@@ -1,4 +1,12 @@
 services:
+  otel-collector:
+    image: otel/opentelemetry-collector:0.128.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./docker/otel/collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
   sim-dev:
     build: .
     working_dir: /workspace
@@ -22,3 +30,9 @@ services:
     environment:
       - WEBOTS_WORLD=/workspace/worlds/tennis_court.wbt
       - DISPLAY_SIZE=1280x800x24
+      - OTEL_ENABLED=true
+      - OTEL_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_METRIC_EXPORT_INTERVAL_MS=5000
+    depends_on:
+      - otel-collector

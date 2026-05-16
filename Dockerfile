@@ -19,6 +19,11 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:${PATH}"
 
 COPY pyproject.toml ./
-RUN uv sync --no-dev || uv pip install numpy opencv-python-headless
+RUN uv sync --no-dev || uv pip install \
+    numpy \
+    opentelemetry-api \
+    opentelemetry-exporter-otlp-proto-http \
+    opentelemetry-sdk \
+    opencv-python-headless
 
 CMD ["bash"]

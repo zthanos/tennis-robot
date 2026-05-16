@@ -5,6 +5,9 @@ description = "Webots/Python starter simulation for a tennis ball collecting rob
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=1.26",
+    "opentelemetry-api>=1.34",
+    "opentelemetry-exporter-otlp-proto-http>=1.34",
+    "opentelemetry-sdk>=1.34",
     "opencv-python-headless>=4.9",
 ]
 

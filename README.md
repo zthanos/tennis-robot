@@ -81,6 +81,30 @@ http://localhost:6080/vnc.html
 
 The service opens `worlds/tennis_court.wbt` automatically. This is convenient for a reproducible setup, but native Webots on Windows or WSLg may still be smoother for interactive editing.
 
+## Telemetry
+
+The Webots controller has optional OpenTelemetry instrumentation for simulation data:
+
+- `robot.camera.frames`
+- `robot.vision.ball.detections`
+- `robot.vision.ball.area`
+- `robot.control.loop.duration`
+- `simulation.step` traces
+
+In Docker, telemetry is enabled for the `webots` service and sent to the local OpenTelemetry Collector:
+
+```powershell
+docker compose up webots otel-collector
+docker compose logs -f otel-collector
+```
+
+For local debugging without a collector, run with:
+
+```powershell
+$env:OTEL_ENABLED="true"
+$env:OTEL_EXPORTER="console"
+```
+
 ## Next Milestones
 
 1. Add depth estimation from camera geometry or a simulated depth camera.

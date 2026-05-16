@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import math
+import time
 
 import cv2
 import numpy as np
 from controller import Camera, Display, Motor, Robot
+from telemetry import setup_telemetry
 
 
 TIME_STEP_MS = 32
@@ -28,6 +30,7 @@ class BallDetectorController:
         self.display = self._device("camera_display", Display)
         self.left_motor = self._device("left_wheel_motor", Motor)
         self.right_motor = self._device("right_wheel_motor", Motor)
+        self.telemetry = setup_telemetry("ball-detector-controller")
 
         self.camera.enable(TIME_STEP_MS)
         self.left_motor.setPosition(math.inf)
@@ -46,10 +49,15 @@ class BallDetectorController:
 
     def run(self) -> None:
         while self.robot.step(TIME_STEP_MS) != -1:
-            image = self._camera_frame()
-            detection = self._detect_largest_ball(image)
-            self._draw_debug(image, detection)
-            self._drive_from_detection(image.shape[1], detection)
+            loop_start = time.perf_counter()
+            with self.telemetry.start_span("simulation.step"):
+                image = self._camera_frame()
+                self.telemetry.add_frame()
+                detection = self._detect_largest_ball(image)
+                self._draw_debug(image, detection)
+                self._drive_from_detection(image.shape[1], detection)
+            duration_ms = (time.perf_counter() - loop_start) * 1000
+            self.telemetry.record_loop_duration(duration_ms)
 
     def _camera_frame(self) -> np.ndarray:
         width = self.camera.getWidth()
@@ -89,6 +97,7 @@ class BallDetectorController:
         x, _, width, _ = detection
         ball_center_x = x + width / 2
         error_px = ball_center_x - frame_width / 2
+        self.telemetry.add_detection(width * detection[3])
 
         if abs(error_px) < TARGET_CENTER_TOLERANCE_PX:
             self.set_speed(2.0, 2.0)
