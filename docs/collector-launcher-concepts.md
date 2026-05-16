@@ -19,15 +19,34 @@ Sources: ITF ball specification references and current retail pipe examples show
 
 | Concept | Collection | Launch | Prototype cost | Complexity | Best use | Verdict |
 |---|---|---|---:|---|---|---|
-| A. Funnel + lift wheel | Mechanical funnel guides ball into a lift wheel/roller | Separate launcher later | US $80-$180 | Medium | First mobile collector MVP | Best first collector concept |
-| B. Brush roller intake | Front brush/roller sweeps balls into a bin | Separate launcher later | US $60-$150 | Low-medium | Simple pickup tests | Good quick prototype |
-| C. Scoop + conveyor | Low scoop feeds belt/elevator into hopper | Separate launcher later | US $120-$300 | Medium-high | Higher capacity collection | Strong later option |
+| A. Funnel + lift wheel + flywheel barrel | Mechanical funnel guides ball into a lift wheel/roller | Hopper feeds a rear/top dual-flywheel launch barrel | US $330-$780 | Medium-high | First full architecture | Best direction, build collector first |
+| B. Brush roller intake + flywheel barrel | Front brush/roller sweeps balls into a bin | Hopper feeds a rear/top dual-flywheel launch barrel | US $310-$750 | Medium | Simple pickup tests plus normal launcher | Good quick prototype |
+| C. Scoop + conveyor + flywheel barrel | Low scoop feeds belt/elevator into hopper | Conveyor/hopper feeds a rear/top dual-flywheel launch barrel | US $370-$900 | High | Higher capacity collection | Strong later option |
 | D. Pneumatic collection + pneumatic launch | Vacuum/airflow pulls balls through tube | Diverter sends balls to launch chamber | US $250-$700+ | High | Bench experiment, not first robot | Interesting but risky |
 | E. Mechanical collector + flywheel launcher | Any collector above | Dual counter-rotating flywheels | US $250-$600+ launcher only | Medium-high | Reliable training shots | Best long-term launcher |
 
-## A. Funnel + Lift Wheel
+## Full Robot Architecture Note
 
-Estimated prototype cost: US $80-$180
+The first collector sketches intentionally focused on pickup geometry and do not show the launch tube/barrel clearly. A complete tennis robot needs three mechanical zones:
+
+1. front collector/intake
+2. middle hopper/feed gate
+3. launch module with a short barrel or guide tube
+
+For mechanical collector concepts A-C, the launcher should be treated as a separate rear/top module. The ball path is:
+
+```text
+front intake -> hopper/bin -> feed gate -> dual flywheels -> short launch barrel
+```
+
+The launch barrel is not a long pressure tube. It is a short guarded guide after the flywheels that sets exit direction and keeps fingers away from moving parts.
+
+## A. Funnel + Lift Wheel + Flywheel Barrel
+
+Estimated prototype cost:
+
+- collector only: US $80-$180
+- full collector + launcher prototype: US $330-$780
 
 Likely parts:
 
@@ -36,6 +55,14 @@ Likely parts:
 - small DC gear motor: US $15-$50
 - simple motor driver: US $10-$30
 - brackets, bearings, fasteners: US $20-$60
+
+Launcher module:
+
+- dual throwing wheels: US $100-$220
+- two launch motors: US $60-$200
+- motor drivers: US $40-$120
+- feed gate and short launch barrel: US $40-$120
+- guards, frame, fasteners: US $40-$140
 
 Pros:
 
@@ -52,9 +79,14 @@ Cons:
 
 Recommended role: first mobile collection prototype.
 
-## B. Brush Roller Intake
+Full robot role: best first complete architecture if we keep the launcher modular and build it after pickup works.
 
-Estimated prototype cost: US $60-$150
+## B. Brush Roller Intake + Flywheel Barrel
+
+Estimated prototype cost:
+
+- collector only: US $60-$150
+- full collector + launcher prototype: US $310-$750
 
 Likely parts:
 
@@ -62,6 +94,8 @@ Likely parts:
 - DC gear motor: US $15-$50
 - motor driver: US $10-$30
 - front tray/bin and brackets: US $20-$50
+
+Launcher module: same dual-flywheel barrel module as Concept A.
 
 Pros:
 
@@ -78,9 +112,14 @@ Cons:
 
 Recommended role: quick bench prototype if we want fastest mechanical test.
 
-## C. Low Scoop + Conveyor Belt
+Full robot role: fastest full prototype, but pickup may be less reliable than funnel/lift.
 
-Estimated prototype cost: US $120-$300
+## C. Low Scoop + Conveyor Belt + Flywheel Barrel
+
+Estimated prototype cost:
+
+- collector only: US $120-$300
+- full collector + launcher prototype: US $370-$900
 
 Likely parts:
 
@@ -88,6 +127,8 @@ Likely parts:
 - small belt or printed conveyor: US $30-$100
 - motor and pulleys: US $30-$80
 - frame, bearings, tensioner, brackets: US $50-$120
+
+Launcher module: same dual-flywheel barrel module as Concept A, potentially fed more cleanly by the conveyor/hopper.
 
 Pros:
 
@@ -102,6 +143,8 @@ Cons:
 - front geometry may require a larger chassis
 
 Recommended role: second-generation collector if the first MVP works.
+
+Full robot role: best capacity path, but too complex for first mechanical build.
 
 ## D. Pneumatic Collection + Pneumatic Launch
 
@@ -119,6 +162,7 @@ Likely parts:
 Pros:
 
 - same tube can theoretically serve transport and launch routing
+- includes a visible launch tube/path from the start
 - fewer ground-contact pickup mechanisms
 - can move balls to a high hopper without a conveyor
 - interesting system for experiments
@@ -143,7 +187,7 @@ Likely parts:
 - two throwing wheels: US $100-$220 pair, depending source
 - two motors: US $60-$200
 - motor drivers: US $40-$120
-- feed gate/wheel: US $20-$80
+- feed gate/wheel and short launch barrel: US $40-$120
 - frame, guards, bearings, fasteners: US $50-$150
 
 Pros:
@@ -167,8 +211,8 @@ Build the project in this order:
 
 1. Simulate and test `scan -> align -> approach -> stop_near_ball`.
 2. Model Concept A: funnel + lift wheel.
-3. Keep the launcher separate from the collector for now.
-4. Use dual flywheels for launch when we reach the serving phase.
+3. Add the hopper/feed gate interface in the model, even before the launcher works.
+4. Add a placeholder launch module with dual flywheels and a short barrel/tube.
 5. Treat the pneumatic tube idea as a bench-only side experiment.
 
 The pneumatic concept is worth sketching and possibly bench-testing, but it should not drive the first base choice. The base should first support a reliable front collector with enough room for a hopper and service access.
