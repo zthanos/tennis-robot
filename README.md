@@ -23,6 +23,7 @@ worlds/
   tennis_court.wbt          # Webots world
 docker-compose.yml          # Optional Python dev container
 Dockerfile                  # Optional Python/OpenCV environment
+Dockerfile.webots           # Webots GUI container with noVNC
 pyproject.toml              # Python deps managed with uv
 ```
 
@@ -63,6 +64,22 @@ docker compose run --rm sim-dev
 uv run python scripts/generate_balls.py --count 18 --seed 7
 uv run python -m py_compile controllers/ball_detector/ball_detector.py scripts/generate_balls.py
 ```
+
+## Webots In Docker
+
+The `webots` compose service runs Webots in a virtual X display and exposes it through noVNC.
+
+```powershell
+docker compose up webots
+```
+
+Then open:
+
+```text
+http://localhost:6080/vnc.html
+```
+
+The service opens `worlds/tennis_court.wbt` automatically. This is convenient for a reproducible setup, but native Webots on Windows or WSLg may still be smoother for interactive editing.
 
 ## Next Milestones
 

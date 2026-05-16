@@ -57,10 +57,6 @@ def format_ball(ball: Ball) -> str:
   physics Physics {{
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }}
 }}"""
 

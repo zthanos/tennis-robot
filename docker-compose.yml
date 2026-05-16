@@ -8,3 +8,17 @@ services:
       - PYTHONPATH=/workspace
       - UV_PROJECT_ENVIRONMENT=/opt/tennis-robot-venv
       - UV_LINK_MODE=copy
+  webots:
+    build:
+      context: .
+      dockerfile: Dockerfile.webots
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    ports:
+      - "6080:6080"
+      - "5900:5900"
+    shm_size: "2gb"
+    environment:
+      - WEBOTS_WORLD=/workspace/worlds/tennis_court.wbt
+      - DISPLAY_SIZE=1280x800x24

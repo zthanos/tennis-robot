@@ -1,5 +1,8 @@
 #VRML_SIM R2023b utf8
 
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+
 WorldInfo {
   title "Tennis Robot Ball Detection Starter"
   basicTimeStep 32
@@ -251,10 +254,6 @@ DEF TENNIS_BALL_00 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -281,10 +280,6 @@ DEF TENNIS_BALL_01 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -311,10 +306,6 @@ DEF TENNIS_BALL_02 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -341,10 +332,6 @@ DEF TENNIS_BALL_03 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -371,10 +358,6 @@ DEF TENNIS_BALL_04 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -401,10 +384,6 @@ DEF TENNIS_BALL_05 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -431,10 +410,6 @@ DEF TENNIS_BALL_06 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -461,10 +436,6 @@ DEF TENNIS_BALL_07 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -491,10 +462,6 @@ DEF TENNIS_BALL_08 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -521,10 +488,6 @@ DEF TENNIS_BALL_09 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -551,10 +514,6 @@ DEF TENNIS_BALL_10 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -581,10 +540,6 @@ DEF TENNIS_BALL_11 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -611,10 +566,6 @@ DEF TENNIS_BALL_12 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -641,10 +592,6 @@ DEF TENNIS_BALL_13 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -671,10 +618,6 @@ DEF TENNIS_BALL_14 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -701,10 +644,6 @@ DEF TENNIS_BALL_15 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -731,10 +670,6 @@ DEF TENNIS_BALL_16 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 
@@ -761,10 +696,6 @@ DEF TENNIS_BALL_17 Solid {
   physics Physics {
     density -1
     mass 0.058
-    bounce 0.55
-    coulombFriction [
-      0.9
-    ]
   }
 }
 # BALLS_END
