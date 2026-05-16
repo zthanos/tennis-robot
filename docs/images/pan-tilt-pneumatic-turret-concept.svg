@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#1f77b4"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#d62728"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2ca02c"/>
+    </marker>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 38px; font-weight: 700; fill: #111; }
+      .label { font-family: Arial, sans-serif; font-size: 23px; fill: #111; }
+      .small { font-family: Arial, sans-serif; font-size: 19px; fill: #222; }
+      .tiny { font-family: Arial, sans-serif; font-size: 16px; fill: #333; }
+      .panel { fill: #fbfbf8; stroke: #222; stroke-width: 2; rx: 18; }
+      .metal { fill: #d8dde2; stroke: #222; stroke-width: 3; }
+      .dark { fill: #2b2f34; stroke: #111; stroke-width: 3; }
+      .wheel { fill: #262a2e; stroke: #111; stroke-width: 4; }
+      .rubber { fill: #111; stroke: #111; stroke-width: 2; }
+      .tube { fill: #e7f1f7; stroke: #222; stroke-width: 4; }
+      .glass { fill: #f0fbff; fill-opacity: 0.72; stroke: #222; stroke-width: 3; }
+      .ball { fill: #d6ee24; stroke: #7f8b10; stroke-width: 3; }
+      .blue { stroke: #1f77b4; stroke-width: 6; fill: none; marker-end: url(#arrow-blue); }
+      .red { stroke: #d62728; stroke-width: 6; fill: none; marker-end: url(#arrow-red); }
+      .green { stroke: #2ca02c; stroke-width: 6; fill: none; marker-end: url(#arrow-green); }
+      .dash { stroke-dasharray: 12 10; }
+      .note { fill: #fff; stroke: #bbb; stroke-width: 2; rx: 12; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="900" fill="#f3f5f2"/>
+  <text x="50" y="70" class="title">PAN-TILT PNEUMATIC TURRET CONCEPT</text>
+  <text x="52" y="105" class="small">One steerable tube acts as pickup nozzle, ball holder, and launch barrel</text>
+
+  <rect x="45" y="135" width="825" height="685" class="panel"/>
+  <rect x="905" y="135" width="450" height="320" class="panel"/>
+  <rect x="905" y="490" width="450" height="330" class="panel"/>
+
+  <!-- Court base -->
+  <path d="M105 710 L785 710 L820 760 L70 760 Z" fill="#9db792" opacity="0.55"/>
+  <line x1="105" y1="710" x2="785" y2="710" stroke="#f4f1de" stroke-width="8"/>
+
+  <!-- Chassis -->
+  <rect x="235" y="515" width="390" height="135" class="metal" rx="14"/>
+  <rect x="280" y="420" width="300" height="115" class="metal" rx="16"/>
+  <rect x="333" y="382" width="195" height="50" class="dark" rx="10"/>
+  <circle cx="285" cy="660" r="54" class="wheel"/>
+  <circle cx="575" cy="660" r="54" class="wheel"/>
+  <circle cx="285" cy="660" r="27" fill="#757b81" stroke="#111" stroke-width="3"/>
+  <circle cx="575" cy="660" r="27" fill="#757b81" stroke="#111" stroke-width="3"/>
+  <rect x="370" y="535" width="120" height="62" fill="#3b4148" stroke="#111" stroke-width="3" rx="8"/>
+  <text x="393" y="573" class="tiny" fill="#fff">blower</text>
+
+  <!-- Turret -->
+  <ellipse cx="430" cy="396" rx="120" ry="34" fill="#b7bec5" stroke="#222" stroke-width="3"/>
+  <ellipse cx="430" cy="389" rx="88" ry="23" fill="#eff2f4" stroke="#222" stroke-width="2"/>
+  <rect x="397" y="295" width="66" height="105" class="dark" rx="10"/>
+  <circle cx="430" cy="298" r="54" fill="#c8ced4" stroke="#222" stroke-width="4"/>
+  <circle cx="430" cy="298" r="20" fill="#515960" stroke="#111" stroke-width="3"/>
+
+  <!-- Barrel launch position -->
+  <g transform="rotate(-22 430 298)">
+    <rect x="430" y="262" width="395" height="72" class="tube" rx="36"/>
+    <rect x="505" y="252" width="70" height="92" class="glass" rx="18"/>
+    <circle cx="540" cy="298" r="25" class="ball"/>
+    <rect x="788" y="252" width="70" height="92" class="dark" rx="18"/>
+  </g>
+
+  <!-- Pickup position ghost -->
+  <g opacity="0.32" transform="rotate(67 430 298)">
+    <rect x="430" y="262" width="320" height="72" class="tube" rx="36"/>
+    <path d="M735 250 L805 220 L805 378 L735 346 Z" fill="#d8dde2" stroke="#222" stroke-width="4"/>
+  </g>
+
+  <!-- Balls -->
+  <circle cx="118" cy="710" r="24" class="ball"/>
+  <circle cx="178" cy="725" r="24" class="ball"/>
+  <circle cx="245" cy="710" r="24" class="ball"/>
+  <path d="M188 698 C260 620, 325 545, 420 380" class="blue"/>
+  <path d="M675 240 C770 208, 835 180, 910 150" class="red"/>
+  <path d="M309 382 C235 360, 220 280, 306 245 C385 215, 515 225, 560 284" class="green dash"/>
+  <text x="145" y="585" class="label">pickup mode</text>
+  <text x="132" y="615" class="small">tilt down + vacuum airflow</text>
+  <text x="620" y="185" class="label">launch mode</text>
+  <text x="620" y="215" class="small">tilt up + air pulse</text>
+  <text x="285" y="350" class="label">360 degree yaw turret</text>
+  <text x="255" y="250" class="small">same tube aims at balls or target</text>
+
+  <!-- Main callouts -->
+  <line x1="430" y1="396" x2="165" y2="430" stroke="#222" stroke-width="2"/>
+  <text x="85" y="425" class="label">slew bearing</text>
+  <text x="85" y="452" class="small">yaw rotation</text>
+  <line x1="540" y1="298" x2="715" y2="350" stroke="#222" stroke-width="2"/>
+  <text x="720" y="355" class="label">breech / ball stop</text>
+  <text x="720" y="382" class="small">holds ball before firing</text>
+
+  <!-- Right top panel: modes -->
+  <text x="935" y="185" class="label">Operating Modes</text>
+  <circle cx="955" cy="232" r="15" class="ball"/>
+  <text x="985" y="239" class="small">1. Search: rotate turret while base stays still</text>
+  <circle cx="955" cy="282" r="15" class="ball"/>
+  <text x="985" y="289" class="small">2. Pickup: tilt down, vacuum pulls ball in</text>
+  <circle cx="955" cy="332" r="15" class="ball"/>
+  <text x="985" y="339" class="small">3. Hold: breech gate seals/positions ball</text>
+  <circle cx="955" cy="382" r="15" class="ball"/>
+  <text x="985" y="389" class="small">4. Launch: tilt to target, pulse air or flywheel assist</text>
+
+  <!-- Right bottom panel: risks -->
+  <text x="935" y="540" class="label">Design Risks</text>
+  <rect x="940" y="570" width="375" height="55" class="note"/>
+  <text x="958" y="604" class="small">air hose routing through 360 degree yaw</text>
+  <rect x="940" y="638" width="375" height="55" class="note"/>
+  <text x="958" y="672" class="small">pickup nozzle must reach court without scraping</text>
+  <rect x="940" y="706" width="375" height="55" class="note"/>
+  <text x="958" y="740" class="small">breech seal and ball jam access are critical</text>
+  <text x="940" y="795" class="small">Best next step: simulate as a yaw/tilt turret, then bench-test tube airflow.</text>
+</svg>

@@ -14,6 +14,10 @@ This document compares early mechanical concepts for collecting tennis balls and
 
 ![Pneumatic collection and launch concept sketch](images/pneumatic-collection-launch-concept.png)
 
+### Pan-Tilt Pneumatic Turret Concept
+
+![Pan-tilt pneumatic turret concept sketch](images/pan-tilt-pneumatic-turret-concept.svg)
+
 ## Important Ball Constraint
 
 An ITF tennis ball diameter is approximately 65.4-68.6 mm. For any tube-based concept, use generous clearance:
