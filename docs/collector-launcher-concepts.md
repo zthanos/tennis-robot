@@ -4,6 +4,16 @@ Last checked: 2026-05-16
 
 This document compares early mechanical concepts for collecting tennis balls and, later, launching them for practice. Costs are rough prototype estimates and exclude shipping, VAT/import duties, machining, 3D printing, and failed experiments.
 
+## Concept Sketches
+
+### Collector Intake Options
+
+![Collector intake concept sketches](images/collector-concepts.png)
+
+### Pneumatic Collection And Launch Concept
+
+![Pneumatic collection and launch concept sketch](images/pneumatic-collection-launch-concept.png)
+
 ## Important Ball Constraint
 
 An ITF tennis ball diameter is approximately 65.4-68.6 mm. For any tube-based concept, use generous clearance:
