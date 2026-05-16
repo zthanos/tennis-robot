@@ -31,9 +31,10 @@ Sources: ITF ball specification references and current retail pipe examples show
 |---|---|---|---:|---|---|---|
 | A. Funnel + lift wheel + flywheel barrel | Mechanical funnel guides ball into a lift wheel/roller | Hopper feeds a rear/top dual-flywheel launch barrel | US $330-$780 | Medium-high | First full architecture | Best direction, build collector first |
 | B. Brush roller intake + flywheel barrel | Front brush/roller sweeps balls into a bin | Hopper feeds a rear/top dual-flywheel launch barrel | US $310-$750 | Medium | Simple pickup tests plus normal launcher | Good quick prototype |
-| C. Scoop + conveyor + flywheel barrel | Low scoop feeds belt/elevator into hopper | Conveyor/hopper feeds a rear/top dual-flywheel launch barrel | US $370-$900 | High | Higher capacity collection | Strong later option |
-| D. Pneumatic collection + pneumatic launch | Vacuum/airflow pulls balls through tube | Diverter sends balls to launch chamber | US $250-$700+ | High | Bench experiment, not first robot | Interesting but risky |
-| E. Mechanical collector + flywheel launcher | Any collector above | Dual counter-rotating flywheels | US $250-$600+ launcher only | Medium-high | Reliable training shots | Best long-term launcher |
+| C. Pan-tilt pneumatic turret | Same steerable tube tilts down to vacuum-pick balls | Same tube tilts up and fires as a barrel/cannon | US $350-$900+ | High | Simulation concept and bench prototype | Third main option; very interesting, mechanically risky |
+| D. Scoop + conveyor + flywheel barrel | Low scoop feeds belt/elevator into hopper | Conveyor/hopper feeds a rear/top dual-flywheel launch barrel | US $370-$900 | High | Higher capacity collection | Strong later option |
+| E. Fixed pneumatic collection + pneumatic launch | Vacuum/airflow pulls balls through fixed tube | Diverter sends balls to launch chamber | US $250-$700+ | High | Bench experiment, not first robot | Interesting but less elegant than turret |
+| F. Mechanical collector + flywheel launcher | Any collector above | Dual counter-rotating flywheels | US $250-$600+ launcher only | Medium-high | Reliable training shots | Best long-term launcher |
 
 ## Full Robot Architecture Note
 
@@ -43,13 +44,15 @@ The first collector sketches intentionally focused on pickup geometry and do not
 2. middle hopper/feed gate
 3. launch module with a short barrel or guide tube
 
-For mechanical collector concepts A-C, the launcher should be treated as a separate rear/top module. The ball path is:
+For mechanical collector concepts A, B, and D, the launcher should be treated as a separate rear/top module. The ball path is:
 
 ```text
 front intake -> hopper/bin -> feed gate -> dual flywheels -> short launch barrel
 ```
 
 The launch barrel is not a long pressure tube. It is a short guarded guide after the flywheels that sets exit direction and keeps fingers away from moving parts.
+
+Concept C is different: it uses one moving tube as both collection nozzle and launch barrel.
 
 ## A. Funnel + Lift Wheel + Flywheel Barrel
 
@@ -124,7 +127,53 @@ Recommended role: quick bench prototype if we want fastest mechanical test.
 
 Full robot role: fastest full prototype, but pickup may be less reliable than funnel/lift.
 
-## C. Low Scoop + Conveyor Belt + Flywheel Barrel
+## C. Pan-Tilt Pneumatic Turret
+
+Estimated prototype cost: US $350-$900+
+
+Core idea:
+
+```text
+one steerable tube / barrel
+  -> yaw turret, ideally 360 degrees
+  -> tilt down for pickup
+  -> tilt up for launch
+  -> vacuum/airflow collection mode
+  -> hold/breech mode
+  -> pressure pulse or blower launch mode
+```
+
+Likely parts:
+
+- 90-100 mm smooth tube/barrel: US $20-$80
+- pan turret bearing or slew mechanism: US $40-$180
+- tilt hinge/actuator: US $30-$150
+- blower/vacuum source: US $50-$200
+- launch pressure chamber or high-energy air path: US $80-$250+
+- breech gate / ball stop / sealing door: US $30-$120
+- slip ring or cable/air hose management: US $20-$120
+- frame, guards, seals, access doors: US $80-$200
+
+Pros:
+
+- same tube does collection and aiming/launch
+- 360 degree yaw can collect balls without rotating the whole base
+- base can be more symmetric because it does not need a fixed front intake
+- simulation-friendly as a turret with yaw/tilt states
+- elegant if it works
+
+Cons:
+
+- hardest concept mechanically
+- 360 degree rotation complicates air hose and cable routing
+- tube must reach low enough for pickup without scraping or jamming
+- needs a reliable ball hold/breech mechanism
+- launch energy and repeatability are uncertain
+- safety guarding is important because the launcher can aim in many directions
+
+Recommended role: third main architecture option. Simulate before buying parts. Bench-test the tube, vacuum pickup, breech, and launch pulse separately before putting it on a mobile base.
+
+## D. Low Scoop + Conveyor Belt + Flywheel Barrel
 
 Estimated prototype cost:
 
@@ -156,7 +205,7 @@ Recommended role: second-generation collector if the first MVP works.
 
 Full robot role: best capacity path, but too complex for first mechanical build.
 
-## D. Pneumatic Collection + Pneumatic Launch
+## E. Fixed Pneumatic Collection + Pneumatic Launch
 
 Estimated prototype cost: US $250-$700+
 
@@ -188,7 +237,7 @@ Cons:
 
 Recommended role: bench experiment only. Do not make it the first mobile robot mechanism.
 
-## E. Mechanical Collector + Dual Flywheel Launcher
+## F. Mechanical Collector + Dual Flywheel Launcher
 
 Estimated prototype cost: US $250-$600+ for launcher module
 
@@ -221,8 +270,9 @@ Build the project in this order:
 
 1. Simulate and test `scan -> align -> approach -> stop_near_ball`.
 2. Model Concept A: funnel + lift wheel.
-3. Add the hopper/feed gate interface in the model, even before the launcher works.
-4. Add a placeholder launch module with dual flywheels and a short barrel/tube.
-5. Treat the pneumatic tube idea as a bench-only side experiment.
+3. Model Concept C separately as a pan-tilt pneumatic turret, because it changes the base geometry completely.
+4. Add the hopper/feed gate interface in the mechanical-collector model, even before the launcher works.
+5. Add a placeholder launch module with dual flywheels and a short barrel/tube.
+6. Treat the fixed pneumatic tube idea as a bench-only side experiment.
 
-The pneumatic concept is worth sketching and possibly bench-testing, but it should not drive the first base choice. The base should first support a reliable front collector with enough room for a hopper and service access.
+The pan-tilt pneumatic turret is worth sketching, simulating, and possibly bench-testing because it can change the base choice completely. The fixed pneumatic concept is less attractive as a main architecture, but still useful as a bench experiment for airflow, tube clearance, and ball handling.
