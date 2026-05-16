@@ -24,6 +24,8 @@ class SimulationTelemetry:
     frame_counter: Any
     detection_counter: Any
     detection_area_histogram: Any
+    ball_distance_histogram: Any
+    ball_bearing_histogram: Any
     loop_duration_histogram: Any
     enabled: bool
 
@@ -36,11 +38,13 @@ class SimulationTelemetry:
         if self.enabled:
             self.frame_counter.add(1)
 
-    def add_detection(self, area_px: int) -> None:
+    def add_detection(self, area_px: int, distance_m: float, bearing_rad: float) -> None:
         if not self.enabled:
             return
         self.detection_counter.add(1)
         self.detection_area_histogram.record(area_px)
+        self.ball_distance_histogram.record(distance_m)
+        self.ball_bearing_histogram.record(bearing_rad)
 
     def record_loop_duration(self, duration_ms: float) -> None:
         if self.enabled:
@@ -113,6 +117,16 @@ def setup_telemetry(service_name: str) -> SimulationTelemetry:
             unit="px",
             description="Detected tennis ball bounding-box area.",
         ),
+        ball_distance_histogram=meter.create_histogram(
+            "robot.vision.ball.distance",
+            unit="m",
+            description="Estimated distance from the camera to the detected tennis ball.",
+        ),
+        ball_bearing_histogram=meter.create_histogram(
+            "robot.vision.ball.bearing",
+            unit="rad",
+            description="Estimated horizontal bearing from the camera centerline to the detected tennis ball.",
+        ),
         loop_duration_histogram=meter.create_histogram(
             "robot.control.loop.duration",
             unit="ms",
@@ -129,6 +143,8 @@ def _noop_telemetry() -> SimulationTelemetry:
         frame_counter=metric,
         detection_counter=metric,
         detection_area_histogram=metric,
+        ball_distance_histogram=metric,
+        ball_bearing_histogram=metric,
         loop_duration_histogram=metric,
         enabled=False,
     )

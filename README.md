@@ -42,6 +42,7 @@ controllers/ball_detector/ball_detector.py
 ```
 
 When the simulation runs, the controller reads from the robot camera, detects tennis-ball-colored blobs, and draws detection rectangles on the Webots camera display.
+The controller also estimates a rough monocular ball distance and bearing from the camera field of view and the known tennis ball diameter.
 
 ## Generate New Random Ball Positions
 
@@ -63,6 +64,7 @@ Docker is useful for Python tooling and OpenCV experiments, but Webots GUI is us
 docker compose run --rm sim-dev
 uv run python scripts/generate_balls.py --count 18 --seed 7
 uv run python -m py_compile controllers/ball_detector/ball_detector.py scripts/generate_balls.py
+uv run python scripts/perception_smoke.py
 ```
 
 ## Webots In Docker
@@ -88,6 +90,8 @@ The Webots controller has optional OpenTelemetry instrumentation for simulation 
 - `robot.camera.frames`
 - `robot.vision.ball.detections`
 - `robot.vision.ball.area`
+- `robot.vision.ball.distance`
+- `robot.vision.ball.bearing`
 - `robot.control.loop.duration`
 - `simulation.step` traces
 
