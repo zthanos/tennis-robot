@@ -1,0 +1,770 @@
+#VRML_SIM R2023b utf8
+
+WorldInfo {
+  title "Tennis Robot Ball Detection Starter"
+  basicTimeStep 32
+  contactProperties [
+    ContactProperties {
+      material1 "tennis_ball"
+      material2 "court"
+      bounce 0.4
+      coulombFriction [
+        0.9
+      ]
+    }
+  ]
+}
+
+Viewpoint {
+  orientation 0.56 0.58 0.59 2.15
+  position 9.5 -14 9
+}
+
+TexturedBackground {
+}
+
+TexturedBackgroundLight {
+}
+
+DEF COURT_FLOOR Solid {
+  translation 0 0 -0.01
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.08 0.34 0.25
+        roughness 0.8
+        metalness 0
+      }
+      geometry Box {
+        size 26 13 0.02
+      }
+    }
+  ]
+  name "court_floor"
+  contactMaterial "court"
+  boundingObject Box {
+    size 26 13 0.02
+  }
+}
+
+DEF COURT_LINES Solid {
+  translation 0 0 0.002
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.92 0.92 0.86
+        roughness 0.4
+        metalness 0
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            -11.885 -5.485 0, 11.885 -5.485 0, 11.885 -5.40 0, -11.885 -5.40 0,
+            -11.885 5.40 0, 11.885 5.40 0, 11.885 5.485 0, -11.885 5.485 0,
+            -11.885 -5.485 0, -11.80 -5.485 0, -11.80 5.485 0, -11.885 5.485 0,
+            11.80 -5.485 0, 11.885 -5.485 0, 11.885 5.485 0, 11.80 5.485 0,
+            -6.40 -4.115 0, 6.40 -4.115 0, 6.40 -4.03 0, -6.40 -4.03 0,
+            -6.40 4.03 0, 6.40 4.03 0, 6.40 4.115 0, -6.40 4.115 0,
+            -6.40 -4.115 0, -6.315 -4.115 0, -6.315 4.115 0, -6.40 4.115 0,
+            6.315 -4.115 0, 6.40 -4.115 0, 6.40 4.115 0, 6.315 4.115 0,
+            -6.40 -0.043 0, 6.40 -0.043 0, 6.40 0.043 0, -6.40 0.043 0,
+            -0.043 -4.115 0, 0.043 -4.115 0, 0.043 4.115 0, -0.043 4.115 0
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          4, 5, 6, 7, -1,
+          8, 9, 10, 11, -1,
+          12, 13, 14, 15, -1,
+          16, 17, 18, 19, -1,
+          20, 21, 22, 23, -1,
+          24, 25, 26, 27, -1,
+          28, 29, 30, 31, -1,
+          32, 33, 34, 35, -1,
+          36, 37, 38, 39, -1
+        ]
+      }
+    }
+  ]
+}
+
+DEF TENNIS_NET Solid {
+  translation 0 0 0.55
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.04 0.04 0.04
+        transparency 0.45
+        roughness 0.7
+        metalness 0
+      }
+      geometry Box {
+        size 0.06 11.2 1.1
+      }
+    }
+  ]
+  name "tennis_net"
+  boundingObject Box {
+    size 0.06 11.2 1.1
+  }
+}
+
+DEF TENNIS_ROBOT Robot {
+  translation -8 0 0.16
+  rotation 0 0 1 0
+  controller "ball_detector"
+  children [
+    DEF BODY Shape {
+      appearance PBRAppearance {
+        baseColor 0.12 0.13 0.16
+        roughness 0.55
+        metalness 0
+      }
+      geometry Box {
+        size 0.55 0.38 0.22
+      }
+    }
+    DEF FRONT_CAMERA Camera {
+      translation 0.31 0 0.16
+      rotation 0 1 0 0.16
+      name "front_camera"
+      width 640
+      height 360
+      fieldOfView 1.05
+      near 0.03
+      far 18
+    }
+    DEF CAMERA_DISPLAY Display {
+      translation 0 0 -0.18
+      name "camera_display"
+      width 640
+      height 360
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0 -0.24 -0.09
+      }
+      device [
+        RotationalMotor {
+          name "left_wheel_motor"
+          maxVelocity 6.28
+        }
+      ]
+      endPoint Solid {
+        translation 0 -0.24 -0.09
+        rotation 1 0 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.02 0.02 0.02
+              roughness 0.9
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.08
+              radius 0.11
+            }
+          }
+        ]
+        name "left_wheel"
+        boundingObject Cylinder {
+          height 0.08
+          radius 0.11
+        }
+        physics Physics {
+          density -1
+          mass 0.25
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0 0.24 -0.09
+      }
+      device [
+        RotationalMotor {
+          name "right_wheel_motor"
+          maxVelocity 6.28
+        }
+      ]
+      endPoint Solid {
+        translation 0 0.24 -0.09
+        rotation 1 0 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.02 0.02 0.02
+              roughness 0.9
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.08
+              radius 0.11
+            }
+          }
+        ]
+        name "right_wheel"
+        boundingObject Cylinder {
+          height 0.08
+          radius 0.11
+        }
+        physics Physics {
+          density -1
+          mass 0.25
+        }
+      }
+    }
+  ]
+  name "tennis_robot"
+  boundingObject Box {
+    size 0.55 0.38 0.22
+  }
+  physics Physics {
+    density -1
+    mass 8
+  }
+}
+
+# BALLS_START
+DEF TENNIS_BALL_00 Solid {
+  translation -4.264 -3.713 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_00"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_01 Solid {
+  translation 3.647 -4.082 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_01"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_02 Solid {
+  translation 0.865 -1.287 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_02"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_03 Solid {
+  translation -10.696 0.072 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_03"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_04 Solid {
+  translation -10.165 -0.632 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_04"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_05 Solid {
+  translation -10.409 -3.936 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_05"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_06 Solid {
+  translation -1.823 3.169 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_06"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_07 Solid {
+  translation -8.622 -2.648 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_07"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_08 Solid {
+  translation 3.080 4.298 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_08"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_09 Solid {
+  translation 1.875 -1.003 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_09"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_10 Solid {
+  translation 11.513 -4.320 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_10"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_11 Solid {
+  translation 8.692 -2.006 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_11"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_12 Solid {
+  translation -8.610 -3.661 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_12"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_13 Solid {
+  translation -4.623 3.009 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_13"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_14 Solid {
+  translation -7.725 0.784 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_14"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_15 Solid {
+  translation 3.367 -1.170 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_15"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_16 Solid {
+  translation 1.154 -4.081 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_16"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+
+DEF TENNIS_BALL_17 Solid {
+  translation -10.608 -2.741 0.033
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.73 0.95 0.11
+        roughness 0.65
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.033
+        subdivision 3
+      }
+    }
+  ]
+  name "tennis_ball_17"
+  contactMaterial "tennis_ball"
+  boundingObject Sphere {
+    radius 0.033
+  }
+  physics Physics {
+    density -1
+    mass 0.058
+    bounce 0.55
+    coulombFriction [
+      0.9
+    ]
+  }
+}
+# BALLS_END

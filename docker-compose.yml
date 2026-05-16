@@ -1,0 +1,10 @@
+services:
+  sim-dev:
+    build: .
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      - PYTHONPATH=/workspace
+      - UV_PROJECT_ENVIRONMENT=/opt/tennis-robot-venv
+      - UV_LINK_MODE=copy

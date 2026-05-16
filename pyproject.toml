@@ -1,0 +1,15 @@
+[project]
+name = "tennis-robot-sim"
+version = "0.1.0"
+description = "Webots/Python starter simulation for a tennis ball collecting robot."
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.26",
+    "opencv-python-headless>=4.9",
+]
+
+[dependency-groups]
+dev = []
+
+[tool.uv]
+package = false
