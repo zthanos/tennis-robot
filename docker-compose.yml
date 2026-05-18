@@ -36,3 +36,9 @@ services:
       - OTEL_METRIC_EXPORT_INTERVAL_MS=5000
     depends_on:
       - otel-collector
+  openscad:
+    image: openscad/openscad:bookworm
+    profiles: ["cad"]
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
