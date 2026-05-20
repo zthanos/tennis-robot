@@ -34,6 +34,18 @@ services:
       - OTEL_EXPORTER=otlp
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - OTEL_METRIC_EXPORT_INTERVAL_MS=5000
+      - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
+      - USE_RGB_VISION=true
+      - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
+      - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
+      - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
+      - COLLECTOR_ALIGN_ANGULAR_GAIN=1.4
+      - COLLECTOR_APPROACH_SPEED_M_S=0.12
+      - COLLECTOR_CAPTURE_SPEED_M_S=0.05
+      - COLLECTOR_REVERSE_SPEED_M_S=0.08
+      - SURVEY_DRIVE_SPEED_M_S=0.24
+      - SURVEY_TURN_SPEED_RAD_S=0.75
+      - SURVEY_HEADING_GAIN=2.2
     depends_on:
       - otel-collector
   openscad:

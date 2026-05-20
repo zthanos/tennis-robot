@@ -184,6 +184,50 @@ def make_pickup_flow():
     return path
 
 
+def make_intake_front_view():
+    path = IMG_DIR / "design-intake-front-view.png"
+    im = Image.new("RGB", (1600, 900), PALETTE["white"])
+    d = ImageDraw.Draw(im)
+    label(d, (80, 60), "Μπροστινή όψη intake", 34, bold=True, anchor="la")
+    label(d, (80, 105), "Οδηγοί funnel, στόμιο και brush roller όπως φαίνονται από μπροστά", 24, PALETTE["muted"], anchor="la")
+
+    d.line((120, 760, 1480, 760), fill=(185, 195, 205), width=5)
+    rounded(d, (270, 160, 1330, 750), PALETTE["panel"], PALETTE["line"], 4, 42)
+    rounded(d, (360, 250, 1240, 720), (255, 255, 255), PALETTE["line"], 3, 28)
+
+    for x in (250, 1350):
+        d.ellipse((x - 85, 560, x + 85, 780), fill=(49, 57, 67), outline=PALETTE["ink"], width=4)
+        d.ellipse((x - 46, 610, x + 46, 735), fill=(130, 145, 160), outline=PALETTE["ink"], width=3)
+
+    d.polygon([(405, 360), (620, 500), (620, 600), (405, 690)], fill=(237, 246, 237), outline=PALETTE["green"])
+    d.polygon([(1195, 360), (980, 500), (980, 600), (1195, 690)], fill=(237, 246, 237), outline=PALETTE["green"])
+    d.line((405, 360, 620, 500, 980, 500, 1195, 360), fill=PALETTE["green"], width=5)
+    d.line((405, 690, 620, 600, 980, 600, 1195, 690), fill=PALETTE["green"], width=5)
+    label(d, (505, 330), "αριστερός οδηγός", 22, PALETTE["green"], bold=True)
+    label(d, (1095, 330), "δεξιός οδηγός", 22, PALETTE["green"], bold=True)
+    label(d, (800, 465), "φαρδύ στόμιο intake", 24, PALETTE["green"], bold=True)
+
+    rounded(d, (585, 610, 1015, 710), (245, 248, 250), PALETTE["line"], 3, 18)
+    d.rounded_rectangle((620, 590, 980, 680), radius=45, fill=(70, 82, 96), outline=PALETTE["ink"], width=4)
+    for x in range(650, 970, 34):
+        d.line((x, 595, x - 18, 675), fill=PALETTE["accent2"], width=5)
+    label(d, (800, 575), "brush roller", 24, PALETTE["accent2"], bold=True)
+
+    for x in (690, 800, 910):
+        d.ellipse((x - 36, 680, x + 36, 752), fill=(210, 235, 80), outline=(130, 150, 30), width=3)
+    label(d, (800, 795), "ο roller τραβά τη μπάλα μέσα από το κεντραρισμένο throat", 22, PALETTE["muted"])
+
+    arrow(d, (410, 250), (1190, 250), PALETTE["accent"])
+    arrow(d, (1190, 250), (410, 250), PALETTE["accent"])
+    label(d, (800, 225), "πλάτος στόμιου 250-350 mm", 22, PALETTE["accent"], bold=True)
+    arrow(d, (620, 535), (980, 535), PALETTE["danger"])
+    arrow(d, (980, 535), (620, 535), PALETTE["danger"])
+    label(d, (800, 520), "throat 75-85 mm", 21, PALETTE["danger"], bold=True)
+
+    im.save(path)
+    return path
+
+
 def make_collection_hopper():
     path = IMG_DIR / "design-collection-hopper.png"
     im = Image.new("RGB", (1600, 900), PALETTE["white"])
@@ -307,7 +351,13 @@ def add_note(doc, title, body):
 
 def build_doc():
     IMG_DIR.mkdir(parents=True, exist_ok=True)
-    diagrams = [make_base_plan(), make_side_section(), make_pickup_flow(), make_collection_hopper()]
+    diagrams = [
+        make_base_plan(),
+        make_side_section(),
+        make_pickup_flow(),
+        make_intake_front_view(),
+        make_collection_hopper(),
+    ]
 
     doc = Document()
     sec = doc.sections[0]
@@ -386,6 +436,8 @@ def build_doc():
     doc.add_heading("3. Design για τον μηχανισμό μαζέματος", level=1)
     doc.add_picture(str(diagrams[2]), width=Inches(6.9))
     add_caption(doc, "Σχήμα 3. Μπροστινό intake με funnel, brush roller και elevator.")
+    doc.add_picture(str(diagrams[3]), width=Inches(6.9))
+    add_caption(doc, "Σχήμα 4. Μπροστινή όψη intake με οδηγούς, στόμιο και brush roller.")
     doc.add_paragraph(
         "Το μάζεμα γίνεται με χαμηλό στόμιο και φαρδείς οδηγούς που συγχωρούν μικρό σφάλμα προσέγγισης. Ένας μαλακός roller/βούρτσα τραβά τη μπάλα προς τα μέσα και τη στέλνει σε μικρή ράμπα ή elevator. Αυτό είναι πιο αξιόπιστο από το να προσπαθήσουμε να χρησιμοποιήσουμε τους flywheels της εκτόξευσης ως intake."
     )
@@ -404,8 +456,8 @@ def build_doc():
     )
 
     doc.add_heading("4. Design για τον μηχανισμό συλλογής/αποθήκευσης", level=1)
-    doc.add_picture(str(diagrams[3]), width=Inches(6.9))
-    add_caption(doc, "Σχήμα 4. Hopper με κεκλιμένο πάτο, anti-jam agitator και star feeder.")
+    doc.add_picture(str(diagrams[4]), width=Inches(6.9))
+    add_caption(doc, "Σχήμα 5. Hopper με κεκλιμένο πάτο, anti-jam agitator και star feeder.")
     doc.add_paragraph(
         "Ο μηχανισμός συλλογής είναι το buffer μεταξύ μαζέματος και εκτόξευσης. Θέλει λείες εσωτερικές επιφάνειες, κεκλιμένο πάτο και σημείο καθαρισμού. Για πρώτη πλήρη έκδοση, στόχος 40-80 μπάλες είναι λογικός χωρίς να γίνει υπερβολικά ψηλό το robot."
     )

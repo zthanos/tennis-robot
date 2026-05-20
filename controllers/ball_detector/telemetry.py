@@ -26,6 +26,8 @@ class SimulationTelemetry:
     detection_area_histogram: Any
     ball_distance_histogram: Any
     ball_bearing_histogram: Any
+    collector_state_counter: Any
+    collector_collection_counter: Any
     loop_duration_histogram: Any
     enabled: bool
 
@@ -38,17 +40,35 @@ class SimulationTelemetry:
         if self.enabled:
             self.frame_counter.add(1)
 
-    def add_detection(self, area_px: int, distance_m: float, bearing_rad: float) -> None:
+    def add_detection(
+        self,
+        area_px: int,
+        distance_m: float,
+        bearing_rad: float,
+        distance_source: str = "unknown",
+    ) -> None:
         if not self.enabled:
             return
-        self.detection_counter.add(1)
-        self.detection_area_histogram.record(area_px)
-        self.ball_distance_histogram.record(distance_m)
-        self.ball_bearing_histogram.record(bearing_rad)
+        attributes = {
+            "robot.vision.ball.distance_source": distance_source,
+            "robot.vision.ball.bearing_side": "left" if bearing_rad < 0 else "right",
+        }
+        self.detection_counter.add(1, attributes)
+        self.detection_area_histogram.record(area_px, attributes)
+        self.ball_distance_histogram.record(distance_m, attributes)
+        self.ball_bearing_histogram.record(abs(bearing_rad), attributes)
 
     def record_loop_duration(self, duration_ms: float) -> None:
         if self.enabled:
             self.loop_duration_histogram.record(duration_ms)
+
+    def add_collector_state(self, state: str) -> None:
+        if self.enabled:
+            self.collector_state_counter.add(1, {"collector.state": state})
+
+    def add_collection(self) -> None:
+        if self.enabled:
+            self.collector_collection_counter.add(1)
 
 
 class _NoopMetric:
@@ -125,7 +145,17 @@ def setup_telemetry(service_name: str) -> SimulationTelemetry:
         ball_bearing_histogram=meter.create_histogram(
             "robot.vision.ball.bearing",
             unit="rad",
-            description="Estimated horizontal bearing from the camera centerline to the detected tennis ball.",
+            description="Absolute horizontal bearing from the camera centerline to the detected tennis ball.",
+        ),
+        collector_state_counter=meter.create_counter(
+            "robot.collector.state.updates",
+            unit="1",
+            description="Collector state-machine updates grouped by state.",
+        ),
+        collector_collection_counter=meter.create_counter(
+            "robot.collector.collections",
+            unit="1",
+            description="Tennis balls collected by the simulated Concept A intake.",
         ),
         loop_duration_histogram=meter.create_histogram(
             "robot.control.loop.duration",
@@ -145,6 +175,8 @@ def _noop_telemetry() -> SimulationTelemetry:
         detection_area_histogram=metric,
         ball_distance_histogram=metric,
         ball_bearing_histogram=metric,
+        collector_state_counter=metric,
+        collector_collection_counter=metric,
         loop_duration_histogram=metric,
         enabled=False,
     )
