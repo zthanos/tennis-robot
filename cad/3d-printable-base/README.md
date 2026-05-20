@@ -9,10 +9,10 @@ Scope:
 - printable direct-drive wheels
 - printable stabilizer feet
 - printable trolley-handle sockets
+- first-pass collector funnel, lift-wheel bracket, and receiving bin
 
 Out of scope for this folder:
 
-- ball basket / hopper
 - launcher flywheels
 - metal axle-based wheel assemblies
 
@@ -48,6 +48,7 @@ Recommended first exports:
 3. `drive_wheel_direct_hub.scad`
 4. `stabilizer_foot.scad`
 5. `handle_socket.scad`
+6. `collector_funnel_bin.scad`
 
 ## Starting print settings
 
@@ -65,4 +66,6 @@ Recommended first exports:
 - Make motor pods replaceable; they will be the first parts to revise.
 - Print one wheel at reduced width first to verify motor shaft fit.
 - Add rubber/TPU tread to the wheel. Hard plastic wheels will slip and chatter.
-
+- Treat `collector_funnel_bin.scad` as a tunable bench rig, not a final enclosure.
+  The throat width, wheel gap, and bin geometry should follow the Webots physics
+  experiments before printing a full-size revision.

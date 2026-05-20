@@ -23,6 +23,10 @@ def main() -> None:
     assert command.state == CollectorState.ALIGN
     assert command.base.angular_speed_rad_s > 0
 
+    command = behavior.update(BallObservationInput(visible=False), 0.032)
+    assert command.state == CollectorState.ALIGN
+    assert command.base.angular_speed_rad_s > 0
+
     command = behavior.update(BallObservationInput(True, bearing_rad=0.01, distance_m=1.2, confidence=0.9), 0.032)
     assert command.state == CollectorState.APPROACH
     assert command.collector.intake_enabled

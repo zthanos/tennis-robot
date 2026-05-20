@@ -63,6 +63,15 @@ INTAKE_HALF_WIDTH_M = 0.11
 INTAKE_MAX_HEIGHT_M = 0.12
 SUPERVISED_FOV_RAD = 1.05
 SUPERVISED_MAX_RANGE_M = 8.0
+NET_X_M = 0.0
+NET_SIDE_CLEARANCE_M = 0.25
+COLLECTION_ANIMATION_S = 0.75
+COLLECTION_PATH_LOCAL = (
+    (0.52, 0.0, 0.045),
+    (0.43, 0.0, 0.11),
+    (0.28, 0.0, 0.22),
+    (0.12, 0.0, 0.30),
+)
 FRONT_CAMERA_MOUNT = CameraMount(x_m=0.31, y_m=0.0, yaw_rad=0.0) if VISION_ENABLED else None
 
 
@@ -82,6 +91,7 @@ class BallDetectorController:
         self.robot = Supervisor()
         self.camera = self._device("front_camera", Camera)
         self.depth_camera = self._optional_device("front_depth", RangeFinder)
+        self.collector_camera = self._optional_device("collector_camera", Camera)
         self.display = self._device("camera_display", Display)
         self.left_motor = self._device("left_wheel_motor", Motor)
         self.right_motor = self._device("right_wheel_motor", Motor)
@@ -93,14 +103,18 @@ class BallDetectorController:
         self.command_store = RobotCommandStore.from_env()
         self.control_mode = "idle"
         self.robot_node = self.robot.getSelf()
+        self.collection_visual_ball = self.robot.getFromDef("COLLECTOR_ANIMATION_BALL")
         self.collection_confirmed = False
         self.collection_count = 0
+        self.collection_animation = None
         self.last_command: ConceptACommand | None = None
         self.loop_count = 0
 
         self.camera.enable(TIME_STEP_MS)
         if self.depth_camera is not None:
             self.depth_camera.enable(TIME_STEP_MS)
+        if self.collector_camera is not None:
+            self.collector_camera.enable(TIME_STEP_MS)
         self.left_motor.setPosition(math.inf)
         self.right_motor.setPosition(math.inf)
         if self.lift_motor is not None:
@@ -130,9 +144,11 @@ class BallDetectorController:
         self.right_motor.setVelocity(max(-self.max_speed_rad_s, min(self.max_speed_rad_s, right)))
 
     def set_base_command(self, linear_speed_m_s: float, angular_speed_rad_s: float) -> None:
-        left = (linear_speed_m_s - angular_speed_rad_s * TRACK_WIDTH_M / 2) / WHEEL_RADIUS_M
-        right = (linear_speed_m_s + angular_speed_rad_s * TRACK_WIDTH_M / 2) / WHEEL_RADIUS_M
-        self.set_speed(left, right)
+        left_side = (linear_speed_m_s - angular_speed_rad_s * TRACK_WIDTH_M / 2) / WHEEL_RADIUS_M
+        right_side = (linear_speed_m_s + angular_speed_rad_s * TRACK_WIDTH_M / 2) / WHEEL_RADIUS_M
+        # The Webots device names are historical: left_wheel_motor is mounted at y=-0.24,
+        # i.e. on the robot's right side in the local frame.
+        self.set_speed(right_side, left_side)
 
     def set_collector_command(self, lift_wheel_speed: float) -> None:
         if self.lift_motor is not None:
@@ -142,6 +158,7 @@ class BallDetectorController:
         while self.robot.step(TIME_STEP_MS) != -1:
             loop_start = time.perf_counter()
             with self.telemetry.start_span("simulation.step"):
+                self._update_collection_animation(TIME_STEP_MS / 1000)
                 image = self._camera_frame()
                 depth_frame = self._depth_frame()
                 self.telemetry.add_frame()
@@ -290,11 +307,16 @@ class BallDetectorController:
 
     def _supervised_ball_observation(self) -> BallObservationInput:
         nearest: tuple[float, float, float, float, float, float] | None = None
+        robot_world_x = self.robot_node.getPosition()[0]
         for index in range(100):
             ball = self.robot.getFromDef(f"TENNIS_BALL_{index:02d}")
             if ball is None:
                 continue
+            if self._is_collection_animation_ball(index):
+                continue
             ball_position = ball.getPosition()
+            if self._across_net(robot_world_x, ball_position[0]):
+                continue
             x, y, _z = self._world_to_robot_local(ball_position)
             if x <= 0:
                 continue
@@ -318,6 +340,13 @@ class BallDetectorController:
             world_x_m=world_x_m,
             world_y_m=world_y_m,
         )
+
+    def _across_net(self, robot_x_m: float, ball_x_m: float) -> bool:
+        if abs(robot_x_m - NET_X_M) < NET_SIDE_CLEARANCE_M:
+            return False
+        if abs(ball_x_m - NET_X_M) < NET_SIDE_CLEARANCE_M:
+            return False
+        return (robot_x_m - NET_X_M) * (ball_x_m - NET_X_M) < 0
 
     def _draw_debug(
         self,
@@ -408,6 +437,8 @@ class BallDetectorController:
     def _simulate_collection(self, command: ConceptACommand) -> bool:
         if not command.collector.intake_enabled:
             return False
+        if self.collection_animation is not None:
+            return False
 
         for index in range(100):
             ball = self.robot.getFromDef(f"TENNIS_BALL_{index:02d}")
@@ -415,12 +446,59 @@ class BallDetectorController:
                 continue
             local_position = self._world_to_robot_local(ball.getPosition())
             if self._in_intake_zone(local_position):
-                ball.remove()
-                self.collection_count += 1
-                self.telemetry.add_collection()
-                print(f"collected tennis_ball_{index:02d}; total={self.collection_count}")
+                self._start_collection_animation(index, ball)
                 return True
         return False
+
+    def _start_collection_animation(self, index: int, ball) -> None:
+        self.collection_count += 1
+        self.telemetry.add_collection()
+        self.collection_animation = {
+            "index": index,
+            "elapsed_s": 0.0,
+        }
+        ball.remove()
+        self._set_collection_visual_position(COLLECTION_PATH_LOCAL[0])
+        print(f"collecting tennis_ball_{index:02d}; total={self.collection_count}")
+
+    def _update_collection_animation(self, dt_s: float) -> None:
+        if self.collection_animation is None:
+            return
+
+        elapsed_s = float(self.collection_animation["elapsed_s"]) + max(0.0, dt_s)
+        self.collection_animation["elapsed_s"] = elapsed_s
+        progress = min(1.0, elapsed_s / COLLECTION_ANIMATION_S)
+
+        local_position = self._collection_path_position(progress)
+        self._set_collection_visual_position(local_position)
+
+        if progress >= 1.0:
+            self._hide_collection_visual()
+            self.collection_animation = None
+
+    def _set_collection_visual_position(self, local_position: tuple[float, float, float]) -> None:
+        if self.collection_visual_ball is None:
+            return
+        self.collection_visual_ball.getField("translation").setSFVec3f(list(local_position))
+
+    def _hide_collection_visual(self) -> None:
+        self._set_collection_visual_position((0.0, 0.0, -1.0))
+
+    def _collection_path_position(self, progress: float) -> tuple[float, float, float]:
+        segment_count = len(COLLECTION_PATH_LOCAL) - 1
+        scaled = min(segment_count - 1e-9, max(0.0, progress) * segment_count)
+        segment_index = int(scaled)
+        segment_t = scaled - segment_index
+        start = COLLECTION_PATH_LOCAL[segment_index]
+        end = COLLECTION_PATH_LOCAL[segment_index + 1]
+        return (
+            start[0] + (end[0] - start[0]) * segment_t,
+            start[1] + (end[1] - start[1]) * segment_t,
+            start[2] + (end[2] - start[2]) * segment_t,
+        )
+
+    def _is_collection_animation_ball(self, index: int) -> bool:
+        return self.collection_animation is not None and self.collection_animation["index"] == index
 
     def _world_to_robot_local(self, world_position: list[float]) -> tuple[float, float, float]:
         robot_position = self.robot_node.getPosition()
@@ -432,6 +510,16 @@ class BallDetectorController:
             orientation[0] * dx + orientation[3] * dy + orientation[6] * dz,
             orientation[1] * dx + orientation[4] * dy + orientation[7] * dz,
             orientation[2] * dx + orientation[5] * dy + orientation[8] * dz,
+        )
+
+    def _robot_local_to_world(self, local_position: tuple[float, float, float]) -> tuple[float, float, float]:
+        robot_position = self.robot_node.getPosition()
+        orientation = self.robot_node.getOrientation()
+        x, y, z = local_position
+        return (
+            robot_position[0] + orientation[0] * x + orientation[1] * y + orientation[2] * z,
+            robot_position[1] + orientation[3] * x + orientation[4] * y + orientation[5] * z,
+            robot_position[2] + orientation[6] * x + orientation[7] * y + orientation[8] * z,
         )
 
     def _in_intake_zone(self, local_position: tuple[float, float, float]) -> bool:

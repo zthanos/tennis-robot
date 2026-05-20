@@ -106,11 +106,13 @@ class ConceptACollectorBehavior:
         self.state = CollectorState.SCAN
         self._state_elapsed_s = 0.0
         self._lost_elapsed_s = 0.0
+        self._last_visible_observation: BallObservationInput | None = None
 
     def reset(self) -> None:
         self.state = CollectorState.SCAN
         self._state_elapsed_s = 0.0
         self._lost_elapsed_s = 0.0
+        self._last_visible_observation = None
 
     def update(
         self,
@@ -122,8 +124,10 @@ class ConceptACollectorBehavior:
         self._state_elapsed_s += max(0.0, dt_s)
         if observation.visible:
             self._lost_elapsed_s = 0.0
+            self._last_visible_observation = observation
         else:
             self._lost_elapsed_s += max(0.0, dt_s)
+        tracking_observation = self._tracking_observation(observation)
 
         if collection_confirmed:
             self._transition(CollectorState.COLLECTED)
@@ -136,7 +140,7 @@ class ConceptACollectorBehavior:
             if self._lost_elapsed_s > self.config.lost_target_timeout_s:
                 self._transition(CollectorState.SCAN)
             else:
-                self._transition(self._tracking_state(observation))
+                self._transition(self._tracking_state(tracking_observation))
         elif self.state == CollectorState.CAPTURE:
             if self._state_elapsed_s > self.config.capture_timeout_s:
                 self._transition(CollectorState.REVERSE_CLEAR)
@@ -147,7 +151,15 @@ class ConceptACollectorBehavior:
             if self._state_elapsed_s > self.config.collected_hold_s:
                 self._transition(CollectorState.SCAN)
 
-        return self._command_for_state(observation)
+        return self._command_for_state(tracking_observation)
+
+    def _tracking_observation(self, observation: BallObservationInput) -> BallObservationInput:
+        if observation.visible:
+            return observation
+        if self.state in {CollectorState.ALIGN, CollectorState.APPROACH} and self._last_visible_observation is not None:
+            if self._lost_elapsed_s <= self.config.lost_target_timeout_s:
+                return self._last_visible_observation
+        return observation
 
     def _tracking_state(self, observation: BallObservationInput) -> CollectorState:
         if not observation.visible:
