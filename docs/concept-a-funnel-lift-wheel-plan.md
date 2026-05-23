@@ -31,6 +31,36 @@ The important decision is to keep collection and throwing modular. The first mac
 
 ![Concept A recommended assembly sketch](images/concept-a-funnel-lift-wheel-assembly.svg)
 
+### Collector-To-Base Assembly
+
+![Collector to base assembly diagram](images/collector-base-assembly.svg)
+
+### Base Layout Plan
+
+![Base layout plan](images/base-layout-plan.svg)
+
+CAD source for the first chassis drill template:
+
+```text
+cad/3d-printable-base/base_mounting_plate.scad
+```
+
+Plywood cutting instructions:
+
+```text
+docs/plywood-cut-list.md
+```
+
+Physical-store purchase checklist:
+
+```text
+docs/prototype-purchase-list-el.md
+```
+
+The same CAD model also includes the vertical mounting frame by default
+(`show_verticals=true`): upper rails, electronics trays, collector uprights,
+battery retainers, handle rails, and reserved launcher/feed uprights.
+
 Assembly intent:
 
 ```text

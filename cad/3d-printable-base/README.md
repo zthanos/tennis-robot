@@ -5,11 +5,14 @@ Parametric OpenSCAD sources for a first printable tennis-robot base.
 Scope:
 
 - printable modular base tiles
+- full-size base mounting/drill template with component mounting points
 - printable side motor pods
 - printable direct-drive wheels
 - printable stabilizer feet
+- printable passive front caster mounts
 - printable trolley-handle sockets
 - first-pass collector funnel, lift-wheel bracket, and receiving bin
+- full concept assembly showing the expected wooden-base robot layout
 
 Out of scope for this folder:
 
@@ -35,20 +38,36 @@ load-bearing axles are not recommended for a tennis robot base.
 | Wheel core | PETG/ASA/nylon-CF | Print strong, then add rubber/TPU tire if possible. |
 | Tire sleeve | TPU 95A | Optional but strongly recommended for grip. |
 | Stabilizer feet | TPU or PETG with rubber pad | Rubber contact is better on court. |
+| Front caster mounts | PETG/ASA/nylon-CF | Use with bought swivel caster wheels. |
 | Handle sockets | PETG/ASA | Bolt to the base tiles and inner frame. |
 
-## Exporting to STL
+## Editing and exporting
 
-Open each `.scad` in OpenSCAD and export the selected module to STL.
+### In Docker (browser GUI)
+
+From the repo root:
+
+```powershell
+docker compose --profile cad up --build openscad-gui
+```
+
+Then open `http://localhost:6081/vnc.html`. The repo is mounted at `/workspace`, so you can open any file under `cad/3d-printable-base/`.
+
+### On the host
+
+Open each `.scad` in a local OpenSCAD install and export the selected module to STL.
 
 Recommended first exports:
 
 1. `base_tile.scad`
-2. `motor_pod.scad`
-3. `drive_wheel_direct_hub.scad`
-4. `stabilizer_foot.scad`
-5. `handle_socket.scad`
-6. `collector_funnel_bin.scad`
+2. `base_mounting_plate.scad`
+3. `motor_pod.scad`
+4. `drive_wheel_direct_hub.scad`
+5. `stabilizer_foot.scad`
+6. `handle_socket.scad`
+7. `collector_funnel_bin.scad`
+8. `front_caster_mount.scad`
+9. `full_robot_concept.scad`
 
 ## Starting print settings
 
@@ -61,7 +80,27 @@ Recommended first exports:
 
 ## Mechanical notes
 
+- A wooden base is a practical first mobile prototype. Use 21 mm birch marine
+  plywood for the rugged first chassis, or 9-12 mm plywood after the geometry is
+  proven and reinforced with rails. For the 21 mm cut plan, see
+  `docs/plywood-cut-list.md`. Bolt the printed motor pods,
+  front caster mounts, collector rig, electronics, and battery onto it. This is
+  faster to drill, adjust, and replace than a fully printed chassis while the
+  robot geometry is still changing.
+- Use `base_mounting_plate.scad` as the first drill/CAD reference for the
+  physical chassis. It keeps the mounting points for motor pods, front casters,
+  collector, battery straps, electronics standoffs, handle sockets, stabilizer
+  brackets, and a reserved launcher/feed zone visible in one model. With the
+  default `show_verticals=true`, it also shows the upright frame, electronics
+  trays, collector uprights, battery retainers, handle rails, and future
+  launcher/feed uprights.
+- The battery bay is intentionally removable: split cross rails leave side
+  access, and the model shows a removable top strap/clamp instead of glued
+  blocks that trap the battery.
 - Do not support the robot only on two wheels during launch. Use stabilizer feet.
+- For the collection-only MVP, prefer two driven side wheels plus two passive
+  front swivel casters. Avoid servo steering until the differential-drive base
+  proves insufficient.
 - Keep the battery low and near the middle of the footprint.
 - Make motor pods replaceable; they will be the first parts to revise.
 - Print one wheel at reduced width first to verify motor shaft fit.
@@ -69,3 +108,16 @@ Recommended first exports:
 - Treat `collector_funnel_bin.scad` as a tunable bench rig, not a final enclosure.
   The throat width, wheel gap, and bin geometry should follow the Webots physics
   experiments before printing a full-size revision.
+- Use `full_robot_concept.scad` as an assembly/reference model. It is meant to
+  communicate layout and mounting relationships: wooden base, upper frame,
+  electronics/battery module, receiving bin, collector intake, launcher wheels,
+  rear drive wheels, front casters, cover mounting rails, removable panels, and
+  transport handle. Do not print it as one object.
+- The intended ball path in `full_robot_concept.scad` is:
+  front intake -> lift wheel -> transfer chute -> open receiving bin -> sloped
+  bin floor -> narrow feed channel -> metering gate -> dual flywheels -> guarded
+  launch chute.
+- The transparent cover panels in the concept are placeholders for removable
+  polycarbonate/ABS panels. They show where the outer shell can land on rails
+  and standoffs while leaving service access to the intake, feed gate, and
+  launcher.

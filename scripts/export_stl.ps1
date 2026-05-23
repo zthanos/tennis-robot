@@ -6,6 +6,7 @@ New-Item -ItemType Directory -Force $outDir | Out-Null
 
 $models = @(
   "base_tile",
+  "base_mounting_plate",
   "motor_pod",
   "drive_wheel_direct_hub",
   "stabilizer_foot",

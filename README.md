@@ -149,7 +149,32 @@ The service opens `worlds/tennis_court.wbt` automatically. This is convenient fo
 
 ## OpenSCAD In Docker
 
-The `openscad` compose service uses the official `openscad/openscad:bookworm` image to export printable CAD files without installing OpenSCAD locally.
+### GUI in the browser (no local install)
+
+The `openscad-gui` service runs OpenSCAD on a virtual display and exposes it through noVNC (same idea as the Webots container). Port `6081` avoids clashing with Webots on `6080`.
+
+```powershell
+docker compose --profile cad up --build openscad-gui
+```
+
+Open:
+
+```text
+http://localhost:6081/vnc.html
+```
+
+By default it loads `cad/3d-printable-base/full_robot_concept.scad`. Override with:
+
+```powershell
+$env:OPENSCAD_FILE="/workspace/cad/3d-printable-base/base_tile.scad"
+docker compose --profile cad up openscad-gui
+```
+
+Files under `cad/` are the mounted repo workspace, so saves in the GUI write back to your project folder.
+
+### Headless STL export
+
+The `openscad` compose service uses the official `openscad/openscad:bookworm` image to export printable CAD files without a GUI.
 
 ```powershell
 .\scripts\export_stl.ps1

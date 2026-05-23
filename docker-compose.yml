@@ -54,3 +54,18 @@ services:
     working_dir: /workspace
     volumes:
       - .:/workspace
+  openscad-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile.openscad
+    profiles: ["cad"]
+    working_dir: /workspace
+    ports:
+      - "6081:6080"
+      - "5901:5900"
+    shm_size: "512mb"
+    environment:
+      - DISPLAY_SIZE=1280x800x24
+      - OPENSCAD_FILE=/workspace/cad/3d-printable-base/full_robot_concept.scad
+    volumes:
+      - .:/workspace

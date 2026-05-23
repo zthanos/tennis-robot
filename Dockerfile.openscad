@@ -1,0 +1,26 @@
+FROM debian:bookworm-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:99
+ENV LIBGL_ALWAYS_SOFTWARE=true
+ENV QT_X11_NO_MITSHM=1
+
+WORKDIR /workspace
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        fluxbox \
+        libgl1-mesa-dri \
+        novnc \
+        openscad \
+        websockify \
+        x11vnc \
+        xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY docker/openscad/start-openscad-gui.sh /usr/local/bin/start-openscad-gui
+RUN chmod +x /usr/local/bin/start-openscad-gui
+
+EXPOSE 5900 6080
+
+CMD ["start-openscad-gui"]

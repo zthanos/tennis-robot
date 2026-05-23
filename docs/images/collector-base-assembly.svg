@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050">
+  <defs>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2f7d46"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2368a8"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#b33939"/>
+    </marker>
+    <style>
+      .bg { fill: #f5f4ef; }
+      .title { font-family: Arial, sans-serif; font-size: 38px; font-weight: 700; fill: #151515; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 21px; fill: #333; }
+      .panel-title { font-family: Arial, sans-serif; font-size: 25px; font-weight: 700; fill: #111; }
+      .label { font-family: Arial, sans-serif; font-size: 21px; fill: #111; }
+      .small { font-family: Arial, sans-serif; font-size: 17px; fill: #222; }
+      .tiny { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+      .panel { fill: #fffefa; stroke: #242424; stroke-width: 2; rx: 12; }
+      .base { fill: #cfd7dd; stroke: #1d1d1d; stroke-width: 3; }
+      .wood { fill: #b98a55; stroke: #1d1d1d; stroke-width: 3; }
+      .collector { fill: #f0b23d; stroke: #1d1d1d; stroke-width: 3; }
+      .collector-light { fill: #f8d27a; stroke: #1d1d1d; stroke-width: 3; }
+      .rubber { fill: #22272e; stroke: #111; stroke-width: 3; }
+      .metal { fill: #aeb8c2; stroke: #1d1d1d; stroke-width: 3; }
+      .bin { fill: #85d9ee; fill-opacity: 0.58; stroke: #1d1d1d; stroke-width: 3; }
+      .ball { fill: #d9f039; stroke: #75820d; stroke-width: 3; }
+      .slot { fill: #f8f8f8; stroke: #1d1d1d; stroke-width: 2; }
+      .bolt { fill: #444; stroke: #111; stroke-width: 2; }
+      .flow { stroke: #2f7d46; stroke-width: 7; fill: none; marker-end: url(#arrow-green); }
+      .motion { stroke: #2368a8; stroke-width: 5; fill: none; marker-end: url(#arrow-blue); }
+      .adjust { stroke: #b33939; stroke-width: 5; fill: none; stroke-dasharray: 9 8; marker-end: url(#arrow-red); }
+      .dim { stroke: #2368a8; stroke-width: 2; fill: none; marker-start: url(#arrow-blue); marker-end: url(#arrow-blue); }
+      .note { fill: #fff; stroke: #c7c0b5; stroke-width: 2; rx: 10; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1050" class="bg"/>
+  <text x="50" y="68" class="title">Συναρμολόγηση collector πάνω στη βάση</text>
+  <text x="52" y="105" class="subtitle">Μπροστινό module με funnel, lift wheel και μικρό hopper, βιδωμένο σε ξύλινη ή printable βάση</text>
+
+  <rect x="40" y="135" width="735" height="415" class="panel"/>
+  <rect x="825" y="135" width="735" height="415" class="panel"/>
+  <rect x="40" y="585" width="735" height="405" class="panel"/>
+  <rect x="825" y="585" width="735" height="405" class="panel"/>
+
+  <!-- Top mounting layout -->
+  <text x="75" y="182" class="panel-title">1. Κάτοψη: θέση collector στη μύτη της βάσης</text>
+  <rect x="120" y="260" width="545" height="215" class="wood" rx="16"/>
+  <text x="332" y="370" class="label">βάση 760 × 430 mm</text>
+
+  <path d="M665 276 L735 215 L735 520 L665 458 Z" class="collector-light"/>
+  <path d="M665 276 L486 317 L486 417 L665 458 Z" class="collector"/>
+  <path d="M665 276 L735 215 L735 520 L665 458 Z" fill="none" stroke="#1d1d1d" stroke-width="3"/>
+  <rect x="474" y="312" width="88" height="110" class="collector-light" rx="7"/>
+  <rect x="300" y="292" width="180" height="150" class="bin" rx="10"/>
+  <text x="335" y="372" class="label">hopper</text>
+
+  <circle cx="180" cy="500" r="36" class="rubber"/>
+  <circle cx="605" cy="500" r="36" class="rubber"/>
+  <circle cx="705" cy="236" r="22" class="ball"/>
+  <circle cx="705" cy="499" r="22" class="ball"/>
+  <path d="M705 236 C650 270, 580 314, 523 366" class="flow"/>
+  <path d="M705 499 C642 458, 580 420, 523 372" class="flow"/>
+
+  <g>
+    <rect x="520" y="282" width="46" height="14" class="slot" rx="7"/>
+    <rect x="610" y="252" width="46" height="14" class="slot" rx="7"/>
+    <rect x="520" y="439" width="46" height="14" class="slot" rx="7"/>
+    <rect x="610" y="468" width="46" height="14" class="slot" rx="7"/>
+    <circle cx="543" cy="289" r="5" class="bolt"/>
+    <circle cx="633" cy="259" r="5" class="bolt"/>
+    <circle cx="543" cy="446" r="5" class="bolt"/>
+    <circle cx="633" cy="475" r="5" class="bolt"/>
+  </g>
+  <text x="133" y="230" class="small">Κέντρο collector στον άξονα της βάσης. Το στόμιο μένει μπροστά, χαμηλά στο γήπεδο.</text>
+  <line x1="486" y1="246" x2="735" y2="246" class="dim"/>
+  <text x="540" y="234" class="tiny">collector module ~330-360 mm</text>
+  <line x1="748" y1="215" x2="748" y2="520" class="dim"/>
+  <text x="602" y="208" class="tiny">στόμιο ~300-310 mm</text>
+
+  <!-- Side section -->
+  <text x="860" y="182" class="panel-title">2. Πλάγια τομή: ύψη και ροή μπάλας</text>
+  <path d="M865 488 L1515 488 L1515 530 L865 530 Z" fill="#87a96b" opacity="0.45"/>
+  <rect x="940" y="398" width="485" height="42" class="wood" rx="8"/>
+  <rect x="955" y="373" width="205" height="26" class="metal" rx="6"/>
+  <text x="1000" y="389" class="tiny">ράγα / ενισχυτική πλάκα</text>
+
+  <path d="M880 474 L1048 430 L1048 468 L880 493 Z" class="collector-light"/>
+  <rect x="1032" y="318" width="32" height="148" class="metal" rx="7"/>
+  <circle cx="1110" cy="354" r="46" class="rubber"/>
+  <circle cx="1110" cy="354" r="12" fill="#777" stroke="#111" stroke-width="2"/>
+  <rect x="1168" y="300" width="220" height="120" class="bin" rx="12"/>
+  <path d="M1178 416 L1380 392" stroke="#1d1d1d" stroke-width="4"/>
+  <text x="1225" y="364" class="label">hopper 3-6 μπάλες</text>
+  <circle cx="943" cy="449" r="24" class="ball"/>
+  <path d="M942 449 C1000 426, 1050 392, 1107 356" class="flow"/>
+  <path d="M1139 350 C1168 335, 1194 328, 1224 328" class="flow"/>
+  <path d="M1106 308 A49 49 0 0 1 1154 359" class="motion"/>
+  <path d="M1030 318 L1030 466" class="adjust"/>
+  <path d="M1162 302 L1162 418" class="adjust"/>
+  <text x="870" y="535" class="small">lip 5-12 mm από το έδαφος, lift wheel gap 55-65 mm, back plate ρυθμιζόμενη.</text>
+  <text x="870" y="228" class="small">Η μπάλα μπαίνει από το χαμηλό scoop, πιέζεται από τον τροχό και πέφτει στο hopper.</text>
+
+  <!-- Exploded assembly -->
+  <text x="75" y="632" class="panel-title">3. Σειρά συναρμολόγησης</text>
+  <rect x="90" y="700" width="140" height="92" class="wood" rx="10"/>
+  <text x="116" y="750" class="small">βάση</text>
+  <path d="M280 673 L230 798 L332 798 Z" class="collector-light"/>
+  <path d="M362 673 L413 798 L310 798 Z" class="collector-light"/>
+  <text x="250" y="835" class="small">πλευρά funnel</text>
+  <rect x="462" y="686" width="45" height="138" class="metal" rx="7"/>
+  <text x="431" y="850" class="small">back plate</text>
+  <rect x="540" y="705" width="100" height="72" class="metal" rx="8"/>
+  <circle cx="660" cy="740" r="40" class="rubber"/>
+  <text x="535" y="835" class="small">μοτέρ + τροχός</text>
+  <rect x="300" y="885" width="230" height="62" class="bin" rx="10"/>
+  <text x="360" y="922" class="small">hopper panels</text>
+  <path d="M230 745 L278 745" class="motion"/>
+  <path d="M412 745 L462 745" class="motion"/>
+  <path d="M507 744 L540 744" class="motion"/>
+  <path d="M640 780 C620 830, 570 872, 530 900" class="motion"/>
+
+  <rect x="84" y="650" width="630" height="38" fill="none"/>
+  <text x="90" y="668" class="tiny">A. Βιδώνουμε πλάκα/ράγα στη βάση  B. Πιάνουμε funnel  C. Ρυθμίζουμε back plate  D. Βάζουμε τροχό/μοτέρ  E. Κλείνουμε hopper</text>
+  <text x="90" y="972" class="small">Πρώτα σφίγγουμε ελαφρά, δοκιμάζουμε 2-3 μπάλες, μετά τελικό σφίξιμο με ροδέλες.</text>
+
+  <!-- Fastener and access details -->
+  <text x="860" y="632" class="panel-title">4. Σημεία βιδώματος και πρόσβαση</text>
+  <rect x="880" y="690" width="315" height="210" class="wood" rx="12"/>
+  <rect x="925" y="735" width="230" height="120" class="collector" rx="9"/>
+  <g>
+    <rect x="940" y="710" width="56" height="16" class="slot" rx="8"/>
+    <rect x="1084" y="710" width="56" height="16" class="slot" rx="8"/>
+    <rect x="940" y="864" width="56" height="16" class="slot" rx="8"/>
+    <rect x="1084" y="864" width="56" height="16" class="slot" rx="8"/>
+    <circle cx="968" cy="718" r="6" class="bolt"/>
+    <circle cx="1112" cy="718" r="6" class="bolt"/>
+    <circle cx="968" cy="872" r="6" class="bolt"/>
+    <circle cx="1112" cy="872" r="6" class="bolt"/>
+  </g>
+  <text x="910" y="925" class="small">4 κύρια slots M5 ή M4 + ροδέλες</text>
+
+  <rect x="1230" y="682" width="275" height="72" class="note"/>
+  <text x="1250" y="710" class="small">Κρατάμε πρόσβαση</text>
+  <text x="1250" y="735" class="tiny">lip height, wheel gap, wheel angle</text>
+  <rect x="1230" y="778" width="275" height="72" class="note"/>
+  <text x="1250" y="806" class="small">Καλώδια μοτέρ</text>
+  <text x="1250" y="831" class="tiny">περνάνε πίσω από back plate, όχι στο στόμιο</text>
+  <rect x="1230" y="874" width="275" height="72" class="note"/>
+  <text x="1250" y="902" class="small">Service</text>
+  <text x="1250" y="927" class="tiny">ο τροχός βγαίνει χωρίς να λυθεί όλο το module</text>
+  <path d="M1198 718 L1230 718" class="adjust"/>
+  <path d="M1198 816 L1230 816" class="adjust"/>
+  <path d="M1198 912 L1230 912" class="adjust"/>
+
+  <text x="860" y="972" class="small">Πρακτική πρόταση: πρόσθεσε ενδιάμεση ράγα/adapter plate ώστε οι τρύπες της βάσης να μη χρειάζονται αλλαγή σε κάθε δοκιμή collector.</text>
+</svg>

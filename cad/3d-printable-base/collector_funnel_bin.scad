@@ -12,7 +12,7 @@ mount_hole_d = 5.2;
 funnel_len = 360;
 funnel_mouth_w = 300;
 throat_w = 82;
-funnel_wall_h = 120;
+funnel_wall_h = 80;
 lip_h = 12;
 
 lift_wheel_d = 90;
@@ -48,7 +48,7 @@ module low_intake_lip() {
 module back_plate() {
     translate([lift_wheel_center_x - wheel_gap_to_back_plate, 0, lift_wheel_center_z])
         rotate([0, 12, 0])
-            cube([plate_t, throat_w + 38, 160], center=true);
+            cube([plate_t, throat_w + 38, 130], center=true);
 }
 
 module lift_wheel_placeholder() {

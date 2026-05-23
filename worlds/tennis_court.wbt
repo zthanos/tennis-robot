@@ -1,35 +1,30 @@
-#VRML_SIM R2023b utf8
+#VRML_SIM R2025a utf8
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 
 WorldInfo {
   title "Clay Tennis Court Robot Simulation"
-  basicTimeStep 32
   contactProperties [
     ContactProperties {
       material1 "tennis_ball"
       material2 "court"
-      bounce 0.4
       coulombFriction [
         0.9
       ]
+      bounce 0.4
     }
   ]
 }
-
 Viewpoint {
+  fieldOfView 0.82
   orientation -0.21632091665759634 0.21632091665759634 0.952055944802003 1.619908052651413
   position 0 -24 11.5
-  fieldOfView 0.82
 }
-
 TexturedBackground {
 }
-
 TexturedBackgroundLight {
 }
-
 DEF COURT_FLOOR Solid {
   translation 0 0 -0.01
   children [
@@ -50,7 +45,6 @@ DEF COURT_FLOOR Solid {
     size 26 13 0.025
   }
 }
-
 DEF CLAY_BRUSH_MARKS Solid {
   translation 0 0 0.004
   children [
@@ -65,7 +59,7 @@ DEF CLAY_BRUSH_MARKS Solid {
         size 22.5 0.055 0.004
       }
     }
-    Transform {
+    Pose {
       translation -2.4 -2.1 0
       rotation 0 0 1 0.08
       children [
@@ -82,8 +76,8 @@ DEF CLAY_BRUSH_MARKS Solid {
         }
       ]
     }
-    Transform {
-      translation 3.0 2.2 0
+    Pose {
+      translation 3 2.2 0
       rotation 0 0 1 -0.06
       children [
         Shape {
@@ -99,8 +93,8 @@ DEF CLAY_BRUSH_MARKS Solid {
         }
       ]
     }
-    Transform {
-      translation 5.6 -4.0 0
+    Pose {
+      translation 5.6 -4 0
       rotation 0 0 1 0.16
       children [
         Shape {
@@ -116,14 +110,14 @@ DEF CLAY_BRUSH_MARKS Solid {
         }
       ]
     }
-    Transform {
-      translation -7.0 3.5 0
-      rotation 0 0 1 -0.10
+    Pose {
+      translation -7 3.5 0
+      rotation 0 0 1 -0.1
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.40 0.17 0.12
-            transparency 0.60
+            baseColor 0.4 0.17 0.12
+            transparency 0.6
             roughness 1
             metalness 0
           }
@@ -136,16 +130,15 @@ DEF CLAY_BRUSH_MARKS Solid {
   ]
   name "clay_brush_marks"
 }
-
 DEF COURT_LINES Solid {
   translation 0 0 0.008
   children [
-    Transform {
+    Pose {
       translation 0 5.485 0
       children [
         Shape {
           appearance DEF COURT_LINE_APPEARANCE PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
@@ -155,7 +148,7 @@ DEF COURT_LINES Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation 0 -5.485 0
       children [
         Shape {
@@ -166,12 +159,12 @@ DEF COURT_LINES Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation 0 4.115 0
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
@@ -181,12 +174,12 @@ DEF COURT_LINES Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation 0 -4.115 0
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
@@ -196,12 +189,12 @@ DEF COURT_LINES Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -11.885 0 0
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
@@ -211,12 +204,12 @@ DEF COURT_LINES Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation 11.885 0 0
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
@@ -226,12 +219,12 @@ DEF COURT_LINES Solid {
         }
       ]
     }
-    Transform {
-      translation -6.40 0 0
+    Pose {
+      translation -6.4 0 0
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
@@ -241,12 +234,12 @@ DEF COURT_LINES Solid {
         }
       ]
     }
-    Transform {
-      translation 6.40 0 0
+    Pose {
+      translation 6.4 0 0
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
@@ -256,54 +249,52 @@ DEF COURT_LINES Solid {
         }
       ]
     }
-    Transform {
-      translation 0 0 0
+    Pose {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
           geometry Box {
-            size 12.80 0.085 0.006
+            size 12.8 0.085 0.006
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation -11.785 0 0
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
           geometry Box {
-            size 0.20 0.085 0.006
+            size 0.2 0.085 0.006
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation 11.785 0 0
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.95 0.90 0.82
+            baseColor 0.95 0.9 0.82
             roughness 0.65
             metalness 0
           }
           geometry Box {
-            size 0.20 0.085 0.006
+            size 0.2 0.085 0.006
           }
         }
       ]
     }
   ]
 }
-
 DEF TENNIS_NET Solid {
   translation 0 0 0.55
   children [
@@ -324,13 +315,12 @@ DEF TENNIS_NET Solid {
     size 0.06 11.2 1.1
   }
 }
-
 DEF EAST_FENCE Solid {
   translation 13 0 1.4
   children [
     Shape {
       appearance PBRAppearance {
-        baseColor 0.18 0.20 0.22
+        baseColor 0.18 0.2 0.22
         transparency 0.35
         roughness 0.7
         metalness 0
@@ -345,13 +335,12 @@ DEF EAST_FENCE Solid {
     size 0.08 13 2.8
   }
 }
-
 DEF WEST_FENCE Solid {
   translation -13 0 1.4
   children [
     Shape {
       appearance PBRAppearance {
-        baseColor 0.18 0.20 0.22
+        baseColor 0.18 0.2 0.22
         transparency 0.35
         roughness 0.7
         metalness 0
@@ -366,13 +355,12 @@ DEF WEST_FENCE Solid {
     size 0.08 13 2.8
   }
 }
-
 DEF NORTH_FENCE Solid {
   translation 0 6.5 1.4
   children [
     Shape {
       appearance PBRAppearance {
-        baseColor 0.18 0.20 0.22
+        baseColor 0.18 0.2 0.22
         transparency 0.35
         roughness 0.7
         metalness 0
@@ -387,13 +375,12 @@ DEF NORTH_FENCE Solid {
     size 26 0.08 2.8
   }
 }
-
 DEF SOUTH_FENCE Solid {
   translation 0 -6.5 1.4
   children [
     Shape {
       appearance PBRAppearance {
-        baseColor 0.18 0.20 0.22
+        baseColor 0.18 0.2 0.22
         transparency 0.35
         roughness 0.7
         metalness 0
@@ -408,11 +395,9 @@ DEF SOUTH_FENCE Solid {
     size 26 0.08 2.8
   }
 }
-
 DEF PHOTO_COURT_DETAILS Solid {
-  translation 0 0 0
   children [
-    Transform {
+    Pose {
       translation 0 -8.05 0.012
       children [
         Shape {
@@ -427,8 +412,8 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
-      translation -7.0 -8.05 0.035
+    Pose {
+      translation -7 -8.05 0.035
       rotation 0 0 1 0.18
       children [
         Shape {
@@ -443,8 +428,8 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
-      translation -3.8 -8.30 0.036
+    Pose {
+      translation -3.8 -8.3 0.036
       rotation 0 0 1 -0.12
       children [
         Shape {
@@ -459,7 +444,7 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation 0.2 -7.85 0.036
       rotation 0 0 1 0.06
       children [
@@ -475,9 +460,9 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation 4.4 -8.18 0.036
-      rotation 0 0 1 -0.20
+      rotation 0 0 1 -0.2
       children [
         Shape {
           appearance PBRAppearance {
@@ -491,8 +476,8 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
-      translation 8.3 -7.90 0.036
+    Pose {
+      translation 8.3 -7.9 0.036
       rotation 0 0 1 0.14
       children [
         Shape {
@@ -507,7 +492,7 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -11.6 -6.95 0.35
       children [
         Shape {
@@ -517,12 +502,12 @@ DEF PHOTO_COURT_DETAILS Solid {
             metalness 0
           }
           geometry Box {
-            size 0.35 0.35 0.70
+            size 0.35 0.35 0.7
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation -5.8 -6.95 0.35
       children [
         Shape {
@@ -532,12 +517,12 @@ DEF PHOTO_COURT_DETAILS Solid {
             metalness 0
           }
           geometry Box {
-            size 0.35 0.35 0.70
+            size 0.35 0.35 0.7
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation 0 -6.95 0.35
       children [
         Shape {
@@ -547,12 +532,12 @@ DEF PHOTO_COURT_DETAILS Solid {
             metalness 0
           }
           geometry Box {
-            size 0.35 0.35 0.70
+            size 0.35 0.35 0.7
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation 5.8 -6.95 0.35
       children [
         Shape {
@@ -562,12 +547,12 @@ DEF PHOTO_COURT_DETAILS Solid {
             metalness 0
           }
           geometry Box {
-            size 0.35 0.35 0.70
+            size 0.35 0.35 0.7
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation 11.6 -6.95 0.35
       children [
         Shape {
@@ -577,17 +562,17 @@ DEF PHOTO_COURT_DETAILS Solid {
             metalness 0
           }
           geometry Box {
-            size 0.35 0.35 0.70
+            size 0.35 0.35 0.7
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation -9.2 -7.25 0.88
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.08 0.30 0.16
+            baseColor 0.08 0.3 0.16
             roughness 0.8
             metalness 0
           }
@@ -598,39 +583,39 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
-      translation -3.0 -7.25 0.88
+    Pose {
+      translation -3 -7.25 0.88
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.10 0.34 0.18
+            baseColor 0.1 0.34 0.18
             roughness 0.8
             metalness 0
           }
           geometry Sphere {
-            radius 0.40
+            radius 0.4
             subdivision 2
           }
         }
       ]
     }
-    Transform {
-      translation 3.0 -7.25 0.88
+    Pose {
+      translation 3 -7.25 0.88
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.09 0.30 0.15
+            baseColor 0.09 0.3 0.15
             roughness 0.8
             metalness 0
           }
           geometry Sphere {
-            radius 0.40
+            radius 0.4
             subdivision 2
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation 9.2 -7.25 0.88
       children [
         Shape {
@@ -646,7 +631,7 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation 10.6 -7.8 0.45
       children [
         Shape {
@@ -656,10 +641,10 @@ DEF PHOTO_COURT_DETAILS Solid {
             metalness 0
           }
           geometry Box {
-            size 0.55 0.50 0.08
+            size 0.55 0.5 0.08
           }
         }
-        Transform {
+        Pose {
           translation 0 0.18 0.35
           rotation 1 0 0 0.35
           children [
@@ -677,12 +662,12 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation 8.8 -8.05 0.72
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.02 0.19 0.10
+            baseColor 0.02 0.19 0.1
             roughness 0.9
             metalness 0
           }
@@ -693,7 +678,7 @@ DEF PHOTO_COURT_DETAILS Solid {
         }
       ]
     }
-    Transform {
+    Pose {
       translation -10.8 -6.7 2.4
       children [
         Shape {
@@ -703,27 +688,27 @@ DEF PHOTO_COURT_DETAILS Solid {
             metalness 0
           }
           geometry Box {
-            size 0.10 0.10 4.8
+            size 0.1 0.1 4.8
           }
         }
-        Transform {
+        Pose {
           translation 0 0.25 2.25
           children [
             Shape {
               appearance PBRAppearance {
-                baseColor 0.95 0.88 0.70
+                baseColor 0.95 0.88 0.7
                 roughness 0.2
                 metalness 0
               }
               geometry Box {
-                size 0.65 0.10 0.22
+                size 0.65 0.1 0.22
               }
             }
           ]
         }
       ]
     }
-    Transform {
+    Pose {
       translation 10.8 6.7 2.4
       children [
         Shape {
@@ -733,20 +718,20 @@ DEF PHOTO_COURT_DETAILS Solid {
             metalness 0
           }
           geometry Box {
-            size 0.10 0.10 4.8
+            size 0.1 0.1 4.8
           }
         }
-        Transform {
+        Pose {
           translation 0 -0.25 2.25
           children [
             Shape {
               appearance PBRAppearance {
-                baseColor 0.95 0.88 0.70
+                baseColor 0.95 0.88 0.7
                 roughness 0.2
                 metalness 0
               }
               geometry Box {
-                size 0.65 0.10 0.22
+                size 0.65 0.1 0.22
               }
             }
           ]
@@ -756,30 +741,136 @@ DEF PHOTO_COURT_DETAILS Solid {
   ]
   name "photo_court_details"
 }
-
 DEF TENNIS_ROBOT Robot {
   translation -8 0 0.20
   rotation 0 0 1 0
-  controller "ball_detector"
-  supervisor TRUE
   children [
-    DEF BODY Shape {
-      appearance PBRAppearance {
-        baseColor 0.12 0.13 0.16
-        roughness 0.55
-        metalness 0
+    DEF WOODEN_CHASSIS_PLATE Solid {
+      translation 0.08 0 0.045
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.58 0.40 0.24
+            roughness 0.82
+            metalness 0
+          }
+          geometry Box {
+            size 0.92 0.58 0.026
+          }
+        }
+      ]
+      name "wooden_chassis_plate"
+      boundingObject Box {
+        size 0.92 0.58 0.026
       }
-      geometry Box {
-        size 0.55 0.38 0.22
+      physics Physics {
+        density -1
+        mass 0.9
       }
+    }
+    DEF ELECTRONICS_BOX Solid {
+      translation -0.13 0 0.135
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.12 0.13 0.16
+            roughness 0.55
+            metalness 0
+          }
+          geometry Box {
+            size 0.34 0.26 0.12
+          }
+        }
+      ]
+      name "electronics_box"
+    }
+    DEF LOW_BATTERY_BLOCK Solid {
+      translation -0.25 0 0.088
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.04 0.05 0.055
+            roughness 0.6
+            metalness 0
+          }
+          geometry Box {
+            size 0.28 0.20 0.055
+          }
+        }
+      ]
+      name "low_battery_block"
+    }
+    DEF LEFT_CHASSIS_RAIL Solid {
+      translation 0.18 -0.245 0.025
+      children [
+        Shape {
+          appearance DEF STRUCTURAL_RAIL_APPEARANCE PBRAppearance {
+            baseColor 0.18 0.19 0.21
+            roughness 0.55
+            metalness 0
+          }
+          geometry Box {
+            size 0.70 0.035 0.04
+          }
+        }
+      ]
+      name "left_chassis_rail"
+    }
+    DEF RIGHT_CHASSIS_RAIL Solid {
+      translation 0.18 0.245 0.025
+      children [
+        Shape {
+          appearance USE STRUCTURAL_RAIL_APPEARANCE
+          geometry Box {
+            size 0.70 0.035 0.04
+          }
+        }
+      ]
+      name "right_chassis_rail"
+    }
+    DEF FRONT_CROSSMEMBER Solid {
+      translation 0.49 0 0.025
+      children [
+        Shape {
+          appearance USE STRUCTURAL_RAIL_APPEARANCE
+          geometry Box {
+            size 0.05 0.52 0.04
+          }
+        }
+      ]
+      name "front_crossmember"
+    }
+    DEF LEFT_MOTOR_POD Solid {
+      translation -0.02 -0.305 -0.025
+      children [
+        Shape {
+          appearance USE STRUCTURAL_RAIL_APPEARANCE
+          geometry Box {
+            size 0.20 0.08 0.12
+          }
+        }
+      ]
+      name "left_motor_pod"
+    }
+    DEF RIGHT_MOTOR_POD Solid {
+      translation -0.02 0.305 -0.025
+      children [
+        Shape {
+          appearance USE STRUCTURAL_RAIL_APPEARANCE
+          geometry Box {
+            size 0.20 0.08 0.12
+          }
+        }
+      ]
+      name "right_motor_pod"
     }
     DEF FRONT_CAMERA Camera {
       translation 0.31 0 0.16
       rotation 0 1 0 0.16
       name "front_camera"
+      fieldOfView 1.05
       width 640
       height 360
-      fieldOfView 1.05
       near 0.03
       far 18
     }
@@ -787,9 +878,9 @@ DEF TENNIS_ROBOT Robot {
       translation 0.31 0 0.16
       rotation 0 1 0 0.16
       name "front_depth"
+      fieldOfView 1.05
       width 320
       height 180
-      fieldOfView 1.05
       near 0.03
       minRange 0.08
       maxRange 8
@@ -798,9 +889,9 @@ DEF TENNIS_ROBOT Robot {
       translation 0.62 -0.42 0.44
       rotation -0.3083922133140435 0.1985778386183594 0.9303016095745114 2.0621755063869562
       name "collector_camera"
+      fieldOfView 0.9
       width 480
       height 320
-      fieldOfView 0.9
       near 0.03
       far 3
     }
@@ -810,12 +901,45 @@ DEF TENNIS_ROBOT Robot {
       width 640
       height 360
     }
-    DEF COLLECTOR_BASE_PLATE Solid {
-      translation 0.37 0 0.01
+    DEF COLLECTOR_LEFT_DROP_BRACKET Solid {
+      translation 0.31 -0.18 0.02
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.08 0.09 0.10
+            baseColor 0.22 0.23 0.25
+            roughness 0.65
+            metalness 0
+          }
+          geometry Box {
+            size 0.035 0.025 0.10
+          }
+        }
+      ]
+      name "collector_left_drop_bracket"
+    }
+    DEF COLLECTOR_RIGHT_DROP_BRACKET Solid {
+      translation 0.31 0.18 0.02
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.22 0.23 0.25
+            roughness 0.65
+            metalness 0
+          }
+          geometry Box {
+            size 0.035 0.025 0.10
+          }
+        }
+      ]
+      name "collector_right_drop_bracket"
+    }
+    DEF COLLECTOR_BASE_PLATE Solid {
+      translation 0.37 0 0.018
+      rotation 0 1 0 0.10
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.08 0.09 0.1
             roughness 0.65
             metalness 0
           }
@@ -834,7 +958,7 @@ DEF TENNIS_ROBOT Robot {
       }
     }
     DEF COLLECTOR_LEFT_FUNNEL Solid {
-      translation 0.49 -0.17 0.05
+      translation 0.49 -0.17 0.035
       rotation 0 0 1 -0.35
       children [
         Shape {
@@ -844,13 +968,13 @@ DEF TENNIS_ROBOT Robot {
             metalness 0
           }
           geometry Box {
-            size 0.36 0.035 0.12
+            size 0.36 0.035 0.075
           }
         }
       ]
       name "collector_left_funnel"
       boundingObject Box {
-        size 0.36 0.035 0.12
+        size 0.36 0.035 0.075
       }
       physics Physics {
         density -1
@@ -858,7 +982,7 @@ DEF TENNIS_ROBOT Robot {
       }
     }
     DEF COLLECTOR_RIGHT_FUNNEL Solid {
-      translation 0.49 0.17 0.05
+      translation 0.49 0.17 0.035
       rotation 0 0 1 0.35
       children [
         Shape {
@@ -868,13 +992,13 @@ DEF TENNIS_ROBOT Robot {
             metalness 0
           }
           geometry Box {
-            size 0.36 0.035 0.12
+            size 0.36 0.035 0.075
           }
         }
       ]
       name "collector_right_funnel"
       boundingObject Box {
-        size 0.36 0.035 0.12
+        size 0.36 0.035 0.075
       }
       physics Physics {
         density -1
@@ -882,23 +1006,23 @@ DEF TENNIS_ROBOT Robot {
       }
     }
     DEF COLLECTOR_BACK_PLATE Solid {
-      translation 0.34 0 0.09
+      translation 0.34 0 0.07
       rotation 0 1 0 -0.25
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.16 0.18 0.20
+            baseColor 0.16 0.18 0.2
             roughness 0.6
             metalness 0
           }
           geometry Box {
-            size 0.035 0.18 0.20
+            size 0.035 0.18 0.15
           }
         }
       ]
       name "collector_back_plate"
       boundingObject Box {
-        size 0.035 0.18 0.20
+        size 0.035 0.18 0.15
       }
       physics Physics {
         density -1
@@ -918,7 +1042,7 @@ DEF TENNIS_ROBOT Robot {
       ]
       endPoint Solid {
         translation 0.43 0 0.105
-        rotation 1 0 0 1.5708
+        rotation 0.9900522525415301 0.09948986008810325 -0.09949022553543622 1.5807973901773442
         children [
           Shape {
             appearance PBRAppearance {
@@ -946,8 +1070,8 @@ DEF TENNIS_ROBOT Robot {
     DEF COLLECTOR_HOPPER Solid {
       translation 0.12 0 0.28
       children [
-        Transform {
-          translation 0 0 -0.10
+        Pose {
+          translation 0 0 -0.1
           children [
             Shape {
               appearance DEF HOPPER_PANEL_APPEARANCE PBRAppearance {
@@ -962,7 +1086,7 @@ DEF TENNIS_ROBOT Robot {
             }
           ]
         }
-        Transform {
+        Pose {
           translation 0 -0.18 0
           children [
             Shape {
@@ -973,7 +1097,7 @@ DEF TENNIS_ROBOT Robot {
             }
           ]
         }
-        Transform {
+        Pose {
           translation 0 0.18 0
           children [
             Shape {
@@ -984,7 +1108,7 @@ DEF TENNIS_ROBOT Robot {
             }
           ]
         }
-        Transform {
+        Pose {
           translation -0.17 0 0
           children [
             Shape {
@@ -995,18 +1119,18 @@ DEF TENNIS_ROBOT Robot {
             }
           ]
         }
-        Transform {
+        Pose {
           translation 0.17 0 -0.06
           children [
             Shape {
               appearance USE HOPPER_PANEL_APPEARANCE
               geometry Box {
-                size 0.025 0.36 0.10
+                size 0.025 0.36 0.1
               }
             }
           ]
         }
-        Transform {
+        Pose {
           translation 0 0 0.12
           children [
             Shape {
@@ -1023,6 +1147,199 @@ DEF TENNIS_ROBOT Robot {
         }
       ]
       name "collector_receiving_bin"
+    }
+    DEF LAUNCHER_MODULE Solid {
+      translation -0.04 0 0.39
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.08 0.09 0.10
+            roughness 0.6
+            metalness 0
+          }
+          geometry Box {
+            size 0.035 0.30 0.26
+          }
+        }
+        Pose {
+          translation 0.04 0 0.14
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.08 0.09 0.10
+                roughness 0.6
+                metalness 0
+              }
+              geometry Box {
+                size 0.16 0.32 0.025
+              }
+            }
+          ]
+        }
+        Pose {
+          translation 0.04 0 -0.14
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.08 0.09 0.10
+                roughness 0.6
+                metalness 0
+              }
+              geometry Box {
+                size 0.16 0.32 0.025
+              }
+            }
+          ]
+        }
+        Pose {
+          translation 0.04 0 0
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.90 0.84 0.55
+                roughness 0.55
+                metalness 0
+              }
+              geometry Box {
+                size 0.18 0.11 0.055
+              }
+            }
+          ]
+        }
+        Pose {
+          translation 0.13 0 0.08
+          rotation 1 0 0 1.5708
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.04 0.04 0.045
+                roughness 0.85
+                metalness 0
+              }
+              geometry Cylinder {
+                height 0.052
+                radius 0.065
+              }
+            }
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.55 0.20 0.70
+                roughness 0.45
+                metalness 0
+              }
+              geometry Cylinder {
+                height 0.058
+                radius 0.034
+              }
+            }
+            Pose {
+              rotation 0 0 1 0.785
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.55 0.20 0.70
+                    roughness 0.45
+                    metalness 0
+                  }
+                  geometry Box {
+                    size 0.105 0.012 0.060
+                  }
+                }
+              ]
+            }
+            Pose {
+              rotation 0 0 1 -0.785
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.55 0.20 0.70
+                    roughness 0.45
+                    metalness 0
+                  }
+                  geometry Box {
+                    size 0.105 0.012 0.060
+                  }
+                }
+              ]
+            }
+          ]
+        }
+        Pose {
+          translation 0.13 0 -0.08
+          rotation 1 0 0 1.5708
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.04 0.04 0.045
+                roughness 0.85
+                metalness 0
+              }
+              geometry Cylinder {
+                height 0.052
+                radius 0.065
+              }
+            }
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.55 0.20 0.70
+                roughness 0.45
+                metalness 0
+              }
+              geometry Cylinder {
+                height 0.058
+                radius 0.034
+              }
+            }
+            Pose {
+              rotation 0 0 1 0.785
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.55 0.20 0.70
+                    roughness 0.45
+                    metalness 0
+                  }
+                  geometry Box {
+                    size 0.105 0.012 0.060
+                  }
+                }
+              ]
+            }
+            Pose {
+              rotation 0 0 1 -0.785
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.55 0.20 0.70
+                    roughness 0.45
+                    metalness 0
+                  }
+                  geometry Box {
+                    size 0.105 0.012 0.060
+                  }
+                }
+              ]
+            }
+          ]
+        }
+        Pose {
+          translation 0.23 0 0
+          rotation 0 1 0 -0.25
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.86 0.86 0.80
+                roughness 0.55
+                metalness 0
+              }
+              geometry Box {
+                size 0.20 0.11 0.06
+              }
+            }
+          ]
+        }
+      ]
+      name "launcher_flywheel_module"
     }
     DEF COLLECTOR_ANIMATION_BALL Solid {
       translation 0 0 -1
@@ -1041,6 +1358,132 @@ DEF TENNIS_ROBOT Robot {
       ]
       name "collector_animation_ball"
     }
+    DEF FRONT_LEFT_CASTER_BRACKET Solid {
+      translation 0.31 -0.205 -0.035
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.18 0.19 0.21
+            roughness 0.65
+            metalness 0
+          }
+          geometry Box {
+            size 0.09 0.045 0.035
+          }
+        }
+        Pose {
+          translation 0 0 -0.04
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.08 0.09 0.1
+                roughness 0.7
+                metalness 0
+              }
+              geometry Box {
+                size 0.045 0.035 0.07
+              }
+            }
+          ]
+        }
+      ]
+      name "front_left_caster_bracket"
+    }
+    DEF FRONT_RIGHT_CASTER_BRACKET Solid {
+      translation 0.31 0.205 -0.035
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.18 0.19 0.21
+            roughness 0.65
+            metalness 0
+          }
+          geometry Box {
+            size 0.09 0.045 0.035
+          }
+        }
+        Pose {
+          translation 0 0 -0.04
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.08 0.09 0.1
+                roughness 0.7
+                metalness 0
+              }
+              geometry Box {
+                size 0.045 0.035 0.07
+              }
+            }
+          ]
+        }
+      ]
+      name "front_right_caster_bracket"
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.31 -0.205 -0.145
+      }
+      endPoint Solid {
+        translation 0.31 -0.205 -0.145
+        rotation 0.999999977026329 -0.0001515704002404505 0.0001515709569906407 1.5708000229736712
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.03 0.03 0.035
+              roughness 0.9
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.035
+              radius 0.055
+            }
+          }
+        ]
+        name "front_left_passive_caster_wheel"
+        boundingObject Cylinder {
+          height 0.035
+          radius 0.055
+        }
+        physics Physics {
+          density -1
+          mass 0.08
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.31 0.205 -0.145
+      }
+      endPoint Solid {
+        translation 0.31 0.205 -0.145
+        rotation 0.9999999770277319 -0.00015156577231860148 0.00015156632905179233 1.570800022972268
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.03 0.03 0.035
+              roughness 0.9
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.035
+              radius 0.055
+            }
+          }
+        ]
+        name "front_right_passive_caster_wheel"
+        boundingObject Cylinder {
+          height 0.035
+          radius 0.055
+        }
+        physics Physics {
+          density -1
+          mass 0.08
+        }
+      }
+    }
     HingeJoint {
       jointParameters HingeJointParameters {
         axis 0 1 0
@@ -1055,7 +1498,7 @@ DEF TENNIS_ROBOT Robot {
       ]
       endPoint Solid {
         translation 0 -0.24 -0.09
-        rotation 1 0 0 1.5708
+        rotation 1 -4.984439105363043e-11 4.984457414263828e-11 1.5708
         children [
           Shape {
             appearance PBRAppearance {
@@ -1094,7 +1537,7 @@ DEF TENNIS_ROBOT Robot {
       ]
       endPoint Solid {
         translation 0 0.24 -0.09
-        rotation 1 0 0 1.5708
+        rotation 1 6.382428043099148e-11 -6.382451487109466e-11 1.5708
         children [
           Shape {
             appearance PBRAppearance {
@@ -1122,17 +1565,17 @@ DEF TENNIS_ROBOT Robot {
   ]
   name "tennis_robot"
   boundingObject Box {
-    size 0.55 0.38 0.22
+    size 0.92 0.58 0.20
   }
   physics Physics {
     density -1
     mass 8
   }
+  controller "ball_detector"
+  supervisor TRUE
 }
-
-# BALLS_START
 DEF TENNIS_BALL_00 Solid {
-  translation -4.264 -3.713 0.033
+  translation -4.264 -3.713 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1156,9 +1599,8 @@ DEF TENNIS_BALL_00 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_01 Solid {
-  translation 3.647 -4.082 0.033
+  translation 3.647 -4.082 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1182,9 +1624,8 @@ DEF TENNIS_BALL_01 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_02 Solid {
-  translation 0.865 -1.287 0.033
+  translation 0.865 -1.287 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1208,9 +1649,8 @@ DEF TENNIS_BALL_02 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_03 Solid {
-  translation -10.696 0.072 0.033
+  translation -10.696 0.072 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1234,9 +1674,8 @@ DEF TENNIS_BALL_03 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_04 Solid {
-  translation -10.165 -0.632 0.033
+  translation -10.165 -0.632 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1260,9 +1699,8 @@ DEF TENNIS_BALL_04 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_05 Solid {
-  translation -10.409 -3.936 0.033
+  translation -10.409 -3.936 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1286,9 +1724,8 @@ DEF TENNIS_BALL_05 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_06 Solid {
-  translation -1.823 3.169 0.033
+  translation -1.823 3.169 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1312,9 +1749,8 @@ DEF TENNIS_BALL_06 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_07 Solid {
-  translation -8.622 -2.648 0.033
+  translation -8.622 -2.648 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1338,9 +1774,8 @@ DEF TENNIS_BALL_07 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_08 Solid {
-  translation 3.080 4.298 0.033
+  translation 3.08 4.298 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1364,9 +1799,8 @@ DEF TENNIS_BALL_08 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_09 Solid {
-  translation 1.875 -1.003 0.033
+  translation 1.875 -1.003 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1390,9 +1824,8 @@ DEF TENNIS_BALL_09 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_10 Solid {
-  translation 11.513 -4.320 0.033
+  translation 11.513 -4.32 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1416,9 +1849,8 @@ DEF TENNIS_BALL_10 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_11 Solid {
-  translation 8.692 -2.006 0.033
+  translation 8.692 -2.006 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1442,9 +1874,8 @@ DEF TENNIS_BALL_11 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_12 Solid {
-  translation -8.610 -3.661 0.033
+  translation -8.61 -3.661 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1468,9 +1899,8 @@ DEF TENNIS_BALL_12 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_13 Solid {
-  translation -4.623 3.009 0.033
+  translation -4.623 3.009 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1494,9 +1924,8 @@ DEF TENNIS_BALL_13 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_14 Solid {
-  translation -7.725 0.784 0.033
+  translation -7.725 0.784 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1520,9 +1949,8 @@ DEF TENNIS_BALL_14 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_15 Solid {
-  translation 3.367 -1.170 0.033
+  translation 3.367 -1.17 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1546,9 +1974,8 @@ DEF TENNIS_BALL_15 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_16 Solid {
-  translation 1.154 -4.081 0.033
+  translation 1.154 -4.081 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1572,9 +1999,8 @@ DEF TENNIS_BALL_16 Solid {
     mass 0.058
   }
 }
-
 DEF TENNIS_BALL_17 Solid {
-  translation -10.608 -2.741 0.033
+  translation -10.608 -2.741 0.03540774572081631
   children [
     Shape {
       appearance PBRAppearance {
@@ -1598,4 +2024,3 @@ DEF TENNIS_BALL_17 Solid {
     mass 0.058
   }
 }
-# BALLS_END
