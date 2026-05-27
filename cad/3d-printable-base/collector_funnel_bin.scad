@@ -1,6 +1,6 @@
 include <common.scad>
 
-// Concept A collector prototype: front funnel, lift-wheel bracket, back plate,
+// Concept A collector prototype: front funnel, wide intake roller, back plate,
 // and small receiving bin. Dimensions are aligned with the current Webots MVP
 // geometry but kept adjustable for bench testing.
 
@@ -15,11 +15,11 @@ throat_w = 82;
 funnel_wall_h = 80;
 lip_h = 12;
 
-lift_wheel_d = 90;
-lift_wheel_w = 180;
-lift_wheel_center_x = 210;
-lift_wheel_center_z = 105;
-wheel_gap_to_back_plate = 62;
+intake_roller_d = 80;
+intake_roller_w = 280;
+intake_roller_center_x = 210;
+intake_roller_center_z = 100;
+roller_gap_to_back_plate = 62;
 
 bin_len = 260;
 bin_w = 300;
@@ -46,31 +46,31 @@ module low_intake_lip() {
 }
 
 module back_plate() {
-    translate([lift_wheel_center_x - wheel_gap_to_back_plate, 0, lift_wheel_center_z])
+    translate([intake_roller_center_x - roller_gap_to_back_plate, 0, intake_roller_center_z])
         rotate([0, 12, 0])
-            cube([plate_t, throat_w + 38, 130], center=true);
+            cube([plate_t, intake_roller_w + 36, 130], center=true);
 }
 
-module lift_wheel_placeholder() {
+module intake_roller_placeholder() {
     color([0.03, 0.03, 0.03])
-        translate([lift_wheel_center_x, 0, lift_wheel_center_z])
+        translate([intake_roller_center_x, 0, intake_roller_center_z])
             rotate([90, 0, 0])
-                cylinder(h=lift_wheel_w, d=lift_wheel_d, center=true);
+                cylinder(h=intake_roller_w, d=intake_roller_d, center=true);
 }
 
-module lift_wheel_bracket() {
+module intake_roller_bracket() {
     difference() {
         union() {
             for (side = [-1, 1]) {
-                translate([lift_wheel_center_x, side * (lift_wheel_w / 2 + 12), lift_wheel_center_z])
+                translate([intake_roller_center_x, side * (intake_roller_w / 2 + 12), intake_roller_center_z])
                     rounded_plate([85, 8, 120], 4);
             }
-            translate([lift_wheel_center_x - 42, -lift_wheel_w / 2 - 16, 45])
-                cube([84, lift_wheel_w + 32, 10]);
+            translate([intake_roller_center_x - 42, -intake_roller_w / 2 - 16, 45])
+                cube([84, intake_roller_w + 32, 10]);
         }
 
         for (side = [-1, 1]) {
-            translate([lift_wheel_center_x, side * (lift_wheel_w / 2 + 18), lift_wheel_center_z])
+            translate([intake_roller_center_x, side * (intake_roller_w / 2 + 18), intake_roller_center_z])
                 rotate([90, 0, 0])
                     cylinder(h=22, d=12, center=true);
         }
@@ -113,17 +113,17 @@ module collector_mount_plate() {
     }
 }
 
-module collector_funnel_bin(show_wheel=true) {
+module collector_funnel_bin(show_roller=true) {
     collector_mount_plate();
     translate([0, funnel_mouth_w / 2 + 30, plate_t]) {
         funnel_side(1);
         funnel_side(-1);
         low_intake_lip();
         back_plate();
-        lift_wheel_bracket();
+        intake_roller_bracket();
         receiving_bin();
-        if (show_wheel) {
-            lift_wheel_placeholder();
+        if (show_roller) {
+            intake_roller_placeholder();
         }
     }
 }

@@ -22,6 +22,16 @@ docs/prototype-purchase-list-el.md
 Ask the shop to keep the cuts square and to account for saw kerf, usually
 about 3-5 mm per cut. Dimensions below are finished part dimensions.
 
+## Base Top View
+
+![Base layout plan](images/base-layout-plan.svg)
+
+CAD reference:
+
+```text
+cad/3d-printable-base/base_mounting_plate.scad
+```
+
 ## Required Cuts
 
 | Qty | Finished size, mm | Part | Notes |
@@ -29,7 +39,7 @@ about 3-5 mm per cut. Dimensions below are finished part dimensions.
 | 1 | 760 x 430 | Main base plate | Bottom chassis plate. Mark front side before drilling. |
 | 2 | 760 x 45 | Long side rails | Mount on edge along left/right sides for stiffness. |
 | 3 | 390 x 45 | Cross rails | Mount on edge: rear motor area, middle battery area, front collector area. |
-| 2 | 180 x 90 | Collector upright plates | Side/back support for collector lift wheel and hopper mouth. |
+| 2 | 180 x 90 | Collector upright plates | Side/back support for collector intake roller and hopper mouth. |
 | 2 | 220 x 80 | Hopper/back-plate supports | Trim/drill after collector height is confirmed. |
 | 2 | 120 x 80 | Motor pod reinforcement plates | Under or above the motor pod bolt area. |
 | 2 | 100 x 80 | Front caster reinforcement plates | Under or above caster mounts. |
@@ -71,7 +81,7 @@ arrange the sheet. Keep the grain direction along the long dimension for the
 3. Use washers under bolt heads on all module mounts.
 4. Use threaded inserts, T-nuts, or through-bolts where parts will be removed
    often, especially collector and motor pods.
-5. Do not glue the collector uprights at first. Bolt them so the lift-wheel
+5. Do not glue the collector uprights at first. Bolt them so the roller
    gap and hopper height can still change.
 6. If 21 mm feels heavy after the first rolling test, keep this base as the
    rugged prototype and later transfer the final geometry to 12 mm plywood plus
@@ -91,7 +101,7 @@ Keep all mechanical modules removable.
 | Small backing plates | D4 wood glue + screws or clamps while curing | Spreads wheel/caster/collector loads. |
 | Motor pods | M5 bolts + washers + T-nuts or threaded inserts | Must be removable and adjustable. |
 | Front caster mounts | M5 bolts + washers + T-nuts or threaded inserts | Must be removable for height/level tuning. |
-| Collector module | M5 bolts through slots + washers | Needs adjustment for lip height and wheel gap. |
+| Collector module | M5 bolts through slots + washers | Needs adjustment for lip height and roller gap. |
 | Electronics trays | M4 screws + standoffs | Serviceable wiring and board access. |
 | Battery straps | Bolts/screws + strap slots | Battery must be removable for charging/service. |
 | Handle sockets | M5 bolts + backing plates | High pull load; avoid relying on glue only. |
@@ -162,7 +172,7 @@ the rail firmly into the base.
 9. Mount the collector.
    - Bolt collector through slots with washers.
    - Start with the front lip around 5-12 mm above the floor.
-   - Keep the lift-wheel/back-plate adjustment reachable.
+   - Keep the roller/back-plate adjustment reachable.
    - Hand-feed balls before driving the robot.
 
 10. Add handle and stabilizers.

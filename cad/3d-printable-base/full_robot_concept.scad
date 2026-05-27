@@ -22,6 +22,8 @@ collector_mouth_w = 310;
 collector_throat_w = 86;
 collector_wall_h = 78;
 collector_lip_h = 14;
+collector_roller_d = 80;
+collector_roller_w = 280;
 
 bin_len = 230;
 bin_w = 300;
@@ -168,7 +170,7 @@ module receiving_bin() {
             cube([8, 84, 120], center=true);
     }
 
-    // Yellow transfer chute from collector lift wheel into the bin opening.
+    // Yellow transfer chute from collector intake roller into the bin opening.
     material_collector()
         translate([base_len - 250, y, z + 34])
             rotate([0, -8, 0])
@@ -213,10 +215,11 @@ module collector_intake() {
                 cube([140, 10, 78], center=true);
     }
 
+    // Full-width compliant intake roller: wider contact patch than the earlier centered wheel.
     color([0.03, 0.03, 0.03])
         translate([x0 + 170, y0, wood_t + 94])
             rotate([90, 0, 0])
-                cylinder(h=180, d=90, center=true);
+                cylinder(h=collector_roller_w, d=collector_roller_d, center=true);
 }
 
 module launcher_module() {

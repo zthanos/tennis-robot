@@ -1,4 +1,4 @@
-"""Collector behavior primitives for the Concept A funnel + lift wheel MVP."""
+"""Collector behavior primitives for the Concept A funnel + intake roller MVP."""
 
 from __future__ import annotations
 

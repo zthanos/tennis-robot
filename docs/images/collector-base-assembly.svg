@@ -38,7 +38,7 @@
 
   <rect width="1600" height="1050" class="bg"/>
   <text x="50" y="68" class="title">Συναρμολόγηση collector πάνω στη βάση</text>
-  <text x="52" y="105" class="subtitle">Μπροστινό module με funnel, lift wheel και μικρό hopper, βιδωμένο σε ξύλινη ή printable βάση</text>
+  <text x="52" y="105" class="subtitle">Μπροστινό module με funnel, φαρδύ intake roller και μικρό hopper, βιδωμένο σε ξύλινη ή printable βάση</text>
 
   <rect x="40" y="135" width="735" height="415" class="panel"/>
   <rect x="825" y="135" width="735" height="415" class="panel"/>
@@ -100,8 +100,8 @@
   <path d="M1106 308 A49 49 0 0 1 1154 359" class="motion"/>
   <path d="M1030 318 L1030 466" class="adjust"/>
   <path d="M1162 302 L1162 418" class="adjust"/>
-  <text x="870" y="535" class="small">lip 5-12 mm από το έδαφος, lift wheel gap 55-65 mm, back plate ρυθμιζόμενη.</text>
-  <text x="870" y="228" class="small">Η μπάλα μπαίνει από το χαμηλό scoop, πιέζεται από τον τροχό και πέφτει στο hopper.</text>
+  <text x="870" y="535" class="small">lip 5-12 mm από το έδαφος, roller gap 55-65 mm, back plate ρυθμιζόμενη.</text>
+  <text x="870" y="228" class="small">Η μπάλα μπαίνει από το χαμηλό scoop, πιέζεται από τον κύλινδρο και πέφτει στο hopper.</text>
 
   <!-- Exploded assembly -->
   <text x="75" y="632" class="panel-title">3. Σειρά συναρμολόγησης</text>
@@ -114,7 +114,7 @@
   <text x="431" y="850" class="small">back plate</text>
   <rect x="540" y="705" width="100" height="72" class="metal" rx="8"/>
   <circle cx="660" cy="740" r="40" class="rubber"/>
-  <text x="535" y="835" class="small">μοτέρ + τροχός</text>
+  <text x="535" y="835" class="small">μοτέρ + κύλινδρος</text>
   <rect x="300" y="885" width="230" height="62" class="bin" rx="10"/>
   <text x="360" y="922" class="small">hopper panels</text>
   <path d="M230 745 L278 745" class="motion"/>
@@ -123,7 +123,7 @@
   <path d="M640 780 C620 830, 570 872, 530 900" class="motion"/>
 
   <rect x="84" y="650" width="630" height="38" fill="none"/>
-  <text x="90" y="668" class="tiny">A. Βιδώνουμε πλάκα/ράγα στη βάση  B. Πιάνουμε funnel  C. Ρυθμίζουμε back plate  D. Βάζουμε τροχό/μοτέρ  E. Κλείνουμε hopper</text>
+  <text x="90" y="668" class="tiny">A. Βιδώνουμε πλάκα/ράγα στη βάση  B. Πιάνουμε funnel  C. Ρυθμίζουμε back plate  D. Βάζουμε κύλινδρο/μοτέρ  E. Κλείνουμε hopper</text>
   <text x="90" y="972" class="small">Πρώτα σφίγγουμε ελαφρά, δοκιμάζουμε 2-3 μπάλες, μετά τελικό σφίξιμο με ροδέλες.</text>
 
   <!-- Fastener and access details -->
@@ -144,13 +144,13 @@
 
   <rect x="1230" y="682" width="275" height="72" class="note"/>
   <text x="1250" y="710" class="small">Κρατάμε πρόσβαση</text>
-  <text x="1250" y="735" class="tiny">lip height, wheel gap, wheel angle</text>
+  <text x="1250" y="735" class="tiny">lip height, roller gap, roller angle</text>
   <rect x="1230" y="778" width="275" height="72" class="note"/>
   <text x="1250" y="806" class="small">Καλώδια μοτέρ</text>
   <text x="1250" y="831" class="tiny">περνάνε πίσω από back plate, όχι στο στόμιο</text>
   <rect x="1230" y="874" width="275" height="72" class="note"/>
   <text x="1250" y="902" class="small">Service</text>
-  <text x="1250" y="927" class="tiny">ο τροχός βγαίνει χωρίς να λυθεί όλο το module</text>
+  <text x="1250" y="927" class="tiny">ο κύλινδρος βγαίνει χωρίς να λυθεί όλο το module</text>
   <path d="M1198 718 L1230 718" class="adjust"/>
   <path d="M1198 816 L1230 816" class="adjust"/>
   <path d="M1198 912 L1230 912" class="adjust"/>

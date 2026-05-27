@@ -59,7 +59,8 @@ MAX_SPEED_RAD_S = 6.28
 WHEEL_RADIUS_M = 0.11
 TRACK_WIDTH_M = 0.48
 INTAKE_ZONE_X_M = (0.34, 0.62)
-INTAKE_HALF_WIDTH_M = 0.11
+# Wide intake roller accepts a wider lateral pickup envelope than the earlier centered wheel.
+INTAKE_HALF_WIDTH_M = 0.16
 INTAKE_MAX_HEIGHT_M = 0.12
 SUPERVISED_FOV_RAD = 1.05
 SUPERVISED_MAX_RANGE_M = 8.0

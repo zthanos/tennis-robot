@@ -11,7 +11,7 @@ Scope:
 - printable stabilizer feet
 - printable passive front caster mounts
 - printable trolley-handle sockets
-- first-pass collector funnel, lift-wheel bracket, and receiving bin
+- first-pass collector funnel, wide roller bracket, and receiving bin
 - full concept assembly showing the expected wooden-base robot layout
 
 Out of scope for this folder:
@@ -106,7 +106,7 @@ Recommended first exports:
 - Print one wheel at reduced width first to verify motor shaft fit.
 - Add rubber/TPU tread to the wheel. Hard plastic wheels will slip and chatter.
 - Treat `collector_funnel_bin.scad` as a tunable bench rig, not a final enclosure.
-  The throat width, wheel gap, and bin geometry should follow the Webots physics
+  The throat width, roller gap, and bin geometry should follow the Webots physics
   experiments before printing a full-size revision.
 - Use `full_robot_concept.scad` as an assembly/reference model. It is meant to
   communicate layout and mounting relationships: wooden base, upper frame,
@@ -114,7 +114,7 @@ Recommended first exports:
   rear drive wheels, front casters, cover mounting rails, removable panels, and
   transport handle. Do not print it as one object.
 - The intended ball path in `full_robot_concept.scad` is:
-  front intake -> lift wheel -> transfer chute -> open receiving bin -> sloped
+  front intake -> wide compliant roller -> transfer chute -> open receiving bin -> sloped
   bin floor -> narrow feed channel -> metering gate -> dual flywheels -> guarded
   launch chute.
 - The transparent cover panels in the concept are placeholders for removable

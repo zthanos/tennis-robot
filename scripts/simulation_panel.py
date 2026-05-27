@@ -206,7 +206,7 @@ HTML = r"""<!doctype html>
       <header>
         <div>
           <h1>Tennis Robot Route Simulator</h1>
-          <p>Map court limits, scatter balls, plan a collection route, avoid people and fixed obstacles, then measure time.</p>
+          <p>Map court limits, scan by phase, plan a collection route, refresh during collection, then measure time.</p>
         </div>
         <div class="actions">
           <button id="runBtn">Run</button>
@@ -231,11 +231,18 @@ HTML = r"""<!doctype html>
         <h2>Scenario</h2>
         <label>Playable area
           <select id="areaMode">
-            <option value="half">Half court</option>
-            <option value="full">Full court</option>
+            <option value="half">Left half</option>
+            <option value="two-phase">Two-phase halves</option>
+            <option value="full">Continuous full court</option>
           </select>
         </label>
         <label>Balls <input id="ballCount" type="number" min="5" max="80" value="48"></label>
+        <label>Ball distribution
+          <select id="ballDistribution">
+            <option value="realistic">Realistic bias</option>
+            <option value="uniform">Uniform scatter</option>
+          </select>
+        </label>
         <label>Seed <input id="seed" type="number" min="1" max="99999" value="37"></label>
         <label>People <input id="peopleCount" type="number" min="0" max="8" value="3"></label>
         <label>Bag / basket obstacles <input id="fixedCount" type="number" min="0" max="8" value="3"></label>
@@ -272,7 +279,7 @@ HTML = r"""<!doctype html>
       <section class="group">
         <h2>Leg Telemetry</h2>
         <table>
-          <thead><tr><th>Leg</th><th>Ball</th><th>Dist</th><th>Travel</th><th>Mode</th></tr></thead>
+          <thead><tr><th>Leg</th><th>Phase</th><th>Ball</th><th>Dist</th><th>Travel</th><th>Mode</th></tr></thead>
           <tbody id="legs"></tbody>
         </table>
       </section>
@@ -313,6 +320,16 @@ HTML = r"""<!doctype html>
       };
     }
 
+    function gaussian(r) {
+      const u1 = Math.max(r(), 1e-9);
+      const u2 = r();
+      return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
     function val(id) {
       const el = els[id];
       return el.type === "number" || el.type === "range" ? Number(el.value) : el.value;
@@ -322,6 +339,78 @@ HTML = r"""<!doctype html>
       const half = COURT.length / 2;
       if (val("areaMode") === "half") return { minX: -half, maxX: -0.35, minY: -COURT.width / 2, maxY: COURT.width / 2 };
       return { minX: -half, maxX: half, minY: -COURT.width / 2, maxY: COURT.width / 2 };
+    }
+
+    function halfBounds(side) {
+      const half = COURT.length / 2;
+      if (side === "left") return { minX: -half, maxX: -0.35, minY: -COURT.width / 2, maxY: COURT.width / 2 };
+      return { minX: 0.35, maxX: half, minY: -COURT.width / 2, maxY: COURT.width / 2 };
+    }
+
+    function phaseStart(area) {
+      const fromLeft = Math.abs(area.minX) >= Math.abs(area.maxX);
+      return { x: fromLeft ? area.minX + 1.15 : area.maxX - 1.15, y: 0 };
+    }
+
+    function inBounds(p, area, margin = 0) {
+      return p.x >= area.minX + margin && p.x <= area.maxX - margin && p.y >= area.minY + margin && p.y <= area.maxY - margin;
+    }
+
+    function planningPhases(sc) {
+      if (val("areaMode") !== "two-phase") {
+        return [{ index: 1, name: val("areaMode") === "half" ? "Left half" : "Full court", bounds: sc.bounds, start: sc.robotStart }];
+      }
+      const left = halfBounds("left");
+      const right = halfBounds("right");
+      return [
+        { index: 1, name: "Phase A left half", bounds: left, start: phaseStart(left) },
+        { index: 2, name: "Phase B right half", bounds: right, start: phaseStart(right) },
+      ];
+    }
+
+    function randomPlayableArea(r, b) {
+      if (val("areaMode") === "two-phase" || (val("areaMode") === "full" && val("ballDistribution") === "realistic")) {
+        return r() < 0.5 ? halfBounds("left") : halfBounds("right");
+      }
+      return b;
+    }
+
+    function sampleBallPosition(r, b) {
+      const area = randomPlayableArea(r, b);
+      const margin = 0.55;
+      if (val("ballDistribution") === "uniform") {
+        return {
+          x: area.minX + margin + r() * (area.maxX - area.minX - margin * 2),
+          y: area.minY + margin + r() * (area.maxY - area.minY - margin * 2),
+        };
+      }
+
+      const zone = r();
+      const leftSide = Math.abs(area.minX) > Math.abs(area.maxX);
+      const netX = leftSide ? area.maxX : area.minX;
+      const backX = leftSide ? area.minX : area.maxX;
+      let x;
+      let y;
+
+      if (zone < 0.46) {
+        x = netX + (leftSide ? -1 : 1) * Math.abs(gaussian(r)) * 1.05;
+        y = gaussian(r) * COURT.width * 0.26;
+      } else if (zone < 0.82) {
+        x = backX + (leftSide ? 1 : -1) * Math.abs(gaussian(r)) * 1.20;
+        y = gaussian(r) * COURT.width * 0.30;
+      } else if (zone < 0.94) {
+        const serviceX = leftSide ? -COURT.service : COURT.service;
+        x = serviceX + gaussian(r) * 1.65;
+        y = gaussian(r) * COURT.width * 0.24;
+      } else {
+        x = area.minX + margin + r() * (area.maxX - area.minX - margin * 2);
+        y = area.minY + margin + r() * (area.maxY - area.minY - margin * 2);
+      }
+
+      return {
+        x: clamp(x, area.minX + margin, area.maxX - margin),
+        y: clamp(y, area.minY + margin, area.maxY - margin),
+      };
     }
 
     function makeScenario() {
@@ -378,10 +467,11 @@ HTML = r"""<!doctype html>
       let attempts = 0;
       while (balls.length < val("ballCount") && attempts < val("ballCount") * 90) {
         attempts++;
+        const position = sampleBallPosition(r, b);
         const ball = {
           id: balls.length + 1,
-          x: b.minX + 0.55 + r() * (b.maxX - b.minX - 1.1),
-          y: b.minY + 0.55 + r() * (b.maxY - b.minY - 1.1),
+          x: position.x,
+          y: position.y,
           collected: false,
           blocked: false,
         };
@@ -397,8 +487,8 @@ HTML = r"""<!doctype html>
       };
     }
 
-    function isFree(x, y, obstacles, extra = 0) {
-      const b = bounds();
+    function isFree(x, y, obstacles, extra = 0, area = bounds()) {
+      const b = area;
       const pad = ROBOT_RADIUS + val("buffer") + extra;
       if (x < b.minX + pad || x > b.maxX - pad || y < b.minY + pad || y > b.maxY - pad) return false;
       return !obstacles.some(o => collides(x, y, o, pad));
@@ -411,14 +501,14 @@ HTML = r"""<!doctype html>
       return Math.hypot(dx, dy) <= pad;
     }
 
-    function segmentClear(a, b, obstacles) {
+    function segmentClear(a, b, obstacles, area = bounds()) {
       const dist = Math.hypot(a.x - b.x, a.y - b.y);
       const steps = Math.max(2, Math.ceil(dist / 0.18));
       for (let i = 0; i <= steps; i++) {
         const t = i / steps;
         const x = a.x + (b.x - a.x) * t;
         const y = a.y + (b.y - a.y) * t;
-        if (!isFree(x, y, obstacles)) return false;
+        if (!isFree(x, y, obstacles, 0, area)) return false;
       }
       return true;
     }
@@ -435,7 +525,7 @@ HTML = r"""<!doctype html>
     }
 
     function pathfind(start, goal, sc) {
-      if (segmentClear(start, goal, sc.obstacles)) return { distance: dist(start, goal), path: [start, goal], mode: "direct" };
+      if (segmentClear(start, goal, sc.obstacles, sc.bounds)) return { distance: dist(start, goal), path: [start, goal], mode: "direct" };
 
       const b = sc.bounds;
       const cols = Math.round((b.maxX - b.minX) / GRID) + 1;
@@ -457,7 +547,7 @@ HTML = r"""<!doctype html>
           const nx = cur.gx + dx, ny = cur.gy + dy;
           if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
           const wp = gridToWorld({ gx: nx, gy: ny }, b);
-          if (!isFree(wp.x, wp.y, sc.obstacles)) continue;
+          if (!isFree(wp.x, wp.y, sc.obstacles, 0, sc.bounds)) continue;
           const step = Math.hypot(dx, dy) * GRID;
           const nk = key(nx, ny);
           const nextCost = cur.cost + step;
@@ -481,16 +571,16 @@ HTML = r"""<!doctype html>
       nodes.reverse();
       nodes[0] = start;
       nodes[nodes.length - 1] = goal;
-      return { distance: pathDistance(nodes), path: simplifyPath(nodes, sc.obstacles), mode: "avoid" };
+      return { distance: pathDistance(nodes), path: simplifyPath(nodes, sc.obstacles, sc.bounds), mode: "avoid" };
     }
 
-    function simplifyPath(nodes, obstacles) {
+    function simplifyPath(nodes, obstacles, area = bounds()) {
       if (nodes.length <= 2) return nodes;
       const out = [nodes[0]];
       let anchor = 0;
       while (anchor < nodes.length - 1) {
         let next = nodes.length - 1;
-        while (next > anchor + 1 && !segmentClear(nodes[anchor], nodes[next], obstacles)) next--;
+        while (next > anchor + 1 && !segmentClear(nodes[anchor], nodes[next], obstacles, area)) next--;
         out.push(nodes[next]);
         anchor = next;
       }
@@ -501,11 +591,25 @@ HTML = r"""<!doctype html>
     function pathDistance(path) { return path.slice(1).reduce((sum, p, i) => sum + dist(path[i], p), 0); }
 
     function planRoute(sc) {
-      const start = sc.robotStart;
-      const candidates = sc.balls.filter(b => isFree(b.x, b.y, sc.obstacles, 0.08));
-      sc.balls.forEach(b => b.blocked = !candidates.includes(b));
+      sc.balls.forEach(b => b.blocked = false);
+      const phasePlans = planningPhases(sc).map(phase => planPhaseRoute(sc, phase));
+      const legs = phasePlans.flatMap(phase => phase.legs);
+      const plannedBalls = new Set(legs.map(leg => leg.ball));
+      sc.balls.forEach(b => {
+        const ownedByPhase = phasePlans.some(phase => inBounds(b, phase.bounds, 0));
+        b.blocked = ownedByPhase && !plannedBalls.has(b);
+      });
 
-      let current = start;
+      const telemetry = buildTelemetry(sc, phasePlans);
+      return { legs, phases: phasePlans, telemetry };
+    }
+
+    function planPhaseRoute(sc, phase) {
+      const phaseScenario = { ...sc, bounds: phase.bounds, robotStart: phase.start };
+      const candidates = sc.balls.filter(ball => (
+        inBounds(ball, phase.bounds, 0.08) && isFree(ball.x, ball.y, sc.obstacles, 0.08, phase.bounds)
+      ));
+      let current = phase.start;
       const remaining = [...candidates];
       const legs = [];
       while (remaining.length) {
@@ -513,52 +617,71 @@ HTML = r"""<!doctype html>
         let best = null;
         for (let i = 0; i < remaining.length; i++) {
           const candidate = remaining[i];
-          const pf = pathfind(current, candidate, sc);
+          const pf = pathfind(current, candidate, phaseScenario);
           if (pf.distance < Infinity && (!best || pf.distance < best.distance)) {
             best = { ...pf, ball: candidate };
             bestIndex = i;
           }
         }
         if (!best) break;
-        legs.push(best);
+        legs.push({
+          ...best,
+          phaseIndex: phase.index,
+          phaseName: phase.name,
+          phaseBounds: phase.bounds,
+        });
         current = best.ball;
         remaining.splice(bestIndex, 1);
       }
-
-      const telemetry = buildTelemetry(sc, legs);
-      return { legs, telemetry };
+      return { ...phase, candidates, legs };
     }
 
-    function buildTelemetry(sc, legs) {
+    function buildTelemetry(sc, phasePlans) {
       const speed = val("speed");
       const pickupTime = val("pickupTime");
       const scanTime = val("scanTime");
       const rescanEvery = val("rescanEvery");
-      let time = scanTime;
+      const legs = phasePlans.flatMap(phase => phase.legs);
+      let time = 0;
       let distance = 0;
       let replans = 0;
       const legRows = [];
-      const events = [{ t: 0, type: "scan", detail: `initial scan mapped ${sc.balls.length} balls` }];
+      const events = [];
+      let legNumber = 1;
 
-      legs.forEach((leg, index) => {
-        const travel = leg.distance / speed;
-        distance += leg.distance;
-        time += travel + pickupTime;
-        if (leg.mode === "avoid") replans++;
-        legRows.push({
-          leg: index + 1,
-          ball: leg.ball.id,
-          distance_m: round(leg.distance),
-          travel_s: round(travel),
-          mode: leg.mode,
-        });
-        events.push({ t: round(time), type: "pickup", detail: `ball ${leg.ball.id} collected` });
-        if (rescanEvery > 0 && (index + 1) % rescanEvery === 0 && index < legs.length - 1) {
-          time += scanTime;
-          replans++;
-          events.push({ t: round(time), type: "rescan", detail: `local re-scan after ${index + 1} balls` });
+      phasePlans.forEach((phase, phaseIndex) => {
+        if (phaseIndex > 0) {
+          events.push({ t: round(time), type: "phase", detail: `handover to ${phase.name}` });
         }
+        events.push({ t: round(time), type: "scan", detail: `${phase.name} initial scan mapped ${phase.candidates.length} reachable balls` });
+        time += scanTime;
+        replans++;
+
+        phase.legs.forEach((leg, index) => {
+          const travel = leg.distance / speed;
+          distance += leg.distance;
+          time += travel + pickupTime;
+          if (leg.mode === "avoid") replans++;
+          legRows.push({
+            leg: legNumber++,
+            phase: phase.index,
+            ball: leg.ball.id,
+            distance_m: round(leg.distance),
+            travel_s: round(travel),
+            mode: leg.mode,
+          });
+          events.push({ t: round(time), type: "pickup", detail: `${phase.name}: ball ${leg.ball.id} collected` });
+          if (rescanEvery > 0 && (index + 1) % rescanEvery === 0 && index < phase.legs.length - 1) {
+            time += scanTime;
+            replans++;
+            events.push({ t: round(time), type: "rescan", detail: `${phase.name} refresh scan after ${index + 1} balls` });
+          }
+        });
       });
+
+      if (!phasePlans.length) {
+        events.push({ t: 0, type: "scan", detail: "no collection phases available" });
+      }
 
       return {
         court: { length_m: COURT.length, width_m: COURT.width, area_mode: val("areaMode"), bounds_m: sc.bounds },
@@ -567,15 +690,18 @@ HTML = r"""<!doctype html>
           pickup_time_s: pickupTime,
           scan_time_s: scanTime,
           safety_buffer_m: val("buffer"),
+          ball_distribution: val("ballDistribution"),
         },
         summary: {
+          phases: phasePlans.length,
           balls_detected: sc.balls.length,
           balls_collectable: legs.length,
           balls_blocked: sc.balls.filter(b => b.blocked).length,
           total_time_s: round(time),
           total_distance_m: round(distance),
           replans,
-          average_leg_speed_m_s: legs.length ? round(distance / Math.max(1, time - scanTime)) : 0,
+          scan_events: events.filter(event => event.type === "scan" || event.type === "rescan").length,
+          average_leg_speed_m_s: legs.length ? round(distance / Math.max(1, time - scanTime * phasePlans.length)) : 0,
         },
         legs: legRows,
         events,
@@ -637,6 +763,11 @@ HTML = r"""<!doctype html>
         sim.collected++;
         sim.legIndex++;
         sim.segmentIndex = 0;
+        const nextLeg = plan.legs[sim.legIndex];
+        if (nextLeg && nextLeg.phaseIndex !== leg.phaseIndex) {
+          sim.pos = { ...nextLeg.path[0] };
+          logRuntimeEvent("phase", `handover to ${nextLeg.phaseName}`);
+        }
         sim.state = "pickup";
         return;
       }
@@ -662,7 +793,7 @@ HTML = r"""<!doctype html>
       if (sim.replanCooldown > 0) {
         sim.replanCooldown = Math.max(0, sim.replanCooldown - dt);
       }
-      if (!segmentClear(sim.pos, target, scenario.obstacles)) {
+      if (!segmentClear(sim.pos, target, scenario.obstacles, leg.phaseBounds || scenario.bounds)) {
         if (sim.replanCooldown > 0) {
           sim.state = "safety-hold";
           updateLiveMetrics();
@@ -746,7 +877,15 @@ HTML = r"""<!doctype html>
     }
 
     function replanFromCurrent() {
-      const remaining = plan.legs.slice(sim.legIndex).map(leg => leg.ball).filter(ball => !ball.collected);
+      const activeLeg = plan.legs[sim.legIndex];
+      const activePhase = activeLeg ? activeLeg.phaseIndex : 1;
+      const activeBounds = activeLeg ? activeLeg.phaseBounds : scenario.bounds;
+      const phaseScenario = { ...scenario, bounds: activeBounds, robotStart: { ...sim.pos } };
+      const remaining = plan.legs
+        .slice(sim.legIndex)
+        .filter(leg => leg.phaseIndex === activePhase)
+        .map(leg => leg.ball)
+        .filter(ball => !ball.collected);
       let current = { ...sim.pos };
       const legs = [];
       while (remaining.length) {
@@ -754,19 +893,25 @@ HTML = r"""<!doctype html>
         let bestIndex = -1;
         for (let i = 0; i < remaining.length; i++) {
           const candidate = remaining[i];
-          const pf = pathfind(current, candidate, scenario);
+          const pf = pathfind(current, candidate, phaseScenario);
           if (pf.distance < Infinity && (!best || pf.distance < best.distance)) {
             best = { ...pf, ball: candidate };
             bestIndex = i;
           }
         }
         if (!best) break;
-        legs.push(best);
+        legs.push({
+          ...best,
+          phaseIndex: activeLeg.phaseIndex,
+          phaseName: activeLeg.phaseName,
+          phaseBounds: activeLeg.phaseBounds,
+        });
         current = best.ball;
         remaining.splice(bestIndex, 1);
       }
       if (!legs.length && remaining.length) return false;
-      plan.legs = [...plan.legs.slice(0, sim.legIndex), ...legs];
+      const laterPhaseLegs = plan.legs.slice(sim.legIndex).filter(leg => leg.phaseIndex !== activePhase);
+      plan.legs = [...plan.legs.slice(0, sim.legIndex), ...legs, ...laterPhaseLegs];
       sim.segmentIndex = 0;
       return true;
     }
@@ -790,7 +935,7 @@ HTML = r"""<!doctype html>
       metrics.nearMisses.textContent = "0";
       metrics.log.innerHTML = plan.telemetry.events.map(e => `${e.t.toFixed(1)}s  ${e.type.padEnd(7)} ${e.detail}`).join("<br>");
       metrics.legs.innerHTML = plan.telemetry.legs.slice(0, 18).map(l => (
-        `<tr><td>${l.leg}</td><td>${l.ball}</td><td>${l.distance_m.toFixed(1)}m</td><td>${l.travel_s.toFixed(1)}s</td><td>${l.mode}</td></tr>`
+        `<tr><td>${l.leg}</td><td>${l.phase}</td><td>${l.ball}</td><td>${l.distance_m.toFixed(1)}m</td><td>${l.travel_s.toFixed(1)}s</td><td>${l.mode}</td></tr>`
       )).join("");
     }
 
@@ -823,8 +968,8 @@ HTML = r"""<!doctype html>
         return;
       }
       const rows = [
-        ["leg", "ball", "distance_m", "travel_s", "mode"],
-        ...telemetry.legs.map(l => [l.leg, l.ball, l.distance_m, l.travel_s, l.mode]),
+        ["leg", "phase", "ball", "distance_m", "travel_s", "mode"],
+        ...telemetry.legs.map(l => [l.leg, l.phase, l.ball, l.distance_m, l.travel_s, l.mode]),
         [],
         ["summary", "value"],
         ["balls_detected", telemetry.summary.balls_detected],
@@ -833,6 +978,7 @@ HTML = r"""<!doctype html>
         ["total_time_s", telemetry.summary.total_time_s],
         ["total_distance_m", telemetry.summary.total_distance_m],
         ["replans", telemetry.summary.replans],
+        ["scan_events", telemetry.summary.scan_events],
         ["average_leg_speed_m_s", telemetry.summary.average_leg_speed_m_s],
         [],
         ["runtime", "value"],
@@ -933,10 +1079,15 @@ HTML = r"""<!doctype html>
       ctx.globalAlpha = 0.82;
       ctx.beginPath();
       let started = false;
+      let phaseIndex = null;
       plan.legs.forEach(leg => {
         leg.path.forEach(p => {
           const q = pt(p);
-          if (!started) { ctx.moveTo(q.x, q.y); started = true; }
+          if (!started || phaseIndex !== leg.phaseIndex) {
+            ctx.moveTo(q.x, q.y);
+            started = true;
+            phaseIndex = leg.phaseIndex;
+          }
           else ctx.lineTo(q.x, q.y);
         });
       });
@@ -980,7 +1131,7 @@ HTML = r"""<!doctype html>
       ctx.fillText(`State: ${sim.state}`, 34, 47);
       ctx.font = "14px Arial";
       ctx.fillText(`Court: ${COURT.length}m x ${COURT.width}m`, 34, 72);
-      ctx.fillText(`Move area: ${val("areaMode")} court`, 34, 94);
+      ctx.fillText(`Move area: ${val("areaMode")}`, 34, 94);
     }
 
     function lineRect(x, y, w, h, color, width) {

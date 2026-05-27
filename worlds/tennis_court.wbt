@@ -1051,15 +1051,15 @@ DEF TENNIS_ROBOT Robot {
               metalness 0
             }
             geometry Cylinder {
-              height 0.18
-              radius 0.045
+              height 0.28
+              radius 0.04
             }
           }
         ]
-        name "collector_lift_wheel"
+        name "collector_intake_roller"
         boundingObject Cylinder {
-          height 0.18
-          radius 0.045
+          height 0.28
+          radius 0.04
         }
         physics Physics {
           density -1

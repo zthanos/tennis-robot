@@ -431,7 +431,7 @@ module vertical_mounting_elements() {
     }
 
     // Collector uprights. These are the side plates/back-plate support points
-    // that hold the lift-wheel bracket and hopper mouth above the intake lip.
+    // that hold the wide roller bracket and hopper mouth above the intake lip.
     material_collector() {
         for (y = [base_w / 2 - 98, base_w / 2 + 98]) {
             vertical_panel([collector_origin_x + 160, y], [plywood_t, 90, collector_upright_h]);

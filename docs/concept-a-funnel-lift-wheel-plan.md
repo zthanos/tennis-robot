@@ -1,4 +1,4 @@
-# Concept A: Funnel + Lift Wheel Plan
+# Concept A: Funnel + Wide Intake Roller Plan
 
 Last checked: 2026-05-16
 
@@ -14,7 +14,7 @@ Costs are rough prototype estimates and exclude shipping, VAT/import duties, loc
 Build the simplest useful version of the tennis robot architecture:
 
 ```text
-camera/depth perception -> base alignment -> front funnel -> lift wheel -> small hopper
+camera/depth perception -> base alignment -> front funnel -> wide intake roller -> small hopper
 ```
 
 Then extend the same architecture:
@@ -67,7 +67,7 @@ Assembly intent:
 base front plate
   -> left/right funnel side plates
   -> fixed or adjustable back plate
-  -> lift wheel + motor bracket
+  -> wide intake roller + motor bracket
   -> small transparent hopper/bin
   -> optional ball-present sensor at throat or hopper entry
 ```
@@ -76,8 +76,8 @@ Keep these four adjustments reachable without removing the collector from the ro
 
 - bottom lip height
 - funnel side angle
-- lift wheel gap
-- lift wheel angle/speed
+- roller gap/compression
+- roller angle/speed
 
 The preferred first build is not a sealed beautiful mechanism. It is a tunable rig that can tell us what geometry actually works on a court-like surface.
 
@@ -90,7 +90,7 @@ The Collect MVP should do one job well:
 3. rotate/drive the base toward the ball
 4. slow down near the ball
 5. guide the ball into a front funnel
-6. lift or pinch the ball into a small hopper/bin
+6. pinch/pull the ball with the wide roller into a small hopper/bin
 7. confirm collection by sensor, camera state, or simple timeout
 
 ### Use The Base Capabilities
@@ -123,36 +123,39 @@ collector_command:
   intake_enabled: bool
 ```
 
+`lift_wheel_speed` remains the software/control field for compatibility with the current Webots device name. Mechanically, the preferred collector is now a full-width compliant intake roller, not a narrow centered wheel.
+
 ### Mechanical Concept
 
 The front module is intentionally simple:
 
 ```text
-wide low funnel -> centered throat -> rubber lift wheel/roller -> ball shelf/hopper
+wide low funnel -> full-width compliant roller -> adjustable back plate/ramp -> ball shelf/hopper
 ```
 
 Suggested starting dimensions:
 
 | Feature | Starting target | Why |
 |---|---:|---|
-| Funnel mouth width | 220-300 mm | Forgives approach error and bearing noise. |
-| Throat width | 75-85 mm | Centers a 65.4-68.6 mm tennis ball without jamming. |
+| Funnel mouth width | 260-340 mm | Forgives approach error and bearing noise. |
+| Effective roller capture width | 220-280 mm | Uses a wider contact patch so the robot does not need perfect centering. |
+| Transfer throat width after roller | 75-95 mm | Keeps the hopper/feed path controlled after pickup. |
 | Bottom lip height | 5-12 mm | Low enough to catch the ball, high enough to avoid scraping. |
-| Lift wheel diameter | 60-100 mm | Easy to source or print; enough contact patch. |
-| Lift wheel gap to back plate | 55-65 mm adjustable | Needs tuning for tennis ball fuzz and compression. |
+| Roller diameter | 60-90 mm | Easy to source or print; enough contact patch without lifting the front too high. |
+| Roller gap to back plate/ramp | 55-65 mm adjustable | Needs tuning for tennis ball fuzz and compression. |
 | Hopper capacity | 3-6 balls | Enough for MVP without complicating sorting. |
 
-The first prototype should have adjustable slots for funnel height, wheel gap, and wheel angle. Adjustment matters more than perfect CAD on the first pass.
+The first prototype should have adjustable slots for funnel height, roller gap, and roller angle. The roller shaft should be supported at both ends because the wider cylinder will flex more than a narrow wheel.
 
 ### Phase 1 Bill Of Materials
 
 | Priority | Component | Qty | Est. unit cost | Est. subtotal | Notes |
 |---|---:|---:|---:|---:|---|
 | Required | Funnel side plates, PETG/ABS print or 2-3 mm plastic sheet | 1 set | US $10-$40 | US $10-$40 | Can be 3D printed or cut from sheet plastic. |
-| Required | Rubber lift wheel / compliant roller, 60-100 mm | 1 | US $10-$35 | US $10-$35 | Prefer soft rubber or TPU over hard plastic. |
-| Required | DC gear motor for lift wheel | 1 | US $15-$50 | US $15-$50 | Start around 100-300 RPM, enough torque to pinch a ball. |
+| Required | Wide compliant intake roller/cylinder, 240-300 mm length, 60-90 mm diameter | 1 | US $15-$45 | US $15-$45 | Prefer soft rubber/PU/TPU over hard plastic. |
+| Required | DC gear motor for intake roller | 1 | US $15-$50 | US $15-$50 | Start around 100-300 RPM, enough torque to pinch a ball. |
 | Required | Motor driver for collector motor | 1 | US $10-$30 | US $10-$30 | Small H-bridge is enough unless using a large motor. |
-| Required | Bearings, shaft, hubs/couplers | 1 set | US $15-$45 | US $15-$45 | Make the wheel easy to remove. |
+| Required | Bearings, long shaft, hubs/couplers | 1 set | US $20-$55 | US $20-$55 | Support both roller ends and make the roller easy to remove. |
 | Required | Brackets, fasteners, inserts, standoffs | 1 set | US $20-$60 | US $20-$60 | Expect iteration here. |
 | Required | Small hopper/bin panels | 1 | US $10-$35 | US $10-$35 | Transparent plastic is useful for debugging. |
 | Recommended | Ball-present sensor at hopper throat | 1 | US $3-$15 | US $3-$15 | IR break beam, microswitch, or ToF sensor. |
@@ -173,7 +176,7 @@ The Collect MVP is successful when it can:
 | Test | Target |
 |---|---|
 | Center approach | Ball enters the funnel from 1.5-2.0 m away with less than 2 approach corrections. |
-| Offset approach | Ball still collects when initial alignment is off by about 100 mm. |
+| Offset approach | Ball still collects when initial alignment is off by about 130-160 mm. |
 | Slow capture | Base slows before contact and does not push the ball away. |
 | Lift reliability | 8 of 10 balls move from floor to hopper on flat court-like surface. |
 | Jam recovery | A stuck ball can be cleared without disassembling the whole front module. |
@@ -185,7 +188,7 @@ The Collect MVP is successful when it can:
 |---|---|
 | Add behavior states | `scan`, `align`, `approach`, `capture`, `reverse_clear`, `collected`. |
 | Add near-ball stop distance | Use `distance_m` threshold before entering capture speed. |
-| Add collector command abstraction | Keep lift wheel control separate from drive control. |
+| Add collector command abstraction | Keep intake roller control separate from drive control. |
 | Add simulated collection event | In Webots, mark a ball as collected when it reaches the intake zone. |
 | Add telemetry fields | Collector state, collection attempts, successful captures, jam timeout. |
 
@@ -235,7 +238,7 @@ Estimated Phase 2 launcher module total:
 
 1. Simulate the collection state machine using current camera detection.
 2. Print or cut the front funnel with adjustable throat and lip.
-3. Bench-test lift wheel gap, speed, and ball compression by hand-feeding balls.
+3. Bench-test roller gap, speed, shaft support, and ball compression by hand-feeding balls.
 4. Mount the collector to the base and test slow approach.
 5. Add ball-present sensing or collection confirmation.
 6. Tune approach speed and capture speed using telemetry.
@@ -260,7 +263,7 @@ Estimated Phase 2 launcher module total:
 Buy now for Collect MVP:
 
 - funnel material / filament
-- one compliant lift wheel or roller
+- one wide compliant intake roller/cylinder
 - one DC gear motor
 - one motor driver
 - shaft/bearings/fasteners

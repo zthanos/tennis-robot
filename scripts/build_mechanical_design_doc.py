@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 IMG_DIR = DOCS / "images"
-OUT = DOCS / "tennis-robot-mechanical-design.docx"
+OUT = DOCS / "research" / "tennis-robot-mechanical-design.docx"
 
 
 PALETTE = {

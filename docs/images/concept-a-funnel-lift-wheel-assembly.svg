@@ -34,7 +34,7 @@
 
   <rect width="1500" height="1000" fill="#f2f4f1"/>
   <text x="50" y="70" class="title">CONCEPT A - RECOMMENDED ASSEMBLY SKETCH</text>
-  <text x="52" y="104" class="subtitle">Funnel + lift wheel collector first, with a clean interface for the later throw module</text>
+  <text x="52" y="104" class="subtitle">Funnel + wide intake roller collector first, with a clean interface for the later throw module</text>
 
   <rect x="45" y="135" width="690" height="405" class="panel"/>
   <rect x="765" y="135" width="690" height="405" class="panel"/>
@@ -55,13 +55,13 @@
   <circle cx="155" cy="272" r="23" class="ball"/>
   <path d="M82 245 C170 265, 250 305, 333 362" class="flow"/>
   <path d="M154 272 C220 292, 280 322, 344 362" class="flow"/>
-  <text x="90" y="504" class="small">wide mouth: 220-300 mm</text>
+  <text x="90" y="504" class="small">wide mouth: 260-340 mm</text>
   <text x="452" y="504" class="small">throat: 75-85 mm</text>
   <line x1="65" y1="212" x2="645" y2="212" class="dim"/>
   <line x1="315" y1="285" x2="395" y2="285" class="dim"/>
 
   <!-- Side view panel -->
-  <text x="795" y="180" class="label">Side View: Lift Into Hopper</text>
+  <text x="795" y="180" class="label">Side View: Roller Into Hopper</text>
   <path d="M820 462 L1415 462 L1415 505 L820 505 Z" class="court"/>
   <rect x="940" y="365" width="345" height="95" class="chassis" rx="15"/>
   <circle cx="1000" cy="473" r="37" class="rubber"/>
@@ -77,9 +77,9 @@
   <path d="M1008 372 C1042 356, 1070 350, 1100 351" class="flow"/>
   <path d="M985 338 A46 46 0 0 1 1028 388" class="motion"/>
   <text x="810" y="525" class="small">low lip: 5-12 mm</text>
-  <text x="1020" y="525" class="small">adjustable wheel gap: 55-65 mm</text>
+  <text x="1020" y="525" class="small">adjustable roller gap: 55-65 mm</text>
   <path d="M934 326 L934 450" class="adjust"/>
-  <text x="812" y="238" class="small">Lift wheel pinches the ball against the back plate and raises it into the bin.</text>
+  <text x="812" y="238" class="small">Wide roller pinches the ball against the back plate and raises it into the bin.</text>
 
   <!-- Exploded assembly panel -->
   <text x="75" y="620" class="label">Assembly Order</text>
@@ -91,7 +91,7 @@
   <rect x="445" y="690" width="55" height="110" class="metal" rx="8"/>
   <circle cx="528" cy="716" r="38" class="rubber"/>
   <rect x="582" y="682" width="95" height="55" class="dark" rx="8"/>
-  <text x="584" y="767" class="small">motor + wheel</text>
+  <text x="584" y="767" class="small">motor + roller</text>
   <rect x="235" y="842" width="195" height="58" class="transparent" rx="10"/>
   <text x="263" y="878" class="small">hopper panels</text>
   <path d="M205 720 L245 720" class="motion"/>
@@ -99,7 +99,7 @@
   <path d="M500 716 L582 710" class="motion"/>
   <path d="M430 842 C420 810, 460 775, 510 744" class="motion"/>
   <rect x="80" y="635" width="595" height="35" fill="none"/>
-  <text x="85" y="650" class="tiny">1. Mount base plate  2. Add funnel sides  3. Add back plate  4. Add wheel/motor  5. Add hopper</text>
+  <text x="85" y="650" class="tiny">1. Mount base plate  2. Add funnel sides  3. Add back plate  4. Add roller/motor  5. Add hopper</text>
 
   <!-- Interfaces panel -->
   <text x="795" y="620" class="label">Interfaces To Keep Stable</text>
@@ -114,7 +114,7 @@
   <text x="835" y="841" class="tiny">height and direction for Phase 2 feed gate</text>
   <rect x="1130" y="780" width="285" height="90" class="note"/>
   <text x="1150" y="812" class="small">adjustments</text>
-  <text x="1150" y="841" class="tiny">lip height, wheel gap, wheel angle, motor speed</text>
+  <text x="1150" y="841" class="tiny">lip height, roller gap, roller angle, motor speed</text>
   <path d="M970 754 L970 780" class="adjust"/>
   <path d="M1285 754 L1285 780" class="adjust"/>
   <text x="817" y="905" class="small">Recommended: make every red adjustment reachable without removing the collector from the base.</text>

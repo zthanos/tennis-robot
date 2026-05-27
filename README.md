@@ -45,10 +45,10 @@ When the simulation runs, the controller reads from the robot camera, detects te
 The controller also estimates a rough monocular ball distance and bearing from the camera field of view and the known tennis ball diameter.
 Detections are projected into robot-base and court/world XY coordinates using the front camera mount and the robot pose, so downstream navigation can reason in meters instead of image pixels.
 
-The current world includes **Concept A: Funnel + Lift Wheel** as the front collector module:
+The current world includes **Concept A: Funnel + Wide Intake Roller** as the front collector module:
 
 - orange funnel plates and a low intake lip on the robot front;
-- a rubber-like lift wheel with `lift_wheel_motor`;
+- a rubber-like wide intake roller driven by `lift_wheel_motor` (historical device name);
 - a transparent visual hopper;
 - a simulated intake zone that removes a tennis ball once the collector state machine captures it.
 - an aligned `front_depth` RangeFinder that mimics the OAK-D depth contract for distance estimates.
@@ -117,6 +117,7 @@ uv run python scripts/generate_balls.py --count 18 --seed 7
 ```
 
 Copy the output between the `# BALLS_START` and `# BALLS_END` markers in `worlds/tennis_court.wbt`.
+By default the generator uses a realistic tennis-court bias: more balls near the net and the back court, fewer in open mid-court. Use `--distribution uniform` when you need an even random scatter for comparison.
 
 ## Optional Docker Dev Shell
 
@@ -240,6 +241,68 @@ http://127.0.0.1:8082
 ```
 
 This panel is a fast planning sandbox before deeper Webots work. It models the tennis court bounds, half-court or full-court movement area, random 40-50 ball dispersion, fixed obstacles, moving people with safety zones, travel speed, pickup time, scan time, periodic re-scans, and obstacle-aware route planning. During movement it performs continuous lookahead collision checks, pauses for emergency clearance, and replans if a dynamic obstacle enters the active path. It records telemetry for the run, including detected/collectable/blocked balls, total distance, total time, planned and runtime replans, safety stops, near misses, per-leg travel time, and scan/pickup/re-scan events.
+
+## Route Benchmark
+
+Run a Monte Carlo benchmark for the half-court scan/route strategy:
+
+```powershell
+uv run python scripts/route_benchmark.py --runs 100 --balls 40
+```
+
+The benchmark generates deterministic random scenarios with realistic ball bias, plans two-phase collection, estimates travel time from configured robot speed, and reports average collection rate, total time, distance, expected misses, blocked balls, net/wall risks, obstacle risks, scan events, and replans.
+
+Enable the RPLIDAR C1-style costmap penalty when comparing the camera-only planner against the camera+LiDAR navigation stack:
+
+```powershell
+uv run python scripts/route_benchmark.py --runs 100 --balls 40 --lidar-costmap --json-out runtime/route-benchmark-lidar-costmap.json --csv-out runtime/route-benchmark-lidar-costmap.csv
+```
+
+Write detailed outputs when comparing planner settings:
+
+```powershell
+uv run python scripts/route_benchmark.py --runs 100 --balls 40 --json-out runtime/route-benchmark.json --csv-out runtime/route-benchmark.csv
+```
+
+Generate learning-to-rank training data for a future next-ball policy model:
+
+```powershell
+uv run python scripts/route_benchmark.py --runs 1000 --balls 40 --training-out runtime/route-training.csv
+```
+
+Each training row represents one candidate ball at one planning decision. `selected=1` marks the ball chosen by the planner; `selected=0` marks alternatives. Features include robot pose, ball pose, estimated route distance, travel time, pickup-pose offset, risk type, miss probability, and distances to net, walls, and obstacles.
+
+Train a baseline next-ball policy model from that CSV:
+
+```powershell
+uv run python scripts/train_next_ball_policy.py --training-csv runtime/route-training.csv --model-out runtime/next-ball-policy-model.json --metrics-out runtime/next-ball-policy-metrics.json
+```
+
+Evaluate the trained model against the planner on fresh scenarios:
+
+```powershell
+uv run python scripts/evaluate_next_ball_policy.py --runs 100 --balls 40 --seed 10000 --json-out runtime/next-ball-policy-eval.json --csv-out runtime/next-ball-policy-eval.csv
+```
+
+Generate outcome-labeled data when testing alternatives to planner imitation:
+
+```powershell
+uv run python scripts/generate_outcome_training.py --runs 300 --balls 40 --rollout-depth 0 --miss-penalty 12 --training-out runtime/route-outcome-training.csv
+```
+
+Evaluate a defer/edge-pass policy that leaves risky balls for a second pass:
+
+```powershell
+uv run python scripts/evaluate_defer_policy.py --runs 100 --balls 40 --seed 10000 --json-out runtime/defer-policy-eval.json --csv-out runtime/defer-policy-eval.csv
+```
+
+Add `--lidar-costmap` to evaluate the same defer/edge-pass policy using LiDAR-aware clearance costs.
+
+For a faster mode that deliberately skips risky balls:
+
+```powershell
+uv run python scripts/evaluate_defer_policy.py --runs 100 --balls 40 --seed 10000 --skip-risky --json-out runtime/defer-policy-skip-risky-eval.json --csv-out runtime/defer-policy-skip-risky-eval.csv
+```
 
 ## Next Milestones
 
