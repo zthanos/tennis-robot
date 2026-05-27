@@ -47,9 +47,10 @@ Detections are projected into robot-base and court/world XY coordinates using th
 
 The current world includes **Concept A: Funnel + Wide Intake Roller** as the front collector module:
 
+- a pitched chassis layout based on larger rear drive wheels and smaller outboard front casters;
 - orange funnel plates and a low intake lip on the robot front;
 - a rubber-like wide intake roller driven by `lift_wheel_motor` (historical device name);
-- a transparent visual hopper;
+- a transparent visual hopper raised for throw-mode gravity feed;
 - a simulated intake zone that removes a tennis ball once the collector state machine captures it.
 - an aligned `front_depth` RangeFinder that mimics the OAK-D depth contract for distance estimates.
 

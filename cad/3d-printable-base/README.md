@@ -99,8 +99,12 @@ Recommended first exports:
   blocks that trap the battery.
 - Do not support the robot only on two wheels during launch. Use stabilizer feet.
 - For the collection-only MVP, prefer two driven side wheels plus two passive
-  front swivel casters. Avoid servo steering until the differential-drive base
-  proves insufficient.
+  outboard front swivel casters. Keep the front caster wheels outside the base
+  edges so the center intake/funnel stays clear. Avoid servo steering until the
+  differential-drive base proves insufficient.
+- The current concept assembly shows a pitched chassis from larger rear wheels
+  and smaller front casters. Treat that as a layout hypothesis: the wheels stay
+  on the ground while the wooden body and mounted modules pitch as one unit.
 - Keep the battery low and near the middle of the footprint.
 - Make motor pods replaceable; they will be the first parts to revise.
 - Print one wheel at reduced width first to verify motor shaft fit.
@@ -108,15 +112,18 @@ Recommended first exports:
 - Treat `collector_funnel_bin.scad` as a tunable bench rig, not a final enclosure.
   The throat width, roller gap, and bin geometry should follow the Webots physics
   experiments before printing a full-size revision.
+- Keep the intake roller close to the front edge of the base. The low scoop can
+  guide the ball, but the roller contact line should arrive before the chassis
+  can push the ball away.
 - Use `full_robot_concept.scad` as an assembly/reference model. It is meant to
   communicate layout and mounting relationships: wooden base, upper frame,
   electronics/battery module, receiving bin, collector intake, launcher wheels,
   rear drive wheels, front casters, cover mounting rails, removable panels, and
   transport handle. Do not print it as one object.
 - The intended ball path in `full_robot_concept.scad` is:
-  front intake -> wide compliant roller -> transfer chute -> open receiving bin -> sloped
-  bin floor -> narrow feed channel -> metering gate -> dual flywheels -> guarded
-  launch chute.
+  front intake -> wide compliant roller -> transfer chute -> collect-mode bin
+  position -> raised/tilted throw-mode bin -> gravity feed chute -> metering
+  gate -> dual flywheels -> guarded launch chute.
 - The transparent cover panels in the concept are placeholders for removable
   polycarbonate/ABS panels. They show where the outer shell can land on rails
   and standoffs while leaving service access to the intake, feed gate, and

@@ -16,19 +16,36 @@ rear_wheel_d = 190;
 rear_wheel_w = 48;
 front_caster_d = 85;
 front_caster_w = 32;
+front_caster_outboard_gap = 18;
+front_caster_left_y = -front_caster_w / 2 - front_caster_outboard_gap;
+front_caster_right_y = base_w + front_caster_w / 2 + front_caster_outboard_gap;
+wheelbase = (base_len - 110) - 170;
+base_pitch_from_wheels = atan(((rear_wheel_d - front_caster_d) / 2) / wheelbase);
+rear_axle_x = 170;
+front_caster_x = base_len - 110;
+front_base_ground_clearance = 22;
+body_pivot_x = rear_axle_x;
+body_pivot_z = front_base_ground_clearance + tan(base_pitch_from_wheels) * wheelbase;
 
 collector_len = 330;
-collector_mouth_w = 310;
+collector_mouth_w = 380;
 collector_throat_w = 86;
 collector_wall_h = 78;
 collector_lip_h = 14;
 collector_roller_d = 80;
 collector_roller_w = 280;
+collector_front_overhang = 45;
+collector_roller_x = base_len + 5;
+collector_mouth_x = base_len + collector_front_overhang;
 
 bin_len = 230;
 bin_w = 300;
 bin_h = 360;
-bin_tilt = 7;
+bin_collect_z = wood_t + 92;
+bin_throw_lift = 118;
+bin_throw_z = bin_collect_z + bin_throw_lift;
+bin_tilt = 16;
+show_collect_bin_reference = true;
 feed_channel_w = 92;
 feed_channel_h = 78;
 
@@ -36,6 +53,8 @@ launcher_wheel_d = 110;
 launcher_wheel_w = 38;
 launcher_gap = 72;
 launcher_panel_t = 8;
+launcher_x = 570;
+launcher_z = wood_t + 260;
 cover_panel_t = 3;
 cover_z = 510;
 cover_h = 310;
@@ -72,9 +91,39 @@ module material_cover() {
     color([0.72, 0.86, 1.0, 0.28]) children();
 }
 
+module material_reference() {
+    color([0.72, 0.86, 1.0, 0.18]) children();
+}
+
 module wheel(d, w) {
     rotate([90, 0, 0])
         cylinder(h=w, d=d, center=true);
+}
+
+module side_pitch_reference() {
+    // Side rail showing the static base pitch implied by the larger rear wheels
+    // and smaller front casters. The main assembly stays readable in world axes.
+    rail_x1 = 170;
+    rail_x2 = base_len - 110;
+    rail_z1 = rear_wheel_d / 2 + 24;
+    rail_z2 = front_caster_d / 2 + 24;
+    rail_len = sqrt(pow(rail_x2 - rail_x1, 2) + pow(rail_z1 - rail_z2, 2));
+    rail_angle = base_pitch_from_wheels;
+
+    material_reference() {
+        for (y = [-36, base_w + 36]) {
+            translate([(rail_x1 + rail_x2) / 2, y, (rail_z1 + rail_z2) / 2])
+                rotate([0, rail_angle, 0])
+                    cube([rail_len, 10, 12], center=true);
+        }
+    }
+}
+
+module pitched_body() {
+    translate([body_pivot_x, 0, body_pivot_z])
+        rotate([0, base_pitch_from_wheels, 0])
+            translate([-body_pivot_x, 0, 0])
+                children();
 }
 
 module chassis_base() {
@@ -105,28 +154,28 @@ module chassis_base() {
 
 module drive_and_casters() {
     material_frame() {
-        translate([170, -rear_wheel_w / 2, rear_wheel_d / 2])
+        translate([rear_axle_x, -rear_wheel_w / 2, rear_wheel_d / 2])
             cube([150, 36, 95], center=true);
-        translate([170, base_w + rear_wheel_w / 2, rear_wheel_d / 2])
+        translate([rear_axle_x, base_w + rear_wheel_w / 2, rear_wheel_d / 2])
             cube([150, 36, 95], center=true);
     }
 
     color([0.02, 0.02, 0.02]) {
-        translate([170, -rear_wheel_w / 2 - 18, rear_wheel_d / 2])
+        translate([rear_axle_x, -rear_wheel_w / 2 - 18, rear_wheel_d / 2])
             wheel(rear_wheel_d, rear_wheel_w);
-        translate([170, base_w + rear_wheel_w / 2 + 18, rear_wheel_d / 2])
+        translate([rear_axle_x, base_w + rear_wheel_w / 2 + 18, rear_wheel_d / 2])
             wheel(rear_wheel_d, rear_wheel_w);
-        translate([base_len - 110, 85, front_caster_d / 2])
+        translate([front_caster_x, front_caster_left_y, front_caster_d / 2])
             wheel(front_caster_d, front_caster_w);
-        translate([base_len - 110, base_w - 85, front_caster_d / 2])
+        translate([front_caster_x, front_caster_right_y, front_caster_d / 2])
             wheel(front_caster_d, front_caster_w);
     }
 
     material_frame() {
-        for (y = [85, base_w - 85]) {
-            translate([base_len - 110, y, front_caster_d + 18])
+        for (y = [front_caster_left_y, front_caster_right_y]) {
+            translate([front_caster_x, y, front_caster_d + 18])
                 rounded_box([88, 64, 18], 6);
-            translate([base_len - 110, y, front_caster_d / 2 + 24])
+            translate([front_caster_x, y, front_caster_d / 2 + 24])
                 cube([24, 18, 58], center=true);
         }
     }
@@ -142,15 +191,30 @@ module electronics_battery_module() {
 }
 
 module receiving_bin() {
-    // Flow bin: open intake side, sloped floor, narrow feed channel to launcher.
+    // Flow bin shown in throw mode: lifted and tilted so gravity can feed the
+    // launcher. The low transparent outline below marks the collect-mode height.
     x = 355;
     y = base_w / 2;
-    z = wood_t + 92;
+    z = bin_throw_z;
+
+    if (show_collect_bin_reference) {
+        material_reference() {
+            translate([x, y, bin_collect_z])
+                rotate([0, 7, 0])
+                    cube([bin_len, bin_w, 8], center=true);
+            translate([x, y - bin_w / 2, bin_collect_z + bin_h / 2])
+                cube([bin_len, 8, bin_h], center=true);
+            translate([x, y + bin_w / 2, bin_collect_z + bin_h / 2])
+                cube([bin_len, 8, bin_h], center=true);
+            translate([x - bin_len / 2, y, bin_collect_z + bin_h / 2])
+                cube([8, bin_w, bin_h], center=true);
+        }
+    }
 
     material_bin() {
         // Sloped floor sends balls toward the launcher feed channel.
         translate([x, y, z])
-            rotate([0, -bin_tilt, 0])
+            rotate([0, bin_tilt, 0])
                 cube([bin_len, bin_w, 8], center=true);
 
         // Side walls.
@@ -170,62 +234,83 @@ module receiving_bin() {
             cube([8, 84, 120], center=true);
     }
 
-    // Yellow transfer chute from collector intake roller into the bin opening.
+    // Yellow transfer chute from collector intake roller into the low collection
+    // height. In a mode-changing prototype this would feed before the bin lifts.
     material_collector()
-        translate([base_len - 250, y, z + 34])
+        translate([base_len - 250, y, bin_collect_z + 34])
             rotate([0, -8, 0])
                 cube([180, feed_channel_w, 26], center=true);
 
-    // Narrow feed channel from lower bin outlet into launcher throat.
-    color([0.90, 0.84, 0.55])
-        translate([480, y, z + 38])
-            cube([190, feed_channel_w, feed_channel_h], center=true);
+    gravity_feed_chute(
+        start_x = x + bin_len / 2 - 18,
+        end_x = launcher_x - 78,
+        y = y,
+        start_z = z + 34,
+        end_z = launcher_z - 92,
+        width = feed_channel_w,
+        height = feed_channel_h
+    );
 
     // Simple gate/metering wheel placeholder at bin exit.
     color([0.08, 0.08, 0.09])
-        translate([430, y, z + 45])
+        translate([x + bin_len / 2 - 45, y, z + 38])
             rotate([90, 0, 0])
                 cylinder(h=feed_channel_w + 14, d=46, center=true);
 }
 
+module gravity_feed_chute(start_x, end_x, y, start_z, end_z, width, height) {
+    dx = end_x - start_x;
+    dz = start_z - end_z;
+    channel_len = sqrt(pow(dx, 2) + pow(dz, 2));
+    channel_angle = atan(dz / dx);
+
+    color([0.90, 0.84, 0.55])
+        translate([(start_x + end_x) / 2, y, (start_z + end_z) / 2])
+            rotate([0, channel_angle, 0])
+                cube([channel_len, width, height], center=true);
+}
+
 module collector_intake() {
-    x0 = base_len - collector_len + 15;
     y0 = base_w / 2;
 
     material_collector() {
-        // Sloped receiving panel/scoop: low front lip, higher rear edge.
-        translate([x0 + collector_len / 2, y0, wood_t + 18])
-            rotate([0, 10, 0])
-                cube([collector_len, collector_throat_w + 40, collector_lip_h], center=true);
-
-        // Funnel side guides.
-        for (side = [-1, 1]) {
-            angle = atan((collector_mouth_w - collector_throat_w) / 2 / collector_len);
-            translate([x0 + collector_len / 2, y0 + side * collector_throat_w / 2, wood_t + 58])
-                rotate([0, 0, side * angle])
-                    cube([collector_len, 10, collector_wall_h], center=true);
+        // Sloped funnel floor. It starts wider than the roller and narrows at
+        // the pickup line, so loose balls are guided into the full-width roller.
+        hull() {
+            translate([collector_mouth_x, y0, wood_t + 8])
+                cube([18, collector_mouth_w, 8], center=true);
+            translate([collector_roller_x - 72, y0, wood_t + 23])
+                cube([18, collector_roller_w + 18, collector_lip_h], center=true);
         }
 
-        // Front side flares, visually matching the sketch's sloped intake panels.
-        translate([base_len - 60, y0 - collector_mouth_w / 2, wood_t + 38])
-            rotate([0, 0, -25])
-                cube([140, 10, 78], center=true);
-        translate([base_len - 60, y0 + collector_mouth_w / 2, wood_t + 38])
-            rotate([0, 0, 25])
-                cube([140, 10, 78], center=true);
+        // Funnel side guides: wide mouth at the front, narrowing directly at
+        // the roller working width.
+        for (side = [-1, 1]) {
+            hull() {
+                translate([collector_mouth_x, y0 + side * collector_mouth_w / 2, wood_t + 54])
+                    cube([18, 10, collector_wall_h], center=true);
+                translate([collector_roller_x - 55, y0 + side * (collector_roller_w / 2 + 8), wood_t + 62])
+                    cube([18, 10, collector_wall_h], center=true);
+            }
+        }
+
+        // Low front lip, ahead of the base and below the roller contact line.
+        translate([collector_mouth_x + 4, y0, wood_t + 7])
+            cube([36, collector_mouth_w, 10], center=true);
     }
 
-    // Full-width compliant intake roller: wider contact patch than the earlier centered wheel.
+    // Full-width compliant intake roller mounted near the front edge so the robot
+    // captures the ball before the chassis can push it away.
     color([0.03, 0.03, 0.03])
-        translate([x0 + 170, y0, wood_t + 94])
+        translate([collector_roller_x, y0, wood_t + 82])
             rotate([90, 0, 0])
                 cylinder(h=collector_roller_w, d=collector_roller_d, center=true);
 }
 
 module launcher_module() {
-    x = 570;
+    x = launcher_x;
     y = base_w / 2;
-    z = wood_t + 260;
+    z = launcher_z;
 
     material_frame() {
         translate([x, y - 72, z])
@@ -323,14 +408,16 @@ module cover_mounting_frame() {
 }
 
 module full_robot_concept() {
-    chassis_base();
     drive_and_casters();
-    electronics_battery_module();
-    receiving_bin();
-    collector_intake();
-    launcher_module();
-    cover_mounting_frame();
-    transport_handle();
+    pitched_body() {
+        chassis_base();
+        electronics_battery_module();
+        receiving_bin();
+        collector_intake();
+        launcher_module();
+        cover_mounting_frame();
+        transport_handle();
+    }
 }
 
 full_robot_concept();

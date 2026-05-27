@@ -20,7 +20,7 @@ camera/depth perception -> base alignment -> front funnel -> wide intake roller 
 Then extend the same architecture:
 
 ```text
-small hopper -> feed gate -> dual flywheels -> short guarded launch barrel
+collect-mode hopper -> raised/tilted throw-mode hopper -> gravity feed gate -> dual flywheels -> short guarded launch barrel
 ```
 
 The important decision is to keep collection and throwing modular. The first machine should prove that the base can locate and collect balls reliably before we add high-energy launch hardware.
@@ -81,6 +81,17 @@ Keep these four adjustments reachable without removing the collector from the ro
 
 The preferred first build is not a sealed beautiful mechanism. It is a tunable rig that can tell us what geometry actually works on a court-like surface.
 
+### Updated Chassis Geometry
+
+The current CAD direction uses a pitched chassis instead of a flat body:
+
+- larger rear driven wheels and smaller front casters create the base pitch;
+- the front casters sit outboard of the base edges, leaving the center intake/funnel unobstructed;
+- the bin has two modeled positions: a lower collect-mode reference and a raised/tilted throw-mode position;
+- throw mode uses a gravity feed chute from the raised bin into the flywheel throat.
+
+This keeps the pickup path low while still giving the launcher a downhill feed path. Before cutting final holes, verify the actual caster plate, wheel diameter, and front clearance against `cad/3d-printable-base/full_robot_concept.scad` and `cad/3d-printable-base/base_mounting_plate.scad`.
+
 ### Scope
 
 The Collect MVP should do one job well:
@@ -139,13 +150,14 @@ Suggested starting dimensions:
 |---|---:|---|
 | Funnel mouth width | 260-340 mm | Forgives approach error and bearing noise. |
 | Effective roller capture width | 220-280 mm | Uses a wider contact patch so the robot does not need perfect centering. |
+| Roller fore-aft placement | As close to the front edge as practical; roller contact line should be the first hard contact after the low scoop | Prevents the chassis or funnel floor from pushing the ball away before capture. |
 | Transfer throat width after roller | 75-95 mm | Keeps the hopper/feed path controlled after pickup. |
 | Bottom lip height | 5-12 mm | Low enough to catch the ball, high enough to avoid scraping. |
 | Roller diameter | 60-90 mm | Easy to source or print; enough contact patch without lifting the front too high. |
 | Roller gap to back plate/ramp | 55-65 mm adjustable | Needs tuning for tennis ball fuzz and compression. |
 | Hopper capacity | 3-6 balls | Enough for MVP without complicating sorting. |
 
-The first prototype should have adjustable slots for funnel height, roller gap, and roller angle. The roller shaft should be supported at both ends because the wider cylinder will flex more than a narrow wheel.
+The first prototype should have adjustable slots for funnel height, roller gap, roller angle, and roller fore-aft position. The roller shaft should be supported at both ends because the wider cylinder will flex more than a narrow wheel.
 
 ### Phase 1 Bill Of Materials
 
@@ -199,7 +211,7 @@ The Collect MVP is successful when it can:
 Phase 2 adds a launcher only after collection is repeatable. The launcher should be a rear/top module so it does not disturb the front intake.
 
 ```text
-hopper -> metering/feed gate -> dual counter-rotating flywheels -> short guarded barrel
+raised/tilted hopper -> gravity feed chute -> metering/feed gate -> dual counter-rotating flywheels -> short guarded barrel
 ```
 
 This should start as a bench module before it is mounted on the mobile base.
@@ -298,4 +310,4 @@ These links are not final purchase recommendations; they anchor the rough cost r
 | Collector motor voltage | 12 V DC for simple sourcing. |
 | Hopper capacity | Start with 3-6 balls. |
 | Launch architecture | Dual flywheel, fixed angle at first. |
-| Mobile base | Reuse current differential-drive concept; choose physical chassis after simulated approach behavior is stable. |
+| Mobile base | Differential-drive base with larger rear wheels, outboard front casters, and pitched body geometry. |

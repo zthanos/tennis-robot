@@ -32,6 +32,11 @@ motor_pod_flange_w = 100;
 
 caster_mount_x = 92;
 caster_mount_y = 78;
+front_caster_outboard_gap = 18;
+front_caster_w = 32;
+front_caster_left_y = -front_caster_w / 2 - front_caster_outboard_gap;
+front_caster_right_y = base_w + front_caster_w / 2 + front_caster_outboard_gap;
+front_caster_anchor_ys = [34, base_w - 34];
 
 collector_len = 360;
 collector_w = 360;
@@ -179,8 +184,9 @@ module chassis_plate_cutouts() {
         for (y = [base_w - 86, base_w - 18]) translate([x, y, 0]) screw_hole(hole_d, plate_t + 4);
     }
 
-    // Front caster mounts. Slots allow small trim to level the base.
-    for (y_center = [85, base_w - 85]) {
+    // Outboard front caster outrigger anchors. The caster wheel/plate sits
+    // outside the base edge; these slots fasten the inner outrigger bracket.
+    for (y_center = front_caster_anchor_ys) {
         x0 = base_len - 110 - caster_mount_x / 2;
         y0 = y_center - caster_mount_y / 2;
         for (x = [x0 + 22, x0 + caster_mount_x - 22]) {
@@ -259,13 +265,13 @@ module chassis_plate_markers() {
     label("RIGHT MOTOR POD", [170, base_w - 47], 10);
 
     material_caster() {
-        for (y_center = [85, base_w - 85]) {
+        for (y_center = [front_caster_left_y, front_caster_right_y]) {
             translate([base_len - 110 - caster_mount_x / 2, y_center - caster_mount_y / 2, 0])
                 envelope([caster_mount_x, caster_mount_y], 8);
         }
     }
-    label("FRONT CASTER", [base_len - 110, 85], 9);
-    label("FRONT CASTER", [base_len - 110, base_w - 85], 9);
+    label("OUTBOARD CASTER", [base_len - 110, 18], 8);
+    label("OUTBOARD CASTER", [base_len - 110, base_w - 18], 8);
 
     material_collector()
         translate([collector_origin_x, base_w / 2 - collector_w / 2, 0])
@@ -314,7 +320,7 @@ module chassis_plate_markers() {
         for (y = [base_w - 86, base_w - 18]) translate([x, y, 0]) screw_marker();
     }
 
-    for (y_center = [85, base_w - 85]) {
+    for (y_center = front_caster_anchor_ys) {
         x0 = base_len - 110 - caster_mount_x / 2;
         y0 = y_center - caster_mount_y / 2;
         for (x = [x0 + 22, x0 + caster_mount_x - 22]) {

@@ -746,7 +746,8 @@ DEF TENNIS_ROBOT Robot {
   rotation 0 0 1 0
   children [
     DEF WOODEN_CHASSIS_PLATE Solid {
-      translation 0.08 0 0.045
+      translation 0.08 0 0.085
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance PBRAppearance {
@@ -769,7 +770,8 @@ DEF TENNIS_ROBOT Robot {
       }
     }
     DEF ELECTRONICS_BOX Solid {
-      translation -0.13 0 0.135
+      translation -0.13 0 0.165
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance PBRAppearance {
@@ -785,7 +787,8 @@ DEF TENNIS_ROBOT Robot {
       name "electronics_box"
     }
     DEF LOW_BATTERY_BLOCK Solid {
-      translation -0.25 0 0.088
+      translation -0.25 0 0.115
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance PBRAppearance {
@@ -801,7 +804,8 @@ DEF TENNIS_ROBOT Robot {
       name "low_battery_block"
     }
     DEF LEFT_CHASSIS_RAIL Solid {
-      translation 0.18 -0.245 0.025
+      translation 0.18 -0.245 0.065
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance DEF STRUCTURAL_RAIL_APPEARANCE PBRAppearance {
@@ -817,7 +821,8 @@ DEF TENNIS_ROBOT Robot {
       name "left_chassis_rail"
     }
     DEF RIGHT_CHASSIS_RAIL Solid {
-      translation 0.18 0.245 0.025
+      translation 0.18 0.245 0.065
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance USE STRUCTURAL_RAIL_APPEARANCE
@@ -829,19 +834,21 @@ DEF TENNIS_ROBOT Robot {
       name "right_chassis_rail"
     }
     DEF FRONT_CROSSMEMBER Solid {
-      translation 0.49 0 0.025
+      translation 0.49 0 0.015
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance USE STRUCTURAL_RAIL_APPEARANCE
           geometry Box {
-            size 0.05 0.52 0.04
+            size 0.05 0.64 0.04
           }
         }
       ]
       name "front_crossmember"
     }
     DEF LEFT_MOTOR_POD Solid {
-      translation -0.02 -0.305 -0.025
+      translation -0.02 -0.305 0.005
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance USE STRUCTURAL_RAIL_APPEARANCE
@@ -853,7 +860,8 @@ DEF TENNIS_ROBOT Robot {
       name "left_motor_pod"
     }
     DEF RIGHT_MOTOR_POD Solid {
-      translation -0.02 0.305 -0.025
+      translation -0.02 0.305 0.005
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance USE STRUCTURAL_RAIL_APPEARANCE
@@ -1006,7 +1014,7 @@ DEF TENNIS_ROBOT Robot {
       }
     }
     DEF COLLECTOR_BACK_PLATE Solid {
-      translation 0.34 0 0.07
+      translation 0.49 0 0.07
       rotation 0 1 0 -0.25
       children [
         Shape {
@@ -1032,7 +1040,7 @@ DEF TENNIS_ROBOT Robot {
     HingeJoint {
       jointParameters HingeJointParameters {
         axis 0 1 0
-        anchor 0.43 0 0.105
+        anchor 0.58 0 0.105
       }
       device [
         RotationalMotor {
@@ -1041,7 +1049,7 @@ DEF TENNIS_ROBOT Robot {
         }
       ]
       endPoint Solid {
-        translation 0.43 0 0.105
+        translation 0.58 0 0.105
         rotation 0.9900522525415301 0.09948986008810325 -0.09949022553543622 1.5807973901773442
         children [
           Shape {
@@ -1068,7 +1076,8 @@ DEF TENNIS_ROBOT Robot {
       }
     }
     DEF COLLECTOR_HOPPER Solid {
-      translation 0.12 0 0.28
+      translation 0.12 0 0.38
+      rotation 0 1 0 0.28
       children [
         Pose {
           translation 0 0 -0.1
@@ -1149,7 +1158,8 @@ DEF TENNIS_ROBOT Robot {
       name "collector_receiving_bin"
     }
     DEF LAUNCHER_MODULE Solid {
-      translation -0.04 0 0.39
+      translation -0.04 0 0.43
+      rotation 0 1 0 0.176
       children [
         Shape {
           appearance PBRAppearance {
@@ -1359,7 +1369,7 @@ DEF TENNIS_ROBOT Robot {
       name "collector_animation_ball"
     }
     DEF FRONT_LEFT_CASTER_BRACKET Solid {
-      translation 0.31 -0.205 -0.035
+      translation 0.31 -0.325 -0.035
       children [
         Shape {
           appearance PBRAppearance {
@@ -1390,7 +1400,7 @@ DEF TENNIS_ROBOT Robot {
       name "front_left_caster_bracket"
     }
     DEF FRONT_RIGHT_CASTER_BRACKET Solid {
-      translation 0.31 0.205 -0.035
+      translation 0.31 0.325 -0.035
       children [
         Shape {
           appearance PBRAppearance {
@@ -1423,10 +1433,10 @@ DEF TENNIS_ROBOT Robot {
     HingeJoint {
       jointParameters HingeJointParameters {
         axis 0 1 0
-        anchor 0.31 -0.205 -0.145
+        anchor 0.31 -0.325 -0.145
       }
       endPoint Solid {
-        translation 0.31 -0.205 -0.145
+        translation 0.31 -0.325 -0.145
         rotation 0.999999977026329 -0.0001515704002404505 0.0001515709569906407 1.5708000229736712
         children [
           Shape {
@@ -1455,10 +1465,10 @@ DEF TENNIS_ROBOT Robot {
     HingeJoint {
       jointParameters HingeJointParameters {
         axis 0 1 0
-        anchor 0.31 0.205 -0.145
+        anchor 0.31 0.325 -0.145
       }
       endPoint Solid {
-        translation 0.31 0.205 -0.145
+        translation 0.31 0.325 -0.145
         rotation 0.9999999770277319 -0.00015156577231860148 0.00015156632905179233 1.570800022972268
         children [
           Shape {

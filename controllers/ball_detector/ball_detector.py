@@ -58,7 +58,7 @@ TIME_STEP_MS = 32
 MAX_SPEED_RAD_S = 6.28
 WHEEL_RADIUS_M = 0.11
 TRACK_WIDTH_M = 0.48
-INTAKE_ZONE_X_M = (0.34, 0.62)
+INTAKE_ZONE_X_M = (0.50, 0.70)
 # Wide intake roller accepts a wider lateral pickup envelope than the earlier centered wheel.
 INTAKE_HALF_WIDTH_M = 0.16
 INTAKE_MAX_HEIGHT_M = 0.12
@@ -68,10 +68,10 @@ NET_X_M = 0.0
 NET_SIDE_CLEARANCE_M = 0.25
 COLLECTION_ANIMATION_S = 0.75
 COLLECTION_PATH_LOCAL = (
-    (0.52, 0.0, 0.045),
-    (0.43, 0.0, 0.11),
-    (0.28, 0.0, 0.22),
-    (0.12, 0.0, 0.30),
+    (0.64, 0.0, 0.045),
+    (0.58, 0.0, 0.11),
+    (0.28, 0.0, 0.28),
+    (0.12, 0.0, 0.40),
 )
 FRONT_CAMERA_MOUNT = CameraMount(x_m=0.31, y_m=0.0, yaw_rad=0.0) if VISION_ENABLED else None
 

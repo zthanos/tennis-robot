@@ -17,7 +17,7 @@ lip_h = 12;
 
 intake_roller_d = 80;
 intake_roller_w = 280;
-intake_roller_center_x = 210;
+intake_roller_center_x = 290;
 intake_roller_center_z = 100;
 roller_gap_to_back_plate = 62;
 
