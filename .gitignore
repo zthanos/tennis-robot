@@ -6,3 +6,4 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 runtime/
+controllers/ball_detector/runtime.ini

@@ -29,7 +29,31 @@ pyproject.toml              # Python deps managed with uv
 
 ## Quick Start
 
-Install Webots on the host machine, then open:
+Install Webots on the host machine, then start local Webots and the remote-control console with:
+
+```powershell
+.\scripts\start_local_webots_control.ps1
+```
+
+Then press Play in Webots and open:
+
+```text
+http://127.0.0.1:8081
+```
+
+The script starts Webots with `USE_RGB_VISION=true` and points both Webots and the control panel at the same local `runtime/*.json` files. If Webots is installed somewhere unusual, pass the executable path:
+
+```powershell
+.\scripts\start_local_webots_control.ps1 -WebotsPath "C:\Path\to\webots.exe"
+```
+
+If Webots was already open, close it before running the script so it picks up the project Python/OpenCV environment. To force that from the script:
+
+```powershell
+.\scripts\start_local_webots_control.ps1 -RestartWebots
+```
+
+You can still open the world manually:
 
 ```text
 worlds/tennis_court.wbt
@@ -52,7 +76,7 @@ The current world includes **Concept A: Funnel + Wide Intake Roller** as the fro
 - a rubber-like wide intake roller driven by `lift_wheel_motor` (historical device name);
 - a transparent visual hopper raised for throw-mode gravity feed;
 - a simulated intake zone that removes a tennis ball once the collector state machine captures it.
-- an aligned `front_depth` RangeFinder that mimics the OAK-D depth contract for distance estimates.
+- a top-mounted `front_camera` for tennis-ball detection and a `front_lidar` for range/obstacle sensing.
 
 The Webots court is modeled after the reference clay court photos:
 
@@ -67,7 +91,7 @@ The controller behavior is:
 idle -> scan -> align -> approach -> capture -> collected
 ```
 
-The Webots camera display overlays the current collector state and collected-ball count. The controller starts in `idle` and waits for a command from the Python control panel before it begins collecting. It prefers depth-based ball distance when `front_depth` returns valid range pixels, then falls back to monocular ball-size distance.
+The Webots camera display overlays the current collector state and collected-ball count. The controller starts in `idle` and waits for a command from the Python control panel before it begins collecting. Ball distance is estimated from the top camera image, while `front_lidar` provides the forward range used by survey/navigation telemetry.
 
 ## Remote Control Console
 
@@ -153,6 +177,25 @@ uv run python scripts/survey_behavior_smoke.py
 ## Webots In Docker
 
 The `webots` compose service runs Webots in a virtual X display and exposes it through noVNC.
+
+To start Webots with RGB vision and LiDAR enabled, and launch the remote-control console at the same time:
+
+```powershell
+.\scripts\start_webots_control.ps1
+```
+
+Then open:
+
+```text
+http://localhost:6080/vnc.html
+http://127.0.0.1:8081
+```
+
+Use `-Build` the first time you want to rebuild the Docker image:
+
+```powershell
+.\scripts\start_webots_control.ps1 -Build
+```
 
 ```powershell
 docker compose up webots

@@ -21,7 +21,7 @@ from collector import (
     ConceptAConfig,
 )
 from control_bus import RobotCommandStore, RobotSensorStore, RobotStatusStore
-from controller import Camera, Display, Motor, RangeFinder, Supervisor
+from controller import Camera, Display, Lidar, Motor, Supervisor
 from survey import CourtSurveyBehavior, SurveyState
 from telemetry import setup_telemetry
 
@@ -55,7 +55,7 @@ RESET_COMMAND_ON_START = os.getenv("ROBOT_RESET_COMMAND_ON_START", "true").strip
 
 try:
     if not RGB_VISION_REQUESTED:
-        raise ImportError("RGB/depth vision disabled; set USE_RGB_VISION=true to enable it")
+        raise ImportError("RGB vision disabled; set USE_RGB_VISION=true to enable it")
 
     import cv2
     import numpy as np
@@ -66,7 +66,6 @@ try:
         RobotPose2D,
         detect_largest_ball,
         estimate_ball_observation,
-        estimate_depth_ball_observation,
         observation_to_world,
     )
 
@@ -103,7 +102,7 @@ COLLECTION_PATH_LOCAL = (
     (0.28, 0.0, 0.28),
     (0.12, 0.0, 0.40),
 )
-FRONT_CAMERA_MOUNT = CameraMount(x_m=0.31, y_m=0.0, yaw_rad=0.0) if VISION_ENABLED else None
+FRONT_CAMERA_MOUNT = CameraMount(x_m=0.42, y_m=0.0, yaw_rad=0.0) if VISION_ENABLED else None
 
 
 def _bgra_bmp_data_url(bgra: bytes, width: int, height: int) -> str:
@@ -294,8 +293,7 @@ class BallDetectorController:
     def __init__(self) -> None:
         self.robot = Supervisor()
         self.camera = self._device("front_camera", Camera)
-        self.depth_camera = self._optional_device("front_depth", RangeFinder)
-        self.collector_camera = self._optional_device("collector_camera", Camera)
+        self.lidar = self._optional_device("front_lidar", Lidar)
         self.display = self._device("camera_display", Display)
         self.left_motor = self._device("left_wheel_motor", Motor)
         self.right_motor = self._device("right_wheel_motor", Motor)
@@ -324,17 +322,15 @@ class BallDetectorController:
         self.collection_complete_reported = False
 
         self.camera.enable(TIME_STEP_MS)
-        if self.depth_camera is not None:
-            self.depth_camera.enable(TIME_STEP_MS)
-        if self.collector_camera is not None:
-            self.collector_camera.enable(TIME_STEP_MS)
+        if self.lidar is not None:
+            self.lidar.enable(TIME_STEP_MS)
         self.left_motor.setPosition(math.inf)
         self.right_motor.setPosition(math.inf)
         if self.lift_motor is not None:
             self.lift_motor.setPosition(math.inf)
         self.set_speed(0.0, 0.0)
         if VISION_ENABLED:
-            print("ball_detector controller started with RGB/depth vision")
+            print("ball_detector controller started with RGB vision and LiDAR")
         else:
             print(f"ball_detector controller started in supervised emulator mode: {VISION_IMPORT_ERROR}")
         if self.route_visualizer.enabled:
@@ -375,18 +371,17 @@ class BallDetectorController:
             with self.telemetry.start_span("simulation.step"):
                 self._update_collection_animation(TIME_STEP_MS / 1000)
                 image = self._camera_frame()
-                depth_frame = self._depth_frame()
                 self.telemetry.add_frame()
                 detection = self._detect_largest_ball(image)
                 if VISION_ENABLED:
-                    observation = self._observation_from_detection(detection, depth_frame)
+                    observation = self._observation_from_detection(detection)
                 else:
                     observation = self._supervised_ball_observation()
                 control_command = self.command_store.read()
                 inventory = self._ball_inventory()
                 effective_mode = self._effective_control_mode(control_command.mode, inventory)
                 if effective_mode == "survey":
-                    command = self._survey_command_for_mode(effective_mode, depth_frame)
+                    command = self._survey_command_for_mode(effective_mode)
                 else:
                     command = self._collector_command_for_mode(effective_mode, observation)
                 self.collection_confirmed = False
@@ -396,12 +391,12 @@ class BallDetectorController:
                 self.collection_confirmed = self._simulate_collection(command)
                 if self.collection_confirmed:
                     self.route_visualizer.refresh()
-                self._write_status(control_command.mode, command, observation, depth_frame, inventory)
-                self._write_sensor_snapshots(depth_frame)
+                self._write_status(control_command.mode, command, observation, detection, inventory)
+                self._write_sensor_snapshots()
                 self.last_command = command
                 self.loop_count += 1
                 if self.loop_count % 60 == 0:
-                    self._print_status(command, observation, depth_frame)
+                    self._print_status(command, observation)
             duration_ms = (time.perf_counter() - loop_start) * 1000
             self.telemetry.record_loop_duration(duration_ms)
 
@@ -440,7 +435,7 @@ class BallDetectorController:
             collector=CollectorCommand(0.0, False),
         )
 
-    def _survey_command_for_mode(self, mode: str, depth_frame: np.ndarray | None) -> ConceptACommand:
+    def _survey_command_for_mode(self, mode: str) -> ConceptACommand:
         if mode != self.control_mode:
             self.behavior.reset()
             self.survey_behavior.reset()
@@ -452,7 +447,7 @@ class BallDetectorController:
             x_m,
             y_m,
             self._robot_yaw_rad(),
-            self._front_range_m(depth_frame),
+            self._front_range_m(),
             TIME_STEP_MS / 1000,
         )
         if survey_command.state == SurveyState.DONE:
@@ -476,13 +471,6 @@ class BallDetectorController:
         frame = np.frombuffer(raw, np.uint8).reshape((height, width, 4))
         return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
 
-    def _depth_frame(self) -> np.ndarray | None:
-        if not VISION_ENABLED or self.depth_camera is None:
-            return None
-        width = self.depth_camera.getWidth()
-        height = self.depth_camera.getHeight()
-        return np.array(self.depth_camera.getRangeImage(), dtype=np.float32).reshape((height, width))
-
     def _detect_largest_ball(self, frame: np.ndarray) -> BallDetection | None:
         if not VISION_ENABLED or frame is None:
             return None
@@ -491,12 +479,11 @@ class BallDetectorController:
     def _observation_from_detection(
         self,
         detection: BallDetection | None,
-        depth_frame: np.ndarray | None,
     ) -> BallObservationInput:
         if detection is None:
             return BallObservationInput(visible=False)
 
-        observation = self._estimate_observation(detection, depth_frame)
+        observation = self._estimate_observation(detection)
         world_observation = observation_to_world(
             observation,
             RobotPose2D(*self._robot_pose_2d()),
@@ -522,19 +509,7 @@ class BallDetectorController:
     def _estimate_observation(
         self,
         detection: BallDetection,
-        depth_frame: np.ndarray | None,
     ) -> BallObservation:
-        if depth_frame is not None:
-            depth_observation = estimate_depth_ball_observation(
-                detection,
-                depth_frame,
-                self.camera.getWidth(),
-                self.camera.getHeight(),
-                self.camera.getFov(),
-            )
-            if depth_observation is not None:
-                return depth_observation
-
         return estimate_ball_observation(
             detection,
             self.camera.getWidth(),
@@ -784,15 +759,8 @@ class BallDetectorController:
         self.set_base_command(command.base.linear_speed_m_s, command.base.angular_speed_rad_s)
         self.set_collector_command(command.collector.lift_wheel_speed)
 
-    def _front_range_m(self, depth_frame: np.ndarray | None) -> float | None:
-        if depth_frame is None:
-            return None
-        height, width = depth_frame.shape
-        crop = depth_frame[height // 2 - 8 : height // 2 + 8, width // 2 - 8 : width // 2 + 8]
-        valid = crop[np.isfinite(crop) & (crop > 0)]
-        if valid.size == 0:
-            return None
-        return float(np.median(valid))
+    def _front_range_m(self) -> float | None:
+        return self._lidar_front_range_m()
 
     def _robot_yaw_rad(self) -> float:
         orientation = self.robot_node.getOrientation()
@@ -802,7 +770,7 @@ class BallDetectorController:
         x_m, y_m, _z_m = self.robot_node.getPosition()
         return (x_m, y_m, self._robot_yaw_rad())
 
-    def _write_sensor_snapshots(self, depth_frame: np.ndarray | None) -> None:
+    def _write_sensor_snapshots(self) -> None:
         now = time.time()
         if now - self.last_sensor_write_s < 1.0:
             return
@@ -810,8 +778,7 @@ class BallDetectorController:
         self.sensor_store.write(
             {
                 "front_camera": self._camera_snapshot(self.camera),
-                "collector_camera": self._camera_snapshot(self.collector_camera),
-                "front_depth": self._depth_snapshot(depth_frame),
+                "front_lidar": self._lidar_snapshot(),
             }
         )
 
@@ -830,33 +797,56 @@ class BallDetectorController:
             "data_url": _bgra_bmp_data_url(bytes(raw), width, height),
         }
 
-    def _depth_snapshot(self, depth_frame: np.ndarray | None) -> dict[str, object] | None:
-        if self.depth_camera is None:
+    def _lidar_ranges(self) -> list[float] | None:
+        if self.lidar is None:
             return None
-        width = self.depth_camera.getWidth()
-        height = self.depth_camera.getHeight()
-        values = (
-            depth_frame.reshape(-1).tolist()
-            if depth_frame is not None
-            else list(self.depth_camera.getRangeImage())
-        )
-        max_range = float(self.depth_camera.getMaxRange())
-        min_range = float(self.depth_camera.getMinRange())
+        return [float(value) for value in self.lidar.getRangeImage()]
+
+    def _lidar_front_range_m(self) -> float | None:
+        ranges = self._lidar_ranges()
+        if not ranges:
+            return None
+        center = len(ranges) // 2
+        half_width = max(2, len(ranges) // 72)
+        window = ranges[max(0, center - half_width) : min(len(ranges), center + half_width + 1)]
+        valid = [value for value in window if math.isfinite(value) and value > 0]
+        if not valid:
+            return None
+        valid.sort()
+        return valid[len(valid) // 2]
+
+    def _lidar_snapshot(self) -> dict[str, object] | None:
+        if self.lidar is None:
+            return None
+        ranges = self._lidar_ranges()
+        if not ranges:
+            return None
+        width = len(ranges)
+        height = 64
+        max_range = float(self.lidar.getMaxRange())
+        min_range = float(self.lidar.getMinRange())
         span = max(0.001, max_range - min_range)
         pixels = bytearray()
-        for value in values:
-            if not math.isfinite(value) or value <= 0:
-                shade = 0
+        normalized_ranges = []
+        for value in ranges:
+            if math.isfinite(value) and value > 0:
+                normalized_ranges.append(max(0.0, min(1.0, (value - min_range) / span)))
             else:
-                normalized = 1.0 - max(0.0, min(1.0, (float(value) - min_range) / span))
-                shade = int(normalized * 255)
-            pixels.extend((shade, shade, shade, 255))
+                normalized_ranges.append(1.0)
+        for y in range(height):
+            for normalized in normalized_ranges:
+                bar_height = max(1, int((1.0 - normalized) * (height - 1)))
+                if y >= height - bar_height:
+                    pixels.extend((80, 220, 120, 255))
+                else:
+                    pixels.extend((18, 24, 28, 255))
         return {
             "width": width,
             "height": height,
-            "format": "depth-bmp",
+            "format": "lidar-bmp",
             "min_range_m": min_range,
             "max_range_m": max_range,
+            "front_range_m": self._lidar_front_range_m(),
             "data_url": _bgra_bmp_data_url(bytes(pixels), width, height),
         }
 
@@ -865,7 +855,7 @@ class BallDetectorController:
         requested_mode: str,
         command: ConceptACommand,
         observation: BallObservationInput,
-        depth_frame: np.ndarray | None,
+        detection: BallDetection | None,
         inventory: dict[str, float | int | None],
     ) -> None:
         now = time.time()
@@ -875,7 +865,7 @@ class BallDetectorController:
 
         x_m, y_m, z_m = self.robot_node.getPosition()
         target = self.survey_behavior.current_target()
-        front_range_m = self._front_range_m(depth_frame)
+        front_range_m = self._front_range_m()
         self.status_store.write(
             {
                 "requested_mode": requested_mode,
@@ -910,6 +900,17 @@ class BallDetectorController:
                     "world_x_m": observation.world_x_m,
                     "world_y_m": observation.world_y_m,
                 },
+                "detection": None
+                if detection is None
+                else {
+                    "x": detection.x,
+                    "y": detection.y,
+                    "width": detection.width,
+                    "height": detection.height,
+                    "area_px": detection.area_px,
+                    "center_x": detection.center_x,
+                    "center_y": detection.center_y,
+                },
                 "command": {
                     "linear_speed_m_s": command.base.linear_speed_m_s,
                     "angular_speed_rad_s": command.base.angular_speed_rad_s,
@@ -932,7 +933,6 @@ class BallDetectorController:
         self,
         command: ConceptACommand,
         observation: BallObservationInput,
-        depth_frame: np.ndarray | None,
     ) -> None:
         status = (
             f"mode={self.control_mode} "
@@ -948,7 +948,7 @@ class BallDetectorController:
             x_m, y_m, _z_m = self.robot_node.getPosition()
             target = self.survey_behavior.current_target()
             target_text = "none" if target is None else f"({target[0]:.2f},{target[1]:.2f})"
-            front_range = self._front_range_m(depth_frame)
+            front_range = self._front_range_m()
             front_range_text = "none" if front_range is None else f"{front_range:.2f}m"
             status += (
                 f" survey_state={self.survey_behavior.state.value} "

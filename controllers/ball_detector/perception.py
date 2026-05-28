@@ -11,10 +11,14 @@ import numpy as np
 
 TENNIS_BALL_DIAMETER_M = 0.067
 MIN_BALL_AREA_PX = 20
+MIN_BALL_ASPECT_RATIO = 0.55
+MAX_BALL_ASPECT_RATIO = 1.8
 
-# Tennis balls vary from yellow-green to green depending on lighting.
-HSV_LOWER = np.array([25, 80, 80], dtype=np.uint8)
-HSV_UPPER = np.array([85, 255, 255], dtype=np.uint8)
+# Tennis balls vary from bright yellow-green to shadowed/desaturated green in Webots.
+HSV_RANGES = (
+    (np.array([25, 80, 80], dtype=np.uint8), np.array([85, 255, 255], dtype=np.uint8)),
+    (np.array([25, 35, 45], dtype=np.uint8), np.array([95, 180, 170], dtype=np.uint8)),
+)
 
 
 @dataclass(frozen=True)
@@ -90,16 +94,22 @@ class BallWorldObservation:
 
 def detect_largest_ball(frame: np.ndarray) -> BallDetection | None:
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, HSV_LOWER, HSV_UPPER)
+    mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+    for lower, upper in HSV_RANGES:
+        mask = cv2.bitwise_or(mask, cv2.inRange(hsv, lower, upper))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    candidates = [
-        BallDetection(*cv2.boundingRect(contour))
-        for contour in contours
-        if cv2.contourArea(contour) > MIN_BALL_AREA_PX
-    ]
+    candidates: list[BallDetection] = []
+    for contour in contours:
+        if cv2.contourArea(contour) <= MIN_BALL_AREA_PX:
+            continue
+        x, y, width, height = cv2.boundingRect(contour)
+        aspect_ratio = width / max(1, height)
+        if not MIN_BALL_ASPECT_RATIO <= aspect_ratio <= MAX_BALL_ASPECT_RATIO:
+            continue
+        candidates.append(BallDetection(x, y, width, height))
     if not candidates:
         return None
     return max(candidates, key=lambda detection: detection.area_px)
@@ -120,43 +130,6 @@ def estimate_ball_observation(
         bearing_rad=bearing_rad,
         distance_m=distance_m,
         distance_source="monocular",
-    )
-
-
-def estimate_depth_ball_observation(
-    detection: BallDetection,
-    depth_frame_m: np.ndarray,
-    rgb_frame_width_px: int,
-    rgb_frame_height_px: int,
-    camera_fov_rad: float,
-) -> BallObservation | None:
-    """Estimate ball distance from a depth/range frame aligned to the RGB camera."""
-
-    if depth_frame_m.ndim != 2:
-        raise ValueError("depth_frame_m must be a 2D array of meter distances")
-
-    depth_height, depth_width = depth_frame_m.shape
-    scale_x = depth_width / rgb_frame_width_px
-    scale_y = depth_height / rgb_frame_height_px
-    x0 = max(0, int(detection.x * scale_x))
-    x1 = min(depth_width, int((detection.x + detection.width) * scale_x))
-    y0 = max(0, int(detection.y * scale_y))
-    y1 = min(depth_height, int((detection.y + detection.height) * scale_y))
-    if x0 >= x1 or y0 >= y1:
-        return None
-
-    crop = depth_frame_m[y0:y1, x0:x1]
-    valid = crop[np.isfinite(crop) & (crop > 0)]
-    if valid.size == 0:
-        return None
-
-    normalized_x = (detection.center_x - rgb_frame_width_px / 2) / (rgb_frame_width_px / 2)
-    bearing_rad = math.atan(normalized_x * math.tan(camera_fov_rad / 2))
-    return BallObservation(
-        detection=detection,
-        bearing_rad=bearing_rad,
-        distance_m=float(np.median(valid)),
-        distance_source="depth",
     )
 
 

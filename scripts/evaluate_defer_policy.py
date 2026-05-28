@@ -25,6 +25,28 @@ from route_benchmark import (
 )
 
 
+STRATEGY_PRESETS = {
+    "fast": {
+        "defer_risk_threshold": 0.10,
+        "miss_penalty": 12.0,
+        "edge_pass_miss_multiplier": 0.55,
+        "skip_risky": True,
+    },
+    "balanced": {
+        "defer_risk_threshold": 0.18,
+        "miss_penalty": 8.0,
+        "edge_pass_miss_multiplier": 0.75,
+        "skip_risky": False,
+    },
+    "thorough": {
+        "defer_risk_threshold": 1.0,
+        "miss_penalty": 0.0,
+        "edge_pass_miss_multiplier": 1.0,
+        "skip_risky": False,
+    },
+}
+
+
 @dataclass
 class DeferComparisonRow:
     seed: int
@@ -231,6 +253,14 @@ def write_csv(path: Path, rows: list[DeferComparisonRow]) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate defer/edge-pass policy against baseline planner.")
+    parser.add_argument(
+        "--strategy-preset",
+        choices=tuple(STRATEGY_PRESETS),
+        help=(
+            "Use a named collection strategy: fast skips risky edge balls, balanced defers obstacle-risk balls, "
+            "thorough keeps all collectable balls in the normal pass."
+        ),
+    )
     parser.add_argument("--runs", type=int, default=100)
     parser.add_argument("--balls", type=int, default=40)
     parser.add_argument("--seed", type=int, default=10000)
@@ -252,7 +282,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lidar-costmap", action="store_true")
     parser.add_argument("--json-out", type=Path, default=Path("runtime/defer-policy-eval.json"))
     parser.add_argument("--csv-out", type=Path, default=Path("runtime/defer-policy-eval.csv"))
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.strategy_preset:
+        preset = STRATEGY_PRESETS[args.strategy_preset]
+        args.defer_risk_threshold = preset["defer_risk_threshold"]
+        args.miss_penalty = preset["miss_penalty"]
+        args.edge_pass_miss_multiplier = preset["edge_pass_miss_multiplier"]
+        args.skip_risky = preset["skip_risky"]
+    return args
 
 
 def main() -> None:
@@ -280,14 +317,15 @@ def main() -> None:
         )
         _planner_legs, planner = plan_route(
             planner_scenario,
-            args.area_mode,
-            args.travel_speed,
-            args.pickup_time,
-            args.scan_time,
-            args.rescan_every,
-            args.safety_buffer,
-            args.collection_margin,
-            args.candidate_window,
+            area_mode=args.area_mode,
+            travel_speed_m_s=args.travel_speed,
+            pickup_time_s=args.pickup_time,
+            scan_time_s=args.scan_time,
+            rescan_every=args.rescan_every,
+            safety_buffer_m=args.safety_buffer,
+            collection_margin_m=args.collection_margin,
+            candidate_window=args.candidate_window,
+            lidar_costmap=args.lidar_costmap,
         )
         _defer_legs, defer, deferred, skipped = plan_defer_policy(
             defer_scenario,

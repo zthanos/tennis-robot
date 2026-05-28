@@ -69,7 +69,8 @@ base front plate
   -> fixed or adjustable back plate
   -> wide intake roller + motor bracket
   -> small transparent hopper/bin
-  -> optional ball-present sensor at throat or hopper entry
+  -> required IR break-beam ball-present sensor at throat or hopper entry
+  -> recommended second IR break-beam near the roller for jam/partial-capture detection
 ```
 
 Keep these four adjustments reachable without removing the collector from the robot:
@@ -102,7 +103,7 @@ The Collect MVP should do one job well:
 4. slow down near the ball
 5. guide the ball into a front funnel
 6. pinch/pull the ball with the wide roller into a small hopper/bin
-7. confirm collection by sensor, camera state, or simple timeout
+7. confirm collection with an IR break-beam at the throat or hopper entry
 
 ### Use The Base Capabilities
 
@@ -170,7 +171,8 @@ The first prototype should have adjustable slots for funnel height, roller gap, 
 | Required | Bearings, long shaft, hubs/couplers | 1 set | US $20-$55 | US $20-$55 | Support both roller ends and make the roller easy to remove. |
 | Required | Brackets, fasteners, inserts, standoffs | 1 set | US $20-$60 | US $20-$60 | Expect iteration here. |
 | Required | Small hopper/bin panels | 1 | US $10-$35 | US $10-$35 | Transparent plastic is useful for debugging. |
-| Recommended | Ball-present sensor at hopper throat | 1 | US $3-$15 | US $3-$15 | IR break beam, microswitch, or ToF sensor. |
+| Required | IR break-beam ball-present sensor at hopper throat | 1 | US $3-$15 | US $3-$15 | Primary `collection_confirmed` signal for the physical MVP. |
+| Recommended | Second IR break-beam near roller/throat entry | 1 | US $3-$15 | US $3-$15 | Helps detect partial captures and jams before the ball reaches the hopper. |
 | Recommended | Emergency stop switch | 1 | US $10-$30 | US $10-$30 | Required before real moving tests. |
 | Optional | 100 mm smooth tube/duct section for later feed path tests | 1 | US $8-$25 | US $8-$25 | Good clearance for tennis balls; avoid tight bends. |
 
@@ -202,6 +204,7 @@ The Collect MVP is successful when it can:
 | Add near-ball stop distance | Use `distance_m` threshold before entering capture speed. |
 | Add collector command abstraction | Keep intake roller control separate from drive control. |
 | Add simulated collection event | In Webots, mark a ball as collected when it reaches the intake zone. |
+| Add IR break-beam collection confirmation | Physical MVP should feed a throat/hopper IR break-beam into `collection_confirmed`; simulation should keep an equivalent signal. |
 | Add telemetry fields | Collector state, collection attempts, successful captures, jam timeout. |
 
 ## Phase 2: Throw
@@ -252,7 +255,7 @@ Estimated Phase 2 launcher module total:
 2. Print or cut the front funnel with adjustable throat and lip.
 3. Bench-test roller gap, speed, shaft support, and ball compression by hand-feeding balls.
 4. Mount the collector to the base and test slow approach.
-5. Add ball-present sensing or collection confirmation.
+5. Add IR break-beam ball-present sensing for collection confirmation.
 6. Tune approach speed and capture speed using telemetry.
 7. Freeze the collector interface: hopper exit height, ball spacing, and feed direction.
 8. Build Phase 2 launcher as a separate bench module.
@@ -280,7 +283,7 @@ Buy now for Collect MVP:
 - one motor driver
 - shaft/bearings/fasteners
 - emergency stop switch
-- simple ball-present sensor
+- IR break-beam ball-present sensor
 
 Do not buy yet:
 

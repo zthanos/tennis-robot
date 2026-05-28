@@ -293,15 +293,15 @@ def main() -> None:
         )
         _planner_legs, planner_metrics = plan_route(
             planner_scenario,
-            args.area_mode,
-            args.travel_speed,
-            args.pickup_time,
-            args.scan_time,
-            args.rescan_every,
-            args.safety_buffer,
-            args.collection_margin,
-            args.candidate_window,
-            args.lidar_costmap,
+            area_mode=args.area_mode,
+            travel_speed_m_s=args.travel_speed,
+            pickup_time_s=args.pickup_time,
+            scan_time_s=args.scan_time,
+            rescan_every=args.rescan_every,
+            safety_buffer_m=args.safety_buffer,
+            collection_margin_m=args.collection_margin,
+            candidate_window=args.candidate_window,
+            lidar_costmap=args.lidar_costmap,
         )
         _model_legs, model_metrics, model_choice_count = plan_model_policy(
             model,

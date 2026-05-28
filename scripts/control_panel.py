@@ -450,8 +450,7 @@ HTML = """<!doctype html>
           <h3>Sensor Views</h3>
           <div class="sensor-grid">
             <div class="sensor-view"><h4>Front Camera</h4><div id="frontCameraView" class="sensor-empty">waiting for image</div></div>
-            <div class="sensor-view"><h4>Collector Camera</h4><div id="collectorCameraView" class="sensor-empty">waiting for image</div></div>
-            <div class="sensor-view"><h4>Front Depth</h4><div id="frontDepthView" class="sensor-empty">waiting for range image</div></div>
+            <div class="sensor-view"><h4>Front LiDAR</h4><div id="frontLidarView" class="sensor-empty">waiting for scan</div></div>
           </div>
         </div>
       </section>
@@ -634,8 +633,7 @@ HTML = """<!doctype html>
     }
     function renderSensors() {
       renderSensor("frontCameraView", sensors.front_camera);
-      renderSensor("collectorCameraView", sensors.collector_camera);
-      renderSensor("frontDepthView", sensors.front_depth);
+      renderSensor("frontLidarView", sensors.front_lidar);
     }
     function renderCourtMap() {
       const canvas = document.getElementById("courtMap");
