@@ -69,9 +69,9 @@ idle -> scan -> align -> approach -> capture -> collected
 
 The Webots camera display overlays the current collector state and collected-ball count. The controller starts in `idle` and waits for a command from the Python control panel before it begins collecting. It prefers depth-based ball distance when `front_depth` returns valid range pixels, then falls back to monocular ball-size distance.
 
-## Python Control Panel
+## Remote Control Console
 
-Run the web control panel:
+Run the web remote-control console:
 
 ```powershell
 uv run python scripts/control_panel.py
@@ -83,7 +83,24 @@ Then open:
 http://127.0.0.1:8081
 ```
 
-Use **Start collection** to write `mode=collect` to `runtime/robot_command.json`; the Webots controller polls that file and starts the collector state machine. Use **Stop** to return the robot to `idle`. You can override the command file for both processes with `ROBOT_COMMAND_FILE` if the UI and Webots are launched from different working directories.
+The console has navigation for:
+
+- **Dashboard**: requested mode, actual controller state, ball detection, collected count, and latest command stream.
+- **Control**: send `idle`, `collect`, and `survey` commands, plus a live court map with detected balls, same-side/across-net status, planned route, and pickup order.
+- **Telemetry**: live robot pose, collector output, observation fields, survey target/range, and raw status JSON.
+- **Command Stats**: per-mode command counts and last command metadata.
+- **History**: recent command audit trail.
+
+Use **Start Collection** to write `mode=collect` to `runtime/robot_command.json`; the Webots controller polls that file and starts the collector state machine. Use **Stop** to return the robot to `idle`. The controller also writes live diagnostics to `runtime/robot_status.json`, while command history is appended to `runtime/robot_command_history.jsonl`. You can override paths for both processes with `ROBOT_COMMAND_FILE`, `ROBOT_STATUS_FILE`, and `ROBOT_COMMAND_HISTORY_FILE` if the UI and Webots are launched from different working directories.
+
+To visualize the scan-first collection plan directly in Webots, start the controller with:
+
+```powershell
+$env:ROUTE_VISUALIZATION="true"
+$env:ROUTE_VISUALIZATION_PRESET="fast"  # or "thorough"
+```
+
+When collection starts, the supervisor draws a route line on the court and ball markers for the current plan. `fast` hides risky balls from the plan; `thorough` shows the full reachable route for the robot's current side of the court. The overlay refreshes after simulated collection events and clears when the robot leaves collect mode.
 
 Use **Survey court** to drive a boustrophedon measurement pattern across the court. The controller visits rows across the court, samples the front depth reading at each waypoint, and writes measurements to:
 
@@ -299,7 +316,26 @@ uv run python scripts/evaluate_defer_policy.py --runs 100 --balls 40 --seed 1000
 
 Add `--lidar-costmap` to evaluate the same defer/edge-pass policy using LiDAR-aware clearance costs.
 
-For a faster mode that deliberately skips risky balls:
+The route strategy evaluator also has named presets:
+
+- `thorough`: collect every reachable ball with the baseline LiDAR-aware route planner.
+- `balanced`: defer obstacle-risk balls to a second pass, keeping collection coverage high at the cost of more time.
+- `fast`: skip risky edge/obstacle balls for early physical tests where speed and low miss risk matter more than full collection.
+
+```powershell
+uv run python scripts/evaluate_defer_policy.py --runs 100 --balls 40 --lidar-costmap --strategy-preset fast --json-out runtime/strategy-fast-lidar-eval.json --csv-out runtime/strategy-fast-lidar-eval.csv
+uv run python scripts/evaluate_defer_policy.py --runs 100 --balls 40 --lidar-costmap --strategy-preset balanced --json-out runtime/strategy-balanced-lidar-eval.json --csv-out runtime/strategy-balanced-lidar-eval.csv
+uv run python scripts/evaluate_defer_policy.py --runs 100 --balls 40 --lidar-costmap --strategy-preset thorough --json-out runtime/strategy-thorough-lidar-eval.json --csv-out runtime/strategy-thorough-lidar-eval.csv
+```
+
+Evaluate the scan-first architecture: scan the court, build a batch plan, execute up to `--replan-every` pickups, and replan from the current position when a periodic or blocked-path trigger fires.
+
+```powershell
+uv run python scripts/evaluate_scan_replan_strategy.py --runs 100 --balls 40 --lidar-costmap --strategy-preset thorough --json-out runtime/scan-replan-thorough-lidar-eval.json --csv-out runtime/scan-replan-thorough-lidar-eval.csv
+uv run python scripts/evaluate_scan_replan_strategy.py --runs 100 --balls 40 --lidar-costmap --strategy-preset fast --json-out runtime/scan-replan-fast-lidar-eval.json --csv-out runtime/scan-replan-fast-lidar-eval.csv
+```
+
+For a faster mode without using a preset, deliberately skip risky balls:
 
 ```powershell
 uv run python scripts/evaluate_defer_policy.py --runs 100 --balls 40 --seed 10000 --skip-risky --json-out runtime/defer-policy-skip-risky-eval.json --csv-out runtime/defer-policy-skip-risky-eval.csv

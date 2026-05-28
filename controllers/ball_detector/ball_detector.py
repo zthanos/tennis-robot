@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import math
 import os
+import base64
+import struct
+import sys
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from collector import (
@@ -16,12 +20,38 @@ from collector import (
     ConceptACommand,
     ConceptAConfig,
 )
-from control_bus import RobotCommandStore
+from control_bus import RobotCommandStore, RobotSensorStore, RobotStatusStore
 from controller import Camera, Display, Motor, RangeFinder, Supervisor
 from survey import CourtSurveyBehavior, SurveyState
 from telemetry import setup_telemetry
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SCRIPTS_DIR = PROJECT_ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+ROUTE_VISUALIZATION_ENABLED = os.getenv("ROUTE_VISUALIZATION", "").strip().lower() in {"1", "true", "yes", "on"}
+ROUTE_VISUALIZATION_PRESET = os.getenv("ROUTE_VISUALIZATION_PRESET", "thorough").strip().lower()
+
+try:
+    from route_benchmark import (
+        NET_CLEARANCE_X_M as ROUTE_NET_CLEARANCE_X_M,
+        Ball as RouteBall,
+        Obstacle as RouteObstacle,
+        Point as RoutePoint,
+        Scenario as RouteScenario,
+        ball_risk as route_ball_risk,
+        half_bounds as route_half_bounds,
+        plan_route as route_plan_route,
+    )
+
+    ROUTE_PLANNER_AVAILABLE = True
+except ImportError as exc:
+    ROUTE_PLANNER_AVAILABLE = False
+    ROUTE_PLANNER_IMPORT_ERROR = exc
+
 RGB_VISION_REQUESTED = os.getenv("USE_RGB_VISION", "").strip().lower() in {"1", "true", "yes", "on"}
+RESET_COMMAND_ON_START = os.getenv("ROBOT_RESET_COMMAND_ON_START", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 try:
     if not RGB_VISION_REQUESTED:
@@ -76,6 +106,179 @@ COLLECTION_PATH_LOCAL = (
 FRONT_CAMERA_MOUNT = CameraMount(x_m=0.31, y_m=0.0, yaw_rad=0.0) if VISION_ENABLED else None
 
 
+def _bgra_bmp_data_url(bgra: bytes, width: int, height: int) -> str:
+    pixel_bytes = width * height * 4
+    if len(bgra) != pixel_bytes:
+        bgra = bgra[:pixel_bytes].ljust(pixel_bytes, b"\x00")
+    file_size = 54 + pixel_bytes
+    file_header = struct.pack("<2sIHHI", b"BM", file_size, 0, 0, 54)
+    dib_header = struct.pack(
+        "<IiiHHIIiiII",
+        40,
+        width,
+        -height,
+        1,
+        32,
+        0,
+        pixel_bytes,
+        2835,
+        2835,
+        0,
+        0,
+    )
+    return "data:image/bmp;base64," + base64.b64encode(file_header + dib_header + bgra).decode("ascii")
+
+
+class WebotsRouteVisualizer:
+    """Draw a lightweight scan-first route overlay in the Webots scene."""
+
+    def __init__(self, supervisor: Supervisor, robot_node, preset: str) -> None:
+        self.supervisor = supervisor
+        self.robot_node = robot_node
+        self.preset = preset if preset in {"fast", "thorough"} else "thorough"
+        self.enabled = ROUTE_VISUALIZATION_ENABLED and ROUTE_PLANNER_AVAILABLE
+        self._defs: list[str] = []
+        if ROUTE_VISUALIZATION_ENABLED and not ROUTE_PLANNER_AVAILABLE:
+            print(f"route visualization disabled: {ROUTE_PLANNER_IMPORT_ERROR}")
+
+    def refresh(self) -> None:
+        if not self.enabled:
+            return
+        self.clear()
+        scenario = self._scenario_from_world()
+        if scenario is None:
+            return
+        legs, _metrics = route_plan_route(
+            scenario,
+            area_mode="half",
+            travel_speed_m_s=0.85,
+            pickup_time_s=1.2,
+            scan_time_s=7.0,
+            rescan_every=5,
+            safety_buffer_m=0.55,
+            collection_margin_m=0.55,
+            candidate_window=12,
+            lidar_costmap=True,
+        )
+        if not legs:
+            return
+
+        route_points = [scenario.robot_start]
+        for leg in legs:
+            route_points.extend(leg.path[1:])
+        self._draw_route_line(route_points)
+        planned_ids = {leg.ball_id for leg in legs}
+        for order, leg in enumerate(legs, start=1):
+            ball = next((candidate for candidate in scenario.balls if candidate.id == leg.ball_id), None)
+            if ball is not None:
+                self._draw_marker(ball.x, ball.y, order, skipped=False)
+        for ball in scenario.balls:
+            if ball.id not in planned_ids:
+                self._draw_marker(ball.x, ball.y, ball.id, skipped=True)
+
+    def clear(self) -> None:
+        if not self.enabled:
+            return
+        for def_name in self._defs:
+            node = self.supervisor.getFromDef(def_name)
+            if node is not None:
+                node.remove()
+        self._defs = []
+
+    def _scenario_from_world(self):
+        robot_x, robot_y, _robot_z = self.robot_node.getPosition()
+        side = "left" if robot_x < NET_X_M else "right"
+        bounds = route_half_bounds(side)
+        balls: list[RouteBall] = []
+        for index in range(100):
+            node = self.supervisor.getFromDef(f"TENNIS_BALL_{index:02d}")
+            if node is None:
+                continue
+            x, y, _z = node.getPosition()
+            ball = RouteBall(x=x, y=y, id=index)
+            if not (bounds.min_x <= ball.x <= bounds.max_x and bounds.min_y <= ball.y <= bounds.max_y):
+                continue
+            if self.preset == "fast":
+                risk = route_ball_risk(ball, self._route_obstacles(), bounds, collection_margin_m=0.55)
+                if risk != "normal":
+                    continue
+            balls.append(ball)
+        if not balls:
+            return None
+        return RouteScenario(
+            seed=0,
+            bounds=bounds,
+            robot_start=RoutePoint(robot_x, robot_y),
+            obstacles=self._route_obstacles(),
+            balls=balls,
+        )
+
+    def _route_obstacles(self) -> list[RouteObstacle]:
+        return [
+            RouteObstacle(
+                "rect",
+                "net",
+                NET_X_M,
+                0.0,
+                width=ROUTE_NET_CLEARANCE_X_M * 2,
+                height=12.0,
+            )
+        ]
+
+    def _draw_route_line(self, points: list[RoutePoint]) -> None:
+        if len(points) < 2:
+            return
+        def_name = "ROUTE_VISUAL_LINE"
+        color = "0.1 0.85 0.25" if self.preset == "fast" else "0.1 0.45 1.0"
+        point_text = ", ".join(f"{point.x:.3f} {point.y:.3f} 0.055" for point in points)
+        coord_index = ", ".join([*(str(index) for index in range(len(points))), "-1"])
+        node_text = f"""
+DEF {def_name} Shape {{
+  appearance PBRAppearance {{
+    baseColor {color}
+    emissiveColor {color}
+    roughness 0.3
+  }}
+  geometry IndexedLineSet {{
+    coord Coordinate {{
+      point [ {point_text} ]
+    }}
+    coordIndex [ {coord_index} ]
+  }}
+}}
+"""
+        self._import_node(def_name, node_text)
+
+    def _draw_marker(self, x_m: float, y_m: float, index: int, skipped: bool) -> None:
+        def_name = f"ROUTE_VISUAL_MARKER_{index:02d}_{'SKIP' if skipped else 'PLAN'}"
+        color = "0.45 0.45 0.45" if skipped else ("0.1 0.85 0.25" if self.preset == "fast" else "0.1 0.45 1.0")
+        radius = 0.075 if skipped else 0.095
+        node_text = f"""
+DEF {def_name} Transform {{
+  translation {x_m:.3f} {y_m:.3f} 0.095
+  children [
+    Shape {{
+      appearance PBRAppearance {{
+        baseColor {color}
+        emissiveColor {color}
+        transparency 0.15
+      }}
+      geometry Sphere {{
+        radius {radius:.3f}
+      }}
+    }}
+  ]
+}}
+"""
+        self._import_node(def_name, node_text)
+
+    def _import_node(self, def_name: str, node_text: str) -> None:
+        root = self.supervisor.getRoot()
+        children = root.getField("children")
+        children.importMFNodeFromString(-1, node_text)
+        self._defs.append(def_name)
+
+
 def _env_float(name: str, default: float) -> float:
     value = os.getenv(name)
     if value is None:
@@ -102,14 +305,23 @@ class BallDetectorController:
         self.behavior = ConceptACollectorBehavior(ConceptAConfig.from_env())
         self.survey_behavior = CourtSurveyBehavior.from_env()
         self.command_store = RobotCommandStore.from_env()
+        if RESET_COMMAND_ON_START:
+            self.command_store.write("idle", source="webots-startup")
+        self.status_store = RobotStatusStore.from_env()
+        self.sensor_store = RobotSensorStore.from_env()
         self.control_mode = "idle"
         self.robot_node = self.robot.getSelf()
+        self.route_visualizer = WebotsRouteVisualizer(self.robot, self.robot_node, ROUTE_VISUALIZATION_PRESET)
         self.collection_visual_ball = self.robot.getFromDef("COLLECTOR_ANIMATION_BALL")
         self.collection_confirmed = False
         self.collection_count = 0
         self.collection_animation = None
         self.last_command: ConceptACommand | None = None
         self.loop_count = 0
+        self.started_at = time.time()
+        self.last_status_write_s = 0.0
+        self.last_sensor_write_s = 0.0
+        self.collection_complete_reported = False
 
         self.camera.enable(TIME_STEP_MS)
         if self.depth_camera is not None:
@@ -125,6 +337,8 @@ class BallDetectorController:
             print("ball_detector controller started with RGB/depth vision")
         else:
             print(f"ball_detector controller started in supervised emulator mode: {VISION_IMPORT_ERROR}")
+        if self.route_visualizer.enabled:
+            print(f"route visualization enabled: preset={self.route_visualizer.preset}")
 
     def _device(self, name: str, expected_type: type):
         device = self.robot.getDevice(name)
@@ -169,15 +383,21 @@ class BallDetectorController:
                 else:
                     observation = self._supervised_ball_observation()
                 control_command = self.command_store.read()
-                if control_command.mode == "survey":
-                    command = self._survey_command_for_mode(control_command.mode, depth_frame)
+                inventory = self._ball_inventory()
+                effective_mode = self._effective_control_mode(control_command.mode, inventory)
+                if effective_mode == "survey":
+                    command = self._survey_command_for_mode(effective_mode, depth_frame)
                 else:
-                    command = self._collector_command_for_mode(control_command.mode, observation)
+                    command = self._collector_command_for_mode(effective_mode, observation)
                 self.collection_confirmed = False
                 self._draw_debug(image, detection, command)
                 self._apply_command(command)
                 self.telemetry.add_collector_state(command.state.value)
                 self.collection_confirmed = self._simulate_collection(command)
+                if self.collection_confirmed:
+                    self.route_visualizer.refresh()
+                self._write_status(control_command.mode, command, observation, depth_frame, inventory)
+                self._write_sensor_snapshots(depth_frame)
                 self.last_command = command
                 self.loop_count += 1
                 if self.loop_count % 60 == 0:
@@ -185,12 +405,27 @@ class BallDetectorController:
             duration_ms = (time.perf_counter() - loop_start) * 1000
             self.telemetry.record_loop_duration(duration_ms)
 
+    def _effective_control_mode(self, requested_mode: str, inventory: dict[str, float | int | None]) -> str:
+        if requested_mode == "collect" and inventory["same_side_remaining"] == 0 and self.collection_animation is None:
+            if not self.collection_complete_reported:
+                print(f"collection complete for current side; total={self.collection_count}")
+                self.command_store.write("idle", source="webots-complete")
+                self.collection_complete_reported = True
+            return "idle"
+        if requested_mode == "collect" and inventory["same_side_remaining"] > 0:
+            self.collection_complete_reported = False
+        return requested_mode
+
     def _collector_command_for_mode(self, mode: str, observation: BallObservationInput) -> ConceptACommand:
         if mode != self.control_mode:
             self.behavior.reset()
             self.survey_behavior.reset()
             self.control_mode = mode
             print(f"control mode changed to {self.control_mode}")
+            if mode == "collect":
+                self.route_visualizer.refresh()
+            else:
+                self.route_visualizer.clear()
 
         if mode == "collect":
             return self.behavior.update(
@@ -349,6 +584,169 @@ class BallDetectorController:
             return False
         return (robot_x_m - NET_X_M) * (ball_x_m - NET_X_M) < 0
 
+    def _ball_inventory(self) -> dict[str, float | int | None]:
+        total_remaining = 0
+        same_side_remaining = 0
+        across_net_remaining = 0
+        visible_candidates = 0
+        nearest_same_side_distance_m: float | None = None
+        robot_world_x = self.robot_node.getPosition()[0]
+
+        for index in range(100):
+            ball = self.robot.getFromDef(f"TENNIS_BALL_{index:02d}")
+            if ball is None or self._is_collection_animation_ball(index):
+                continue
+
+            total_remaining += 1
+            ball_position = ball.getPosition()
+            if self._across_net(robot_world_x, ball_position[0]):
+                across_net_remaining += 1
+                continue
+
+            same_side_remaining += 1
+            x, y, _z = self._world_to_robot_local(ball_position)
+            distance_m = math.hypot(x, y)
+            if nearest_same_side_distance_m is None or distance_m < nearest_same_side_distance_m:
+                nearest_same_side_distance_m = distance_m
+            if x > 0 and abs(math.atan2(y, x)) <= SUPERVISED_FOV_RAD / 2 and distance_m <= SUPERVISED_MAX_RANGE_M:
+                visible_candidates += 1
+
+        return {
+            "total_remaining": total_remaining,
+            "same_side_remaining": same_side_remaining,
+            "across_net_remaining": across_net_remaining,
+            "visible_candidates": visible_candidates,
+            "nearest_same_side_distance_m": nearest_same_side_distance_m,
+        }
+
+    def _route_snapshot(self) -> dict[str, object]:
+        robot_x, robot_y, _robot_z = self.robot_node.getPosition()
+        robot_yaw = self._robot_yaw_rad()
+        same_side_balls: list[RouteBall] = []
+        ball_rows: list[dict[str, object]] = []
+
+        for index in range(100):
+            ball = self.robot.getFromDef(f"TENNIS_BALL_{index:02d}")
+            if ball is None or self._is_collection_animation_ball(index):
+                continue
+
+            x_m, y_m, _z_m = ball.getPosition()
+            across_net = self._across_net(robot_x, x_m)
+            local_x, local_y, _local_z = self._world_to_robot_local([x_m, y_m, _z_m])
+            distance_m = math.hypot(local_x, local_y)
+            bearing_rad = math.atan2(local_y, local_x)
+            visible_candidate = (
+                not across_net
+                and local_x > 0
+                and abs(bearing_rad) <= SUPERVISED_FOV_RAD / 2
+                and distance_m <= SUPERVISED_MAX_RANGE_M
+            )
+            row = {
+                "id": index,
+                "x_m": x_m,
+                "y_m": y_m,
+                "side": "across_net" if across_net else "same_side",
+                "visible_candidate": visible_candidate,
+                "planned": False,
+                "order": None,
+                "risk": None,
+            }
+            ball_rows.append(row)
+            if ROUTE_PLANNER_AVAILABLE and not across_net:
+                same_side_balls.append(RouteBall(x=x_m, y=y_m, id=index))
+
+        route_points: list[dict[str, float]] = []
+        legs_payload: list[dict[str, object]] = []
+        bounds_payload: dict[str, float] | None = None
+        if ROUTE_PLANNER_AVAILABLE and same_side_balls:
+            side = "left" if robot_x < NET_X_M else "right"
+            bounds = route_half_bounds(side)
+            bounds_payload = {
+                "min_x": bounds.min_x,
+                "max_x": bounds.max_x,
+                "min_y": bounds.min_y,
+                "max_y": bounds.max_y,
+            }
+            scenario = RouteScenario(
+                seed=0,
+                bounds=bounds,
+                robot_start=RoutePoint(robot_x, robot_y),
+                obstacles=[
+                    RouteObstacle(
+                        "rect",
+                        "net",
+                        NET_X_M,
+                        0.0,
+                        width=ROUTE_NET_CLEARANCE_X_M * 2,
+                        height=12.0,
+                    )
+                ],
+                balls=same_side_balls,
+            )
+            legs, metrics = route_plan_route(
+                scenario,
+                area_mode="half",
+                travel_speed_m_s=0.85,
+                pickup_time_s=1.2,
+                scan_time_s=7.0,
+                rescan_every=5,
+                safety_buffer_m=0.55,
+                collection_margin_m=0.55,
+                candidate_window=12,
+                lidar_costmap=True,
+            )
+            route = [scenario.robot_start]
+            planned_orders = {leg.ball_id: order for order, leg in enumerate(legs, start=1)}
+            risks = {leg.ball_id: leg.risk for leg in legs}
+            for leg in legs:
+                route.extend(leg.path[1:])
+                legs_payload.append(
+                    {
+                        "ball_id": leg.ball_id,
+                        "distance_m": leg.distance_m,
+                        "travel_s": leg.travel_s,
+                        "mode": leg.mode,
+                        "risk": leg.risk,
+                    }
+                )
+            route_points = [{"x_m": point.x, "y_m": point.y} for point in route]
+            for row in ball_rows:
+                order = planned_orders.get(int(row["id"]))
+                if order is None:
+                    continue
+                row["planned"] = True
+                row["order"] = order
+                row["risk"] = risks.get(int(row["id"]))
+        else:
+            metrics = None
+
+        return {
+            "planner_available": ROUTE_PLANNER_AVAILABLE,
+            "updated_at": time.time(),
+            "court": {
+                "min_x": -11.885,
+                "max_x": 11.885,
+                "min_y": -5.485,
+                "max_y": 5.485,
+                "net_x": NET_X_M,
+            },
+            "active_bounds": bounds_payload,
+            "robot": {"x_m": robot_x, "y_m": robot_y, "yaw_rad": robot_yaw},
+            "balls": ball_rows,
+            "route": route_points,
+            "legs": legs_payload,
+            "metrics": None
+            if metrics is None
+            else {
+                "balls_detected": metrics.balls_detected,
+                "balls_collectable": metrics.balls_collectable,
+                "balls_blocked": metrics.balls_blocked,
+                "total_distance_m": metrics.total_distance_m,
+                "total_time_s": metrics.total_time_s,
+                "planned_replans": metrics.planned_replans,
+            },
+        }
+
     def _draw_debug(
         self,
         frame: np.ndarray | None,
@@ -403,6 +801,132 @@ class BallDetectorController:
     def _robot_pose_2d(self) -> tuple[float, float, float]:
         x_m, y_m, _z_m = self.robot_node.getPosition()
         return (x_m, y_m, self._robot_yaw_rad())
+
+    def _write_sensor_snapshots(self, depth_frame: np.ndarray | None) -> None:
+        now = time.time()
+        if now - self.last_sensor_write_s < 1.0:
+            return
+        self.last_sensor_write_s = now
+        self.sensor_store.write(
+            {
+                "front_camera": self._camera_snapshot(self.camera),
+                "collector_camera": self._camera_snapshot(self.collector_camera),
+                "front_depth": self._depth_snapshot(depth_frame),
+            }
+        )
+
+    def _camera_snapshot(self, camera: Camera | None) -> dict[str, object] | None:
+        if camera is None:
+            return None
+        width = camera.getWidth()
+        height = camera.getHeight()
+        raw = camera.getImage()
+        if raw is None:
+            return None
+        return {
+            "width": width,
+            "height": height,
+            "format": "bgra-bmp",
+            "data_url": _bgra_bmp_data_url(bytes(raw), width, height),
+        }
+
+    def _depth_snapshot(self, depth_frame: np.ndarray | None) -> dict[str, object] | None:
+        if self.depth_camera is None:
+            return None
+        width = self.depth_camera.getWidth()
+        height = self.depth_camera.getHeight()
+        values = (
+            depth_frame.reshape(-1).tolist()
+            if depth_frame is not None
+            else list(self.depth_camera.getRangeImage())
+        )
+        max_range = float(self.depth_camera.getMaxRange())
+        min_range = float(self.depth_camera.getMinRange())
+        span = max(0.001, max_range - min_range)
+        pixels = bytearray()
+        for value in values:
+            if not math.isfinite(value) or value <= 0:
+                shade = 0
+            else:
+                normalized = 1.0 - max(0.0, min(1.0, (float(value) - min_range) / span))
+                shade = int(normalized * 255)
+            pixels.extend((shade, shade, shade, 255))
+        return {
+            "width": width,
+            "height": height,
+            "format": "depth-bmp",
+            "min_range_m": min_range,
+            "max_range_m": max_range,
+            "data_url": _bgra_bmp_data_url(bytes(pixels), width, height),
+        }
+
+    def _write_status(
+        self,
+        requested_mode: str,
+        command: ConceptACommand,
+        observation: BallObservationInput,
+        depth_frame: np.ndarray | None,
+        inventory: dict[str, float | int | None],
+    ) -> None:
+        now = time.time()
+        if now - self.last_status_write_s < 0.2 and not self.collection_confirmed:
+            return
+        self.last_status_write_s = now
+
+        x_m, y_m, z_m = self.robot_node.getPosition()
+        target = self.survey_behavior.current_target()
+        front_range_m = self._front_range_m(depth_frame)
+        self.status_store.write(
+            {
+                "requested_mode": requested_mode,
+                "actual_mode": self.control_mode,
+                "collector_state": command.state.value,
+                "balls_collected": self.collection_count,
+                "loop_count": self.loop_count,
+                "uptime_s": now - self.started_at,
+                "telemetry_enabled": self.telemetry.enabled,
+                "vision_enabled": VISION_ENABLED,
+                "route_visualization_enabled": self.route_visualizer.enabled,
+                "completion": {
+                    "current_side_complete": inventory["same_side_remaining"] == 0,
+                    "reported": self.collection_complete_reported,
+                },
+                "balls": inventory,
+                "map": self._route_snapshot(),
+                "robot": {
+                    "x_m": x_m,
+                    "y_m": y_m,
+                    "z_m": z_m,
+                    "yaw_rad": self._robot_yaw_rad(),
+                },
+                "observation": {
+                    "visible": observation.visible,
+                    "distance_m": None if math.isinf(observation.distance_m) else observation.distance_m,
+                    "bearing_rad": observation.bearing_rad,
+                    "bearing_deg": math.degrees(observation.bearing_rad),
+                    "confidence": observation.confidence,
+                    "robot_x_m": observation.robot_x_m,
+                    "robot_y_m": observation.robot_y_m,
+                    "world_x_m": observation.world_x_m,
+                    "world_y_m": observation.world_y_m,
+                },
+                "command": {
+                    "linear_speed_m_s": command.base.linear_speed_m_s,
+                    "angular_speed_rad_s": command.base.angular_speed_rad_s,
+                    "lift_wheel_speed": command.collector.lift_wheel_speed,
+                    "intake_enabled": command.collector.intake_enabled,
+                },
+                "survey": {
+                    "state": self.survey_behavior.state.value,
+                    "waypoint_index": self.survey_behavior.waypoint_index,
+                    "waypoint_count": len(self.survey_behavior.waypoints),
+                    "target_x_m": None if target is None else target[0],
+                    "target_y_m": None if target is None else target[1],
+                    "front_range_m": front_range_m,
+                },
+                "collection_animation_active": self.collection_animation is not None,
+            }
+        )
 
     def _print_status(
         self,
