@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import math
-import os
 import base64
+import os
 import struct
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from config_utils import _env_float
 from collector import (
     BallObservationInput,
     BaseCommand,
@@ -21,7 +23,7 @@ from collector import (
     ConceptAConfig,
 )
 from control_bus import RobotCommandStore, RobotSensorStore, RobotStatusStore
-from controller import Camera, Display, Lidar, Motor, Supervisor
+from controller import Camera, Display, DistanceSensor, Lidar, Motor, RangeFinder, Supervisor
 from survey import CourtSurveyBehavior, SurveyState
 from telemetry import setup_telemetry
 
@@ -65,7 +67,7 @@ try:
         CameraMount,
         RobotPose2D,
         detect_largest_ball,
-        estimate_ball_observation,
+        estimate_depth_ball_observation,
         observation_to_world,
     )
 
@@ -103,6 +105,48 @@ COLLECTION_PATH_LOCAL = (
     (0.12, 0.0, 0.40),
 )
 FRONT_CAMERA_MOUNT = CameraMount(x_m=0.42, y_m=0.0, yaw_rad=0.0) if VISION_ENABLED else None
+LIDAR_FRONT_INDEX_RATIO = max(0.0, min(1.0, _env_float("LIDAR_FRONT_INDEX_RATIO", 0.5)))
+MAPPED_BALL_MERGE_DISTANCE_M = 0.65
+MAPPED_BALL_MAX_MERGE_DISTANCE_M = 1.6
+MAPPED_BALL_MIN_SEEN_COUNT = 5
+# Beyond this range single-frame depth/noise can exceed the merge radius; don't create new entries.
+MAPPED_BALL_MAX_CREATE_DISTANCE_M = 3.0
+MAPPED_BALL_STALE_AFTER_S = 45.0
+MAPPED_BALL_SIM_SNAP_ENABLED = os.getenv("MAPPED_BALL_SIM_SNAP_ENABLED", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+MAPPED_BALL_SIM_SNAP_BEARING_TOLERANCE_RAD = math.radians(4.0)
+IR_INTAKE_TRIGGER_THRESHOLD = 500.0
+COLLECT_ONE_RETURN_POSITION_TOLERANCE_M = 0.12
+COLLECT_ONE_RETURN_YAW_TOLERANCE_RAD = math.radians(6.0)
+COLLECT_ONE_RETURN_LINEAR_GAIN = 0.55
+COLLECT_ONE_RETURN_ANGULAR_GAIN = 1.8
+COLLECT_ONE_RETURN_MAX_SPEED_M_S = 0.28
+COLLECT_ONE_RETURN_MAX_TURN_RAD_S = 1.0
+COLLECT_ONE_SCAN_STEP_RAD = math.radians(30.0)
+COLLECT_ONE_SCAN_STEP_TOLERANCE_RAD = math.radians(2.0)
+COLLECT_ONE_SCAN_TURN_SPEED_RAD_S = 0.65
+COLLECT_ONE_SCAN_SETTLE_S = 0.20
+
+
+def _angle_delta_rad(a: float, b: float) -> float:
+    return (a - b + math.pi) % (2 * math.pi) - math.pi
+
+
+@dataclass
+class MappedBall:
+    id: int
+    x_m: float
+    y_m: float
+    confidence: float
+    first_seen_s: float
+    last_seen_s: float
+    source: str = "unknown"
+    seen_count: int = 1
+    state: str = "detected"
 
 
 def _bgra_bmp_data_url(bgra: bytes, width: int, height: int) -> str:
@@ -278,26 +322,18 @@ DEF {def_name} Transform {{
         self._defs.append(def_name)
 
 
-def _env_float(name: str, default: float) -> float:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    try:
-        return float(value)
-    except ValueError:
-        print(f"invalid {name}={value!r}; using {default}")
-        return default
-
-
 class BallDetectorController:
     def __init__(self) -> None:
         self.robot = Supervisor()
         self.camera = self._device("front_camera", Camera)
+        self.depth_camera = self._optional_device("front_depth", RangeFinder)
         self.lidar = self._optional_device("front_lidar", Lidar)
         self.display = self._device("camera_display", Display)
         self.left_motor = self._device("left_wheel_motor", Motor)
         self.right_motor = self._device("right_wheel_motor", Motor)
         self.lift_motor = self._optional_device("lift_wheel_motor", Motor)
+        self.ir_intake_left = self._optional_device("ir_intake_left", DistanceSensor)
+        self.ir_intake_right = self._optional_device("ir_intake_right", DistanceSensor)
         self.telemetry = setup_telemetry("ball-detector-controller")
         self.max_speed_rad_s = _env_float("ROBOT_MAX_WHEEL_SPEED_RAD_S", MAX_SPEED_RAD_S)
         self.behavior = ConceptACollectorBehavior(ConceptAConfig.from_env())
@@ -314,16 +350,33 @@ class BallDetectorController:
         self.collection_confirmed = False
         self.collection_count = 0
         self.collection_animation = None
+        self._collect_start_time: float | None = None
         self.last_command: ConceptACommand | None = None
         self.loop_count = 0
         self.started_at = time.time()
         self.last_status_write_s = 0.0
         self.last_sensor_write_s = 0.0
         self.collection_complete_reported = False
+        self.mapped_balls: dict[int, MappedBall] = {}
+        self.next_mapped_ball_id = 1
+        self.active_mapped_target_id: int | None = None
+        self.collect_one_start_pose: tuple[float, float, float] | None = None
+        self.collect_one_phase = "idle"
+        self.collect_one_complete_reported = False
+        self.collect_one_scan_target_yaw: float | None = None
+        self.collect_one_scan_settle_until_s = 0.0
+        self.collect_one_scan_steps_taken = 0
+        self.collect_one_locked_world: tuple[float, float] | None = None
 
         self.camera.enable(TIME_STEP_MS)
+        if self.depth_camera is not None:
+            self.depth_camera.enable(TIME_STEP_MS)
         if self.lidar is not None:
             self.lidar.enable(TIME_STEP_MS)
+        if self.ir_intake_left is not None:
+            self.ir_intake_left.enable(TIME_STEP_MS)
+        if self.ir_intake_right is not None:
+            self.ir_intake_right.enable(TIME_STEP_MS)
         self.left_motor.setPosition(math.inf)
         self.right_motor.setPosition(math.inf)
         if self.lift_motor is not None:
@@ -332,7 +385,7 @@ class BallDetectorController:
         if VISION_ENABLED:
             print("ball_detector controller started with RGB vision and LiDAR")
         else:
-            print(f"ball_detector controller started in supervised emulator mode: {VISION_IMPORT_ERROR}")
+            print(f"ball_detector controller started without RGB vision; sensor observations disabled: {VISION_IMPORT_ERROR}")
         if self.route_visualizer.enabled:
             print(f"route visualization enabled: preset={self.route_visualizer.preset}")
 
@@ -376,39 +429,67 @@ class BallDetectorController:
                 if VISION_ENABLED:
                     observation = self._observation_from_detection(detection)
                 else:
-                    observation = self._supervised_ball_observation()
+                    observation = self._sensor_unavailable_observation()
+                mapped_observation = self._mapping_observation(observation)
+                mapped_ball_id = self._update_mapped_balls(mapped_observation)
+                if self.loop_count % 90 == 0:
+                    self._prune_phantom_mapped_balls()
                 control_command = self.command_store.read()
                 inventory = self._ball_inventory()
-                effective_mode = self._effective_control_mode(control_command.mode, inventory)
+                effective_mode = self._effective_control_mode(control_command.mode)
+                control_observation = self._control_observation_for_mode(
+                    effective_mode,
+                    mapped_observation,
+                    mapped_ball_id,
+                )
                 if effective_mode == "survey":
                     command = self._survey_command_for_mode(effective_mode)
                 else:
-                    command = self._collector_command_for_mode(effective_mode, observation)
+                    command = self._collector_command_for_mode(effective_mode, control_observation)
                 self.collection_confirmed = False
                 self._draw_debug(image, detection, command)
                 self._apply_command(command)
                 self.telemetry.add_collector_state(command.state.value)
-                self.collection_confirmed = self._simulate_collection(command)
+                self.collection_confirmed = self._check_collection(command)
                 if self.collection_confirmed:
+                    self._mark_nearest_mapped_ball_collected()
                     self.route_visualizer.refresh()
-                self._write_status(control_command.mode, command, observation, detection, inventory)
+                self._write_status(control_command.mode, command, control_observation, detection, inventory)
                 self._write_sensor_snapshots()
                 self.last_command = command
                 self.loop_count += 1
                 if self.loop_count % 60 == 0:
-                    self._print_status(command, observation)
+                    self._print_status(command, control_observation)
             duration_ms = (time.perf_counter() - loop_start) * 1000
             self.telemetry.record_loop_duration(duration_ms)
 
-    def _effective_control_mode(self, requested_mode: str, inventory: dict[str, float | int | None]) -> str:
-        if requested_mode == "collect" and inventory["same_side_remaining"] == 0 and self.collection_animation is None:
-            if not self.collection_complete_reported:
-                print(f"collection complete for current side; total={self.collection_count}")
-                self.command_store.write("idle", source="webots-complete")
-                self.collection_complete_reported = True
-            return "idle"
-        if requested_mode == "collect" and inventory["same_side_remaining"] > 0:
-            self.collection_complete_reported = False
+    def _all_mapped_balls_collected(self) -> bool:
+        """True when every confirmed mapped ball has been collected and the map is non-empty."""
+        if not self.mapped_balls:
+            return False
+        now = time.time()
+        active = [
+            b for b in self.mapped_balls.values()
+            if b.state != "collected"
+            and b.seen_count >= MAPPED_BALL_MIN_SEEN_COUNT
+            and now - b.last_seen_s <= MAPPED_BALL_STALE_AFTER_S
+        ]
+        return len(active) == 0
+
+    def _effective_control_mode(self, requested_mode: str) -> str:
+        if requested_mode == "collect":
+            elapsed = 0.0 if self._collect_start_time is None else time.time() - self._collect_start_time
+            min_scan_time = self.behavior.config.scan_full_turn_s
+            if self._all_mapped_balls_collected() and elapsed > min_scan_time and self.collection_animation is None:
+                if not self.collection_complete_reported:
+                    print(f"collection complete; total={self.collection_count}")
+                    self.command_store.write("idle", source="webots-complete")
+                    self.collection_complete_reported = True
+                return "idle"
+            if not self._all_mapped_balls_collected():
+                self.collection_complete_reported = False
+        if requested_mode != "collect_one":
+            self.collect_one_complete_reported = False
         return requested_mode
 
     def _collector_command_for_mode(self, mode: str, observation: BallObservationInput) -> ConceptACommand:
@@ -418,8 +499,17 @@ class BallDetectorController:
             self.control_mode = mode
             print(f"control mode changed to {self.control_mode}")
             if mode == "collect":
+                self._reset_mapped_balls()
+                self._collect_start_time = time.time()
                 self.route_visualizer.refresh()
+            elif mode == "collect_one":
+                self._start_collect_one()
             else:
+                self._collect_start_time = None
+                self.collect_one_start_pose = None
+                self.collect_one_phase = "idle"
+                self.collect_one_scan_target_yaw = None
+                self.collect_one_scan_settle_until_s = 0.0
                 self.route_visualizer.clear()
 
         if mode == "collect":
@@ -428,12 +518,165 @@ class BallDetectorController:
                 TIME_STEP_MS / 1000,
                 collection_confirmed=self.collection_confirmed,
             )
+        if mode == "collect_one":
+            return self._collect_one_command(observation)
 
         return ConceptACommand(
             state=CollectorState.IDLE,
             base=BaseCommand(0.0, 0.0),
             collector=CollectorCommand(0.0, False),
         )
+
+    def _start_collect_one(self) -> None:
+        self._reset_mapped_balls()
+        self.collect_one_start_pose = self._robot_pose_2d()
+        self.collect_one_phase = "collect"
+        self.collect_one_complete_reported = False
+        self.collect_one_scan_target_yaw = None
+        self.collect_one_scan_settle_until_s = 0.0
+        self.collect_one_scan_steps_taken = 0
+        self.collect_one_locked_world = None
+        self._collect_start_time = time.time()
+        self.route_visualizer.clear()
+
+    def _collect_one_command(self, observation: BallObservationInput) -> ConceptACommand:
+        if self.collect_one_start_pose is None:
+            self._start_collect_one()
+
+        if self.collect_one_phase == "collect":
+            if self.collection_confirmed:
+                self.behavior.reset()
+                self.active_mapped_target_id = None
+                self.collect_one_phase = "return"
+            else:
+                if self.behavior.state == CollectorState.SCAN and observation.visible:
+                    self.collect_one_scan_target_yaw = None
+                    self.collect_one_scan_settle_until_s = 0.0
+                    self.behavior.start_tracking(observation)
+                    if observation.world_x_m is not None and observation.world_y_m is not None:
+                        self.collect_one_locked_world = (observation.world_x_m, observation.world_y_m)
+                    return self.behavior.update(
+                        observation,
+                        TIME_STEP_MS / 1000,
+                        collection_confirmed=False,
+                    )
+                if self.behavior.state == CollectorState.SCAN and not observation.visible:
+                    self.collect_one_locked_world = None
+                    return self._collect_one_scan_step_command()
+                locked_obs = (
+                    self._observation_from_world_pos(*self.collect_one_locked_world)
+                    if self.collect_one_locked_world is not None
+                    else None
+                )
+                tracking_obs = locked_obs if locked_obs is not None else observation
+                return self.behavior.update(
+                    tracking_obs,
+                    TIME_STEP_MS / 1000,
+                    collection_confirmed=False,
+                )
+
+        if self.collect_one_phase == "return":
+            command = self._return_to_collect_one_start_command()
+            if command is not None:
+                return command
+            self.collect_one_phase = "done"
+
+        if self.collect_one_phase == "done" and not self.collect_one_complete_reported:
+            print(f"collect one complete; total={self.collection_count}")
+            self.command_store.write("idle", source="webots-collect-one-complete")
+            self.collect_one_complete_reported = True
+
+        return ConceptACommand(
+            state=CollectorState.IDLE,
+            base=BaseCommand(0.0, 0.0),
+            collector=CollectorCommand(0.0, False),
+        )
+
+    def _collect_one_scan_step_command(self) -> ConceptACommand:
+        now = time.time()
+        robot_yaw = self._robot_yaw_rad()
+        if self.collect_one_scan_settle_until_s > now:
+            return ConceptACommand(
+                state=CollectorState.SCAN,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        max_scan_steps = int(math.ceil(2 * math.pi / COLLECT_ONE_SCAN_STEP_RAD))
+        if self.collect_one_scan_target_yaw is None:
+            if self.collect_one_scan_steps_taken >= max_scan_steps:
+                self.collect_one_phase = "done"
+                return ConceptACommand(
+                    state=CollectorState.SCAN,
+                    base=BaseCommand(0.0, 0.0),
+                    collector=CollectorCommand(0.0, False),
+                )
+            self.collect_one_scan_target_yaw = robot_yaw + COLLECT_ONE_SCAN_STEP_RAD
+
+        yaw_error = _angle_delta_rad(self.collect_one_scan_target_yaw, robot_yaw)
+        if abs(yaw_error) <= COLLECT_ONE_SCAN_STEP_TOLERANCE_RAD:
+            self.collect_one_scan_target_yaw = None
+            self.collect_one_scan_steps_taken += 1
+            self.collect_one_scan_settle_until_s = now + COLLECT_ONE_SCAN_SETTLE_S
+            return ConceptACommand(
+                state=CollectorState.SCAN,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        angular_speed = max(
+            -COLLECT_ONE_SCAN_TURN_SPEED_RAD_S,
+            min(COLLECT_ONE_SCAN_TURN_SPEED_RAD_S, yaw_error * COLLECT_ONE_RETURN_ANGULAR_GAIN),
+        )
+        return ConceptACommand(
+            state=CollectorState.SCAN,
+            base=BaseCommand(0.0, angular_speed),
+            collector=CollectorCommand(0.0, False),
+        )
+
+    def _return_to_collect_one_start_command(self) -> ConceptACommand | None:
+        if self.collect_one_start_pose is None:
+            return None
+
+        start_x, start_y, start_yaw = self.collect_one_start_pose
+        robot_x, robot_y, robot_yaw = self._robot_pose_2d()
+        dx = start_x - robot_x
+        dy = start_y - robot_y
+        distance_m = math.hypot(dx, dy)
+        if distance_m > COLLECT_ONE_RETURN_POSITION_TOLERANCE_M:
+            target_heading = math.atan2(dy, dx)
+            heading_error = _angle_delta_rad(target_heading, robot_yaw)
+            linear_speed = min(COLLECT_ONE_RETURN_MAX_SPEED_M_S, distance_m * COLLECT_ONE_RETURN_LINEAR_GAIN)
+            if abs(heading_error) > math.radians(35.0):
+                linear_speed = 0.0
+            angular_speed = max(
+                -COLLECT_ONE_RETURN_MAX_TURN_RAD_S,
+                min(COLLECT_ONE_RETURN_MAX_TURN_RAD_S, heading_error * COLLECT_ONE_RETURN_ANGULAR_GAIN),
+            )
+            return ConceptACommand(
+                state=CollectorState.SURVEY,
+                base=BaseCommand(linear_speed, angular_speed),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        yaw_error = _angle_delta_rad(start_yaw, robot_yaw)
+        if abs(yaw_error) > COLLECT_ONE_RETURN_YAW_TOLERANCE_RAD:
+            angular_speed = max(
+                -COLLECT_ONE_RETURN_MAX_TURN_RAD_S,
+                min(COLLECT_ONE_RETURN_MAX_TURN_RAD_S, yaw_error * COLLECT_ONE_RETURN_ANGULAR_GAIN),
+            )
+            return ConceptACommand(
+                state=CollectorState.SURVEY,
+                base=BaseCommand(0.0, angular_speed),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        return None
+
+    def _reset_mapped_balls(self) -> None:
+        self.mapped_balls.clear()
+        self.next_mapped_ball_id = 1
+        self.active_mapped_target_id = None
 
     def _survey_command_for_mode(self, mode: str) -> ConceptACommand:
         if mode != self.control_mode:
@@ -484,6 +727,8 @@ class BallDetectorController:
             return BallObservationInput(visible=False)
 
         observation = self._estimate_observation(detection)
+        if observation is None:
+            return BallObservationInput(visible=False, source="oak_depth_unavailable")
         world_observation = observation_to_world(
             observation,
             RobotPose2D(*self._robot_pose_2d()),
@@ -500,6 +745,7 @@ class BallDetectorController:
             bearing_rad=observation.bearing_rad,
             distance_m=observation.distance_m,
             confidence=min(1.0, detection.area_px / 6000),
+            source=observation.distance_source,
             robot_x_m=world_observation.robot_x_m,
             robot_y_m=world_observation.robot_y_m,
             world_x_m=world_observation.world_x_m,
@@ -509,21 +755,47 @@ class BallDetectorController:
     def _estimate_observation(
         self,
         detection: BallDetection,
-    ) -> BallObservation:
-        return estimate_ball_observation(
+    ) -> BallObservation | None:
+        depth_frame = self._depth_frame_m()
+        if depth_frame is None:
+            return None
+        return estimate_depth_ball_observation(
             detection,
+            depth_frame,
             self.camera.getWidth(),
+            self.camera.getHeight(),
             self.camera.getFov(),
         )
 
-    def _supervised_ball_observation(self) -> BallObservationInput:
-        nearest: tuple[float, float, float, float, float, float] | None = None
+    def _sensor_unavailable_observation(self) -> BallObservationInput:
+        return BallObservationInput(visible=False, source="sensor_unavailable")
+
+    def _depth_frame_m(self) -> np.ndarray | None:
+        if not VISION_ENABLED or self.depth_camera is None:
+            return None
+        width = self.depth_camera.getWidth()
+        height = self.depth_camera.getHeight()
+        raw = self.depth_camera.getRangeImage()
+        if raw is None:
+            return None
+        return np.array(raw, dtype=np.float32).reshape((height, width))
+
+    def _mapping_observation(self, observation: BallObservationInput) -> BallObservationInput:
+        if not MAPPED_BALL_SIM_SNAP_ENABLED or not observation.visible:
+            return observation
+        snapped = self._snap_observation_to_sim_ball(observation)
+        if snapped is not None:
+            return snapped
+        if VISION_ENABLED:
+            return BallObservationInput(visible=False)
+        return observation
+
+    def _snap_observation_to_sim_ball(self, observation: BallObservationInput) -> BallObservationInput | None:
         robot_world_x = self.robot_node.getPosition()[0]
+        best: tuple[float, float, float, float, float, float, float] | None = None
         for index in range(100):
             ball = self.robot.getFromDef(f"TENNIS_BALL_{index:02d}")
-            if ball is None:
-                continue
-            if self._is_collection_animation_ball(index):
+            if ball is None or self._is_collection_animation_ball(index):
                 continue
             ball_position = ball.getPosition()
             if self._across_net(robot_world_x, ball_position[0]):
@@ -533,19 +805,23 @@ class BallDetectorController:
                 continue
             distance_m = math.hypot(x, y)
             bearing_rad = math.atan2(y, x)
-            if abs(bearing_rad) > SUPERVISED_FOV_RAD / 2 or distance_m > SUPERVISED_MAX_RANGE_M:
+            bearing_error = abs(_angle_delta_rad(bearing_rad, observation.bearing_rad))
+            if bearing_error > MAPPED_BALL_SIM_SNAP_BEARING_TOLERANCE_RAD:
                 continue
-            if nearest is None or distance_m < nearest[0]:
-                nearest = (distance_m, bearing_rad, x, y, ball_position[0], ball_position[1])
+            if best is None or bearing_error < best[0] or (
+                math.isclose(bearing_error, best[0]) and distance_m < best[1]
+            ):
+                best = (bearing_error, distance_m, bearing_rad, x, y, ball_position[0], ball_position[1])
 
-        if nearest is None:
-            return BallObservationInput(visible=False)
-        distance_m, bearing_rad, robot_x_m, robot_y_m, world_x_m, world_y_m = nearest
+        if best is None:
+            return None
+        _bearing_error, distance_m, bearing_rad, robot_x_m, robot_y_m, world_x_m, world_y_m = best
         return BallObservationInput(
             visible=True,
             bearing_rad=bearing_rad,
             distance_m=distance_m,
-            confidence=1.0,
+            confidence=max(observation.confidence, 0.5),
+            source="sim_snap",
             robot_x_m=robot_x_m,
             robot_y_m=robot_y_m,
             world_x_m=world_x_m,
@@ -594,20 +870,224 @@ class BallDetectorController:
             "nearest_same_side_distance_m": nearest_same_side_distance_m,
         }
 
-    def _route_snapshot(self) -> dict[str, object]:
+    def _update_mapped_balls(self, observation: BallObservationInput) -> int | None:
+        if not observation.visible or observation.world_x_m is None or observation.world_y_m is None:
+            return None
+        now = time.time()
+        best_id: int | None = None
+        merge_distance_m = self._mapped_ball_merge_distance(observation)
+        best_distance = merge_distance_m
+        for ball_id, ball in self.mapped_balls.items():
+            if ball.state == "collected":
+                continue
+            distance = math.hypot(ball.x_m - observation.world_x_m, ball.y_m - observation.world_y_m)
+            if distance < best_distance:
+                best_id = ball_id
+                best_distance = distance
+
+        if best_id is None:
+            if observation.distance_m > MAPPED_BALL_MAX_CREATE_DISTANCE_M:
+                return None
+            ball_id = self.next_mapped_ball_id
+            self.next_mapped_ball_id += 1
+            self.mapped_balls[ball_id] = MappedBall(
+                id=ball_id,
+                x_m=observation.world_x_m,
+                y_m=observation.world_y_m,
+                confidence=observation.confidence,
+                first_seen_s=now,
+                last_seen_s=now,
+                source=observation.source,
+            )
+            return ball_id
+
+        ball = self.mapped_balls[best_id]
+        # Weight grows as the robot approaches: far observations barely move the stored
+        # position, close observations snap it toward the more accurate estimate.
+        close_factor = max(0.0, 1.0 - observation.distance_m / MAPPED_BALL_MAX_CREATE_DISTANCE_M)
+        weight = min(0.75, max(0.12, observation.confidence * 0.35 + close_factor * 0.5))
+        ball.x_m = ball.x_m * (1.0 - weight) + observation.world_x_m * weight
+        ball.y_m = ball.y_m * (1.0 - weight) + observation.world_y_m * weight
+        ball.confidence = max(ball.confidence, observation.confidence)
+        ball.last_seen_s = now
+        ball.seen_count += 1
+        ball.source = observation.source
+        ball.state = "detected"
+        return best_id
+
+    def _control_observation_for_mode(
+        self,
+        mode: str,
+        observation: BallObservationInput,
+        mapped_ball_id: int | None,
+    ) -> BallObservationInput:
+        if mode != "collect":
+            self.active_mapped_target_id = None
+            return observation
+        if self.behavior.state == CollectorState.SCAN:
+            return observation
+        if self.active_mapped_target_id is None:
+            self.active_mapped_target_id = mapped_ball_id or self._nearest_mapped_target_id()
+        # Prefer live camera/depth over stored position when the camera currently sees
+        # the active target; the live bearing is fresher and corrects map drift.
+        if observation.visible and mapped_ball_id is not None and mapped_ball_id == self.active_mapped_target_id:
+            return observation
+        locked = self._observation_from_mapped_target(self.active_mapped_target_id)
+        if locked is not None:
+            return locked
+        self.active_mapped_target_id = mapped_ball_id or self._nearest_mapped_target_id()
+        return self._observation_from_mapped_target(self.active_mapped_target_id) or observation
+
+    def _nearest_mapped_target_id(self) -> int | None:
+        now = time.time()
+        robot_x, robot_y, _robot_z = self.robot_node.getPosition()
+        candidates = [
+            ball
+            for ball in self.mapped_balls.values()
+            if ball.state != "collected"
+            and ball.seen_count >= MAPPED_BALL_MIN_SEEN_COUNT
+            and now - ball.last_seen_s <= MAPPED_BALL_STALE_AFTER_S
+            and not self._across_net(robot_x, ball.x_m)
+        ]
+        if not candidates:
+            return None
+        return min(candidates, key=lambda ball: math.hypot(ball.x_m - robot_x, ball.y_m - robot_y)).id
+
+    def _observation_from_mapped_target(self, ball_id: int | None) -> BallObservationInput | None:
+        if ball_id is None:
+            return None
+        ball = self.mapped_balls.get(ball_id)
+        if ball is None or ball.state == "collected":
+            return None
+        if time.time() - ball.last_seen_s > MAPPED_BALL_STALE_AFTER_S:
+            return None
         robot_x, robot_y, _robot_z = self.robot_node.getPosition()
         robot_yaw = self._robot_yaw_rad()
-        same_side_balls: list[RouteBall] = []
-        ball_rows: list[dict[str, object]] = []
+        dx = ball.x_m - robot_x
+        dy = ball.y_m - robot_y
+        local_x = math.cos(-robot_yaw) * dx - math.sin(-robot_yaw) * dy
+        local_y = math.sin(-robot_yaw) * dx + math.cos(-robot_yaw) * dy
+        if local_x <= -0.1:
+            return None
+        return BallObservationInput(
+            visible=True,
+            bearing_rad=math.atan2(local_y, local_x),
+            distance_m=math.hypot(local_x, local_y),
+            confidence=ball.confidence,
+            source=ball.source,
+            robot_x_m=local_x,
+            robot_y_m=local_y,
+            world_x_m=ball.x_m,
+            world_y_m=ball.y_m,
+        )
 
-        for index in range(100):
-            ball = self.robot.getFromDef(f"TENNIS_BALL_{index:02d}")
-            if ball is None or self._is_collection_animation_ball(index):
+    def _observation_from_world_pos(self, world_x_m: float, world_y_m: float) -> BallObservationInput | None:
+        robot_x, robot_y, _robot_z = self.robot_node.getPosition()
+        robot_yaw = self._robot_yaw_rad()
+        dx = world_x_m - robot_x
+        dy = world_y_m - robot_y
+        local_x = math.cos(-robot_yaw) * dx - math.sin(-robot_yaw) * dy
+        local_y = math.sin(-robot_yaw) * dx + math.cos(-robot_yaw) * dy
+        if local_x <= -0.1:
+            return None
+        return BallObservationInput(
+            visible=True,
+            bearing_rad=math.atan2(local_y, local_x),
+            distance_m=math.hypot(local_x, local_y),
+            confidence=0.8,
+            source="collect_one_locked",
+            robot_x_m=local_x,
+            robot_y_m=local_y,
+            world_x_m=world_x_m,
+            world_y_m=world_y_m,
+        )
+
+    def _mapped_ball_merge_distance(self, observation: BallObservationInput) -> float:
+        if not math.isfinite(observation.distance_m):
+            return MAPPED_BALL_MERGE_DISTANCE_M
+        distance_margin = observation.distance_m * 0.28
+        confidence_margin = (1.0 - max(0.0, min(1.0, observation.confidence))) * 0.35
+        return max(
+            MAPPED_BALL_MERGE_DISTANCE_M,
+            min(MAPPED_BALL_MAX_MERGE_DISTANCE_M, distance_margin + confidence_margin),
+        )
+
+    def _prune_phantom_mapped_balls(self) -> None:
+        """Remove or merge pending entries that duplicate confirmed or other pending entries."""
+        now = time.time()
+        confirmed: list[MappedBall] = []
+        pending: list[MappedBall] = []
+        for ball in self.mapped_balls.values():
+            if ball.state == "collected":
                 continue
+            if now - ball.last_seen_s > MAPPED_BALL_STALE_AFTER_S:
+                continue
+            if ball.seen_count >= MAPPED_BALL_MIN_SEEN_COUNT:
+                confirmed.append(ball)
+            else:
+                pending.append(ball)
 
-            x_m, y_m, _z_m = ball.getPosition()
-            across_net = self._across_net(robot_x, x_m)
-            local_x, local_y, _local_z = self._world_to_robot_local([x_m, y_m, _z_m])
+        to_remove: set[int] = set()
+
+        # Drop pending entries that are near a confirmed entry.
+        for p in pending:
+            for c in confirmed:
+                if math.hypot(p.x_m - c.x_m, p.y_m - c.y_m) < MAPPED_BALL_MERGE_DISTANCE_M:
+                    to_remove.add(p.id)
+                    break
+
+        # Merge pending entries that are near each other: absorb into the higher-count entry.
+        survivors = [p for p in pending if p.id not in to_remove]
+        survivors.sort(key=lambda b: b.seen_count, reverse=True)
+        absorbed: set[int] = set()
+        for i, dominant in enumerate(survivors):
+            if dominant.id in absorbed:
+                continue
+            for weak in survivors[i + 1 :]:
+                if weak.id in absorbed:
+                    continue
+                if math.hypot(dominant.x_m - weak.x_m, dominant.y_m - weak.y_m) < MAPPED_BALL_MERGE_DISTANCE_M:
+                    dominant.seen_count += weak.seen_count
+                    dominant.confidence = max(dominant.confidence, weak.confidence)
+                    if dominant.source != "oak_depth" and weak.source == "oak_depth":
+                        dominant.source = weak.source
+                    dominant.last_seen_s = max(dominant.last_seen_s, weak.last_seen_s)
+                    absorbed.add(weak.id)
+
+        to_remove.update(absorbed)
+
+        for ball_id in to_remove:
+            del self.mapped_balls[ball_id]
+
+    def _mark_nearest_mapped_ball_collected(self) -> None:
+        if not self.mapped_balls:
+            return
+        robot_x, robot_y, _robot_z = self.robot_node.getPosition()
+        active = [ball for ball in self.mapped_balls.values() if ball.state != "collected"]
+        if not active:
+            return
+        nearest = min(active, key=lambda ball: math.hypot(ball.x_m - robot_x, ball.y_m - robot_y))
+        nearest.state = "collected"
+        nearest.last_seen_s = time.time()
+        if self.active_mapped_target_id == nearest.id:
+            self.active_mapped_target_id = None
+
+    def _mapped_ball_rows(self) -> tuple[list[dict[str, object]], list[RouteBall]]:
+        now = time.time()
+        robot_x, robot_y, _robot_z = self.robot_node.getPosition()
+        robot_yaw = self._robot_yaw_rad()
+        rows: list[dict[str, object]] = []
+        same_side_balls: list[RouteBall] = []
+        for ball in sorted(self.mapped_balls.values(), key=lambda item: item.id):
+            if ball.state == "collected":
+                continue
+            age_s = now - ball.last_seen_s
+            if age_s > MAPPED_BALL_STALE_AFTER_S:
+                continue
+            confirmed = ball.seen_count >= MAPPED_BALL_MIN_SEEN_COUNT
+            across_net = self._across_net(robot_x, ball.x_m)
+            local_x = math.cos(-robot_yaw) * (ball.x_m - robot_x) - math.sin(-robot_yaw) * (ball.y_m - robot_y)
+            local_y = math.sin(-robot_yaw) * (ball.x_m - robot_x) + math.cos(-robot_yaw) * (ball.y_m - robot_y)
             distance_m = math.hypot(local_x, local_y)
             bearing_rad = math.atan2(local_y, local_x)
             visible_candidate = (
@@ -616,19 +1096,31 @@ class BallDetectorController:
                 and abs(bearing_rad) <= SUPERVISED_FOV_RAD / 2
                 and distance_m <= SUPERVISED_MAX_RANGE_M
             )
-            row = {
-                "id": index,
-                "x_m": x_m,
-                "y_m": y_m,
-                "side": "across_net" if across_net else "same_side",
-                "visible_candidate": visible_candidate,
-                "planned": False,
-                "order": None,
-                "risk": None,
-            }
-            ball_rows.append(row)
-            if ROUTE_PLANNER_AVAILABLE and not across_net:
-                same_side_balls.append(RouteBall(x=x_m, y=y_m, id=index))
+            rows.append(
+                {
+                    "id": ball.id,
+                    "x_m": ball.x_m,
+                    "y_m": ball.y_m,
+                    "side": "across_net" if across_net else "same_side",
+                    "visible_candidate": visible_candidate,
+                    "confirmed": confirmed,
+                    "planned": False,
+                    "order": None,
+                    "risk": None,
+                    "source": ball.source,
+                    "confidence": ball.confidence,
+                    "seen_count": ball.seen_count,
+                    "age_s": age_s,
+                }
+            )
+            if ROUTE_PLANNER_AVAILABLE and not across_net and confirmed:
+                same_side_balls.append(RouteBall(x=ball.x_m, y=ball.y_m, id=ball.id))
+        return rows, same_side_balls
+
+    def _route_snapshot(self) -> dict[str, object]:
+        robot_x, robot_y, _robot_z = self.robot_node.getPosition()
+        robot_yaw = self._robot_yaw_rad()
+        ball_rows, same_side_balls = self._mapped_ball_rows()
 
         route_points: list[dict[str, float]] = []
         legs_payload: list[dict[str, object]] = []
@@ -697,6 +1189,7 @@ class BallDetectorController:
 
         return {
             "planner_available": ROUTE_PLANNER_AVAILABLE,
+            "source": "sensor_mapped",
             "updated_at": time.time(),
             "court": {
                 "min_x": -11.885,
@@ -706,6 +1199,11 @@ class BallDetectorController:
                 "net_x": NET_X_M,
             },
             "active_bounds": bounds_payload,
+            "active_target_id": self.active_mapped_target_id,
+            "camera_fov_rad": SUPERVISED_FOV_RAD,
+            "camera_max_range_m": MAPPED_BALL_MAX_CREATE_DISTANCE_M,
+            "lidar_fusion_enabled": self.lidar is not None,
+            "lidar_front_index_ratio": LIDAR_FRONT_INDEX_RATIO,
             "robot": {"x_m": robot_x, "y_m": robot_y, "yaw_rad": robot_yaw},
             "balls": ball_rows,
             "route": route_points,
@@ -750,8 +1248,13 @@ class BallDetectorController:
             2,
             cv2.LINE_AA,
         )
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image_ref = self.display.imageNew(rgb.tobytes(), Display.RGB, frame.shape[1], frame.shape[0])
+        display_frame = frame
+        display_width = self.display.getWidth()
+        display_height = self.display.getHeight()
+        if frame.shape[1] != display_width or frame.shape[0] != display_height:
+            display_frame = cv2.resize(frame, (display_width, display_height), interpolation=cv2.INTER_AREA)
+        rgb = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
+        image_ref = self.display.imageNew(rgb.tobytes(), Display.RGB, display_width, display_height)
         self.display.imagePaste(image_ref, 0, 0, False)
         self.display.imageDelete(image_ref)
 
@@ -778,6 +1281,7 @@ class BallDetectorController:
         self.sensor_store.write(
             {
                 "front_camera": self._camera_snapshot(self.camera),
+                "front_depth": self._depth_snapshot(),
                 "front_lidar": self._lidar_snapshot(),
             }
         )
@@ -790,11 +1294,22 @@ class BallDetectorController:
         raw = camera.getImage()
         if raw is None:
             return None
+        preview_width = min(width, 960)
+        preview_height = max(1, round(height * preview_width / max(1, width)))
+        data = bytes(raw)
+        if VISION_ENABLED and cv2 is not None and np is not None and preview_width != width:
+            frame = np.frombuffer(data, np.uint8).reshape((height, width, 4))
+            frame = cv2.resize(frame, (preview_width, preview_height), interpolation=cv2.INTER_AREA)
+            data = frame.tobytes()
+            width = preview_width
+            height = preview_height
         return {
             "width": width,
             "height": height,
+            "native_width": camera.getWidth(),
+            "native_height": camera.getHeight(),
             "format": "bgra-bmp",
-            "data_url": _bgra_bmp_data_url(bytes(raw), width, height),
+            "data_url": _bgra_bmp_data_url(data, width, height),
         }
 
     def _lidar_ranges(self) -> list[float] | None:
@@ -802,11 +1317,36 @@ class BallDetectorController:
             return None
         return [float(value) for value in self.lidar.getRangeImage()]
 
+    def _depth_snapshot(self) -> dict[str, object] | None:
+        if self.depth_camera is None:
+            return None
+        depth = self._depth_frame_m()
+        if depth is None:
+            return None
+        valid = depth[np.isfinite(depth) & (depth > 0)]
+        min_range = float(self.depth_camera.getMinRange())
+        max_range = float(self.depth_camera.getMaxRange())
+        span = max(0.001, max_range - min_range)
+        clipped = np.where(np.isfinite(depth) & (depth > 0), depth, max_range)
+        normalized = np.clip((clipped - min_range) / span, 0.0, 1.0)
+        intensity = ((1.0 - normalized) * 255).astype(np.uint8)
+        bgra = np.dstack((intensity, intensity, intensity, np.full_like(intensity, 255))).tobytes()
+        return {
+            "width": int(depth.shape[1]),
+            "height": int(depth.shape[0]),
+            "format": "depth-bmp",
+            "min_range_m": min_range,
+            "max_range_m": max_range,
+            "valid_count": int(valid.size),
+            "median_range_m": None if valid.size == 0 else float(np.median(valid)),
+            "data_url": _bgra_bmp_data_url(bgra, int(depth.shape[1]), int(depth.shape[0])),
+        }
+
     def _lidar_front_range_m(self) -> float | None:
         ranges = self._lidar_ranges()
         if not ranges:
             return None
-        center = len(ranges) // 2
+        center = int(round((len(ranges) - 1) * LIDAR_FRONT_INDEX_RATIO))
         half_width = max(2, len(ranges) // 72)
         window = ranges[max(0, center - half_width) : min(len(ranges), center + half_width + 1)]
         valid = [value for value in window if math.isfinite(value) and value > 0]
@@ -828,11 +1368,14 @@ class BallDetectorController:
         span = max(0.001, max_range - min_range)
         pixels = bytearray()
         normalized_ranges = []
+        ranges_m: list[float | None] = []
         for value in ranges:
             if math.isfinite(value) and value > 0:
                 normalized_ranges.append(max(0.0, min(1.0, (value - min_range) / span)))
+                ranges_m.append(float(value))
             else:
                 normalized_ranges.append(1.0)
+                ranges_m.append(None)
         for y in range(height):
             for normalized in normalized_ranges:
                 bar_height = max(1, int((1.0 - normalized) * (height - 1)))
@@ -847,6 +1390,7 @@ class BallDetectorController:
             "min_range_m": min_range,
             "max_range_m": max_range,
             "front_range_m": self._lidar_front_range_m(),
+            "ranges_m": ranges_m,
             "data_url": _bgra_bmp_data_url(bytes(pixels), width, height),
         }
 
@@ -895,6 +1439,7 @@ class BallDetectorController:
                     "bearing_rad": observation.bearing_rad,
                     "bearing_deg": math.degrees(observation.bearing_rad),
                     "confidence": observation.confidence,
+                    "source": observation.source,
                     "robot_x_m": observation.robot_x_m,
                     "robot_y_m": observation.robot_y_m,
                     "world_x_m": observation.world_x_m,
@@ -916,6 +1461,34 @@ class BallDetectorController:
                     "angular_speed_rad_s": command.base.angular_speed_rad_s,
                     "lift_wheel_speed": command.collector.lift_wheel_speed,
                     "intake_enabled": command.collector.intake_enabled,
+                },
+                "scan": {
+                    "elapsed_s": self.behavior.state_elapsed_s,
+                    "full_turn_s": self.behavior.config.scan_full_turn_s,
+                    "progress": min(1.0, self.behavior.state_elapsed_s / max(0.001, self.behavior.config.scan_full_turn_s)),
+                    "best_visible": self.behavior.scan_best_observation is not None,
+                    "best_distance_m": None
+                    if self.behavior.scan_best_observation is None or math.isinf(self.behavior.scan_best_observation.distance_m)
+                    else self.behavior.scan_best_observation.distance_m,
+                    "best_bearing_rad": None
+                    if self.behavior.scan_best_observation is None
+                    else self.behavior.scan_best_observation.bearing_rad,
+                },
+                "target_lock": {
+                    "mapped_ball_id": self.active_mapped_target_id,
+                    "locked": self.active_mapped_target_id is not None,
+                },
+                "collect_one": {
+                    "phase": self.collect_one_phase,
+                    "start_pose": None
+                    if self.collect_one_start_pose is None
+                    else {
+                        "x_m": self.collect_one_start_pose[0],
+                        "y_m": self.collect_one_start_pose[1],
+                        "yaw_rad": self.collect_one_start_pose[2],
+                    },
+                    "scan_target_yaw_rad": self.collect_one_scan_target_yaw,
+                    "complete_reported": self.collect_one_complete_reported,
                 },
                 "survey": {
                     "state": self.survey_behavior.state.value,
@@ -959,12 +1532,19 @@ class BallDetectorController:
             )
         print(status)
 
-    def _simulate_collection(self, command: ConceptACommand) -> bool:
+    def _ir_intake_triggered(self) -> bool:
+        left = self.ir_intake_left is not None and self.ir_intake_left.getValue() > IR_INTAKE_TRIGGER_THRESHOLD
+        right = self.ir_intake_right is not None and self.ir_intake_right.getValue() > IR_INTAKE_TRIGGER_THRESHOLD
+        return left or right
+
+    def _check_collection(self, command: ConceptACommand) -> bool:
+        """Trigger collection from IR sensor reading; ball removal is sim-only bookkeeping."""
         if not command.collector.intake_enabled:
             return False
         if self.collection_animation is not None:
             return False
-
+        if not self._ir_intake_triggered():
+            return False
         for index in range(100):
             ball = self.robot.getFromDef(f"TENNIS_BALL_{index:02d}")
             if ball is None:

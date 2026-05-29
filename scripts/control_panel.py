@@ -226,6 +226,7 @@ HTML = """<!doctype html>
       transition: transform 130ms ease, filter 130ms ease;
     }
     .command:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .command[value="collect_one"] { background: var(--warn); color: #1b1204; }
     .command[value="survey"] { background: var(--accent-2); color: #06101d; }
     .command[value="idle"] { background: var(--danger); color: #1b0604; }
     .kv {
@@ -325,11 +326,14 @@ HTML = """<!doctype html>
       background: var(--accent);
     }
     .legend .across::before { background: #8793a0; }
+    .legend .pending::before { background: #d7e85f; opacity: 0.4; }
+    .legend .depth::before { background: #2fd08f; box-shadow: 0 0 0 2px rgba(87,166,255,0.5); }
     .legend .route::before { border-radius: 2px; background: var(--accent-2); }
     .legend .robot::before { background: var(--warn); }
+    .legend .fov::before { background: rgba(87,166,255,0.15); border: 1px solid rgba(87,166,255,0.4); border-radius: 2px; }
     .sensor-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin-top: 14px;
     }
@@ -354,6 +358,28 @@ HTML = """<!doctype html>
       aspect-ratio: 16 / 9;
       object-fit: contain;
       background: #05080b;
+    }
+    .sensor-view canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #05080b;
+    }
+    .sensor-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px 12px 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .sensor-meta strong {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
     }
     .sensor-empty {
       display: grid;
@@ -427,6 +453,7 @@ HTML = """<!doctype html>
             <h3>Mode Command</h3>
             <form id="commandForm" class="controls">
               <button class="command" type="submit" name="mode" value="collect">Start Collection</button>
+              <button class="command" type="submit" name="mode" value="collect_one">Collect One</button>
               <button class="command" type="submit" name="mode" value="survey">Survey Court</button>
               <button class="command" type="submit" name="mode" value="idle">Stop</button>
             </form>
@@ -440,17 +467,21 @@ HTML = """<!doctype html>
           <h3>Collection Map</h3>
           <canvas id="courtMap" class="court-map" width="1200" height="600"></canvas>
           <div class="legend">
-            <span>Same-side ball</span>
+            <span>Confirmed ball</span>
+            <span class="depth">OAK depth</span>
+            <span class="pending">Pending (building confidence)</span>
             <span class="across">Across net</span>
             <span class="route">Planned route</span>
             <span class="robot">Robot</span>
+            <span class="fov">Camera FOV</span>
           </div>
         </div>
         <div class="panel map-panel">
           <h3>Sensor Views</h3>
           <div class="sensor-grid">
             <div class="sensor-view"><h4>Front Camera</h4><div id="frontCameraView" class="sensor-empty">waiting for image</div></div>
-            <div class="sensor-view"><h4>Front LiDAR</h4><div id="frontLidarView" class="sensor-empty">waiting for scan</div></div>
+            <div class="sensor-view"><h4>OAK Depth</h4><div id="frontDepthView" class="sensor-empty">waiting for depth</div></div>
+            <div class="sensor-view"><h4>360 LiDAR</h4><div id="frontLidarView" class="sensor-empty">waiting for scan</div></div>
           </div>
         </div>
       </section>
@@ -471,7 +502,7 @@ HTML = """<!doctype html>
       <section id="stats" class="view">
         <div class="grid kpis">
           <div class="metric"><span>Total Commands</span><strong id="sTotal">0</strong><small>from local history</small></div>
-          <div class="metric"><span>Collect Commands</span><strong id="sCollect">0</strong><small>requested mode collect</small></div>
+          <div class="metric"><span>Collect Commands</span><strong id="sCollect">0</strong><small>collect / collect one</small></div>
           <div class="metric"><span>Survey Commands</span><strong id="sSurvey">0</strong><small>requested mode survey</small></div>
           <div class="metric"><span>Stop Commands</span><strong id="sIdle">0</strong><small>requested mode idle</small></div>
         </div>
@@ -559,6 +590,8 @@ HTML = """<!doctype html>
       const out = robot.command || {};
       const pose = robot.robot || {};
       const survey = robot.survey || {};
+      const scan = robot.scan || {};
+      const collectOne = robot.collect_one || {};
       const balls = robot.balls || {};
       const completion = robot.completion || {};
       const connected = !!robot.connected;
@@ -581,6 +614,7 @@ HTML = """<!doctype html>
         ["Robot position", `${fmt(pose.x_m, "m")}, ${fmt(pose.y_m, "m")}`],
         ["Robot yaw", fmt((pose.yaw_rad || 0) * 180 / Math.PI, "deg")],
         ["Collector state", robot.collector_state || "idle"],
+        ["Collect one", collectOne.phase || "idle"],
         ["Side complete", completion.current_side_complete ? "yes" : "no"],
         ["Remaining balls", `${balls.same_side_remaining ?? "?"} same-side / ${balls.total_remaining ?? "?"} total`],
         ["Across net", balls.across_net_remaining ?? "none"],
@@ -596,7 +630,8 @@ HTML = """<!doctype html>
         ["Sequence", command.sequence ?? 0],
         ["Updated", dateText(command.updated_at)],
         ["Source", command.source || "default"],
-        ["Controller state", robot.collector_state || "idle"]
+        ["Controller state", robot.collector_state || "idle"],
+        ["Collect one phase", collectOne.phase || "idle"]
       ]);
       setKv("telemetryKv", [
         ["Telemetry enabled", robot.telemetry_enabled ? "yes" : "no"],
@@ -610,6 +645,8 @@ HTML = """<!doctype html>
         ["Ball world", `${fmt(obs.world_x_m, "m")}, ${fmt(obs.world_y_m, "m")}`],
         ["Confidence", fmt(obs.confidence)],
         ["Animation", robot.collection_animation_active ? "active" : "idle"],
+        ["Scan progress", `${fmt((scan.progress || 0) * 100, "%")} (${fmt(scan.elapsed_s, "s")}/${fmt(scan.full_turn_s, "s")})`],
+        ["Scan best target", scan.best_visible ? `${fmt(scan.best_distance_m, "m")} @ ${fmt((scan.best_bearing_rad || 0) * 180 / Math.PI, "deg")}` : "none"],
         ["Survey state", survey.state || "idle"],
         ["Survey target", `${fmt(survey.target_x_m, "m")}, ${fmt(survey.target_y_m, "m")}`]
       ]);
@@ -631,9 +668,94 @@ HTML = """<!doctype html>
       target.className = "";
       target.innerHTML = `<img src="${sensor.data_url}" alt="${id}">`;
     }
+    function renderLidarSensor(id, sensor) {
+      const target = document.getElementById(id);
+      if (!target) return;
+      const ranges = Array.isArray(sensor?.ranges_m) ? sensor.ranges_m : [];
+      if (!ranges.length) {
+        renderSensor(id, sensor);
+        return;
+      }
+      const canvasId = `${id}Canvas`;
+      const validRanges = ranges.filter(value => Number.isFinite(value) && value > 0);
+      const minRange = Number.isFinite(sensor.min_range_m) ? sensor.min_range_m : 0.05;
+      const maxRange = Number.isFinite(sensor.max_range_m) ? sensor.max_range_m : Math.max(1, ...validRanges);
+      const nearest = validRanges.length ? Math.min(...validRanges) : null;
+      const blocked = validRanges.filter(value => value < Math.min(1.2, maxRange)).length;
+      target.className = "";
+      target.innerHTML = `
+        <canvas id="${canvasId}" width="520" height="520" aria-label="LiDAR 360 degree scan"></canvas>
+        <div class="sensor-meta">
+          <div>front<strong>${fmt(sensor.front_range_m, "m")}</strong></div>
+          <div>nearest<strong>${fmt(nearest, "m")}</strong></div>
+          <div>hits<strong>${validRanges.length}/${ranges.length}</strong></div>
+        </div>
+      `;
+      drawLidarScan(document.getElementById(canvasId), ranges, minRange, maxRange, blocked);
+    }
+    function drawLidarScan(canvas, ranges, minRange, maxRange, blockedCount) {
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const cx = width / 2;
+      const cy = height / 2;
+      const radius = Math.min(width, height) * 0.43;
+      const span = Math.max(0.001, maxRange - minRange);
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#05080b";
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = "rgba(145,162,178,0.22)";
+      ctx.lineWidth = 1;
+      [0.25, 0.5, 0.75, 1].forEach(scale => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * scale, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      ctx.strokeStyle = "rgba(87,166,255,0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx, cy - radius);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(255,189,90,0.95)";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - radius - 12);
+      ctx.lineTo(cx - 7, cy - radius + 3);
+      ctx.lineTo(cx + 7, cy - radius + 3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(47,208,143,0.95)";
+      ranges.forEach((value, index) => {
+        if (!Number.isFinite(value) || value <= 0) return;
+        const angle = (index / ranges.length) * Math.PI * 2 - Math.PI / 2;
+        const clamped = Math.max(minRange, Math.min(maxRange, value));
+        const r = ((clamped - minRange) / span) * radius;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        const near = value < Math.min(1.2, maxRange);
+        ctx.fillStyle = near ? "rgba(255,189,90,0.95)" : "rgba(47,208,143,0.88)";
+        ctx.fillRect(x - 1.7, y - 1.7, 3.4, 3.4);
+      });
+
+      ctx.fillStyle = "#eef4f8";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(145,162,178,0.9)";
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      ctx.fillText(`${maxRange.toFixed(1)}m`, cx + radius - 28, cy - 8);
+      ctx.fillText(`${blockedCount} near`, 14, height - 16);
+    }
     function renderSensors() {
       renderSensor("frontCameraView", sensors.front_camera);
-      renderSensor("frontLidarView", sensors.front_lidar);
+      renderSensor("frontDepthView", sensors.front_depth);
+      renderLidarSensor("frontLidarView", sensors.front_lidar);
     }
     function renderCourtMap() {
       const canvas = document.getElementById("courtMap");
@@ -646,6 +768,7 @@ HTML = """<!doctype html>
       const pad = 42;
       const sx = x => pad + (x - court.min_x) / (court.max_x - court.min_x) * (width - pad * 2);
       const sy = y => height - pad - (y - court.min_y) / (court.max_y - court.min_y) * (height - pad * 2);
+      const scaleM = (width - pad * 2) / (court.max_x - court.min_x);
 
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#7a3329";
@@ -680,8 +803,33 @@ HTML = """<!doctype html>
 
       const bounds = map.active_bounds;
       if (bounds) {
-        ctx.fillStyle = "rgba(87,166,255,0.08)";
+        ctx.fillStyle = "rgba(87,166,255,0.06)";
         ctx.fillRect(sx(bounds.min_x), sy(bounds.max_y), sx(bounds.max_x) - sx(bounds.min_x), sy(bounds.min_y) - sy(bounds.max_y));
+      }
+
+      // camera FOV cone
+      const robot = map.robot || {};
+      if (robot.x_m !== undefined && robot.y_m !== undefined) {
+        const rx = sx(robot.x_m);
+        const ry = sy(robot.y_m);
+        const yaw = robot.yaw_rad || 0;
+        const fov = map.camera_fov_rad || 1.05;
+        const fovRange = (map.camera_max_range_m || 4.5) * scaleM;
+        ctx.save();
+        ctx.translate(rx, ry);
+        ctx.rotate(-yaw);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, fovRange, -fov / 2, fov / 2);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(87,166,255,0.07)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(87,166,255,0.22)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
       }
 
       const route = map.route || [];
@@ -700,16 +848,50 @@ HTML = """<!doctype html>
         ctx.stroke();
       }
 
-      (map.balls || []).forEach(ball => {
+      const activeTargetId = map.active_target_id;
+      const allBalls = map.balls || [];
+
+      // pending balls (below seen_count threshold) — drawn first so confirmed render on top
+      allBalls.filter(b => !b.confirmed).forEach(ball => {
         const x = sx(ball.x_m);
         const y = sy(ball.y_m);
+        ctx.globalAlpha = 0.35;
         ctx.beginPath();
-        ctx.arc(x, y, ball.planned ? 9 : 7, 0, Math.PI * 2);
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = ball.side === "across_net" ? "#8793a0" : "#d7e85f";
+        ctx.fill();
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = "rgba(255,255,255,0.4)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1.0;
+      });
+
+      // confirmed balls
+      allBalls.filter(b => b.confirmed).forEach(ball => {
+        const x = sx(ball.x_m);
+        const y = sy(ball.y_m);
+        const isActive = ball.id === activeTargetId;
+        const radius = ball.planned ? 9 : 7;
+
+        // active target ring
+        if (isActive) {
+          ctx.beginPath();
+          ctx.arc(x, y, radius + 6, 0, Math.PI * 2);
+          ctx.strokeStyle = "#2fd08f";
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
         ctx.fillStyle = ball.side === "across_net" ? "#8793a0" : (ball.visible_candidate ? "#2fd08f" : "#d7e85f");
         ctx.fill();
-        ctx.strokeStyle = ball.planned ? "#ffffff" : "rgba(0,0,0,0.45)";
-        ctx.lineWidth = ball.planned ? 3 : 1;
+        ctx.strokeStyle = ball.source === "oak_depth" ? "#57a6ff" : (ball.planned ? "#ffffff" : "rgba(0,0,0,0.45)");
+        ctx.lineWidth = ball.source === "oak_depth" ? 3 : (ball.planned ? 3 : 1);
         ctx.stroke();
+
         if (ball.order) {
           ctx.fillStyle = "#07110d";
           ctx.font = "bold 12px system-ui";
@@ -719,7 +901,7 @@ HTML = """<!doctype html>
         }
       });
 
-      const robot = map.robot || {};
+      // robot arrow
       if (robot.x_m !== undefined && robot.y_m !== undefined) {
         const x = sx(robot.x_m);
         const y = sy(robot.y_m);
@@ -737,16 +919,26 @@ HTML = """<!doctype html>
         ctx.restore();
       }
 
+      // summary box
       const metrics = map.metrics || {};
+      const confirmedCount = allBalls.filter(b => b.confirmed && b.side !== "across_net").length;
+      const depthCount = allBalls.filter(b => b.confirmed && b.source === "oak_depth" && b.side !== "across_net").length;
+      const pendingCount = allBalls.filter(b => !b.confirmed && b.side !== "across_net").length;
+      const plannedCount = metrics.balls_collectable ?? 0;
+      const summaryLine1 = `confirmed ${confirmedCount} · depth ${depthCount} · planned ${plannedCount}${pendingCount > 0 ? ` · pending ${pendingCount}` : ""}`;
+      const summaryLine2 = metrics.total_distance_m != null
+        ? `distance ${fmt(metrics.total_distance_m, "m")} · replans ${metrics.planned_replans ?? 0}`
+        : "no route planned";
+      const boxW = Math.max(280, ctx.measureText(summaryLine1).width + 28);
       ctx.fillStyle = "rgba(12,17,22,0.76)";
-      ctx.fillRect(pad + 10, pad + 10, 310, 64);
+      ctx.fillRect(pad + 10, pad + 10, boxW, 64);
       ctx.fillStyle = "#eef4f8";
       ctx.font = "16px system-ui";
       ctx.textAlign = "left";
-      ctx.fillText(`planned ${metrics.balls_collectable ?? 0} / detected ${metrics.balls_detected ?? ((map.balls || []).length)}`, pad + 24, pad + 36);
+      ctx.fillText(summaryLine1, pad + 24, pad + 36);
       ctx.fillStyle = "#91a2b2";
       ctx.font = "13px system-ui";
-      ctx.fillText(`distance ${fmt(metrics.total_distance_m, "m")} · replans ${metrics.planned_replans ?? 0}`, pad + 24, pad + 58);
+      ctx.fillText(summaryLine2, pad + 24, pad + 58);
     }
     function renderHistory() {
       const history = diagnostics.history || [];
@@ -762,10 +954,10 @@ HTML = """<!doctype html>
       const total = stats.total || 0;
       const byMode = stats.by_mode || {};
       document.getElementById("sTotal").textContent = total;
-      document.getElementById("sCollect").textContent = byMode.collect || 0;
+      document.getElementById("sCollect").textContent = (byMode.collect || 0) + (byMode.collect_one || 0);
       document.getElementById("sSurvey").textContent = byMode.survey || 0;
       document.getElementById("sIdle").textContent = byMode.idle || 0;
-      document.getElementById("statsRows").innerHTML = ["collect", "survey", "idle"].map(mode => {
+      document.getElementById("statsRows").innerHTML = ["collect", "collect_one", "survey", "idle"].map(mode => {
         const count = byMode[mode] || 0;
         const latest = (stats.latest_by_mode || {})[mode] || {};
         const share = total ? `${Math.round(count * 100 / total)}%` : "0%";
@@ -865,6 +1057,9 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         payload = html.encode("utf-8")
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -873,6 +1068,7 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         payload = json.dumps(data).encode("utf-8")
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)

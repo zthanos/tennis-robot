@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise ball detection and monocular range estimation on a synthetic frame."""
+"""Exercise ball detection and OAK-style depth range estimation on a synthetic frame."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from perception import (  # noqa: E402
     CameraMount,
     RobotPose2D,
     detect_largest_ball,
-    estimate_ball_observation,
+    estimate_depth_ball_observation,
     observation_to_robot_xy,
     observation_to_world,
     robot_xy_to_world,
@@ -32,8 +32,20 @@ def main() -> None:
     if detection is None:
         raise SystemExit("expected synthetic tennis ball to be detected")
 
-    observation = estimate_ball_observation(detection, frame.shape[1], camera_fov_rad=1.05)
-    if not 1.0 < observation.distance_m < 1.6:
+    far_frame = np.zeros((360, 640, 3), dtype=np.uint8)
+    cv2.circle(far_frame, (52, 43), 4, (30, 230, 210), -1)
+    far_detection = detect_largest_ball(far_frame)
+    if far_detection is None:
+        raise SystemExit("expected small distant tennis ball to be detected")
+    if far_detection.width < 5 or far_detection.height < 5:
+        raise SystemExit(f"unexpected distant ball bbox: {far_detection}")
+
+    depth = np.full(frame.shape[:2], np.nan, dtype=np.float32)
+    depth[detection.y : detection.y + detection.height, detection.x : detection.x + detection.width] = 1.25
+    observation = estimate_depth_ball_observation(detection, depth, frame.shape[1], frame.shape[0], camera_fov_rad=1.05)
+    if observation is None:
+        raise SystemExit("expected depth observation for synthetic tennis ball")
+    if not 1.2 < observation.distance_m < 1.3:
         raise SystemExit(f"unexpected distance estimate: {observation.distance_m:.3f}m")
     if not 0.03 < observation.bearing_rad < 0.09:
         raise SystemExit(f"unexpected bearing estimate: {math.degrees(observation.bearing_rad):.2f}deg")
@@ -63,7 +75,7 @@ def main() -> None:
     print(
         "perception smoke ok: "
         f"bbox=({detection.x},{detection.y},{detection.width},{detection.height}) "
-        f"mono_distance={observation.distance_m:.2f}m "
+        f"depth_distance={observation.distance_m:.2f}m "
         f"bearing={math.degrees(observation.bearing_rad):.1f}deg "
         f"world=({world_xy[0]:.2f},{world_xy[1]:.2f})"
     )

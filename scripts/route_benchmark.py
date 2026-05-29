@@ -21,6 +21,14 @@ GRID_M = 0.35
 ROBOT_RADIUS_M = 0.36
 NET_CLEARANCE_X_M = 0.35
 
+ROBOT_START_INSET_M = 1.15     # robot starts this far inset from the phase boundary
+BALL_PHASE_MARGIN_M = 0.08     # balls within this margin of a phase edge are excluded
+AVOID_MISS_DELTA = 0.04        # extra miss probability added for avoid-mode legs
+MISS_PROBABILITY_CAP = 0.60    # maximum miss probability per ball
+PICKUP_DISTANCE_WEIGHT = 0.35  # pickup-pose distance contribution to route estimate
+AVOID_DISTANCE_MULTIPLIER = 1.35   # estimated-distance multiplier for avoid-mode paths
+AVOID_DISTANCE_ADDER_M = 2.0   # extra distance added for avoid-mode route estimate
+
 
 @dataclass(frozen=True)
 class Bounds:
@@ -125,6 +133,12 @@ class TrainingRow:
     phase_max_x_m: float
     phase_min_y_m: float
     phase_max_y_m: float
+    balls_within_2m: int = 0
+    phase_progress: float = 0.0
+    bearing_cost_rad: float = 0.0
+    cluster_distance_m: float = 0.0
+    normalized_x: float = 0.0
+    quality_advantage: float = 0.0
 
 
 def half_bounds(side: str) -> Bounds:
@@ -141,7 +155,7 @@ def full_bounds() -> Bounds:
 
 def phase_start(bounds: Bounds) -> Point:
     from_left = abs(bounds.min_x) >= abs(bounds.max_x)
-    return Point(bounds.min_x + 1.15 if from_left else bounds.max_x - 1.15, 0.0)
+    return Point(bounds.min_x + ROBOT_START_INSET_M if from_left else bounds.max_x - ROBOT_START_INSET_M, 0.0)
 
 
 def dist(a: Point, b: Point) -> float:
@@ -345,7 +359,7 @@ def make_scenario(
 ) -> Scenario:
     rng = random.Random(seed)
     bounds = half_bounds("left") if area_mode == "half" else full_bounds()
-    robot_start = Point(bounds.min_x + 1.15, 0.0)
+    robot_start = Point(bounds.min_x + ROBOT_START_INSET_M, 0.0)
     obstacles = [Obstacle("rect", "net", 0.0, 0.0, width=0.18, height=COURT_WIDTH_M + 0.8)]
 
     for index in range(people_count):
@@ -434,6 +448,23 @@ def nearest_obstacle_distance(point: Point, obstacles: list[Obstacle]) -> float:
     return min(distances) if distances else 999.0
 
 
+def ball_centroid(balls: list[Ball]) -> Point:
+    if not balls:
+        return Point(0.0, 0.0)
+    return Point(sum(b.x for b in balls) / len(balls), sum(b.y for b in balls) / len(balls))
+
+
+def heading_bearing_cost(prev: Point, current: Point, target: Point) -> float:
+    hdx, hdy = current.x - prev.x, current.y - prev.y
+    tdx, tdy = target.x - current.x, target.y - current.y
+    hn = math.hypot(hdx, hdy)
+    tn = math.hypot(tdx, tdy)
+    if hn < 1e-6 or tn < 1e-6:
+        return 0.0
+    cos_a = (hdx * tdx + hdy * tdy) / (hn * tn)
+    return math.acos(max(-1.0, min(1.0, cos_a)))
+
+
 def lidar_clearance_penalty(
     point: Point,
     obstacles: list[Obstacle],
@@ -495,9 +526,9 @@ def candidate_features(
         direct_distance = dist(current, target)
         pickup_distance = dist(target, ball)
         clear = segment_clear(current, target, obstacles, phase_bounds, safety_buffer_m)
-        estimated_distance = direct_distance + pickup_distance * 0.35
+        estimated_distance = direct_distance + pickup_distance * PICKUP_DISTANCE_WEIGHT
         if not clear:
-            estimated_distance = estimated_distance * 1.35 + 2.0
+            estimated_distance = estimated_distance * AVOID_DISTANCE_MULTIPLIER + AVOID_DISTANCE_ADDER_M
         estimated_distance += lidar_clearance_penalty(target, obstacles, phase_bounds, lidar_costmap)
         if best is None or estimated_distance < best[0]:
             best = (estimated_distance, target, clear)
@@ -521,11 +552,59 @@ def candidate_features(
     }
 
 
+RISK_BASE_PROBS: dict[str, float] = {"normal": 0.03, "net_wall": 0.18, "obstacle": 0.32}
+
+
 def miss_probability(risk: str, mode: str) -> float:
-    base = {"normal": 0.03, "net_wall": 0.18, "obstacle": 0.32}[risk]
+    base = RISK_BASE_PROBS[risk]
     if mode == "avoid":
-        base += 0.04
-    return min(base, 0.60)
+        base += AVOID_MISS_DELTA
+    return min(base, MISS_PROBABILITY_CAP)
+
+
+def nearest_shortlist(current: Point, balls: list[Ball], window: int) -> list[tuple[int, Ball]]:
+    return sorted(
+        enumerate(balls),
+        key=lambda item: math.hypot(item[1].x - current.x, item[1].y - current.y),
+    )[:window]
+
+
+def run_metrics_from_legs(
+    seed: int,
+    balls: list[Ball],
+    legs: list[Leg],
+    travel_speed_m_s: float,
+    pickup_time_s: float,
+    scan_time_s: float,
+    scan_events: int,
+    planned_replans: int,
+) -> RunMetrics:
+    travel_time = sum(leg.travel_s for leg in legs)
+    pickup_time = len(legs) * pickup_time_s
+    scan_time = scan_events * scan_time_s
+    total_distance = sum(leg.distance_m for leg in legs)
+    avoid_legs = sum(1 for leg in legs if leg.mode == "avoid")
+    expected_misses = sum(miss_probability(leg.risk, leg.mode) for leg in legs)
+    return RunMetrics(
+        seed=seed,
+        balls_detected=len(balls),
+        balls_collectable=len(legs),
+        balls_blocked=sum(1 for ball in balls if ball.blocked),
+        collected_rate=len(legs) / max(1, len(balls)),
+        total_distance_m=total_distance,
+        total_time_s=travel_time + pickup_time + scan_time,
+        travel_time_s=travel_time,
+        scan_time_s=scan_time,
+        pickup_time_s=pickup_time,
+        estimated_avg_speed_m_s=total_distance / max(1.0, travel_time),
+        planned_replans=planned_replans + avoid_legs,
+        scan_events=scan_events,
+        risky_balls=sum(1 for leg in legs if leg.risk != "normal"),
+        expected_misses=expected_misses,
+        net_wall_risks=sum(1 for leg in legs if leg.risk == "net_wall"),
+        obstacle_risks=sum(1 for leg in legs if leg.risk == "obstacle"),
+        avoid_legs=avoid_legs,
+    )
 
 
 def plan_route(
@@ -550,8 +629,10 @@ def plan_route(
     for phase_index, phase_bounds, phase_start_point in planning_phases(area_mode, scenario):
         scan_events += 1
         planned_replans += 1
-        phase_balls = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, 0.08)]
+        phase_balls = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, BALL_PHASE_MARGIN_M)]
+        total_phase_balls = max(1, len(phase_balls))
         current = phase_start_point
+        prev = phase_start_point
         remaining = phase_balls[:]
         step_in_phase = 0
         while remaining:
@@ -590,6 +671,9 @@ def plan_route(
                 decision_id += 1
                 step_in_phase += 1
                 ranked_rows = sorted(candidate_rows, key=lambda item: float(item[1]["estimated_route_distance_m"]))
+                phase_span_x = max(1e-6, phase_bounds.max_x - phase_bounds.min_x)
+                centroid_pt = ball_centroid(remaining)
+                prog = step_in_phase / total_phase_balls
                 for rank, (candidate, features, _index) in enumerate(ranked_rows, start=1):
                     training_rows.append(
                         TrainingRow(
@@ -619,11 +703,18 @@ def plan_route(
                             phase_max_x_m=phase_bounds.max_x,
                             phase_min_y_m=phase_bounds.min_y,
                             phase_max_y_m=phase_bounds.max_y,
+                            balls_within_2m=sum(1 for b in remaining if b.id != candidate.id and dist(b, candidate) <= 2.0),
+                            phase_progress=prog,
+                            bearing_cost_rad=heading_bearing_cost(prev, current, candidate),
+                            cluster_distance_m=dist(candidate, centroid_pt),
+                            normalized_x=(candidate.x - phase_bounds.min_x) / phase_span_x,
+                            quality_advantage=0.0,
                         )
                     )
             risk = ball_risk(ball, scenario.obstacles, phase_bounds, collection_margin_m)
             legs.append(Leg(phase_index, ball.id, distance, distance / travel_speed_m_s, mode, path, risk))
             planned_balls.add(ball.id)
+            prev = current
             current = path[-1]
             remaining.pop(best_index)
             if rescan_every > 0 and len(remaining) > 0 and len([leg for leg in legs if leg.phase == phase_index]) % rescan_every == 0:

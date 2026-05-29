@@ -66,7 +66,7 @@ controllers/ball_detector/ball_detector.py
 ```
 
 When the simulation runs, the controller reads from the robot camera, detects tennis-ball-colored blobs, and draws detection rectangles on the Webots camera display.
-The controller also estimates a rough monocular ball distance and bearing from the camera field of view and the known tennis ball diameter.
+The controller uses the simulated OAK depth stream for ball distance; RGB-only detections without valid depth are not converted into ball positions.
 Detections are projected into robot-base and court/world XY coordinates using the front camera mount and the robot pose, so downstream navigation can reason in meters instead of image pixels.
 
 The current world includes **Concept A: Funnel + Wide Intake Roller** as the front collector module:
@@ -76,7 +76,8 @@ The current world includes **Concept A: Funnel + Wide Intake Roller** as the fro
 - a rubber-like wide intake roller driven by `lift_wheel_motor` (historical device name);
 - a transparent visual hopper raised for throw-mode gravity feed;
 - a simulated intake zone that removes a tennis ball once the collector state machine captures it.
-- a top-mounted `front_camera` for tennis-ball detection and a `front_lidar` for range/obstacle sensing.
+- a top-mounted `front_camera` plus aligned `front_depth` range finder representing the OAK-D-Lite AF RGB-D role for tennis-ball detection, depth, and targeted looks into shadow zones;
+- a low-mounted 360-degree `front_lidar` representing the Waveshare/Slamtec RPLIDAR C1 role for real-time court boundaries, obstacles, range, shadow zones, and route costmaps.
 
 The Webots court is modeled after the reference clay court photos:
 
@@ -91,7 +92,7 @@ The controller behavior is:
 idle -> scan -> align -> approach -> capture -> collected
 ```
 
-The Webots camera display overlays the current collector state and collected-ball count. The controller starts in `idle` and waits for a command from the Python control panel before it begins collecting. Ball distance is estimated from the top camera image, while `front_lidar` provides the forward range used by survey/navigation telemetry.
+The Webots camera display overlays the current collector state and collected-ball count. The controller starts in `idle` and waits for a command from the Python control panel before it begins collecting. Ball distance is currently estimated from the top camera image, while the low 360-degree `front_lidar` provides range data for survey/navigation telemetry and the intended simulated contract for live obstacle mapping.
 
 ## Remote Control Console
 
@@ -313,7 +314,7 @@ uv run python scripts/route_benchmark.py --runs 100 --balls 40
 
 The benchmark generates deterministic random scenarios with realistic ball bias, plans two-phase collection, estimates travel time from configured robot speed, and reports average collection rate, total time, distance, expected misses, blocked balls, net/wall risks, obstacle risks, scan events, and replans.
 
-Enable the RPLIDAR C1-style costmap penalty when comparing the camera-only planner against the camera+LiDAR navigation stack:
+Enable the RPLIDAR C1-style costmap penalty when comparing the camera-only planner against OAK-D ball detection plus a live LiDAR obstacle map:
 
 ```powershell
 uv run python scripts/route_benchmark.py --runs 100 --balls 40 --lidar-costmap --json-out runtime/route-benchmark-lidar-costmap.json --csv-out runtime/route-benchmark-lidar-costmap.csv

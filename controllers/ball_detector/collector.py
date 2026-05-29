@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import math
-import os
 from dataclasses import dataclass
 from enum import Enum
+
+from config_utils import _env_float
 
 
 class CollectorState(str, Enum):
@@ -25,6 +26,7 @@ class BallObservationInput:
     bearing_rad: float = 0.0
     distance_m: float = math.inf
     confidence: float = 0.0
+    source: str = "unknown"
     robot_x_m: float | None = None
     robot_y_m: float | None = None
     world_x_m: float | None = None
@@ -58,10 +60,12 @@ class ConceptAConfig:
     lost_target_timeout_s: float = 0.5
     capture_timeout_s: float = 2.8
     scan_angular_speed_rad_s: float = 0.75
+    scan_full_turn_s: float = 8.4
     align_angular_gain: float = 2.7
     max_align_angular_speed_rad_s: float = 1.2
     approach_speed_m_s: float = 0.22
     capture_speed_m_s: float = 0.08
+    capture_angular_gain: float = 1.2
     reverse_speed_m_s: float = -0.10
     lift_wheel_speed: float = 1.0
 
@@ -75,6 +79,7 @@ class ConceptAConfig:
             lost_target_timeout_s=_env_float("COLLECTOR_LOST_TARGET_TIMEOUT_S", defaults.lost_target_timeout_s),
             capture_timeout_s=_env_float("COLLECTOR_CAPTURE_TIMEOUT_S", defaults.capture_timeout_s),
             scan_angular_speed_rad_s=_env_float("COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S", defaults.scan_angular_speed_rad_s),
+            scan_full_turn_s=_env_float("COLLECTOR_SCAN_FULL_TURN_S", defaults.scan_full_turn_s),
             align_angular_gain=_env_float("COLLECTOR_ALIGN_ANGULAR_GAIN", defaults.align_angular_gain),
             max_align_angular_speed_rad_s=_env_float(
                 "COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S",
@@ -82,20 +87,10 @@ class ConceptAConfig:
             ),
             approach_speed_m_s=_env_float("COLLECTOR_APPROACH_SPEED_M_S", defaults.approach_speed_m_s),
             capture_speed_m_s=_env_float("COLLECTOR_CAPTURE_SPEED_M_S", defaults.capture_speed_m_s),
+            capture_angular_gain=_env_float("COLLECTOR_CAPTURE_ANGULAR_GAIN", defaults.capture_angular_gain),
             reverse_speed_m_s=-abs(_env_float("COLLECTOR_REVERSE_SPEED_M_S", abs(defaults.reverse_speed_m_s))),
             lift_wheel_speed=_env_float("COLLECTOR_LIFT_WHEEL_SPEED", defaults.lift_wheel_speed),
         )
-
-
-def _env_float(name: str, default: float) -> float:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    try:
-        return float(value)
-    except ValueError:
-        print(f"invalid {name}={value!r}; using {default}")
-        return default
 
 
 class ConceptACollectorBehavior:
@@ -107,12 +102,30 @@ class ConceptACollectorBehavior:
         self._state_elapsed_s = 0.0
         self._lost_elapsed_s = 0.0
         self._last_visible_observation: BallObservationInput | None = None
+        self._scan_best_observation: BallObservationInput | None = None
 
     def reset(self) -> None:
         self.state = CollectorState.SCAN
         self._state_elapsed_s = 0.0
         self._lost_elapsed_s = 0.0
         self._last_visible_observation = None
+        self._scan_best_observation = None
+
+    @property
+    def state_elapsed_s(self) -> float:
+        return self._state_elapsed_s
+
+    @property
+    def scan_best_observation(self) -> BallObservationInput | None:
+        return self._scan_best_observation
+
+    def start_tracking(self, observation: BallObservationInput) -> None:
+        if not observation.visible:
+            return
+        self._lost_elapsed_s = 0.0
+        self._last_visible_observation = observation
+        self._scan_best_observation = observation
+        self._transition(self._tracking_state(observation))
 
     def update(
         self,
@@ -125,6 +138,8 @@ class ConceptACollectorBehavior:
         if observation.visible:
             self._lost_elapsed_s = 0.0
             self._last_visible_observation = observation
+            if self.state == CollectorState.SCAN:
+                self._remember_scan_observation(observation)
         else:
             self._lost_elapsed_s += max(0.0, dt_s)
         tracking_observation = self._tracking_observation(observation)
@@ -134,8 +149,9 @@ class ConceptACollectorBehavior:
         elif jam_detected:
             self._transition(CollectorState.REVERSE_CLEAR)
         elif self.state == CollectorState.SCAN:
-            if observation.visible:
-                self._transition(self._tracking_state(observation))
+            if self._state_elapsed_s >= self.config.scan_full_turn_s and self._scan_best_observation is not None:
+                tracking_observation = self._scan_best_observation
+                self._transition(self._tracking_state(tracking_observation))
         elif self.state in {CollectorState.ALIGN, CollectorState.APPROACH}:
             if self._lost_elapsed_s > self.config.lost_target_timeout_s:
                 self._transition(CollectorState.SCAN)
@@ -152,6 +168,16 @@ class ConceptACollectorBehavior:
                 self._transition(CollectorState.SCAN)
 
         return self._command_for_state(tracking_observation)
+
+    def _remember_scan_observation(self, observation: BallObservationInput) -> None:
+        current = self._scan_best_observation
+        if current is None:
+            self._scan_best_observation = observation
+            return
+        current_score = current.confidence / max(0.25, current.distance_m)
+        new_score = observation.confidence / max(0.25, observation.distance_m)
+        if new_score > current_score:
+            self._scan_best_observation = observation
 
     def _tracking_observation(self, observation: BallObservationInput) -> BallObservationInput:
         if observation.visible:
@@ -172,8 +198,20 @@ class ConceptACollectorBehavior:
 
     def _transition(self, next_state: CollectorState) -> None:
         if next_state != self.state:
+            previous_state = self.state
             self.state = next_state
             self._state_elapsed_s = 0.0
+            if next_state == CollectorState.SCAN:
+                self._scan_best_observation = None
+            elif previous_state == CollectorState.SCAN:
+                self._lost_elapsed_s = 0.0
+
+    def _clamped_turn(self, bearing_rad: float) -> float:
+        cfg = self.config
+        return max(
+            -cfg.max_align_angular_speed_rad_s,
+            min(cfg.max_align_angular_speed_rad_s, bearing_rad * cfg.align_angular_gain),
+        )
 
     def _command_for_state(self, observation: BallObservationInput) -> ConceptACommand:
         cfg = self.config
@@ -181,21 +219,13 @@ class ConceptACollectorBehavior:
             base = BaseCommand(0.0, cfg.scan_angular_speed_rad_s)
             collector = CollectorCommand(0.0, False)
         elif self.state == CollectorState.ALIGN:
-            turn = max(
-                -cfg.max_align_angular_speed_rad_s,
-                min(cfg.max_align_angular_speed_rad_s, observation.bearing_rad * cfg.align_angular_gain),
-            )
-            base = BaseCommand(0.0, turn)
+            base = BaseCommand(0.0, self._clamped_turn(observation.bearing_rad))
             collector = CollectorCommand(0.0, False)
         elif self.state == CollectorState.APPROACH:
-            turn = max(
-                -cfg.max_align_angular_speed_rad_s,
-                min(cfg.max_align_angular_speed_rad_s, observation.bearing_rad * cfg.align_angular_gain),
-            )
-            base = BaseCommand(cfg.approach_speed_m_s, turn)
+            base = BaseCommand(cfg.approach_speed_m_s, self._clamped_turn(observation.bearing_rad))
             collector = CollectorCommand(cfg.lift_wheel_speed, True)
         elif self.state == CollectorState.CAPTURE:
-            base = BaseCommand(cfg.capture_speed_m_s, observation.bearing_rad * 1.2)
+            base = BaseCommand(cfg.capture_speed_m_s, observation.bearing_rad * cfg.capture_angular_gain)
             collector = CollectorCommand(cfg.lift_wheel_speed, True)
         elif self.state == CollectorState.REVERSE_CLEAR:
             base = BaseCommand(cfg.reverse_speed_m_s, 0.0)

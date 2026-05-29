@@ -14,10 +14,16 @@ import math
 from pathlib import Path
 
 from route_benchmark import (
+    BALL_PHASE_MARGIN_M,
+    Ball,
     TrainingRow,
+    ball_centroid,
     candidate_features,
+    dist,
+    heading_bearing_cost,
     in_bounds,
     make_scenario,
+    nearest_shortlist,
     pathfind,
     planning_phases,
     write_training_csv,
@@ -51,10 +57,7 @@ def greedy_rollout_cost(
         best_index = -1
         best_features = None
         best_cost = math.inf
-        shortlist = sorted(enumerate(balls), key=lambda item: math.hypot(item[1].x - current.x, item[1].y - current.y))[
-            :candidate_window
-        ]
-        for index, ball in shortlist:
+        for index, ball in nearest_shortlist(current, balls, candidate_window):
             features = candidate_features(
                 current,
                 ball,
@@ -86,21 +89,26 @@ def append_training_row(
     decision_id: int,
     phase_index: int,
     step_in_phase: int,
-    remaining_count: int,
+    total_phase_balls: int,
+    remaining: list,
     rank: int,
     selected: bool,
+    quality_advantage: float,
+    prev,
     current,
     ball,
     features: dict[str, float | int | str],
     phase_bounds,
 ) -> None:
+    phase_span_x = max(1e-6, phase_bounds.max_x - phase_bounds.min_x)
+    centroid_pt = ball_centroid(remaining)
     rows.append(
         TrainingRow(
             seed=seed,
             decision_id=decision_id,
             phase=phase_index,
             step_in_phase=step_in_phase,
-            remaining_balls=remaining_count,
+            remaining_balls=len(remaining),
             candidate_rank_by_distance=rank,
             selected=int(selected),
             robot_x_m=current.x,
@@ -122,6 +130,12 @@ def append_training_row(
             phase_max_x_m=phase_bounds.max_x,
             phase_min_y_m=phase_bounds.min_y,
             phase_max_y_m=phase_bounds.max_y,
+            balls_within_2m=sum(1 for b in remaining if b.id != ball.id and dist(b, ball) <= 2.0),
+            phase_progress=step_in_phase / max(1, total_phase_balls),
+            bearing_cost_rad=heading_bearing_cost(prev, current, ball),
+            cluster_distance_m=dist(ball, centroid_pt),
+            normalized_x=(ball.x - phase_bounds.min_x) / phase_span_x,
+            quality_advantage=quality_advantage,
         )
     )
 
@@ -144,16 +158,16 @@ def generate_rows_for_scenario(
     decisions = 0
 
     for phase_index, phase_bounds, phase_start_point in planning_phases(area_mode, scenario):
+        phase_balls = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, BALL_PHASE_MARGIN_M)]
+        total_phase_balls = max(1, len(phase_balls))
         current = phase_start_point
-        remaining = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, 0.08)]
+        prev = phase_start_point
+        remaining = list(phase_balls)
         step_in_phase = 0
         while remaining:
             step_in_phase += 1
             candidate_rows = []
-            shortlist = sorted(enumerate(remaining), key=lambda item: math.hypot(item[1].x - current.x, item[1].y - current.y))[
-                :candidate_window
-            ]
-            for index, ball in shortlist:
+            for index, ball in nearest_shortlist(current, remaining, candidate_window):
                 features = candidate_features(
                     current,
                     ball,
@@ -189,17 +203,27 @@ def generate_rows_for_scenario(
             decision_id += 1
             decisions += 1
             best = min(candidate_rows, key=lambda item: item[0])
+
+            # quality_advantage: positive = better than mean, negative = worse
+            costs = [c[0] for c in candidate_rows]
+            mean_cost = sum(costs) / len(costs)
+            denom = max(1e-6, mean_cost)
+
             ranked = sorted(candidate_rows, key=lambda item: float(item[3]["estimated_route_distance_m"]))
-            for rank, (_outcome_cost, _index, ball, features) in enumerate(ranked, start=1):
+            for rank, (outcome_cost, _index, ball, features) in enumerate(ranked, start=1):
+                adv = (mean_cost - outcome_cost) / denom
                 append_training_row(
                     rows,
                     scenario.seed,
                     decision_id,
                     phase_index,
                     step_in_phase,
-                    len(remaining),
+                    total_phase_balls,
+                    remaining,
                     rank,
                     selected=ball.id == best[2].id,
+                    quality_advantage=adv,
+                    prev=prev,
                     current=current,
                     ball=ball,
                     features=features,
@@ -217,6 +241,7 @@ def generate_rows_for_scenario(
             if distance == math.inf:
                 remaining.pop(best_index)
                 continue
+            prev = current
             current = path[-1]
             remaining.pop(best_index)
 

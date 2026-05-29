@@ -11,20 +11,20 @@
 Η νέα baseline επιλογή αισθητήρων είναι:
 
 ```text
-OAK-D S2 camera -> ball detection / ball distance / ball map
-Slamtec RPLIDAR C1 -> obstacle scan / wall-net-fence clearance / route costmap
+Waveshare/Slamtec RPLIDAR C1 low 360 LiDAR -> obstacle scan / shadow zones / wall-net-fence clearance / route costmap
+OAK-D S2 top camera -> ball detection / hidden ball recovery / ball distance / ball map
 Encoders + IMU -> odometry / robot pose
 ```
 
-Το RPLIDAR C1 μπαίνει συμπληρωματικά στην OAK-D S2. Δεν αντικαθιστά την κάμερα για την ανίχνευση μπάλας, αλλά κάνει την πλοήγηση και το edge/defer policy πολύ πιο αξιόπιστα.
+Το Waveshare/Slamtec RPLIDAR C1 μπαίνει χαμηλά στο robot για real-time χάρτη εμποδίων, όρια γηπέδου, shadow zones και costmap. Δεν το χρησιμοποιούμε ως αξιόπιστο ball detector, γιατί η μπάλα 6.7 cm δίνει αδύναμο/ασταθές 2D return. Η OAK-D S2 μένει ψηλά ως ο κύριος αισθητήρας για ball detection, depth και targeted look σε περιοχές που το LiDAR δείχνει κρυμμένες ή μπλοκαρισμένες.
 
 Προσθήκη στη λίστα αγοράς electronics/sensors:
 
 | Qty | Είδος | Χρήση |
 |---:|---|---|
-| 1 | Slamtec RPLIDAR C1 | 2D LiDAR για costmap, εμπόδια, φιλέ/τοίχο/φράχτη και ROS 2 navigation |
+| 1 | Waveshare/Slamtec RPLIDAR C1 από Amazon.de | Χαμηλό 360° 2D LiDAR για costmap, εμπόδια, shadow zones, φιλέ/τοίχο/φράχτη και ROS 2 navigation |
 | 1 | USB/serial cable ή adapter που απαιτεί το C1 kit | Σύνδεση στο SBC / mini PC |
-| 1 set | M3/M4 vibration-isolated mounting bracket | Σταθερή οριζόντια τοποθέτηση LiDAR στο robot |
+| 1 set | M3/M4 guarded, vibration-isolated lower mounting bracket | Σταθερή χαμηλή οριζόντια τοποθέτηση LiDAR, προστατευμένη από χτυπήματα και χωρίς να κόβεται το 360° scan από ρόδες/funnel |
 
 Πάρε αυτή τη λίστα σε φυσικό κατάστημα ξυλείας/σιδηρικών/ηλεκτρονικών. Οι
 διαστάσεις είναι σε mm όπου δεν αναφέρεται κάτι άλλο.
@@ -82,6 +82,35 @@ Encoders + IMU -> odometry / robot pose
 | Rated torque | τουλάχιστον 7-10 kg.cm |
 | Stall current | να αναγράφεται στο datasheet |
 | Gearbox | μεταλλικό |
+
+Προτεινόμενο συγκεκριμένο μοντέλο για το prototype:
+
+```text
+2 τεμάχια DFRobot 12V Metal DC Geared Motor with Encoder
+Model: GB37Y3530-12V-83R
+Link: https://www.dfrobot.com/product-633.html
+```
+
+Χαρακτηριστικά του συγκεκριμένου μοτέρ:
+
+| Χαρακτηριστικό | Τιμή |
+|---|---|
+| Motor type | Brushed DC gear motor με integrated quadrature encoder |
+| Rated voltage | 12 V DC |
+| Gear ratio | 131:1 |
+| No-load speed | 83 RPM ±10% |
+| No-load current | 350 mA |
+| Start voltage | 1.0 V |
+| Stall torque | 45 kg.cm |
+| Stall current | 7 A |
+| Encoder resolution | 16 counts/rev στο motor shaft, 2096 counts/rev στο gearbox output shaft |
+| Output shaft | 6 mm D-shaped shaft, μήκος περίπου 0.61 in / 15.5 mm |
+| Mounting | 6x M3 face holes σε hex pattern |
+| Screw depth warning | Οι M3 βίδες να μην μπουν πάνω από 3 mm μέσα στο μοτέρ |
+
+Αυτό το μοντέλο είναι καλή επιλογή για τη βάση: η ταχύτητα 83 RPM ταιριάζει
+στον στόχο 80-120 RPM, το stall current 7 A είναι διαχειρίσιμο με σωστό driver,
+και ο encoder έχει αρκετή ανάλυση για odometry/closed-loop speed control.
 
 Αν δεν υπάρχει με encoder:
 
@@ -493,7 +522,7 @@ External PSU: περίπου 90 W
 
 ```text
 1 φύλλο κόντρα πλακέ θαλάσσης σημύδα 12-15 mm, 70x100 cm, κομμένο σύμφωνα με λίστα
-2 DC gear motors 12V, 80-120RPM, με encoder, 6/8mm D-shaft
+2 DFRobot GB37Y3530-12V-83R DC gear motors 12V, 83RPM, 45kg.cm, encoder, 6mm D-shaft: https://www.dfrobot.com/product-633.html
 2 motor drivers για brushed DC motors, π.χ. BTS7960/IBT-2
 2 driven wheels 150-180mm rubber/PU ή hubs για τους άξονες
 2 swivel casters 75-85mm με πλάκα

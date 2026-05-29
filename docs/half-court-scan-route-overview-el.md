@@ -4,12 +4,12 @@ Last checked: 2026-05-27
 
 This document defines the first mapping and route-planning approach for the tennis robot collector. The goal is to avoid reactive back-and-forth movement by scanning one half of the court, building a temporary ball map, planning a collection route, and refreshing that map during collection.
 
-The intended first hardware path uses the OAK-D S2 as the primary ball-perception sensor and the RPLIDAR C1 as the navigation/costmap sensor:
+The intended first hardware path uses a low-mounted Waveshare/Slamtec RPLIDAR C1 360-degree 2D LiDAR for real-time court/obstacle mapping, with the top-mounted OAK-D S2 as the primary tennis-ball detector:
 
-- RGB image for tennis-ball detection.
-- Stereo depth for distance.
+- Low 360-degree LiDAR sweep for court boundaries, obstacle edges, net/fence/wall clearance, people/bags, route costmaps, and shadow zones.
+- Top OAK-D RGB image for tennis-ball detection and color/shape classification.
+- OAK-D stereo depth for distance, clusters, and balls in LiDAR shadow zones.
 - IMU as part of future pose estimation.
-- RPLIDAR C1 2D scan for obstacles, net/fence/wall clearance, and route costmaps.
 - Wheel encoders, when the mobile base is selected, for odometry.
 
 ## Strategy
@@ -23,11 +23,11 @@ Split collection into two independent court phases:
 The first implementation does not require full SLAM. It uses court-bounded local mapping:
 
 ```text
-camera detection + depth + robot pose -> ball position in court coordinates
-LiDAR scan + robot pose -> obstacle/cost map in court coordinates
+LiDAR scan + robot pose -> obstacle/cost map + shadow zones in court coordinates
+OAK-D RGB/depth + robot pose -> ball positions in court coordinates
 ```
 
-The ball map chooses what can be collected; the LiDAR costmap chooses how safely the robot can reach it.
+The LiDAR does not try to be a tennis-ball detector. A 6.7 cm ball is too small and inconsistent for reliable 2D LiDAR returns. Its job is to keep the planner's map fresh without a slow survey phase, and to tell the OAK-D where the scene is blocked, cluttered, or worth a targeted look.
 
 ## High-Level Flow
 
@@ -54,14 +54,17 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    RGB["OAK-D RGB frame"] --> DET["Ball detector"]
+    LIDAR["Low 360-degree LiDAR scan"] --> COST["Obstacle / clearance costmap"]
+    LIDAR --> SHADOW["Shadow zones / occluded sectors"]
+    RGB["Top OAK-D RGB frame"] --> DET["Visual ball detector"]
     DEPTH["OAK-D stereo depth"] --> RANGE["Depth crop / median range"]
-    DET --> OBS["bearing_rad"]
-    RANGE --> OBS
+    DET --> VOBS["Visual/depth observations"]
+    RANGE --> VOBS
+    SHADOW --> LOOK["Targeted OAK-D look/refresh"]
+    LOOK --> DET
     POSE["robot pose x/y/yaw"] --> WORLD["Court coordinate projection"]
-    OBS --> WORLD
+    VOBS --> WORLD
     WORLD --> MAP["Ball map"]
-    LIDAR["RPLIDAR C1 2D scan"] --> COST["Obstacle / clearance costmap"]
     POSE --> COST
     MAP --> ROUTE["Route planner"]
     COST --> ROUTE
@@ -73,7 +76,7 @@ The simulated code already has the core projection shape in `controllers/ball_de
 BallDetection -> BallObservation -> robot XY -> world/court XY
 ```
 
-The physical robot should preserve this contract even if the detector changes from HSV thresholding to a neural model later.
+The physical robot should preserve this contract even if the camera detector changes from HSV thresholding to a neural model later. LiDAR should feed traversability, clearance, and shadow-zone data; OAK-D observations should feed the ball map.
 
 ## Ball Map State
 
@@ -121,11 +124,11 @@ With RPLIDAR C1 installed, `obstacle_penalty`, `edge_penalty`, and `lidar_cleara
 
 | Sensor | Main question | Algorithm output |
 |---|---|---|
-| OAK-D S2 | Where are the balls? | Ball detections, depth, bearing, ball map. |
-| RPLIDAR C1 | Where can the robot move safely? | Occupancy/cost map, wall/net/fence clearance, obstacle inflation. |
+| Waveshare/Slamtec RPLIDAR C1 low 360-degree LiDAR | Where can the robot move safely, and what areas are blocked from view? | Occupancy/cost map, wall/net/fence clearance, obstacle inflation, shadow zones. |
+| Top OAK-D S2 | Where are the tennis balls? | Ball detections, RGB-D observations, depth, bearing, ball map. |
 | Encoders + IMU | Where is the robot now? | Odometry and pose prediction/correction. |
 
-The LiDAR should not be used as the primary tennis-ball detector. Its value is safer navigation and better approach decisions, especially for balls near walls, fences, the net, bags, or people.
+The LiDAR is not the primary tennis-ball detector. A 2D scan can miss balls, merge them into nearby geometry, or shadow everything behind the first object in the scan. The OAK-D stays responsible for ball detection, while the LiDAR keeps the obstacle map live.
 
 ## Scan Policy
 
@@ -182,7 +185,7 @@ For the first implementation in the browser route simulator:
 3. Plan phase A and phase B separately.
 4. Add explicit phase scan and refresh scan events.
 5. Keep telemetry for phases, scans, replans, distance, blocked balls, and collection order.
-6. Add a LiDAR-costmap mode to compare camera-only planning against camera+RPLIDAR planning.
+6. Add a LiDAR obstacle/shadow-zone mode and compare camera-only planning against OAK-D ball detection plus live LiDAR costmaps.
 
 For benchmark validation:
 
@@ -215,5 +218,5 @@ For the Webots/physical controller after that:
 | Side order | Start on the left/west half in simulation. |
 | Net crossing | Treat halves as independent phases; do not plan through the net. |
 | Full SLAM | Defer until court-line correction plus odometry is insufficient. |
-| LiDAR | Use RPLIDAR C1 as recommended navigation/costmap sensor, complementary to OAK-D. |
+| LiDAR | Use the Waveshare/Slamtec RPLIDAR C1 mounted low on the robot for 360-degree obstacle/court mapping and shadow-zone generation, not primary ball detection. |
 | Perfect route solver | Defer; use greedy route with penalties and refresh scans. |

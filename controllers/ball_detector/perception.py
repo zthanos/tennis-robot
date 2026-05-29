@@ -10,7 +10,7 @@ import numpy as np
 
 
 TENNIS_BALL_DIAMETER_M = 0.067
-MIN_BALL_AREA_PX = 20
+MIN_BALL_AREA_PX = 6
 MIN_BALL_ASPECT_RATIO = 0.55
 MAX_BALL_ASPECT_RATIO = 1.8
 
@@ -50,7 +50,7 @@ class BallObservation:
     detection: BallDetection
     bearing_rad: float
     distance_m: float
-    distance_source: str = "monocular"
+    distance_source: str = "unknown"
 
     @property
     def x_m(self) -> float:
@@ -97,8 +97,8 @@ def detect_largest_ball(frame: np.ndarray) -> BallDetection | None:
     mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
     for lower, upper in HSV_RANGES:
         mask = cv2.bitwise_or(mask, cv2.inRange(hsv, lower, upper))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     candidates: list[BallDetection] = []
@@ -115,21 +115,41 @@ def detect_largest_ball(frame: np.ndarray) -> BallDetection | None:
     return max(candidates, key=lambda detection: detection.area_px)
 
 
-def estimate_ball_observation(
+def estimate_depth_ball_observation(
     detection: BallDetection,
+    depth_frame_m: np.ndarray,
     frame_width_px: int,
+    frame_height_px: int,
     camera_fov_rad: float,
-    ball_diameter_m: float = TENNIS_BALL_DIAMETER_M,
-) -> BallObservation:
-    focal_length_px = frame_width_px / (2 * math.tan(camera_fov_rad / 2))
-    distance_m = ball_diameter_m * focal_length_px / detection.apparent_diameter_px
+    roi_scale: float = 0.55,
+) -> BallObservation | None:
+    """Estimate ball bearing/range from an RGB detection and aligned depth frame."""
+
+    if depth_frame_m.size == 0:
+        return None
+    depth_height, depth_width = depth_frame_m.shape[:2]
+    scale_x = depth_width / max(1, frame_width_px)
+    scale_y = depth_height / max(1, frame_height_px)
+    cx = detection.center_x * scale_x
+    cy = detection.center_y * scale_y
+    half_w = max(1, int(detection.width * scale_x * roi_scale / 2))
+    half_h = max(1, int(detection.height * scale_y * roi_scale / 2))
+    x0 = max(0, int(round(cx)) - half_w)
+    x1 = min(depth_width, int(round(cx)) + half_w + 1)
+    y0 = max(0, int(round(cy)) - half_h)
+    y1 = min(depth_height, int(round(cy)) + half_h + 1)
+    roi = depth_frame_m[y0:y1, x0:x1]
+    valid = roi[np.isfinite(roi) & (roi > 0)]
+    if valid.size == 0:
+        return None
+
     normalized_x = (detection.center_x - frame_width_px / 2) / (frame_width_px / 2)
     bearing_rad = math.atan(normalized_x * math.tan(camera_fov_rad / 2))
     return BallObservation(
         detection=detection,
         bearing_rad=bearing_rad,
-        distance_m=distance_m,
-        distance_source="monocular",
+        distance_m=float(np.median(valid)),
+        distance_source="oak_depth",
     )
 
 

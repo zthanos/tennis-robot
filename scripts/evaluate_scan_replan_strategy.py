@@ -4,15 +4,16 @@
 from __future__ import annotations
 
 import argparse
-import csv
+import copy
 import json
 import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from evaluate_defer_policy import STRATEGY_PRESETS, adjusted_risk, risk_score
-from evaluate_next_ball_policy import run_metrics_from_legs
+from eval_utils import avg_field, write_dataclass_csv
+from evaluate_defer_policy import STRATEGY_PRESETS, adjusted_risk, choose_next, risk_score
 from route_benchmark import (
+    BALL_PHASE_MARGIN_M,
     Ball,
     Leg,
     RunMetrics,
@@ -20,9 +21,11 @@ from route_benchmark import (
     candidate_features,
     in_bounds,
     make_scenario,
+    nearest_shortlist,
     pathfind,
     plan_route,
     planning_phases,
+    run_metrics_from_legs,
 )
 
 
@@ -43,48 +46,6 @@ class ScanReplanRow:
     delta_expected_misses: float
     scan_events: int
     event_replans: int
-
-
-def choose_next(
-    current,
-    candidates: list[Ball],
-    obstacles,
-    phase_bounds,
-    travel_speed_m_s: float,
-    safety_buffer_m: float,
-    collection_margin_m: float,
-    miss_penalty_s: float,
-    edge_pass_miss_multiplier: float,
-    candidate_window: int,
-    skip_risky: bool,
-    lidar_costmap: bool,
-):
-    best = None
-    best_score = math.inf
-    shortlist = sorted(enumerate(candidates), key=lambda item: math.hypot(item[1].x - current.x, item[1].y - current.y))[
-        :candidate_window
-    ]
-    for index, ball in shortlist:
-        features = candidate_features(
-            current,
-            ball,
-            obstacles,
-            phase_bounds,
-            safety_buffer_m,
-            collection_margin_m,
-            travel_speed_m_s,
-            lidar_costmap,
-        )
-        if features is None:
-            continue
-        risk = adjusted_risk(str(features["risk_type"]), edge_pass=False, skip_risky=skip_risky)
-        if risk is None:
-            continue
-        score = float(features["estimated_travel_s"]) + risk_score(risk, False, edge_pass_miss_multiplier) * miss_penalty_s
-        if score < best_score:
-            best_score = score
-            best = (index, ball, features["target"], risk)
-    return best
 
 
 def build_scan_plan(
@@ -118,8 +79,9 @@ def build_scan_plan(
             miss_penalty_s,
             edge_pass_miss_multiplier,
             candidate_window,
-            skip_risky,
-            lidar_costmap,
+            edge_pass=False,
+            skip_risky=skip_risky,
+            lidar_costmap=lidar_costmap,
         )
         if choice is None:
             break
@@ -156,7 +118,7 @@ def plan_scan_replan_policy(
 
     for phase_index, phase_bounds, phase_start_point in planning_phases(area_mode, scenario):
         current = phase_start_point
-        remaining = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, 0.08)]
+        remaining = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, BALL_PHASE_MARGIN_M)]
 
         while remaining:
             scan_events += 1
@@ -219,9 +181,7 @@ def plan_scan_replan_policy(
 
 
 def summarize(rows: list[ScanReplanRow]) -> dict[str, float | int]:
-    def avg(name: str) -> float:
-        return sum(float(getattr(row, name)) for row in rows) / max(1, len(rows))
-
+    avg = lambda name: avg_field(rows, name)
     return {
         "runs": len(rows),
         "avg_planner_time_s": avg("planner_time_s"),
@@ -239,15 +199,6 @@ def summarize(rows: list[ScanReplanRow]) -> dict[str, float | int]:
         "avg_scan_events": avg("scan_events"),
         "avg_event_replans": avg("event_replans"),
     }
-
-
-def write_csv(path: Path, rows: list[ScanReplanRow]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(ScanReplanRow.__dataclass_fields__.keys()))
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(asdict(row))
 
 
 def parse_args() -> argparse.Namespace:
@@ -288,15 +239,7 @@ def main() -> None:
             args.fixed_obstacles,
             args.safety_buffer,
         )
-        scan_scenario = make_scenario(
-            seed,
-            args.balls,
-            args.area_mode,
-            args.distribution,
-            args.people,
-            args.fixed_obstacles,
-            args.safety_buffer,
-        )
+        scan_scenario = copy.deepcopy(planner_scenario)
         _planner_legs, planner = plan_route(
             planner_scenario,
             area_mode=args.area_mode,
@@ -351,7 +294,7 @@ def main() -> None:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.json_out.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     if args.csv_out:
-        write_csv(args.csv_out, rows)
+        write_dataclass_csv(args.csv_out, rows)
 
 
 if __name__ == "__main__":

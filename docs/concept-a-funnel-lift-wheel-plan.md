@@ -14,7 +14,7 @@ Costs are rough prototype estimates and exclude shipping, VAT/import duties, loc
 Build the simplest useful version of the tennis robot architecture:
 
 ```text
-camera/depth perception -> base alignment -> front funnel -> wide intake roller -> small hopper
+OAK-D RGB-D ball detection + low 360-degree LiDAR obstacle map -> base alignment -> front funnel -> wide intake roller -> small hopper
 ```
 
 Then extend the same architecture:
@@ -60,6 +60,20 @@ docs/prototype-purchase-list-el.md
 The same CAD model also includes the vertical mounting frame by default
 (`show_verticals=true`): upper rails, electronics trays, collector uprights,
 battery retainers, handle rails, and reserved launcher/feed uprights.
+
+Sensor mounting intent:
+
+```text
+Waveshare/Slamtec RPLIDAR C1, low on the body, with 360-degree line of sight around the robot
+  -> real-time obstacle/court-edge costmap + shadow zones
+top OAK-D S2, rigidly mounted above the intake/upper frame
+  -> primary ball detection, depth, and targeted looks into LiDAR shadow zones
+```
+
+Keep the LiDAR mount clear of the front funnel lips, casters, and drive wheels.
+The scan plane should be low enough to see real obstacles and court boundaries,
+but tennis balls should remain an OAK-D target. The OAK-D mount should be higher
+and stiffer, with a repeatable downward/front angle for calibration.
 
 Assembly intent:
 
@@ -111,9 +125,10 @@ The current simulation already gives us the right control signals for a first co
 
 | Base capability | Current source | How it helps collection |
 |---|---|---|
-| RGB tennis ball detection | `controllers/ball_detector/perception.py` | Finds the largest ball-colored target in the camera image. |
-| Bearing estimate | `bearing_rad` from `estimate_ball_observation()` | Lets the base center the ball before pickup. |
-| Rough distance estimate | `distance_m` from apparent ball diameter | Lets the base switch from approach to slow capture. |
+| Low 360-degree LiDAR sweep | simulated `front_lidar`, physical lower LiDAR | Builds the live obstacle/court-edge costmap and shadow zones so the robot avoids a slow survey pass. |
+| RGB tennis ball detection | `controllers/ball_detector/perception.py`, physical top OAK-D | Finds tennis balls by color/shape and later neural detection. |
+| Bearing estimate | OAK-D ball observation | Lets the base center the ball before pickup. |
+| Distance estimate | OAK-D depth/monocular fallback | Lets the base switch from approach to slow capture. |
 | Differential drive control | left/right wheel motor velocity | Allows `scan -> align -> approach -> capture` behavior without a steering mechanism. |
 | Telemetry | `robot.vision.ball.*`, `robot.control.loop.duration` | Helps tune detection stability, approach speed, and capture behavior. |
 
@@ -172,6 +187,8 @@ The first prototype should have adjustable slots for funnel height, roller gap, 
 | Required | Brackets, fasteners, inserts, standoffs | 1 set | US $20-$60 | US $20-$60 | Expect iteration here. |
 | Required | Small hopper/bin panels | 1 | US $10-$35 | US $10-$35 | Transparent plastic is useful for debugging. |
 | Required | IR break-beam ball-present sensor at hopper throat | 1 | US $3-$15 | US $3-$15 | Primary `collection_confirmed` signal for the physical MVP. |
+| Required | Waveshare/Slamtec RPLIDAR C1 360-degree 2D LiDAR and lower-body protective bracket | 1 | EUR 80-100 | EUR 80-100 | Live obstacle/court-edge costmap and shadow-zone sensor. Do not rely on it for tennis-ball detection. |
+| Required | Top OAK-D S2 camera mount, USB3 cable, and vibration isolation | 1 set | US $25-$60 | US $25-$60 | Keeps RGB-D ball detection calibrated above the intake/upper frame. |
 | Recommended | Second IR break-beam near roller/throat entry | 1 | US $3-$15 | US $3-$15 | Helps detect partial captures and jams before the ball reaches the hopper. |
 | Recommended | Emergency stop switch | 1 | US $10-$30 | US $10-$30 | Required before real moving tests. |
 | Optional | 100 mm smooth tube/duct section for later feed path tests | 1 | US $8-$25 | US $8-$25 | Good clearance for tennis balls; avoid tight bends. |
@@ -181,7 +198,7 @@ Estimated Phase 1 collector module total:
 - **Lean bench prototype**: US $80-$150
 - **Mobile-ready collector MVP**: US $150-$280
 - **With base electronics already available**: no extra perception cost
-- **With OAK-D S2 camera added**: add about US $350-$380 minimum from the hardware list
+- **With low RPLIDAR C1 + top OAK-D S2 sensors added**: add about US $450-$520 minimum from the hardware list
 
 ### Phase 1 Acceptance Criteria
 
@@ -268,7 +285,7 @@ Estimated Phase 2 launcher module total:
 |---|---:|
 | Collector bench MVP only | US $80-$150 |
 | Collector mobile MVP, excluding base and camera | US $150-$280 |
-| Collector MVP with OAK-D S2 camera path | US $500-$660 |
+| Collector MVP with low LiDAR + top OAK-D sensor path | US $600-$780 |
 | Launcher bench module | US $330-$650 |
 | Full Concept A prototype, excluding mobile base | US $480-$1,180 |
 | Full Concept A with mobile base still to be selected | Add roughly US $250-$800 |
@@ -300,6 +317,7 @@ The launcher depends on the hopper height, ball feed direction, and available po
 These links are not final purchase recommendations; they anchor the rough cost ranges:
 
 - OAK-D S2 camera and hardware docs: https://new-store.luxonis.com/products/oak-d-s2 and https://docs.luxonis.com/hardware/products/OAK-D%20S2
+- Slamtec RPLIDAR C1 reference: https://www.slamtec.com/en/C1/
 - Example 100 mm flexible duct pricing: https://www.airconcentre.co.uk/products/devola-100mm-pvc-flexible-ducting-3m-dvfd1003
 - Example tennis-machine throwing wheel: https://www.tenniswarehouse.com.au/spinfire-throwing-wheel.html
 - Example pair of Tennis Tutor Cube replacement wheels: https://www.clarkesports.net/product-page/tennis-tutor-cube-throwing-wheel-replacements-2
@@ -309,7 +327,7 @@ These links are not final purchase recommendations; they anchor the rough cost r
 
 | Decision | Default for now |
 |---|---|
-| Camera | Use current simulated RGB first; physical build can use OAK-D S2. |
+| Sensor stack | Top OAK-D S2 for ball detection; low 360-degree LiDAR for live obstacle/court mapping and shadow zones. |
 | Collector motor voltage | 12 V DC for simple sourcing. |
 | Hopper capacity | Start with 3-6 balls. |
 | Launch architecture | Dual flywheel, fixed angle at first. |

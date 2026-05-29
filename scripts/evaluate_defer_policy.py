@@ -4,24 +4,28 @@
 from __future__ import annotations
 
 import argparse
-import csv
+import copy
 import json
 import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from evaluate_next_ball_policy import run_metrics_from_legs
+from eval_utils import avg_field, write_dataclass_csv
 from route_benchmark import (
+    BALL_PHASE_MARGIN_M,
     Ball,
     Leg,
+    RISK_BASE_PROBS,
     RunMetrics,
     ball_risk,
     candidate_features,
     in_bounds,
     make_scenario,
+    nearest_shortlist,
     pathfind,
     plan_route,
     planning_phases,
+    run_metrics_from_legs,
 )
 
 
@@ -78,7 +82,7 @@ def adjusted_risk(risk: str, edge_pass: bool, skip_risky: bool) -> str | None:
 
 
 def risk_score(risk: str, edge_pass: bool, edge_pass_miss_multiplier: float) -> float:
-    score = {"normal": 0.03, "net_wall": 0.18, "obstacle": 0.32}[risk]
+    score = RISK_BASE_PROBS[risk]
     return score * edge_pass_miss_multiplier if edge_pass and risk != "normal" else score
 
 
@@ -99,10 +103,7 @@ def choose_next(
 ):
     best = None
     best_score = math.inf
-    shortlist = sorted(enumerate(candidates), key=lambda item: math.hypot(item[1].x - current.x, item[1].y - current.y))[
-        :candidate_window
-    ]
-    for index, ball in shortlist:
+    for index, ball in nearest_shortlist(current, candidates, candidate_window):
         features = candidate_features(
             current,
             ball,
@@ -152,7 +153,7 @@ def plan_defer_policy(
         scan_events += 1
         planned_replans += 1
         current = phase_start_point
-        phase_balls = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, 0.08)]
+        phase_balls = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, BALL_PHASE_MARGIN_M)]
         primary: list[Ball] = []
         deferred: list[Ball] = []
         for ball in phase_balls:
@@ -221,9 +222,7 @@ def plan_defer_policy(
 
 
 def summarize(rows: list[DeferComparisonRow]) -> dict[str, float | int]:
-    def avg(name: str) -> float:
-        return sum(float(getattr(row, name)) for row in rows) / max(1, len(rows))
-
+    avg = lambda name: avg_field(rows, name)
     return {
         "runs": len(rows),
         "avg_planner_time_s": avg("planner_time_s"),
@@ -240,15 +239,6 @@ def summarize(rows: list[DeferComparisonRow]) -> dict[str, float | int]:
         "avg_deferred_balls": avg("deferred_balls"),
         "avg_skipped_balls": avg("skipped_balls"),
     }
-
-
-def write_csv(path: Path, rows: list[DeferComparisonRow]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(DeferComparisonRow.__dataclass_fields__.keys()))
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(asdict(row))
 
 
 def parse_args() -> argparse.Namespace:
@@ -306,15 +296,7 @@ def main() -> None:
             args.fixed_obstacles,
             args.safety_buffer,
         )
-        defer_scenario = make_scenario(
-            seed,
-            args.balls,
-            args.area_mode,
-            args.distribution,
-            args.people,
-            args.fixed_obstacles,
-            args.safety_buffer,
-        )
+        defer_scenario = copy.deepcopy(planner_scenario)
         _planner_legs, planner = plan_route(
             planner_scenario,
             area_mode=args.area_mode,
@@ -371,7 +353,7 @@ def main() -> None:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.json_out.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     if args.csv_out:
-        write_csv(args.csv_out, rows)
+        write_dataclass_csv(args.csv_out, rows)
 
 
 if __name__ == "__main__":

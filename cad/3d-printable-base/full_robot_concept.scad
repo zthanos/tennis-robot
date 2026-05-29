@@ -58,6 +58,10 @@ launcher_z = wood_t + 260;
 cover_panel_t = 3;
 cover_z = 510;
 cover_h = 310;
+low_lidar_d = 56;
+low_lidar_h = 42;
+low_lidar_mount_z = wood_t + 148;
+oak_body = [95, 32, 28];
 
 module material_wood() {
     color([0.58, 0.40, 0.24]) children();
@@ -89,6 +93,10 @@ module material_handle() {
 
 module material_cover() {
     color([0.72, 0.86, 1.0, 0.28]) children();
+}
+
+module material_sensor() {
+    color([0.05, 0.12, 0.18]) children();
 }
 
 module material_reference() {
@@ -187,6 +195,49 @@ module electronics_battery_module() {
             cube([265, 310, 70], center=true);
         translate([190, base_w / 2, wood_t + 92])
             cube([140, 180, 45], center=true);
+    }
+}
+
+module sensor_module() {
+    y = base_w / 2;
+
+    // Low Waveshare/Slamtec RPLIDAR C1 reference mount. Keep the guarded scan
+    // plane clear for obstacles/court mapping; OAK-D remains the ball detector.
+    material_frame()
+        translate([515, y, low_lidar_mount_z - low_lidar_h / 2 - 4])
+            rounded_box([92, 92, 8], 5);
+
+    material_sensor() {
+        translate([515, y, low_lidar_mount_z])
+            cylinder(h=low_lidar_h, d=low_lidar_d, center=true);
+        translate([515, y, low_lidar_mount_z])
+            cylinder(h=low_lidar_h + 8, d=low_lidar_d + 18, center=true);
+    }
+
+    material_reference()
+        translate([515, y, low_lidar_mount_z])
+            rotate([90, 0, 0])
+                cylinder(h=base_w + 190, d=4, center=true);
+
+    // Top OAK-D reference mount for ball detection and targeted shadow-zone looks.
+    material_frame()
+        translate([620, y, cover_z + 18])
+            cube([120, 44, 10], center=true);
+
+    material_sensor()
+        translate([620, y, cover_z + 42])
+            cube(oak_body, center=true);
+
+    color([0.02, 0.02, 0.025]) {
+        translate([635, y - 22, cover_z + 42])
+            rotate([90, 0, 0])
+                cylinder(h=6, d=14, center=true);
+        translate([635, y, cover_z + 42])
+            rotate([90, 0, 0])
+                cylinder(h=6, d=18, center=true);
+        translate([635, y + 22, cover_z + 42])
+            rotate([90, 0, 0])
+                cylinder(h=6, d=14, center=true);
     }
 }
 
@@ -412,6 +463,7 @@ module full_robot_concept() {
     pitched_body() {
         chassis_base();
         electronics_battery_module();
+        sensor_module();
         receiving_bin();
         collector_intake();
         launcher_module();

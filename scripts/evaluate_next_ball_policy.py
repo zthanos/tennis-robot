@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-import csv
+import copy
 import json
 import math
 from dataclasses import asdict, dataclass
@@ -12,20 +12,26 @@ from pathlib import Path
 
 import numpy as np
 
+from eval_utils import avg_field, write_dataclass_csv
 from route_benchmark import (
+    BALL_PHASE_MARGIN_M,
     Ball,
     Leg,
     Point,
     RunMetrics,
+    ball_centroid,
     ball_risk,
     candidate_features,
+    dist,
     half_bounds,
+    heading_bearing_cost,
     in_bounds,
     make_scenario,
-    miss_probability,
+    nearest_shortlist,
     pathfind,
     plan_route,
     planning_phases,
+    run_metrics_from_legs,
 )
 
 
@@ -59,58 +65,42 @@ def load_model(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def model_score(model: dict[str, object], row: dict[str, float | int | str]) -> float:
+def _build_feature_vector(model: dict[str, object], row: dict[str, float | int | str]) -> np.ndarray:
     feature_names = model["feature_names"]
     mean = np.array(model["mean"], dtype=np.float64)
     std = np.array(model["std"], dtype=np.float64)
-    weights = np.array(model["weights"], dtype=np.float64)
     values = []
     for feature in feature_names:  # type: ignore[assignment]
         name = str(feature)
         if name.startswith("risk_type_"):
-            values.append(1.0 if row["risk_type"] == name.removeprefix("risk_type_") else 0.0)
+            values.append(1.0 if row.get("risk_type") == name.removeprefix("risk_type_") else 0.0)
         else:
-            values.append(float(row[name]))
-    x = (np.array(values, dtype=np.float64) - mean) / std
+            values.append(float(row.get(name, 0.0) or 0.0))
+    return (np.array(values, dtype=np.float64) - mean) / std
+
+
+def _mlp_forward(model: dict[str, object], x: np.ndarray) -> float:
+    h = x
+    layers = model["layers"]
+    for i, layer in enumerate(layers):  # type: ignore[union-attr]
+        W = np.array(layer["weights"], dtype=np.float64)
+        b = np.array(layer["bias"], dtype=np.float64)
+        z = h @ W + b
+        act = layer.get("activation", "sigmoid")
+        if act == "leaky_relu":
+            h = np.where(z > 0, z, 0.01 * z)
+        else:
+            h = np.array([sigmoid(float(v)) for v in z])
+    return float(h.ravel()[0])
+
+
+def model_score(model: dict[str, object], row: dict[str, float | int | str]) -> float:
+    x = _build_feature_vector(model, row)
+    if model.get("model_type") == "mlp":
+        return _mlp_forward(model, x)
+    # legacy: standardized_logistic_regression
+    weights = np.array(model["weights"], dtype=np.float64)
     return sigmoid(float(x @ weights + float(model["bias"])))
-
-
-def run_metrics_from_legs(
-    seed: int,
-    balls: list[Ball],
-    legs: list[Leg],
-    travel_speed_m_s: float,
-    pickup_time_s: float,
-    scan_time_s: float,
-    scan_events: int,
-    planned_replans: int,
-) -> RunMetrics:
-    travel_time = sum(leg.travel_s for leg in legs)
-    pickup_time = len(legs) * pickup_time_s
-    scan_time = scan_events * scan_time_s
-    total_distance = sum(leg.distance_m for leg in legs)
-    avoid_legs = sum(1 for leg in legs if leg.mode == "avoid")
-    expected_misses = sum(miss_probability(leg.risk, leg.mode) for leg in legs)
-    return RunMetrics(
-        seed=seed,
-        balls_detected=len(balls),
-        balls_collectable=len(legs),
-        balls_blocked=sum(1 for ball in balls if ball.blocked),
-        collected_rate=len(legs) / max(1, len(balls)),
-        total_distance_m=total_distance,
-        total_time_s=travel_time + pickup_time + scan_time,
-        travel_time_s=travel_time,
-        scan_time_s=scan_time,
-        pickup_time_s=pickup_time,
-        estimated_avg_speed_m_s=total_distance / max(1.0, travel_time),
-        planned_replans=planned_replans + avoid_legs,
-        scan_events=scan_events,
-        risky_balls=sum(1 for leg in legs if leg.risk != "normal"),
-        expected_misses=expected_misses,
-        net_wall_risks=sum(1 for leg in legs if leg.risk == "net_wall"),
-        obstacle_risks=sum(1 for leg in legs if leg.risk == "obstacle"),
-        avoid_legs=avoid_legs,
-    )
 
 
 def plan_model_policy(
@@ -135,15 +125,18 @@ def plan_model_policy(
     for phase_index, phase_bounds, phase_start_point in planning_phases(area_mode, scenario):
         scan_events += 1
         planned_replans += 1
+        phase_balls = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, BALL_PHASE_MARGIN_M)]
+        total_phase_balls = max(1, len(phase_balls))
         current = phase_start_point
-        remaining = [ball for ball in scenario.balls if in_bounds(ball, phase_bounds, 0.08)]
+        prev = phase_start_point
+        remaining = list(phase_balls)
         step_in_phase = 0
 
         while remaining:
             step_in_phase += 1
-            shortlist = sorted(enumerate(remaining), key=lambda item: math.hypot(item[1].x - current.x, item[1].y - current.y))[
-                :candidate_window
-            ]
+            shortlist = nearest_shortlist(current, remaining, candidate_window)
+            centroid_pt = ball_centroid(remaining)
+            phase_span_x = max(1e-6, phase_bounds.max_x - phase_bounds.min_x)
             scored: list[tuple[float, int, Ball, Point, dict[str, float | int | str]]] = []
             for rank, (index, candidate) in enumerate(shortlist, start=1):
                 features = candidate_features(
@@ -172,6 +165,11 @@ def plan_model_policy(
                     "phase_max_x_m": phase_bounds.max_x,
                     "phase_min_y_m": phase_bounds.min_y,
                     "phase_max_y_m": phase_bounds.max_y,
+                    "balls_within_2m": sum(1 for b in remaining if b.id != candidate.id and dist(b, candidate) <= 2.0),
+                    "phase_progress": step_in_phase / total_phase_balls,
+                    "bearing_cost_rad": heading_bearing_cost(prev, current, candidate),
+                    "cluster_distance_m": dist(candidate, centroid_pt),
+                    "normalized_x": (candidate.x - phase_bounds.min_x) / phase_span_x,
                 }
                 scored.append((model_score(model, row), index, candidate, features["target"], features))  # type: ignore[arg-type]
 
@@ -187,6 +185,7 @@ def plan_model_policy(
             legs.append(Leg(phase_index, ball.id, distance, distance / travel_speed_m_s, mode, path, risk))
             planned_balls.add(ball.id)
             model_choice_count += 1
+            prev = current
             current = path[-1]
             remaining.pop(best_index)
             phase_leg_count = sum(1 for leg in legs if leg.phase == phase_index)
@@ -211,9 +210,7 @@ def plan_model_policy(
 
 
 def summarize(rows: list[ComparisonRow]) -> dict[str, float | int]:
-    def avg(name: str) -> float:
-        return sum(float(getattr(row, name)) for row in rows) / max(1, len(rows))
-
+    avg = lambda name: avg_field(rows, name)
     model_wins_time = sum(1 for row in rows if row.delta_time_s < 0)
     model_wins_distance = sum(1 for row in rows if row.delta_distance_m < 0)
     return {
@@ -232,15 +229,6 @@ def summarize(rows: list[ComparisonRow]) -> dict[str, float | int]:
         "model_time_win_rate": model_wins_time / max(1, len(rows)),
         "model_distance_win_rate": model_wins_distance / max(1, len(rows)),
     }
-
-
-def write_comparison_csv(path: Path, rows: list[ComparisonRow]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(ComparisonRow.__dataclass_fields__.keys()))
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(asdict(row))
 
 
 def parse_args() -> argparse.Namespace:
@@ -282,15 +270,7 @@ def main() -> None:
             args.fixed_obstacles,
             args.safety_buffer,
         )
-        model_scenario = make_scenario(
-            seed,
-            args.balls,
-            args.area_mode,
-            args.distribution,
-            args.people,
-            args.fixed_obstacles,
-            args.safety_buffer,
-        )
+        model_scenario = copy.deepcopy(planner_scenario)
         _planner_legs, planner_metrics = plan_route(
             planner_scenario,
             area_mode=args.area_mode,
@@ -349,7 +329,7 @@ def main() -> None:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.json_out.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     if args.csv_out:
-        write_comparison_csv(args.csv_out, rows)
+        write_dataclass_csv(args.csv_out, rows)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ from enum import Enum
 from pathlib import Path
 
 from collector import BaseCommand
+from config_utils import _env_float
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -237,17 +238,6 @@ class CourtSurveyBehavior:
 
     def _clamp(self, value: float, limit: float) -> float:
         return max(-limit, min(limit, value))
-
-
-def _env_float(name: str, default: float) -> float:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    try:
-        return float(value)
-    except ValueError:
-        print(f"invalid {name}={value!r}; using {default}")
-        return default
 
 
 def _wrap_angle(angle_rad: float) -> float:
