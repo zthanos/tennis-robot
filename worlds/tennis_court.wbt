@@ -572,13 +572,12 @@ DEF PHOTO_COURT_DETAILS Solid {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.08 0.3 0.16
-            roughness 0.8
+            baseColor 0.28 0.18 0.10
+            roughness 0.9
             metalness 0
           }
-          geometry Sphere {
-            radius 0.42
-            subdivision 2
+          geometry Box {
+            size 0.84 0.84 0.76
           }
         }
       ]
@@ -588,13 +587,12 @@ DEF PHOTO_COURT_DETAILS Solid {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.1 0.34 0.18
-            roughness 0.8
+            baseColor 0.25 0.17 0.09
+            roughness 0.9
             metalness 0
           }
-          geometry Sphere {
-            radius 0.4
-            subdivision 2
+          geometry Box {
+            size 0.80 0.80 0.72
           }
         }
       ]
@@ -604,13 +602,12 @@ DEF PHOTO_COURT_DETAILS Solid {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.09 0.3 0.15
-            roughness 0.8
+            baseColor 0.26 0.17 0.10
+            roughness 0.9
             metalness 0
           }
-          geometry Sphere {
-            radius 0.4
-            subdivision 2
+          geometry Box {
+            size 0.80 0.80 0.72
           }
         }
       ]
@@ -620,13 +617,12 @@ DEF PHOTO_COURT_DETAILS Solid {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0.11 0.35 0.18
-            roughness 0.8
+            baseColor 0.29 0.18 0.11
+            roughness 0.9
             metalness 0
           }
-          geometry Sphere {
-            radius 0.42
-            subdivision 2
+          geometry Box {
+            size 0.84 0.84 0.76
           }
         }
       ]
@@ -873,7 +869,7 @@ DEF TENNIS_ROBOT Robot {
       name "right_motor_pod"
     }
     DEF FRONT_CAMERA Camera {
-      translation 0.42 0 0.42
+      translation 0.42 0 0.35
       rotation 0 1 0 0.35
       name "front_camera"
       fieldOfView 1.204
@@ -883,17 +879,17 @@ DEF TENNIS_ROBOT Robot {
       far 18
     }
     DEF FRONT_DEPTH RangeFinder {
-      translation 0.42 0 0.42
+      translation 0.42 0 0.35
       rotation 0 1 0 0.35
       name "front_depth"
-      fieldOfView 1.204
+      fieldOfView 1.274
       width 640
-      height 360
-      minRange 0.08
+      height 480
+      minRange 0.20
       maxRange 12
     }
     DEF FRONT_LIDAR Lidar {
-      translation 0.18 0 0.16
+      translation -0.20 0 0.10
       children [
         Pose {
           rotation 1 0 0 1.5708
@@ -995,11 +991,11 @@ DEF TENNIS_ROBOT Robot {
       ]
       name "front_lidar"
       fieldOfView 6.28318530718
-      horizontalResolution 360
+      horizontalResolution 500
       numberOfLayers 1
       near 0.05
-      minRange 0.08
-      maxRange 8
+      minRange 0.05
+      maxRange 12
     }
     DEF CAMERA_DISPLAY Display {
       translation 0 0 -0.18
@@ -1675,8 +1671,8 @@ DEF TENNIS_ROBOT Robot {
       rotation 0 0 1 -1.5708
       name "ir_intake_left"
       type "infra-red"
-      numberOfRays 1
-      aperture 0.15
+      numberOfRays 5
+      aperture 1.0
       lookupTable [
         0 1000 0
         0.22 1000 0
@@ -1688,8 +1684,8 @@ DEF TENNIS_ROBOT Robot {
       rotation 0 0 1 1.5708
       name "ir_intake_right"
       type "infra-red"
-      numberOfRays 1
-      aperture 0.15
+      numberOfRays 5
+      aperture 1.0
       lookupTable [
         0 1000 0
         0.22 1000 0

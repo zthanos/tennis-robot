@@ -59,15 +59,16 @@ class ConceptAConfig:
     collected_hold_s: float = 0.7
     lost_target_timeout_s: float = 0.5
     capture_timeout_s: float = 2.8
-    scan_angular_speed_rad_s: float = 0.75
+    scan_angular_speed_rad_s: float = 1.1
     scan_full_turn_s: float = 8.4
     align_angular_gain: float = 2.7
     max_align_angular_speed_rad_s: float = 1.2
-    approach_speed_m_s: float = 0.22
-    capture_speed_m_s: float = 0.08
+    approach_speed_m_s: float = 0.40
+    capture_speed_m_s: float = 0.14
     capture_angular_gain: float = 1.2
     reverse_speed_m_s: float = -0.10
     lift_wheel_speed: float = 1.0
+    max_capture_retries: int = 3
 
     @classmethod
     def from_env(cls) -> "ConceptAConfig":
@@ -90,6 +91,7 @@ class ConceptAConfig:
             capture_angular_gain=_env_float("COLLECTOR_CAPTURE_ANGULAR_GAIN", defaults.capture_angular_gain),
             reverse_speed_m_s=-abs(_env_float("COLLECTOR_REVERSE_SPEED_M_S", abs(defaults.reverse_speed_m_s))),
             lift_wheel_speed=_env_float("COLLECTOR_LIFT_WHEEL_SPEED", defaults.lift_wheel_speed),
+            max_capture_retries=int(round(_env_float("COLLECTOR_MAX_CAPTURE_RETRIES", defaults.max_capture_retries))),
         )
 
 
@@ -103,6 +105,8 @@ class ConceptACollectorBehavior:
         self._lost_elapsed_s = 0.0
         self._last_visible_observation: BallObservationInput | None = None
         self._scan_best_observation: BallObservationInput | None = None
+        self._capture_attempts = 0
+        self.gave_up = False
 
     def reset(self) -> None:
         self.state = CollectorState.SCAN
@@ -110,6 +114,8 @@ class ConceptACollectorBehavior:
         self._lost_elapsed_s = 0.0
         self._last_visible_observation = None
         self._scan_best_observation = None
+        self._capture_attempts = 0
+        self.gave_up = False
 
     @property
     def state_elapsed_s(self) -> float:
@@ -119,12 +125,18 @@ class ConceptACollectorBehavior:
     def scan_best_observation(self) -> BallObservationInput | None:
         return self._scan_best_observation
 
+    @property
+    def capture_attempts(self) -> int:
+        return self._capture_attempts
+
     def start_tracking(self, observation: BallObservationInput) -> None:
         if not observation.visible:
             return
         self._lost_elapsed_s = 0.0
         self._last_visible_observation = observation
         self._scan_best_observation = observation
+        self._capture_attempts = 0
+        self.gave_up = False
         self._transition(self._tracking_state(observation))
 
     def update(
@@ -159,6 +171,9 @@ class ConceptACollectorBehavior:
                 self._transition(self._tracking_state(tracking_observation))
         elif self.state == CollectorState.CAPTURE:
             if self._state_elapsed_s > self.config.capture_timeout_s:
+                self._capture_attempts += 1
+                if self._capture_attempts >= self.config.max_capture_retries:
+                    self.gave_up = True
                 self._transition(CollectorState.REVERSE_CLEAR)
         elif self.state == CollectorState.REVERSE_CLEAR:
             if self._state_elapsed_s > 0.6:

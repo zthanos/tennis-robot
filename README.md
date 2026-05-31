@@ -1,5 +1,12 @@
 # Tennis Robot Simulation Starter
 
+## Architecture Reset Notice
+
+The current Webots controller and world are now treated as **legacy reference**
+for the next implementation phase. New work should follow
+`docs/architecture-implementation-guide-el.md` and the active baseline plans in
+`docs/` before extending the existing controller behavior.
+
 This is a first simulation-first experiment for a tennis-ball collecting and serving robot.
 
 The initial goal is intentionally small:
@@ -111,12 +118,13 @@ http://127.0.0.1:8081
 The console has navigation for:
 
 - **Dashboard**: requested mode, actual controller state, ball detection, collected count, and latest command stream.
-- **Control**: send `idle`, `collect`, and `survey` commands, plus a live court map with detected balls, same-side/across-net status, planned route, and pickup order.
+- **Control**: send `idle`, `collect`, `collect_pattern`, `search`, and `survey` commands, plus a live court map with detected balls, same-side/across-net status, planned route, and pickup order.
 - **Telemetry**: live robot pose, collector output, observation fields, survey target/range, and raw status JSON.
 - **Command Stats**: per-mode command counts and last command metadata.
 - **History**: recent command audit trail.
 
 Use **Start Collection** to write `mode=collect` to `runtime/robot_command.json`; the Webots controller polls that file and starts the collector state machine. Use **Stop** to return the robot to `idle`. The controller also writes live diagnostics to `runtime/robot_status.json`, while command history is appended to `runtime/robot_command_history.jsonl`. You can override paths for both processes with `ROBOT_COMMAND_FILE`, `ROBOT_STATUS_FILE`, and `ROBOT_COMMAND_HISTORY_FILE` if the UI and Webots are launched from different working directories.
+Use **Collect Pattern** to write `mode=collect_pattern`: the controller follows the half-court boundary/lane search pattern, interrupts on a same-side OAK-D target, hands off to the Concept A collector state machine, verifies collection, then resumes from the saved search marker.
 
 To visualize the scan-first collection plan directly in Webots, start the controller with:
 

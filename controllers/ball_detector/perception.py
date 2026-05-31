@@ -11,13 +11,19 @@ import numpy as np
 
 TENNIS_BALL_DIAMETER_M = 0.067
 MIN_BALL_AREA_PX = 6
+# Upper bound keeps all balls down to 0.34 m (~75 k px) while rejecting bushes/vegetation
+# which subtend hundreds of thousands of pixels even at 8 m.
+MAX_BALL_AREA_PX = 90_000
 MIN_BALL_ASPECT_RATIO = 0.55
 MAX_BALL_ASPECT_RATIO = 1.8
 
-# Tennis balls vary from bright yellow-green to shadowed/desaturated green in Webots.
+# Tennis balls in Webots render as bright chartreuse (H≈35-60 in OpenCV 0-179).
+# Upper hue capped at 72 to exclude pure-green Webots vegetation (H≈65-90).
+# Second range covers shadowed/partially occluded balls; min saturation raised to
+# 55 to avoid matching dark-green foliage with low chroma.
 HSV_RANGES = (
-    (np.array([25, 80, 80], dtype=np.uint8), np.array([85, 255, 255], dtype=np.uint8)),
-    (np.array([25, 35, 45], dtype=np.uint8), np.array([95, 180, 170], dtype=np.uint8)),
+    (np.array([25, 80, 80], dtype=np.uint8), np.array([72, 255, 255], dtype=np.uint8)),
+    (np.array([25, 55, 50], dtype=np.uint8), np.array([72, 180, 175], dtype=np.uint8)),
 )
 
 
@@ -103,7 +109,8 @@ def detect_largest_ball(frame: np.ndarray) -> BallDetection | None:
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     candidates: list[BallDetection] = []
     for contour in contours:
-        if cv2.contourArea(contour) <= MIN_BALL_AREA_PX:
+        area = cv2.contourArea(contour)
+        if area <= MIN_BALL_AREA_PX or area > MAX_BALL_AREA_PX:
             continue
         x, y, width, height = cv2.boundingRect(contour)
         aspect_ratio = width / max(1, height)
@@ -143,12 +150,16 @@ def estimate_depth_ball_observation(
     if valid.size == 0:
         return None
 
+    # Use the 20th percentile instead of median: for small ball detections the ROI
+    # contains background pixels at large depth; the lower percentile picks the
+    # near surface (ball face) rather than the background-contaminated median.
+    distance_m = float(np.percentile(valid, 20) if valid.size >= 5 else np.min(valid))
     normalized_x = (detection.center_x - frame_width_px / 2) / (frame_width_px / 2)
     bearing_rad = math.atan(normalized_x * math.tan(camera_fov_rad / 2))
     return BallObservation(
         detection=detection,
         bearing_rad=bearing_rad,
-        distance_m=float(np.median(valid)),
+        distance_m=distance_m,
         distance_source="oak_depth",
     )
 

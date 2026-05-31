@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Simulation-first tennis ball collection robot. Stack: Webots (simulation) + Python (controller). ROS 2 planned for later. The active design is "Concept A": pitched chassis, orange funnel, wide intake roller, optional OAK-D depth camera.
 
+## Current Architecture Direction
+
+Treat the current Webots controller, control panel, and world as legacy reference
+for the next implementation phase. New implementation work should start from
+`docs/architecture-implementation-guide-el.md` and the active baseline docs in
+`docs/`, especially validation, search strategy, collection state machine, and
+mission dashboard plans. Reuse existing code only when it supports the new
+contracts; do not let old controller states or UI labels define the new design.
+
 ## Commands
 
 ### Run the simulation

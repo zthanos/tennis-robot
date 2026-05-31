@@ -4,8 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+import math
 import sys
+import threading
 import time
 from collections import Counter
 from http import HTTPStatus
@@ -18,6 +21,38 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "controllers" / "ball_detector"))
 
 from control_bus import RobotCommandStore, RobotSensorStore, RobotStatusStore, SUPPORTED_MODES  # noqa: E402
+
+try:
+    import cv2
+    from perception import detect_largest_ball, TENNIS_BALL_DIAMETER_M
+    _VISION_AVAILABLE = True
+except ImportError:
+    _VISION_AVAILABLE = False
+
+WEBCAM_FOV_DEG = 60.0  # typical webcam horizontal FOV; tune if distance estimates are off
+
+
+class WebcamManager:
+    _cap: object = None
+    _lock = threading.Lock()
+
+    @classmethod
+    def get_frame(cls) -> tuple[bool, object]:
+        if not _VISION_AVAILABLE:
+            return False, None
+        with cls._lock:
+            if cls._cap is None or not cls._cap.isOpened():
+                cls._cap = cv2.VideoCapture(0)
+            if not cls._cap.isOpened():
+                return False, None
+            return cls._cap.read()
+
+    @classmethod
+    def release(cls) -> None:
+        with cls._lock:
+            if cls._cap is not None:
+                cls._cap.release()
+                cls._cap = None
 
 
 HTML = """<!doctype html>
@@ -226,9 +261,26 @@ HTML = """<!doctype html>
       transition: transform 130ms ease, filter 130ms ease;
     }
     .command:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .command[value="collect_pattern"] { background: #2fd08f; color: #06130d; }
     .command[value="collect_one"] { background: var(--warn); color: #1b1204; }
     .command[value="survey"] { background: var(--accent-2); color: #06101d; }
+    .command[value="scan_side"] { background: #1acdcd; color: #051717; }
     .command[value="idle"] { background: var(--danger); color: #1b0604; }
+    .command[value="map_left_side"] { background: #a855f7; color: #0b0514; }
+    .map-cell {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 14px 8px;
+      font-size: 22px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.35s, color 0.35s;
+    }
     .kv {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -410,9 +462,11 @@ HTML = """<!doctype html>
       <nav aria-label="Console sections">
         <button class="active" data-view="dashboard">Dashboard</button>
         <button data-view="control">Control</button>
+        <button data-view="sensors">Sensor Views</button>
         <button data-view="telemetry">Telemetry</button>
         <button data-view="stats">Command Stats</button>
         <button data-view="history">History</button>
+        <button data-view="webcam">Webcam</button>
       </nav>
       <div class="connection">
         <div><span id="liveDot" class="dot"></span><span id="connectionText">Waiting for robot status</span></div>
@@ -453,7 +507,11 @@ HTML = """<!doctype html>
             <h3>Mode Command</h3>
             <form id="commandForm" class="controls">
               <button class="command" type="submit" name="mode" value="collect">Start Collection</button>
+              <button class="command" type="submit" name="mode" value="collect_pattern">Collect Pattern</button>
+              <button class="command" type="submit" name="mode" value="search">Search Pattern</button>
               <button class="command" type="submit" name="mode" value="collect_one">Collect One</button>
+              <button class="command" type="submit" name="mode" value="scan_side">Scan This Side</button>
+              <button class="command" type="submit" name="mode" value="map_left_side">Map Left Side</button>
               <button class="command" type="submit" name="mode" value="survey">Survey Court</button>
               <button class="command" type="submit" name="mode" value="idle">Stop</button>
             </form>
@@ -476,13 +534,77 @@ HTML = """<!doctype html>
             <span class="fov">Camera FOV</span>
           </div>
         </div>
-        <div class="panel map-panel">
-          <h3>Sensor Views</h3>
-          <div class="sensor-grid">
-            <div class="sensor-view"><h4>Front Camera</h4><div id="frontCameraView" class="sensor-empty">waiting for image</div></div>
-            <div class="sensor-view"><h4>OAK Depth</h4><div id="frontDepthView" class="sensor-empty">waiting for depth</div></div>
-            <div class="sensor-view"><h4>360 LiDAR</h4><div id="frontLidarView" class="sensor-empty">waiting for scan</div></div>
+      </section>
+
+      <section id="sensors" class="view">
+        <div class="panel">
+          <h3>360° LiDAR Ground Scan</h3>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Real-time RPLIDAR C1 scan — 500 samples/rev, 12 m range. Use <strong>Scan This Side</strong> to capture a stationary snapshot.</p>
+          <div id="lidarScanView" class="sensor-empty" style="background:#090d12;border:1px solid var(--line);border-radius:8px;min-height:420px;">waiting for LiDAR scan</div>
+          <div id="lidarScanMeta" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 0 4px;color:var(--muted);font-size:12px;"></div>
+          <div id="scanSideProgress" style="display:none;margin-top:12px;padding:12px 14px;background:rgba(26,205,205,0.08);border:1px solid rgba(26,205,205,0.28);border-radius:7px;font-size:13px;color:#1acdcd;">
+            <strong>Scan in progress</strong> — <span id="scanSideElapsed">0.0</span>s / <span id="scanSideDuration">12</span>s
+            <div style="margin-top:6px;height:4px;background:rgba(26,205,205,0.18);border-radius:2px;overflow:hidden;">
+              <div id="scanSideBar" style="height:100%;background:#1acdcd;width:0%;transition:width 0.3s;border-radius:2px;"></div>
+            </div>
           </div>
+        </div>
+        <div class="grid two" style="margin-top:14px;">
+          <div class="panel">
+            <h3>Front Camera</h3>
+            <div id="sensorsCameraView" class="sensor-empty">waiting for image</div>
+          </div>
+          <div class="panel">
+            <h3>OAK-D Depth</h3>
+            <div id="sensorsDepthView" class="sensor-empty">waiting for depth</div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:14px;">
+          <h3>IR Intake Sensors</h3>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Collection trigger fires when either sensor exceeds threshold. Value 1000 = object detected, 0 = clear.</p>
+          <div id="irIntakeView" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div id="irLeftPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">LEFT</div>
+              <div id="irLeftValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">—</div>
+              <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
+                <div id="irLeftBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
+              </div>
+            </div>
+            <div id="irRightPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">RIGHT</div>
+              <div id="irRightValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">—</div>
+              <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
+                <div id="irRightBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
+              </div>
+            </div>
+          </div>
+          <div id="irTriggeredBadge" style="margin-top:12px;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;text-align:center;background:rgba(255,255,255,0.04);color:var(--muted);">
+            TRIGGERED: —
+          </div>
+        </div>
+        <div id="mapMissionPanel" class="panel" style="margin-top:14px;">
+          <h3>Half-Court Mapping Grid &nbsp;<span id="mapMissionStatus" style="font-size:13px;font-weight:400;color:var(--muted);">idle</span></h3>
+          <div style="display:grid;grid-template-columns:88px repeat(3,1fr);gap:6px;margin-top:14px;font-size:13px;text-align:center;align-items:center;">
+            <div></div>
+            <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Αριστερά</div>
+            <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Κέντρο</div>
+            <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Δεξιά</div>
+            <div style="color:var(--muted);font-size:11px;text-align:right;padding-right:10px;">Φράχτης</div>
+            <div id="mapCell00" class="map-cell">—</div><div id="mapCell01" class="map-cell">—</div><div id="mapCell02" class="map-cell">—</div>
+            <div style="color:var(--muted);font-size:11px;text-align:right;padding-right:10px;">Μέση</div>
+            <div id="mapCell10" class="map-cell">—</div><div id="mapCell11" class="map-cell">—</div><div id="mapCell12" class="map-cell">—</div>
+            <div style="color:var(--muted);font-size:11px;text-align:right;padding-right:10px;">Φιλέ</div>
+            <div id="mapCell20" class="map-cell">—</div><div id="mapCell21" class="map-cell">—</div><div id="mapCell22" class="map-cell">—</div>
+          </div>
+          <div id="mapMissionProgress" style="display:none;margin-top:12px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px;">
+              <span id="mapMissionPhaseLabel"></span><span id="mapMissionPosesLabel"></span>
+            </div>
+            <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+              <div id="mapMissionBar" style="height:100%;width:0%;background:#a855f7;border-radius:2px;transition:width 0.5s;"></div>
+            </div>
+          </div>
+          <div id="mapMissionTotals" style="margin-top:10px;color:var(--muted);font-size:12px;"></div>
         </div>
       </section>
 
@@ -502,7 +624,7 @@ HTML = """<!doctype html>
       <section id="stats" class="view">
         <div class="grid kpis">
           <div class="metric"><span>Total Commands</span><strong id="sTotal">0</strong><small>from local history</small></div>
-          <div class="metric"><span>Collect Commands</span><strong id="sCollect">0</strong><small>collect / collect one</small></div>
+          <div class="metric"><span>Collect Commands</span><strong id="sCollect">0</strong><small>collect / pattern / one</small></div>
           <div class="metric"><span>Survey Commands</span><strong id="sSurvey">0</strong><small>requested mode survey</small></div>
           <div class="metric"><span>Stop Commands</span><strong id="sIdle">0</strong><small>requested mode idle</small></div>
         </div>
@@ -524,6 +646,22 @@ HTML = """<!doctype html>
           </table>
         </div>
       </section>
+
+      <section id="webcam" class="view">
+        <div class="grid kpis" style="grid-template-columns: repeat(3, minmax(150px, 1fr)); margin-bottom: 18px;">
+          <div class="metric"><span>Distance</span><strong id="wcDistance">—</strong><small>monocular estimate</small></div>
+          <div class="metric"><span>Bearing</span><strong id="wcBearing">—</strong><small>horizontal angle</small></div>
+          <div class="metric"><span>Diameter</span><strong id="wcDiameter">—</strong><small>apparent pixels</small></div>
+        </div>
+        <div class="panel">
+          <h3>Webcam Feed <span id="wcStatus" style="font-weight:400;color:var(--muted);font-size:13px;">— initializing</span></h3>
+          <div id="wcFeedWrap" style="position:relative;background:#05080b;border-radius:6px;overflow:hidden;min-height:240px;display:flex;align-items:center;justify-content:center;">
+            <img id="wcFrame" style="display:none;max-width:100%;border-radius:6px;" alt="webcam feed">
+            <div id="wcEmpty" style="color:var(--muted);font-size:13px;">waiting for webcam&hellip;</div>
+          </div>
+          <p style="margin:12px 0 0;color:var(--muted);font-size:12px;">HSV range: H 25–72 (yellow-green). Real tennis balls (H&nbsp;25–40) are in range. Distance uses monocular focal-length formula — assumes <strong style="color:var(--ink);">60° horizontal FOV</strong>; adjust <code>WEBCAM_FOV_DEG</code> in <code>scripts/control_panel.py</code> to calibrate.</p>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -531,9 +669,11 @@ HTML = """<!doctype html>
     const titles = {
       dashboard: ["Dashboard", "Observe the robot mode, collector state, current target, and command stream while the simulation runs."],
       control: ["Control", "Send high-level commands to the running Webots controller."],
+      sensors: ["Sensor Views", "Live RPLIDAR C1 360° ground scan, front camera, OAK-D depth image, and half-court mapping grid. Press Map Left Side to start a mapping mission; the 3×3 grid updates live after each scan pose."],
       telemetry: ["Telemetry", "Inspect live robot pose, detection, command output, survey data, and raw status."],
       stats: ["Command Stats", "Review per-mode command counts and recent command usage."],
-      history: ["History", "Audit the local command stream written by this console and controller startup."]
+      history: ["History", "Audit the local command stream written by this console and controller startup."],
+      webcam: ["Webcam", "Live webcam feed with HSV tennis ball detection and monocular distance estimation. No Webots needed."]
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
@@ -562,8 +702,53 @@ HTML = """<!doctype html>
       document.querySelectorAll("section.view").forEach(view => view.classList.toggle("active", view.id === name));
       document.getElementById("viewTitle").textContent = titles[name][0];
       document.getElementById("viewHelp").textContent = titles[name][1];
+      if (name === "webcam") startWebcam(); else stopWebcam();
     }
     document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
+
+    let _wcInterval = null;
+    function startWebcam() {
+      if (_wcInterval) return;
+      refreshWebcam();
+      _wcInterval = setInterval(refreshWebcam, 125);
+    }
+    function stopWebcam() {
+      if (_wcInterval) { clearInterval(_wcInterval); _wcInterval = null; }
+    }
+    async function refreshWebcam() {
+      try {
+        const res = await fetch("/api/webcam/frame", { cache: "no-store" });
+        renderWebcam(await res.json());
+      } catch (_) {}
+    }
+    function renderWebcam(data) {
+      const img = document.getElementById("wcFrame");
+      const empty = document.getElementById("wcEmpty");
+      const status = document.getElementById("wcStatus");
+      if (!data.available) {
+        img.style.display = "none";
+        empty.style.display = "";
+        empty.textContent = data.error || "webcam unavailable";
+        status.textContent = "— unavailable";
+        status.style.color = "var(--danger)";
+        return;
+      }
+      img.src = data.data_url;
+      img.style.display = "block";
+      empty.style.display = "none";
+      if (data.detected) {
+        status.textContent = "— ball detected";
+        status.style.color = "var(--accent)";
+        document.getElementById("wcDistance").textContent = data.distance_m != null ? `${data.distance_m.toFixed(2)} m` : "—";
+        const b = data.bearing_deg;
+        document.getElementById("wcBearing").textContent = b != null ? `${b >= 0 ? "+" : ""}${b.toFixed(1)}°` : "—";
+        document.getElementById("wcDiameter").textContent = data.diameter_px != null ? `${Math.round(data.diameter_px)} px` : "—";
+      } else {
+        status.textContent = "— no ball";
+        status.style.color = "var(--muted)";
+        ["wcDistance", "wcBearing", "wcDiameter"].forEach(id => { document.getElementById(id).textContent = "—"; });
+      }
+    }
 
     document.getElementById("commandForm").addEventListener("submit", async event => {
       event.preventDefault();
@@ -573,6 +758,7 @@ HTML = """<!doctype html>
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ mode })
       });
+      if (mode === "scan_side" || mode === "map_left_side") setView("sensors");
       await refresh();
     });
 
@@ -590,8 +776,12 @@ HTML = """<!doctype html>
       const out = robot.command || {};
       const pose = robot.robot || {};
       const survey = robot.survey || {};
+      const search = robot.search || {};
+      const mounts = robot.sensor_mounts || {};
+      const oakDepth = robot.oak_depth || {};
       const scan = robot.scan || {};
       const collectOne = robot.collect_one || {};
+      const collectPattern = robot.collect_pattern || {};
       const balls = robot.balls || {};
       const completion = robot.completion || {};
       const connected = !!robot.connected;
@@ -608,12 +798,18 @@ HTML = """<!doctype html>
       document.getElementById("kBalls").textContent = robot.balls_collected ?? 0;
       document.getElementById("kUptime").textContent = `remaining ${balls.same_side_remaining ?? "?"} same-side`;
       document.getElementById("kDetection").textContent = obs.visible ? "visible" : "hidden";
-      document.getElementById("kDistance").textContent = `distance ${fmt(obs.distance_m, "m")} bearing ${fmt(obs.bearing_deg, "deg")}`;
+      document.getElementById("kDistance").textContent = `OAK-D Depth ${fmt(oakDepth.range_m ?? obs.distance_m, "m")} bearing ${fmt(obs.bearing_deg, "deg")}`;
 
       setKv("snapshot", [
         ["Robot position", `${fmt(pose.x_m, "m")}, ${fmt(pose.y_m, "m")}`],
         ["Robot yaw", fmt((pose.yaw_rad || 0) * 180 / Math.PI, "deg")],
         ["Collector state", robot.collector_state || "idle"],
+        ["Search", `${search.search_state || "idle"} / Zone ${search.zone_id || "?"}`],
+        ["Collect pattern", collectPattern.phase || "idle"],
+        ["Coverage", fmt(search.coverage_pct, "%")],
+        ["LiDAR height", fmt(mounts.front_lidar?.world_z_m, "m")],
+        ["OAK-D height", fmt(mounts.front_camera?.world_z_m, "m")],
+        ["OAK-D Depth", oakDepth.used_for_current_observation ? `${fmt(oakDepth.range_m, "m")} used` : (oakDepth.available ? "available" : "unavailable")],
         ["Collect one", collectOne.phase || "idle"],
         ["Side complete", completion.current_side_complete ? "yes" : "no"],
         ["Remaining balls", `${balls.same_side_remaining ?? "?"} same-side / ${balls.total_remaining ?? "?"} total`],
@@ -631,6 +827,9 @@ HTML = """<!doctype html>
         ["Updated", dateText(command.updated_at)],
         ["Source", command.source || "default"],
         ["Controller state", robot.collector_state || "idle"],
+        ["Search state", search.search_state || "idle"],
+        ["Search target", `${fmt(search.target_x_m, "m")}, ${fmt(search.target_y_m, "m")}`],
+        ["Collect pattern", `${collectPattern.phase || "idle"} / failures ${collectPattern.failures ?? 0}`],
         ["Collect one phase", collectOne.phase || "idle"]
       ]);
       setKv("telemetryKv", [
@@ -642,20 +841,115 @@ HTML = """<!doctype html>
         ["Nearest same-side", fmt(balls.nearest_same_side_distance_m, "m")],
         ["Loop count", robot.loop_count ?? 0],
         ["Ball visible", obs.visible ? "yes" : "no"],
+        ["OAK-D Depth range", oakDepth.used_for_current_observation ? fmt(oakDepth.range_m, "m") : "not used"],
+        ["OAK-D Depth limits", `${fmt(oakDepth.min_range_m, "m")} - ${fmt(oakDepth.max_range_m, "m")}`],
         ["Ball world", `${fmt(obs.world_x_m, "m")}, ${fmt(obs.world_y_m, "m")}`],
         ["Confidence", fmt(obs.confidence)],
         ["Animation", robot.collection_animation_active ? "active" : "idle"],
         ["Scan progress", `${fmt((scan.progress || 0) * 100, "%")} (${fmt(scan.elapsed_s, "s")}/${fmt(scan.full_turn_s, "s")})`],
         ["Scan best target", scan.best_visible ? `${fmt(scan.best_distance_m, "m")} @ ${fmt((scan.best_bearing_rad || 0) * 180 / Math.PI, "deg")}` : "none"],
+        ["Search path", search.path_status || "idle"],
+        ["Search resume", search.resume_marker || "none"],
         ["Survey state", survey.state || "idle"],
         ["Survey target", `${fmt(survey.target_x_m, "m")}, ${fmt(survey.target_y_m, "m")}`]
       ]);
       document.getElementById("rawStatus").textContent = JSON.stringify(robot, null, 2);
 
+      // auto-navigate to sensors view when scan_side is active
+      const scanSide = robot.scan_side || {};
+      const scanProgressEl = document.getElementById("scanSideProgress");
+      if (scanSide.active) {
+        if (scanProgressEl) scanProgressEl.style.display = "block";
+        const elEl = document.getElementById("scanSideElapsed");
+        const durEl = document.getElementById("scanSideDuration");
+        const barEl = document.getElementById("scanSideBar");
+        if (elEl) elEl.textContent = fmt(scanSide.elapsed_s);
+        if (durEl) durEl.textContent = fmt(scanSide.duration_s);
+        if (barEl) barEl.style.width = `${Math.round((scanSide.progress || 0) * 100)}%`;
+        const activeView = document.querySelector("section.view.active");
+        if (activeView && activeView.id !== "sensors") setView("sensors");
+      } else {
+        if (scanProgressEl) scanProgressEl.style.display = "none";
+      }
+
       renderHistory();
       renderStats();
       renderCourtMap();
       renderSensors();
+      renderMapMission(robot.map_mission || {});
+
+      // Auto-navigate to sensors when mapping mission is active
+      const mapMission = robot.map_mission || {};
+      if (mapMission.active && !mapMission.complete) {
+        const activeView = document.querySelector("section.view.active");
+        if (activeView && activeView.id !== "sensors") setView("sensors");
+      }
+    }
+    function renderMapMission(m) {
+      const statusEl = document.getElementById("mapMissionStatus");
+      if (statusEl) {
+        if (m.complete) statusEl.textContent = "— complete";
+        else if (m.active) statusEl.textContent = `— ${m.phase_label || m.phase}`;
+        else statusEl.textContent = "idle";
+        statusEl.style.color = m.active ? "#a855f7" : (m.complete ? "var(--accent)" : "var(--muted)");
+      }
+
+      const hasData = m.active || m.complete;
+      const grid = m.grid || [[0,0,0],[0,0,0],[0,0,0]];
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          const el = document.getElementById(`mapCell${r}${c}`);
+          if (!el) continue;
+          if (!hasData) {
+            el.textContent = "—";
+            el.style.background = "var(--panel-2)";
+            el.style.color = "var(--muted)";
+            continue;
+          }
+          const count = (grid[r] || [])[c] ?? 0;
+          el.textContent = count;
+          if (count === 0) {
+            el.style.background = "rgba(255,255,255,0.03)";
+            el.style.color = "rgba(145,162,178,0.5)";
+          } else if (count <= 2) {
+            el.style.background = "rgba(87,166,255,0.13)";
+            el.style.color = "#57a6ff";
+          } else if (count <= 5) {
+            el.style.background = "rgba(255,189,90,0.13)";
+            el.style.color = "#ffbd5a";
+          } else {
+            el.style.background = "rgba(47,208,143,0.15)";
+            el.style.color = "#2fd08f";
+          }
+        }
+      }
+
+      const progressEl = document.getElementById("mapMissionProgress");
+      if (progressEl) {
+        if (m.active && !m.complete) {
+          progressEl.style.display = "block";
+          const done = m.scan_poses_done ?? 0;
+          const total = m.scan_poses_total ?? 5;
+          const pct = total > 0 ? Math.round(done / total * 100) : 0;
+          const phaseEl = document.getElementById("mapMissionPhaseLabel");
+          const posesEl = document.getElementById("mapMissionPosesLabel");
+          const barEl   = document.getElementById("mapMissionBar");
+          if (phaseEl) phaseEl.textContent = m.phase_label || m.phase || "";
+          if (posesEl) posesEl.textContent = `${done} / ${total} poses`;
+          if (barEl)   barEl.style.width   = `${pct}%`;
+        } else {
+          progressEl.style.display = "none";
+        }
+      }
+
+      const totalsEl = document.getElementById("mapMissionTotals");
+      if (totalsEl && hasData) {
+        const flat = grid.flat ? grid.flat() : [].concat(...grid);
+        const gridSum = flat.reduce((a, b) => a + b, 0);
+        totalsEl.textContent = `Candidates detected: ${m.total_candidates ?? 0} · Grid sum: ${gridSum} · Elapsed: ${fmt(m.elapsed_s, "s")}`;
+      } else if (totalsEl) {
+        totalsEl.textContent = "";
+      }
     }
     function renderSensor(id, sensor) {
       const target = document.getElementById(id);
@@ -693,7 +987,7 @@ HTML = """<!doctype html>
       `;
       drawLidarScan(document.getElementById(canvasId), ranges, minRange, maxRange, blocked);
     }
-    function drawLidarScan(canvas, ranges, minRange, maxRange, blockedCount) {
+    function drawLidarScan(canvas, ranges, minRange, maxRange, candidates) {
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
       const width = canvas.width;
@@ -702,26 +996,33 @@ HTML = """<!doctype html>
       const cy = height / 2;
       const radius = Math.min(width, height) * 0.43;
       const span = Math.max(0.001, maxRange - minRange);
+      const candList = Array.isArray(candidates) ? candidates : [];
+      const blockedCount = ranges.filter(v => Number.isFinite(v) && v > 0 && v < Math.min(1.5, maxRange)).length;
 
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#05080b";
       ctx.fillRect(0, 0, width, height);
 
+      // range rings
       ctx.strokeStyle = "rgba(145,162,178,0.22)";
       ctx.lineWidth = 1;
       [0.25, 0.5, 0.75, 1].forEach(scale => {
         ctx.beginPath();
         ctx.arc(cx, cy, radius * scale, 0, Math.PI * 2);
         ctx.stroke();
+        const rLabel = (minRange + span * scale).toFixed(1);
+        ctx.fillStyle = "rgba(145,162,178,0.5)";
+        ctx.font = "11px Inter, system-ui, sans-serif";
+        ctx.fillText(`${rLabel}m`, cx + radius * scale + 3, cy - 3);
       });
 
+      // forward indicator
       ctx.strokeStyle = "rgba(87,166,255,0.55)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx, cy - radius);
       ctx.stroke();
-
       ctx.fillStyle = "rgba(255,189,90,0.95)";
       ctx.beginPath();
       ctx.moveTo(cx, cy - radius - 12);
@@ -730,32 +1031,134 @@ HTML = """<!doctype html>
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = "rgba(47,208,143,0.95)";
+      // LiDAR range points
+      // Webots Lidar: index 0 = backward (-x), index n/2 = forward (+x), scan CW from above
+      // Canvas convention: forward = top, left = left (so x = cx - sin(θ), y = cy - cos(θ))
       ranges.forEach((value, index) => {
         if (!Number.isFinite(value) || value <= 0) return;
-        const angle = (index / ranges.length) * Math.PI * 2 - Math.PI / 2;
+        const theta = (index / ranges.length) * Math.PI * 2 - Math.PI;
         const clamped = Math.max(minRange, Math.min(maxRange, value));
         const r = ((clamped - minRange) / span) * radius;
-        const x = cx + Math.cos(angle) * r;
-        const y = cy + Math.sin(angle) * r;
+        const x = cx - Math.sin(theta) * r;
+        const y = cy - Math.cos(theta) * r;
         const near = value < Math.min(1.2, maxRange);
         ctx.fillStyle = near ? "rgba(255,189,90,0.95)" : "rgba(47,208,143,0.88)";
         ctx.fillRect(x - 1.7, y - 1.7, 3.4, 3.4);
       });
 
+      // Ball candidates overlay
+      // robot_x_m = forward (+x), robot_y_m = left (+y) — same canvas transform as LiDAR points
+      candList.forEach((cand, i) => {
+        const rx = cand.robot_x_m;
+        const ry = cand.robot_y_m;
+        const dist = Math.hypot(rx, ry);
+        if (dist < 0.1 || dist > maxRange) return;
+        const bearing = Math.atan2(ry, rx);
+        const r = Math.min(1.0, (dist - minRange) / span) * radius;
+        const x = cx - Math.sin(bearing) * r;
+        const y = cy - Math.cos(bearing) * r;
+        // Pulsing ring
+        ctx.beginPath();
+        ctx.arc(x, y, 11, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255,189,90,0.35)";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        // Filled dot
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffbd5a";
+        ctx.fill();
+        ctx.strokeStyle = "#07110d";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // Label
+        ctx.fillStyle = "#ffbd5a";
+        ctx.font = "bold 11px Inter, system-ui, sans-serif";
+        ctx.fillText(`${dist.toFixed(1)}m`, x + 9, y - 5);
+      });
+
+      // Robot dot
       ctx.fillStyle = "#eef4f8";
       ctx.beginPath();
       ctx.arc(cx, cy, 7, 0, Math.PI * 2);
       ctx.fill();
+
+      // Status text
       ctx.fillStyle = "rgba(145,162,178,0.9)";
       ctx.font = "12px Inter, system-ui, sans-serif";
-      ctx.fillText(`${maxRange.toFixed(1)}m`, cx + radius - 28, cy - 8);
       ctx.fillText(`${blockedCount} near`, 14, height - 16);
+      if (candList.length > 0) {
+        ctx.fillStyle = "#ffbd5a";
+        ctx.fillText(`${candList.length} candidate${candList.length > 1 ? "s" : ""}`, 14, height - 32);
+      }
     }
     function renderSensors() {
-      renderSensor("frontCameraView", sensors.front_camera);
-      renderSensor("frontDepthView", sensors.front_depth);
-      renderLidarSensor("frontLidarView", sensors.front_lidar);
+      renderSensor("sensorsCameraView", sensors.front_camera);
+      renderSensor("sensorsDepthView", sensors.front_depth);
+      renderLidarSensorFull("lidarScanView", sensors.front_lidar, sensors.lidar_candidates || []);
+      renderIrIntake(sensors.ir_intake);
+    }
+    function renderIrIntake(ir) {
+      const threshold = ir?.threshold ?? 500;
+      function renderOne(valueId, barId, panelId, value, available) {
+        const valEl = document.getElementById(valueId);
+        const barEl = document.getElementById(barId);
+        const panelEl = document.getElementById(panelId);
+        if (!valEl || !barEl || !panelEl) return;
+        if (!available || value === null || value === undefined) {
+          valEl.textContent = "N/A";
+          barEl.style.width = "0%";
+          barEl.style.background = "rgba(255,255,255,0.15)";
+          panelEl.style.borderColor = "var(--line)";
+          return;
+        }
+        const pct = Math.min(100, Math.round((value / 1000) * 100));
+        const triggered = value > threshold;
+        valEl.textContent = Math.round(value);
+        barEl.style.width = `${pct}%`;
+        barEl.style.background = triggered ? "#2fd08f" : "rgba(145,162,178,0.45)";
+        panelEl.style.borderColor = triggered ? "rgba(47,208,143,0.55)" : "var(--line)";
+      }
+      renderOne("irLeftValue", "irLeftBar", "irLeftPanel", ir?.left, ir?.left_available ?? (ir !== undefined));
+      renderOne("irRightValue", "irRightBar", "irRightPanel", ir?.right, ir?.right_available ?? (ir !== undefined));
+      const badge = document.getElementById("irTriggeredBadge");
+      if (badge) {
+        const triggered = !!ir?.triggered;
+        const available = ir?.left_available || ir?.right_available;
+        badge.textContent = available ? (triggered ? "TRIGGERED: YES — collection gate open" : "TRIGGERED: NO — ball not in intake zone") : "TRIGGERED: sensors not available";
+        badge.style.background = triggered ? "rgba(47,208,143,0.15)" : (available ? "rgba(255,255,255,0.04)" : "rgba(255,80,80,0.10)");
+        badge.style.color = triggered ? "#2fd08f" : (available ? "var(--muted)" : "#ff6060");
+        badge.style.border = triggered ? "1px solid rgba(47,208,143,0.35)" : "none";
+      }
+    }
+    function renderLidarSensorFull(id, sensor, candidates) {
+      const target = document.getElementById(id);
+      if (!target) return;
+      const ranges = Array.isArray(sensor?.ranges_m) ? sensor.ranges_m : [];
+      if (!ranges.length) {
+        target.className = "sensor-empty";
+        target.style.cssText = "background:#090d12;border:1px solid var(--line);border-radius:8px;min-height:420px;";
+        target.textContent = "waiting for LiDAR scan";
+        return;
+      }
+      const canvasId = "lidarFullCanvas";
+      const validRanges = ranges.filter(v => Number.isFinite(v) && v > 0);
+      const minRange = Number.isFinite(sensor.min_range_m) ? sensor.min_range_m : 0.05;
+      const maxRange = Number.isFinite(sensor.max_range_m) ? sensor.max_range_m : Math.max(1, ...validRanges);
+      const nearest = validRanges.length ? Math.min(...validRanges) : null;
+      const blocked = validRanges.filter(v => v < Math.min(1.5, maxRange)).length;
+      const candList = Array.isArray(candidates) ? candidates : [];
+      target.className = "";
+      target.style.cssText = "background:#090d12;border:1px solid var(--line);border-radius:8px;overflow:hidden;";
+      target.innerHTML = `<canvas id="${canvasId}" width="700" height="700" style="display:block;width:100%;max-height:520px;object-fit:contain;" aria-label="LiDAR 360 degree scan"></canvas>`;
+      const metaEl = document.getElementById("lidarScanMeta");
+      if (metaEl) metaEl.innerHTML = [
+        ["front", `<strong style="color:var(--ink);display:block;font-size:13px;">${fmt(sensor.front_range_m, "m")}</strong>`],
+        ["nearest", `<strong style="color:var(--ink);display:block;font-size:13px;">${fmt(nearest, "m")}</strong>`],
+        ["hits", `<strong style="color:var(--ink);display:block;font-size:13px;">${validRanges.length}/${ranges.length}</strong>`],
+        ["candidates", `<strong style="color:${candList.length > 0 ? "#ffbd5a" : "var(--muted)"};display:block;font-size:13px;">${candList.length}</strong>`],
+      ].map(([label, val]) => `<div style="border-top:1px solid var(--line);padding-top:8px;">${label}${val}</div>`).join("");
+      drawLidarScan(document.getElementById(canvasId), ranges, minRange, maxRange, candList);
     }
     function renderCourtMap() {
       const canvas = document.getElementById("courtMap");
@@ -954,10 +1357,10 @@ HTML = """<!doctype html>
       const total = stats.total || 0;
       const byMode = stats.by_mode || {};
       document.getElementById("sTotal").textContent = total;
-      document.getElementById("sCollect").textContent = (byMode.collect || 0) + (byMode.collect_one || 0);
+      document.getElementById("sCollect").textContent = (byMode.collect || 0) + (byMode.collect_pattern || 0) + (byMode.collect_one || 0);
       document.getElementById("sSurvey").textContent = byMode.survey || 0;
       document.getElementById("sIdle").textContent = byMode.idle || 0;
-      document.getElementById("statsRows").innerHTML = ["collect", "collect_one", "survey", "idle"].map(mode => {
+      document.getElementById("statsRows").innerHTML = ["collect", "collect_pattern", "search", "collect_one", "scan_side", "map_left_side", "survey", "idle"].map(mode => {
         const count = byMode[mode] || 0;
         const latest = (stats.latest_by_mode || {})[mode] || {};
         const share = total ? `${Math.round(count * 100 / total)}%` : "0%";
@@ -997,6 +1400,9 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         if path == "/api/diagnostics":
             self._send_json(self._diagnostics())
             return
+        if path == "/api/webcam/frame":
+            self._handle_webcam_frame()
+            return
         if path == "/favicon.ico":
             self.send_response(HTTPStatus.NO_CONTENT)
             self.end_headers()
@@ -1024,8 +1430,47 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         self.send_header("Location", "/")
         self.end_headers()
 
+    def _handle_webcam_frame(self) -> None:
+        if not _VISION_AVAILABLE:
+            self._send_json({"available": False, "error": "cv2 / perception not installed"})
+            return
+        ok, frame = WebcamManager.get_frame()
+        if not ok or frame is None:
+            self._send_json({"available": False, "error": "no webcam or read failed"})
+            return
+
+        h, w = frame.shape[:2]
+        detection = detect_largest_ball(frame)
+        result: dict[str, object] = {"available": True, "detected": detection is not None, "width": w, "height": h}
+
+        if detection:
+            cv2.rectangle(
+                frame,
+                (detection.x, detection.y),
+                (detection.x + detection.width, detection.y + detection.height),
+                (0, 220, 100), 2,
+            )
+            focal_px = (w / 2) / math.tan(math.radians(WEBCAM_FOV_DEG / 2))
+            diam_px = detection.apparent_diameter_px
+            distance_m = (TENNIS_BALL_DIAMETER_M * focal_px) / max(1.0, diam_px)
+            normalized_x = (detection.center_x - w / 2) / (w / 2)
+            bearing_rad = math.atan(normalized_x * math.tan(math.radians(WEBCAM_FOV_DEG / 2)))
+            bearing_deg = math.degrees(bearing_rad)
+            label = f"{distance_m:.2f}m"
+            cv2.putText(frame, label, (detection.x, max(20, detection.y - 8)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 220, 100), 2)
+            result.update({
+                "distance_m": round(distance_m, 3),
+                "bearing_deg": round(bearing_deg, 1),
+                "diameter_px": round(diam_px, 1),
+            })
+
+        _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 82])
+        result["data_url"] = "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode()
+        self._send_json(result)
+
     def log_message(self, format: str, *args: object) -> None:
-        if urlparse(self.path).path in {"/api/status", "/api/robot-status", "/api/sensors", "/api/diagnostics", "/favicon.ico"}:
+        if urlparse(self.path).path in {"/api/status", "/api/robot-status", "/api/sensors", "/api/diagnostics", "/api/webcam/frame", "/favicon.ico"}:
             return
         print(f"{self.address_string()} - {format % args}")
 
