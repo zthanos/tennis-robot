@@ -467,7 +467,7 @@ class BallDetectorController:
                     mapped_ball_id,
                 )
                 if effective_mode == "map_court":
-                    command = self._survey_command_for_mode(effective_mode)
+                    command = self._survey_command_for_mode(effective_mode, image)
                 elif effective_mode == "search":
                     command = self._search_command_for_mode(
                         effective_mode,
@@ -484,7 +484,7 @@ class BallDetectorController:
                 else:
                     command = self._collector_command_for_mode(effective_mode, control_observation)
                 self.collection_confirmed = False
-                self._draw_debug(image, detection, command)
+                self._draw_debug(image, detection, command, control_observation)
                 self._apply_command(command)
                 self.telemetry.add_collector_state(command.state.value)
                 self.collection_confirmed = self._check_collection(command)
@@ -1032,7 +1032,7 @@ class BallDetectorController:
         self.active_mapped_target_id = self._nearest_mapped_target_id()
         return len(self.mapped_balls)
 
-    def _survey_command_for_mode(self, mode: str) -> ConceptACommand:
+    def _survey_command_for_mode(self, mode: str, image: np.ndarray | None = None) -> ConceptACommand:
         if mode != self.control_mode:
             self.behavior.reset()
             self.search_behavior.reset()
@@ -1045,7 +1045,7 @@ class BallDetectorController:
             print(f"control mode changed to {self.control_mode}")
 
         x_m, y_m, _z_m = self.robot_node.getPosition()
-        self._last_survey_vision = self._survey_vision_summary()
+        self._last_survey_vision = self._survey_vision_summary(image)
         survey_command = self.survey_behavior.update(
             x_m,
             y_m,
@@ -1058,20 +1058,23 @@ class BallDetectorController:
             if not self._survey_complete_reported:
                 bounds = self.survey_behavior.court_bounds or {}
                 pt_count = bounds.get("point_count", 0)
-                if pt_count >= 500:
+                status = bounds.get("status", "FAILED")
+                if status == "SUCCESS":
+                    fg = bounds.get("fence_geometry") or {}
                     print(
                         f"map court complete — "
-                        f"W={bounds.get('west_fence_x', '?'):.2f}  "
-                        f"E={bounds.get('east_fence_x', '?'):.2f}  "
-                        f"S={bounds.get('south_fence_y', '?'):.2f}  "
-                        f"N={bounds.get('north_fence_y', '?'):.2f}  "
+                        f"W={fg.get('west_x', 0.0):.2f}  "
+                        f"E={fg.get('east_x', 0.0):.2f}  "
+                        f"S={fg.get('south_y', 0.0):.2f}  "
+                        f"N={fg.get('north_y', 0.0):.2f}  "
                         f"pts={pt_count}"
                     )
                 else:
                     print(
-                        f"map court FAILED — only {pt_count} pts accumulated, no boundary data saved"
+                        f"map court FAILED — {bounds.get('failure_reason') or 'survey incomplete'} "
+                        f"pts={pt_count}"
                     )
-                self.command_store.write("idle", source="webots-map-court-complete")
+                self.command_store.write("idle", source="robot-map-court-complete")
                 self._survey_complete_reported = True
             return ConceptACommand(
                 state=CollectorState.IDLE,
@@ -1159,7 +1162,7 @@ class BallDetectorController:
             return None
         return np.array(raw, dtype=np.float32).reshape((height, width))
 
-    def _survey_vision_summary(self) -> SurveyVision | None:
+    def _survey_vision_summary(self, frame: np.ndarray | None = None) -> SurveyVision | None:
         """OAK-D forward clearance used only by survey corridor navigation."""
         depth = self._depth_frame_m()
         if depth is None or self.depth_camera is None:
@@ -1167,8 +1170,8 @@ class BallDetectorController:
         h, w = depth.shape[:2]
         if h < 4 or w < 6:
             return None
-        y0 = int(h * 0.28)
-        y1 = int(h * 0.78)
+        y0 = int(h * 0.56)
+        y1 = int(h * 0.92)
         min_range = float(self.depth_camera.getMinRange())
         max_range = float(self.depth_camera.getMaxRange())
 
@@ -1187,7 +1190,32 @@ class BallDetectorController:
             left_m=left,
             right_m=right,
             valid_count=left_n + center_n + right_n,
+            obstacle_class=self._classify_survey_obstacle_from_frame(frame),
         )
+
+    def _classify_survey_obstacle_from_frame(self, frame: np.ndarray | None) -> str | None:
+        if not VISION_ENABLED or frame is None or cv2 is None or np is None:
+            return None
+        h, w = frame.shape[:2]
+        if h < 20 or w < 20:
+            return None
+        roi = frame[int(h * 0.12):int(h * 0.58), int(w * 0.05):int(w * 0.95)]
+        if roi.size == 0:
+            return None
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        dark = gray < 85
+        if float(np.mean(dark)) < 0.035:
+            return None
+        edges = cv2.Canny(gray, 45, 130)
+        horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (18, 1))
+        vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 10))
+        horizontal = cv2.morphologyEx(edges, cv2.MORPH_OPEN, horizontal_kernel)
+        vertical = cv2.morphologyEx(edges, cv2.MORPH_OPEN, vertical_kernel)
+        horizontal_score = float(np.count_nonzero(horizontal)) / float(horizontal.size)
+        vertical_score = float(np.count_nonzero(vertical)) / float(vertical.size)
+        if horizontal_score >= 0.012 and vertical_score >= 0.006:
+            return "net"
+        return None
 
     def _mapping_observation(self, observation: BallObservationInput) -> BallObservationInput:
         if not MAPPED_BALL_SIM_SNAP_ENABLED or not observation.visible:
@@ -1670,6 +1698,7 @@ class BallDetectorController:
         frame: np.ndarray | None,
         detection: BallDetection | None,
         command: ConceptACommand,
+        observation: BallObservationInput,
     ) -> None:
         if not VISION_ENABLED or frame is None:
             return
@@ -1682,6 +1711,14 @@ class BallDetectorController:
                 2,
             )
             cv2.circle(frame, (int(detection.center_x), int(detection.center_y)), 4, (255, 0, 0), -1)
+            ball_distance = None if math.isinf(observation.distance_m) else observation.distance_m
+            ball_label = "ball"
+            if ball_distance is not None:
+                ball_label += f" {ball_distance:.2f}m"
+            self._draw_label(frame, ball_label, detection.x, max(18, detection.y - 8), (0, 0, 255))
+
+        if self.control_mode == "map_court":
+            self._draw_survey_overlay(frame)
 
         cv2.putText(
             frame,
@@ -1702,6 +1739,85 @@ class BallDetectorController:
         image_ref = self.display.imageNew(rgb.tobytes(), Display.RGB, display_width, display_height)
         self.display.imagePaste(image_ref, 0, 0, False)
         self.display.imageDelete(image_ref)
+
+    def _draw_survey_overlay(self, frame: np.ndarray) -> None:
+        h, w = frame.shape[:2]
+        survey_object = self._survey_recognized_object()
+        label = survey_object["label"]
+        distance_m = survey_object["distance_m"]
+        source = survey_object["source"]
+        color = (80, 220, 255) if label == "net" else (0, 210, 120) if label == "fence" else (180, 180, 180)
+
+        vx0 = int(w * 0.05)
+        vx1 = int(w * 0.95)
+        vy0 = int(h * 0.12)
+        vy1 = int(h * 0.58)
+        cv2.rectangle(frame, (vx0, vy0), (vx1, vy1), color, 1)
+
+        dx0 = int(w * 0.33)
+        dx1 = int(w * 0.67)
+        dy0 = int(h * 0.56)
+        dy1 = int(h * 0.92)
+        cv2.rectangle(frame, (dx0, dy0), (dx1, dy1), (255, 255, 255), 1)
+
+        distance_text = "dist=none" if distance_m is None else f"dist={distance_m:.2f}m"
+        self._draw_label(frame, f"{label} {distance_text} {source}", vx0 + 4, max(18, vy0 - 8), color)
+
+    def _draw_label(self, frame: np.ndarray, text: str, x: int, y: int, color: tuple[int, int, int]) -> None:
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        scale = 0.48
+        thickness = 1
+        (tw, th), baseline = cv2.getTextSize(text, font, scale, thickness)
+        x = max(2, min(x, frame.shape[1] - tw - 4))
+        y = max(th + 4, min(y, frame.shape[0] - baseline - 4))
+        cv2.rectangle(frame, (x - 2, y - th - 4), (x + tw + 4, y + baseline + 3), (0, 0, 0), -1)
+        cv2.putText(frame, text, (x, y), font, scale, color, thickness, cv2.LINE_AA)
+
+    def _survey_recognized_object(self) -> dict[str, object]:
+        nav = self.survey_behavior.telemetry()
+        vision_class = None if self._last_survey_vision is None else self._last_survey_vision.obstacle_class
+        label = vision_class or nav.get("front_obstacle_kind") or "unknown"
+        if label is None:
+            label = "unknown"
+        source = nav.get("front_obstacle_source") or "none"
+        if vision_class:
+            source = "oak_visual_classifier"
+        oak_range = None if self._last_survey_vision is None else self._last_survey_vision.center_m
+        front_lidar = nav.get("front_lidar_range_m")
+        distance_m = oak_range if oak_range is not None else front_lidar
+        return {
+            "label": label,
+            "distance_m": distance_m,
+            "source": source,
+            "confidence": None,
+            "roi": "front_camera_survey",
+        }
+
+    def _recognized_objects_snapshot(
+        self,
+        observation: BallObservationInput,
+        detection: BallDetection | None,
+    ) -> list[dict[str, object]]:
+        objects: list[dict[str, object]] = []
+        if detection is not None:
+            objects.append(
+                {
+                    "label": "ball",
+                    "distance_m": None if math.isinf(observation.distance_m) else observation.distance_m,
+                    "bearing_deg": math.degrees(observation.bearing_rad),
+                    "source": observation.source,
+                    "confidence": observation.confidence,
+                    "bbox": {
+                        "x": detection.x,
+                        "y": detection.y,
+                        "width": detection.width,
+                        "height": detection.height,
+                    },
+                }
+            )
+        if self.control_mode == "map_court":
+            objects.append(self._survey_recognized_object())
+        return objects
 
     def _apply_command(self, command: ConceptACommand) -> None:
         self.set_base_command(command.base.linear_speed_m_s, command.base.angular_speed_rad_s)
@@ -1996,7 +2112,6 @@ class BallDetectorController:
         self.last_status_write_s = now
 
         x_m, y_m, z_m = self.robot_node.getPosition()
-        target = self.survey_behavior.current_target()
         front_range_m = self._front_range_m()
         search_snapshot = self.search_behavior.snapshot(x_m, y_m)
         if self.control_mode == "search":
@@ -2005,6 +2120,7 @@ class BallDetectorController:
             current_action = f"collect_pattern:{self.collect_pattern_phase}"
         else:
             current_action = command.state.value
+        recognized_objects = self._recognized_objects_snapshot(observation, detection)
         self.status_store.write(
             {
                 "requested_mode": requested_mode,
@@ -2059,6 +2175,7 @@ class BallDetectorController:
                     "center_x": detection.center_x,
                     "center_y": detection.center_y,
                 },
+                "recognized_objects": recognized_objects,
                 "command": {
                     "linear_speed_m_s": command.base.linear_speed_m_s,
                     "angular_speed_rad_s": command.base.angular_speed_rad_s,
@@ -2111,10 +2228,6 @@ class BallDetectorController:
                 "search": search_snapshot,
                 "survey": {
                     "state": self.survey_behavior.state.value,
-                    "waypoint_index": self.survey_behavior.waypoint_index,
-                    "waypoint_count": len(self.survey_behavior.waypoints),
-                    "target_x_m": None if target is None else target[0],
-                    "target_y_m": None if target is None else target[1],
                     "sample_count": self.survey_behavior.sample_count,
                     "bounds_saved": self.survey_behavior.court_bounds is not None,
                     "bounds": self.survey_behavior.court_bounds,
@@ -2126,7 +2239,9 @@ class BallDetectorController:
                         "left_m": self._last_survey_vision.left_m,
                         "right_m": self._last_survey_vision.right_m,
                         "valid_count": self._last_survey_vision.valid_count,
+                        "obstacle_class": self._last_survey_vision.obstacle_class,
                     },
+                    "navigation": self.survey_behavior.telemetry(),
                 },
                 "map_mission": self._map_mission.telemetry(),
                 "collection_animation_active": self.collection_animation is not None,
@@ -2150,15 +2265,28 @@ class BallDetectorController:
         if observation.world_x_m is not None and observation.world_y_m is not None:
             status += f" ball_world=({observation.world_x_m:.2f},{observation.world_y_m:.2f})"
         if self.control_mode == "map_court":
-            x_m, y_m, _z_m = self.robot_node.getPosition()
-            target = self.survey_behavior.current_target()
-            target_text = "none" if target is None else f"({target[0]:.2f},{target[1]:.2f})"
+            survey_nav = self.survey_behavior.telemetry()
+            oak_range = survey_nav["oak_range_m"]
+            oak_text = "none" if oak_range is None else f"{oak_range:.2f}m"
+            front_range = survey_nav["front_lidar_range_m"]
+            front_text = "none" if front_range is None else f"{front_range:.2f}m"
+            right_range = survey_nav["right_lidar_range_m"]
+            right_text = "none" if right_range is None else f"{right_range:.2f}m"
             status += (
                 f" survey_state={self.survey_behavior.state.value} "
-                f"waypoint={self.survey_behavior.waypoint_index + 1}/{len(self.survey_behavior.waypoints)} "
+                f"event={survey_nav['last_event']} "
                 f"samples={self.survey_behavior.sample_count} "
-                f"pos=({x_m:.2f},{y_m:.2f}) "
-                f"target={target_text} "
+                f"sensor_only={survey_nav['sensor_only_navigation']} "
+                f"first_obstacle={survey_nav['first_obstacle_kind']} "
+                f"obstacle={survey_nav['front_obstacle_kind']}:{survey_nav['front_obstacle_source']} "
+                f"net_source={survey_nav['net_detection_source']} "
+                f"front_lidar={front_text} "
+                f"right_lidar={right_text} "
+                f"distance_traveled={survey_nav['distance_traveled_m']:.2f}m "
+                f"turn={survey_nav['turn_progress_deg']:.1f}/{survey_nav['turn_target_deg'] or 0:.0f}deg "
+                f"oak_brake={survey_nav['oak_brake_active']} "
+                f"oak_range={oak_text} "
+                f"loop_closed={survey_nav['loop_closed']} "
                 f"bounds={'saved' if self.survey_behavior.court_bounds else 'pending'}"
             )
         if self.control_mode in {"search", "collect_pattern"}:

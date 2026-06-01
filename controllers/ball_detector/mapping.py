@@ -126,10 +126,11 @@ class LidarSurveyBoundaryProvider:
             raise RuntimeError(f"Court survey incomplete — run Map Court first. Reason: {reason}")
 
         try:
-            east_x  = float(data["east_fence_x"])
-            west_x  = float(data["west_fence_x"])
-            north_y = float(data["north_fence_y"])
-            south_y = float(data["south_fence_y"])
+            fence_geometry = data["fence_geometry"]
+            east_x  = float(fence_geometry["east_x"])
+            west_x  = float(fence_geometry["west_x"])
+            north_y = float(fence_geometry["north_y"])
+            south_y = float(fence_geometry["south_y"])
         except (KeyError, TypeError, ValueError) as exc:
             raise RuntimeError(f"Court survey data malformed: {exc}") from exc
 

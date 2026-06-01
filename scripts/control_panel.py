@@ -925,8 +925,9 @@ HTML = """<!doctype html>
         ["Intake", out.intake_enabled ? "enabled" : "disabled"],
         ["Base command", `${fmt(out.linear_speed_m_s, "m/s")} / ${fmt(out.angular_speed_rad_s, "rad/s")}`],
         ["Lift wheel", fmt(out.lift_wheel_speed)],
-        ["Survey waypoint", `${(survey.waypoint_index ?? 0) + 1}/${survey.waypoint_count ?? 0}`],
-        ["Front range", fmt(survey.front_range_m, "m")]
+        ["Map court state", survey.state || "idle"],
+        ["Map court event", survey.navigation?.last_event || "none"],
+        ["Front range", fmt(survey.navigation?.front_lidar_range_m ?? survey.front_range_m, "m")]
       ]);
       setKv("selectedMode", [
         ["Requested mode", command.mode || "idle"],
@@ -958,8 +959,8 @@ HTML = """<!doctype html>
         ["Scan best target", scan.best_visible ? `${fmt(scan.best_distance_m, "m")} @ ${fmt((scan.best_bearing_rad || 0) * 180 / Math.PI, "deg")}` : "none"],
         ["Search path", search.path_status || "idle"],
         ["Search resume", search.resume_marker || "none"],
-        ["Survey state", survey.state || "idle"],
-        ["Survey target", `${fmt(survey.target_x_m, "m")}, ${fmt(survey.target_y_m, "m")}`]
+        ["Map court state", survey.state || "idle"],
+        ["Map court distance", fmt(survey.navigation?.distance_traveled_m, "m")]
       ]);
       document.getElementById("rawStatus").textContent = JSON.stringify(robot, null, 2);
 
@@ -983,15 +984,15 @@ HTML = """<!doctype html>
       const kvEl = document.getElementById("surveyBoundaryKv");
       if (!statusEl || !kvEl) return;
       const bounds = survey.bounds;
-      const inProgress = survey.state === "goto" || survey.state === "sample";
+      const inProgress = survey.state && survey.state !== "done";
       const isComplete = bounds && (bounds.status === "SUCCESS" || bounds.survey_complete);
       if (isComplete) {
         const cg = bounds.court_geometry || {};
         const fg = bounds.fence_geometry || {};
-        const w  = (fg.west_x  ?? bounds.west_fence_x)  != null ? (fg.west_x  ?? bounds.west_fence_x).toFixed(2)  : "—";
-        const e  = (fg.east_x  ?? bounds.east_fence_x)  != null ? (fg.east_x  ?? bounds.east_fence_x).toFixed(2)  : "—";
-        const s  = (fg.south_y ?? bounds.south_fence_y) != null ? (fg.south_y ?? bounds.south_fence_y).toFixed(2) : "—";
-        const n  = (fg.north_y ?? bounds.north_fence_y) != null ? (fg.north_y ?? bounds.north_fence_y).toFixed(2) : "—";
+        const w  = fg.west_x  != null ? fg.west_x.toFixed(2)  : "—";
+        const e  = fg.east_x  != null ? fg.east_x.toFixed(2)  : "—";
+        const s  = fg.south_y != null ? fg.south_y.toFixed(2) : "—";
+        const n  = fg.north_y != null ? fg.north_y.toFixed(2) : "—";
         const len = cg.length_m != null ? cg.length_m.toFixed(2) : "—";
         const wid = cg.width_m  != null ? cg.width_m.toFixed(2)  : "—";
         statusEl.textContent = `— SUCCESS · ${bounds.sample_count ?? "?"} samples`;
@@ -1009,7 +1010,8 @@ HTML = """<!doctype html>
         statusEl.style.color = "var(--accent-2)";
         setKv("surveyBoundaryKv", [
           ["State", survey.state || "—"],
-          ["Waypoint", `${(survey.waypoint_index ?? 0) + 1} / ${survey.waypoint_count ?? 2}`],
+          ["Event", (survey.navigation || {}).last_event || "none"],
+          ["Distance", fmt((survey.navigation || {}).distance_traveled_m, "m")],
           ["Samples collected", survey.sample_count ?? 0],
         ]);
       } else {
@@ -1346,6 +1348,7 @@ HTML = """<!doctype html>
       // Survey fence measurements overlay — prefer persistent court_boundary.json over in-memory survey state
       const survBounds = diagnostics.court_boundary || ((diagnostics.robot || {}).survey || {}).bounds;
       if (survBounds && survBounds.survey_complete) {
+        const fg = survBounds.fence_geometry || {};
         ctx.save();
         ctx.setLineDash([7, 4]);
         ctx.lineWidth = 1.8;
@@ -1353,36 +1356,35 @@ HTML = """<!doctype html>
         ctx.fillStyle = "rgba(255,189,90,0.92)";
         ctx.font = "bold 11px system-ui";
 
-        if (survBounds.west_fence_x != null) {
-          const fx = sx(survBounds.west_fence_x);
+        if (fg.west_x != null) {
+          const fx = sx(fg.west_x);
           ctx.beginPath(); ctx.moveTo(fx, pad); ctx.lineTo(fx, height - pad); ctx.stroke();
           ctx.textAlign = "right";
-          ctx.fillText(`W ${survBounds.west_fence_x.toFixed(1)}m`, fx - 3, pad + 20);
+          ctx.fillText(`W ${fg.west_x.toFixed(1)}m`, fx - 3, pad + 20);
         }
-        if (survBounds.east_fence_x != null) {
-          const fx = sx(survBounds.east_fence_x);
+        if (fg.east_x != null) {
+          const fx = sx(fg.east_x);
           ctx.beginPath(); ctx.moveTo(fx, pad); ctx.lineTo(fx, height - pad); ctx.stroke();
           ctx.textAlign = "left";
-          ctx.fillText(`E ${survBounds.east_fence_x.toFixed(1)}m`, fx + 3, pad + 20);
+          ctx.fillText(`E ${fg.east_x.toFixed(1)}m`, fx + 3, pad + 20);
         }
-        if (survBounds.south_fence_y != null) {
-          const fy = sy(survBounds.south_fence_y);
+        if (fg.south_y != null) {
+          const fy = sy(fg.south_y);
           ctx.beginPath(); ctx.moveTo(pad, fy); ctx.lineTo(width - pad, fy); ctx.stroke();
           ctx.textAlign = "left";
-          ctx.fillText(`S ${survBounds.south_fence_y.toFixed(1)}m`, pad + 6, fy - 4);
+          ctx.fillText(`S ${fg.south_y.toFixed(1)}m`, pad + 6, fy - 4);
         }
-        if (survBounds.north_fence_y != null) {
-          const fy = sy(survBounds.north_fence_y);
+        if (fg.north_y != null) {
+          const fy = sy(fg.north_y);
           ctx.beginPath(); ctx.moveTo(pad, fy); ctx.lineTo(width - pad, fy); ctx.stroke();
           ctx.textAlign = "left";
-          ctx.fillText(`N ${survBounds.north_fence_y.toFixed(1)}m`, pad + 6, fy + 13);
+          ctx.fillText(`N ${fg.north_y.toFixed(1)}m`, pad + 6, fy + 13);
         }
 
         // Width × depth badge bottom-right
-        if (survBounds.east_fence_x != null && survBounds.west_fence_x != null &&
-            survBounds.north_fence_y != null && survBounds.south_fence_y != null) {
-          const w = (survBounds.east_fence_x - survBounds.west_fence_x).toFixed(1);
-          const d = (survBounds.north_fence_y - survBounds.south_fence_y).toFixed(1);
+        if (fg.east_x != null && fg.west_x != null && fg.north_y != null && fg.south_y != null) {
+          const w = (fg.east_x - fg.west_x).toFixed(1);
+          const d = (fg.north_y - fg.south_y).toFixed(1);
           const label = `map court: ${w} × ${d} m`;
           ctx.setLineDash([]);
           ctx.textAlign = "right";

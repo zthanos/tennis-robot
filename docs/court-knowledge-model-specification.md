@@ -114,6 +114,90 @@ The robot continuously:
 
 The traversal must cover the entire perimeter.
 
+#### Required Map Court Traversal FSM
+
+The Map Court traversal must be deterministic and sensor-driven. It must not use
+simulator/world-specific waypoints or pre-recorded court coordinates. The same
+behavior must run in simulation and on the physical robot when given equivalent
+OAK-D, LiDAR, and localization inputs.
+
+The required traversal order is:
+
+1. `FIND_FIRST_OBSTACLE`
+   - Drive forward from the current robot heading until the first obstacle is
+     close enough to classify.
+   - Do not begin by spinning in place and do not begin from an arbitrary
+     wall-following loop.
+   - Classify the first obstacle using OAK-D close-range evidence and LiDAR
+     front-sector evidence.
+   - OAK-D-only net classification must not be accepted immediately at startup;
+     it requires either explicit visual classification or a minimum forward
+     travel distance so stale/near-field depth cannot start the wrong path.
+   - If the first obstacle is the net, continue with the net-first traversal.
+   - If the first obstacle is a fence, begin the left-turn perimeter traversal
+     from that fence and complete only after returning to the same reference
+     point.
+
+2. `APPROACH_NET`
+   - Drive toward the detected net until the robot reaches a safe standoff
+     distance.
+   - Maintain obstacle avoidance using LiDAR and OAK-D depth.
+
+3. `TURN_LEFT_AT_NET`
+   - When the robot is near the net, turn left.
+   - Record this first net-left-turn location as the loop-completion reference.
+
+4. `FOLLOW_NET_TO_FENCE`
+   - Move parallel to the net.
+   - Continue until LiDAR/OAK-D indicates the robot is near the surrounding
+     fence or a corner constraint.
+
+5. `TURN_LEFT_AT_FENCE`
+   - At the fence/corner, turn left.
+   - The turn trigger must come from sensor evidence, not from an absolute
+     coordinate.
+
+6. `FOLLOW_FENCE_TO_NEXT_FENCE`
+   - Follow the fence boundary until the next fence/corner is detected.
+   - Record fence geometry, obstacles, clearance, and blocked passages while
+     moving.
+
+7. `TURN_LEFT_AT_FENCE`
+   - Turn left at the next fence/corner and continue perimeter traversal.
+
+8. `FOLLOW_FENCE_TO_NET`
+   - Continue until the net is detected again from the opposite approach.
+
+9. `CROSS_NET_ON_RIGHT_SIDE`
+   - Cross around the net through the right-side available gap.
+   - Use LiDAR side clearances and OAK-D depth to keep the robot centered in
+     the gap and away from the net post/fence.
+
+10. `FOLLOW_SECOND_HALF_PERIMETER`
+    - Repeat the same left-turn perimeter pattern for the other half of the
+      court: fence -> left turn -> fence -> left turn -> net.
+
+11. `COMPLETE_AT_FIRST_NET_TURN_REFERENCE`
+    - Complete only when the robot returns near the first net-left-turn
+      reference after traversing both halves.
+    - Completion requires loop closure, sufficient traveled distance, valid
+      sensor coverage, and successful map validation.
+
+The state transitions must be based on named sensor events:
+
+- `first_obstacle_net`
+- `first_obstacle_fence`
+- `net_detected`
+- `near_net`
+- `near_fence`
+- `corner_detected`
+- `right_side_net_gap_detected`
+- `gap_crossed`
+- `loop_closed`
+
+The Map Court process must fail with a structured reason if any required sensor
+event cannot be detected with sufficient confidence.
+
 ### Step 4 - Environment Mapping
 
 During traversal the robot creates:
