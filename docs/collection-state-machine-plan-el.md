@@ -295,15 +295,15 @@ bucket_capacity
 Το συνολικό flow γίνεται:
 
 ```text
-Search Plan
+Collection Plan Target
     ↓
 Target Selected
     ↓
-Collect Plan
+Collect Attempt
     ↓
 Ball Stored
     ↓
-Resume Search
+Resume Collection Plan Or Rescan
 ```
 
 Μετά από αυτά θα χρειαστεί ξεχωριστό Recovery Plan για:

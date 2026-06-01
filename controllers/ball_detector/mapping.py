@@ -6,14 +6,19 @@ ground-truth positions; Phase 2 swaps in mapped_balls from camera detection.
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Optional, Protocol, Tuple
 
 from config_utils import _env_float
 from collector import BaseCommand, CollectorCommand, CollectorState, ConceptACommand
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_BOUNDARY_FILE = PROJECT_ROOT / "runtime" / "court_boundary.json"
 
 
 # ── Config ─────────────────────────────────────────────────────────────────────
@@ -77,10 +82,7 @@ class BoundaryProvider(Protocol):
 
 
 class SupervisorBoundaryProvider:
-    """Returns fixed bounds from Webots court constants.
-
-    Replace with a LiDAR implementation for physical deployment.
-    """
+    """Returns fixed bounds from Webots court constants (fallback / testing)."""
 
     def __init__(
         self,
@@ -96,6 +98,33 @@ class SupervisorBoundaryProvider:
         if side == "left":
             return HalfCourtBounds("left", -self._half_x, 0.0, -y, y)
         return HalfCourtBounds("right", 0.0, self._half_x, -y, y)
+
+
+class LidarSurveyBoundaryProvider:
+    """Reads court boundaries from the survey output file written by CourtSurveyBehavior.
+
+    Falls back to SupervisorBoundaryProvider if the file is missing or incomplete.
+    """
+
+    def __init__(self, boundary_path: Path | None = None) -> None:
+        self._path = boundary_path or DEFAULT_BOUNDARY_FILE
+        self._fallback = SupervisorBoundaryProvider()
+
+    def get_bounds(self, side: str) -> HalfCourtBounds:
+        try:
+            with self._path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not data.get("survey_complete"):
+                return self._fallback.get_bounds(side)
+            east_x = float(data["east_fence_x"])
+            west_x = float(data["west_fence_x"])
+            north_y = float(data["north_fence_y"])
+            south_y = float(data["south_fence_y"])
+            if side == "left":
+                return HalfCourtBounds("left", west_x, 0.0, south_y, north_y)
+            return HalfCourtBounds("right", 0.0, east_x, south_y, north_y)
+        except (FileNotFoundError, OSError, KeyError, TypeError, ValueError):
+            return self._fallback.get_bounds(side)
 
 
 # ── 3×3 grid ───────────────────────────────────────────────────────────────────

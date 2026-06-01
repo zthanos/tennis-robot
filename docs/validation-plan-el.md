@@ -102,7 +102,11 @@ prototype να επικεντρωθεί στα σωστά ρίσκα.
 ```text
 Idle
 ↓
-Search Court
+Require / Load Court Knowledge Model
+↓
+Scan Selected Side Matrix
+↓
+Plan Collection
 ↓
 Detect Candidate Ball
 ↓
@@ -114,34 +118,38 @@ Final Approach
 ↓
 Collect / Simulated Collect
 ↓
-Resume Search
+Resume Plan Or Rescan
 ```
 
 ### Webots Implementation Milestones
 
 1. Confirm current simulated sensor layout and document exact mount heights.
 2. Add or validate obstacle sectors from LiDAR.
-3. Add repeatable search route over full court or half court, following `docs/search-strategy-plan-el.md`.
-4. Connect camera detections to target selection.
-5. Add path validation before committing to a target.
-6. Add final approach and collection behavior following `docs/collection-state-machine-plan-el.md`.
-7. Add simulated collection event.
-8. Add structured telemetry logs for decisions and failures.
-9. Add repeatable smoke/regression scenarios.
+3. Add Court Knowledge Model storage and require a valid Court Knowledge Model before collection, following `docs/court-knowledge-model-specification.md`.
+4. Add matrix-based side scan for the selected collection side.
+5. Connect camera detections to matrix cells and planned targets.
+6. Add path validation before committing to a planned target.
+7. Add final approach and collection behavior following `docs/collection-state-machine-plan-el.md`.
+8. Add simulated collection event.
+9. Add structured telemetry logs for Court Knowledge Model status, matrix scan, planning decisions and failures.
+10. Add repeatable smoke/regression scenarios.
 
 ### DoD - Webots Simulation
 
 Η φάση θεωρείται ολοκληρωμένη όταν:
 
-1. Το robot μπορεί να εκτελέσει search pattern σε ολόκληρο ή ορισμένο τμήμα του γηπέδου.
-2. Το LiDAR δημιουργεί usable obstacle map ή τουλάχιστον reliable obstacle sectors.
-3. Το robot σταματά ή αλλάζει πορεία όταν υπάρχει άνθρωπος/εμπόδιο μπροστά του.
-4. Η camera μπορεί να εντοπίσει simulated tennis balls.
-5. Το robot μπορεί να κινηθεί προς detected ball χωρίς να αγνοεί εμπόδια.
-6. Το robot μπορεί να κάνει final approach με μειωμένη ταχύτητα.
-7. Το simulation δείχνει καθαρά αν η θέση LiDAR/OAK-D είναι λογική.
-8. Υπάρχουν logs για detected balls, selected target, obstacle events, navigation decisions και failed detections.
-9. Υπάρχει documented limitation list για όσα δεν μπορεί να αποδείξει το Webots.
+1. Το robot δεν ξεκινά collection χωρίς valid Court Knowledge Model για το selected court.
+2. Το Court Knowledge Model παράγει court geometry, fence geometry, obstacle map, accessibility map και traversable route information.
+3. Το robot μπορεί να εκτελέσει side scan και να ενημερώσει cells με ball observations.
+4. Το LiDAR δημιουργεί usable obstacle map ή τουλάχιστον reliable obstacle sectors.
+5. Το robot σταματά ή αλλάζει πορεία όταν υπάρχει άνθρωπος/εμπόδιο μπροστά του.
+6. Η camera μπορεί να εντοπίσει simulated tennis balls.
+7. Το robot μπορεί να παράγει ordered collection plan από matrix data.
+8. Το robot μπορεί να κινηθεί προς planned target χωρίς να αγνοεί εμπόδια.
+9. Το robot μπορεί να κάνει final approach με μειωμένη ταχύτητα.
+10. Το simulation δείχνει καθαρά αν η θέση LiDAR/OAK-D είναι λογική.
+11. Υπάρχουν logs για Court Knowledge Model status, matrix scan, planned targets, obstacle events, navigation decisions και failed detections.
+12. Υπάρχει documented limitation list για όσα δεν μπορεί να αποδείξει το Webots.
 
 ### Suggested Webots Metrics
 

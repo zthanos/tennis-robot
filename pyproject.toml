@@ -9,6 +9,7 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.34",
     "opentelemetry-sdk>=1.34",
     "opencv-python-headless>=4.9",
+    "duckdb>=1.5.3",
 ]
 
 [dependency-groups]

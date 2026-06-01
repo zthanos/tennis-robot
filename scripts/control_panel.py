@@ -19,8 +19,10 @@ from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "controllers" / "ball_detector"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from control_bus import RobotCommandStore, RobotSensorStore, RobotStatusStore, SUPPORTED_MODES  # noqa: E402
+from db_store import TennisRobotDB  # noqa: E402
 
 try:
     import cv2
@@ -53,6 +55,7 @@ class WebcamManager:
             if cls._cap is not None:
                 cls._cap.release()
                 cls._cap = None
+
 
 
 HTML = """<!doctype html>
@@ -261,12 +264,10 @@ HTML = """<!doctype html>
       transition: transform 130ms ease, filter 130ms ease;
     }
     .command:hover { transform: translateY(-1px); filter: brightness(1.05); }
-    .command[value="collect_pattern"] { background: #2fd08f; color: #06130d; }
-    .command[value="collect_one"] { background: var(--warn); color: #1b1204; }
-    .command[value="survey"] { background: var(--accent-2); color: #06101d; }
-    .command[value="scan_side"] { background: #1acdcd; color: #051717; }
-    .command[value="idle"] { background: var(--danger); color: #1b0604; }
     .command[value="map_left_side"] { background: #a855f7; color: #0b0514; }
+    .command[value="survey"] { background: var(--accent-2); color: #06101d; }
+    .command[value="idle"] { background: var(--danger); color: #1b0604; }
+    .command:disabled { opacity: 0.32; cursor: not-allowed; transform: none !important; filter: none !important; }
     .map-cell {
       background: var(--panel-2);
       border: 1px solid var(--line);
@@ -467,10 +468,13 @@ HTML = """<!doctype html>
         <button data-view="stats">Command Stats</button>
         <button data-view="history">History</button>
         <button data-view="webcam">Webcam</button>
+        <button data-view="vendors">Vendors</button>
+        <button data-view="surveys">Surveys</button>
       </nav>
       <div class="connection">
         <div><span id="liveDot" class="dot"></span><span id="connectionText">Waiting for robot status</span></div>
         <div id="commandFile">Command file: runtime/robot_command.json</div>
+        <div id="activeSessionSidebar" style="margin-top:8px;font-size:12px;color:var(--muted);">Session: none</div>
       </div>
     </aside>
     <main>
@@ -506,15 +510,11 @@ HTML = """<!doctype html>
           <div class="panel">
             <h3>Mode Command</h3>
             <form id="commandForm" class="controls">
-              <button class="command" type="submit" name="mode" value="collect">Start Collection</button>
-              <button class="command" type="submit" name="mode" value="collect_pattern">Collect Pattern</button>
-              <button class="command" type="submit" name="mode" value="search">Search Pattern</button>
-              <button class="command" type="submit" name="mode" value="collect_one">Collect One</button>
-              <button class="command" type="submit" name="mode" value="scan_side">Scan This Side</button>
-              <button class="command" type="submit" name="mode" value="map_left_side">Map Left Side</button>
               <button class="command" type="submit" name="mode" value="survey">Survey Court</button>
+              <button class="command" type="submit" name="mode" value="map_left_side">Collect Left Side</button>
               <button class="command" type="submit" name="mode" value="idle">Stop</button>
             </form>
+            <div id="commandHint" style="font-size:12px;color:var(--warn);margin-top:8px;min-height:16px;"></div>
           </div>
           <div class="panel">
             <h3>Selected Mode</h3>
@@ -542,12 +542,6 @@ HTML = """<!doctype html>
           <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Real-time RPLIDAR C1 scan — 500 samples/rev, 12 m range. Use <strong>Scan This Side</strong> to capture a stationary snapshot.</p>
           <div id="lidarScanView" class="sensor-empty" style="background:#090d12;border:1px solid var(--line);border-radius:8px;min-height:420px;">waiting for LiDAR scan</div>
           <div id="lidarScanMeta" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 0 4px;color:var(--muted);font-size:12px;"></div>
-          <div id="scanSideProgress" style="display:none;margin-top:12px;padding:12px 14px;background:rgba(26,205,205,0.08);border:1px solid rgba(26,205,205,0.28);border-radius:7px;font-size:13px;color:#1acdcd;">
-            <strong>Scan in progress</strong> — <span id="scanSideElapsed">0.0</span>s / <span id="scanSideDuration">12</span>s
-            <div style="margin-top:6px;height:4px;background:rgba(26,205,205,0.18);border-radius:2px;overflow:hidden;">
-              <div id="scanSideBar" style="height:100%;background:#1acdcd;width:0%;transition:width 0.3s;border-radius:2px;"></div>
-            </div>
-          </div>
         </div>
         <div class="grid two" style="margin-top:14px;">
           <div class="panel">
@@ -581,6 +575,10 @@ HTML = """<!doctype html>
           <div id="irTriggeredBadge" style="margin-top:12px;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;text-align:center;background:rgba(255,255,255,0.04);color:var(--muted);">
             TRIGGERED: —
           </div>
+        </div>
+        <div id="surveyBoundaryPanel" class="panel" style="margin-top:14px;">
+          <h3>Court Boundary &nbsp;<span id="surveyBoundaryStatus" style="font-size:13px;font-weight:400;color:var(--muted);">no survey data</span></h3>
+          <div id="surveyBoundaryKv" class="kv" style="margin-top:10px;"></div>
         </div>
         <div id="mapMissionPanel" class="panel" style="margin-top:14px;">
           <h3>Half-Court Mapping Grid &nbsp;<span id="mapMissionStatus" style="font-size:13px;font-weight:400;color:var(--muted);">idle</span></h3>
@@ -624,8 +622,8 @@ HTML = """<!doctype html>
       <section id="stats" class="view">
         <div class="grid kpis">
           <div class="metric"><span>Total Commands</span><strong id="sTotal">0</strong><small>from local history</small></div>
-          <div class="metric"><span>Collect Commands</span><strong id="sCollect">0</strong><small>collect / pattern / one</small></div>
           <div class="metric"><span>Survey Commands</span><strong id="sSurvey">0</strong><small>requested mode survey</small></div>
+          <div class="metric"><span>Collect Commands</span><strong id="sCollect">0</strong><small>requested mode map_left_side</small></div>
           <div class="metric"><span>Stop Commands</span><strong id="sIdle">0</strong><small>requested mode idle</small></div>
         </div>
         <div class="panel">
@@ -662,6 +660,91 @@ HTML = """<!doctype html>
           <p style="margin:12px 0 0;color:var(--muted);font-size:12px;">HSV range: H 25–72 (yellow-green). Real tennis balls (H&nbsp;25–40) are in range. Distance uses monocular focal-length formula — assumes <strong style="color:var(--ink);">60° horizontal FOV</strong>; adjust <code>WEBCAM_FOV_DEG</code> in <code>scripts/control_panel.py</code> to calibrate.</p>
         </div>
       </section>
+
+      <section id="surveys" class="view">
+        <div class="panel">
+          <h3>Survey History</h3>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Αποτελέσματα περιμετρικής καταγραφής γηπέδου — κάθε ολοκληρωμένο survey αποθηκεύεται αυτόματα.</p>
+          <table id="surveyTable">
+            <thead>
+              <tr>
+                <th>#</th><th>Ημ/νία</th><th>Vendor</th><th>Court</th><th>Surface</th>
+                <th>W (m)</th><th>E (m)</th><th>S (m)</th><th>N (m)</th>
+                <th>Width</th><th>Depth</th><th>Pts</th><th>Fallback</th>
+              </tr>
+            </thead>
+            <tbody id="surveyRows"></tbody>
+          </table>
+          <div id="surveyEmpty" style="color:var(--muted);font-size:13px;padding:14px 0;display:none;">Δεν υπάρχουν surveys ακόμα. Τρέξε Survey Court για να ξεκινήσει η καταγραφή.</div>
+        </div>
+      </section>
+
+      <section id="vendors" class="view">
+        <div class="grid" style="gap:14px;">
+          <div class="panel" style="grid-column:1/-1;">
+            <h3>Active Session</h3>
+            <div id="activeSessionDisplay" style="margin-bottom:14px;padding:12px 16px;background:var(--panel-2);border-radius:7px;border:1px solid var(--line);font-size:14px;">
+              <span style="color:var(--muted);font-size:13px;">No active session — select a vendor and court below.</span>
+            </div>
+            <form id="activeSessionForm" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+              <div>
+                <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">Vendor</label>
+                <select id="activeVendorSelect" style="background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;min-width:200px;"></select>
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">Court / Γήπεδο</label>
+                <select id="activeCourtSelect" style="background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;min-width:200px;"></select>
+              </div>
+              <button type="submit" class="command">Set Active</button>
+            </form>
+          </div>
+          <div class="grid two" style="gap:14px;">
+            <div class="panel">
+              <h3>Vendors / Χώροι</h3>
+              <div id="vendorList" style="margin-bottom:16px;"></div>
+              <form id="addVendorForm">
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Name *</label>
+                  <input id="vendorName" type="text" required placeholder="π.χ. Athens Tennis Club" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Address</label>
+                  <input id="vendorAddress" type="text" placeholder="προαιρετικό" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                </div>
+                <button type="submit" class="command" style="background:var(--accent-2);color:#06101d;">Add Vendor</button>
+              </form>
+            </div>
+            <div class="panel">
+              <h3>Courts / Γήπεδα</h3>
+              <div id="courtList" style="margin-bottom:16px;"></div>
+              <form id="addCourtForm">
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Vendor *</label>
+                  <select id="courtVendorSelect" required style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;"><option value="">— select vendor —</option></select>
+                </div>
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Court Name *</label>
+                  <input id="courtName" type="text" required placeholder="π.χ. Γήπεδο 1" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                </div>
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Surface</label>
+                  <select id="courtSurface" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                    <option value="clay">Clay (χώμα)</option>
+                    <option value="hard">Hard (σκληρό)</option>
+                    <option value="grass">Grass (χορτάρι)</option>
+                    <option value="carpet">Carpet (χαλί)</option>
+                  </select>
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Notes</label>
+                  <input id="courtNotes" type="text" placeholder="προαιρετικό" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                </div>
+                <button type="submit" class="command" style="background:var(--accent-2);color:#06101d;">Add Court</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -669,11 +752,13 @@ HTML = """<!doctype html>
     const titles = {
       dashboard: ["Dashboard", "Observe the robot mode, collector state, current target, and command stream while the simulation runs."],
       control: ["Control", "Send high-level commands to the running Webots controller."],
-      sensors: ["Sensor Views", "Live RPLIDAR C1 360° ground scan, front camera, OAK-D depth image, and half-court mapping grid. Press Map Left Side to start a mapping mission; the 3×3 grid updates live after each scan pose."],
+      sensors: ["Sensor Views", "Live RPLIDAR C1 360° ground scan, front camera, OAK-D depth image, court boundary from last survey, and half-court mapping grid. Run Survey Court first to measure boundaries; then Collect Left Side uses them automatically."],
       telemetry: ["Telemetry", "Inspect live robot pose, detection, command output, survey data, and raw status."],
       stats: ["Command Stats", "Review per-mode command counts and recent command usage."],
       history: ["History", "Audit the local command stream written by this console and controller startup."],
-      webcam: ["Webcam", "Live webcam feed with HSV tennis ball detection and monocular distance estimation. No Webots needed."]
+      webcam: ["Webcam", "Live webcam feed with HSV tennis ball detection and monocular distance estimation. No Webots needed."],
+      vendors: ["Vendors", "Manage vendors, venues and courts. Set the active session so survey results are tagged with the correct location."],
+      surveys: ["Survey History", "Ιστορικό καταγραφών γηπέδου αποθηκευμένο στη DuckDB — ένα row ανά survey run."]
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
@@ -703,6 +788,8 @@ HTML = """<!doctype html>
       document.getElementById("viewTitle").textContent = titles[name][0];
       document.getElementById("viewHelp").textContent = titles[name][1];
       if (name === "webcam") startWebcam(); else stopWebcam();
+      if (name === "vendors") loadVendors();
+      if (name === "surveys") loadSurveys();
     }
     document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 
@@ -750,6 +837,26 @@ HTML = """<!doctype html>
       }
     }
 
+    function updateCommandButtons() {
+      const active = vendorData.active || {};
+      const hasSession = !!(active.vendor_id && active.court_id);
+      const cb = diagnostics.court_boundary;
+      const hasSurvey = hasSession && !!(cb && cb.survey_complete && cb.court_id === active.court_id);
+
+      const btnSurvey  = document.querySelector('#commandForm [value="survey"]');
+      const btnCollect = document.querySelector('#commandForm [value="map_left_side"]');
+      const hintEl     = document.getElementById("commandHint");
+
+      if (btnSurvey)  btnSurvey.disabled  = !hasSession;
+      if (btnCollect) btnCollect.disabled = !hasSurvey;
+
+      if (hintEl) {
+        if (!hasSession)       hintEl.textContent = "Επίλεξε vendor και γήπεδο πρώτα (Vendors →)";
+        else if (!hasSurvey)   hintEl.textContent = "Collect Left Side χρειάζεται survey για το ενεργό γήπεδο";
+        else                   hintEl.textContent = "";
+      }
+    }
+
     document.getElementById("commandForm").addEventListener("submit", async event => {
       event.preventDefault();
       const mode = event.submitter.value;
@@ -758,7 +865,7 @@ HTML = """<!doctype html>
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ mode })
       });
-      if (mode === "scan_side" || mode === "map_left_side") setView("sensors");
+      if (mode === "map_left_side" || mode === "survey") setView("sensors");
       await refresh();
     });
 
@@ -855,34 +962,59 @@ HTML = """<!doctype html>
       ]);
       document.getElementById("rawStatus").textContent = JSON.stringify(robot, null, 2);
 
-      // auto-navigate to sensors view when scan_side is active
-      const scanSide = robot.scan_side || {};
-      const scanProgressEl = document.getElementById("scanSideProgress");
-      if (scanSide.active) {
-        if (scanProgressEl) scanProgressEl.style.display = "block";
-        const elEl = document.getElementById("scanSideElapsed");
-        const durEl = document.getElementById("scanSideDuration");
-        const barEl = document.getElementById("scanSideBar");
-        if (elEl) elEl.textContent = fmt(scanSide.elapsed_s);
-        if (durEl) durEl.textContent = fmt(scanSide.duration_s);
-        if (barEl) barEl.style.width = `${Math.round((scanSide.progress || 0) * 100)}%`;
-        const activeView = document.querySelector("section.view.active");
-        if (activeView && activeView.id !== "sensors") setView("sensors");
-      } else {
-        if (scanProgressEl) scanProgressEl.style.display = "none";
-      }
-
       renderHistory();
       renderStats();
       renderCourtMap();
       renderSensors();
+      renderSurveyBoundary(robot.survey || {});
       renderMapMission(robot.map_mission || {});
+      updateCommandButtons();
 
-      // Auto-navigate to sensors when mapping mission is active
+      // Auto-navigate to sensors when mapping mission or survey is active
       const mapMission = robot.map_mission || {};
       if (mapMission.active && !mapMission.complete) {
         const activeView = document.querySelector("section.view.active");
         if (activeView && activeView.id !== "sensors") setView("sensors");
+      }
+    }
+    function renderSurveyBoundary(survey) {
+      const statusEl = document.getElementById("surveyBoundaryStatus");
+      const kvEl = document.getElementById("surveyBoundaryKv");
+      if (!statusEl || !kvEl) return;
+      const bounds = survey.bounds;
+      const inProgress = survey.state === "goto" || survey.state === "sample";
+      if (bounds && bounds.survey_complete) {
+        statusEl.textContent = `— complete · ${bounds.sample_count ?? "?"} samples`;
+        statusEl.style.color = "var(--accent)";
+        const w = bounds.west_fence_x != null ? bounds.west_fence_x.toFixed(2) : "—";
+        const e = bounds.east_fence_x != null ? bounds.east_fence_x.toFixed(2) : "—";
+        const s = bounds.south_fence_y != null ? bounds.south_fence_y.toFixed(2) : "—";
+        const n = bounds.north_fence_y != null ? bounds.north_fence_y.toFixed(2) : "—";
+        const width = bounds.east_fence_x != null && bounds.west_fence_x != null
+          ? (bounds.east_fence_x - bounds.west_fence_x).toFixed(2) : "—";
+        const depth = bounds.north_fence_y != null && bounds.south_fence_y != null
+          ? (bounds.north_fence_y - bounds.south_fence_y).toFixed(2) : "—";
+        setKv("surveyBoundaryKv", [
+          ["West fence x", `${w} m`],
+          ["East fence x", `${e} m`],
+          ["South fence y", `${s} m`],
+          ["North fence y", `${n} m`],
+          ["Court width (E-W)", `${width} m`],
+          ["Court depth (N-S)", `${depth} m`],
+          ["Survey side", bounds.side || "—"],
+        ]);
+      } else if (inProgress) {
+        statusEl.textContent = `— scanning · ${survey.sample_count ?? 0} samples`;
+        statusEl.style.color = "var(--accent-2)";
+        setKv("surveyBoundaryKv", [
+          ["State", survey.state || "—"],
+          ["Waypoint", `${(survey.waypoint_index ?? 0) + 1} / ${survey.waypoint_count ?? 2}`],
+          ["Samples collected", survey.sample_count ?? 0],
+        ]);
+      } else {
+        statusEl.textContent = "no survey data";
+        statusEl.style.color = "var(--muted)";
+        kvEl.innerHTML = "";
       }
     }
     function renderMapMission(m) {
@@ -1210,6 +1342,60 @@ HTML = """<!doctype html>
         ctx.fillRect(sx(bounds.min_x), sy(bounds.max_y), sx(bounds.max_x) - sx(bounds.min_x), sy(bounds.min_y) - sy(bounds.max_y));
       }
 
+      // Survey fence measurements overlay — prefer persistent court_boundary.json over in-memory survey state
+      const survBounds = diagnostics.court_boundary || ((diagnostics.robot || {}).survey || {}).bounds;
+      if (survBounds && survBounds.survey_complete) {
+        ctx.save();
+        ctx.setLineDash([7, 4]);
+        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = "rgba(255,189,90,0.75)";
+        ctx.fillStyle = "rgba(255,189,90,0.92)";
+        ctx.font = "bold 11px system-ui";
+
+        if (survBounds.west_fence_x != null) {
+          const fx = sx(survBounds.west_fence_x);
+          ctx.beginPath(); ctx.moveTo(fx, pad); ctx.lineTo(fx, height - pad); ctx.stroke();
+          ctx.textAlign = "right";
+          ctx.fillText(`W ${survBounds.west_fence_x.toFixed(1)}m`, fx - 3, pad + 20);
+        }
+        if (survBounds.east_fence_x != null) {
+          const fx = sx(survBounds.east_fence_x);
+          ctx.beginPath(); ctx.moveTo(fx, pad); ctx.lineTo(fx, height - pad); ctx.stroke();
+          ctx.textAlign = "left";
+          ctx.fillText(`E ${survBounds.east_fence_x.toFixed(1)}m`, fx + 3, pad + 20);
+        }
+        if (survBounds.south_fence_y != null) {
+          const fy = sy(survBounds.south_fence_y);
+          ctx.beginPath(); ctx.moveTo(pad, fy); ctx.lineTo(width - pad, fy); ctx.stroke();
+          ctx.textAlign = "left";
+          ctx.fillText(`S ${survBounds.south_fence_y.toFixed(1)}m`, pad + 6, fy - 4);
+        }
+        if (survBounds.north_fence_y != null) {
+          const fy = sy(survBounds.north_fence_y);
+          ctx.beginPath(); ctx.moveTo(pad, fy); ctx.lineTo(width - pad, fy); ctx.stroke();
+          ctx.textAlign = "left";
+          ctx.fillText(`N ${survBounds.north_fence_y.toFixed(1)}m`, pad + 6, fy + 13);
+        }
+
+        // Width × depth badge bottom-right
+        if (survBounds.east_fence_x != null && survBounds.west_fence_x != null &&
+            survBounds.north_fence_y != null && survBounds.south_fence_y != null) {
+          const w = (survBounds.east_fence_x - survBounds.west_fence_x).toFixed(1);
+          const d = (survBounds.north_fence_y - survBounds.south_fence_y).toFixed(1);
+          const label = `survey: ${w} × ${d} m`;
+          ctx.setLineDash([]);
+          ctx.textAlign = "right";
+          const lw = ctx.measureText(label).width;
+          ctx.fillStyle = "rgba(12,17,22,0.72)";
+          ctx.fillRect(width - pad - lw - 16, height - pad - 26, lw + 14, 20);
+          ctx.fillStyle = "rgba(255,189,90,0.92)";
+          ctx.fillText(label, width - pad - 4, height - pad - 11);
+        }
+
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
       // camera FOV cone
       const robot = map.robot || {};
       if (robot.x_m !== undefined && robot.y_m !== undefined) {
@@ -1357,10 +1543,10 @@ HTML = """<!doctype html>
       const total = stats.total || 0;
       const byMode = stats.by_mode || {};
       document.getElementById("sTotal").textContent = total;
-      document.getElementById("sCollect").textContent = (byMode.collect || 0) + (byMode.collect_pattern || 0) + (byMode.collect_one || 0);
       document.getElementById("sSurvey").textContent = byMode.survey || 0;
+      document.getElementById("sCollect").textContent = byMode.map_left_side || 0;
       document.getElementById("sIdle").textContent = byMode.idle || 0;
-      document.getElementById("statsRows").innerHTML = ["collect", "collect_pattern", "search", "collect_one", "scan_side", "map_left_side", "survey", "idle"].map(mode => {
+      document.getElementById("statsRows").innerHTML = ["survey", "map_left_side", "idle"].map(mode => {
         const count = byMode[mode] || 0;
         const latest = (stats.latest_by_mode || {})[mode] || {};
         const share = total ? `${Math.round(count * 100 / total)}%` : "0%";
@@ -1369,6 +1555,238 @@ HTML = """<!doctype html>
     }
     refresh();
     setInterval(refresh, 1000);
+
+    // ── Vendors ───────────────────────────────────────────────────────────────
+    let vendorData = { vendors: [], courts: [], active: {} };
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    async function loadVendors() {
+      try {
+        const res = await fetch("/api/vendors", { cache: "no-store" });
+        vendorData = await res.json();
+      } catch (_) {}
+      renderVendors();
+    }
+
+    async function saveVendors(data) {
+      try {
+        await fetch("/api/vendors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        vendorData = data;
+      } catch (_) {}
+      renderVendors();
+    }
+
+    function renderVendors() {
+      const { vendors, courts, active } = vendorData;
+
+      // Sidebar session indicator
+      const sidebarEl = document.getElementById("activeSessionSidebar");
+      if (sidebarEl) {
+        if (active && active.vendor_id) {
+          const v = vendors.find(x => x.id === active.vendor_id);
+          const c = courts.find(x => x.id === active.court_id);
+          sidebarEl.textContent = `Session: ${v ? v.name : "?"} · ${c ? c.name : "?"}`;
+          sidebarEl.style.color = "var(--accent)";
+        } else {
+          sidebarEl.textContent = "Session: none";
+          sidebarEl.style.color = "var(--muted)";
+        }
+      }
+
+      // Active session display banner
+      const displayEl = document.getElementById("activeSessionDisplay");
+      if (displayEl) {
+        if (active && active.vendor_id) {
+          const v = vendors.find(x => x.id === active.vendor_id);
+          const c = courts.find(x => x.id === active.court_id);
+          displayEl.innerHTML = `
+            <strong style="color:var(--accent);font-size:15px;">${escHtml(v ? v.name : "Unknown vendor")}</strong>
+            <span style="color:var(--muted);margin:0 8px;">/</span>
+            <span style="color:var(--ink);">${escHtml(c ? c.name : "Unknown court")}</span>
+            ${c && c.surface ? `<span style="color:var(--muted);font-size:12px;margin-left:10px;">${escHtml(c.surface)}</span>` : ""}
+            ${v && v.address ? `<div style="color:var(--muted);font-size:12px;margin-top:4px;">${escHtml(v.address)}</div>` : ""}
+          `;
+        } else {
+          displayEl.innerHTML = `<span style="color:var(--muted);font-size:13px;">No active session — select a vendor and court below.</span>`;
+        }
+      }
+
+      // Vendor dropdowns (activeVendorSelect + courtVendorSelect)
+      ["activeVendorSelect", "courtVendorSelect"].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const prevVal = sel.value;
+        sel.innerHTML = `<option value="">— select vendor —</option>` +
+          vendors.map(v => `<option value="${escHtml(v.id)}"${v.id === prevVal ? " selected" : ""}>${escHtml(v.name)}</option>`).join("");
+      });
+
+      // Pre-select active vendor and refresh court dropdown
+      const avSel = document.getElementById("activeVendorSelect");
+      if (avSel && !avSel.value && active && active.vendor_id) avSel.value = active.vendor_id;
+      updateCourtSelect("activeCourtSelect", avSel ? avSel.value : "");
+
+      // Vendor list
+      const vendorList = document.getElementById("vendorList");
+      if (vendorList) {
+        if (!vendors.length) {
+          vendorList.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;">Δεν υπάρχουν vendors ακόμα.</div>`;
+        } else {
+          vendorList.innerHTML = vendors.map(v => `
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);">
+              <div>
+                <strong>${escHtml(v.name)}</strong>
+                ${v.address ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;">${escHtml(v.address)}</div>` : ""}
+              </div>
+              <button onclick="deleteVendor('${escHtml(v.id)}')" style="background:rgba(255,107,95,0.12);border:1px solid rgba(255,107,95,0.28);color:var(--danger);border-radius:5px;padding:5px 10px;cursor:pointer;font:inherit;font-size:12px;flex-shrink:0;margin-left:12px;">Διαγραφή</button>
+            </div>
+          `).join("");
+        }
+      }
+
+      // Court list
+      const courtList = document.getElementById("courtList");
+      if (courtList) {
+        if (!courts.length) {
+          courtList.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;">Δεν υπάρχουν γήπεδα ακόμα.</div>`;
+        } else {
+          courtList.innerHTML = courts.map(c => {
+            const v = vendors.find(x => x.id === c.vendor_id);
+            const isActive = active && active.court_id === c.id;
+            return `
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px ${isActive ? "8px" : "0"};border-bottom:1px solid var(--line);${isActive ? "background:rgba(47,208,143,0.05);border-radius:6px;" : ""}">
+                <div>
+                  <strong>${escHtml(c.name)}</strong>${isActive ? ` <span style="font-size:11px;color:var(--accent);">● active</span>` : ""}
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">${escHtml(v ? v.name : "—")} · ${escHtml(c.surface || "—")}</div>
+                  ${c.notes ? `<div style="font-size:12px;color:var(--muted);">${escHtml(c.notes)}</div>` : ""}
+                </div>
+                <button onclick="deleteCourt('${escHtml(c.id)}')" style="background:rgba(255,107,95,0.12);border:1px solid rgba(255,107,95,0.28);color:var(--danger);border-radius:5px;padding:5px 10px;cursor:pointer;font:inherit;font-size:12px;flex-shrink:0;margin-left:12px;">Διαγραφή</button>
+              </div>
+            `;
+          }).join("");
+        }
+      }
+      updateCommandButtons();
+    }
+
+    function updateCourtSelect(selectId, vendorId) {
+      const sel = document.getElementById(selectId);
+      if (!sel) return;
+      const { courts, active } = vendorData;
+      const list = vendorId ? courts.filter(c => c.vendor_id === vendorId) : courts;
+      sel.innerHTML = `<option value="">— select court —</option>` +
+        list.map(c => `<option value="${escHtml(c.id)}"${c.id === (active && active.court_id) ? " selected" : ""}>${escHtml(c.name)}</option>`).join("");
+    }
+
+    function deleteVendor(id) {
+      const d = JSON.parse(JSON.stringify(vendorData));
+      d.vendors = d.vendors.filter(v => v.id !== id);
+      d.courts = d.courts.filter(c => c.vendor_id !== id);
+      if (d.active && d.active.vendor_id === id) d.active = {};
+      saveVendors(d);
+    }
+
+    function deleteCourt(id) {
+      const d = JSON.parse(JSON.stringify(vendorData));
+      d.courts = d.courts.filter(c => c.id !== id);
+      if (d.active && d.active.court_id === id) d.active = Object.assign({}, d.active, { court_id: null });
+      saveVendors(d);
+    }
+
+    document.getElementById("activeVendorSelect").addEventListener("change", function () {
+      updateCourtSelect("activeCourtSelect", this.value);
+    });
+
+    document.getElementById("activeSessionForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const vendorId = document.getElementById("activeVendorSelect").value;
+      const courtId = document.getElementById("activeCourtSelect").value;
+      if (!vendorId || !courtId) return;
+      const d = JSON.parse(JSON.stringify(vendorData));
+      d.active = { vendor_id: vendorId, court_id: courtId };
+      saveVendors(d);
+    });
+
+    document.getElementById("addVendorForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const name = document.getElementById("vendorName").value.trim();
+      const address = document.getElementById("vendorAddress").value.trim();
+      if (!name) return;
+      const d = JSON.parse(JSON.stringify(vendorData));
+      d.vendors.push({ id: "v" + Date.now(), name, address });
+      saveVendors(d);
+      this.reset();
+    });
+
+    document.getElementById("addCourtForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const vendor_id = document.getElementById("courtVendorSelect").value;
+      const name = document.getElementById("courtName").value.trim();
+      const surface = document.getElementById("courtSurface").value;
+      const notes = document.getElementById("courtNotes").value.trim();
+      if (!vendor_id || !name) return;
+      const d = JSON.parse(JSON.stringify(vendorData));
+      d.courts.push({ id: "c" + Date.now(), vendor_id, name, surface, notes });
+      saveVendors(d);
+      this.reset();
+    });
+
+    loadVendors();
+
+    // ── Survey history ────────────────────────────────────────────────────────
+    async function loadSurveys() {
+      try {
+        const res = await fetch("/api/surveys", { cache: "no-store" });
+        const data = await res.json();
+        renderSurveys(data.surveys || []);
+      } catch (_) {}
+    }
+
+    function renderSurveys(surveys) {
+      const tbody = document.getElementById("surveyRows");
+      const empty = document.getElementById("surveyEmpty");
+      const table = document.getElementById("surveyTable");
+      if (!surveys.length) {
+        table.style.display = "none";
+        empty.style.display = "block";
+        return;
+      }
+      table.style.display = "";
+      empty.style.display = "none";
+      tbody.innerHTML = surveys.map(s => {
+        const dt = s.surveyed_at ? new Date(s.surveyed_at * 1000).toLocaleString() : "—";
+        const w = s.west_x != null ? s.west_x.toFixed(2) : "—";
+        const e = s.east_x != null ? s.east_x.toFixed(2) : "—";
+        const sY = s.south_y != null ? s.south_y.toFixed(2) : "—";
+        const n = s.north_y != null ? s.north_y.toFixed(2) : "—";
+        const width = (s.east_x != null && s.west_x != null) ? (s.east_x - s.west_x).toFixed(2) : "—";
+        const depth = (s.north_y != null && s.south_y != null) ? (s.north_y - s.south_y).toFixed(2) : "—";
+        const fb = s.fallback_used
+          ? `<span style="color:var(--warn);font-size:11px;">fallback</span>`
+          : `<span style="color:var(--accent);font-size:11px;">measured</span>`;
+        return `<tr>
+          <td style="color:var(--muted);">${s.id}</td>
+          <td>${dt}</td>
+          <td>${escHtml(s.vendor_name || "—")}</td>
+          <td>${escHtml(s.court_name || "—")}</td>
+          <td style="color:var(--muted);">${escHtml(s.surface || "—")}</td>
+          <td style="font-variant-numeric:tabular-nums;">${w}</td>
+          <td style="font-variant-numeric:tabular-nums;">${e}</td>
+          <td style="font-variant-numeric:tabular-nums;">${sY}</td>
+          <td style="font-variant-numeric:tabular-nums;">${n}</td>
+          <td style="color:var(--accent-2);font-weight:600;">${width} m</td>
+          <td style="color:var(--accent-2);font-weight:600;">${depth} m</td>
+          <td style="color:var(--muted);">${s.point_count ?? "—"}</td>
+          <td>${fb}</td>
+        </tr>`;
+      }).join("");
+    }
   </script>
 </body>
 </html>
@@ -1379,6 +1797,7 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
     store: RobotCommandStore
     status_store: RobotStatusStore
     sensor_store: RobotSensorStore
+    db: TennisRobotDB
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
@@ -1403,6 +1822,12 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         if path == "/api/webcam/frame":
             self._handle_webcam_frame()
             return
+        if path == "/api/vendors":
+            self._send_json(self.db.read_all())
+            return
+        if path == "/api/surveys":
+            self._send_json({"surveys": self.db.surveys()})
+            return
         if path == "/favicon.ico":
             self.send_response(HTTPStatus.NO_CONTENT)
             self.end_headers()
@@ -1411,6 +1836,9 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+        if path == "/api/vendors":
+            self._handle_vendors_post()
+            return
         if path not in {"/command", "/api/command"}:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -1429,6 +1857,19 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.SEE_OTHER)
         self.send_header("Location", "/")
         self.end_headers()
+
+    def _handle_vendors_post(self) -> None:
+        length = int(self.headers.get("Content-Length", "0"))
+        try:
+            data = json.loads(self.rfile.read(length).decode("utf-8"))
+        except (json.JSONDecodeError, ValueError):
+            self.send_error(HTTPStatus.BAD_REQUEST, "Invalid JSON")
+            return
+        if not isinstance(data, dict):
+            self.send_error(HTTPStatus.BAD_REQUEST, "Expected JSON object")
+            return
+        self.db.write_all(data)
+        self._send_json({"ok": True})
 
     def _handle_webcam_frame(self) -> None:
         if not _VISION_AVAILABLE:
@@ -1470,9 +1911,21 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         self._send_json(result)
 
     def log_message(self, format: str, *args: object) -> None:
-        if urlparse(self.path).path in {"/api/status", "/api/robot-status", "/api/sensors", "/api/diagnostics", "/api/webcam/frame", "/favicon.ico"}:
+        if urlparse(self.path).path in {"/api/status", "/api/robot-status", "/api/sensors", "/api/diagnostics", "/api/webcam/frame", "/api/vendors", "/api/surveys", "/favicon.ico"}:
             return
         print(f"{self.address_string()} - {format % args}")
+
+    def _read_court_boundary(self) -> dict | None:
+        path = ROOT / "runtime" / "court_boundary.json"
+        if not path.exists():
+            return None
+        try:
+            bounds = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+        if bounds and bounds.get("survey_complete"):
+            self.db.import_survey(bounds)
+        return bounds
 
     def _diagnostics(self) -> dict[str, object]:
         history = self.store.read_history(200)
@@ -1490,6 +1943,7 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             "generated_at": time.time(),
             "command": self.store.read().to_mapping(),
             "robot": robot_status,
+            "court_boundary": self._read_court_boundary(),
             "history": history[-50:],
             "stats": {
                 "total": len(history),
@@ -1530,6 +1984,7 @@ def main() -> None:
     ControlPanelHandler.store = RobotCommandStore(args.command_file) if args.command_file else RobotCommandStore.from_env()
     ControlPanelHandler.status_store = RobotStatusStore(args.status_file) if args.status_file else RobotStatusStore.from_env()
     ControlPanelHandler.sensor_store = RobotSensorStore.from_env()
+    ControlPanelHandler.db = TennisRobotDB()
     server = ThreadingHTTPServer((args.host, args.port), ControlPanelHandler)
     print(f"remote console listening on http://{args.host}:{args.port}")
     print(f"command file: {ControlPanelHandler.store.path}")

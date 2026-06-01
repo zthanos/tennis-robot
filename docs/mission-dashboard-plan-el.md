@@ -40,8 +40,8 @@ Collect All Balls
 Progress:
 12 / 25 balls
 
-Current Zone:
-Zone B
+Current Cell:
+B07
 
 Current Action:
 Approaching Ball
@@ -56,7 +56,11 @@ Ball #14
 mission_name
 balls_collected
 balls_total_estimated
-current_zone
+court_id
+court_knowledge_status
+court_knowledge_model_id
+collection_side
+current_cell
 current_action
 current_target_id
 mission_elapsed_s
@@ -71,20 +75,22 @@ coverage_pct
 
 Το υπάρχον Collection Map είναι η βάση για mission progress visualization.
 
-### Court Zones
+### Court Matrix
 
-Να εμφανίζονται οι βασικές ζώνες:
+Να εμφανίζεται το Court Knowledge Model matrix του γηπέδου. Το dashboard πρέπει να ξεχωρίζει:
 
 ```text
-Zone A - Left Baseline
-Zone B - Right Baseline
-Zone C - Net Area
-Zone D - Center Court
-Zone E - Corners
-Zone F - Outside Court / buffer
+Court Knowledge Model missing
+Court Knowledge Model running
+Court Knowledge Model ready
+Selected collection side
+Cells scanned
+Cells with balls
+Blocked cells
+Visited cells
 ```
 
-### Zone Colors
+### Matrix Cell Colors
 
 | Color | Meaning |
 | --- | --- |
@@ -97,7 +103,7 @@ Zone F - Outside Court / buffer
 ### Coverage
 
 ```text
-Court Coverage: 67%
+Matrix Coverage: 67%
 ```
 
 ### Ball Statistics
@@ -112,13 +118,16 @@ Missed: 2
 ### Required Fields
 
 ```text
-zones[].id
-zones[].label
-zones[].status
-zones[].coverage_pct
-zones[].detected_count
-zones[].collected_count
-court_coverage_pct
+court_id
+court_knowledge_status
+court_knowledge_model_id
+collection_side
+matrix_cells[].id
+matrix_cells[].status
+matrix_cells[].ball_count_estimate
+matrix_cells[].confidence
+matrix_cells[].risk
+matrix_coverage_pct
 balls_detected
 balls_confirmed
 balls_collected
@@ -127,7 +136,8 @@ balls_missed
 
 ### DoD
 
-Ο operator μπορεί να δει ποιες περιοχές έχουν ήδη σαρωθεί και πού υπάρχουν στόχοι.
+Ο operator μπορεί να δει αν υπάρχει valid Court Knowledge Model, ποια πλευρά σαρώνεται, ποια
+cells έχουν ήδη σαρωθεί και πού υπάρχουν στόχοι.
 
 ## 3. Phase 3 - Robot Timeline
 
@@ -145,7 +155,7 @@ Mission Timeline
 10:22:17 Route Planned
 10:22:24 Ball Collected
 10:22:31 Human Detected
-10:22:45 Resume Search
+10:22:45 Resume Collection Plan
 ```
 
 ### Required Event Fields
@@ -155,7 +165,7 @@ timestamp
 event_type
 message
 state
-zone_id
+cell_id
 target_id
 severity
 ```
@@ -374,7 +384,7 @@ Mission Control Center.
 
 1. Add mission summary fields to controller status JSON.
 2. Rename/reframe the top dashboard KPIs around mission progress.
-3. Add zone state model and render it in the Collection Map.
+3. Add Court Knowledge Model / matrix state model and render it in the Collection Map.
 4. Add in-memory mission timeline events.
 5. Add perception summary counters from OAK-D and LiDAR data.
 6. Add performance and safety counters.
@@ -387,8 +397,8 @@ Mission Control Center.
 
 1. `Collected X / Y balls`.
 2. `Coverage %`.
-3. `Current Zone`.
+3. `Current Cell`.
 4. `Current Action`.
 5. `Current Target`.
-6. Zone colors στο Collection Map.
+6. Matrix cell colors στο Collection Map.
 7. Timeline με τα τελευταία mission events.

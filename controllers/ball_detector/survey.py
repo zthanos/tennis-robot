@@ -1,8 +1,24 @@
-"""Court survey pattern for measuring court edges and obstacle distances."""
+"""Court survey — drives the full court perimeter to measure all boundary fences with LiDAR.
+
+Route: nearest perimeter corner → west side → north gap (between N net post and N fence)
+       → east side → south gap (between S net post and S fence) → back to start.
+
+The robot drives fast (~0.55 m/s) and samples the full 360° LiDAR scan on every timestep.
+Each LiDAR return is projected into world coordinates.  When the loop is complete the
+5th/95th percentiles of the accumulated point cloud give reliable fence positions, which
+are saved to runtime/court_boundary.json for use by the Collect Left/Right Side missions.
+
+Net-crossing strategy
+─────────────────────
+Net posts are at (x=0, y=±5.485).  The crossing gap between post and outer fence is
+only ~1 m wide.  Two "funnel" waypoints (at x=±0.4, y=±5.7) steer the robot above the
+post level before it reaches x=0, then the crossing waypoints at y=±6.2 thread the
+needle through the centre of the gap.
+"""
 
 from __future__ import annotations
 
-import csv
+import json
 import math
 import os
 import time
@@ -15,59 +31,88 @@ from config_utils import _env_float
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_SURVEY_FILE = PROJECT_ROOT / "runtime" / "court_survey.csv"
+DEFAULT_BOUNDARY_FILE = PROJECT_ROOT / "runtime" / "court_boundary.json"
+_VENDORS_FILE = PROJECT_ROOT / "runtime" / "vendors.json"
+
+# LiDAR mount offset in robot frame (must match ball_detector.py)
+_LIDAR_LOCAL_X = -0.20
+_LIDAR_LOCAL_Y = 0.0
+
+# Fallback fence positions — inner walls of the perimeter fencing in tennis_court.wbt.
+# Fence centers: east/west at x=±13.0, north/south at y=±6.5 (thickness 0.08 m each).
+# Inner wall = center ∓ 0.04 m.  Used only when LiDAR accumulates < _MIN_POINTS.
+_FB_EAST_X = 12.96
+_FB_WEST_X = -12.96
+_FB_NORTH_Y = 6.46
+_FB_SOUTH_Y = -6.46
+
+# ── Full-court perimeter waypoints ────────────────────────────────────────────
+# The net mesh ends around y=±5.6 and the fence inner wall is at y=±6.46.
+# With a ~0.58 m wide chassis the safe centerline is only roughly 5.9..6.15,
+# so the route keeps several waypoints outside the doubles sideline before
+# returning to the inner survey lane.  OAK-D depth acts as the forward guard
+# for this narrow visual corridor; LiDAR still records the fence/boundary cloud.
+_PERIMETER: list[tuple[float, float]] = [
+    (-10.5, -4.0),   # 0  SW  — close to west + south fences
+    (-10.5, +4.0),   # 1  NW  — close to west + north fences
+    (-1.4,  +4.0),   # 2  north approach, left side
+    (-1.4,  +6.05),  # 3  ▶ move outside doubles before reaching the net
+    (-0.35, +6.05),  # 4  north gap entry
+    (+0.35, +6.05),  # 5  north gap exit
+    (+1.4,  +6.05),  # 6  stay outside until fully clear of the net
+    (+1.4,  +4.0),   # 7  return to inner survey lane
+    (+10.5, +4.0),   # 8  NE  — close to east + north fences
+    (+10.5, -4.0),   # 9  SE  — close to east + south fences
+    (+1.4,  -4.0),   # 10 south approach, right side
+    (+1.4,  -6.05),  # 11 ▶ move outside doubles before reaching the net
+    (+0.35, -6.05),  # 12 south gap entry
+    (-0.35, -6.05),  # 13 south gap exit
+    (-1.4,  -6.05),  # 14 stay outside until fully clear of the net
+    (-1.4,  -4.0),   # 15 return to inner survey lane
+]
+
+_SUBSAMPLE = 8          # keep every Nth LiDAR index to limit memory
+_MIN_POINTS = 500       # minimum accumulated points for a trusted result
+_TIMEOUT_S = 300.0      # hard timeout — finalize with whatever we have
 
 
 class SurveyState(str, Enum):
     GOTO = "goto"
-    SAMPLE = "sample"
     DONE = "done"
 
 
 @dataclass(frozen=True)
 class SurveyConfig:
-    x_min_m: float = -11.3
-    x_max_m: float = 11.3
-    y_min_m: float = -5.0
-    y_max_m: float = 5.0
-    row_step_m: float = 2.5
-    waypoint_tolerance_m: float = 0.22
-    heading_tolerance_rad: float = math.radians(5.0)
-    drive_speed_m_s: float = 0.24
-    turn_speed_rad_s: float = 0.75
-    heading_gain: float = 2.2
-    sample_hold_s: float = 0.35
-    court_half_length_m: float = 13.0
-    court_half_width_m: float = 6.5
-    singles_half_width_m: float = 4.115
-    doubles_half_width_m: float = 5.485
-    baseline_x_m: float = 11.885
-    service_line_x_m: float = 6.4
+    waypoint_tolerance_m: float = 0.45
+    crossing_tolerance_m: float = 0.22
+    drive_speed_m_s: float = 0.9
+    turn_speed_rad_s: float = 1.8
+    heading_gain: float = 2.5
+    min_fence_range_m: float = 0.4
+    max_fence_range_m: float = 11.5
+    oak_min_clearance_m: float = 0.85
 
     @classmethod
     def from_env(cls) -> "SurveyConfig":
-        defaults = cls()
+        d = cls()
         return cls(
-            x_min_m=_env_float("SURVEY_X_MIN_M", defaults.x_min_m),
-            x_max_m=_env_float("SURVEY_X_MAX_M", defaults.x_max_m),
-            y_min_m=_env_float("SURVEY_Y_MIN_M", defaults.y_min_m),
-            y_max_m=_env_float("SURVEY_Y_MAX_M", defaults.y_max_m),
-            row_step_m=_env_float("SURVEY_ROW_STEP_M", defaults.row_step_m),
-            waypoint_tolerance_m=_env_float("SURVEY_WAYPOINT_TOLERANCE_M", defaults.waypoint_tolerance_m),
-            heading_tolerance_rad=math.radians(
-                _env_float("SURVEY_HEADING_TOLERANCE_DEG", math.degrees(defaults.heading_tolerance_rad))
-            ),
-            drive_speed_m_s=_env_float("SURVEY_DRIVE_SPEED_M_S", defaults.drive_speed_m_s),
-            turn_speed_rad_s=_env_float("SURVEY_TURN_SPEED_RAD_S", defaults.turn_speed_rad_s),
-            heading_gain=_env_float("SURVEY_HEADING_GAIN", defaults.heading_gain),
-            sample_hold_s=_env_float("SURVEY_SAMPLE_HOLD_S", defaults.sample_hold_s),
-            court_half_length_m=_env_float("SURVEY_COURT_HALF_LENGTH_M", defaults.court_half_length_m),
-            court_half_width_m=_env_float("SURVEY_COURT_HALF_WIDTH_M", defaults.court_half_width_m),
-            singles_half_width_m=_env_float("SURVEY_SINGLES_HALF_WIDTH_M", defaults.singles_half_width_m),
-            doubles_half_width_m=_env_float("SURVEY_DOUBLES_HALF_WIDTH_M", defaults.doubles_half_width_m),
-            baseline_x_m=_env_float("SURVEY_BASELINE_X_M", defaults.baseline_x_m),
-            service_line_x_m=_env_float("SURVEY_SERVICE_LINE_X_M", defaults.service_line_x_m),
+            waypoint_tolerance_m=_env_float("SURVEY_WAYPOINT_TOL_M", d.waypoint_tolerance_m),
+            crossing_tolerance_m=_env_float("SURVEY_CROSSING_TOL_M", d.crossing_tolerance_m),
+            drive_speed_m_s=_env_float("SURVEY_DRIVE_SPEED_M_S", d.drive_speed_m_s),
+            turn_speed_rad_s=_env_float("SURVEY_TURN_SPEED_RAD_S", d.turn_speed_rad_s),
+            heading_gain=_env_float("SURVEY_HEADING_GAIN", d.heading_gain),
+            oak_min_clearance_m=_env_float("SURVEY_OAK_MIN_CLEARANCE_M", d.oak_min_clearance_m),
         )
+
+
+@dataclass(frozen=True)
+class SurveyVision:
+    """Forward OAK-D depth clearance summary for narrow survey corridors."""
+
+    center_m: float | None = None
+    left_m: float | None = None
+    right_m: float | None = None
+    valid_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -76,173 +121,355 @@ class SurveyCommand:
     base: BaseCommand
     waypoint_index: int
     sample_count: int
+    vision: SurveyVision | None = None
 
 
 class CourtSurveyBehavior:
-    """Drive a boustrophedon pattern and log distance measurements."""
+    """Drive the full court perimeter and accumulate LiDAR data to measure all boundaries.
 
-    def __init__(self, config: SurveyConfig | None = None, output_path: Path = DEFAULT_SURVEY_FILE) -> None:
+    The robot navigates a 10-waypoint closed loop that hugs each fence and crosses
+    between the two court halves via the gaps at the ends of the net.  Every timestep
+    all in-range LiDAR returns are projected into world coordinates.  At loop completion
+    the point cloud is summarised via percentiles and saved to court_boundary.json.
+    """
+
+    def __init__(
+        self,
+        config: SurveyConfig | None = None,
+        output_path: Path = DEFAULT_BOUNDARY_FILE,
+    ) -> None:
         self.config = config or SurveyConfig()
         self.output_path = output_path
-        self.waypoints = self._build_waypoints()
         self.state = SurveyState.GOTO
         self.waypoint_index = 0
-        self._sample_elapsed_s = 0.0
+        self.waypoints: list[tuple[float, float]] = []
         self.sample_count = 0
-        self._file_initialized = False
-        self._start_waypoint_pending = True
+        self._initialized = False
+        self._started_at: float | None = None
+        self._world_xs: list[float] = []
+        self._world_ys: list[float] = []
+        self._court_bounds: dict | None = None
+        self._min_front_range: float = float("inf")
+        self._obstacle_bias: float = 0.0   # +1 = obstacle left → steer right, -1 = right → steer left
 
     @classmethod
     def from_env(cls) -> "CourtSurveyBehavior":
-        path = Path(os.getenv("SURVEY_OUTPUT_FILE", str(DEFAULT_SURVEY_FILE)))
+        path = Path(os.getenv("SURVEY_OUTPUT_FILE", str(DEFAULT_BOUNDARY_FILE)))
         return cls(SurveyConfig.from_env(), path)
 
     def reset(self) -> None:
         self.state = SurveyState.GOTO
         self.waypoint_index = 0
-        self._sample_elapsed_s = 0.0
+        self.waypoints = []
         self.sample_count = 0
-        self._file_initialized = False
-        self._start_waypoint_pending = True
+        self._initialized = False
+        self._started_at = None
+        self._world_xs = []
+        self._world_ys = []
+        self._court_bounds = None
+        self._min_front_range = float("inf")
+        self._obstacle_bias = 0.0
 
     def current_target(self) -> tuple[float, float] | None:
         if self.waypoint_index >= len(self.waypoints):
             return None
         return self.waypoints[self.waypoint_index]
 
+    @property
+    def court_bounds(self) -> dict | None:
+        """Measured court boundaries, populated after the survey completes."""
+        return self._court_bounds
+
     def update(
         self,
         x_m: float,
         y_m: float,
         yaw_rad: float,
-        front_range_m: float | None,
-        dt_s: float,
+        lidar_ranges: list[float] | None,
+        dt_s: float,  # noqa: ARG002 — kept for API compatibility with other behaviors
+        vision: SurveyVision | None = None,
     ) -> SurveyCommand:
-        if self._start_waypoint_pending:
-            if not self.waypoints or math.hypot(self.waypoints[0][0] - x_m, self.waypoints[0][1] - y_m) > self.config.waypoint_tolerance_m:
-                self.waypoints.insert(0, (x_m, y_m))
-            self._start_waypoint_pending = False
+        if not self._initialized:
+            self._setup_route(x_m, y_m)
+            self._initialized = True
+            self._started_at = time.time()
 
-        if self.waypoint_index >= len(self.waypoints):
+        if self.state == SurveyState.DONE:
+            return self._cmd(BaseCommand(0.0, 0.0))
+
+        # Accumulate LiDAR data on every active timestep
+        if lidar_ranges:
+            self._accumulate(lidar_ranges, x_m, y_m, yaw_rad)
+            self._min_front_range, self._obstacle_bias = self._front_scan(lidar_ranges)
+
+        # Hard timeout — avoids getting stuck if the robot can't complete the loop
+        if self._started_at is not None and time.time() - self._started_at > _TIMEOUT_S:
+            print(f"survey: timeout after {_TIMEOUT_S:.0f}s — finalizing with {len(self._world_xs)} pts")
+            self._finalize()
             self.state = SurveyState.DONE
-            return self._command(BaseCommand(0.0, 0.0))
+            return self._cmd(BaseCommand(0.0, 0.0))
 
-        if self.state == SurveyState.GOTO:
-            return self._update_goto(x_m, y_m, yaw_rad)
-        if self.state == SurveyState.SAMPLE:
-            return self._update_sample(x_m, y_m, yaw_rad, front_range_m, dt_s)
-        return self._command(BaseCommand(0.0, 0.0))
+        return self._step_goto(x_m, y_m, yaw_rad, vision)
 
-    def _update_goto(self, x_m: float, y_m: float, yaw_rad: float) -> SurveyCommand:
-        target_x, target_y = self.waypoints[self.waypoint_index]
-        dx = target_x - x_m
-        dy = target_y - y_m
-        distance_m = math.hypot(dx, dy)
-        if distance_m <= self.config.waypoint_tolerance_m:
-            self.state = SurveyState.SAMPLE
-            self._sample_elapsed_s = 0.0
-            print(f"survey waypoint {self.waypoint_index + 1}/{len(self.waypoints)} reached at x={x_m:.2f} y={y_m:.2f}")
-            return self._command(BaseCommand(0.0, 0.0))
+    # ── Private ────────────────────────────────────────────────────────────────
 
-        target_heading = math.atan2(dy, dx)
-        heading_error = _wrap_angle(target_heading - yaw_rad)
-        turn = self._clamp(heading_error * self.config.heading_gain, self.config.turn_speed_rad_s)
-        linear = self.config.drive_speed_m_s * max(0.25, 1.0 - min(1.0, abs(heading_error) / math.pi))
-        return self._command(BaseCommand(linear, turn))
+    def _setup_route(self, x_m: float, y_m: float) -> None:
+        """Rotate the fixed perimeter so the nearest waypoint comes first, then return to start."""
+        start_idx = min(
+            range(len(_PERIMETER)),
+            key=lambda i: math.hypot(_PERIMETER[i][0] - x_m, _PERIMETER[i][1] - y_m),
+        )
+        loop = _PERIMETER[start_idx:] + _PERIMETER[:start_idx]
+        # Append start position so the robot returns home after the loop
+        self.waypoints = list(loop) + [(x_m, y_m)]
+        print(
+            f"survey: start=({x_m:.1f},{y_m:.1f})  "
+            f"entry={_PERIMETER[start_idx]}  "
+            f"{len(self.waypoints)} wps  "
+            f"speed={self.config.drive_speed_m_s} m/s"
+        )
 
-    def _update_sample(
+    def _step_goto(
         self,
         x_m: float,
         y_m: float,
         yaw_rad: float,
-        front_range_m: float | None,
-        dt_s: float,
+        vision: SurveyVision | None,
     ) -> SurveyCommand:
-        self._sample_elapsed_s += max(0.0, dt_s)
-        if self._sample_elapsed_s >= self.config.sample_hold_s:
-            self._write_sample(x_m, y_m, yaw_rad, front_range_m)
+        if self.waypoint_index >= len(self.waypoints):
+            self._finalize()
+            self.state = SurveyState.DONE
+            return self._cmd(BaseCommand(0.0, 0.0))
+
+        target_x, target_y = self.waypoints[self.waypoint_index]
+        dx = target_x - x_m
+        dy = target_y - y_m
+        dist = math.hypot(dx, dy)
+
+        tolerance = self._target_tolerance(target_x, target_y)
+        if dist <= tolerance:
             self.waypoint_index += 1
-            self._sample_elapsed_s = 0.0
-            self.state = SurveyState.GOTO
+            print(
+                f"survey: reached wp {self.waypoint_index}/{len(self.waypoints)}  "
+                f"reached ({target_x:.1f},{target_y:.1f})  "
+                f"pts={len(self._world_xs)}"
+            )
             if self.waypoint_index >= len(self.waypoints):
+                self._finalize()
                 self.state = SurveyState.DONE
-                print(f"survey complete: {self.sample_count} samples written to {self.output_path}")
-        return self._command(BaseCommand(0.0, 0.0))
+            return self._cmd(BaseCommand(0.0, 0.0))
 
-    def _write_sample(self, x_m: float, y_m: float, yaw_rad: float, front_range_m: float | None) -> None:
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-        is_new = not self._file_initialized or not self.output_path.exists()
-        with self.output_path.open("a", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=self._fieldnames())
-            if is_new:
-                writer.writeheader()
-                self._file_initialized = True
-            writer.writerow(self._sample_row(x_m, y_m, yaw_rad, front_range_m))
-        self.sample_count += 1
+        heading_error = _wrap(math.atan2(dy, dx) - yaw_rad)
+        turn = max(
+            -self.config.turn_speed_rad_s,
+            min(self.config.turn_speed_rad_s, heading_error * self.config.heading_gain),
+        )
 
-    def _sample_row(self, x_m: float, y_m: float, yaw_rad: float, front_range_m: float | None) -> dict[str, object]:
-        cfg = self.config
-        return {
-            "timestamp_s": f"{time.time():.3f}",
-            "waypoint_index": self.waypoint_index,
-            "x_m": f"{x_m:.3f}",
-            "y_m": f"{y_m:.3f}",
-            "heading_deg": f"{math.degrees(yaw_rad):.1f}",
-            "front_range_m": "" if front_range_m is None else f"{front_range_m:.3f}",
-            "distance_to_east_fence_m": f"{cfg.court_half_length_m - x_m:.3f}",
-            "distance_to_west_fence_m": f"{x_m + cfg.court_half_length_m:.3f}",
-            "distance_to_north_fence_m": f"{cfg.court_half_width_m - y_m:.3f}",
-            "distance_to_south_fence_m": f"{y_m + cfg.court_half_width_m:.3f}",
-            "distance_to_nearest_singles_sideline_m": f"{abs(abs(y_m) - cfg.singles_half_width_m):.3f}",
-            "distance_to_nearest_doubles_sideline_m": f"{abs(abs(y_m) - cfg.doubles_half_width_m):.3f}",
-            "distance_to_nearest_baseline_m": f"{abs(abs(x_m) - cfg.baseline_x_m):.3f}",
-            "distance_to_nearest_service_line_m": f"{abs(abs(x_m) - cfg.service_line_x_m):.3f}",
+        # LiDAR lateral avoidance: steer away from the side where the obstacle is.
+        # bias > 0 → obstacle on LEFT → add rightward (negative) correction.
+        # Only active when something is within the avoidance horizon (~1.2 m).
+        if self._min_front_range < 1.2:
+            avoid_strength = min(1.0, (1.2 - self._min_front_range) / 0.9)
+            avoidance = -self._obstacle_bias * avoid_strength * self.config.turn_speed_rad_s
+            turn = max(
+                -self.config.turn_speed_rad_s,
+                min(self.config.turn_speed_rad_s, turn + avoidance),
+            )
+
+        # Slow down near broad obstacles; use min() not × to avoid compounding with
+        # heading_scale (turning near any object would otherwise stall to ~0.03 m/s)
+        heading_scale = max(0.15, 1.0 - abs(heading_error) / math.pi)
+        proximity_scale = min(1.0, max(0.2, (self._min_front_range - 0.3) / 0.6))
+        linear = self.config.drive_speed_m_s * min(heading_scale, proximity_scale)
+        linear, turn = self._apply_oak_corridor_guard(target_y, linear, turn, vision)
+        return self._cmd(BaseCommand(linear, turn), vision)
+
+    def _target_tolerance(self, target_x: float, target_y: float) -> float:
+        if abs(target_y) > 5.6 and abs(target_x) < 1.6:
+            return self.config.crossing_tolerance_m
+        return self.config.waypoint_tolerance_m
+
+    def _apply_oak_corridor_guard(
+        self,
+        target_y: float,
+        linear: float,
+        turn: float,
+        vision: SurveyVision | None,
+    ) -> tuple[float, float]:
+        """Use OAK-D depth to slow and bias the robot in the narrow outer gap."""
+        if vision is None or vision.center_m is None or abs(target_y) < 5.6:
+            return linear, turn
+        if vision.center_m >= self.config.oak_min_clearance_m:
+            return linear, turn
+
+        linear = min(linear, 0.12)
+        left = vision.left_m if vision.left_m is not None else 0.0
+        right = vision.right_m if vision.right_m is not None else 0.0
+        if left or right:
+            # Positive turn steers toward the left side of the camera image.
+            turn += 0.45 * self.config.turn_speed_rad_s * (1.0 if left > right else -1.0)
+        else:
+            # When depth is sparse, bias outward from the net side.
+            turn += 0.25 * self.config.turn_speed_rad_s * (1.0 if target_y > 0 else -1.0)
+        return (
+            linear,
+            max(-self.config.turn_speed_rad_s, min(self.config.turn_speed_rad_s, turn)),
+        )
+
+    def _front_scan(self, ranges: list[float]) -> tuple[float, float]:
+        """Scan the ±60° forward sector.
+
+        Returns (proximity_range, lateral_bias):
+        - proximity_range: 30th-percentile of valid returns (for speed scaling).
+          Uses min_fence_range_m floor so chassis self-returns are excluded.
+        - lateral_bias: weighted centre of close returns, normalised to [-1, +1].
+          +1 = obstacle concentrated on the LEFT  → caller should steer right.
+          -1 = obstacle concentrated on the RIGHT → caller should steer left.
+          Only returns in the avoidance window (min_r … 1.2 m) contribute.
+        """
+        n = len(ranges)
+        if n < 10:
+            return float("inf"), 0.0
+
+        sector = n // 6   # ±60°
+        mid = n // 2
+        lo, hi = max(0, mid - sector), min(n, mid + sector)
+        min_r = self.config.min_fence_range_m
+        avoid_max = 1.2   # avoidance horizon (m)
+
+        valid = []
+        weight_sum = 0.0
+        lateral_sum = 0.0
+
+        for i in range(lo, hi):
+            r = ranges[i]
+            if not math.isfinite(r) or r <= min_r:
+                continue
+            valid.append(r)
+            if r < avoid_max:
+                # weight by proximity: 1.0 at min_r, 0.0 at avoid_max
+                w = (avoid_max - r) / (avoid_max - min_r)
+                # lateral position: (i - mid) / sector → +1 = left, -1 = right
+                lateral_sum += ((i - mid) / sector) * w
+                weight_sum += w
+
+        if not valid:
+            return float("inf"), 0.0
+
+        valid.sort()
+        idx = max(0, int(len(valid) * 0.30) - 1)
+        prox_range = valid[idx]
+        bias = lateral_sum / weight_sum if weight_sum > 0 else 0.0
+        return prox_range, bias
+
+    def _accumulate(
+        self,
+        ranges: list[float],
+        robot_x: float,
+        robot_y: float,
+        robot_yaw: float,
+    ) -> None:
+        """Project subsampled LiDAR returns into world coordinates and append to running lists."""
+        n = len(ranges)
+        if n < 10:
+            return
+
+        cos_y = math.cos(robot_yaw)
+        sin_y = math.sin(robot_yaw)
+        r_min = self.config.min_fence_range_m
+        r_max = self.config.max_fence_range_m
+        added = 0
+
+        for i in range(0, n, _SUBSAMPLE):
+            r = ranges[i]
+            if not math.isfinite(r) or r < r_min or r > r_max:
+                continue
+            # Index 0 = backward (−x in robot frame), index n/2 = forward (+x)
+            angle = (i / n) * 2.0 * math.pi - math.pi
+            lx = _LIDAR_LOCAL_X + r * math.cos(angle)
+            ly = _LIDAR_LOCAL_Y + r * math.sin(angle)
+            wx = robot_x + cos_y * lx - sin_y * ly
+            wy = robot_y + sin_y * lx + cos_y * ly
+            # Reject points outside the court+margin (grandstand, chairs, floodlights)
+            if abs(wx) > 13.5 or abs(wy) > 7.0:
+                continue
+            self._world_xs.append(wx)
+            self._world_ys.append(wy)
+            added += 1
+
+        if added:
+            self.sample_count += 1
+
+    def _finalize(self) -> None:
+        """Compute fence positions from the accumulated world-coordinate cloud and save."""
+        n = len(self._world_xs)
+        fb = {
+            "east_fence_x":  _FB_EAST_X,
+            "west_fence_x":  _FB_WEST_X,
+            "north_fence_y": _FB_NORTH_Y,
+            "south_fence_y": _FB_SOUTH_Y,
+        }
+        bounds: dict = {
+            "surveyed_at": time.time(),
+            "survey_complete": True,
+            "sample_count": self.sample_count,
+            "point_count": n,
         }
 
-    def _fieldnames(self) -> list[str]:
-        return [
-            "timestamp_s",
-            "waypoint_index",
-            "x_m",
-            "y_m",
-            "heading_deg",
-            "front_range_m",
-            "distance_to_east_fence_m",
-            "distance_to_west_fence_m",
-            "distance_to_north_fence_m",
-            "distance_to_south_fence_m",
-            "distance_to_nearest_singles_sideline_m",
-            "distance_to_nearest_doubles_sideline_m",
-            "distance_to_nearest_baseline_m",
-            "distance_to_nearest_service_line_m",
-        ]
+        if n >= _MIN_POINTS:
+            xs = sorted(self._world_xs)
+            ys = sorted(self._world_ys)
+            bounds["west_fence_x"]  = round(xs[int(n * 0.05)], 3)
+            bounds["east_fence_x"]  = round(xs[int(n * 0.95)], 3)
+            bounds["south_fence_y"] = round(ys[int(n * 0.05)], 3)
+            bounds["north_fence_y"] = round(ys[int(n * 0.95)], 3)
+        else:
+            print(f"survey: only {n} pts accumulated — using fallback dimensions")
+            bounds.update(fb)
 
-    def _build_waypoints(self) -> list[tuple[float, float]]:
-        waypoints: list[tuple[float, float]] = []
-        y = self.config.y_min_m
-        row = 0
-        while y <= self.config.y_max_m + 1e-6:
-            if math.isclose(self.config.x_min_m, self.config.x_max_m):
-                row_points = [(self.config.x_min_m, y)]
-            else:
-                row_points = [(self.config.x_min_m, y), (self.config.x_max_m, y)]
-            if row % 2:
-                row_points.reverse()
-            waypoints.extend(row_points)
-            y += self.config.row_step_m
-            row += 1
-        return waypoints
+        for k, v in fb.items():
+            if bounds.get(k) is None:
+                bounds[k] = v
 
-    def _command(self, base: BaseCommand) -> SurveyCommand:
-        return SurveyCommand(self.state, base, self.waypoint_index, self.sample_count)
+        # Embed active vendor/court session if set via the control panel
+        try:
+            if _VENDORS_FILE.exists():
+                vdata = json.loads(_VENDORS_FILE.read_text(encoding="utf-8"))
+                active = vdata.get("active") or {}
+                if active.get("vendor_id"):
+                    vmap = {v["id"]: v for v in vdata.get("vendors", [])}
+                    cmap = {c["id"]: c for c in vdata.get("courts", [])}
+                    vendor = vmap.get(active["vendor_id"], {})
+                    court = cmap.get(active.get("court_id", ""), {})
+                    bounds["vendor_id"] = active["vendor_id"]
+                    bounds["court_id"] = active.get("court_id")
+                    bounds["vendor_name"] = vendor.get("name", "")
+                    bounds["court_name"] = court.get("name", "")
+                    bounds["court_surface"] = court.get("surface", "")
+        except Exception:
+            pass
 
-    def _clamp(self, value: float, limit: float) -> float:
-        return max(-limit, min(limit, value))
+        self._court_bounds = bounds
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.output_path.with_suffix(".tmp.json")
+        with tmp.open("w", encoding="utf-8") as f:
+            json.dump(bounds, f, indent=2)
+            f.write("\n")
+        tmp.replace(self.output_path)
+
+        elapsed = 0.0 if self._started_at is None else time.time() - self._started_at
+        print(
+            f"survey: complete in {elapsed:.1f}s — "
+            f"{self.sample_count} frames, {n} pts  "
+            f"W={bounds['west_fence_x']:.2f}  E={bounds['east_fence_x']:.2f}  "
+            f"S={bounds['south_fence_y']:.2f}  N={bounds['north_fence_y']:.2f}  "
+            f"-> {self.output_path}"
+        )
+
+    def _cmd(self, base: BaseCommand, vision: SurveyVision | None = None) -> SurveyCommand:
+        return SurveyCommand(self.state, base, self.waypoint_index, self.sample_count, vision)
 
 
-def _wrap_angle(angle_rad: float) -> float:
-    while angle_rad > math.pi:
-        angle_rad -= 2 * math.pi
-    while angle_rad < -math.pi:
-        angle_rad += 2 * math.pi
-    return angle_rad
+def _wrap(a: float) -> float:
+    """Wrap angle to (−π, +π]."""
+    return (a + math.pi) % (2.0 * math.pi) - math.pi

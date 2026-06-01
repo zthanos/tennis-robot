@@ -18,10 +18,9 @@ documents και όχι από την τρέχουσα μορφή του Webots 
 Η νέα πηγή αλήθειας είναι τα active baseline documents:
 
 - `docs/validation-plan-el.md`
-- `docs/search-strategy-plan-el.md`
+- `docs/court-knowledge-model-specification.md`
 - `docs/collection-state-machine-plan-el.md`
 - `docs/mission-dashboard-plan-el.md`
-- `docs/half-court-scan-route-overview-el.md`
 - `docs/concept-a-funnel-lift-wheel-plan.md`
 - `docs/prototype-purchase-list-el.md`
 - `docs/plywood-cut-list.md`
@@ -63,8 +62,9 @@ documents και όχι από την τρέχουσα μορφή του Webots 
 
 Το court πρέπει να υποστηρίζει:
 
-- full ή half-court search,
-- court zones A-F,
+- full ή half-court Court Knowledge Model creation και selected-side scan,
+- Court Knowledge Model-gated court matrix,
+- selectable collection side,
 - tennis balls σε realistic και edge-case θέσεις,
 - static obstacles,
 - moving human/person obstacles,
@@ -82,7 +82,9 @@ Perception
   ↓
 World / Court Model
   ↓
-Search Strategy
+Court Knowledge Model / Side Scan
+  ↓
+Collection Planning
   ↓
 Target Selection
   ↓
@@ -101,9 +103,10 @@ Telemetry / Mission Dashboard
 | --- | --- |
 | Sensors | Raw camera, depth, LiDAR, odometry, front collection sensors. |
 | Perception | Ball/person observations, confidence, bearing, distance. |
-| World / Court Model | Court zones, coverage, obstacle map, ball map, target states. |
-| Search Strategy | Boundary-first, lane sweep, zone progress, resume markers. |
-| Target Selection | Choose best ball using distance, confidence, stale data and obstacle cost. |
+| World / Court Model | Court Knowledge Model, matrix cells, coverage, obstacle map, ball map, target states. |
+| Court Knowledge Model / Side Scan | Require a valid Court Knowledge Model, scan the selected collection side, and update matrix cells. |
+| Collection Planning | Build an ordered collection plan from matrix data, current pose, obstacles and target confidence. |
+| Target Selection | Choose the next planned target using distance, confidence, stale data and obstacle cost. |
 | Collection State Machine | Approach, fine alignment, attempt, verification, retry. |
 | Safety / Recovery | Human stop, blocked path, stuck robot, lost ball, full bucket, jam. |
 | Actuation | Drive commands and collector commands. |
@@ -165,21 +168,25 @@ jam_or_partial_capture
 
 ## 6. Core State Machines
 
-### Search
+### Court Knowledge Model-Gated Collection Planning
 
-Το search behavior ακολουθεί:
+Το collection planning behavior ακολουθεί:
 
 ```text
-Boundary First Search
+NO_COURT_KNOWLEDGE_MODEL
 ↓
-Lane Sweep Search
+BUILDING_COURT_KNOWLEDGE_MODEL
 ↓
-Opportunistic Ball Acquisition
+COURT_KNOWLEDGE_MODEL_READY
 ↓
-Target Selected
+SIDE_SCAN
+↓
+PLAN_COLLECTION
+↓
+EXECUTE_COLLECTION_PLAN
 ```
 
-Source: `docs/search-strategy-plan-el.md`
+Source: `docs/court-knowledge-model-specification.md`
 
 ### Collection
 
@@ -227,14 +234,15 @@ Source: `docs/mission-dashboard-plan-el.md`
 
 1. Rebuild/clean Webots robot model with target sensor layout.
 2. Implement or adapt perception outputs into stable observation contracts.
-3. Add court zone model.
-4. Add boundary-first half-court route.
-5. Add lane-sweep fallback for the same half-court.
-6. Add target selection from multiple visible balls.
-7. Add collection state machine with approach, fine alignment, attempt and verification.
-8. Add retry with `max_retries = 3`.
-9. Add mission dashboard fields and timeline events.
-10. Add smoke/regression scenario for a half-court mission.
+3. Add Court Knowledge Model storage and require a valid model before collection.
+4. Add matrix cell model for the selected court.
+5. Add selected-side scan that updates matrix cells with ball observations and blocked cells.
+6. Add ordered collection plan generation from matrix data.
+7. Add target selection from planned targets.
+8. Add collection state machine with approach, fine alignment, attempt and verification.
+9. Add retry with `max_retries = 3`.
+10. Add mission dashboard fields and timeline events.
+11. Add smoke/regression scenario for a Court Knowledge Model -> side scan -> planned collection mission.
 
 ## 8. Migration Rule
 
@@ -250,7 +258,7 @@ Examples of legacy concepts that may be reused but should not define the new des
 
 - old `idle -> scan -> align -> approach -> capture -> collected` collector flow,
 - old dashboard KPIs centered on requested/actual mode,
-- route visualization presets that do not know zones or mission progress,
+- route visualization presets that do not know Court Knowledge Model status, matrix cells or mission progress,
 - simulated collection without verification semantics.
 
 ## 9. Telemetry Contract
@@ -259,8 +267,9 @@ Every implementation step should update at least one telemetry group:
 
 ```text
 mission.*
-search.*
-zone.*
+scan.*
+court_knowledge.*
+matrix.*
 target.*
 collection.*
 perception.*
@@ -275,7 +284,11 @@ Minimum fields for the first dashboard:
 mission_name
 mission_elapsed_s
 current_action
-current_zone
+current_cell
+court_knowledge_status
+court_knowledge_model_id
+collection_side
+matrix_coverage_pct
 current_target_id
 coverage_pct
 balls_detected
