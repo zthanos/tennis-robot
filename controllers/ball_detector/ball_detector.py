@@ -466,7 +466,7 @@ class BallDetectorController:
                     mapped_observation,
                     mapped_ball_id,
                 )
-                if effective_mode == "survey":
+                if effective_mode == "map_court":
                     command = self._survey_command_for_mode(effective_mode)
                 elif effective_mode == "search":
                     command = self._search_command_for_mode(
@@ -1060,7 +1060,7 @@ class BallDetectorController:
                 pt_count = bounds.get("point_count", 0)
                 if pt_count >= 500:
                     print(
-                        f"survey complete — "
+                        f"map court complete — "
                         f"W={bounds.get('west_fence_x', '?'):.2f}  "
                         f"E={bounds.get('east_fence_x', '?'):.2f}  "
                         f"S={bounds.get('south_fence_y', '?'):.2f}  "
@@ -1069,9 +1069,9 @@ class BallDetectorController:
                     )
                 else:
                     print(
-                        f"survey complete (fallback dims — only {pt_count} pts accumulated)"
+                        f"map court FAILED — only {pt_count} pts accumulated, no boundary data saved"
                     )
-                self.command_store.write("idle", source="webots-survey-complete")
+                self.command_store.write("idle", source="webots-map-court-complete")
                 self._survey_complete_reported = True
             return ConceptACommand(
                 state=CollectorState.IDLE,
@@ -2149,7 +2149,7 @@ class BallDetectorController:
         )
         if observation.world_x_m is not None and observation.world_y_m is not None:
             status += f" ball_world=({observation.world_x_m:.2f},{observation.world_y_m:.2f})"
-        if self.control_mode == "survey":
+        if self.control_mode == "map_court":
             x_m, y_m, _z_m = self.robot_node.getPosition()
             target = self.survey_behavior.current_target()
             target_text = "none" if target is None else f"({target[0]:.2f},{target[1]:.2f})"

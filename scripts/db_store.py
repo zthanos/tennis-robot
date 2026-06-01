@@ -37,17 +37,20 @@ _SCHEMA = [
     """,
     """
     CREATE TABLE IF NOT EXISTS surveys (
-        id           INTEGER PRIMARY KEY,
-        court_id     TEXT,
-        vendor_id    TEXT,
-        surveyed_at  DOUBLE,
-        point_count  INTEGER,
-        fallback_used BOOLEAN,
-        west_x       DOUBLE,
-        east_x       DOUBLE,
-        south_y      DOUBLE,
-        north_y      DOUBLE,
-        raw_json     TEXT
+        id             INTEGER PRIMARY KEY,
+        court_id       TEXT,
+        vendor_id      TEXT,
+        surveyed_at    DOUBLE,
+        point_count    INTEGER,
+        fallback_used  BOOLEAN,
+        west_x         DOUBLE,
+        east_x         DOUBLE,
+        south_y        DOUBLE,
+        north_y        DOUBLE,
+        status         TEXT DEFAULT 'SUCCESS',
+        court_length_m DOUBLE,
+        court_width_m  DOUBLE,
+        raw_json       TEXT
     )
     """,
     """
@@ -75,10 +78,21 @@ class TennisRobotDB:
 
     # ── Schema ─────────────────────────────────────────────────────────────────
 
+    _MIGRATIONS = [
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'SUCCESS'",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS court_length_m DOUBLE",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS court_width_m DOUBLE",
+    ]
+
     def _init_schema(self) -> None:
         with self._lock:
             for stmt in _SCHEMA:
                 self._conn.execute(stmt)
+            for stmt in self._MIGRATIONS:
+                try:
+                    self._conn.execute(stmt)
+                except Exception:
+                    pass
 
     def _migrate_legacy(self) -> None:
         """One-shot import from vendors.json when the vendors table is still empty."""
@@ -188,6 +202,7 @@ class TennisRobotDB:
                 SELECT s.id, s.court_id, s.vendor_id, s.surveyed_at,
                        s.point_count, s.fallback_used,
                        s.west_x, s.east_x, s.south_y, s.north_y,
+                       s.status, s.court_length_m, s.court_width_m,
                        c.name  AS court_name,
                        v.name  AS vendor_name,
                        c.surface
@@ -203,13 +218,14 @@ class TennisRobotDB:
             "id", "court_id", "vendor_id", "surveyed_at",
             "point_count", "fallback_used",
             "west_x", "east_x", "south_y", "north_y",
+            "status", "court_length_m", "court_width_m",
             "court_name", "vendor_name", "surface",
         ]
         return [dict(zip(cols, r)) for r in rows]
 
     def import_survey(self, bounds: dict) -> bool:
-        """Insert a court_boundary.json dict. Returns True if it was a new row."""
-        surveyed_at = float(bounds.get("surveyed_at") or 0)
+        """Insert a Court Knowledge Model output dict. Returns True if it was a new row."""
+        surveyed_at = float(bounds.get("mapped_at") or bounds.get("surveyed_at") or 0)
         if not surveyed_at:
             return False
         with self._lock:
@@ -218,24 +234,31 @@ class TennisRobotDB:
             ).fetchone()[0]:
                 return False
             next_id = self._conn.execute("SELECT nextval('survey_id_seq')").fetchone()[0]
+            status = bounds.get("status") or ("SUCCESS" if bounds.get("survey_complete") else "FAILED")
+            pt_count = int(bounds.get("point_count") or 0)
+            cg = bounds.get("court_geometry") or {}
+            fg = bounds.get("fence_geometry") or {}
             self._conn.execute(
                 """
                 INSERT INTO surveys
                   (id, court_id, vendor_id, surveyed_at, point_count, fallback_used,
-                   west_x, east_x, south_y, north_y, raw_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   west_x, east_x, south_y, north_y, status, court_length_m, court_width_m, raw_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     next_id,
                     bounds.get("court_id"),
                     bounds.get("vendor_id"),
                     surveyed_at,
-                    int(bounds.get("point_count") or 0),
-                    int(bounds.get("point_count") or 0) < 500,
-                    bounds.get("west_fence_x"),
-                    bounds.get("east_fence_x"),
-                    bounds.get("south_fence_y"),
-                    bounds.get("north_fence_y"),
+                    pt_count,
+                    pt_count < 500,
+                    fg.get("west_x") or bounds.get("west_fence_x"),
+                    fg.get("east_x") or bounds.get("east_fence_x"),
+                    fg.get("south_y") or bounds.get("south_fence_y"),
+                    fg.get("north_y") or bounds.get("north_fence_y"),
+                    status,
+                    cg.get("length_m"),
+                    cg.get("width_m"),
                     json.dumps(bounds),
                 ],
             )

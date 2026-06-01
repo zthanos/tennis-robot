@@ -22,7 +22,6 @@ def main() -> None:
             crossing_tolerance_m=0.05,
             drive_speed_m_s=0.8,
             turn_speed_rad_s=1.0,
-            oak_min_clearance_m=0.85,
         ),
         output_path,
     )
@@ -39,9 +38,15 @@ def main() -> None:
 
     assert command.state == SurveyState.DONE
     assert output_path.exists()
-    assert '"survey_complete": true' in output_path.read_text(encoding="utf-8")
+    import json
+    data = json.loads(output_path.read_text(encoding="utf-8"))
+    assert "status" in data                  # Court Knowledge Model status field
+    assert "court_geometry" in data          # structured output present
+    assert "fence_geometry" in data
+    assert "west_fence_x" in data            # legacy keys still present for backward compat
+    assert "survey_complete" in data
     output_path.unlink(missing_ok=True)
-    print("survey behavior smoke ok: full-court route -> lidar bounds -> done")
+    print("map court behavior smoke ok: full-court route -> court knowledge model -> done")
 
 
 if __name__ == "__main__":

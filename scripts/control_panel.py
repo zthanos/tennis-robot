@@ -265,7 +265,7 @@ HTML = """<!doctype html>
     }
     .command:hover { transform: translateY(-1px); filter: brightness(1.05); }
     .command[value="map_left_side"] { background: #a855f7; color: #0b0514; }
-    .command[value="survey"] { background: var(--accent-2); color: #06101d; }
+    .command[value="map_court"] { background: var(--accent-2); color: #06101d; }
     .command[value="idle"] { background: var(--danger); color: #1b0604; }
     .command:disabled { opacity: 0.32; cursor: not-allowed; transform: none !important; filter: none !important; }
     .map-cell {
@@ -469,7 +469,7 @@ HTML = """<!doctype html>
         <button data-view="history">History</button>
         <button data-view="webcam">Webcam</button>
         <button data-view="vendors">Vendors</button>
-        <button data-view="surveys">Surveys</button>
+        <button data-view="surveys">Court Maps</button>
       </nav>
       <div class="connection">
         <div><span id="liveDot" class="dot"></span><span id="connectionText">Waiting for robot status</span></div>
@@ -510,7 +510,7 @@ HTML = """<!doctype html>
           <div class="panel">
             <h3>Mode Command</h3>
             <form id="commandForm" class="controls">
-              <button class="command" type="submit" name="mode" value="survey">Survey Court</button>
+              <button class="command" type="submit" name="mode" value="map_court">Map Court</button>
               <button class="command" type="submit" name="mode" value="map_left_side">Collect Left Side</button>
               <button class="command" type="submit" name="mode" value="idle">Stop</button>
             </form>
@@ -577,7 +577,7 @@ HTML = """<!doctype html>
           </div>
         </div>
         <div id="surveyBoundaryPanel" class="panel" style="margin-top:14px;">
-          <h3>Court Boundary &nbsp;<span id="surveyBoundaryStatus" style="font-size:13px;font-weight:400;color:var(--muted);">no survey data</span></h3>
+          <h3>Court Map Boundary &nbsp;<span id="surveyBoundaryStatus" style="font-size:13px;font-weight:400;color:var(--muted);">no court map data</span></h3>
           <div id="surveyBoundaryKv" class="kv" style="margin-top:10px;"></div>
         </div>
         <div id="mapMissionPanel" class="panel" style="margin-top:14px;">
@@ -622,7 +622,7 @@ HTML = """<!doctype html>
       <section id="stats" class="view">
         <div class="grid kpis">
           <div class="metric"><span>Total Commands</span><strong id="sTotal">0</strong><small>from local history</small></div>
-          <div class="metric"><span>Survey Commands</span><strong id="sSurvey">0</strong><small>requested mode survey</small></div>
+          <div class="metric"><span>Map Court Commands</span><strong id="sSurvey">0</strong><small>requested mode map_court</small></div>
           <div class="metric"><span>Collect Commands</span><strong id="sCollect">0</strong><small>requested mode map_left_side</small></div>
           <div class="metric"><span>Stop Commands</span><strong id="sIdle">0</strong><small>requested mode idle</small></div>
         </div>
@@ -663,19 +663,20 @@ HTML = """<!doctype html>
 
       <section id="surveys" class="view">
         <div class="panel">
-          <h3>Survey History</h3>
-          <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Αποτελέσματα περιμετρικής καταγραφής γηπέδου — κάθε ολοκληρωμένο survey αποθηκεύεται αυτόματα.</p>
+          <h3>Court Map History</h3>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Αποτελέσματα χαρτογράφησης γηπέδου (Court Knowledge Model) — κάθε ολοκληρωμένο Map Court αποθηκεύεται αυτόματα.</p>
           <table id="surveyTable">
             <thead>
               <tr>
                 <th>#</th><th>Ημ/νία</th><th>Vendor</th><th>Court</th><th>Surface</th>
-                <th>W (m)</th><th>E (m)</th><th>S (m)</th><th>N (m)</th>
-                <th>Width</th><th>Depth</th><th>Pts</th><th>Fallback</th>
+                <th>Status</th><th>Length (m)</th><th>Width (m)</th>
+                <th>W fence</th><th>E fence</th><th>S fence</th><th>N fence</th>
+                <th>Pts</th>
               </tr>
             </thead>
             <tbody id="surveyRows"></tbody>
           </table>
-          <div id="surveyEmpty" style="color:var(--muted);font-size:13px;padding:14px 0;display:none;">Δεν υπάρχουν surveys ακόμα. Τρέξε Survey Court για να ξεκινήσει η καταγραφή.</div>
+          <div id="surveyEmpty" style="color:var(--muted);font-size:13px;padding:14px 0;display:none;">Δεν υπάρχουν χαρτογραφήσεις ακόμα. Τρέξε Map Court για να ξεκινήσει η καταγραφή.</div>
         </div>
       </section>
 
@@ -752,13 +753,13 @@ HTML = """<!doctype html>
     const titles = {
       dashboard: ["Dashboard", "Observe the robot mode, collector state, current target, and command stream while the simulation runs."],
       control: ["Control", "Send high-level commands to the running Webots controller."],
-      sensors: ["Sensor Views", "Live RPLIDAR C1 360° ground scan, front camera, OAK-D depth image, court boundary from last survey, and half-court mapping grid. Run Survey Court first to measure boundaries; then Collect Left Side uses them automatically."],
+      sensors: ["Sensor Views", "Live RPLIDAR C1 360° ground scan, front camera, OAK-D depth image, court boundary from last Map Court run, and half-court mapping grid. Run Map Court first to measure boundaries; then Collect Left Side uses them automatically."],
       telemetry: ["Telemetry", "Inspect live robot pose, detection, command output, survey data, and raw status."],
       stats: ["Command Stats", "Review per-mode command counts and recent command usage."],
       history: ["History", "Audit the local command stream written by this console and controller startup."],
       webcam: ["Webcam", "Live webcam feed with HSV tennis ball detection and monocular distance estimation. No Webots needed."],
       vendors: ["Vendors", "Manage vendors, venues and courts. Set the active session so survey results are tagged with the correct location."],
-      surveys: ["Survey History", "Ιστορικό καταγραφών γηπέδου αποθηκευμένο στη DuckDB — ένα row ανά survey run."]
+      surveys: ["Court Map History", "Ιστορικό χαρτογράφησης γηπέδου αποθηκευμένο στη DuckDB — ένα row ανά Map Court run."]
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
@@ -843,17 +844,17 @@ HTML = """<!doctype html>
       const cb = diagnostics.court_boundary;
       const hasSurvey = hasSession && !!(cb && cb.survey_complete && cb.court_id === active.court_id);
 
-      const btnSurvey  = document.querySelector('#commandForm [value="survey"]');
-      const btnCollect = document.querySelector('#commandForm [value="map_left_side"]');
-      const hintEl     = document.getElementById("commandHint");
+      const btnMapCourt = document.querySelector('#commandForm [value="map_court"]');
+      const btnCollect  = document.querySelector('#commandForm [value="map_left_side"]');
+      const hintEl      = document.getElementById("commandHint");
 
-      if (btnSurvey)  btnSurvey.disabled  = !hasSession;
-      if (btnCollect) btnCollect.disabled = !hasSurvey;
+      if (btnMapCourt) btnMapCourt.disabled = !hasSession;
+      if (btnCollect)  btnCollect.disabled  = !hasSurvey;
 
       if (hintEl) {
-        if (!hasSession)       hintEl.textContent = "Επίλεξε vendor και γήπεδο πρώτα (Vendors →)";
-        else if (!hasSurvey)   hintEl.textContent = "Collect Left Side χρειάζεται survey για το ενεργό γήπεδο";
-        else                   hintEl.textContent = "";
+        if (!hasSession)     hintEl.textContent = "Επίλεξε vendor και γήπεδο πρώτα (Vendors →)";
+        else if (!hasSurvey) hintEl.textContent = "Collect Left Side χρειάζεται Map Court για το ενεργό γήπεδο";
+        else                 hintEl.textContent = "";
       }
     }
 
@@ -865,7 +866,7 @@ HTML = """<!doctype html>
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ mode })
       });
-      if (mode === "map_left_side" || mode === "survey") setView("sensors");
+      if (mode === "map_left_side" || mode === "map_court") setView("sensors");
       await refresh();
     });
 
@@ -983,28 +984,28 @@ HTML = """<!doctype html>
       if (!statusEl || !kvEl) return;
       const bounds = survey.bounds;
       const inProgress = survey.state === "goto" || survey.state === "sample";
-      if (bounds && bounds.survey_complete) {
-        statusEl.textContent = `— complete · ${bounds.sample_count ?? "?"} samples`;
+      const isComplete = bounds && (bounds.status === "SUCCESS" || bounds.survey_complete);
+      if (isComplete) {
+        const cg = bounds.court_geometry || {};
+        const fg = bounds.fence_geometry || {};
+        const w  = (fg.west_x  ?? bounds.west_fence_x)  != null ? (fg.west_x  ?? bounds.west_fence_x).toFixed(2)  : "—";
+        const e  = (fg.east_x  ?? bounds.east_fence_x)  != null ? (fg.east_x  ?? bounds.east_fence_x).toFixed(2)  : "—";
+        const s  = (fg.south_y ?? bounds.south_fence_y) != null ? (fg.south_y ?? bounds.south_fence_y).toFixed(2) : "—";
+        const n  = (fg.north_y ?? bounds.north_fence_y) != null ? (fg.north_y ?? bounds.north_fence_y).toFixed(2) : "—";
+        const len = cg.length_m != null ? cg.length_m.toFixed(2) : "—";
+        const wid = cg.width_m  != null ? cg.width_m.toFixed(2)  : "—";
+        statusEl.textContent = `— SUCCESS · ${bounds.sample_count ?? "?"} samples`;
         statusEl.style.color = "var(--accent)";
-        const w = bounds.west_fence_x != null ? bounds.west_fence_x.toFixed(2) : "—";
-        const e = bounds.east_fence_x != null ? bounds.east_fence_x.toFixed(2) : "—";
-        const s = bounds.south_fence_y != null ? bounds.south_fence_y.toFixed(2) : "—";
-        const n = bounds.north_fence_y != null ? bounds.north_fence_y.toFixed(2) : "—";
-        const width = bounds.east_fence_x != null && bounds.west_fence_x != null
-          ? (bounds.east_fence_x - bounds.west_fence_x).toFixed(2) : "—";
-        const depth = bounds.north_fence_y != null && bounds.south_fence_y != null
-          ? (bounds.north_fence_y - bounds.south_fence_y).toFixed(2) : "—";
         setKv("surveyBoundaryKv", [
-          ["West fence x", `${w} m`],
-          ["East fence x", `${e} m`],
+          ["Court length (E-W)", `${len} m`],
+          ["Court width (N-S)", `${wid} m`],
+          ["West fence x",  `${w} m`],
+          ["East fence x",  `${e} m`],
           ["South fence y", `${s} m`],
           ["North fence y", `${n} m`],
-          ["Court width (E-W)", `${width} m`],
-          ["Court depth (N-S)", `${depth} m`],
-          ["Survey side", bounds.side || "—"],
         ]);
       } else if (inProgress) {
-        statusEl.textContent = `— scanning · ${survey.sample_count ?? 0} samples`;
+        statusEl.textContent = `— mapping · ${survey.sample_count ?? 0} samples`;
         statusEl.style.color = "var(--accent-2)";
         setKv("surveyBoundaryKv", [
           ["State", survey.state || "—"],
@@ -1012,7 +1013,7 @@ HTML = """<!doctype html>
           ["Samples collected", survey.sample_count ?? 0],
         ]);
       } else {
-        statusEl.textContent = "no survey data";
+        statusEl.textContent = "no court map data";
         statusEl.style.color = "var(--muted)";
         kvEl.innerHTML = "";
       }
@@ -1382,7 +1383,7 @@ HTML = """<!doctype html>
             survBounds.north_fence_y != null && survBounds.south_fence_y != null) {
           const w = (survBounds.east_fence_x - survBounds.west_fence_x).toFixed(1);
           const d = (survBounds.north_fence_y - survBounds.south_fence_y).toFixed(1);
-          const label = `survey: ${w} × ${d} m`;
+          const label = `map court: ${w} × ${d} m`;
           ctx.setLineDash([]);
           ctx.textAlign = "right";
           const lw = ctx.measureText(label).width;
@@ -1543,10 +1544,10 @@ HTML = """<!doctype html>
       const total = stats.total || 0;
       const byMode = stats.by_mode || {};
       document.getElementById("sTotal").textContent = total;
-      document.getElementById("sSurvey").textContent = byMode.survey || 0;
+      document.getElementById("sSurvey").textContent = byMode.map_court || 0;
       document.getElementById("sCollect").textContent = byMode.map_left_side || 0;
       document.getElementById("sIdle").textContent = byMode.idle || 0;
-      document.getElementById("statsRows").innerHTML = ["survey", "map_left_side", "idle"].map(mode => {
+      document.getElementById("statsRows").innerHTML = ["map_court", "map_left_side", "idle"].map(mode => {
         const count = byMode[mode] || 0;
         const latest = (stats.latest_by_mode || {})[mode] || {};
         const share = total ? `${Math.round(count * 100 / total)}%` : "0%";
@@ -1761,29 +1762,32 @@ HTML = """<!doctype html>
       empty.style.display = "none";
       tbody.innerHTML = surveys.map(s => {
         const dt = s.surveyed_at ? new Date(s.surveyed_at * 1000).toLocaleString() : "—";
-        const w = s.west_x != null ? s.west_x.toFixed(2) : "—";
-        const e = s.east_x != null ? s.east_x.toFixed(2) : "—";
+        const status = s.status || "SUCCESS";
+        const statusEl = status === "SUCCESS"
+          ? `<span style="color:var(--accent);font-size:11px;font-weight:600;">SUCCESS</span>`
+          : `<span style="color:var(--danger);font-size:11px;font-weight:600;">FAILED</span>`;
+        const lengthM = s.court_length_m != null ? s.court_length_m.toFixed(2) : (
+          s.east_x != null && s.west_x != null ? (s.east_x - s.west_x).toFixed(2) : "—");
+        const widthM = s.court_width_m != null ? s.court_width_m.toFixed(2) : (
+          s.north_y != null && s.south_y != null ? (s.north_y - s.south_y).toFixed(2) : "—");
+        const w  = s.west_x  != null ? s.west_x.toFixed(2)  : "—";
+        const e  = s.east_x  != null ? s.east_x.toFixed(2)  : "—";
         const sY = s.south_y != null ? s.south_y.toFixed(2) : "—";
-        const n = s.north_y != null ? s.north_y.toFixed(2) : "—";
-        const width = (s.east_x != null && s.west_x != null) ? (s.east_x - s.west_x).toFixed(2) : "—";
-        const depth = (s.north_y != null && s.south_y != null) ? (s.north_y - s.south_y).toFixed(2) : "—";
-        const fb = s.fallback_used
-          ? `<span style="color:var(--warn);font-size:11px;">fallback</span>`
-          : `<span style="color:var(--accent);font-size:11px;">measured</span>`;
+        const n  = s.north_y != null ? s.north_y.toFixed(2) : "—";
         return `<tr>
           <td style="color:var(--muted);">${s.id}</td>
           <td>${dt}</td>
           <td>${escHtml(s.vendor_name || "—")}</td>
           <td>${escHtml(s.court_name || "—")}</td>
           <td style="color:var(--muted);">${escHtml(s.surface || "—")}</td>
-          <td style="font-variant-numeric:tabular-nums;">${w}</td>
-          <td style="font-variant-numeric:tabular-nums;">${e}</td>
-          <td style="font-variant-numeric:tabular-nums;">${sY}</td>
-          <td style="font-variant-numeric:tabular-nums;">${n}</td>
-          <td style="color:var(--accent-2);font-weight:600;">${width} m</td>
-          <td style="color:var(--accent-2);font-weight:600;">${depth} m</td>
+          <td>${statusEl}</td>
+          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${lengthM} m</td>
+          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${widthM} m</td>
+          <td style="font-variant-numeric:tabular-nums;color:var(--muted);">${w}</td>
+          <td style="font-variant-numeric:tabular-nums;color:var(--muted);">${e}</td>
+          <td style="font-variant-numeric:tabular-nums;color:var(--muted);">${sY}</td>
+          <td style="font-variant-numeric:tabular-nums;color:var(--muted);">${n}</td>
           <td style="color:var(--muted);">${s.point_count ?? "—"}</td>
-          <td>${fb}</td>
         </tr>`;
       }).join("");
     }
@@ -1923,7 +1927,7 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             bounds = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             return None
-        if bounds and bounds.get("survey_complete"):
+        if bounds and (bounds.get("survey_complete") or bounds.get("status") == "SUCCESS"):
             self.db.import_survey(bounds)
         return bounds
 

@@ -103,28 +103,39 @@ class SupervisorBoundaryProvider:
 class LidarSurveyBoundaryProvider:
     """Reads court boundaries from the survey output file written by CourtSurveyBehavior.
 
-    Falls back to SupervisorBoundaryProvider if the file is missing or incomplete.
+    Raises RuntimeError if the file is missing, the survey failed, or the data is malformed.
+    Run Map Court before any mission that depends on this provider.
     """
 
     def __init__(self, boundary_path: Path | None = None) -> None:
         self._path = boundary_path or DEFAULT_BOUNDARY_FILE
-        self._fallback = SupervisorBoundaryProvider()
 
     def get_bounds(self, side: str) -> HalfCourtBounds:
         try:
             with self._path.open("r", encoding="utf-8") as f:
                 data = json.load(f)
-            if not data.get("survey_complete"):
-                return self._fallback.get_bounds(side)
-            east_x = float(data["east_fence_x"])
-            west_x = float(data["west_fence_x"])
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                f"Court survey file not found: {self._path} — run Map Court first."
+            ) from exc
+        except OSError as exc:
+            raise RuntimeError(f"Cannot read court survey file: {exc}") from exc
+
+        if not data.get("survey_complete"):
+            reason = data.get("failure_reason") or "survey_complete=false"
+            raise RuntimeError(f"Court survey incomplete — run Map Court first. Reason: {reason}")
+
+        try:
+            east_x  = float(data["east_fence_x"])
+            west_x  = float(data["west_fence_x"])
             north_y = float(data["north_fence_y"])
             south_y = float(data["south_fence_y"])
-            if side == "left":
-                return HalfCourtBounds("left", west_x, 0.0, south_y, north_y)
-            return HalfCourtBounds("right", 0.0, east_x, south_y, north_y)
-        except (FileNotFoundError, OSError, KeyError, TypeError, ValueError):
-            return self._fallback.get_bounds(side)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError(f"Court survey data malformed: {exc}") from exc
+
+        if side == "left":
+            return HalfCourtBounds("left", west_x, 0.0, south_y, north_y)
+        return HalfCourtBounds("right", 0.0, east_x, south_y, north_y)
 
 
 # ── 3×3 grid ───────────────────────────────────────────────────────────────────

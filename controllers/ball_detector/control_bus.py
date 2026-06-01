@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 
-SUPPORTED_MODES = {"idle", "survey", "map_left_side"}
+SUPPORTED_MODES = {"idle", "map_court", "map_left_side"}
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMMAND_FILE = PROJECT_ROOT / "runtime" / "robot_command.json"
 DEFAULT_COMMAND_HISTORY_FILE = PROJECT_ROOT / "runtime" / "robot_command_history.jsonl"
