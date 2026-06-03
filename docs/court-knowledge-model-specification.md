@@ -140,7 +140,7 @@ The required traversal order is:
 
 2. `APPROACH_NET`
    - Drive toward the detected net until the robot reaches a safe standoff
-     distance.
+     distance of 0.10 m from the measured net boundary.
    - Maintain obstacle avoidance using LiDAR and OAK-D depth.
 
 3. `TURN_LEFT_AT_NET`

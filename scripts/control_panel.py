@@ -580,6 +580,11 @@ HTML = """<!doctype html>
           <h3>Court Map Boundary &nbsp;<span id="surveyBoundaryStatus" style="font-size:13px;font-weight:400;color:var(--muted);">no court map data</span></h3>
           <div id="surveyBoundaryKv" class="kv" style="margin-top:10px;"></div>
         </div>
+        <div class="panel" style="margin-top:14px;">
+          <h3>Map Court Discovery &nbsp;<span id="surveyDiscoveryStatus" style="font-size:13px;font-weight:400;color:var(--muted);">waiting for points</span></h3>
+          <canvas id="surveyDiscoveryMap" width="1000" height="520" style="display:block;width:100%;max-height:520px;background:#090d12;border:1px solid var(--line);border-radius:8px;"></canvas>
+          <div id="surveyDiscoveryMeta" class="kv" style="margin-top:10px;"></div>
+        </div>
         <div id="mapMissionPanel" class="panel" style="margin-top:14px;">
           <h3>Half-Court Mapping Grid &nbsp;<span id="mapMissionStatus" style="font-size:13px;font-weight:400;color:var(--muted);">idle</span></h3>
           <div style="display:grid;grid-template-columns:88px repeat(3,1fr);gap:6px;margin-top:14px;font-size:13px;text-align:center;align-items:center;">
@@ -613,9 +618,13 @@ HTML = """<!doctype html>
             <div id="telemetryKv" class="kv"></div>
           </div>
           <div class="panel">
+            <h3>Recent Events</h3>
+            <div id="telemetryEvents" class="log"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:14px;">
             <h3>Raw Status</h3>
             <pre id="rawStatus" class="json">{}</pre>
-          </div>
         </div>
       </section>
 
@@ -778,10 +787,40 @@ HTML = """<!doctype html>
       if (!ts) return "none";
       return new Date(ts * 1000).toLocaleTimeString();
     }
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
     function setKv(id, rows) {
       document.getElementById(id).innerHTML = rows.map(([label, value]) => (
         `<div><span>${label}</span><strong>${value}</strong></div>`
       )).join("");
+    }
+    function renderTelemetryEvents(events) {
+      const target = document.getElementById("telemetryEvents");
+      if (!target) return;
+      if (!events || events.length === 0) {
+        target.innerHTML = `<div style="color:var(--muted);font-size:13px;">No telemetry events yet.</div>`;
+        return;
+      }
+      const hidden = new Set(["t_s", "wall_time_s", "type", "severity"]);
+      target.innerHTML = events.slice(-24).reverse().map(event => {
+        const details = Object.entries(event)
+          .filter(([key, value]) => !hidden.has(key) && value !== null && value !== undefined)
+          .map(([key, value]) => `${key}=${Array.isArray(value) || typeof value === "object" ? JSON.stringify(value) : value}`)
+          .join(" · ");
+        const severity = event.severity || "info";
+        const color = severity === "error" ? "var(--danger)" : severity === "warning" ? "var(--warn)" : "var(--accent-2)";
+        return `<div class="event">
+          <span>${fmt(event.t_s, "s")}</span>
+          <strong style="color:${color};">${escapeHtml(severity)}</strong>
+          <div><strong>${escapeHtml(event.type || "event")}</strong><br><span>${escapeHtml(details || "no details")}</span></div>
+        </div>`;
+      }).join("");
     }
     function setView(name) {
       document.querySelectorAll("nav button").forEach(btn => btn.classList.toggle("active", btn.dataset.view === name));
@@ -892,6 +931,7 @@ HTML = """<!doctype html>
       const collectPattern = robot.collect_pattern || {};
       const balls = robot.balls || {};
       const completion = robot.completion || {};
+      const diag = robot.diagnostics || {};
       const connected = !!robot.connected;
 
       document.getElementById("liveDot").classList.toggle("live", connected);
@@ -942,6 +982,9 @@ HTML = """<!doctype html>
         ["Collect one phase", collectOne.phase || "idle"]
       ]);
       setKv("telemetryKv", [
+        ["Mission health", diag.health || "unknown"],
+        ["Health reasons", (diag.reasons || []).join(", ") || "none"],
+        ["Last event", diag.last_event ? `${diag.last_event.type} @ ${fmt(diag.last_event.t_s, "s")}` : "none"],
         ["Telemetry enabled", robot.telemetry_enabled ? "yes" : "no"],
         ["Vision enabled", robot.vision_enabled ? "yes" : "no"],
         ["Route overlay", robot.route_visualization_enabled ? "yes" : "no"],
@@ -962,6 +1005,7 @@ HTML = """<!doctype html>
         ["Map court state", survey.state || "idle"],
         ["Map court distance", fmt(survey.navigation?.distance_traveled_m, "m")]
       ]);
+      renderTelemetryEvents(robot.timeline_events || []);
       document.getElementById("rawStatus").textContent = JSON.stringify(robot, null, 2);
 
       renderHistory();
@@ -969,6 +1013,7 @@ HTML = """<!doctype html>
       renderCourtMap();
       renderSensors();
       renderSurveyBoundary(robot.survey || {});
+      renderSurveyDiscovery(robot.survey || {});
       renderMapMission(robot.map_mission || {});
       updateCommandButtons();
 
@@ -1019,6 +1064,140 @@ HTML = """<!doctype html>
         statusEl.style.color = "var(--muted)";
         kvEl.innerHTML = "";
       }
+    }
+    function renderSurveyDiscovery(survey) {
+      const canvas = document.getElementById("surveyDiscoveryMap");
+      const statusEl = document.getElementById("surveyDiscoveryStatus");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const nav = survey.navigation || {};
+      const points = Array.isArray(nav.map_points) ? nav.map_points : [];
+      const bounds = survey.bounds || diagnostics.court_boundary || {};
+      const net = nav.net_boundary || (bounds.boundaries || {}).net || (bounds.court_features || {}).net_boundary;
+      const width = canvas.width;
+      const height = canvas.height;
+      const pad = 36;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#090d12";
+      ctx.fillRect(0, 0, width, height);
+
+      const hasPoints = points.some(p => Number.isFinite(p.x_m) && Number.isFinite(p.y_m));
+      const hasNet = !!(net && net.post_a && net.post_b);
+      if (!hasPoints && !hasNet) {
+        ctx.fillStyle = "rgba(145,162,178,0.7)";
+        ctx.font = "14px system-ui";
+        ctx.fillText("waiting for Map Court LiDAR points", pad, pad + 10);
+        if (statusEl) statusEl.textContent = "waiting for points";
+        setKv("surveyDiscoveryMeta", [
+          ["State", survey.state || "idle"],
+          ["Points", nav.map_point_count ?? 0],
+          ["Net boundary", net ? "detected" : "none"],
+        ]);
+        return;
+      }
+
+      const fg = (bounds.fence_geometry || {});
+      let minX = Number.isFinite(fg.west_x) ? fg.west_x - 0.5 : -14.0;
+      let maxX = Number.isFinite(fg.east_x) ? fg.east_x + 0.5 : 14.0;
+      let minY = Number.isFinite(fg.south_y) ? fg.south_y - 0.5 : -7.5;
+      let maxY = Number.isFinite(fg.north_y) ? fg.north_y + 0.5 : 7.5;
+      [...points, net?.post_a, net?.post_b, net?.center, (diagnostics.robot || {}).robot]
+        .filter(Boolean)
+        .forEach(p => {
+          if (!Number.isFinite(p.x_m) || !Number.isFinite(p.y_m)) return;
+          minX = Math.min(minX, p.x_m - 0.5);
+          maxX = Math.max(maxX, p.x_m + 0.5);
+          minY = Math.min(minY, p.y_m - 0.5);
+          maxY = Math.max(maxY, p.y_m + 0.5);
+        });
+      const spanX = Math.max(1, maxX - minX);
+      const spanY = Math.max(1, maxY - minY);
+      const scale = Math.min((width - pad * 2) / spanX, (height - pad * 2) / spanY);
+      const ox = (width - spanX * scale) / 2;
+      const oy = (height - spanY * scale) / 2;
+      const sx = x => ox + (x - minX) * scale;
+      const sy = y => height - (oy + (y - minY) * scale);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.07)";
+      ctx.lineWidth = 1;
+      for (let gx = Math.ceil(minX); gx <= Math.floor(maxX); gx += 1) {
+        ctx.beginPath(); ctx.moveTo(sx(gx), sy(minY)); ctx.lineTo(sx(gx), sy(maxY)); ctx.stroke();
+      }
+      for (let gy = Math.ceil(minY); gy <= Math.floor(maxY); gy += 1) {
+        ctx.beginPath(); ctx.moveTo(sx(minX), sy(gy)); ctx.lineTo(sx(maxX), sy(gy)); ctx.stroke();
+      }
+
+      ctx.strokeStyle = "rgba(255,255,255,0.16)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx(-11.885), sy(5.485), sx(11.885) - sx(-11.885), sy(-5.485) - sy(5.485));
+      ctx.strokeStyle = "rgba(80,220,255,0.22)";
+      ctx.beginPath();
+      ctx.moveTo(sx(0), sy(minY));
+      ctx.lineTo(sx(0), sy(maxY));
+      ctx.stroke();
+      ctx.fillStyle = "rgba(145,162,178,0.8)";
+      ctx.font = "12px system-ui";
+      ctx.fillText("world/court frame", pad, 20);
+
+      ctx.fillStyle = "rgba(47,208,143,0.55)";
+      points.forEach(p => {
+        if (!Number.isFinite(p.x_m) || !Number.isFinite(p.y_m)) return;
+        ctx.fillRect(sx(p.x_m) - 1.2, sy(p.y_m) - 1.2, 2.4, 2.4);
+      });
+
+      if (net && net.post_a && net.post_b) {
+        const a = net.post_a;
+        const b = net.post_b;
+        ctx.strokeStyle = "rgba(80,220,255,0.95)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(sx(a.x_m), sy(a.y_m));
+        ctx.lineTo(sx(b.x_m), sy(b.y_m));
+        ctx.stroke();
+        ctx.fillStyle = "#50dcff";
+        [[a, "post A"], [b, "post B"]].forEach(([p, label]) => {
+          ctx.beginPath();
+          ctx.arc(sx(p.x_m), sy(p.y_m), 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillText(label, sx(p.x_m) + 7, sy(p.y_m) - 7);
+        });
+        ctx.font = "bold 13px system-ui";
+        const c = net.center || { x_m: (a.x_m + b.x_m) / 2, y_m: (a.y_m + b.y_m) / 2 };
+        const clearance = net.front_clearance_m ?? net.distance_m;
+        ctx.fillText(`NET ${fmt(net.length_m, "m")} · front ${fmt(clearance, "m")} · center ${fmt(net.distance_m, "m")}`, sx(c.x_m) + 8, sy(c.y_m) - 8);
+        if (net.lidar_local) {
+          ctx.font = "12px system-ui";
+          ctx.fillText(`LiDAR local: ${fmt(net.lidar_local.length_m, "m")} @ ${fmt(net.lidar_local.distance_m, "m")}`, sx(c.x_m) + 8, sy(c.y_m) + 10);
+        }
+      }
+
+      const robot = (diagnostics.robot || {}).robot || {};
+      if (Number.isFinite(robot.x_m) && Number.isFinite(robot.y_m)) {
+        ctx.fillStyle = "#ffbd5a";
+        ctx.beginPath();
+        ctx.arc(sx(robot.x_m), sy(robot.y_m), 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText("robot", sx(robot.x_m) + 8, sy(robot.y_m) + 4);
+      }
+
+      if (statusEl) {
+        statusEl.textContent = `${nav.map_point_count ?? points.length} points · net ${net ? "boundary detected" : "not fitted"}`;
+        statusEl.style.color = net ? "var(--accent)" : "var(--warn)";
+      }
+      setKv("surveyDiscoveryMeta", [
+        ["State", survey.state || "idle"],
+        ["Event", nav.last_event || "none"],
+        ["Points", nav.map_point_count ?? points.length],
+        ["Shown sample", points.length],
+        ["Frame", "world/court coordinates"],
+        ["LiDAR coverage", `F ${fmt(nav.scan_coverage?.front_m, "m")} · R ${fmt(nav.scan_coverage?.rear_m, "m")} · L ${fmt(nav.scan_coverage?.left_m, "m")} · Rt ${fmt(nav.scan_coverage?.right_m, "m")}`],
+        ["Local extents", nav.scan_coverage?.local_extents ? `x ${fmt(nav.scan_coverage.local_extents.min_x_m, "m")}..${fmt(nav.scan_coverage.local_extents.max_x_m, "m")} · y ${fmt(nav.scan_coverage.local_extents.min_y_m, "m")}..${fmt(nav.scan_coverage.local_extents.max_y_m, "m")}` : "none"],
+        ["World extents", nav.scan_coverage?.world_extents ? `x ${fmt(nav.scan_coverage.world_extents.min_x_m, "m")}..${fmt(nav.scan_coverage.world_extents.max_x_m, "m")} · y ${fmt(nav.scan_coverage.world_extents.min_y_m, "m")}..${fmt(nav.scan_coverage.world_extents.max_y_m, "m")}` : "none"],
+        ["Net boundary", net ? `${fmt(net.length_m, "m")} @ front ${fmt(net.front_clearance_m ?? net.distance_m, "m")}` : "not fitted"],
+        ["Net LiDAR local", net?.lidar_local ? `${fmt(net.lidar_local.length_m, "m")} @ ${fmt(net.lidar_local.distance_m, "m")}` : "none"],
+        ["Net source", net?.source || nav.net_boundary_source || "none"],
+      ]);
     }
     function renderMapMission(m) {
       const statusEl = document.getElementById("mapMissionStatus");

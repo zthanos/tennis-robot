@@ -1,9 +1,9 @@
-"""Runtime-agnostic Map Court finite-state machine.
+"""Runtime-agnostic court-line survey state machine.
 
-Map Court is the only court-survey implementation. It must not use simulator
-waypoints or pre-recorded court coordinates. The traversal is driven by named
-sensor events from OAK-D depth, LiDAR sectors, and a platform localization
-estimate used only for mapping and loop-closure bookkeeping.
+The survey path is driven by camera observations of the painted outer court
+line. LiDAR is used for safety and to enrich the survey result with fences,
+walls, free space, and internal objects. It must not become the perimeter
+driver.
 """
 
 from __future__ import annotations
@@ -12,41 +12,31 @@ import json
 import math
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
 from collector import BaseCommand
 from config_utils import _env_float
+from navigator import Navigator, navigator_from_survey_config
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BOUNDARY_FILE = PROJECT_ROOT / "runtime" / "court_boundary.json"
 _VENDORS_FILE = PROJECT_ROOT / "runtime" / "vendors.json"
 
-_LIDAR_LOCAL_X = -0.20
-_LIDAR_LOCAL_Y = 0.0
-_SUBSAMPLE = 8
-_MIN_POINTS = 500
-_TIMEOUT_S = 540.0
-_MIN_LOOP_DISTANCE_M = 35.0
-_LOOP_CLOSURE_RADIUS_M = 1.2
-_MIN_COURT_LENGTH_M = 23.0
-_MIN_COURT_WIDTH_M = 10.0
 
 
 class SurveyState(str, Enum):
-    FIND_FIRST_OBSTACLE = "find_first_obstacle"
-    APPROACH_NET = "approach_net"
-    TURN_LEFT_AT_NET = "turn_left_at_net"
-    FOLLOW_NET_TO_FENCE = "follow_net_to_fence"
-    TURN_LEFT_AT_FENCE_1 = "turn_left_at_fence_1"
-    FOLLOW_FENCE_TO_NEXT_FENCE = "follow_fence_to_next_fence"
-    TURN_LEFT_AT_FENCE_2 = "turn_left_at_fence_2"
-    FOLLOW_FENCE_TO_NET = "follow_fence_to_net"
-    CROSS_NET_ON_RIGHT_SIDE = "cross_net_on_right_side"
-    FOLLOW_SECOND_HALF_PERIMETER = "follow_second_half_perimeter"
-    COMPLETE_AT_FIRST_NET_TURN_REFERENCE = "complete_at_first_net_turn_reference"
+    FIND_COURT_LINE = "find_court_line"
+    ALIGN_OUTSIDE_LINE = "align_outside_line"
+    FOLLOW_LINE_WITH_OFFSET = "follow_line_with_offset"
+    DETECT_CORNER = "detect_corner"
+    TURN_AT_CORNER = "turn_at_corner"
+    MAP_EXTERNAL_BOUNDARY = "map_external_boundary"
+    COMPLETE_LOOP = "complete_loop"
+    VALIDATE_SURVEY = "validate_survey"
+    RECOVER_LINE = "recover_line"
     DONE = "done"
 
 
@@ -54,19 +44,29 @@ class SurveyState(str, Enum):
 class SurveyConfig:
     drive_speed_m_s: float = 0.35
     turn_speed_rad_s: float = 1.0
-    corridor_speed_m_s: float = 0.22
+    search_turn_speed_rad_s: float = 0.45
+    recovery_turn_speed_rad_s: float = 0.35
+    line_offset_m: float = 0.50
+    line_offset_tolerance_m: float = 0.10
+    line_heading_tolerance_deg: float = 7.0
+    line_heading_gain: float = 1.6
+    line_offset_gain: float = 0.9
+    corner_min_spacing_m: float = 3.0
+    safety_stop_range_m: float = 0.32
+    safety_slow_range_m: float = 0.65
     min_fence_range_m: float = 0.35
     max_fence_range_m: float = 12.0
-    net_detect_range_m: float = 5.5
-    net_standoff_m: float = 0.45
-    first_obstacle_classify_range_m: float = 1.6
-    first_obstacle_min_travel_m: float = 1.2
-    fence_turn_range_m: float = 0.85
-    desired_side_clearance_m: float = 0.9
-    side_clearance_gain: float = 0.85
+    external_boundary_min_distance_from_line_m: float = 1.0
     turn_angle_deg: float = 90.0
-    gap_cross_distance_m: float = 1.9
     phase_timeout_s: float = 90.0
+    total_timeout_s: float = 540.0
+    min_loop_distance_m: float = 45.0
+    loop_closure_radius_m: float = 1.35
+    expected_court_length_m: float = 23.77
+    expected_court_width_m: float = 10.97
+    lidar_local_x_m: float = -0.20
+    lidar_local_y_m: float = 0.0
+    lidar_subsample: int = 8
 
     @classmethod
     def from_env(cls) -> "SurveyConfig":
@@ -74,35 +74,53 @@ class SurveyConfig:
         return cls(
             drive_speed_m_s=_env_float("SURVEY_DRIVE_SPEED_M_S", d.drive_speed_m_s),
             turn_speed_rad_s=_env_float("SURVEY_TURN_SPEED_RAD_S", d.turn_speed_rad_s),
-            corridor_speed_m_s=_env_float("SURVEY_CORRIDOR_SPEED_M_S", d.corridor_speed_m_s),
-            net_detect_range_m=_env_float("SURVEY_NET_DETECT_RANGE_M", d.net_detect_range_m),
-            net_standoff_m=_env_float("SURVEY_NET_STANDOFF_M", d.net_standoff_m),
-            first_obstacle_classify_range_m=_env_float(
-                "SURVEY_FIRST_OBSTACLE_CLASSIFY_RANGE_M",
-                d.first_obstacle_classify_range_m,
+            search_turn_speed_rad_s=_env_float("SURVEY_SEARCH_TURN_SPEED_RAD_S", d.search_turn_speed_rad_s),
+            recovery_turn_speed_rad_s=_env_float("SURVEY_RECOVERY_TURN_SPEED_RAD_S", d.recovery_turn_speed_rad_s),
+            line_offset_m=_env_float("SURVEY_LINE_OFFSET_M", d.line_offset_m),
+            line_offset_tolerance_m=_env_float("SURVEY_LINE_OFFSET_TOLERANCE_M", d.line_offset_tolerance_m),
+            line_heading_tolerance_deg=_env_float(
+                "SURVEY_LINE_HEADING_TOLERANCE_DEG",
+                d.line_heading_tolerance_deg,
             ),
-            first_obstacle_min_travel_m=_env_float(
-                "SURVEY_FIRST_OBSTACLE_MIN_TRAVEL_M",
-                d.first_obstacle_min_travel_m,
+            line_heading_gain=_env_float("SURVEY_LINE_HEADING_GAIN", d.line_heading_gain),
+            line_offset_gain=_env_float("SURVEY_LINE_OFFSET_GAIN", d.line_offset_gain),
+            corner_min_spacing_m=_env_float("SURVEY_CORNER_MIN_SPACING_M", d.corner_min_spacing_m),
+            safety_stop_range_m=_env_float("SURVEY_SAFETY_STOP_RANGE_M", d.safety_stop_range_m),
+            safety_slow_range_m=_env_float("SURVEY_SAFETY_SLOW_RANGE_M", d.safety_slow_range_m),
+            min_fence_range_m=_env_float("SURVEY_MIN_FENCE_RANGE_M", d.min_fence_range_m),
+            max_fence_range_m=_env_float("SURVEY_MAX_FENCE_RANGE_M", d.max_fence_range_m),
+            external_boundary_min_distance_from_line_m=_env_float(
+                "SURVEY_EXTERNAL_BOUNDARY_MIN_DISTANCE_FROM_LINE_M",
+                d.external_boundary_min_distance_from_line_m,
             ),
-            fence_turn_range_m=_env_float("SURVEY_FENCE_TURN_RANGE_M", d.fence_turn_range_m),
-            desired_side_clearance_m=_env_float("SURVEY_DESIRED_SIDE_CLEARANCE_M", d.desired_side_clearance_m),
-            side_clearance_gain=_env_float("SURVEY_SIDE_CLEARANCE_GAIN", d.side_clearance_gain),
             turn_angle_deg=_env_float("SURVEY_TURN_ANGLE_DEG", d.turn_angle_deg),
-            gap_cross_distance_m=_env_float("SURVEY_GAP_CROSS_DISTANCE_M", d.gap_cross_distance_m),
             phase_timeout_s=_env_float("SURVEY_PHASE_TIMEOUT_S", d.phase_timeout_s),
+            total_timeout_s=_env_float("SURVEY_TOTAL_TIMEOUT_S", d.total_timeout_s),
+            min_loop_distance_m=_env_float("SURVEY_MIN_LOOP_DISTANCE_M", d.min_loop_distance_m),
+            loop_closure_radius_m=_env_float("SURVEY_LOOP_CLOSURE_RADIUS_M", d.loop_closure_radius_m),
+            expected_court_length_m=_env_float("SURVEY_EXPECTED_COURT_LENGTH_M", d.expected_court_length_m),
+            expected_court_width_m=_env_float("SURVEY_EXPECTED_COURT_WIDTH_M", d.expected_court_width_m),
+            lidar_local_x_m=_env_float("SURVEY_LIDAR_LOCAL_X_M", d.lidar_local_x_m),
+            lidar_local_y_m=_env_float("SURVEY_LIDAR_LOCAL_Y_M", d.lidar_local_y_m),
+            lidar_subsample=int(_env_float("SURVEY_LIDAR_SUBSAMPLE", float(d.lidar_subsample))),
         )
 
 
 @dataclass(frozen=True)
 class SurveyVision:
-    """OAK-D depth clearance summary in robot frame."""
+    """Camera-derived court geometry plus optional depth/object summary."""
 
     center_m: float | None = None
     left_m: float | None = None
     right_m: float | None = None
     valid_count: int = 0
     obstacle_class: str | None = None
+    line_detected: bool = False
+    line_offset_m: float | None = None
+    line_heading_error_rad: float | None = None
+    line_confidence: float = 0.0
+    corner_detected: bool = False
+    corner_confidence: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -113,8 +131,156 @@ class SurveyCommand:
     vision: SurveyVision | None = None
 
 
+@dataclass
+class LidarObject:
+    label: str
+    classification: str
+    x_m: float
+    y_m: float
+    distance_to_court_line_m: float | None = None
+    confidence: float = 0.6
+
+
+@dataclass
+class LidarSurveyMap:
+    external_boundary_candidates: list[LidarObject] = field(default_factory=list)
+    internal_obstacles: list[LidarObject] = field(default_factory=list)
+    raw_points: list[tuple[float, float]] = field(default_factory=list)
+
+    def point_sample(self, limit: int = 800) -> list[dict[str, float]]:
+        if not self.raw_points:
+            return []
+        stride = max(1, len(self.raw_points) // limit)
+        return [
+            {"x_m": round(x, 3), "y_m": round(y, 3)}
+            for x, y in self.raw_points[-limit * stride::stride]
+        ][-limit:]
+
+
+class LidarObstacleClassifier:
+    """Classifies LiDAR returns without allowing the net to define the perimeter."""
+
+    def __init__(self, config: SurveyConfig) -> None:
+        self.config = config
+
+    def classify(
+        self,
+        world_x: float,
+        world_y: float,
+        line_distance_m: float | None,
+        vision_class: str | None,
+    ) -> LidarObject:
+        label = (vision_class or "").strip().lower()
+        if label == "net":
+            return LidarObject("net", "internal_obstacle", world_x, world_y, line_distance_m, 0.95)
+        if label in {"post", "net_post", "posts"}:
+            return LidarObject("post", "internal_obstacle", world_x, world_y, line_distance_m, 0.85)
+        if label in {"fence", "wall", "enclosure"}:
+            return LidarObject(label, "external_boundary_candidate", world_x, world_y, line_distance_m, 0.9)
+        if line_distance_m is not None and line_distance_m >= self.config.external_boundary_min_distance_from_line_m:
+            return LidarObject("fence_or_wall", "external_boundary_candidate", world_x, world_y, line_distance_m, 0.55)
+        return LidarObject("temporary_object", "internal_obstacle", world_x, world_y, line_distance_m, 0.5)
+
+
+class LidarBoundaryMapper:
+    def __init__(self, config: SurveyConfig) -> None:
+        self.config = config
+        self.map = LidarSurveyMap()
+        self.classifier = LidarObstacleClassifier(config)
+
+    def update(
+        self,
+        ranges: list[float] | None,
+        robot_x: float,
+        robot_y: float,
+        robot_yaw: float,
+        line_offset_m: float | None,
+        vision_class: str | None,
+    ) -> dict:
+        if not ranges or len(ranges) < 10:
+            return {"hit_count": 0}
+        n = len(ranges)
+        cos_y = math.cos(robot_yaw)
+        sin_y = math.sin(robot_yaw)
+        local_xs: list[float] = []
+        local_ys: list[float] = []
+        hit_count = 0
+        for i in range(0, n, self.config.lidar_subsample):
+            r = ranges[i]
+            if not math.isfinite(r) or r < self.config.min_fence_range_m or r > self.config.max_fence_range_m:
+                continue
+            angle = (i / n) * 2.0 * math.pi - math.pi
+            lx = self.config.lidar_local_x_m + r * math.cos(angle)
+            ly = self.config.lidar_local_y_m + r * math.sin(angle)
+            wx = robot_x + cos_y * lx - sin_y * ly
+            wy = robot_y + sin_y * lx + cos_y * ly
+            local_xs.append(lx)
+            local_ys.append(ly)
+            self.map.raw_points.append((wx, wy))
+            if hit_count % 6 == 0:
+                line_distance = None if line_offset_m is None else max(0.0, abs(ly) - abs(line_offset_m))
+                obj = self.classifier.classify(wx, wy, line_distance, vision_class)
+                if obj.classification == "external_boundary_candidate":
+                    self.map.external_boundary_candidates.append(obj)
+                else:
+                    self.map.internal_obstacles.append(obj)
+            hit_count += 1
+        if not local_xs:
+            return {"hit_count": 0}
+        return {
+            "hit_count": hit_count,
+            "local_extents": {
+                "min_x_m": round(min(local_xs), 3),
+                "max_x_m": round(max(local_xs), 3),
+                "min_y_m": round(min(local_ys), 3),
+                "max_y_m": round(max(local_ys), 3),
+            },
+        }
+
+    def result(self) -> dict:
+        external = self._dedupe(self.map.external_boundary_candidates)
+        internal = self._dedupe(self.map.internal_obstacles)
+        fence_distances = [
+            obj.distance_to_court_line_m
+            for obj in external
+            if obj.distance_to_court_line_m is not None and obj.distance_to_court_line_m > 0.0
+        ]
+        return {
+            "external_boundary_candidates": [self._object_dict(obj) for obj in external],
+            "internal_obstacles": [self._object_dict(obj) for obj in internal],
+            "free_space_between_court_lines_and_fences": {
+                "min_m": round(min(fence_distances), 3) if fence_distances else None,
+                "avg_m": round(sum(fence_distances) / len(fence_distances), 3) if fence_distances else None,
+                "sample_count": len(fence_distances),
+            },
+            "point_cloud_sample": self.map.point_sample(1200),
+            "point_count": len(self.map.raw_points),
+        }
+
+    def _dedupe(self, objects: list[LidarObject], limit: int = 80) -> list[LidarObject]:
+        buckets: dict[tuple[str, int, int], LidarObject] = {}
+        for obj in objects:
+            key = (obj.label, round(obj.x_m * 2), round(obj.y_m * 2))
+            if key not in buckets or obj.confidence > buckets[key].confidence:
+                buckets[key] = obj
+        return list(buckets.values())[-limit:]
+
+    @staticmethod
+    def _object_dict(obj: LidarObject) -> dict:
+        return {
+            "label": obj.label,
+            "classification": obj.classification,
+            "x_m": round(obj.x_m, 3),
+            "y_m": round(obj.y_m, 3),
+            "distance_to_court_line_m": (
+                None if obj.distance_to_court_line_m is None else round(obj.distance_to_court_line_m, 3)
+            ),
+            "confidence": round(obj.confidence, 2),
+        }
+
+
 class CourtSurveyBehavior:
-    """Map Court FSM: first obstacle, left-turn perimeter, right-side net crossing."""
+    """Camera-led outer-court-line survey FSM."""
 
     def __init__(
         self,
@@ -122,38 +288,34 @@ class CourtSurveyBehavior:
         output_path: Path = DEFAULT_BOUNDARY_FILE,
     ) -> None:
         self.config = config or SurveyConfig()
+        self._nav = navigator_from_survey_config(self.config)
         self.output_path = output_path
-        self.state = SurveyState.FIND_FIRST_OBSTACLE
+        self.state = SurveyState.FIND_COURT_LINE
         self.sample_count = 0
         self._started_at: float | None = None
         self._phase_started_at: float | None = None
         self._initialized = False
-        self._map_xs: list[float] = []
-        self._map_ys: list[float] = []
+        self._mapper = LidarBoundaryMapper(self.config)
         self._court_bounds: dict | None = None
+        self._last_vision: SurveyVision | None = None
         self._front_range_m = math.inf
         self._left_range_m: float | None = None
         self._right_range_m: float | None = None
-        self._oak_range_m: float | None = None
-        self._last_vision: SurveyVision | None = None
-        self._oak_brake_active = False
-        self._net_detection_source = "none"
-        self._front_obstacle_kind = "unknown"
-        self._front_obstacle_source = "none"
-        self._first_obstacle_kind: str | None = None
+        self._scan_coverage: dict = {}
         self._last_event = "none"
         self._failure_reason: str | None = None
         self._timed_out = False
         self._loop_closed = False
         self._start_pose: tuple[float, float] | None = None
-        self._first_net_turn_pose: tuple[float, float] | None = None
-        self._loop_reference_pose: tuple[float, float] | None = None
         self._last_pose: tuple[float, float] | None = None
+        self._phase_start_pose: tuple[float, float] | None = None
         self._distance_traveled_m = 0.0
         self._turn_start_yaw: float | None = None
         self._turn_last_yaw: float | None = None
         self._turn_accumulated_rad = 0.0
-        self._gap_start_pose: tuple[float, float] | None = None
+        self._corners: list[dict[str, float]] = []
+        self._current_line_index = 0
+        self._line_lost_count = 0
         self._phase_visit_counts: dict[SurveyState, int] = {}
 
     @classmethod
@@ -174,27 +336,33 @@ class CourtSurveyBehavior:
     def telemetry(self) -> dict:
         elapsed = 0.0 if self._started_at is None else time.time() - self._started_at
         phase_elapsed = 0.0 if self._phase_started_at is None else time.time() - self._phase_started_at
+        mapper = self._mapper.result()
         return {
             "state": self.state.value,
-            "navigation_source": "map_court_sensor_fsm",
+            "navigation_source": "camera_outer_court_line_fsm",
             "sensor_only_navigation": True,
             "mapping_pose_source": "platform_localization_estimate",
+            "path_driver": "camera_court_line",
+            "lidar_role": "obstacle_mapping_and_safety",
             "last_event": self._last_event,
             "failure_reason": self._failure_reason,
             "timed_out": self._timed_out,
-            "front_lidar_range_m": None if math.isinf(self._front_range_m) else self._front_range_m,
+            "front_lidar_range_m": None if math.isinf(self._front_range_m) else round(self._front_range_m, 3),
             "left_lidar_range_m": self._left_range_m,
             "right_lidar_range_m": self._right_range_m,
-            "oak_range_m": self._oak_range_m,
-            "oak_brake_active": self._oak_brake_active,
-            "net_detection_source": self._net_detection_source,
-            "front_obstacle_kind": self._front_obstacle_kind,
-            "front_obstacle_source": self._front_obstacle_source,
-            "first_obstacle_kind": self._first_obstacle_kind,
+            "scan_coverage": self._scan_coverage,
+            "line_detected": self._line_detected(),
+            "line_offset_m": None if self._last_vision is None else self._last_vision.line_offset_m,
+            "line_confidence": 0.0 if self._last_vision is None else self._last_vision.line_confidence,
+            "corner_count": len(self._corners),
+            "detected_corners": self._corners,
+            "external_boundary_candidate_count": len(mapper["external_boundary_candidates"]),
+            "internal_obstacle_count": len(mapper["internal_obstacles"]),
             "loop_closed": self._loop_closed,
             "distance_traveled_m": round(self._distance_traveled_m, 2),
+            "phase_distance_m": round(self._phase_distance_m(), 2),
             "turn_progress_deg": round(math.degrees(self._turn_accumulated_rad), 1),
-            "turn_target_deg": self.config.turn_angle_deg if self.state.name.startswith("TURN_LEFT") else None,
+            "turn_target_deg": self.config.turn_angle_deg if self.state == SurveyState.TURN_AT_CORNER else None,
             "elapsed_s": round(elapsed, 1),
             "phase_elapsed_s": round(phase_elapsed, 1),
             "sample_count": self.sample_count,
@@ -216,244 +384,135 @@ class CourtSurveyBehavior:
             self._phase_started_at = now
             self._start_pose = (x_m, y_m)
             self._last_pose = (x_m, y_m)
-            self._enter(SurveyState.FIND_FIRST_OBSTACLE, "map_court_started", x_m, y_m, yaw_rad)
+            self._enter(SurveyState.FIND_COURT_LINE, "map_court_started", x_m, y_m, yaw_rad)
 
         if self.state == SurveyState.DONE:
-            return self._cmd(BaseCommand(0.0, 0.0), vision)
+            return self._cmd(self._nav.stop(), vision)
 
-        self._update_sensors(lidar_ranges, vision, x_m, y_m, yaw_rad)
         self._update_distance_traveled(x_m, y_m)
+        self._update_sensors(lidar_ranges, vision, x_m, y_m, yaw_rad)
 
         if self._overall_timeout(now):
             self._timed_out = True
-            self._fail("Timed out before Map Court FSM completed")
-            return self._cmd(BaseCommand(0.0, 0.0), vision)
+            self._fail("Timed out before camera-led court survey completed")
+            return self._cmd(self._nav.stop(), vision)
         if self._phase_timeout(now):
             self._fail(f"Phase timeout in {self.state.value}; last_event={self._last_event}")
-            return self._cmd(BaseCommand(0.0, 0.0), vision)
+            return self._cmd(self._nav.stop(), vision)
 
-        command = self._step(x_m, y_m, yaw_rad)
-        return self._cmd(command, vision)
+        return self._cmd(self._apply_safety(self._step(x_m, y_m, yaw_rad)), vision)
 
     def _step(self, x_m: float, y_m: float, yaw_rad: float) -> BaseCommand:
-        cfg = self.config
+        if self.state == SurveyState.FIND_COURT_LINE:
+            if self._line_detected():
+                self._enter(SurveyState.ALIGN_OUTSIDE_LINE, "court_line_detected", x_m, y_m, yaw_rad)
+                return self._nav.stop()
+            return self._nav.turn(self.config.search_turn_speed_rad_s)
 
-        if self.state == SurveyState.FIND_FIRST_OBSTACLE:
-            if self._front_obstacle_ready_for_classification():
-                obstacle_kind = self._classify_front_obstacle()
-                self._first_obstacle_kind = obstacle_kind
-                if obstacle_kind == "net":
-                    self._net_detection_source = self._front_obstacle_source
-                    if self._near_net():
-                        self._first_net_turn_pose = (x_m, y_m)
-                        self._loop_reference_pose = (x_m, y_m)
-                        self._enter(SurveyState.TURN_LEFT_AT_NET, "first_obstacle_net_near", x_m, y_m, yaw_rad)
-                    else:
-                        self._enter(SurveyState.APPROACH_NET, "first_obstacle_net", x_m, y_m, yaw_rad)
-                    return BaseCommand(0.0, 0.0)
-                if obstacle_kind == "fence":
-                    self._loop_reference_pose = (x_m, y_m)
-                    self._enter(SurveyState.TURN_LEFT_AT_FENCE_1, "first_obstacle_fence", x_m, y_m, yaw_rad)
-                    return BaseCommand(0.0, 0.0)
-                self._fail("Unable to classify the first obstacle as net or fence")
-                return BaseCommand(0.0, 0.0)
-            return self._drive_until_first_obstacle()
+        if self.state == SurveyState.ALIGN_OUTSIDE_LINE:
+            if not self._line_detected():
+                self._line_lost_count += 1
+                if self._line_lost_count >= 5:
+                    self._enter(SurveyState.RECOVER_LINE, "line_lost_during_align", x_m, y_m, yaw_rad)
+                    return self._nav.stop()
+                return self._nav.stop()
+            else:
+                self._line_lost_count = 0
+            if self._line_aligned():
+                self._enter(SurveyState.FOLLOW_LINE_WITH_OFFSET, "outside_offset_aligned", x_m, y_m, yaw_rad)
+                return self._nav.stop()
+            return self._line_follow_command(linear_scale=0.35)
 
-        if self.state == SurveyState.APPROACH_NET:
-            if self._front_obstacle_ready_for_classification() and self._classify_front_obstacle() == "fence":
-                self._first_obstacle_kind = "fence"
-                self._loop_reference_pose = (x_m, y_m)
-                self._enter(SurveyState.TURN_LEFT_AT_FENCE_1, "approach_reclassified_as_fence", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            if self._near_net():
-                self._first_net_turn_pose = (x_m, y_m)
-                self._loop_reference_pose = (x_m, y_m)
-                self._enter(SurveyState.TURN_LEFT_AT_NET, "near_net", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            return self._drive_toward_observed_net()
-
-        if self.state == SurveyState.TURN_LEFT_AT_NET:
-            if self._turn_complete(yaw_rad):
-                self._enter(SurveyState.FOLLOW_NET_TO_FENCE, "left_turn_complete", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            return self._left_turn_command()
-
-        if self.state == SurveyState.FOLLOW_NET_TO_FENCE:
-            if self._near_fence():
-                self._enter(SurveyState.TURN_LEFT_AT_FENCE_1, "near_fence", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            return self._drive_parallel_to_boundary()
-
-        if self.state == SurveyState.TURN_LEFT_AT_FENCE_1:
-            if self._turn_complete(yaw_rad):
-                self._enter(SurveyState.FOLLOW_FENCE_TO_NEXT_FENCE, "corner_detected", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            return self._left_turn_command()
-
-        if self.state == SurveyState.FOLLOW_FENCE_TO_NEXT_FENCE:
-            if self._first_obstacle_kind == "fence" and self._loop_reference_reached(x_m, y_m):
-                self._enter(
-                    SurveyState.COMPLETE_AT_FIRST_NET_TURN_REFERENCE,
-                    "loop_closed",
-                    x_m,
-                    y_m,
-                    yaw_rad,
-                )
-                return BaseCommand(0.0, 0.0)
-            if self._near_fence():
-                next_turn = SurveyState.TURN_LEFT_AT_FENCE_1 if self._first_obstacle_kind == "fence" else SurveyState.TURN_LEFT_AT_FENCE_2
-                self._enter(next_turn, "near_fence", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            return self._drive_parallel_to_boundary()
-
-        if self.state == SurveyState.TURN_LEFT_AT_FENCE_2:
-            if self._turn_complete(yaw_rad):
-                self._enter(SurveyState.FOLLOW_FENCE_TO_NET, "corner_detected", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            return self._left_turn_command()
-
-        if self.state == SurveyState.FOLLOW_FENCE_TO_NET:
-            if self._net_detected() and self._phase_elapsed_s() > 2.0:
-                self._enter(SurveyState.CROSS_NET_ON_RIGHT_SIDE, "right_side_net_gap_detected", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            return self._drive_parallel_to_boundary()
-
-        if self.state == SurveyState.CROSS_NET_ON_RIGHT_SIDE:
-            if self._gap_start_pose is None:
-                self._gap_start_pose = (x_m, y_m)
-            if self._distance_from(self._gap_start_pose, x_m, y_m) >= cfg.gap_cross_distance_m:
-                self._enter(SurveyState.FOLLOW_SECOND_HALF_PERIMETER, "gap_crossed", x_m, y_m, yaw_rad)
-                return BaseCommand(0.0, 0.0)
-            return self._drive_gap_centered()
-
-        if self.state == SurveyState.FOLLOW_SECOND_HALF_PERIMETER:
+        if self.state == SurveyState.FOLLOW_LINE_WITH_OFFSET:
+            if not self._line_detected():
+                self._line_lost_count += 1
+                if self._line_lost_count >= 8:
+                    self._enter(SurveyState.RECOVER_LINE, "line_lost", x_m, y_m, yaw_rad)
+                    return self._nav.stop()
+            else:
+                self._line_lost_count = 0
+            if self._corner_seen(x_m, y_m):
+                self._enter(SurveyState.DETECT_CORNER, "court_corner_detected", x_m, y_m, yaw_rad)
+                return self._nav.stop()
             if self._loop_reference_reached(x_m, y_m):
-                self._enter(
-                    SurveyState.COMPLETE_AT_FIRST_NET_TURN_REFERENCE,
-                    "loop_closed",
-                    x_m,
-                    y_m,
-                    yaw_rad,
-                )
-                return BaseCommand(0.0, 0.0)
-            return self._drive_parallel_to_boundary()
+                self._enter(SurveyState.COMPLETE_LOOP, "loop_closed", x_m, y_m, yaw_rad)
+                return self._nav.stop()
+            return self._line_follow_command(linear_scale=1.0)
 
-        if self.state == SurveyState.COMPLETE_AT_FIRST_NET_TURN_REFERENCE:
+        if self.state == SurveyState.DETECT_CORNER:
+            self._record_corner(x_m, y_m)
+            self._enter(SurveyState.TURN_AT_CORNER, "corner_recorded", x_m, y_m, yaw_rad)
+            return self._nav.stop()
+
+        if self.state == SurveyState.TURN_AT_CORNER:
+            if self._turn_complete(yaw_rad):
+                self._current_line_index += 1
+                self._enter(SurveyState.MAP_EXTERNAL_BOUNDARY, "corner_turn_complete", x_m, y_m, yaw_rad)
+                return self._nav.stop()
+            return self._nav.turn(self.config.turn_speed_rad_s)
+
+        if self.state == SurveyState.MAP_EXTERNAL_BOUNDARY:
+            next_state = SurveyState.FOLLOW_LINE_WITH_OFFSET if self._line_detected() else SurveyState.FIND_COURT_LINE
+            self._enter(next_state, "external_boundary_mapped", x_m, y_m, yaw_rad)
+            return self._nav.stop()
+
+        if self.state == SurveyState.RECOVER_LINE:
+            if self._line_detected():
+                self._enter(SurveyState.ALIGN_OUTSIDE_LINE, "line_reacquired", x_m, y_m, yaw_rad)
+                return self._nav.stop()
+            return self._nav.turn(self.config.recovery_turn_speed_rad_s)
+
+        if self.state == SurveyState.COMPLETE_LOOP:
             self._loop_closed = True
+            self._enter(SurveyState.VALIDATE_SURVEY, "full_perimeter_followed", x_m, y_m, yaw_rad)
+            return self._nav.stop()
+
+        if self.state == SurveyState.VALIDATE_SURVEY:
             self._finish()
-            return BaseCommand(0.0, 0.0)
+            return self._nav.stop()
 
-        return BaseCommand(0.0, 0.0)
+        return self._nav.stop()
 
-    def _drive_until_first_obstacle(self) -> BaseCommand:
-        turn = 0.0
-        if self._left_range_m is not None and self._left_range_m < 0.45:
-            turn = -0.25 * self.config.turn_speed_rad_s
-        elif self._right_range_m is not None and self._right_range_m < 0.45:
-            turn = 0.25 * self.config.turn_speed_rad_s
-        return BaseCommand(self.config.drive_speed_m_s, turn)
+    def _line_follow_command(self, linear_scale: float) -> BaseCommand:
+        heading_error = 0.0 if self._last_vision is None or self._last_vision.line_heading_error_rad is None else self._last_vision.line_heading_error_rad
+        offset = self.config.line_offset_m if self._last_vision is None or self._last_vision.line_offset_m is None else self._last_vision.line_offset_m
+        offset_error = offset - self.config.line_offset_m
+        turn = heading_error * self.config.line_heading_gain + offset_error * self.config.line_offset_gain
+        cmd = self._nav.drive(self.config.drive_speed_m_s * linear_scale, turn)
+        return self._nav.clamp_turn(cmd, 0.75 * self.config.turn_speed_rad_s)
 
-    def _left_turn_command(self) -> BaseCommand:
-        return BaseCommand(0.0, self.config.turn_speed_rad_s)
+    def _apply_safety(self, command: BaseCommand) -> BaseCommand:
+        return self._nav.apply_safety(command, self._front_range_m)
 
-    def _drive_toward_observed_net(self) -> BaseCommand:
-        speed = self.config.drive_speed_m_s
-        turn = self._avoidance_turn()
-        return BaseCommand(speed, turn)
+    def _line_detected(self) -> bool:
+        return self._last_vision is not None and self._last_vision.line_detected and self._last_vision.line_confidence >= 0.15
 
-    def _drive_parallel_to_boundary(self) -> BaseCommand:
-        front = self._front_obstacle_range()
-        if front <= self.config.fence_turn_range_m:
-            return BaseCommand(0.0, self.config.turn_speed_rad_s)
-        side = self._right_range_m
-        if side is None:
-            turn = -0.25 * self.config.turn_speed_rad_s
-        else:
-            error = side - self.config.desired_side_clearance_m
-            turn = -error * self.config.side_clearance_gain
-            turn = max(-0.65 * self.config.turn_speed_rad_s, min(0.65 * self.config.turn_speed_rad_s, turn))
-        return BaseCommand(self.config.drive_speed_m_s, turn)
-
-    def _drive_gap_centered(self) -> BaseCommand:
-        left = self._left_range_m
-        right = self._right_range_m
-        turn = 0.0
-        if left is not None and right is not None:
-            turn = max(
-                -0.45 * self.config.turn_speed_rad_s,
-                min(0.45 * self.config.turn_speed_rad_s, (right - left) * 0.5),
-            )
-        return BaseCommand(self.config.corridor_speed_m_s, turn)
-
-    def _avoidance_turn(self) -> float:
-        if self._left_range_m is not None and self._left_range_m < 0.65:
-            return -0.4 * self.config.turn_speed_rad_s
-        if self._right_range_m is not None and self._right_range_m < 0.65:
-            return 0.4 * self.config.turn_speed_rad_s
-        return 0.0
-
-    def _net_detected(self) -> bool:
-        if self.config.net_standoff_m < self._front_range_m <= self.config.net_detect_range_m:
-            self._net_detection_source = "lidar_front"
-            return True
-        if self._oak_range_m is not None and self.config.net_standoff_m < self._oak_range_m <= self.config.net_detect_range_m:
-            self._net_detection_source = "oak_depth"
-            return True
-        self._net_detection_source = "none"
-        return False
-
-    def _front_obstacle_ready_for_classification(self) -> bool:
-        if self._explicit_obstacle_class() in {"net", "fence"}:
-            return self._front_obstacle_range() <= self.config.first_obstacle_classify_range_m
-        if self._front_range_m <= self.config.first_obstacle_classify_range_m:
-            return True
-        if self._oak_range_m is None or self._oak_range_m > self.config.first_obstacle_classify_range_m:
+    def _line_aligned(self) -> bool:
+        if self._last_vision is None:
             return False
-        return self._distance_traveled_m >= self.config.first_obstacle_min_travel_m
+        heading = abs(self._last_vision.line_heading_error_rad or 0.0)
+        offset = self._last_vision.line_offset_m
+        if offset is None:
+            return False
+        return (
+            heading <= math.radians(self.config.line_heading_tolerance_deg)
+            and abs(offset - self.config.line_offset_m) <= self.config.line_offset_tolerance_m
+        )
 
-    def _classify_front_obstacle(self) -> str:
-        explicit = self._explicit_obstacle_class()
-        if explicit in {"net", "fence"}:
-            self._front_obstacle_kind = explicit
-            self._front_obstacle_source = "oak_visual_classifier"
-            return explicit
+    def _corner_seen(self, x_m: float, y_m: float) -> bool:
+        if self._last_vision is None or not self._last_vision.corner_detected:
+            return False
+        if self._last_vision.corner_confidence < 0.35:
+            return False
+        if not self._corners:
+            return True
+        last = self._corners[-1]
+        return math.hypot(x_m - last["x_m"], y_m - last["y_m"]) >= self.config.corner_min_spacing_m
 
-        oak_close = self._oak_range_m is not None and self._oak_range_m <= self.config.first_obstacle_classify_range_m
-        lidar_close = self._front_range_m <= self.config.first_obstacle_classify_range_m
-
-        if oak_close and (not lidar_close or self._front_range_m > (self._oak_range_m or 0.0) + 0.75):
-            self._front_obstacle_kind = "net"
-            self._front_obstacle_source = "oak_depth_no_lidar_front_return"
-            return "net"
-        if lidar_close:
-            self._front_obstacle_kind = "fence"
-            self._front_obstacle_source = "lidar_front"
-            return "fence"
-        if oak_close:
-            self._front_obstacle_kind = "net"
-            self._front_obstacle_source = "oak_depth"
-            return "net"
-
-        self._front_obstacle_kind = "unknown"
-        self._front_obstacle_source = "none"
-        return "unknown"
-
-    def _explicit_obstacle_class(self) -> str | None:
-        if self._last_vision is None or not self._last_vision.obstacle_class:
-            return None
-        return self._last_vision.obstacle_class.strip().lower()
-
-    def _near_net(self) -> bool:
-        return self._front_obstacle_range() <= self.config.net_standoff_m
-
-    def _near_fence(self) -> bool:
-        return self._front_obstacle_range() <= self.config.fence_turn_range_m
-
-    def _front_obstacle_range(self) -> float:
-        candidates = [self._front_range_m]
-        if self._oak_range_m is not None:
-            candidates.append(self._oak_range_m)
-        return min(candidates)
+    def _record_corner(self, x_m: float, y_m: float) -> None:
+        if self._corners and math.hypot(x_m - self._corners[-1]["x_m"], y_m - self._corners[-1]["y_m"]) < 0.25:
+            return
+        self._corners.append({"x_m": round(x_m, 3), "y_m": round(y_m, 3), "index": len(self._corners)})
 
     def _turn_complete(self, yaw_rad: float) -> bool:
         if self._turn_start_yaw is None:
@@ -464,32 +523,26 @@ class CourtSurveyBehavior:
             self._turn_last_yaw = yaw_rad
             return False
         step = abs(_wrap(yaw_rad - self._turn_last_yaw))
-        if step <= math.radians(20.0):
+        if step <= math.radians(25.0):
             self._turn_accumulated_rad += step
         self._turn_last_yaw = yaw_rad
-        target = math.radians(max(0.0, self.config.turn_angle_deg - 1.0))
-        return self._turn_accumulated_rad >= target
+        return self._turn_accumulated_rad >= math.radians(max(0.0, self.config.turn_angle_deg - 1.0))
 
     def _loop_reference_reached(self, x_m: float, y_m: float) -> bool:
-        reference = self._loop_reference_pose or self._first_net_turn_pose
-        if reference is None:
+        if self._start_pose is None or len(self._corners) < 4:
             return False
-        if self._distance_traveled_m < _MIN_LOOP_DISTANCE_M:
+        if self._distance_traveled_m < self.config.min_loop_distance_m:
             return False
-        return self._distance_from(reference, x_m, y_m) <= _LOOP_CLOSURE_RADIUS_M
+        return math.hypot(x_m - self._start_pose[0], y_m - self._start_pose[1]) <= self.config.loop_closure_radius_m
 
-    def _enter(
-        self,
-        state: SurveyState,
-        event: str,
-        x_m: float,
-        y_m: float,
-        yaw_rad: float,
-    ) -> None:
+    def _enter(self, state: SurveyState, event: str, x_m: float, y_m: float, yaw_rad: float) -> None:
         self.state = state
         self._last_event = event
         self._phase_started_at = time.time()
-        if state.name.startswith("TURN_LEFT"):
+        self._phase_start_pose = (x_m, y_m)
+        if state in {SurveyState.ALIGN_OUTSIDE_LINE, SurveyState.FOLLOW_LINE_WITH_OFFSET, SurveyState.RECOVER_LINE}:
+            self._line_lost_count = 0
+        if state == SurveyState.TURN_AT_CORNER:
             self._turn_start_yaw = yaw_rad
             self._turn_last_yaw = yaw_rad
             self._turn_accumulated_rad = 0.0
@@ -497,7 +550,6 @@ class CourtSurveyBehavior:
             self._turn_start_yaw = None
             self._turn_last_yaw = None
             self._turn_accumulated_rad = 0.0
-        self._gap_start_pose = (x_m, y_m) if state == SurveyState.CROSS_NET_ON_RIGHT_SIDE else None
         self._phase_visit_counts[state] = self._phase_visit_counts.get(state, 0) + 1
         print(f"survey: {event} -> {state.value}")
 
@@ -510,13 +562,15 @@ class CourtSurveyBehavior:
         self._finish()
 
     def _overall_timeout(self, now: float) -> bool:
-        return self._started_at is not None and now - self._started_at > _TIMEOUT_S
+        return self._started_at is not None and now - self._started_at > self.config.total_timeout_s
 
     def _phase_timeout(self, now: float) -> bool:
         return self._phase_started_at is not None and now - self._phase_started_at > self.config.phase_timeout_s
 
-    def _phase_elapsed_s(self) -> float:
-        return 0.0 if self._phase_started_at is None else time.time() - self._phase_started_at
+    def _phase_distance_m(self) -> float:
+        if self._phase_start_pose is None or self._last_pose is None:
+            return 0.0
+        return math.hypot(self._last_pose[0] - self._phase_start_pose[0], self._last_pose[1] - self._phase_start_pose[1])
 
     def _update_sensors(
         self,
@@ -527,13 +581,19 @@ class CourtSurveyBehavior:
         yaw_rad: float,
     ) -> None:
         self._last_vision = vision
-        self._oak_range_m = None if vision is None else vision.center_m
-        self._oak_brake_active = self._oak_range_m is not None and self._oak_range_m <= self.config.net_standoff_m
         if lidar_ranges:
-            self._accumulate(lidar_ranges, x_m, y_m, yaw_rad)
             self._front_range_m = self._sector_percentile(lidar_ranges, 0.50, 1 / 8)
             self._right_range_m = self._nullable_sector(lidar_ranges, 0.25, 1 / 10)
             self._left_range_m = self._nullable_sector(lidar_ranges, 0.75, 1 / 10)
+            self._scan_coverage = self._mapper.update(
+                lidar_ranges,
+                x_m,
+                y_m,
+                yaw_rad,
+                None if vision is None else vision.line_offset_m,
+                None if vision is None else vision.obstacle_class,
+            )
+            self.sample_count += 1
 
     def _nullable_sector(self, ranges: list[float], center_ratio: float, half_width_ratio: float) -> float | None:
         value = self._sector_percentile(ranges, center_ratio, half_width_ratio)
@@ -545,135 +605,89 @@ class CourtSurveyBehavior:
             return math.inf
         center = int(n * center_ratio)
         half = max(1, int(n * half_width_ratio))
-        lo = max(0, center - half)
-        hi = min(n, center + half)
-        vals = [
-            ranges[i]
-            for i in range(lo, hi)
-            if math.isfinite(ranges[i]) and self.config.min_fence_range_m < ranges[i] < self.config.max_fence_range_m
-        ]
+        vals: list[float] = []
+        for offset in range(-half, half + 1):
+            value = ranges[(center + offset) % n]
+            if math.isfinite(value) and self.config.min_fence_range_m < value < self.config.max_fence_range_m:
+                vals.append(value)
         if not vals:
             return math.inf
         vals.sort()
         return vals[max(0, int(len(vals) * 0.30) - 1)]
 
-    def _accumulate(
-        self,
-        ranges: list[float],
-        robot_x: float,
-        robot_y: float,
-        robot_yaw: float,
-    ) -> None:
-        n = len(ranges)
-        if n < 10:
-            return
-        cos_y = math.cos(robot_yaw)
-        sin_y = math.sin(robot_yaw)
-        added = 0
-        for i in range(0, n, _SUBSAMPLE):
-            r = ranges[i]
-            if not math.isfinite(r) or r < self.config.min_fence_range_m or r > self.config.max_fence_range_m:
-                continue
-            angle = (i / n) * 2.0 * math.pi - math.pi
-            lx = _LIDAR_LOCAL_X + r * math.cos(angle)
-            ly = _LIDAR_LOCAL_Y + r * math.sin(angle)
-            self._map_xs.append(robot_x + cos_y * lx - sin_y * ly)
-            self._map_ys.append(robot_y + sin_y * lx + cos_y * ly)
-            added += 1
-        if added:
-            self.sample_count += 1
-
     def _update_distance_traveled(self, x_m: float, y_m: float) -> None:
         if self._last_pose is None:
             self._last_pose = (x_m, y_m)
             return
-        step = self._distance_from(self._last_pose, x_m, y_m)
+        step = math.hypot(x_m - self._last_pose[0], y_m - self._last_pose[1])
         if 0.001 <= step <= 1.0:
             self._distance_traveled_m += step
         self._last_pose = (x_m, y_m)
 
-    @staticmethod
-    def _distance_from(pose: tuple[float, float], x_m: float, y_m: float) -> float:
-        return math.hypot(x_m - pose[0], y_m - pose[1])
-
     def _finalize(self) -> None:
-        n = len(self._map_xs)
         elapsed = 0.0 if self._started_at is None else time.time() - self._started_at
         now = time.time()
-
-        if n >= _MIN_POINTS:
-            xs = sorted(self._map_xs)
-            ys = sorted(self._map_ys)
-            west_x = round(xs[int(n * 0.05)], 3)
-            east_x = round(xs[int(n * 0.95)], 3)
-            south_y = round(ys[int(n * 0.05)], 3)
-            north_y = round(ys[int(n * 0.95)], 3)
-            length_m = round(east_x - west_x, 3)
-            width_m = round(north_y - south_y, 3)
-            dimension_ok = length_m >= _MIN_COURT_LENGTH_M and width_m >= _MIN_COURT_WIDTH_M
-            if self._failure_reason:
-                status = "FAILED"
-                failure_reason = self._failure_reason
-            elif not self._loop_closed:
-                status = "FAILED"
-                failure_reason = "Map Court FSM did not close the required loop"
-            elif not dimension_ok:
-                status = "FAILED"
-                failure_reason = f"Measured boundary extents too small for a tennis court: {length_m:.2f} x {width_m:.2f} m"
-            else:
-                status = "SUCCESS"
-                failure_reason = None
-        else:
-            west_x = east_x = south_y = north_y = None
-            length_m = width_m = None
+        geometry = self._court_geometry_from_corners()
+        mapper = self._mapper.result()
+        dimension_ok = (
+            geometry["length_m"] is not None
+            and geometry["width_m"] is not None
+            and geometry["length_m"] >= 0.75 * self.config.expected_court_length_m
+            and geometry["width_m"] >= 0.75 * self.config.expected_court_width_m
+        )
+        if self._failure_reason:
             status = "FAILED"
-            failure_reason = self._failure_reason or (
-                f"Insufficient LiDAR coverage: {n} points accumulated (minimum {_MIN_POINTS} required)"
-            )
+            failure_reason = self._failure_reason
+        elif not self._loop_closed:
+            status = "FAILED"
+            failure_reason = "Survey did not close the outer court-line loop"
+        elif len(self._corners) < 4:
+            status = "FAILED"
+            failure_reason = f"Only {len(self._corners)} court corners detected"
+        elif not dimension_ok:
+            status = "PARTIAL"
+            failure_reason = "Court dimensions are low-confidence; reporting measured loop"
+        else:
+            status = "SUCCESS"
+            failure_reason = None
 
         bounds: dict = {
             "mapped_at": now,
             "status": status,
             "failure_reason": failure_reason,
             "timed_out": self._timed_out,
-            "court_geometry": {
-                "length_m": length_m,
-                "width_m": width_m,
-                "orientation_deg": None,
+            "court_geometry": geometry,
+            "detected_court_corners": self._corners,
+            "external_boundary_map": {
+                "candidates": mapper["external_boundary_candidates"],
+                "point_count": mapper["point_count"],
             },
-            "fence_geometry": {
-                "west_x": west_x,
-                "east_x": east_x,
-                "south_y": south_y,
-                "north_y": north_y,
-                "clearance": {
-                    "west_m": None,
-                    "east_m": None,
-                    "south_m": None,
-                    "north_m": None,
-                },
-            },
-            "obstacles": {
-                "count": 0,
-            },
-            "accessibility": {
-                "perimeter_complete": status == "SUCCESS",
-                "traversable_area_sqm": round(length_m * width_m, 1) if length_m is not None else None,
-            },
-            "navigation": {
-                "source": "map_court_sensor_fsm",
-                "sensor_only": True,
-                "mapping_pose_source": "platform_localization_estimate",
+            "free_space_between_court_lines_and_fences": mapper["free_space_between_court_lines_and_fences"],
+            "internal_objects": mapper["internal_obstacles"],
+            "diagnostics": {
+                "confidence": self._confidence(status, geometry, mapper),
+                "path_driver": "camera_court_line",
+                "lidar_role": "obstacle_mapping_and_safety",
+                "net_policy": "net is internal and ignored for perimeter completion",
                 "final_state": self.state.value,
                 "last_event": self._last_event,
                 "loop_closed": self._loop_closed,
                 "distance_traveled_m": round(self._distance_traveled_m, 2),
                 "elapsed_s": round(elapsed, 1),
+                "sample_count": self.sample_count,
             },
+            "navigation": {
+                "source": "camera_outer_court_line_fsm",
+                "sensor_only": True,
+                "mapping_pose_source": "platform_localization_estimate",
+                "final_state": self.state.value,
+                "loop_closed": self._loop_closed,
+            },
+            "point_cloud_sample": mapper["point_cloud_sample"],
             "surveyed_at": now,
             "survey_complete": status == "SUCCESS",
             "sample_count": self.sample_count,
-            "point_count": n,
+            "point_count": mapper["point_count"],
         }
         self._attach_active_session(bounds)
         self._court_bounds = bounds
@@ -683,10 +697,48 @@ class CourtSurveyBehavior:
             json.dump(bounds, f, indent=2)
             f.write("\n")
         tmp.replace(self.output_path)
+        print(f"map court: {status} in {elapsed:.1f}s -> {self.output_path}")
+
+    def _court_geometry_from_corners(self) -> dict:
+        if len(self._corners) < 4:
+            return {
+                "length_m": None,
+                "width_m": None,
+                "orientation_deg": None,
+                "method": "insufficient_corners",
+            }
+        pts = [(corner["x_m"], corner["y_m"]) for corner in self._corners[:4]]
+        sides = [
+            math.hypot(pts[(i + 1) % 4][0] - pts[i][0], pts[(i + 1) % 4][1] - pts[i][1])
+            for i in range(4)
+        ]
+        pair_a = (sides[0] + sides[2]) * 0.5
+        pair_b = (sides[1] + sides[3]) * 0.5
+        length = max(pair_a, pair_b)
+        width = min(pair_a, pair_b)
+        dx = pts[1][0] - pts[0][0]
+        dy = pts[1][1] - pts[0][1]
+        return {
+            "length_m": round(length, 3),
+            "width_m": round(width, 3),
+            "orientation_deg": round(math.degrees(math.atan2(dy, dx)), 2),
+            "method": "camera_detected_outer_line_corners",
+            "expected_tennis_length_m": self.config.expected_court_length_m,
+            "expected_tennis_width_m": self.config.expected_court_width_m,
+        }
+
+    def _confidence(self, status: str, geometry: dict, mapper: dict) -> float:
+        score = 0.25
+        if self._loop_closed:
+            score += 0.25
+        score += min(0.2, len(self._corners) * 0.05)
+        if geometry["length_m"] is not None and geometry["width_m"] is not None:
+            score += 0.15
+        if mapper["external_boundary_candidates"]:
+            score += 0.1
         if status == "SUCCESS":
-            print(f"map court: complete in {elapsed:.1f}s {self.sample_count} frames, {n} pts -> {self.output_path}")
-        else:
-            print(f"map court: FAILED in {elapsed:.1f}s {n} pts {failure_reason} -> {self.output_path}")
+            score += 0.05
+        return round(min(1.0, score), 2)
 
     def _attach_active_session(self, bounds: dict) -> None:
         try:

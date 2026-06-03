@@ -1,103 +1,155 @@
 #!/usr/bin/env python3
-"""Exercise the runtime-agnostic court survey behavior."""
+"""Exercise the runtime-agnostic camera-led court survey behavior."""
 
 from __future__ import annotations
 
+import json
+import math
 import sys
 import tempfile
-import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "controllers" / "ball_detector"))
 
-from survey import CourtSurveyBehavior, SurveyConfig, SurveyState, SurveyVision  # noqa: E402
+from survey import (  # noqa: E402
+    CourtSurveyBehavior,
+    LidarObstacleClassifier,
+    SurveyConfig,
+    SurveyState,
+    SurveyVision,
+)
+
+
+def line(offset: float = 0.50, heading_deg: float = 0.0, corner: bool = False) -> SurveyVision:
+    return SurveyVision(
+        line_detected=True,
+        line_offset_m=offset,
+        line_heading_error_rad=math.radians(heading_deg),
+        line_confidence=0.88,
+        corner_detected=corner,
+        corner_confidence=0.9 if corner else 0.0,
+    )
+
+
+def ranges_with_front_object(count: int = 180, distance_m: float = 0.50) -> list[float]:
+    ranges = [math.inf] * count
+    for i in range(78, 103):
+        ranges[i] = distance_m
+    return ranges
+
+
+def ranges_with_side_fence(count: int = 180, distance_m: float = 2.2) -> list[float]:
+    ranges = [math.inf] * count
+    for i in range(42, 49):
+        ranges[i] = distance_m
+    return ranges
+
+
+def advance_corner(
+    behavior: CourtSurveyBehavior,
+    x_m: float,
+    y_m: float,
+    start_yaw_deg: int,
+    output_ranges: list[float],
+) -> None:
+    command = behavior.update(x_m, y_m, math.radians(start_yaw_deg), output_ranges, 0.032, line(corner=True))
+    assert command.state == SurveyState.DETECT_CORNER
+    command = behavior.update(x_m, y_m, math.radians(start_yaw_deg), output_ranges, 0.032, line(corner=True))
+    assert command.state == SurveyState.TURN_AT_CORNER
+    command = None
+    for yaw_deg in range(start_yaw_deg + 15, start_yaw_deg + 105, 15):
+        command = behavior.update(x_m, y_m, math.radians(yaw_deg), output_ranges, 0.032, line())
+    assert command is not None
+    assert command.state == SurveyState.MAP_EXTERNAL_BOUNDARY
+    command = behavior.update(x_m, y_m, math.radians(start_yaw_deg + 90), output_ranges, 0.032, line())
+    assert command.state == SurveyState.FOLLOW_LINE_WITH_OFFSET
 
 
 def main() -> None:
     output_path = Path(tempfile.gettempdir()) / "tennis_robot_survey_smoke.json"
     output_path.unlink(missing_ok=True)
-    behavior = CourtSurveyBehavior(
-        SurveyConfig(
-            drive_speed_m_s=0.8,
-            turn_speed_rad_s=1.0,
-        ),
-        output_path,
-    )
-
+    cfg = SurveyConfig(drive_speed_m_s=0.8, turn_speed_rad_s=1.0)
+    behavior = CourtSurveyBehavior(cfg, output_path)
     open_ranges = [math.inf] * 180
-    command = behavior.update(-8.0, 0.0, 0.0, open_ranges, 0.032, None)
-    assert command.state == SurveyState.FIND_FIRST_OBSTACLE
+
+    command = behavior.update(0.0, 0.0, 0.0, open_ranges, 0.032, None)
+    assert command.state == SurveyState.FIND_COURT_LINE
+    assert command.base.angular_speed_rad_s > 0.0
+
+    command = behavior.update(0.0, 0.0, 0.0, open_ranges, 0.032, line(offset=0.80, heading_deg=14.0))
+    assert command.state == SurveyState.ALIGN_OUTSIDE_LINE
+    assert behavior.telemetry()["path_driver"] == "camera_court_line"
+
+    command = behavior.update(0.0, 0.0, 0.0, open_ranges, 0.032, line())
+    assert command.state == SurveyState.FOLLOW_LINE_WITH_OFFSET
+    assert command.base.linear_speed_m_s == 0.0
+
+    command = behavior.update(0.4, 0.0, 0.0, ranges_with_front_object(180, 0.55), 0.032, line())
+    assert command.state == SurveyState.FOLLOW_LINE_WITH_OFFSET
     assert command.base.linear_speed_m_s > 0.0
 
-    ranges = [math.inf] * 180
-    command = behavior.update(-8.0, 0.0, 0.0, ranges, 0.032, SurveyVision(center_m=1.2))
-    assert command.state == SurveyState.FIND_FIRST_OBSTACLE
-    assert command.base.linear_speed_m_s > 0.0
-
-    behavior.update(-7.4, 0.0, 0.0, ranges, 0.032, SurveyVision(center_m=1.2))
-    command = behavior.update(-6.8, 0.0, 0.0, ranges, 0.032, SurveyVision(center_m=1.2))
-    assert command.state == SurveyState.APPROACH_NET
-    assert behavior.current_target() is None
-    assert behavior.telemetry()["sensor_only_navigation"] is True
-    assert behavior.telemetry()["last_event"] == "first_obstacle_net"
-    assert behavior.telemetry()["first_obstacle_kind"] == "net"
-
-    fence_behavior = CourtSurveyBehavior(
-        SurveyConfig(
-            drive_speed_m_s=0.8,
-            turn_speed_rad_s=1.0,
+    command = behavior.update(
+        0.8,
+        0.0,
+        0.0,
+        ranges_with_front_object(180, 0.55),
+        0.032,
+        SurveyVision(
+            obstacle_class="net",
+            line_detected=True,
+            line_offset_m=0.50,
+            line_heading_error_rad=0.0,
+            line_confidence=0.9,
         ),
-        output_path,
     )
-    fence_ranges = [math.inf] * 180
-    for i in range(78, 102):
-        fence_ranges[i] = 0.9
-    command = fence_behavior.update(-8.0, 0.0, 0.0, fence_ranges, 0.032, None)
-    assert command.state == SurveyState.TURN_LEFT_AT_FENCE_1
-    assert fence_behavior.telemetry()["last_event"] == "first_obstacle_fence"
-    assert fence_behavior.telemetry()["first_obstacle_kind"] == "fence"
+    assert command.state == SurveyState.FOLLOW_LINE_WITH_OFFSET
+    assert behavior.telemetry()["last_event"] != "near_net"
 
-    turn_behavior = CourtSurveyBehavior(
-        SurveyConfig(
-            drive_speed_m_s=0.8,
-            turn_speed_rad_s=1.0,
-        ),
-        output_path,
-    )
-    turn_behavior.update(-8.0, 0.0, 0.0, ranges, 0.032, SurveyVision(center_m=1.2, obstacle_class="net"))
-    turn_behavior.update(-7.4, 0.0, 0.0, ranges, 0.032, SurveyVision(center_m=1.2, obstacle_class="net"))
-    turn_behavior.update(-6.8, 0.0, 0.0, ranges, 0.032, SurveyVision(center_m=0.4, obstacle_class="net"))
-    assert turn_behavior.state == SurveyState.TURN_LEFT_AT_NET
-    command = None
-    for yaw_deg in range(10, 100, 10):
-        command = turn_behavior.update(
-            -6.8,
-            0.0,
-            math.radians(yaw_deg),
-            ranges,
-            0.032,
-            SurveyVision(center_m=0.4, obstacle_class="net"),
-        )
-    assert command is not None
-    assert command.state == SurveyState.FOLLOW_NET_TO_FENCE
-    assert turn_behavior.telemetry()["last_event"] == "left_turn_complete"
+    classifier = LidarObstacleClassifier(cfg)
+    net = classifier.classify(0.0, 0.0, 0.2, "net")
+    fence = classifier.classify(0.0, 3.0, 2.5, "fence")
+    assert net.classification == "internal_obstacle"
+    assert net.label == "net"
+    assert fence.classification == "external_boundary_candidate"
 
-    behavior._failure_reason = "smoke forced finish"
-    behavior._finish()
-    command = behavior.update(-8.0, 0.0, 0.0, ranges, 0.032, SurveyVision(center_m=2.0))
+    behavior.update(1.2, 0.0, 0.0, ranges_with_side_fence(), 0.032, SurveyVision(
+        obstacle_class="fence",
+        line_detected=True,
+        line_offset_m=0.50,
+        line_heading_error_rad=0.0,
+        line_confidence=0.9,
+    ))
+    telemetry = behavior.telemetry()
+    assert telemetry["external_boundary_candidate_count"] > 0
+    assert telemetry["internal_obstacle_count"] > 0
 
+    advance_corner(behavior, 23.77, 0.0, 0, open_ranges)
+    advance_corner(behavior, 23.77, 10.97, 90, open_ranges)
+    advance_corner(behavior, 0.0, 10.97, 180, open_ranges)
+    advance_corner(behavior, 0.0, 0.0, 270, open_ranges)
+
+    behavior._distance_traveled_m = 70.0
+    command = behavior.update(0.2, 0.1, math.radians(360), open_ranges, 0.032, line())
+    assert command.state == SurveyState.COMPLETE_LOOP
+    command = behavior.update(0.2, 0.1, math.radians(360), open_ranges, 0.032, line())
+    assert command.state == SurveyState.VALIDATE_SURVEY
+    command = behavior.update(0.2, 0.1, math.radians(360), open_ranges, 0.032, line())
     assert command.state == SurveyState.DONE
+
     assert output_path.exists()
-    import json
     data = json.loads(output_path.read_text(encoding="utf-8"))
-    assert "status" in data                  # Court Knowledge Model status field
-    assert "court_geometry" in data          # structured output present
-    assert "fence_geometry" in data
-    assert "survey_complete" in data
-    assert data["navigation"]["source"] == "map_court_sensor_fsm"
+    assert data["navigation"]["source"] == "camera_outer_court_line_fsm"
+    assert data["diagnostics"]["path_driver"] == "camera_court_line"
+    assert data["diagnostics"]["net_policy"] == "net is internal and ignored for perimeter completion"
+    assert data["court_geometry"]["length_m"] >= 23.0
+    assert data["court_geometry"]["width_m"] >= 10.0
+    assert len(data["detected_court_corners"]) == 4
+    assert data["external_boundary_map"]["candidates"]
+    assert any(obj["label"] == "net" for obj in data["internal_objects"])
+    assert "free_space_between_court_lines_and_fences" in data
     output_path.unlink(missing_ok=True)
-    print("map court behavior smoke ok: sensor-only survey -> court knowledge model -> done")
+    print("map court behavior smoke ok: camera line survey -> boundary/internal mapping -> done")
 
 
 if __name__ == "__main__":
