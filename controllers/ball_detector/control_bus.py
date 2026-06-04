@@ -10,7 +10,16 @@ from pathlib import Path
 from typing import Any
 
 
-SUPPORTED_MODES = {"idle", "map_court", "map_left_side"}
+SUPPORTED_MODES = {
+    "idle",
+    "collect",
+    "collect_one",
+    "collect_pattern",
+    "search",
+    "scan_side",
+    "map_court",
+    "map_left_side",
+}
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMMAND_FILE = PROJECT_ROOT / "runtime" / "robot_command.json"
 DEFAULT_COMMAND_HISTORY_FILE = PROJECT_ROOT / "runtime" / "robot_command_history.jsonl"
@@ -54,7 +63,7 @@ class RobotCommandStore:
 
     def read(self) -> RobotControlCommand:
         try:
-            with self.path.open("r", encoding="utf-8") as handle:
+            with self.path.open("r", encoding="utf-8-sig") as handle:
                 data = json.load(handle)
         except FileNotFoundError:
             return RobotControlCommand()
@@ -121,7 +130,7 @@ class RobotStatusStore:
 
     def read(self) -> dict[str, Any]:
         try:
-            with self.path.open("r", encoding="utf-8") as handle:
+            with self.path.open("r", encoding="utf-8-sig") as handle:
                 data = json.load(handle)
         except FileNotFoundError:
             return {"connected": False}

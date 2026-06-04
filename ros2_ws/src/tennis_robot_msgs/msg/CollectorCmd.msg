@@ -1,0 +1,2 @@
+float32 lift_wheel_speed
+bool intake_enabled

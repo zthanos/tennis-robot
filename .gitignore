@@ -1,5 +1,7 @@
 .venv/
+.venv-win/
 .uv-cache/
+.uv-cache-win/
 *.wbproj
 __pycache__/
 *.py[cod]

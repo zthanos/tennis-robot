@@ -6,7 +6,14 @@ param(
   [switch]$RestartControlPanel,
   [switch]$NoWebots,
   [switch]$RestartWebots,
-  [switch]$NoStopExisting
+  [switch]$NoStopExisting,
+  # ROS 2 mode: runs the full stack (Webots + behavior nodes) inside Docker
+  # instead of local Webots. The control panel still runs locally; the shared
+  # runtime/ volume keeps it connected to the Docker stack.
+  # Webots noVNC is at http://localhost:6082/vnc.html when this flag is set.
+  [switch]$Ros2,
+  # Rebuild Docker images before starting (implies -Ros2).
+  [switch]$Ros2Build
 )
 
 $ErrorActionPreference = "Stop"
@@ -223,6 +230,96 @@ function Stop-PreviousLocalRun {
 
 Push-Location $root
 try {
+  # ── ROS 2 Docker mode ────────────────────────────────────────────────────────
+  # Runs the complete ROS 2 stack in Docker: Webots (webots_bridge controller)
+  # + behavior nodes. The local control panel still runs on Windows and talks
+  # to the Docker stack via the shared runtime/ volume mount.
+  if ($Ros2 -or $Ros2Build) {
+    if (-not $NoStopExisting) {
+      Stop-PreviousLocalRun
+    }
+
+    $env:ROBOT_COMMAND_FILE = $commandFile
+    $env:ROBOT_STATUS_FILE  = $statusFile
+    $env:ROBOT_SENSOR_FILE  = $sensorFile
+
+    $dockerArgs = @("compose", "--profile", "ros2", "up", "-d")
+    if ($Ros2Build) { $dockerArgs += "--build" }
+    $dockerArgs += @("webots-ros2", "ros2-nodes")
+
+    Write-Host "Starting ROS 2 Docker stack (webots-ros2 + ros2-nodes)..."
+    & docker @dockerArgs
+    if ($LASTEXITCODE -ne 0) {
+      throw "docker compose failed (exit $LASTEXITCODE). Run 'docker compose --profile ros2 logs' to diagnose."
+    }
+
+    if (-not $NoControlPanel) {
+      $uvCommand = Get-Command uv.exe -ErrorAction SilentlyContinue
+      if (-not $uvCommand) { $uvCommand = Get-Command uv -ErrorAction SilentlyContinue }
+      $controlPython = Resolve-ControlPanelPython -VenvPython $venvPython -UvCommand $uvCommand
+      $controlUrl = "http://127.0.0.1:$ControlPort"
+
+      $existing = Get-NetTCPConnection -LocalPort $ControlPort -State Listen -ErrorAction SilentlyContinue
+      if ($existing -and $RestartControlPanel) {
+        $existing | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object {
+          Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+        }
+        Start-Sleep -Seconds 1
+        $existing = Get-NetTCPConnection -LocalPort $ControlPort -State Listen -ErrorAction SilentlyContinue
+      }
+
+      if ($existing) {
+        Write-Host "Control panel port $ControlPort already in use; using existing listener."
+      } else {
+        if ($controlPython) {
+          $controlPanelCommand = "`"$controlPython`" scripts/control_panel.py --host 127.0.0.1 --port $ControlPort --command-file `"$commandFile`" --status-file `"$statusFile`""
+        } else {
+          $controlPanelCommand = "uv run python scripts/control_panel.py --host 127.0.0.1 --port $ControlPort --command-file `"$commandFile`" --status-file `"$statusFile`""
+        }
+        $controlLauncherBody = @"
+@echo off
+cd /d "$root"
+set "UV_CACHE_DIR=$uvCacheDir"
+set "ROBOT_COMMAND_FILE=$commandFile"
+set "ROBOT_STATUS_FILE=$statusFile"
+set "ROBOT_SENSOR_FILE=$sensorFile"
+$controlPanelCommand > "$controlOut" 2> "$controlErr"
+"@
+        Set-Content -Path $controlLauncher -Value $controlLauncherBody -Encoding ASCII
+        Write-Host "Starting control panel on $controlUrl ..."
+        $controlProcess = Start-Process -FilePath "cmd.exe" `
+          -ArgumentList @("/k", "call `"$controlLauncher`"") `
+          -WorkingDirectory $root -WindowStyle Hidden -PassThru
+        Set-Content -Path $controlPidFile -Value $controlProcess.Id -Encoding ASCII
+      }
+
+      Write-Host "Waiting for control UI..."
+      if (Wait-ControlPanel -Url $controlUrl -TimeoutSeconds 25) {
+        Write-Host "Remote control UI is ready: $controlUrl"
+        if (-not $NoOpenControlPanel) { Start-Process $controlUrl | Out-Null }
+      } else {
+        Write-Warning "Control UI did not answer yet. Logs: $controlOut / $controlErr"
+      }
+    }
+
+    Write-Host ""
+    Write-Host "ROS 2 stack running in Docker"
+    Write-Host "  Webots noVNC:  http://localhost:6082/vnc.html"
+    if (-not $NoControlPanel) {
+      Write-Host "  Control UI:    http://127.0.0.1:$ControlPort"
+    }
+    Write-Host "  Command file:  $commandFile"
+    Write-Host ""
+    Write-Host "Useful commands:"
+    Write-Host "  docker compose --profile ros2 logs -f webots-ros2"
+    Write-Host "  docker compose --profile ros2 logs -f ros2-nodes"
+    Write-Host "  docker compose --profile ros2 down"
+    Write-Host ""
+    Write-Host "NOTE: world controller must be 'webots_bridge' in worlds/tennis_court.wbt line 4653."
+    return
+  }
+
+  # ── Legacy local-Webots path (default) ──────────────────────────────────────
   if (-not $NoStopExisting) {
     Stop-PreviousLocalRun
   }
@@ -381,6 +478,10 @@ $controlPanelCommand > "$controlOut" 2> "$controlErr"
   Write-Host ""
   Write-Host "Verify vision after pressing Play in Webots:"
   Write-Host "  Get-Content '$statusFile' | Select-String vision_enabled"
+  Write-Host ""
+  Write-Host "To run the ROS 2 Docker stack instead:"
+  Write-Host "  .\scripts\start_local_webots_control.ps1 -Ros2         # requires controller 'webots_bridge'"
+  Write-Host "  .\scripts\start_local_webots_control.ps1 -Ros2Build    # same + rebuild images"
 }
 finally {
   Pop-Location

@@ -1,0 +1,68 @@
+# Webots + ROS 2 Humble combined image.
+# Use this instead of Dockerfile.webots to run webots_bridge.py as the
+# robot controller, publishing sensor data on ROS 2 topics.
+FROM cyberbotics/webots:R2025a-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:99
+ENV QT_X11_NO_MITSHM=1
+ENV UV_SYSTEM_PYTHON=1
+
+WORKDIR /workspace
+
+# System deps + noVNC (same as Dockerfile.webots)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        fluxbox \
+        gnupg2 \
+        libxcb-cursor0 \
+        lsb-release \
+        mesa-utils \
+        novnc \
+        python3-pip \
+        websockify \
+        x11vnc \
+        xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+# ROS 2 Humble base (Ubuntu 22.04 is Jammy — fully compatible)
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+        http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
+        > /etc/apt/sources.list.d/ros2.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ros-humble-ros-base \
+        ros-humble-rmw-cyclonedds-cpp \
+        python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python packages for controller logic
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+COPY pyproject.toml ./
+RUN uv pip install \
+    numpy \
+    opentelemetry-api \
+    opentelemetry-exporter-otlp-proto-http \
+    opentelemetry-sdk \
+    opencv-python-headless
+
+# Build our ROS 2 messages package so webots_bridge.py can import them
+COPY ros2_ws/src/tennis_robot_msgs /ros2_ws/src/tennis_robot_msgs
+RUN . /opt/ros/humble/setup.sh \
+    && cd /ros2_ws \
+    && colcon build --packages-select tennis_robot_msgs
+
+ENV ROS_SETUP=/ros2_ws/install/setup.sh
+
+COPY docker/webots/start-webots.sh /usr/local/bin/start-webots
+COPY docker/webots/start-webots-wslg.sh /usr/local/bin/start-webots-wslg
+RUN chmod +x /usr/local/bin/start-webots /usr/local/bin/start-webots-wslg
+
+EXPOSE 5900 6080
+
+CMD ["bash", "-c", ". /opt/ros/humble/setup.sh && . ${ROS_SETUP} && start-webots"]

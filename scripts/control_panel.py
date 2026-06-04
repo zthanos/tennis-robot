@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "controllers" / "ball_detector"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from control_bus import RobotCommandStore, RobotSensorStore, RobotStatusStore, SUPPORTED_MODES  # noqa: E402
+from control_bus import RobotCommandStore, RobotSensorStore, RobotStatusStore  # noqa: E402
 from db_store import TennisRobotDB  # noqa: E402
 
 try:
@@ -510,8 +510,12 @@ HTML = """<!doctype html>
           <div class="panel">
             <h3>Mode Command</h3>
             <form id="commandForm" class="controls">
+              <button class="command" type="submit" name="mode" value="collect_pattern">Collect</button>
+              <button class="command" type="submit" name="mode" value="collect_one">Collect One</button>
+              <button class="command" type="submit" name="mode" value="search">Search</button>
               <button class="command" type="submit" name="mode" value="map_court">Map Court</button>
-              <button class="command" type="submit" name="mode" value="map_left_side">Collect Left Side</button>
+              <button class="command" type="submit" name="mode" value="map_left_side">Map Left Side</button>
+              <button class="command" type="submit" name="mode" value="scan_side">Scan</button>
               <button class="command" type="submit" name="mode" value="idle">Stop</button>
             </form>
             <div id="commandHint" style="font-size:12px;color:var(--warn);margin-top:8px;min-height:16px;"></div>
@@ -905,7 +909,8 @@ HTML = """<!doctype html>
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ mode })
       });
-      if (mode === "map_left_side" || mode === "map_court") setView("sensors");
+      const activeModes = new Set(["collect", "collect_one", "collect_pattern", "search", "scan_side", "map_court", "map_left_side"]);
+      if (activeModes.has(mode)) setView("sensors");
       await refresh();
     });
 
@@ -1073,7 +1078,7 @@ HTML = """<!doctype html>
       const nav = survey.navigation || {};
       const points = Array.isArray(nav.map_points) ? nav.map_points : [];
       const bounds = survey.bounds || diagnostics.court_boundary || {};
-      const net = nav.net_boundary || (bounds.boundaries || {}).net || (bounds.court_features || {}).net_boundary;
+      const net = nav.net_boundary || (bounds.boundaries || {}).net || (bounds.court_features || {}).net_boundary || bounds.net;
       const width = canvas.width;
       const height = canvas.height;
       const pad = 36;
@@ -1083,7 +1088,7 @@ HTML = """<!doctype html>
       ctx.fillRect(0, 0, width, height);
 
       const hasPoints = points.some(p => Number.isFinite(p.x_m) && Number.isFinite(p.y_m));
-      const hasNet = !!(net && net.post_a && net.post_b);
+      const hasNet = !!(net && ((net.post_a && net.post_b) || net.center || net.midpoint));
       if (!hasPoints && !hasNet) {
         ctx.fillStyle = "rgba(145,162,178,0.7)";
         ctx.font = "14px system-ui";
@@ -1098,11 +1103,37 @@ HTML = """<!doctype html>
       }
 
       const fg = (bounds.fence_geometry || {});
-      let minX = Number.isFinite(fg.west_x) ? fg.west_x - 0.5 : -14.0;
-      let maxX = Number.isFinite(fg.east_x) ? fg.east_x + 0.5 : 14.0;
-      let minY = Number.isFinite(fg.south_y) ? fg.south_y - 0.5 : -7.5;
-      let maxY = Number.isFinite(fg.north_y) ? fg.north_y + 0.5 : 7.5;
-      [...points, net?.post_a, net?.post_b, net?.center, (diagnostics.robot || {}).robot]
+      const worldExtents = nav.scan_coverage?.world_extents || bounds.lidar_boundary_estimate?.combined || {};
+      const hasFence = Number.isFinite(fg.west_x) && Number.isFinite(fg.east_x) && Number.isFinite(fg.south_y) && Number.isFinite(fg.north_y);
+      const hasExtents = Number.isFinite(worldExtents.min_x_m) && Number.isFinite(worldExtents.max_x_m) && Number.isFinite(worldExtents.min_y_m) && Number.isFinite(worldExtents.max_y_m);
+      let minX = hasFence ? fg.west_x - 0.5 : (hasExtents ? worldExtents.min_x_m - 1.0 : -14.0);
+      let maxX = hasFence ? fg.east_x + 0.5 : (hasExtents ? worldExtents.max_x_m + 1.0 : 14.0);
+      let minY = hasFence ? fg.south_y - 0.5 : (hasExtents ? worldExtents.min_y_m - 1.0 : -7.5);
+      let maxY = hasFence ? fg.north_y + 0.5 : (hasExtents ? worldExtents.max_y_m + 1.0 : 7.5);
+      const netCenter = net?.center || net?.midpoint || (net?.post_a && net?.post_b ? {
+        x_m: (net.post_a.x_m + net.post_b.x_m) / 2,
+        y_m: (net.post_a.y_m + net.post_b.y_m) / 2,
+      } : null);
+      const courtCorners = (() => {
+        if (!net?.post_a || !net?.post_b || !netCenter) return [];
+        const ax = net.post_a.x_m, ay = net.post_a.y_m;
+        const bx = net.post_b.x_m, by = net.post_b.y_m;
+        const dx = bx - ax, dy = by - ay;
+        const postSpan = Math.hypot(dx, dy);
+        if (!Number.isFinite(postSpan) || postSpan < 0.5) return [];
+        const tx = dx / postSpan, ty = dy / postSpan;
+        const nx = -ty, ny = tx;
+        const courtWidth = Number.isFinite(net.length_m) && net.length_m > 6 ? net.length_m : 10.97;
+        const halfW = courtWidth / 2;
+        const halfL = 23.77 / 2;
+        return [
+          { x_m: netCenter.x_m + nx * halfL + tx * halfW, y_m: netCenter.y_m + ny * halfL + ty * halfW },
+          { x_m: netCenter.x_m + nx * halfL - tx * halfW, y_m: netCenter.y_m + ny * halfL - ty * halfW },
+          { x_m: netCenter.x_m - nx * halfL - tx * halfW, y_m: netCenter.y_m - ny * halfL - ty * halfW },
+          { x_m: netCenter.x_m - nx * halfL + tx * halfW, y_m: netCenter.y_m - ny * halfL + ty * halfW },
+        ];
+      })();
+      [...points, net?.post_a, net?.post_b, netCenter, ...courtCorners, (diagnostics.robot || {}).robot]
         .filter(Boolean)
         .forEach(p => {
           if (!Number.isFinite(p.x_m) || !Number.isFinite(p.y_m)) return;
@@ -1128,17 +1159,31 @@ HTML = """<!doctype html>
         ctx.beginPath(); ctx.moveTo(sx(minX), sy(gy)); ctx.lineTo(sx(maxX), sy(gy)); ctx.stroke();
       }
 
-      ctx.strokeStyle = "rgba(255,255,255,0.16)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(sx(-11.885), sy(5.485), sx(11.885) - sx(-11.885), sy(-5.485) - sy(5.485));
-      ctx.strokeStyle = "rgba(80,220,255,0.22)";
-      ctx.beginPath();
-      ctx.moveTo(sx(0), sy(minY));
-      ctx.lineTo(sx(0), sy(maxY));
-      ctx.stroke();
+      if (hasFence || hasExtents) {
+        const bx0 = hasFence ? fg.west_x : worldExtents.min_x_m;
+        const bx1 = hasFence ? fg.east_x : worldExtents.max_x_m;
+        const by0 = hasFence ? fg.south_y : worldExtents.min_y_m;
+        const by1 = hasFence ? fg.north_y : worldExtents.max_y_m;
+        ctx.strokeStyle = hasFence ? "rgba(255,255,255,0.38)" : "rgba(47,208,143,0.42)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash(hasFence ? [] : [8, 6]);
+        ctx.strokeRect(sx(bx0), sy(by1), sx(bx1) - sx(bx0), sy(by0) - sy(by1));
+        ctx.setLineDash([]);
+      }
+      if (courtCorners.length === 4) {
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        courtCorners.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(sx(p.x_m), sy(p.y_m));
+          else ctx.lineTo(sx(p.x_m), sy(p.y_m));
+        });
+        ctx.closePath();
+        ctx.stroke();
+      }
       ctx.fillStyle = "rgba(145,162,178,0.8)";
       ctx.font = "12px system-ui";
-      ctx.fillText("world/court frame", pad, 20);
+      ctx.fillText("world boundary map", pad, 20);
 
       ctx.fillStyle = "rgba(47,208,143,0.55)";
       points.forEach(p => {
@@ -1163,13 +1208,17 @@ HTML = """<!doctype html>
           ctx.fillText(label, sx(p.x_m) + 7, sy(p.y_m) - 7);
         });
         ctx.font = "bold 13px system-ui";
-        const c = net.center || { x_m: (a.x_m + b.x_m) / 2, y_m: (a.y_m + b.y_m) / 2 };
+        const c = netCenter || { x_m: (a.x_m + b.x_m) / 2, y_m: (a.y_m + b.y_m) / 2 };
         const clearance = net.front_clearance_m ?? net.distance_m;
-        ctx.fillText(`NET ${fmt(net.length_m, "m")} · front ${fmt(clearance, "m")} · center ${fmt(net.distance_m, "m")}`, sx(c.x_m) + 8, sy(c.y_m) - 8);
-        if (net.lidar_local) {
-          ctx.font = "12px system-ui";
-          ctx.fillText(`LiDAR local: ${fmt(net.lidar_local.length_m, "m")} @ ${fmt(net.lidar_local.distance_m, "m")}`, sx(c.x_m) + 8, sy(c.y_m) + 10);
-        }
+        ctx.fillText(`NET ${fmt(net.length_m, "m")} · clearance ${fmt(clearance, "m")}`, sx(c.x_m) + 8, sy(c.y_m) - 8);
+      } else if (netCenter) {
+        const c = netCenter;
+        ctx.fillStyle = "#50dcff";
+        ctx.beginPath();
+        ctx.arc(sx(c.x_m), sy(c.y_m), 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = "bold 13px system-ui";
+        ctx.fillText(`NET ${fmt(net.distance_m, "m")}`, sx(c.x_m) + 8, sy(c.y_m) - 8);
       }
 
       const robot = (diagnostics.robot || {}).robot || {};
@@ -1182,7 +1231,8 @@ HTML = """<!doctype html>
       }
 
       if (statusEl) {
-        statusEl.textContent = `${nav.map_point_count ?? points.length} points · net ${net ? "boundary detected" : "not fitted"}`;
+        const pointCount = nav.map_point_count ?? points.length;
+        statusEl.textContent = `${pointCount} world points · net ${net ? "localized" : "not fitted"}`;
         statusEl.style.color = net ? "var(--accent)" : "var(--warn)";
       }
       setKv("surveyDiscoveryMeta", [
@@ -1191,11 +1241,10 @@ HTML = """<!doctype html>
         ["Points", nav.map_point_count ?? points.length],
         ["Shown sample", points.length],
         ["Frame", "world/court coordinates"],
+        ["Sensor frame", nav.sensor_frame || "none"],
         ["LiDAR coverage", `F ${fmt(nav.scan_coverage?.front_m, "m")} · R ${fmt(nav.scan_coverage?.rear_m, "m")} · L ${fmt(nav.scan_coverage?.left_m, "m")} · Rt ${fmt(nav.scan_coverage?.right_m, "m")}`],
-        ["Local extents", nav.scan_coverage?.local_extents ? `x ${fmt(nav.scan_coverage.local_extents.min_x_m, "m")}..${fmt(nav.scan_coverage.local_extents.max_x_m, "m")} · y ${fmt(nav.scan_coverage.local_extents.min_y_m, "m")}..${fmt(nav.scan_coverage.local_extents.max_y_m, "m")}` : "none"],
         ["World extents", nav.scan_coverage?.world_extents ? `x ${fmt(nav.scan_coverage.world_extents.min_x_m, "m")}..${fmt(nav.scan_coverage.world_extents.max_x_m, "m")} · y ${fmt(nav.scan_coverage.world_extents.min_y_m, "m")}..${fmt(nav.scan_coverage.world_extents.max_y_m, "m")}` : "none"],
         ["Net boundary", net ? `${fmt(net.length_m, "m")} @ front ${fmt(net.front_clearance_m ?? net.distance_m, "m")}` : "not fitted"],
-        ["Net LiDAR local", net?.lidar_local ? `${fmt(net.lidar_local.length_m, "m")} @ ${fmt(net.lidar_local.distance_m, "m")}` : "none"],
         ["Net source", net?.source || nav.net_boundary_source || "none"],
       ]);
     }
@@ -2031,10 +2080,7 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(length).decode("utf-8")
         mode = parse_qs(body).get("mode", ["idle"])[0]
-        if mode not in SUPPORTED_MODES:
-            self.send_error(HTTPStatus.BAD_REQUEST, "Unsupported mode")
-            return
-
+        # Validation is handled inside RobotCommandStore.write(); unknown modes map to idle.
         command = self.store.write(mode)
         if path == "/api/command":
             self._send_json(command.to_mapping())
@@ -2164,12 +2210,13 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8081)
     parser.add_argument("--command-file", type=Path, default=None)
     parser.add_argument("--status-file", type=Path, default=None)
+    parser.add_argument("--db-file", type=Path, default=None)
     args = parser.parse_args()
 
     ControlPanelHandler.store = RobotCommandStore(args.command_file) if args.command_file else RobotCommandStore.from_env()
     ControlPanelHandler.status_store = RobotStatusStore(args.status_file) if args.status_file else RobotStatusStore.from_env()
     ControlPanelHandler.sensor_store = RobotSensorStore.from_env()
-    ControlPanelHandler.db = TennisRobotDB()
+    ControlPanelHandler.db = TennisRobotDB(args.db_file) if args.db_file else TennisRobotDB()
     server = ThreadingHTTPServer((args.host, args.port), ControlPanelHandler)
     print(f"remote console listening on http://{args.host}:{args.port}")
     print(f"command file: {ControlPanelHandler.store.path}")
