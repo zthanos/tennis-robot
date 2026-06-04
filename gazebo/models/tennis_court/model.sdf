@@ -139,9 +139,9 @@
     <visual name="v">
       <geometry><mesh><uri>model://tennis_court/meshes/fence_long.dae</uri></mesh></geometry>
       <material>
-        <ambient>0.10 0.40 0.10 0.80</ambient>
-        <diffuse>0.12 0.48 0.12 0.80</diffuse>
-        <specular>0.04 0.10 0.04 1</specular>
+        <ambient>0.55 0.55 0.58 1</ambient>
+        <diffuse>0.65 0.65 0.68 1</diffuse>
+        <specular>0.85 0.85 0.88 1</specular>
       </material>
     </visual>
   </link>
@@ -155,9 +155,9 @@
     <visual name="v">
       <geometry><mesh><uri>model://tennis_court/meshes/fence_long.dae</uri></mesh></geometry>
       <material>
-        <ambient>0.10 0.40 0.10 0.80</ambient>
-        <diffuse>0.12 0.48 0.12 0.80</diffuse>
-        <specular>0.04 0.10 0.04 1</specular>
+        <ambient>0.55 0.55 0.58 1</ambient>
+        <diffuse>0.65 0.65 0.68 1</diffuse>
+        <specular>0.85 0.85 0.88 1</specular>
       </material>
     </visual>
   </link>
@@ -171,9 +171,9 @@
     <visual name="v">
       <geometry><mesh><uri>model://tennis_court/meshes/fence_wide.dae</uri></mesh></geometry>
       <material>
-        <ambient>0.10 0.40 0.10 0.80</ambient>
-        <diffuse>0.12 0.48 0.12 0.80</diffuse>
-        <specular>0.04 0.10 0.04 1</specular>
+        <ambient>0.55 0.55 0.58 1</ambient>
+        <diffuse>0.65 0.65 0.68 1</diffuse>
+        <specular>0.85 0.85 0.88 1</specular>
       </material>
     </visual>
   </link>
@@ -187,9 +187,9 @@
     <visual name="v">
       <geometry><mesh><uri>model://tennis_court/meshes/fence_wide.dae</uri></mesh></geometry>
       <material>
-        <ambient>0.10 0.40 0.10 0.80</ambient>
-        <diffuse>0.12 0.48 0.12 0.80</diffuse>
-        <specular>0.04 0.10 0.04 1</specular>
+        <ambient>0.55 0.55 0.58 1</ambient>
+        <diffuse>0.65 0.65 0.68 1</diffuse>
+        <specular>0.85 0.85 0.88 1</specular>
       </material>
     </visual>
   </link>

@@ -133,11 +133,14 @@ def gen_fence(
     height: float,
     diamond: float = 0.04,
     wire_r: float = 0.001,
+    post_r: float = 0.025,
+    post_step: float = 2.0,
 ) -> tuple[list, list]:
     """Chain-link fence panel in the XZ plane, centered in X.
 
     X ∈ [−width/2, +width/2], Z ∈ [0, height].
-    Wire ribbons at ±45° with perpendicular spacing = diamond.
+    Wire ribbons at ±45° (diamond pattern) + vertical support posts every
+    post_step metres + horizontal top/bottom rails.
     """
     verts: list[tuple] = []
     tris: list[tuple] = []
@@ -145,9 +148,8 @@ def gen_fence(
     step = diamond
     half_w = width / 2
 
+    # ── diagonal chain-link wires ──────────────────────────────────────────
     for sign in (+1.0, -1.0):
-        # For "+" sign: "/" wires (x_entry, z=0) going in direction (+1, +sign)
-        # For "-" sign: "\" wires (x_entry, z=0) going in direction (+1, -sign)
         i_min = -int((height + width) / step) - 2
         i_max = int((height + width) / step) + 2
         for i in range(i_min, i_max + 1):
@@ -162,6 +164,19 @@ def gen_fence(
             if result:
                 xa, za, xb, zb = result
                 _add_ribbon(verts, tris, xa, za, xb, zb, hw)
+
+    # ── vertical support posts every post_step m ───────────────────────────
+    x = -half_w
+    while x <= half_w + 1e-6:
+        _add_ribbon(verts, tris, x, 0.0, x, height, post_r)
+        x = round(x + post_step, 6)
+    # guarantee a post at the far edge
+    if abs(round(x - post_step, 6) - half_w) > 0.01:
+        _add_ribbon(verts, tris, half_w, 0.0, half_w, height, post_r)
+
+    # ── top and bottom rails ───────────────────────────────────────────────
+    _add_ribbon(verts, tris, -half_w, 0.0, half_w, 0.0, post_r)
+    _add_ribbon(verts, tris, -half_w, height, half_w, height, post_r)
 
     return verts, tris
 
