@@ -60,6 +60,29 @@ If Webots was already open, close it before running the script so it picks up th
 .\scripts\start_local_webots_control.ps1 -RestartWebots
 ```
 
+To run the ROS 2/Webots stack through WSLg with GPU acceleration, start it from
+a WSL shell instead of Windows PowerShell:
+
+```bash
+cd /mnt/c/Users/thano/projects/diy/tennis-robot
+bash scripts/start_local_webots_control_wslg.sh --build
+```
+
+The WSLg launcher uses the `ros2-wslg` Docker profile and defaults to the
+`RX 7900 XTX` Mesa D3D12 adapter. Override it when needed:
+
+```bash
+bash scripts/start_local_webots_control_wslg.sh --adapter "AMD Radeon RX 7900 XTX"
+```
+
+The optional control panel runs from WSL and uses the project Python deps. If
+WSL does not have `uv` yet:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc
+```
+
 You can still open the world manually:
 
 ```text

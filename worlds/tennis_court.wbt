@@ -4650,7 +4650,7 @@ DEF TENNIS_ROBOT Robot {
     density -1
     mass 8
   }
-  controller "ball_detector"
+  controller "webots_bridge"
   supervisor TRUE
 }
 DEF TENNIS_BALL_00 Solid {

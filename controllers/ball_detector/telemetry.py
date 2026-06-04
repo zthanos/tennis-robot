@@ -166,6 +166,33 @@ def setup_telemetry(service_name: str) -> SimulationTelemetry:
     )
 
 
+class TelemetryJournal:
+    """Ring buffer of structured controller events for the web status panel."""
+
+    def __init__(self, started_at: float, limit: int = 100) -> None:
+        import time as _time
+        from collections import deque
+        self._time = _time
+        self.started_at = started_at
+        self._events: deque[dict[str, object]] = deque(maxlen=limit)
+
+    def record(self, event_type: str, severity: str = "info", **fields: object) -> None:
+        now = self._time.time()
+        event: dict[str, object] = {
+            "t_s": round(now - self.started_at, 3),
+            "wall_time_s": round(now, 3),
+            "type": event_type,
+            "severity": severity,
+        }
+        for key, value in fields.items():
+            if value is not None:
+                event[key] = value
+        self._events.append(event)
+
+    def snapshot(self) -> list[dict[str, object]]:
+        return list(self._events)
+
+
 def _noop_telemetry() -> SimulationTelemetry:
     metric = _NoopMetric()
     return SimulationTelemetry(
