@@ -207,7 +207,7 @@ def main() -> None:
     tasks = [
         ("fence_long",   gen_fence,  {"width": 15.0,   "height": 4.0}),
         ("fence_wide",   gen_fence,  {"width": 29.08,  "height": 4.0}),
-        ("net_mesh",     gen_net,    {"width": 11.3,   "height": 0.914}),
+        ("net_mesh",     gen_net,    {"width": 11.3,   "height": 0.914, "h_step": 0.05, "v_step": 0.05}),
     ]
 
     for geo_id, func, kwargs in tasks:
