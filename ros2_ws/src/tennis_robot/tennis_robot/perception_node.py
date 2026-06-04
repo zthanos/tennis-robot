@@ -26,6 +26,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 
+from tennis_robot import yaw_from_quaternion
+
 sys.path.insert(0, "/workspace/controllers/ball_detector")
 from perception import (
     CameraMount,
@@ -69,10 +71,7 @@ class PerceptionNode(Node):
     def _on_odom(self, msg: Odometry) -> None:
         self._robot_x = msg.pose.pose.position.x
         self._robot_y = msg.pose.pose.position.y
-        q = msg.pose.pose.orientation
-        siny = 2.0 * (q.w * q.z + q.x * q.y)
-        cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        self._robot_yaw = math.atan2(siny, cosy)
+        self._robot_yaw = yaw_from_quaternion(msg.pose.pose.orientation)
 
     def _on_depth(self, msg: Image) -> None:
         raw = bytes(msg.data)

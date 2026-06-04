@@ -37,6 +37,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
 
+from tennis_robot import yaw_from_quaternion
+
 sys.path.insert(0, "/workspace/controllers/ball_detector")
 
 from ball_map import BallMap, BallMapConfig, across_net
@@ -146,6 +148,8 @@ class ControllerNode(Node):
         self._latest_obs = BallObservationInput(visible=False, source="startup")
         self._latest_survey_vision: SurveyVision | None = None
         self._lidar_ranges: list[float] | None = None
+        self._lidar_angle_min: float = -math.pi
+        self._lidar_angle_increment: float | None = None
         self._robot_x = 0.0
         self._robot_y = 0.0
         self._robot_yaw = 0.0
@@ -169,6 +173,7 @@ class ControllerNode(Node):
         self._pub_collector = self.create_publisher(CollectorCmd, "/collector/cmd", 1)
         self._pub_status = self.create_publisher(String, "/robot/status", 10)
         self._pub_ball_collected = self.create_publisher(String, "/ball/collected", 10)
+        self._pub_command = self.create_publisher(RobotCommand, "/robot/command", 10)
 
         self.create_timer(TIME_STEP_S, self._step)
         self.get_logger().info("tennis_robot_controller started")
@@ -193,14 +198,13 @@ class ControllerNode(Node):
 
     def _on_scan(self, msg: LaserScan) -> None:
         self._lidar_ranges = [float(r) for r in msg.ranges]
+        self._lidar_angle_min = float(msg.angle_min)
+        self._lidar_angle_increment = float(msg.angle_increment)
 
     def _on_odom(self, msg: Odometry) -> None:
         self._robot_x = msg.pose.pose.position.x
         self._robot_y = msg.pose.pose.position.y
-        q = msg.pose.pose.orientation
-        siny = 2.0 * (q.w * q.z + q.x * q.y)
-        cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        self._robot_yaw = math.atan2(siny, cosy)
+        self._robot_yaw = yaw_from_quaternion(msg.pose.pose.orientation)
 
     def _on_ir(self, msg: IrReadings) -> None:
         self._ir_left = msg.left
@@ -353,7 +357,7 @@ class ControllerNode(Node):
         if search_command.state == SearchState.COMPLETE:
             if not self._search_complete_reported:
                 self._search_complete_reported = True
-            self._publish_command("idle", "controller-search-complete")
+                self._publish_command("idle", "controller-search-complete")
         return ConceptACommand(
             state=CollectorState.SURVEY
             if search_command.state in {SearchState.SURVEY_VIEWPOINT, SearchState.TRANSIT_TO_ZONE, SearchState.LOCAL_SCAN}
@@ -502,6 +506,8 @@ class ControllerNode(Node):
         survey_command = self.survey_behavior.update(
             self._robot_x, self._robot_y, self._robot_yaw,
             self._lidar_ranges, TIME_STEP_S, sv,
+            lidar_angle_min=self._lidar_angle_min,
+            lidar_angle_increment=self._lidar_angle_increment,
         )
         self._log_survey_progress()
         if survey_command.state == LidarSurveyState.DONE:
@@ -668,11 +674,9 @@ class ControllerNode(Node):
             # Approximate rotation matrix for 2D (Webots uses 3D but robot is flat)
             lx = ori_cos * dx + ori_sin * dy
             ly = -ori_sin * dx + ori_cos * dy
-            lz = -0.12  # approximate ball height relative to robot
             if (
                 INTAKE_ZONE_X_M[0] <= lx <= INTAKE_ZONE_X_M[1]
                 and abs(ly) <= INTAKE_HALF_WIDTH_M
-                and lz <= INTAKE_MAX_HEIGHT_M
             ):
                 collected_msg = String()
                 collected_msg.data = ball["def"]
@@ -719,6 +723,7 @@ class ControllerNode(Node):
         msg = RobotCommand()
         msg.mode = mode
         msg.source = source
+        self._pub_command.publish(msg)
         # Also write to the file store so the web panel stays in sync
         try:
             sys.path.insert(0, "/workspace/controllers/ball_detector")

@@ -133,6 +133,8 @@ class Ros2LidarCourtSurvey:
         self._last_front_range_m = math.inf
         self._last_pose: tuple[float, float] | None = None
         self._distance_traveled_m = 0.0
+        self._lidar_angle_min: float = -math.pi
+        self._lidar_angle_increment: float = 2.0 * math.pi / 360
 
     @classmethod
     def from_env(cls) -> "Ros2LidarCourtSurvey":
@@ -153,6 +155,8 @@ class Ros2LidarCourtSurvey:
         lidar_ranges: list[float] | None,
         dt_s: float,
         vision: SurveyVision | None,
+        lidar_angle_min: float = -math.pi,
+        lidar_angle_increment: float | None = None,
     ) -> LidarSurveyCommand:
         if self._started_at is None:
             self._started_at = time.time()
@@ -162,6 +166,13 @@ class Ros2LidarCourtSurvey:
 
         self._state_elapsed_s += max(0.0, dt_s)
         self._update_distance(x_m, y_m)
+        if lidar_ranges:
+            n = len(lidar_ranges)
+            self._lidar_angle_min = lidar_angle_min
+            self._lidar_angle_increment = (
+                lidar_angle_increment if lidar_angle_increment is not None
+                else 2.0 * math.pi / max(1, n)
+            )
         self._last_front_range_m = self._front_range(lidar_ranges)
         self._accumulate_scan(x_m, y_m, yaw_rad, lidar_ranges)
 
@@ -294,7 +305,7 @@ class Ros2LidarCourtSurvey:
             r = ranges[i]
             if not math.isfinite(r) or r < self.config.lidar_min_range_m or r > self.config.lidar_max_range_m:
                 continue
-            angle = (i / n) * 2.0 * math.pi - math.pi
+            angle = self._lidar_angle_min + i * self._lidar_angle_increment
             points.append((r * math.cos(angle), r * math.sin(angle)))
         return points
 
@@ -316,7 +327,7 @@ class Ros2LidarCourtSurvey:
             r = ranges[i]
             if not math.isfinite(r) or r < self.config.lidar_min_range_m or r > self.config.lidar_max_range_m:
                 continue
-            angle = (i / n) * 2.0 * math.pi - math.pi
+            angle = self._lidar_angle_min + i * self._lidar_angle_increment
             lx = r * math.cos(angle)
             ly = r * math.sin(angle)
             points.append((x_m + cos_y * lx - sin_y * ly, y_m + sin_y * lx + cos_y * ly))
@@ -347,7 +358,8 @@ class Ros2LidarCourtSurvey:
         to_robot = (robot[0] - mid[0], robot[1] - mid[1])
         near = n1 if self._dot(n1, to_robot) >= 0.0 else (-n1[0], -n1[1])
         far = (-near[0], -near[1])
-        confidence = min(0.95, 0.55 + abs(length - self.config.expected_court_width_m) * -0.03 + 0.35)
+        width_error = abs(length - self.config.expected_court_width_m)
+        confidence = min(0.95, 0.55 + (0.35 if width_error < 1.0 else 0.0) - width_error * 0.03)
         return NetFrame(a, b, mid, tangent, near, far, round(max(0.5, confidence), 2))
 
     def _clusters(self, points: list[tuple[float, float]]) -> list[tuple[float, float]]:
