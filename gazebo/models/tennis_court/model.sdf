@@ -1,154 +1,222 @@
 <?xml version="1.0"?>
 <!--
-  Tennis Court model.
-  Dimensions from CLAUDE.md and tennis_court.wbt:
-    Court playing area:  23.77 × 10.97 m
-    Net at x = 0, height 0.914 m at center (0.107 m at posts)
-    Net posts at (0, ±5.485, 0)
-    Baselines at x = ±11.885 m
-    Service lines at x = ±6.4 m
-    Perimeter fence inner wall: x = ±12.96 m, y = ±6.46 m
-    Floodlight poles at court corners (approx x = ±13.5, y = ±7.0)
+  Tennis Court model — Gazebo Harmonic SDF 1.9
+  Standard dimensions (ITF regulation):
+    Playing area:  23.77 × 10.97 m  (doubles width)
+    Singles width: 8.23 m (sidelines at y = ±4.115 m)
+    Baselines:     x = ±11.885 m
+    Service lines: x = ±6.4 m
+    Net posts:     (0, ±5.65, 0) — 0.165 m outside doubles sideline
+    Net height:    0.914 m at center
+    Fences:        x = ±14.5 m,  y = ±7.5 m  (professional margins)
 -->
 <sdf version="1.9">
 <model name="tennis_court">
   <static>true</static>
-  <pose>0 0 0 0 0 0</pose>
 
-  <!-- ── GROUND SURFACE (red clay) ──────────────────────────────── -->
+  <!-- ── GROUND (red clay) ─────────────────────────────────────────────── -->
   <link name="ground">
     <collision name="col">
-      <geometry><box><size>30 20 0.02</size></box></geometry>
+      <geometry><box><size>35 20 0.02</size></box></geometry>
     </collision>
     <visual name="vis">
       <pose>0 0 -0.01 0 0 0</pose>
-      <geometry><box><size>30 20 0.02</size></box></geometry>
+      <geometry><box><size>35 20 0.02</size></box></geometry>
       <material>
-        <ambient>0.72 0.36 0.18 1</ambient>
-        <diffuse>0.72 0.36 0.18 1</diffuse>
+        <ambient>0.72 0.38 0.18 1</ambient>
+        <diffuse>0.72 0.38 0.18 1</diffuse>
+        <specular>0.05 0.04 0.03 1</specular>
       </material>
     </visual>
   </link>
 
-  <!-- ── COURT LINES (visual only) ──────────────────────────────── -->
-  <!-- Baselines -->
+  <!-- ── COURT LINES (visual only, z=0.002 so they sit above clay) ──────
+       Line width 0.05 m matches ITF spec. All lines are white.           -->
+
+  <!-- Baselines (x = ±11.885 m, span full court width 10.97 m) -->
   <link name="baseline_east">
     <pose>11.885 0 0.001 0 0 0</pose>
-    <visual name="vis"><geometry><box><size>0.05 10.97 0.002</size></box></geometry>
-      <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material></visual>
+    <visual name="v"><geometry><box><size>0.05 10.97 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
   </link>
   <link name="baseline_west">
     <pose>-11.885 0 0.001 0 0 0</pose>
-    <visual name="vis"><geometry><box><size>0.05 10.97 0.002</size></box></geometry>
-      <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material></visual>
-  </link>
-  <!-- Sidelines -->
-  <link name="sideline_north">
-    <pose>0 5.485 0.001 0 0 0</pose>
-    <visual name="vis"><geometry><box><size>23.77 0.05 0.002</size></box></geometry>
-      <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material></visual>
-  </link>
-  <link name="sideline_south">
-    <pose>0 -5.485 0.001 0 0 0</pose>
-    <visual name="vis"><geometry><box><size>23.77 0.05 0.002</size></box></geometry>
-      <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material></visual>
-  </link>
-  <!-- Service lines -->
-  <link name="service_east">
-    <pose>6.4 0 0.001 0 0 0</pose>
-    <visual name="vis"><geometry><box><size>0.05 8.23 0.002</size></box></geometry>
-      <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material></visual>
-  </link>
-  <link name="service_west">
-    <pose>-6.4 0 0.001 0 0 0</pose>
-    <visual name="vis"><geometry><box><size>0.05 8.23 0.002</size></box></geometry>
-      <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material></visual>
-  </link>
-  <!-- Centre service line -->
-  <link name="centre_service">
-    <pose>0 0 0.001 0 0 0</pose>
-    <visual name="vis"><geometry><box><size>12.8 0.05 0.002</size></box></geometry>
-      <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material></visual>
+    <visual name="v"><geometry><box><size>0.05 10.97 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
   </link>
 
-  <!-- ── NET POSTS ────────────────────────────────────────────────── -->
+  <!-- Doubles sidelines (y = ±5.485 m, full length) -->
+  <link name="doubles_sideline_north">
+    <pose>0 5.485 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>23.77 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+  <link name="doubles_sideline_south">
+    <pose>0 -5.485 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>23.77 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+
+  <!-- Singles sidelines (y = ±4.115 m, full length) -->
+  <link name="singles_sideline_north">
+    <pose>0 4.115 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>23.77 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+  <link name="singles_sideline_south">
+    <pose>0 -4.115 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>23.77 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+
+  <!-- Service lines (x = ±6.4 m, span singles width 8.23 m) -->
+  <link name="service_line_east">
+    <pose>6.4 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.05 8.23 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+  <link name="service_line_west">
+    <pose>-6.4 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.05 8.23 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+
+  <!-- Centre service line (spans east↔west service lines between singles sidelines) -->
+  <link name="centre_service_line">
+    <pose>0 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>12.8 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+
+  <!-- Centre marks at baselines (0.1 m long, on the centre line) -->
+  <link name="centre_mark_east">
+    <pose>11.835 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.10 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+  <link name="centre_mark_west">
+    <pose>-11.835 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.10 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual>
+  </link>
+
+  <!-- ── NET POSTS (y = ±5.65, height 1.07 m ITF spec) ────────────────── -->
   <link name="net_post_north">
-    <pose>0 5.485 0.557 0 0 0</pose>
-    <collision name="col"><geometry><cylinder><radius>0.025</radius><length>1.114</length></cylinder></geometry></collision>
-    <visual name="vis"><geometry><cylinder><radius>0.025</radius><length>1.114</length></cylinder></geometry>
-      <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material></visual>
+    <pose>0 5.65 0.535 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.025</radius><length>1.07</length></cylinder></geometry></collision>
+    <visual name="v">
+      <geometry><cylinder><radius>0.025</radius><length>1.07</length></cylinder></geometry>
+      <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.2 0.2 0.2 1</diffuse><specular>0.4 0.4 0.4 1</specular></material>
+    </visual>
   </link>
   <link name="net_post_south">
-    <pose>0 -5.485 0.557 0 0 0</pose>
-    <collision name="col"><geometry><cylinder><radius>0.025</radius><length>1.114</length></cylinder></geometry></collision>
-    <visual name="vis"><geometry><cylinder><radius>0.025</radius><length>1.114</length></cylinder></geometry>
-      <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material></visual>
-  </link>
-
-  <!-- ── NET (collision + visual) ───────────────────────────────── -->
-  <!-- Simplified as a thin wall; real net height 0.914 m at center -->
-  <link name="net_wall">
-    <pose>0 0 0.457 0 0 0</pose>
-    <collision name="col">
-      <geometry><box><size>0.02 10.97 0.914</size></box></geometry>
-    </collision>
-    <visual name="vis">
-      <geometry><box><size>0.02 10.97 0.914</size></box></geometry>
-      <material><ambient>0.1 0.1 0.1 0.6</ambient><diffuse>0.1 0.1 0.1 0.6</diffuse></material>
+    <pose>0 -5.65 0.535 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.025</radius><length>1.07</length></cylinder></geometry></collision>
+    <visual name="v">
+      <geometry><cylinder><radius>0.025</radius><length>1.07</length></cylinder></geometry>
+      <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.2 0.2 0.2 1</diffuse><specular>0.4 0.4 0.4 1</specular></material>
     </visual>
   </link>
 
-  <!-- ── PERIMETER FENCE (collision + visual) ──────────────────── -->
-  <!-- East wall: x = +13.0, spans y ±6.5, h = 4 m -->
-  <link name="fence_east">
-    <pose>13.0 0 2.0 0 0 0</pose>
-    <collision name="col"><geometry><box><size>0.08 13.0 4.0</size></box></geometry></collision>
-    <visual name="vis"><geometry><box><size>0.08 13.0 4.0</size></box></geometry>
-      <material><ambient>0.2 0.4 0.2 0.7</ambient><diffuse>0.2 0.4 0.2 0.7</diffuse></material></visual>
-  </link>
-  <!-- West wall -->
-  <link name="fence_west">
-    <pose>-13.0 0 2.0 0 0 0</pose>
-    <collision name="col"><geometry><box><size>0.08 13.0 4.0</size></box></geometry></collision>
-    <visual name="vis"><geometry><box><size>0.08 13.0 4.0</size></box></geometry>
-      <material><ambient>0.2 0.4 0.2 0.7</ambient><diffuse>0.2 0.4 0.2 0.7</diffuse></material></visual>
-  </link>
-  <!-- North wall -->
-  <link name="fence_north">
-    <pose>0 6.5 2.0 0 0 0</pose>
-    <collision name="col"><geometry><box><size>26.08 0.08 4.0</size></box></geometry></collision>
-    <visual name="vis"><geometry><box><size>26.08 0.08 4.0</size></box></geometry>
-      <material><ambient>0.2 0.4 0.2 0.7</ambient><diffuse>0.2 0.4 0.2 0.7</diffuse></material></visual>
-  </link>
-  <!-- South wall -->
-  <link name="fence_south">
-    <pose>0 -6.5 2.0 0 0 0</pose>
-    <collision name="col"><geometry><box><size>26.08 0.08 4.0</size></box></geometry></collision>
-    <visual name="vis"><geometry><box><size>26.08 0.08 4.0</size></box></geometry>
-      <material><ambient>0.2 0.4 0.2 0.7</ambient><diffuse>0.2 0.4 0.2 0.7</diffuse></material></visual>
+  <!-- ── NET ───────────────────────────────────────────────────────────────
+       Solid collision wall (robot cannot cross). Visual uses semi-transparent
+       dark grey to approximate the wire mesh appearance.
+       Width spans post-to-post: 2 × 5.65 = 11.3 m.                       -->
+  <link name="net_wall">
+    <pose>0 0 0.457 0 0 0</pose>
+    <collision name="col">
+      <geometry><box><size>0.02 11.3 0.914</size></box></geometry>
+    </collision>
+    <visual name="net_band">
+      <!-- White top band (0.063 m) -->
+      <pose>0 0 0.426 0 0 0</pose>
+      <geometry><box><size>0.025 11.3 0.063</size></box></geometry>
+      <material><ambient>0.92 0.92 0.92 1</ambient><diffuse>0.92 0.92 0.92 1</diffuse></material>
+    </visual>
+    <visual name="net_mesh">
+      <!-- Dark semi-transparent mesh body -->
+      <pose>0 0 -0.032 0 0 0</pose>
+      <geometry><box><size>0.018 11.3 0.788</size></box></geometry>
+      <material>
+        <ambient>0.08 0.08 0.08 0.55</ambient>
+        <diffuse>0.08 0.08 0.08 0.55</diffuse>
+      </material>
+    </visual>
   </link>
 
-  <!-- ── FLOODLIGHT POLES (LiDAR survey targets) ───────────────── -->
-  <!-- 4 corner poles + 2 mid-court poles -->
-  <link name="pole_ne"><pose>13.5 7.0 5.0 0 0 0</pose>
-    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
-    <visual name="vis"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
-      <material><ambient>0.3 0.3 0.35 1</ambient></material></visual>
+  <!-- ── PERIMETER FENCES ──────────────────────────────────────────────────
+       Fences at x=±14.5 m, y=±7.5 m, height 4 m.
+       Green semi-transparent to simulate chain-link fence.
+       LiDAR detects them via collision geometry.                          -->
+  <link name="fence_east">
+    <pose>14.5 0 2.0 0 0 0</pose>
+    <collision name="col"><geometry><box><size>0.08 15.0 4.0</size></box></geometry></collision>
+    <visual name="v">
+      <geometry><box><size>0.08 15.0 4.0</size></box></geometry>
+      <material>
+        <ambient>0.10 0.38 0.10 0.65</ambient>
+        <diffuse>0.12 0.45 0.12 0.65</diffuse>
+        <specular>0.05 0.12 0.05 1</specular>
+      </material>
+    </visual>
   </link>
-  <link name="pole_nw"><pose>-13.5 7.0 5.0 0 0 0</pose>
-    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
-    <visual name="vis"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
-      <material><ambient>0.3 0.3 0.35 1</ambient></material></visual>
+  <link name="fence_west">
+    <pose>-14.5 0 2.0 0 0 0</pose>
+    <collision name="col"><geometry><box><size>0.08 15.0 4.0</size></box></geometry></collision>
+    <visual name="v">
+      <geometry><box><size>0.08 15.0 4.0</size></box></geometry>
+      <material>
+        <ambient>0.10 0.38 0.10 0.65</ambient>
+        <diffuse>0.12 0.45 0.12 0.65</diffuse>
+        <specular>0.05 0.12 0.05 1</specular>
+      </material>
+    </visual>
   </link>
-  <link name="pole_se"><pose>13.5 -7.0 5.0 0 0 0</pose>
-    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
-    <visual name="vis"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
-      <material><ambient>0.3 0.3 0.35 1</ambient></material></visual>
+  <link name="fence_north">
+    <pose>0 7.5 2.0 0 0 0</pose>
+    <collision name="col"><geometry><box><size>29.08 0.08 4.0</size></box></geometry></collision>
+    <visual name="v">
+      <geometry><box><size>29.08 0.08 4.0</size></box></geometry>
+      <material>
+        <ambient>0.10 0.38 0.10 0.65</ambient>
+        <diffuse>0.12 0.45 0.12 0.65</diffuse>
+        <specular>0.05 0.12 0.05 1</specular>
+      </material>
+    </visual>
   </link>
-  <link name="pole_sw"><pose>-13.5 -7.0 5.0 0 0 0</pose>
+  <link name="fence_south">
+    <pose>0 -7.5 2.0 0 0 0</pose>
+    <collision name="col"><geometry><box><size>29.08 0.08 4.0</size></box></geometry></collision>
+    <visual name="v">
+      <geometry><box><size>29.08 0.08 4.0</size></box></geometry>
+      <material>
+        <ambient>0.10 0.38 0.10 0.65</ambient>
+        <diffuse>0.12 0.45 0.12 0.65</diffuse>
+        <specular>0.05 0.12 0.05 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <!-- ── FLOODLIGHT POLES (LiDAR survey targets) ───────────────────────── -->
+  <link name="pole_ne"><pose>15.0 8.0 5.0 0 0 0</pose>
     <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
-    <visual name="vis"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
-      <material><ambient>0.3 0.3 0.35 1</ambient></material></visual>
+    <visual name="v"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
+      <material><ambient>0.35 0.35 0.40 1</ambient><diffuse>0.4 0.4 0.45 1</diffuse></material></visual>
+  </link>
+  <link name="pole_nw"><pose>-15.0 8.0 5.0 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
+      <material><ambient>0.35 0.35 0.40 1</ambient><diffuse>0.4 0.4 0.45 1</diffuse></material></visual>
+  </link>
+  <link name="pole_se"><pose>15.0 -8.0 5.0 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
+      <material><ambient>0.35 0.35 0.40 1</ambient><diffuse>0.4 0.4 0.45 1</diffuse></material></visual>
+  </link>
+  <link name="pole_sw"><pose>-15.0 -8.0 5.0 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
+      <material><ambient>0.35 0.35 0.40 1</ambient><diffuse>0.4 0.4 0.45 1</diffuse></material></visual>
   </link>
 
 </model>
