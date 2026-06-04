@@ -69,7 +69,7 @@ COPY controllers/ /workspace/controllers/
 RUN . /opt/ros/humble/setup.sh \
   && rosdep update \
   && rosdep install --from-paths src --ignore-src -r -y \
-  && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 ENV ROS_SETUP=/ros2_ws/install/setup.sh
 

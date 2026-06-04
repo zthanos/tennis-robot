@@ -59,14 +59,16 @@
   </link>
 
   <!-- ═══════════════════════════════════════════════════════ LEFT WHEEL (y = +0.24) -->
+  <!-- Cylinder r=0.11m h=0.08m mass=0.25kg, link rotated 90° around X so local Z = spin axis.
+       Izz (spin) = 0.5*m*r² = 0.001513; Ixx=Iyy (transverse) = (1/12)*m*(3r²+h²) = 0.000889 -->
   <link name="left_wheel_link">
     <pose>-0.35 0.24 0.11 1.5708 0 0</pose>
     <inertial>
       <mass>0.25</mass>
       <inertia>
-        <ixx>0.00075</ixx><ixy>0</ixy><ixz>0</ixz>
-        <iyy>0.00151</iyy><iyz>0</iyz>
-        <izz>0.00075</izz>
+        <ixx>0.000889</ixx><ixy>0</ixy><ixz>0</ixz>
+        <iyy>0.000889</iyy><iyz>0</iyz>
+        <izz>0.001513</izz>
       </inertia>
     </inertial>
     <collision name="col">
@@ -95,9 +97,9 @@
     <inertial>
       <mass>0.25</mass>
       <inertia>
-        <ixx>0.00075</ixx><ixy>0</ixy><ixz>0</ixz>
-        <iyy>0.00151</iyy><iyz>0</iyz>
-        <izz>0.00075</izz>
+        <ixx>0.000889</ixx><ixy>0</ixy><ixz>0</ixz>
+        <iyy>0.000889</iyy><iyz>0</iyz>
+        <izz>0.001513</izz>
       </inertia>
     </inertial>
     <collision name="col">
