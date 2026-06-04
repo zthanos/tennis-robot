@@ -37,24 +37,34 @@
     <collision name="chassis_col">
       <geometry><box><size>0.92 0.58 0.20</size></box></geometry>
     </collision>
+    <!-- Plywood chassis — warm birch tone -->
     <visual name="chassis_vis">
       <geometry><box><size>0.92 0.58 0.20</size></box></geometry>
       <material>
-        <ambient>0.58 0.40 0.24 1</ambient>
-        <diffuse>0.58 0.40 0.24 1</diffuse>
+        <ambient>0.62 0.44 0.26 1</ambient>
+        <diffuse>0.68 0.50 0.30 1</diffuse>
+        <specular>0.08 0.06 0.04 1</specular>
       </material>
     </visual>
-    <!-- Electronics box (visual only) -->
+    <!-- Electronics box — matte anthracite -->
     <visual name="elec_vis">
       <pose>-0.13 0 0.13 0 0 0</pose>
       <geometry><box><size>0.34 0.26 0.12</size></box></geometry>
-      <material><ambient>0.12 0.13 0.16 1</ambient><diffuse>0.12 0.13 0.16 1</diffuse></material>
+      <material>
+        <ambient>0.14 0.15 0.18 1</ambient>
+        <diffuse>0.18 0.19 0.22 1</diffuse>
+        <specular>0.15 0.15 0.16 1</specular>
+      </material>
     </visual>
-    <!-- Intake funnel (visual only) -->
+    <!-- Orange intake funnel -->
     <visual name="funnel_vis">
       <pose>0.52 0 -0.06 0 0 0</pose>
       <geometry><box><size>0.04 0.52 0.14</size></box></geometry>
-      <material><ambient>0.96 0.63 0.18 1</ambient><diffuse>0.96 0.63 0.18 1</diffuse></material>
+      <material>
+        <ambient>0.92 0.46 0.08 1</ambient>
+        <diffuse>0.96 0.52 0.10 1</diffuse>
+        <specular>0.10 0.06 0.02 1</specular>
+      </material>
     </visual>
   </link>
 
@@ -77,7 +87,11 @@
     </collision>
     <visual name="vis">
       <geometry><cylinder><radius>0.11</radius><length>0.08</length></cylinder></geometry>
-      <material><ambient>0.05 0.05 0.05 1</ambient><diffuse>0.05 0.05 0.05 1</diffuse></material>
+      <material>
+        <ambient>0.08 0.08 0.08 1</ambient>
+        <diffuse>0.10 0.10 0.10 1</diffuse>
+        <specular>0.20 0.20 0.20 1</specular>
+      </material>
     </visual>
   </link>
 
@@ -108,7 +122,11 @@
     </collision>
     <visual name="vis">
       <geometry><cylinder><radius>0.11</radius><length>0.08</length></cylinder></geometry>
-      <material><ambient>0.05 0.05 0.05 1</ambient><diffuse>0.05 0.05 0.05 1</diffuse></material>
+      <material>
+        <ambient>0.08 0.08 0.08 1</ambient>
+        <diffuse>0.10 0.10 0.10 1</diffuse>
+        <specular>0.20 0.20 0.20 1</specular>
+      </material>
     </visual>
   </link>
 
