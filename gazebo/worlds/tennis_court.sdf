@@ -8,7 +8,7 @@
     <real_time_factor>1.0</real_time_factor>
     <ode>
       <solver><type>quick</type><iters>50</iters><sor>1.3</sor></solver>
-      <constraints><cfm>0</cfm><erp>0.2</erp><max_vel>0.01</max_vel><surface_layer>0.001</surface_layer></constraints>
+      <constraints><cfm>0</cfm><erp>0.2</erp></constraints>
     </ode>
   </physics>
 
@@ -20,13 +20,6 @@
     <render_engine>ogre2</render_engine>
   </plugin>
   <plugin filename="gz-sim-contact-system"       name="gz::sim::systems::Contact"/>
-
-  <!-- Pose publisher — bridges all model poses so gazebo_extras_node can track ball positions -->
-  <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">
-    <publish_nested_model_pose>false</publish_nested_model_pose>
-    <use_pose_vector_msg>true</use_pose_vector_msg>
-    <update_frequency>10</update_frequency>
-  </plugin>
 
   <!-- Sun -->
   <light type="directional" name="sun">
