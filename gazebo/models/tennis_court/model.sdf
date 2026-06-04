@@ -24,6 +24,61 @@
 <model name="tennis_court">
   <static>true</static>
 
+  <!-- ── SKETCHUP MODEL — visual overlay (court, fence, net, chairs) ──────
+       Scale: 0.016507 m/unit (court length 23.77 m ÷ 1440 SKP units).
+       Pose: yaw=π/2 aligns SKP Y-axis (length) with Gazebo X-axis.
+             tx=-7.725 ty=3.3 centres the court at (0,0,0).
+       Visual only — collision geometry is handled by the links below.   -->
+  <link name="skp_visual">
+    <pose>-7.725 3.3 0 0 0 1.5708</pose>
+    <visual name="v">
+      <geometry>
+        <mesh>
+          <uri>model://tennis_court/meshes/tennis_court_skp.dae</uri>
+          <scale>0.016507 0.016507 0.016507</scale>
+        </mesh>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- ── BENCH / CHAIR COLLISION BOXES (for LiDAR survey detection) ────────
+       Positions estimated from the DAE geometry analysis.
+       These are the elevated clusters found inside the court boundary.
+       Label them as "internal_obstacle" candidates for the survey FSM.   -->
+  <link name="bench_north">
+    <!-- y=+3.39m, inside court near north singles sideline -->
+    <pose>0 3.39 0.35 0 0 0</pose>
+    <collision name="col">
+      <geometry><box><size>1.5 0.45 0.72</size></box></geometry>
+    </collision>
+    <visual name="vis">
+      <geometry><box><size>1.5 0.45 0.72</size></box></geometry>
+      <material><ambient>0.0 0.0 0.0 0.0</ambient></material>
+    </visual>
+  </link>
+  <link name="bench_mid_north">
+    <!-- y=+0.77m, mid-court -->
+    <pose>0 0.77 0.32 0 0 0</pose>
+    <collision name="col">
+      <geometry><box><size>1.2 0.40 0.65</size></box></geometry>
+    </collision>
+    <visual name="vis">
+      <geometry><box><size>1.2 0.40 0.65</size></box></geometry>
+      <material><ambient>0.0 0.0 0.0 0.0</ambient></material>
+    </visual>
+  </link>
+  <link name="bench_mid_south">
+    <!-- y=-1.31m, mid-court south side -->
+    <pose>0 -1.31 0.32 0 0 0</pose>
+    <collision name="col">
+      <geometry><box><size>1.2 0.40 0.65</size></box></geometry>
+    </collision>
+    <visual name="vis">
+      <geometry><box><size>1.2 0.40 0.65</size></box></geometry>
+      <material><ambient>0.0 0.0 0.0 0.0</ambient></material>
+    </visual>
+  </link>
+
   <!-- ── OUTER GROUND (grass/vegetation outside the fence) ───────────── -->
   <link name="outer_ground">
     <visual name="vis">
