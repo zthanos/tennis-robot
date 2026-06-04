@@ -70,6 +70,7 @@ RUN . /opt/ros/humble/setup.sh \
   && rosdep update \
   && rosdep install --from-paths src --ignore-src -r -y \
   && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  && pip uninstall -y tennis-robot 2>/dev/null || true \
   && pip install --no-build-isolation \
        --prefix /ros2_ws/install/tennis_robot \
        /ros2_ws/src/tennis_robot
