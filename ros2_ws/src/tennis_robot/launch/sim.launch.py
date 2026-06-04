@@ -86,6 +86,17 @@ def generate_launch_description():
         output="screen",
     )
 
+    # Web control panel — http://localhost:8081
+    control_panel = ExecuteProcess(
+        cmd=["python3", f"{WORKSPACE}/scripts/control_panel.py"],
+        additional_env={
+            "PYTHONPATH": f"{CONTROLLERS_PATH}:{WORKSPACE}/scripts",
+            "ROBOT_COMMAND_FILE": f"{WORKSPACE}/runtime/robot_command.json",
+            "ROBOT_STATUS_FILE": f"{WORKSPACE}/runtime/robot_status.json",
+        },
+        output="screen",
+    )
+
     # Delay ROS nodes until Gazebo + bridge are up
     delayed_nodes = TimerAction(
         period=4.0,
@@ -96,5 +107,6 @@ def generate_launch_description():
         headless_arg,
         gz_server,
         gz_gui,
+        control_panel,
         delayed_nodes,
     ])

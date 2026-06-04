@@ -194,6 +194,8 @@ services:
       dockerfile: Dockerfile.gazebo
     working_dir: /ros2_ws
     shm_size: "2gb"
+    ports:
+      - "8081:8081"   # web control panel
     devices:
       - /dev/dxg
     volumes:
