@@ -181,6 +181,55 @@ services:
     depends_on:
       - otel-collector
 
+  # ── Gazebo Harmonic simulation (replaces Webots for AMD/WSLg) ───────────────
+  # Start with: docker compose --profile gazebo up gazebo
+  # From a WSL shell so /dev/dri and WSLg mounts are available.
+  #
+  # GPU check:  docker compose --profile gazebo run --rm gazebo glxinfo -B
+  # Good output: "OpenGL renderer string: AMD Radeon RX ..."
+  # Bad output:  "OpenGL renderer string: llvmpipe" → GPU not available
+  gazebo:
+    build:
+      context: .
+      dockerfile: Dockerfile.gazebo
+    working_dir: /ros2_ws
+    shm_size: "2gb"
+    devices:
+      - /dev/dxg
+    volumes:
+      - .:/workspace
+      - ./docker/ros2/cyclonedds.xml:/cyclonedds.xml:ro
+      - /mnt/wslg:/mnt/wslg
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    networks:
+      - ros2-net
+    environment:
+      - DISPLAY=:0
+      - WAYLAND_DISPLAY=wayland-0
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - PULSE_SERVER=/mnt/wslg/PulseServer
+      - LD_LIBRARY_PATH=/usr/lib/wsl/lib
+      - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-RX 7900 XTX}"
+      - LIBGL_ALWAYS_SOFTWARE=0
+      - GZ_SIM_RESOURCE_PATH=/workspace/gazebo/models
+      - ROS_DOMAIN_ID=42
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - CYCLONEDDS_URI=/cyclonedds.xml
+      - PYTHONPATH=/workspace/controllers/ball_detector
+      - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
+      - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
+      - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
+      - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
+      - COLLECTOR_ALIGN_ANGULAR_GAIN=1.4
+      - COLLECTOR_APPROACH_SPEED_M_S=0.12
+      - COLLECTOR_CAPTURE_SPEED_M_S=0.05
+      - COLLECTOR_REVERSE_SPEED_M_S=0.08
+      - SURVEY_DRIVE_SPEED_M_S=0.24
+      - SURVEY_TURN_SPEED_RAD_S=0.75
+    profiles: ["gazebo"]
+
   openscad:
     image: openscad/openscad:bookworm
     profiles: ["cad"]

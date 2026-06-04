@@ -1,0 +1,79 @@
+# Gazebo Harmonic + ROS 2 Humble + AMD GPU (Mesa/DRI via WSLg)
+#
+# Build:  docker compose --profile gazebo build gazebo
+# Run:    docker compose --profile gazebo up gazebo
+#
+# GPU check inside container:
+#   glxinfo -B   → should show "Renderer: AMD Radeon" (not llvmpipe)
+#   gz sim --version   → should print Gazebo Harmonic
+#
+# WSL2 AMD GPU notes:
+#   - Requires Windows 11 + AMD driver 21.50+ (WSLg GPU support)
+#   - Passes /dev/dri and /usr/lib/wsl/lib into container
+#   - MESA_LOADER_DRIVER_OVERRIDE=d3d12 uses the D3D12 Mesa translation layer
+#   - If GPU fails Gazebo falls back to software rendering automatically
+
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ── Gazebo Harmonic ───────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl lsb-release gnupg2 ca-certificates wget \
+  && curl https://packages.osrfoundation.org/gazebo.gpg \
+       --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) \
+       signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] \
+       http://packages.osrfoundation.org/gazebo/ubuntu-stable \
+       $(lsb_release -cs) main" \
+       > /etc/apt/sources.list.d/gazebo-stable.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends gz-harmonic \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── ros_gz bridge (Humble ↔ Harmonic) ────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-ros-gzharmonic \
+    ros-humble-tf2-ros \
+    ros-humble-cv-bridge \
+    ros-humble-rmw-cyclonedds-cpp \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── Mesa / AMD GPU (WSLg DRI) ─────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-dri \
+    libgl1-mesa-glx \
+    libgles2-mesa \
+    mesa-utils \
+    libegl1-mesa \
+    libgbm1 \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── Python / build tools ──────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-cv-bridge \
+    python3-numpy \
+    python3-opencv \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── workspace ─────────────────────────────────────────────────────────────────
+WORKDIR /ros2_ws
+
+COPY ros2_ws/ /ros2_ws/
+COPY controllers/ /workspace/controllers/
+
+RUN . /opt/ros/humble/setup.sh \
+  && rosdep update \
+  && rosdep install --from-paths src --ignore-src -r -y \
+  && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+ENV ROS_SETUP=/ros2_ws/install/setup.sh
+
+COPY docker/ros2/cyclonedds.xml /cyclonedds.xml
+
+CMD ["bash", "-c", \
+  ". /opt/ros/humble/setup.sh && . /ros2_ws/install/setup.sh && \
+   ros2 launch tennis_robot sim.launch.py"]
