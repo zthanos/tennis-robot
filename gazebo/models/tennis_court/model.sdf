@@ -24,21 +24,21 @@
 <model name="tennis_court">
   <static>true</static>
 
-  <!-- ── OUTER GROUND (grass around the court) ───────────────────────── -->
+  <!-- ── OUTER GROUND (grass/vegetation outside the fence) ───────────── -->
   <link name="outer_ground">
     <visual name="vis">
-      <pose>0 0 -0.012 0 0 0</pose>
-      <geometry><box><size>60 45 0.02</size></box></geometry>
+      <pose>0 0 -0.014 0 0 0</pose>
+      <geometry><box><size>80 60 0.02</size></box></geometry>
       <material>
-        <ambient>0.22 0.36 0.16 1</ambient>
-        <diffuse>0.24 0.40 0.18 1</diffuse>
-        <specular>0.03 0.05 0.02 1</specular>
+        <ambient>0.16 0.28 0.12 1</ambient>
+        <diffuse>0.18 0.32 0.14 1</diffuse>
+        <specular>0.02 0.04 0.02 1</specular>
       </material>
     </visual>
   </link>
 
-  <!-- ── RED CLAY COURT SURFACE ────────────────────────────────────────── -->
-  <!-- Vivid terracotta — Roland Garros style -->
+  <!-- ── RED CLAY — fills the full fence-enclosed area ────────────────── -->
+  <!-- Darker, richer terracotta matching reference photo -->
   <link name="ground">
     <collision name="col">
       <geometry><box><size>29.0 15.0 0.02</size></box></geometry>
@@ -47,9 +47,9 @@
       <pose>0 0 -0.01 0 0 0</pose>
       <geometry><box><size>29.0 15.0 0.02</size></box></geometry>
       <material>
-        <ambient>0.78 0.30 0.12 1</ambient>
-        <diffuse>0.82 0.34 0.14 1</diffuse>
-        <specular>0.06 0.04 0.03 1</specular>
+        <ambient>0.64 0.20 0.09 1</ambient>
+        <diffuse>0.68 0.23 0.11 1</diffuse>
+        <specular>0.05 0.03 0.02 1</specular>
       </material>
     </visual>
   </link>
@@ -112,15 +112,16 @@
       <geometry><box><size>11.3 0.02 0.914</size></box></geometry>
     </collision>
 
-    <!-- Rope mesh (dark green/gray body) -->
+    <!-- Rope mesh — off-white/cream (matches reference photo net) -->
     <visual name="net_ropes">
       <pose>0 0 0 0 0 0</pose>
       <geometry>
         <mesh><uri>model://tennis_court/meshes/net_mesh.dae</uri></mesh>
       </geometry>
       <material>
-        <ambient>0.12 0.22 0.12 0.85</ambient>
-        <diffuse>0.12 0.22 0.12 0.85</diffuse>
+        <ambient>0.88 0.86 0.80 0.92</ambient>
+        <diffuse>0.92 0.90 0.84 0.92</diffuse>
+        <specular>0.15 0.14 0.12 1</specular>
       </material>
     </visual>
 
@@ -152,10 +153,11 @@
     </collision>
     <visual name="v">
       <geometry><mesh><uri>model://tennis_court/meshes/fence_long.dae</uri></mesh></geometry>
+      <!-- Dark forest green — matches reference photo fence color -->
       <material>
-        <ambient>0.38 0.40 0.42 1</ambient>
-        <diffuse>0.46 0.48 0.52 1</diffuse>
-        <specular>0.60 0.62 0.65 1</specular>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
       </material>
     </visual>
   </link>
@@ -168,10 +170,11 @@
     </collision>
     <visual name="v">
       <geometry><mesh><uri>model://tennis_court/meshes/fence_long.dae</uri></mesh></geometry>
+      <!-- Dark forest green — matches reference photo fence color -->
       <material>
-        <ambient>0.38 0.40 0.42 1</ambient>
-        <diffuse>0.46 0.48 0.52 1</diffuse>
-        <specular>0.60 0.62 0.65 1</specular>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
       </material>
     </visual>
   </link>
@@ -184,10 +187,11 @@
     </collision>
     <visual name="v">
       <geometry><mesh><uri>model://tennis_court/meshes/fence_wide.dae</uri></mesh></geometry>
+      <!-- Dark forest green — matches reference photo fence color -->
       <material>
-        <ambient>0.38 0.40 0.42 1</ambient>
-        <diffuse>0.46 0.48 0.52 1</diffuse>
-        <specular>0.60 0.62 0.65 1</specular>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
       </material>
     </visual>
   </link>
@@ -200,10 +204,11 @@
     </collision>
     <visual name="v">
       <geometry><mesh><uri>model://tennis_court/meshes/fence_wide.dae</uri></mesh></geometry>
+      <!-- Dark forest green — matches reference photo fence color -->
       <material>
-        <ambient>0.38 0.40 0.42 1</ambient>
-        <diffuse>0.46 0.48 0.52 1</diffuse>
-        <specular>0.60 0.62 0.65 1</specular>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
       </material>
     </visual>
   </link>

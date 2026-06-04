@@ -21,36 +21,35 @@
   </plugin>
   <plugin filename="gz-sim-contact-system"       name="gz::sim::systems::Contact"/>
 
-  <!-- Afternoon sun (14:00) — warm, low-angle for natural shadows -->
+  <!-- Morning sun ~10:00 — low angle, strong Mediterranean light, sharp shadows -->
   <light type="directional" name="sun">
     <cast_shadows>true</cast_shadows>
     <pose>0 0 100 0 0 0</pose>
-    <diffuse>0.98 0.90 0.72 1</diffuse>
-    <specular>0.22 0.18 0.12 1</specular>
-    <direction>-0.3 0.2 -0.93</direction>
+    <diffuse>1.05 0.95 0.78 1</diffuse>
+    <specular>0.28 0.22 0.14 1</specular>
+    <direction>-0.55 0.30 -0.78</direction>
   </light>
 
-  <!-- Soft sky fill light -->
+  <!-- Cool sky fill (simulates light from the open sky opposite the sun) -->
   <light type="directional" name="sky_fill">
     <cast_shadows>false</cast_shadows>
     <pose>0 0 50 0 0 0</pose>
-    <diffuse>0.28 0.38 0.52 1</diffuse>
-    <specular>0.05 0.06 0.08 1</specular>
-    <direction>0.1 -0.1 -1.0</direction>
+    <diffuse>0.22 0.30 0.46 1</diffuse>
+    <specular>0.03 0.04 0.06 1</specular>
+    <direction>0.45 -0.25 -0.86</direction>
   </light>
 
   <scene>
-    <!-- Sky dome with clouds (OGRE2 atmospheric scattering) -->
     <sky>
-      <time>14</time>
+      <time>10</time>
       <sunrise>6</sunrise>
       <sunset>20</sunset>
       <clouds>
-        <speed>8</speed>
+        <speed>6</speed>
       </clouds>
     </sky>
-    <ambient>0.40 0.38 0.32 1</ambient>
-    <background>0.52 0.68 0.88 1</background>
+    <ambient>0.35 0.32 0.26 1</ambient>
+    <background>0.58 0.72 0.90 1</background>
     <shadows>true</shadows>
     <grid>false</grid>
   </scene>
