@@ -143,6 +143,7 @@ class ControllerNode(Node):
         self._survey_complete_reported = False
         self._map_completion_reported = False
         self._last_survey_log_key: tuple[str, str] | None = None
+        self._last_status_file_write_s: float = 0.0
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
@@ -735,6 +736,7 @@ class ControllerNode(Node):
     def _publish_status(self, command: ConceptACommand, observation: BallObservationInput) -> None:
         status = {
             "mode": self.control_mode,
+            "actual_mode": self.control_mode,       # alias for control panel JS compatibility
             "requested_mode": self._control_command_mode,
             "collector_state": command.state.value,
             "collection_count": self.collection_count,
@@ -759,6 +761,16 @@ class ControllerNode(Node):
         msg = String()
         msg.data = json.dumps(status)
         self._pub_status.publish(msg)
+
+        # Write to file so the web control panel can read it (throttled to ~2 Hz)
+        now = time.time()
+        if now - self._last_status_file_write_s >= 0.5:
+            self._last_status_file_write_s = now
+            try:
+                from control_bus import RobotStatusStore
+                RobotStatusStore.from_env().write(status)
+            except Exception:
+                pass
 
 
 def main(args=None) -> None:
