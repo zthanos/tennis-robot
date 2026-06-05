@@ -433,6 +433,7 @@ class Ros2LidarCourtSurvey:
             return BaseCommand(0.0, math.copysign(self.config.turn_speed_rad_s, err))
 
         # ── Phase 6: drive the long side (past net, toward opposite baseline) ───
+        # Uses 80th-pct front range so sparse net returns don't trigger a stop.
         if self.state == LidarSurveyState.DRIVE_LONG_SIDE:
             if self._state_elapsed_s >= self.config.sideline_drive_timeout_s:
                 self._finalize_full_survey("long_side_drive_timeout")
@@ -453,7 +454,8 @@ class Ros2LidarCourtSurvey:
                 ):
                     self._far_baseline_to_fence_m = round(self._last_front_range_m, 3)
                     self._far_baseline_crossed = True
-            front = self._last_front_range_m
+            # 80th-pct ignores sparse net; only a solid fence stops the robot
+            front = self._through_front_range()
             if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
                 self._far_short_heading = (self._long_side_heading or 0.0) + math.pi / 2
                 self._enter(LidarSurveyState.TURN_TO_FAR_SHORT, "far_baseline_fence_reached_turning_90_left")
@@ -511,6 +513,7 @@ class Ros2LidarCourtSurvey:
             return BaseCommand(0.0, math.copysign(self.config.turn_speed_rad_s, err))
 
         # ── Phase 10: return long side (net passes on RIGHT) — full loop done ───
+        # Also uses 80th-pct front range to pass through the net without stopping.
         if self.state == LidarSurveyState.DRIVE_RETURN:
             if self._state_elapsed_s >= self.config.sideline_drive_timeout_s:
                 self._finalize_full_survey("return_drive_timeout")
@@ -522,7 +525,7 @@ class Ros2LidarCourtSurvey:
                     self._return_range_samples.append(left_r)
                     if len(self._return_range_samples) > 400:
                         del self._return_range_samples[:200]
-            front = self._last_front_range_m
+            front = self._through_front_range()
             if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
                 self._finalize_full_survey(None)
                 return BaseCommand(0.0, 0.0)
@@ -1007,8 +1010,10 @@ class Ros2LidarCourtSurvey:
         ranges: list[float],
         center_rad: float,
         half_rad: float,
+        pct: float = 0.50,
     ) -> float:
-        """Median valid range in the angular sector [center−half, center+half]."""
+        """pct-ile valid range in [center−half, center+half].
+        pct=0.50 → median; pct=0.80 → 80th percentile (ignores sparse net hits)."""
         vals: list[float] = []
         for i, r in enumerate(ranges):
             if not math.isfinite(r) or r < self.config.lidar_min_range_m or r > self.config.lidar_max_range_m:
@@ -1020,7 +1025,17 @@ class Ros2LidarCourtSurvey:
         if not vals:
             return math.inf
         vals.sort()
-        return vals[len(vals) // 2]
+        idx = min(len(vals) - 1, int(round((len(vals) - 1) * pct)))
+        return vals[idx]
+
+    def _through_front_range(self) -> float:
+        """80th-pct front range with ±20° sector: sees through sparse net,
+        returns solid distance only when a dense obstacle (fence) is ahead."""
+        if not self._last_scan_ranges:
+            return math.inf
+        return self._sector_median_range(
+            self._last_scan_ranges, 0.0, math.radians(20.0), pct=0.80
+        )
 
     def _drive_straight_heading(self, yaw_rad: float, target_heading: float) -> BaseCommand:
         """Drive forward while keeping the given world heading (P-controller)."""
