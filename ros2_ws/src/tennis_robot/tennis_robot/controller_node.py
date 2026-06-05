@@ -517,18 +517,13 @@ class ControllerNode(Node):
                 self._publish_command("idle", "controller-survey-complete")
                 bounds = self.survey_behavior.court_bounds
                 if bounds:
-                    try:
-                        sys.path.insert(0, "/workspace/scripts")
-                        from db_store import TennisRobotDB
-                        inserted = TennisRobotDB().import_survey(bounds)
-                        if inserted:
-                            self.get_logger().info(
-                                f"survey saved to DB: type={bounds.get('survey_type')} "
-                                f"status={bounds.get('status')} "
-                                f"is_doubles={bounds.get('is_doubles')}"
-                            )
-                    except Exception as exc:
-                        self.get_logger().warning(f"survey DB save failed: {exc}")
+                    self.get_logger().info(
+                        f"survey complete: type={bounds.get('survey_type')} "
+                        f"status={bounds.get('status')} "
+                        f"is_doubles={bounds.get('is_doubles')}"
+                    )
+                    # DB import is handled by the control panel when it reads
+                    # court_boundary.json — no direct DuckDB write from here.
             return ConceptACommand(
                 state=CollectorState.IDLE,
                 base=BaseCommand(0.0, 0.0),

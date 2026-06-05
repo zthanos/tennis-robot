@@ -72,7 +72,7 @@ class LidarSurveyConfig:
     expected_court_length_m: float = 23.77
     expected_court_width_m: float = 10.97
     sideline_drive_stop_range_m: float = 2.5   # long-side legs (baseline fence)
-    sideline_short_stop_range_m: float = 0.70  # short-side legs: get close so robot exits sideline
+    sideline_short_stop_range_m: float = 1.20  # short-side legs (> safety_slow_range 0.75 so full speed)
     sideline_avoidance_range_m: float = 2.8    # start obstacle-avoidance steering
     sideline_drive_timeout_s: float = 300.0
     sideline_sector_half_deg: float = 25.0
@@ -1878,9 +1878,12 @@ class ObstacleSurvey:
             if label in {"fence", "wall", "enclosure", "boundary"}:
                 return "fence", 0.90
         sparsity = self._front_sparsity()
-        if sparsity >= self.config.net_sparse_threshold:
-            return "net", round(min(0.90, 0.50 + sparsity * 0.40), 2)
         span_deg = self._front_obstacle_span_deg()
+        if sparsity >= self.config.net_sparse_threshold:
+            # Sparse obstacle: distinguish net (narrow) from fence (fills full front)
+            if span_deg >= self.config.wide_obstacle_span_deg:
+                return "fence", round(min(0.85, 0.55 + sparsity * 0.30), 2)
+            return "net", round(min(0.90, 0.50 + sparsity * 0.40), 2)
         if span_deg >= self.config.wide_obstacle_span_deg:
             return "fence", 0.70
         if span_deg > 0.0:
