@@ -71,7 +71,9 @@ class LidarSurveyConfig:
     heading_tolerance_rad: float = math.radians(8.0)
     expected_court_length_m: float = 23.77
     expected_court_width_m: float = 10.97
-    sideline_drive_stop_range_m: float = 2.5
+    sideline_drive_stop_range_m: float = 2.5   # long-side legs (baseline fence)
+    sideline_short_stop_range_m: float = 0.70  # short-side legs: get close so robot exits sideline
+    sideline_avoidance_range_m: float = 2.8    # start obstacle-avoidance steering
     sideline_drive_timeout_s: float = 300.0
     sideline_sector_half_deg: float = 25.0
     output_file: Path = DEFAULT_BOUNDARY_FILE
@@ -110,6 +112,8 @@ class LidarSurveyConfig:
             expected_court_length_m=_env_float("SURVEY_EXPECTED_COURT_LENGTH_M", d.expected_court_length_m),
             expected_court_width_m=_env_float("SURVEY_EXPECTED_COURT_WIDTH_M", d.expected_court_width_m),
             sideline_drive_stop_range_m=_env_float("SURVEY_SIDELINE_DRIVE_STOP_M", d.sideline_drive_stop_range_m),
+            sideline_short_stop_range_m=_env_float("SURVEY_SIDELINE_SHORT_STOP_M", d.sideline_short_stop_range_m),
+            sideline_avoidance_range_m=_env_float("SURVEY_SIDELINE_AVOIDANCE_M", d.sideline_avoidance_range_m),
             sideline_drive_timeout_s=_env_float("SURVEY_SIDELINE_DRIVE_TIMEOUT_S", d.sideline_drive_timeout_s),
             sideline_sector_half_deg=_env_float("SURVEY_SIDELINE_SECTOR_HALF_DEG", d.sideline_sector_half_deg),
             output_file=Path(os.getenv("SURVEY_OUTPUT_FILE", str(d.output_file))),
@@ -414,8 +418,8 @@ class Ros2LidarCourtSurvey:
                     self._left_sideline_to_fence_m = round(self._last_front_range_m, 3)
                     self._left_sideline_line_crossed = True
             front = self._last_front_range_m
-            if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
-                # Short leg complete — turn 90° left again for the long leg
+            if not math.isinf(front) and front <= self.config.sideline_short_stop_range_m:
+                # Short leg complete — robot is now outside the sideline
                 self._long_side_heading = (self._sideline_heading or 0.0) + math.pi / 2
                 self._enter(LidarSurveyState.TURN_TO_LONG_SIDE, "side_fence_reached_turning_90_left")
                 return BaseCommand(0.0, 0.0)
@@ -463,7 +467,8 @@ class Ros2LidarCourtSurvey:
                     self._far_short_heading = (self._long_side_heading or 0.0) + math.pi / 2
                     self._enter(LidarSurveyState.TURN_TO_FAR_SHORT, "far_baseline_fence_reached_turning_90_left")
                     return BaseCommand(0.0, 0.0)
-            return self._drive_straight_heading(yaw_rad, self._long_side_heading)
+            avoid = self._obstacle_avoidance_cmd(yaw_rad, self._long_side_heading)
+            return avoid if avoid is not None else self._drive_straight_heading(yaw_rad, self._long_side_heading)
 
         # ── Phase 7: third 90° left turn (far baseline → far short side) ────────
         if self.state == LidarSurveyState.TURN_TO_FAR_SHORT:
@@ -498,7 +503,7 @@ class Ros2LidarCourtSurvey:
                     self._right_sideline_to_fence_m = round(self._last_front_range_m, 3)
                     self._right_sideline_line_crossed = True
             front = self._last_front_range_m
-            if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
+            if not math.isinf(front) and front <= self.config.sideline_short_stop_range_m:
                 self._return_heading = (self._far_short_heading or 0.0) + math.pi / 2
                 self._enter(LidarSurveyState.TURN_TO_RETURN, "far_side_fence_reached_turning_90_left")
                 return BaseCommand(0.0, 0.0)
@@ -536,7 +541,8 @@ class Ros2LidarCourtSurvey:
                 else:
                     self._finalize_full_survey(None)
                     return BaseCommand(0.0, 0.0)
-            return self._drive_straight_heading(yaw_rad, self._return_heading)
+            avoid = self._obstacle_avoidance_cmd(yaw_rad, self._return_heading)
+            return avoid if avoid is not None else self._drive_straight_heading(yaw_rad, self._return_heading)
 
         # ── Phases below are disabled (full LiDAR court survey — future work) ──
         # if self.state == LidarSurveyState.RETURN_TO_CENTER: ...
@@ -1052,6 +1058,34 @@ class Ros2LidarCourtSurvey:
             min(self.config.turn_speed_rad_s * 0.5, err * 1.8),
         )
         return BaseCommand(self.config.drive_speed_m_s, turn)
+
+    def _obstacle_avoidance_cmd(self, yaw_rad: float, target_heading: float) -> BaseCommand | None:
+        """Reactive obstacle avoidance for the long-side perimeter legs.
+
+        Checks front-left and front-right sectors. If something (non-net)
+        is within sideline_avoidance_range_m, steers toward the more open
+        side (fence side = further from court center). Returns None when
+        the path is clear so the caller can use normal heading control.
+        """
+        if not self._last_scan_ranges:
+            return None
+        half = math.radians(30.0)
+        fl = self._sector_median_range(self._last_scan_ranges, math.radians(40), half)   # front-left
+        fr = self._sector_median_range(self._last_scan_ranges, -math.radians(40), half)  # front-right
+        threshold = self.config.sideline_avoidance_range_m
+        fl_blocked = math.isfinite(fl) and fl < threshold
+        fr_blocked = math.isfinite(fr) and fr < threshold
+        if not fl_blocked and not fr_blocked:
+            return None
+        # Steer toward whichever side is more open; slow down while avoiding
+        if fl_blocked and not fr_blocked:
+            turn = -self.config.turn_speed_rad_s * 0.6   # steer right
+        elif fr_blocked and not fl_blocked:
+            turn = self.config.turn_speed_rad_s * 0.6    # steer left
+        else:
+            # Both sides blocked — steer toward larger gap
+            turn = self.config.turn_speed_rad_s * 0.6 if fr < fl else -self.config.turn_speed_rad_s * 0.6
+        return BaseCommand(self.config.drive_speed_m_s * 0.5, turn)
 
     def _fail(self, reason: str) -> None:
         self._failure_reason = reason
