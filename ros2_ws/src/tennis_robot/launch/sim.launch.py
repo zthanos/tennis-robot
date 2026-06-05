@@ -5,6 +5,7 @@ from pathlib import Path
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
+from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -18,6 +19,14 @@ GZ_MODELS = f"{WORKSPACE}/gazebo/models"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 CONTROLLERS_PATH = f"{WORKSPACE}/controllers/ball_detector"
+ROS_PYTHONPATH = ":".join(
+    [
+        CONTROLLERS_PATH,
+        "/ros2_ws/install/tennis_robot/lib/python3.10/site-packages",
+        "/ros2_ws/install/tennis_robot_msgs/local/lib/python3.10/dist-packages",
+        os.environ.get("PYTHONPATH", ""),
+    ]
+)
 
 
 def generate_launch_description():
@@ -28,14 +37,17 @@ def generate_launch_description():
     headless = LaunchConfiguration("headless")
 
     # ── Gazebo ──────────────────────────────────────────────────────────────
-    gz_server = ExecuteProcess(
-        cmd=["gz", "sim", "-r", "-s", GZ_WORLD],
+    gz_full = ExecuteProcess(
+        cmd=["gz", "sim", "-r", "--render-engine", "ogre", GZ_WORLD],
+        condition=UnlessCondition(headless),
         additional_env={"GZ_SIM_RESOURCE_PATH": GZ_MODELS},
         output="screen",
     )
 
-    gz_gui = ExecuteProcess(
-        cmd=["gz", "sim", "-g"],
+    gz_headless = ExecuteProcess(
+        cmd=["gz", "sim", "-r", "-s", "--render-engine", "ogre", GZ_WORLD],
+        condition=IfCondition(headless),
+        additional_env={"GZ_SIM_RESOURCE_PATH": GZ_MODELS},
         output="screen",
     )
 
@@ -54,7 +66,7 @@ def generate_launch_description():
         executable="perception_node",
         name="perception_node",
         output="screen",
-        additional_env={"PYTHONPATH": CONTROLLERS_PATH},
+        additional_env={"PYTHONPATH": ROS_PYTHONPATH},
     )
 
     controller = Node(
@@ -63,7 +75,7 @@ def generate_launch_description():
         name="controller_node",
         output="screen",
         additional_env={
-            "PYTHONPATH": CONTROLLERS_PATH,
+            "PYTHONPATH": ROS_PYTHONPATH,
             "ROBOT_COMMAND_FILE": f"{WORKSPACE}/runtime/robot_command.json",
         },
     )
@@ -86,13 +98,32 @@ def generate_launch_description():
         output="screen",
     )
 
+    sensor_snapshots = Node(
+        package="tennis_robot",
+        executable="sensor_snapshot_node",
+        name="sensor_snapshot_node",
+        output="screen",
+        additional_env={
+            "PYTHONPATH": ROS_PYTHONPATH,
+            "ROBOT_SENSOR_FILE": f"{WORKSPACE}/runtime/robot_sensors.json",
+        },
+    )
+
     # Web control panel — http://localhost:8081
     control_panel = ExecuteProcess(
-        cmd=["python3", f"{WORKSPACE}/scripts/control_panel.py"],
+        cmd=[
+            "python3",
+            f"{WORKSPACE}/scripts/control_panel.py",
+            "--host",
+            "0.0.0.0",
+            "--db-file",
+            f"{WORKSPACE}/runtime/tennis_robot_gazebo.db",
+        ],
         additional_env={
             "PYTHONPATH": f"{CONTROLLERS_PATH}:{WORKSPACE}/scripts",
             "ROBOT_COMMAND_FILE": f"{WORKSPACE}/runtime/robot_command.json",
             "ROBOT_STATUS_FILE": f"{WORKSPACE}/runtime/robot_status.json",
+            "ROBOT_SENSOR_FILE": f"{WORKSPACE}/runtime/robot_sensors.json",
         },
         output="screen",
     )
@@ -100,13 +131,13 @@ def generate_launch_description():
     # Delay ROS nodes until Gazebo + bridge are up
     delayed_nodes = TimerAction(
         period=4.0,
-        actions=[bridge, perception, controller, command_bridge, gz_extras],
+        actions=[bridge, perception, controller, command_bridge, gz_extras, sensor_snapshots],
     )
 
     return LaunchDescription([
         headless_arg,
-        gz_server,
-        gz_gui,
+        gz_full,
+        gz_headless,
         control_panel,
         delayed_nodes,
     ])

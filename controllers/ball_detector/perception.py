@@ -316,7 +316,8 @@ def detect_obstacle_class(frame: np.ndarray) -> ObstacleDetection | None:
     if h_score < 0.012 or v_score < 0.006:
         return None
 
-    ys, _ = np.nonzero(cv2.bitwise_or(h_pattern, v_pattern))
+    combined = cv2.bitwise_or(h_pattern, v_pattern)
+    ys, _ = np.nonzero(combined)
     if ys.size == 0:
         return None
 
@@ -324,7 +325,18 @@ def detect_obstacle_class(frame: np.ndarray) -> ObstacleDetection | None:
     bottom_frac = float(roi_y0 + int(np.max(ys))) / float(h)
     height_frac = bottom_frac - top_frac
 
-    if (top_frac < 0.08 and height_frac > 0.42) or height_frac > 0.58:
+    # Check edge density in the lower third of the ROI.
+    # Net: bottom is clear (court surface visible under/through net).
+    # Fence: wire pattern extends throughout — lower third also has edges.
+    roi_h = combined.shape[0]
+    lower_third = combined[2 * roi_h // 3:]
+    lower_density = float(np.count_nonzero(lower_third)) / max(1, lower_third.size)
+
+    large_extent = (top_frac < 0.08 and height_frac > 0.42) or height_frac > 0.58
+    if large_extent:
+        if lower_density < 0.006:
+            # Lower ROI clear → net filling frame at close range.
+            return ObstacleDetection("net", min(1.0, (h_score + v_score) * 20))
         return ObstacleDetection("fence", min(1.0, h_score * 30))
     if 0.08 <= height_frac <= 0.52 and top_frac >= 0.08 and bottom_frac <= 0.82:
         return ObstacleDetection("net", min(1.0, (h_score + v_score) * 20))

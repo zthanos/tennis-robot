@@ -532,11 +532,20 @@ class ControllerNode(Node):
         if key == self._last_survey_log_key:
             return
         self._last_survey_log_key = key
+        extents = (nav.get("scan_coverage") or {}).get("world_extents") or {}
+        ext_str = (
+            f"x[{extents.get('min_x_m'):.1f}..{extents.get('max_x_m'):.1f}] "
+            f"y[{extents.get('min_y_m'):.1f}..{extents.get('max_y_m'):.1f}]"
+            if extents else "extents=none"
+        )
+        dbg = nav.get("net_detection_debug") or {}
+        dbg_str = " ".join(f"{k}={v}" for k, v in dbg.items()) if dbg else "none"
         self.get_logger().info(
             "map_court "
             f"state={nav.get('state')} event={nav.get('last_event')} "
             f"points={nav.get('map_point_count')} net={'yes' if nav.get('net_boundary') else 'no'} "
-            f"target={nav.get('active_target')} dist={nav.get('distance_to_target_m')}"
+            f"target={nav.get('active_target')} dist={nav.get('distance_to_target_m')} "
+            f"{ext_str} net_dbg=[{dbg_str}]"
         )
 
     def _map_mission_command_for_mode(self, mode: str) -> ConceptACommand:

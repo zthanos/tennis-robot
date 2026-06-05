@@ -5,8 +5,10 @@ Run from the project root:
     python gazebo/scripts/gen_court_meshes.py
 
 Output (committed to repo so Docker doesn't need to regenerate):
-    gazebo/models/tennis_court/meshes/fence_long.dae   — 15 × 4 m panel (east/west)
-    gazebo/models/tennis_court/meshes/fence_wide.dae   — 29.08 × 4 m panel (north/south)
+    gazebo/models/tennis_court/meshes/fence_long.dae   — 17 × 4 m panel (east/west)
+    gazebo/models/tennis_court/meshes/fence_wide.dae   — 33.08 × 4 m panel (north)
+    gazebo/models/tennis_court/meshes/fence_gate_side.dae — 15.54 × 4 m panel (south side panels)
+    gazebo/models/tennis_court/meshes/gate_leaf.dae    — 1 × 2.2 m gate leaf
     gazebo/models/tennis_court/meshes/net_mesh.dae     — 11.3 × 0.914 m rope mesh
 
 Fence: diagonal ±45° wire ribbons, 4 cm rhombus diamonds, 1 mm wire radius.
@@ -220,8 +222,10 @@ def main() -> None:
     MESHES.mkdir(parents=True, exist_ok=True)
 
     tasks = [
-        ("fence_long",   gen_fence,  {"width": 15.0,   "height": 4.0}),
-        ("fence_wide",   gen_fence,  {"width": 29.08,  "height": 4.0}),
+        ("fence_long",   gen_fence,  {"width": 17.0,   "height": 4.0}),
+        ("fence_wide",   gen_fence,  {"width": 33.08,  "height": 4.0}),
+        ("fence_gate_side", gen_fence, {"width": 15.54, "height": 4.0}),
+        ("gate_leaf",    gen_fence,  {"width": 1.0,    "height": 2.2, "post_step": 1.0}),
         ("net_mesh",     gen_net,    {"width": 11.3,   "height": 0.914, "h_step": 0.05, "v_step": 0.05}),
     ]
 

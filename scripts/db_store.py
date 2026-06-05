@@ -60,6 +60,26 @@ _SCHEMA = [
         court_id   TEXT
     )
     """,
+    """
+    CREATE SEQUENCE IF NOT EXISTS obs_run_id_seq START 1
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS obstacle_survey_runs (
+        id           INTEGER PRIMARY KEY,
+        started_at   DOUBLE NOT NULL,
+        elapsed_s    DOUBLE,
+        status       TEXT,
+        failure_reason TEXT,
+        obstacle_type  TEXT,
+        obstacle_dist_m DOUBLE,
+        obstacle_conf  DOUBLE,
+        distance_traveled_m DOUBLE,
+        scan_count   INTEGER,
+        robot_x_m    DOUBLE,
+        robot_y_m    DOUBLE,
+        debug_log    TEXT
+    )
+    """,
 ]
 
 
@@ -233,7 +253,9 @@ class TennisRobotDB:
                 "SELECT COUNT(*) FROM surveys WHERE surveyed_at=?", [surveyed_at]
             ).fetchone()[0]:
                 return False
-            next_id = self._conn.execute("SELECT nextval('survey_id_seq')").fetchone()[0]
+            next_id = self._conn.execute(
+                "SELECT COALESCE(MAX(id), 0) + 1 FROM surveys"
+            ).fetchone()[0]
             status = bounds.get("status") or ("SUCCESS" if bounds.get("survey_complete") else "FAILED")
             pt_count = int(bounds.get("point_count") or 0)
             cg = bounds.get("court_geometry") or {}
@@ -263,6 +285,78 @@ class TennisRobotDB:
                 ],
             )
         return True
+
+    # ── Obstacle survey runs ───────────────────────────────────────────────────
+
+    def save_obstacle_run(self, telemetry: dict) -> bool:
+        """Persist one ObstacleSurvey run. Returns True if inserted (new run)."""
+        started_at = float(telemetry.get("elapsed_s") or 0)
+        result = telemetry.get("result") or {}
+        surveyed_at = float(result.get("surveyed_at") or 0)
+        if not surveyed_at:
+            return False
+        with self._lock:
+            if self._conn.execute(
+                "SELECT COUNT(*) FROM obstacle_survey_runs WHERE started_at=?", [surveyed_at]
+            ).fetchone()[0]:
+                return False
+            next_id = self._conn.execute(
+                "SELECT COALESCE(MAX(id), 0) + 1 FROM obstacle_survey_runs"
+            ).fetchone()[0]
+            pose = result.get("robot_pose_at_stop") or {}
+            self._conn.execute(
+                """
+                INSERT INTO obstacle_survey_runs
+                  (id, started_at, elapsed_s, status, failure_reason,
+                   obstacle_type, obstacle_dist_m, obstacle_conf,
+                   distance_traveled_m, scan_count, robot_x_m, robot_y_m, debug_log)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """,
+                [
+                    next_id,
+                    surveyed_at,
+                    result.get("elapsed_s"),
+                    result.get("status"),
+                    result.get("failure_reason"),
+                    result.get("obstacle_type"),
+                    result.get("obstacle_distance_m"),
+                    result.get("obstacle_confidence"),
+                    result.get("distance_traveled_m"),
+                    telemetry.get("scan_count"),
+                    pose.get("x_m"),
+                    pose.get("y_m"),
+                    json.dumps(telemetry.get("debug_log") or []),
+                ],
+            )
+        return True
+
+    def obstacle_runs(self, limit: int = 50) -> list[dict]:
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT id, started_at, elapsed_s, status, failure_reason,
+                       obstacle_type, obstacle_dist_m, obstacle_conf,
+                       distance_traveled_m, scan_count, robot_x_m, robot_y_m, debug_log
+                FROM   obstacle_survey_runs
+                ORDER  BY started_at DESC
+                LIMIT  ?
+                """,
+                [limit],
+            ).fetchall()
+        cols = [
+            "id", "started_at", "elapsed_s", "status", "failure_reason",
+            "obstacle_type", "obstacle_dist_m", "obstacle_conf",
+            "distance_traveled_m", "scan_count", "robot_x_m", "robot_y_m", "debug_log",
+        ]
+        results = []
+        for r in rows:
+            row = dict(zip(cols, r))
+            try:
+                row["debug_log"] = json.loads(row["debug_log"] or "[]")
+            except Exception:
+                row["debug_log"] = []
+            results.append(row)
+        return results
 
     # ── Full read/write (used by /api/vendors) ─────────────────────────────────
 

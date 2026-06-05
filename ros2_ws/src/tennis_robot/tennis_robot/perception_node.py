@@ -90,11 +90,11 @@ class PerceptionNode(Node):
     def _decode_image(self, msg: Image) -> np.ndarray | None:
         arr = np.frombuffer(bytes(msg.data), dtype=np.uint8)
         if msg.encoding == "bgra8":
-            frame = arr.reshape((msg.height, msg.width, 4))
-            return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+            return cv2.cvtColor(arr.reshape((msg.height, msg.width, 4)), cv2.COLOR_BGRA2BGR)
+        if msg.encoding == "rgba8":
+            return cv2.cvtColor(arr.reshape((msg.height, msg.width, 4)), cv2.COLOR_RGBA2BGR)
         if msg.encoding == "rgb8":
-            frame = arr.reshape((msg.height, msg.width, 3))
-            return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            return cv2.cvtColor(arr.reshape((msg.height, msg.width, 3)), cv2.COLOR_RGB2BGR)
         if msg.encoding == "bgr8":
             return arr.reshape((msg.height, msg.width, 3))
         self.get_logger().warn(f"unsupported image encoding: {msg.encoding}")

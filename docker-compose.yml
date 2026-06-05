@@ -200,7 +200,7 @@ services:
       - /dev/dxg
     volumes:
       - .:/workspace
-      - ./docker/ros2/cyclonedds.xml:/cyclonedds.xml:ro
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
       - /mnt/wslg:/mnt/wslg
       - /usr/lib/wsl:/usr/lib/wsl:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
@@ -218,7 +218,7 @@ services:
       - GZ_SIM_RESOURCE_PATH=/workspace/gazebo/models
       - ROS_DOMAIN_ID=42
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-      - CYCLONEDDS_URI=/cyclonedds.xml
+      - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
       - PYTHONPATH=/workspace/controllers/ball_detector
       - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
       - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5

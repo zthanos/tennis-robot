@@ -23,6 +23,7 @@ setup(
             "controller_node = tennis_robot.controller_node:main",
             "command_bridge_node = tennis_robot.command_bridge_node:main",
             "gazebo_extras_node = tennis_robot.gazebo_extras_node:main",
+            "sensor_snapshot_node = tennis_robot.sensor_snapshot_node:main",
         ],
     },
 )

@@ -580,6 +580,15 @@ HTML = """<!doctype html>
             TRIGGERED: —
           </div>
         </div>
+        <div class="panel" style="margin-top:14px;">
+          <h3>Obstacle Survey Debug &nbsp;<span id="obsState" style="font-size:13px;font-weight:400;color:var(--muted);">idle</span></h3>
+          <div id="obsKv" class="kv" style="margin-top:8px;margin-bottom:10px;"></div>
+          <div id="obsLog" style="font-family:monospace;font-size:11px;line-height:1.5;background:#090d12;border:1px solid var(--line);border-radius:6px;padding:8px 10px;max-height:260px;overflow-y:auto;white-space:pre;"></div>
+          <details style="margin-top:12px;">
+            <summary style="cursor:pointer;font-size:12px;color:var(--muted);user-select:none;">Previous runs (history)</summary>
+            <div id="obsRunsTable" style="margin-top:8px;font-size:12px;"></div>
+          </details>
+        </div>
         <div id="surveyBoundaryPanel" class="panel" style="margin-top:14px;">
           <h3>Court Map Boundary &nbsp;<span id="surveyBoundaryStatus" style="font-size:13px;font-weight:400;color:var(--muted);">no court map data</span></h3>
           <div id="surveyBoundaryKv" class="kv" style="margin-top:10px;"></div>
@@ -776,6 +785,7 @@ HTML = """<!doctype html>
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
+    let lastSurveyDiscovery = null;
 
     function fmt(value, suffix = "") {
       if (value === null || value === undefined || Number.isNaN(value)) return "none";
@@ -1019,6 +1029,8 @@ HTML = """<!doctype html>
       renderSensors();
       renderSurveyBoundary(robot.survey || {});
       renderSurveyDiscovery(robot.survey || {});
+      renderObstacleSurveyDebug((robot.survey || {}).navigation || {});
+      renderObstacleRunsHistory(diagnostics.obstacle_runs || []);
       renderMapMission(robot.map_mission || {});
       updateCommandButtons();
 
@@ -1248,6 +1260,413 @@ HTML = """<!doctype html>
         ["Net source", net?.source || nav.net_boundary_source || "none"],
       ]);
     }
+    function renderSurveyDiscovery(survey) {
+      const canvas = document.getElementById("surveyDiscoveryMap");
+      const statusEl = document.getElementById("surveyDiscoveryStatus");
+      const metaEl = document.getElementById("surveyDiscoveryMeta");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const liveNav = survey.navigation || {};
+      const liveBounds = survey.bounds || {};
+      const persistedBounds = diagnostics.court_boundary || {};
+      const livePoints = Array.isArray(liveNav.map_points) ? liveNav.map_points : [];
+      const persistedPoints = Array.isArray(persistedBounds.point_cloud_sample) ? persistedBounds.point_cloud_sample : [];
+      const liveNet = liveNav.net_boundary || liveBounds.net || (liveBounds.boundaries || {}).net || (liveBounds.court_features || {}).net_boundary;
+      const persistedNet = persistedBounds.net || (persistedBounds.boundaries || {}).net || (persistedBounds.court_features || {}).net_boundary;
+      const hasLiveDiscovery = livePoints.length > 0 || !!liveNet;
+      const hasPersistedDiscovery = persistedBounds.survey_complete && (persistedPoints.length > 0 || !!persistedNet);
+      const source = hasLiveDiscovery ? {
+        nav: liveNav,
+        bounds: liveBounds,
+        points: livePoints,
+        net: liveNet,
+        sourceLabel: "live"
+      } : (lastSurveyDiscovery || (hasPersistedDiscovery ? {
+        nav: {},
+        bounds: persistedBounds,
+        points: persistedPoints,
+        net: persistedNet,
+        sourceLabel: "saved"
+      } : {
+        nav: liveNav,
+        bounds: liveBounds.survey_complete ? liveBounds : {},
+        points: [],
+        net: null,
+        sourceLabel: "expected"
+      }));
+      if (hasLiveDiscovery) {
+        lastSurveyDiscovery = source;
+      }
+      const nav = source.nav || {};
+      const bounds = source.bounds || {};
+      const net = source.net;
+      const points = source.points || [];
+      const width = canvas.width;
+      const height = canvas.height;
+      const plotW = width - 270;
+      const pad = 52;
+      const robot = (diagnostics.robot || {}).robot || {};
+      const fg = bounds.fence_geometry || {};
+      const worldExtents = nav.scan_coverage?.world_extents || bounds.lidar_boundary_estimate?.combined || {};
+      const hasFence = Number.isFinite(fg.west_x) && Number.isFinite(fg.east_x) && Number.isFinite(fg.south_y) && Number.isFinite(fg.north_y);
+      const hasExtents = Number.isFinite(worldExtents.min_x_m) && Number.isFinite(worldExtents.max_x_m) && Number.isFinite(worldExtents.min_y_m) && Number.isFinite(worldExtents.max_y_m);
+      const netCenter = net?.center || net?.midpoint || (net?.post_a && net?.post_b ? {
+        x_m: (net.post_a.x_m + net.post_b.x_m) / 2,
+        y_m: (net.post_a.y_m + net.post_b.y_m) / 2,
+      } : null);
+      const courtGeometry = bounds.court_geometry || {};
+      const courtLength = Number.isFinite(courtGeometry.length_m) ? courtGeometry.length_m : 23.77;
+      const courtWidth = Number.isFinite(courtGeometry.width_m) ? courtGeometry.width_m : (
+        Number.isFinite(net?.length_m) && net.length_m > 6 ? net.length_m : 10.97
+      );
+      const extSpanX = hasExtents ? worldExtents.max_x_m - worldExtents.min_x_m : 0;
+      const extSpanY = hasExtents ? worldExtents.max_y_m - worldExtents.min_y_m : 0;
+      const extentsCanContainCourt = (
+        (extSpanX >= courtLength && extSpanY >= courtWidth)
+        || (extSpanY >= courtLength && extSpanX >= courtWidth)
+      );
+      let fenceRect = hasFence ? {
+        minX: fg.west_x, maxX: fg.east_x, minY: fg.south_y, maxY: fg.north_y, source: "verified"
+      } : (hasExtents && extentsCanContainCourt ? {
+        minX: worldExtents.min_x_m, maxX: worldExtents.max_x_m, minY: worldExtents.min_y_m, maxY: worldExtents.max_y_m, source: "lidar boundary estimate"
+      } : {
+        minX: -16.5, maxX: 16.5, minY: -8.5, maxY: 8.5, source: hasExtents ? "expected bounds + live scan" : "expected Gazebo bounds"
+      });
+
+      // Override fenceRect with measured two-point survey geometry.
+      const twoPointGeo = persistedBounds.geometry;
+      if (persistedBounds.survey_type === "two_point_net_baseline" && twoPointGeo) {
+        const netP   = twoPointGeo.net_world_pos;
+        const fenceP = twoPointGeo.fence_world_pos;
+        const btf    = twoPointGeo.baseline_to_fence_m;
+        if (netP && fenceP && Number.isFinite(btf)) {
+          const dx = fenceP.x_m - netP.x_m;
+          const dy = fenceP.y_m - netP.y_m;
+          const surveyDist = Math.hypot(dx, dy);
+          const ux = dx / surveyDist, uy = dy / surveyDist; // unit vector net→fence
+          const px = -uy, py = ux;                          // perpendicular
+          const halfLen = courtLength / 2;
+          const halfWid = courtWidth / 2;
+          // Unknown side margin: use current fenceRect or Gazebo default.
+          const knownSideMargin = Math.abs(px) > 0.5
+            ? (fenceRect.maxX - fenceRect.minX) / 2 - halfLen
+            : (fenceRect.maxY - fenceRect.minY) / 2 - halfWid;
+          const sideMargin = Number.isFinite(knownSideMargin) && knownSideMargin > 0
+            ? knownSideMargin : 3.01;
+          // Build 4 corner points of the outer fence rectangle.
+          const corners = [
+            [netP.x_m + ux*(halfLen+btf) + px*(halfWid+sideMargin), netP.y_m + uy*(halfLen+btf) + py*(halfWid+sideMargin)],
+            [netP.x_m + ux*(halfLen+btf) - px*(halfWid+sideMargin), netP.y_m + uy*(halfLen+btf) - py*(halfWid+sideMargin)],
+            [netP.x_m - ux*(halfLen+btf) + px*(halfWid+sideMargin), netP.y_m - uy*(halfLen+btf) + py*(halfWid+sideMargin)],
+            [netP.x_m - ux*(halfLen+btf) - px*(halfWid+sideMargin), netP.y_m - uy*(halfLen+btf) - py*(halfWid+sideMargin)],
+          ];
+          fenceRect = {
+            minX: Math.min(...corners.map(c => c[0])),
+            maxX: Math.max(...corners.map(c => c[0])),
+            minY: Math.min(...corners.map(c => c[1])),
+            maxY: Math.max(...corners.map(c => c[1])),
+            source: "two_point_survey",
+          };
+        }
+      }
+      const axisAlignedFromFence = (
+        fenceRect.source !== "verified"
+        || !net?.post_a
+        || !net?.post_b
+        || Math.abs(fenceRect.maxX - fenceRect.minX) < Math.abs(fenceRect.maxY - fenceRect.minY)
+      );
+      const courtCorners = (() => {
+        if (axisAlignedFromFence) return [];
+        if (!net?.post_a || !net?.post_b || !netCenter) return [];
+        const ax = net.post_a.x_m, ay = net.post_a.y_m;
+        const bx = net.post_b.x_m, by = net.post_b.y_m;
+        const dx = bx - ax, dy = by - ay;
+        const span = Math.hypot(dx, dy);
+        if (!Number.isFinite(span) || span < 0.5) return [];
+        const tx = dx / span, ty = dy / span;
+        const nx = -ty, ny = tx;
+        const halfL = courtLength / 2;
+        const halfW = courtWidth / 2;
+        return [
+          { x_m: netCenter.x_m + nx * halfL + tx * halfW, y_m: netCenter.y_m + ny * halfL + ty * halfW },
+          { x_m: netCenter.x_m + nx * halfL - tx * halfW, y_m: netCenter.y_m + ny * halfL - ty * halfW },
+          { x_m: netCenter.x_m - nx * halfL - tx * halfW, y_m: netCenter.y_m - ny * halfL - ty * halfW },
+          { x_m: netCenter.x_m - nx * halfL + tx * halfW, y_m: netCenter.y_m - ny * halfL + ty * halfW },
+        ];
+      })();
+      const fallbackCourtCorners = [
+        { x_m: -courtLength / 2, y_m: courtWidth / 2 },
+        { x_m: courtLength / 2, y_m: courtWidth / 2 },
+        { x_m: courtLength / 2, y_m: -courtWidth / 2 },
+        { x_m: -courtLength / 2, y_m: -courtWidth / 2 },
+      ];
+      const displayCourtCorners = courtCorners.length === 4 ? courtCorners : fallbackCourtCorners;
+      const courtRect = displayCourtCorners.length === 4 ? {
+        minX: Math.min(...displayCourtCorners.map(p => p.x_m)),
+        maxX: Math.max(...displayCourtCorners.map(p => p.x_m)),
+        minY: Math.min(...displayCourtCorners.map(p => p.y_m)),
+        maxY: Math.max(...displayCourtCorners.map(p => p.y_m)),
+      } : {
+        minX: -courtLength / 2, maxX: courtLength / 2,
+        minY: -courtWidth / 2, maxY: courtWidth / 2,
+      };
+      const margin = fenceRect ? {
+        top: fenceRect.maxY - courtRect.maxY,
+        bottom: courtRect.minY - fenceRect.minY,
+        left: courtRect.minX - fenceRect.minX,
+        right: fenceRect.maxX - courtRect.maxX,
+      } : {};
+      const marginValues = Object.values(margin).filter(Number.isFinite);
+      const validPoints = points.filter(p => Number.isFinite(p.x_m) && Number.isFinite(p.y_m));
+      let minX = fenceRect ? fenceRect.minX - 0.7 : courtRect.minX - 1.0;
+      let maxX = fenceRect ? fenceRect.maxX + 0.7 : courtRect.maxX + 1.0;
+      let minY = fenceRect ? fenceRect.minY - 0.7 : courtRect.minY - 1.0;
+      let maxY = fenceRect ? fenceRect.maxY + 0.7 : courtRect.maxY + 1.0;
+      [...validPoints, net?.post_a, net?.post_b, netCenter, ...displayCourtCorners, robot].filter(Boolean).forEach(p => {
+        if (!Number.isFinite(p.x_m) || !Number.isFinite(p.y_m)) return;
+        minX = Math.min(minX, p.x_m - 0.5);
+        maxX = Math.max(maxX, p.x_m + 0.5);
+        minY = Math.min(minY, p.y_m - 0.5);
+        maxY = Math.max(maxY, p.y_m + 0.5);
+      });
+      const spanX = Math.max(1, maxX - minX);
+      const spanY = Math.max(1, maxY - minY);
+      const scale = Math.min((plotW - pad * 2) / spanX, (height - pad * 2) / spanY);
+      const ox = (plotW - spanX * scale) / 2;
+      const oy = (height - spanY * scale) / 2;
+      const sx = x => ox + (x - minX) * scale;
+      const sy = y => height - (oy + (y - minY) * scale);
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#090d12";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "rgba(255,255,255,0.07)";
+      ctx.lineWidth = 1;
+      for (let gx = Math.ceil(minX); gx <= Math.floor(maxX); gx += 1) {
+        ctx.beginPath(); ctx.moveTo(sx(gx), sy(minY)); ctx.lineTo(sx(gx), sy(maxY)); ctx.stroke();
+      }
+      for (let gy = Math.ceil(minY); gy <= Math.floor(maxY); gy += 1) {
+        ctx.beginPath(); ctx.moveTo(sx(minX), sy(gy)); ctx.lineTo(sx(maxX), sy(gy)); ctx.stroke();
+      }
+
+      ctx.fillStyle = "rgba(145,162,178,0.28)";
+      validPoints.forEach(p => ctx.fillRect(sx(p.x_m) - 1, sy(p.y_m) - 1, 2, 2));
+      if (fenceRect) {
+        ctx.strokeStyle = "rgba(168,85,247,0.92)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash(fenceRect.source === "verified" ? [] : [8, 6]);
+        ctx.strokeRect(sx(fenceRect.minX), sy(fenceRect.maxY), sx(fenceRect.maxX) - sx(fenceRect.minX), sy(fenceRect.minY) - sy(fenceRect.maxY));
+        ctx.setLineDash([]);
+      }
+      if (displayCourtCorners.length === 4) {
+        ctx.fillStyle = "rgba(47,208,143,0.06)";
+        ctx.beginPath();
+        displayCourtCorners.forEach((p, i) => i === 0 ? ctx.moveTo(sx(p.x_m), sy(p.y_m)) : ctx.lineTo(sx(p.x_m), sy(p.y_m)));
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = courtCorners.length === 4 ? "rgba(47,208,143,0.9)" : "rgba(47,208,143,0.48)";
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash(courtCorners.length === 4 ? [] : [7, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      if (net?.post_a && net?.post_b) {
+        ctx.strokeStyle = "rgba(80,220,255,0.95)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(sx(net.post_a.x_m), sy(net.post_a.y_m));
+        ctx.lineTo(sx(net.post_b.x_m), sy(net.post_b.y_m));
+        ctx.stroke();
+      }
+
+      function drawDistance(x1, y1, x2, y2, label) {
+        if (![x1, y1, x2, y2].every(Number.isFinite)) return;
+        ctx.strokeStyle = "rgba(255,189,90,0.92)";
+        ctx.fillStyle = "#ffbd5a";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.font = "bold 13px system-ui";
+        ctx.fillText(label, (x1 + x2) / 2 + 6, (y1 + y2) / 2 - 6);
+      }
+      if (fenceRect) {
+        const midX = (courtRect.minX + courtRect.maxX) / 2;
+        const midY = (courtRect.minY + courtRect.maxY) / 2;
+        drawDistance(sx(fenceRect.minX), sy(midY), sx(courtRect.minX), sy(midY), fmt(margin.left, "m"));
+        drawDistance(sx(courtRect.maxX), sy(midY), sx(fenceRect.maxX), sy(midY), fmt(margin.right, "m"));
+        drawDistance(sx(midX), sy(courtRect.maxY), sx(midX), sy(fenceRect.maxY), fmt(margin.top, "m"));
+        drawDistance(sx(midX), sy(fenceRect.minY), sx(midX), sy(courtRect.minY), fmt(margin.bottom, "m"));
+      }
+      if (Number.isFinite(robot.x_m) && Number.isFinite(robot.y_m)) {
+        const rx = sx(robot.x_m), ry = sy(robot.y_m);
+        ctx.fillStyle = "rgba(87,166,255,0.15)";
+        ctx.beginPath(); ctx.arc(rx, ry, 28, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#57a6ff";
+        ctx.beginPath(); ctx.arc(rx, ry, 6, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.fillStyle = "rgba(238,244,248,0.9)";
+      ctx.font = "bold 13px system-ui";
+      ctx.fillText("Court Map (Top-Down Occupancy Grid)", 18, 24);
+      const legend = [["#57a6ff", "LiDAR Points"], ["#a855f7", "Outer Boundary"], ["#2fd08f", "Court Boundary"], ["#ffbd5a", "Distances"], ["#57a6ff", "Robot Pose"]];
+      let lx = 24;
+      ctx.font = "11px system-ui";
+      legend.forEach(([color, label]) => {
+        ctx.fillStyle = color; ctx.fillRect(lx, 45, 10, 10);
+        ctx.fillStyle = "rgba(238,244,248,0.82)"; ctx.fillText(label, lx + 16, 54);
+        lx += ctx.measureText(label).width + 42;
+      });
+
+      const panelX = plotW + 12;
+      ctx.fillStyle = "rgba(10,18,26,0.76)";
+      ctx.strokeStyle = "rgba(255,255,255,0.10)";
+      ctx.beginPath(); ctx.roundRect(panelX, 78, width - panelX - 18, 260, 8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(238,244,248,0.92)";
+      ctx.font = "bold 12px system-ui";
+      ctx.fillText("Distances to Fences", panelX + 16, 104);
+      const distRows = [
+        ["Top", margin.top], ["Bottom", margin.bottom], ["Left", margin.left], ["Right", margin.right],
+        ["Min Distance", marginValues.length ? Math.min(...marginValues) : null],
+        ["Max Distance", marginValues.length ? Math.max(...marginValues) : null],
+        ["Avg Distance", marginValues.length ? marginValues.reduce((a, b) => a + b, 0) / marginValues.length : null],
+      ];
+      let rowY = 136;
+      distRows.forEach(([label, value], idx) => {
+        if (idx === 4) rowY += 16;
+        ctx.fillStyle = "rgba(145,162,178,0.9)"; ctx.font = "11px system-ui"; ctx.fillText(label, panelX + 16, rowY);
+        ctx.fillStyle = "rgba(238,244,248,0.96)"; ctx.font = "bold 11px system-ui"; ctx.fillText(fmt(value, "m"), panelX + 120, rowY);
+        rowY += 28;
+      });
+
+      if (statusEl) {
+        const pointCount = nav.map_point_count ?? validPoints.length;
+        statusEl.textContent = `${pointCount} LiDAR points - ${fenceRect.source} - ${courtCorners.length === 4 ? "court boundary fitted" : "court expected"}`;
+        statusEl.style.color = fenceRect.source === "verified" && courtCorners.length === 4 ? "var(--accent)" : "var(--warn)";
+      }
+      const fenceLength = fenceRect ? fenceRect.maxX - fenceRect.minX : null;
+      const fenceWidth = fenceRect ? fenceRect.maxY - fenceRect.minY : null;
+      const segments = [
+        ["F-Top", fenceLength, "Fence", fenceRect.source === "verified"],
+        ["F-Bottom", fenceLength, "Fence", fenceRect.source === "verified"],
+        ["F-Left", fenceWidth, "Fence", fenceRect.source === "verified"],
+        ["F-Right", fenceWidth, "Fence", fenceRect.source === "verified"],
+        ["C-Baseline Far", courtWidth, "Court", courtCorners.length === 4],
+        ["C-Baseline Near", courtWidth, "Court", courtCorners.length === 4],
+        ["C-Side Left", courtLength, "Court", courtCorners.length === 4],
+        ["C-Side Right", courtLength, "Court", courtCorners.length === 4],
+      ];
+      if (metaEl) {
+        metaEl.innerHTML = `
+          <div><span>Outer Boundary</span><strong>${fenceRect ? `${fmt(fenceLength, "m")} x ${fmt(fenceWidth, "m")}` : "pending"}</strong></div>
+          <div><span>Court Boundary</span><strong>${fmt(courtLength, "m")} x ${fmt(courtWidth, "m")}</strong></div>
+          <div><span>Boundary Source</span><strong>${fenceRect?.source || "none"}</strong></div>
+          <div><span>Confidence</span><strong>${fmt((bounds.diagnostics || {}).confidence, "")}</strong></div>
+          <div style="grid-column:1 / -1;display:block;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px 14px;align-items:center;">
+              <strong>ID</strong><strong>Length</strong><strong>Type</strong><strong>Status</strong>
+              ${segments.map(([id, len, type, ok]) => `
+                <span>${id}</span><span>${fmt(len, "m")}</span><span>${type}</span>
+                <span style="color:${ok ? "var(--accent)" : "var(--muted)"}">${ok ? "Verified" : "Pending"}</span>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }
+    }
+    const _obsLogLines = [];
+    const OBS_LOG_MAX = 200;
+
+    function renderObstacleSurveyDebug(nav) {
+      const obs = nav.obstacle_survey;
+      const stateEl = document.getElementById("obsState");
+      const kvEl   = document.getElementById("obsKv");
+      const logEl  = document.getElementById("obsLog");
+      if (!stateEl || !kvEl || !logEl) return;
+
+      if (!obs) {
+        stateEl.textContent = "idle";
+        stateEl.style.color = "var(--muted)";
+        return;
+      }
+
+      const stateColor = {
+        scan_in_place: "var(--accent-2)",
+        approach_obstacle: "var(--warn)",
+        done: obs.failure_reason ? "var(--danger)" : "var(--accent)",
+      }[obs.state] || "var(--muted)";
+      stateEl.textContent = obs.state || "idle";
+      stateEl.style.color = stateColor;
+
+      const fr = obs.front_range_m != null ? obs.front_range_m + " m" : "—";
+      const nearest = (obs.debug_log && obs.debug_log.length)
+        ? (obs.debug_log[obs.debug_log.length - 1].nearest_m ?? "—") + " m" : "—";
+      setKv("obsKv", [
+        ["State",          obs.state || "—"],
+        ["Event",          obs.last_event || "—"],
+        ["Front range",    fr],
+        ["Nearest (360°)", nearest],
+        ["Scans",          obs.scan_count ?? "—"],
+        ["Traveled",       (obs.distance_traveled_m ?? "—") + " m"],
+        ["Elapsed",        (obs.elapsed_s ?? "—") + " s"],
+        ["Obstacle",       obs.obstacle_type ?? "—"],
+        ["Confidence",     obs.obstacle_confidence != null ? (obs.obstacle_confidence * 100).toFixed(0) + "%" : "—"],
+        ["Failure",        obs.failure_reason || "—"],
+      ]);
+
+      // Append new log entries (avoid duplicates by tracking last t seen)
+      const entries = Array.isArray(obs.debug_log) ? obs.debug_log : [];
+      const lastSeen = _obsLogLines.length ? _obsLogLines[_obsLogLines.length - 1]._t : -1;
+      let newAdded = false;
+      for (const e of entries) {
+        if (e.t > lastSeen) {
+          const vis = e.vision ? ` vis:${e.vision}` : "";
+          const tgt = e.target_heading_deg != null ? ` tgt:${e.target_heading_deg}°` : "";
+          const err = e.heading_err_deg != null ? ` err:${e.heading_err_deg}°` : "";
+          const front = e.front_m != null ? e.front_m : "inf";
+          const near  = e.nearest_m != null ? e.nearest_m : "inf";
+          const line = `[${e.t.toFixed(2).padStart(6)}s] ${e.state.padEnd(20)} ${e.decision.padEnd(24)} front:${String(front).padStart(5)}m near:${String(near).padStart(5)}m bear:${String(e.bearing_deg).padStart(6)}°${tgt}${err} cmd:(${e.cmd_lin.toFixed(2)},${e.cmd_ang.toFixed(2)})${vis}`;
+          _obsLogLines.push({ _t: e.t, text: line });
+          newAdded = true;
+        }
+      }
+      if (_obsLogLines.length > OBS_LOG_MAX) _obsLogLines.splice(0, _obsLogLines.length - OBS_LOG_MAX);
+      if (newAdded) {
+        logEl.textContent = _obsLogLines.map(l => l.text).join("\\n");
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+    }
+
+    function renderObstacleRunsHistory(runs) {
+      const el = document.getElementById("obsRunsTable");
+      if (!el || !Array.isArray(runs) || runs.length === 0) return;
+      const statusColor = s => s === "SUCCESS" ? "var(--accent)" : "var(--danger)";
+      const fmtTime = ts => ts ? new Date(ts * 1000).toLocaleTimeString() : "—";
+      let html = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead><tr style="color:var(--muted);text-align:left;border-bottom:1px solid var(--line);">
+          <th style="padding:3px 6px;">#</th>
+          <th style="padding:3px 6px;">Time</th>
+          <th style="padding:3px 6px;">Status</th>
+          <th style="padding:3px 6px;">Obstacle</th>
+          <th style="padding:3px 6px;">Dist</th>
+          <th style="padding:3px 6px;">Elapsed</th>
+          <th style="padding:3px 6px;">Traveled</th>
+          <th style="padding:3px 6px;">Failure</th>
+        </tr></thead><tbody>`;
+      for (const r of runs) {
+        html += `<tr style="border-bottom:1px solid var(--line)20;">
+          <td style="padding:3px 6px;color:var(--muted);">${r.id}</td>
+          <td style="padding:3px 6px;">${fmtTime(r.started_at)}</td>
+          <td style="padding:3px 6px;color:${statusColor(r.status)};">${r.status || "—"}</td>
+          <td style="padding:3px 6px;">${r.obstacle_type || "—"}</td>
+          <td style="padding:3px 6px;">${r.obstacle_dist_m != null ? r.obstacle_dist_m.toFixed(2) + "m" : "—"}</td>
+          <td style="padding:3px 6px;">${r.elapsed_s != null ? r.elapsed_s.toFixed(1) + "s" : "—"}</td>
+          <td style="padding:3px 6px;">${r.distance_traveled_m != null ? r.distance_traveled_m.toFixed(1) + "m" : "—"}</td>
+          <td style="padding:3px 6px;color:var(--danger);">${r.failure_reason || ""}</td>
+        </tr>`;
+      }
+      html += "</tbody></table>";
+      el.innerHTML = html;
+    }
+
     function renderMapMission(m) {
       const statusEl = document.getElementById("mapMissionStatus");
       if (statusEl) {
@@ -2158,6 +2577,20 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             self.db.import_survey(bounds)
         return bounds
 
+    def _maybe_save_obstacle_run(self, robot_status: dict) -> None:
+        """Persist a completed ObstacleSurvey run to DB (idempotent)."""
+        nav = ((robot_status.get("survey") or {}).get("navigation") or {})
+        obs = nav.get("obstacle_survey")
+        if not obs:
+            return
+        result = obs.get("result") or {}
+        if result.get("status") not in ("SUCCESS", "FAILED"):
+            return
+        try:
+            self.db.save_obstacle_run(obs)
+        except Exception:
+            pass
+
     def _diagnostics(self) -> dict[str, object]:
         history = self.store.read_history(200)
         by_mode = Counter(str(row.get("mode", "unknown")) for row in history)
@@ -2170,11 +2603,13 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         robot_status["age_s"] = time.time() - robot_updated_at if robot_updated_at > 0 else None
         robot_status["stale"] = robot_updated_at <= 0 or robot_status["age_s"] > 3.0
         robot_status["connected"] = bool(robot_status.get("connected")) and not robot_status["stale"]
+        self._maybe_save_obstacle_run(robot_status)
         return {
             "generated_at": time.time(),
             "command": self.store.read().to_mapping(),
             "robot": robot_status,
             "court_boundary": self._read_court_boundary(),
+            "obstacle_runs": self.db.obstacle_runs(20),
             "history": history[-50:],
             "stats": {
                 "total": len(history),
@@ -2201,7 +2636,10 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
-        self.wfile.write(payload)
+        try:
+            self.wfile.write(payload)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
 
 def main() -> None:
