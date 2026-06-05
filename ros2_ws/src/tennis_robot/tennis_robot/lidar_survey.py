@@ -27,6 +27,14 @@ DEFAULT_BOUNDARY_FILE = PROJECT_ROOT / "runtime" / "court_boundary.json"
 class LidarSurveyState(str, Enum):
     FIND_BOUNDARY = "find_boundary"
     FIND_BASELINE = "find_baseline"
+    TURN_TO_SIDELINE = "turn_to_left_sideline"
+    DRIVE_SIDELINE = "drive_left_sideline"
+    TURN_TO_LONG_SIDE = "turn_to_long_side"
+    DRIVE_LONG_SIDE = "drive_long_side"
+    TURN_TO_FAR_SHORT = "turn_to_far_short_side"
+    DRIVE_FAR_SHORT = "drive_far_short_side"
+    TURN_TO_RETURN = "turn_to_return_long"
+    DRIVE_RETURN = "drive_return_long"
     RETURN_TO_CENTER = "return_to_center"
     INITIAL_SCAN = "initial_lidar_scan"
     APPROACH_NET = "approach_net_for_visual_confirmation"
@@ -39,7 +47,7 @@ class LidarSurveyState(str, Enum):
 
 @dataclass(frozen=True)
 class LidarSurveyConfig:
-    drive_speed_m_s: float = 0.35
+    drive_speed_m_s: float = 0.60
     turn_speed_rad_s: float = 0.8
     safety_stop_range_m: float = 0.35
     safety_slow_range_m: float = 0.75
@@ -63,6 +71,9 @@ class LidarSurveyConfig:
     heading_tolerance_rad: float = math.radians(8.0)
     expected_court_length_m: float = 23.77
     expected_court_width_m: float = 10.97
+    sideline_drive_stop_range_m: float = 2.5
+    sideline_drive_timeout_s: float = 300.0
+    sideline_sector_half_deg: float = 25.0
     output_file: Path = DEFAULT_BOUNDARY_FILE
 
     @classmethod
@@ -98,6 +109,9 @@ class LidarSurveyConfig:
             target_tolerance_m=_env_float("ROS2_SURVEY_TARGET_TOLERANCE_M", d.target_tolerance_m),
             expected_court_length_m=_env_float("SURVEY_EXPECTED_COURT_LENGTH_M", d.expected_court_length_m),
             expected_court_width_m=_env_float("SURVEY_EXPECTED_COURT_WIDTH_M", d.expected_court_width_m),
+            sideline_drive_stop_range_m=_env_float("SURVEY_SIDELINE_DRIVE_STOP_M", d.sideline_drive_stop_range_m),
+            sideline_drive_timeout_s=_env_float("SURVEY_SIDELINE_DRIVE_TIMEOUT_S", d.sideline_drive_timeout_s),
+            sideline_sector_half_deg=_env_float("SURVEY_SIDELINE_SECTOR_HALF_DEG", d.sideline_sector_half_deg),
             output_file=Path(os.getenv("SURVEY_OUTPUT_FILE", str(d.output_file))),
         )
 
@@ -129,6 +143,20 @@ class Ros2LidarCourtSurvey:
         self._baseline_survey: "ObstacleSurvey | None" = None
         self._first_obstacle: dict | None = None   # net/fence found in FIND_BOUNDARY
         self._second_obstacle: dict | None = None  # baseline/fence found in FIND_BASELINE
+        self._sideline_heading: float | None = None   # world heading during DRIVE_SIDELINE
+        self._long_side_heading: float | None = None   # world heading during DRIVE_LONG_SIDE
+        self._far_short_heading: float | None = None  # world heading during DRIVE_FAR_SHORT
+        self._return_heading: float | None = None     # world heading during DRIVE_RETURN
+        self._left_range_samples: list[float] = []    # left-side LiDAR during sideline drive
+        self._right_range_samples: list[float] = []   # right-side LiDAR during sideline drive
+        self._long_left_range_samples: list[float] = []    # left-side LiDAR during long-side drive
+        self._far_short_range_samples: list[float] = []  # left-side LiDAR during far short side
+        self._return_range_samples: list[float] = []      # left-side LiDAR during return long side
+        self._sideline_to_fence_m: float | None = None
+        self._right_sideline_to_fence_m: float | None = None
+        self._net_passed: bool = False                # robot crossed the net area on the long leg
+        self._far_baseline_crossed: bool = False
+        self._far_baseline_to_fence_m: float | None = None  # front range when far baseline line seen
         self._center_target: tuple[float, float] | None = None  # drive-back waypoint
         self._center_yaw: float | None = None
         self._state_elapsed_s = 0.0
@@ -248,6 +276,21 @@ class Ros2LidarCourtSurvey:
             ),
             "first_obstacle": self._first_obstacle,
             "second_obstacle": self._second_obstacle,
+            "sideline_heading_deg": (
+                None if self._sideline_heading is None
+                else round(math.degrees(self._sideline_heading) % 360, 1)
+            ),
+            "long_side_heading_deg": (
+                None if self._long_side_heading is None
+                else round(math.degrees(self._long_side_heading) % 360, 1)
+            ),
+            "left_fence_sample_count": len(self._left_range_samples),
+            "right_fence_sample_count": len(self._right_range_samples),
+            "long_left_fence_sample_count": len(self._long_left_range_samples),
+            "sideline_to_fence_m": self._sideline_to_fence_m,
+            "net_passed": self._net_passed,
+            "far_baseline_crossed": self._far_baseline_crossed,
+            "far_baseline_to_fence_m": self._far_baseline_to_fence_m,
         }
 
     def _step(self, x_m: float, y_m: float, yaw_rad: float, vision: SurveyVision | None) -> BaseCommand:
@@ -274,7 +317,7 @@ class Ros2LidarCourtSurvey:
                     }
                     # ── Phase 2: turn 180° and find baseline/fence ────────────
                     _bl_cfg = ObstacleSurveyConfig(
-                        drive_speed_m_s=0.50,
+                        drive_speed_m_s=0.70,
                         stop_at_range_m=2.50,
                         approach_timeout_s=300.0,
                         safety_stop_range_m=0.35,
@@ -314,8 +357,154 @@ class Ros2LidarCourtSurvey:
                     "vision_class": result.get("vision_class"),
                     "status": result.get("status"),
                 }
-                self._finalize_two_point()
+                # 90° left from the direction we drove to baseline
+                baseline_bearing = self._baseline_survey._approach_bearing_rad or 0.0
+                self._sideline_heading = baseline_bearing + math.pi / 2
+                self._enter(LidarSurveyState.TURN_TO_SIDELINE, "baseline_found_turning_90_left")
             return bl_cmd.base
+
+        # ── Phase 3: 90° left turn toward sideline ─────────────────────────────
+        if self.state == LidarSurveyState.TURN_TO_SIDELINE:
+            if self._sideline_heading is None:
+                self._fail("SIDELINE_HEADING_NOT_SET")
+                return BaseCommand(0.0, 0.0)
+            err = self._angle_delta(self._sideline_heading, yaw_rad)
+            if abs(err) <= self.config.heading_tolerance_rad:
+                self._enter(LidarSurveyState.DRIVE_SIDELINE, "aligned_for_sideline_drive")
+                return BaseCommand(0.0, 0.0)
+            return BaseCommand(0.0, math.copysign(self.config.turn_speed_rad_s, err))
+
+        # ── Phase 4: drive along left sideline; measure fence distances ─────────
+        if self.state == LidarSurveyState.DRIVE_SIDELINE:
+            if self._state_elapsed_s >= self.config.sideline_drive_timeout_s:
+                self._finalize_full_survey("sideline_drive_timeout")
+                return BaseCommand(0.0, 0.0)
+            if self._last_scan_ranges:
+                half = math.radians(self.config.sideline_sector_half_deg)
+                left_r = self._sector_median_range(self._last_scan_ranges, -math.pi / 2, half)
+                right_r = self._sector_median_range(self._last_scan_ranges, math.pi / 2, half)
+                if math.isfinite(left_r):
+                    self._left_range_samples.append(left_r)
+                    if len(self._left_range_samples) > 300:
+                        del self._left_range_samples[:150]
+                if math.isfinite(right_r):
+                    self._right_range_samples.append(right_r)
+                    if len(self._right_range_samples) > 300:
+                        del self._right_range_samples[:150]
+                # Record far-baseline-to-fence gap when court line is first seen
+                if (
+                    vision is not None
+                    and vision.line_detected
+                    and not self._far_baseline_crossed
+                    and not math.isinf(self._last_front_range_m)
+                ):
+                    self._far_baseline_to_fence_m = round(self._last_front_range_m, 3)
+                    self._far_baseline_crossed = True
+            front = self._last_front_range_m
+            if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
+                # Short leg complete — turn 90° left again for the long leg
+                self._long_side_heading = (self._sideline_heading or 0.0) + math.pi / 2
+                self._enter(LidarSurveyState.TURN_TO_LONG_SIDE, "side_fence_reached_turning_90_left")
+                return BaseCommand(0.0, 0.0)
+            return self._drive_straight_heading(yaw_rad, self._sideline_heading)
+
+        # ── Phase 5: second 90° left turn (corner: side fence → long leg) ────────
+        if self.state == LidarSurveyState.TURN_TO_LONG_SIDE:
+            if self._long_side_heading is None:
+                self._fail("LONG_SIDE_HEADING_NOT_SET")
+                return BaseCommand(0.0, 0.0)
+            err = self._angle_delta(self._long_side_heading, yaw_rad)
+            if abs(err) <= self.config.heading_tolerance_rad:
+                self._enter(LidarSurveyState.DRIVE_LONG_SIDE, "aligned_for_long_side_drive")
+                return BaseCommand(0.0, 0.0)
+            return BaseCommand(0.0, math.copysign(self.config.turn_speed_rad_s, err))
+
+        # ── Phase 6: drive the long side (past net, toward opposite baseline) ───
+        if self.state == LidarSurveyState.DRIVE_LONG_SIDE:
+            if self._state_elapsed_s >= self.config.sideline_drive_timeout_s:
+                self._finalize_full_survey("long_side_drive_timeout")
+                return BaseCommand(0.0, 0.0)
+            if self._last_scan_ranges:
+                half = math.radians(self.config.sideline_sector_half_deg)
+                left_r = self._sector_median_range(self._last_scan_ranges, -math.pi / 2, half)
+                if math.isfinite(left_r):
+                    self._long_left_range_samples.append(left_r)
+                    if len(self._long_left_range_samples) > 400:
+                        del self._long_left_range_samples[:200]
+                # Detect far baseline crossing (first court line after passing net)
+                if (
+                    vision is not None
+                    and vision.line_detected
+                    and not self._far_baseline_crossed
+                    and not math.isinf(self._last_front_range_m)
+                ):
+                    self._far_baseline_to_fence_m = round(self._last_front_range_m, 3)
+                    self._far_baseline_crossed = True
+            front = self._last_front_range_m
+            if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
+                self._far_short_heading = (self._long_side_heading or 0.0) + math.pi / 2
+                self._enter(LidarSurveyState.TURN_TO_FAR_SHORT, "far_baseline_fence_reached_turning_90_left")
+                return BaseCommand(0.0, 0.0)
+            return self._drive_straight_heading(yaw_rad, self._long_side_heading)
+
+        # ── Phase 7: third 90° left turn (far baseline → far short side) ────────
+        if self.state == LidarSurveyState.TURN_TO_FAR_SHORT:
+            if self._far_short_heading is None:
+                self._fail("FAR_SHORT_HEADING_NOT_SET")
+                return BaseCommand(0.0, 0.0)
+            err = self._angle_delta(self._far_short_heading, yaw_rad)
+            if abs(err) <= self.config.heading_tolerance_rad:
+                self._enter(LidarSurveyState.DRIVE_FAR_SHORT, "aligned_for_far_short_drive")
+                return BaseCommand(0.0, 0.0)
+            return BaseCommand(0.0, math.copysign(self.config.turn_speed_rad_s, err))
+
+        # ── Phase 8: drive far short side (opposite side of court) ──────────────
+        if self.state == LidarSurveyState.DRIVE_FAR_SHORT:
+            if self._state_elapsed_s >= self.config.sideline_drive_timeout_s:
+                self._finalize_full_survey("far_short_drive_timeout")
+                return BaseCommand(0.0, 0.0)
+            if self._last_scan_ranges:
+                half = math.radians(self.config.sideline_sector_half_deg)
+                left_r = self._sector_median_range(self._last_scan_ranges, -math.pi / 2, half)
+                if math.isfinite(left_r):
+                    self._far_short_range_samples.append(left_r)
+                    if len(self._far_short_range_samples) > 300:
+                        del self._far_short_range_samples[:150]
+            front = self._last_front_range_m
+            if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
+                self._return_heading = (self._far_short_heading or 0.0) + math.pi / 2
+                self._enter(LidarSurveyState.TURN_TO_RETURN, "far_side_fence_reached_turning_90_left")
+                return BaseCommand(0.0, 0.0)
+            return self._drive_straight_heading(yaw_rad, self._far_short_heading)
+
+        # ── Phase 9: fourth 90° left turn (far side fence → return long side) ───
+        if self.state == LidarSurveyState.TURN_TO_RETURN:
+            if self._return_heading is None:
+                self._fail("RETURN_HEADING_NOT_SET")
+                return BaseCommand(0.0, 0.0)
+            err = self._angle_delta(self._return_heading, yaw_rad)
+            if abs(err) <= self.config.heading_tolerance_rad:
+                self._enter(LidarSurveyState.DRIVE_RETURN, "aligned_for_return_drive")
+                return BaseCommand(0.0, 0.0)
+            return BaseCommand(0.0, math.copysign(self.config.turn_speed_rad_s, err))
+
+        # ── Phase 10: return long side (net passes on RIGHT) — full loop done ───
+        if self.state == LidarSurveyState.DRIVE_RETURN:
+            if self._state_elapsed_s >= self.config.sideline_drive_timeout_s:
+                self._finalize_full_survey("return_drive_timeout")
+                return BaseCommand(0.0, 0.0)
+            if self._last_scan_ranges:
+                half = math.radians(self.config.sideline_sector_half_deg)
+                left_r = self._sector_median_range(self._last_scan_ranges, -math.pi / 2, half)
+                if math.isfinite(left_r):
+                    self._return_range_samples.append(left_r)
+                    if len(self._return_range_samples) > 400:
+                        del self._return_range_samples[:200]
+            front = self._last_front_range_m
+            if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
+                self._finalize_full_survey(None)
+                return BaseCommand(0.0, 0.0)
+            return self._drive_straight_heading(yaw_rad, self._return_heading)
 
         # ── Phases below are disabled (full LiDAR court survey — future work) ──
         # if self.state == LidarSurveyState.RETURN_TO_CENTER: ...
@@ -604,36 +793,47 @@ class Ros2LidarCourtSurvey:
             return True
         return vision.center_m is not None and 0.5 <= vision.center_m <= 3.0 and vision.valid_count >= 80
 
-    def _finalize_two_point(self) -> None:
-        """Write result for the two-point survey (net + baseline/fence)."""
-        now = time.time()
-        elapsed = 0.0 if self._started_at is None else now - self._started_at
+    def _build_two_point_geometry(self) -> tuple[str, dict]:
+        """Compute Phase 1+2 geometry dict; returns (status, geometry_dict)."""
         baseline_ok = (
             self._second_obstacle is not None
             and self._second_obstacle.get("status") == "SUCCESS"
         )
         status = "SUCCESS" if (self._first_obstacle and baseline_ok) else "PARTIAL"
-
-        # ── Derived geometry ──────────────────────────────────────────────────
         net_pos = (self._first_obstacle or {}).get("world_pos")
         fence_pos = (self._second_obstacle or {}).get("world_pos")
         line_to_fence_m = (self._second_obstacle or {}).get("line_to_fence_m")
-
         net_to_fence_m = None
         if net_pos and fence_pos:
             net_to_fence_m = round(math.hypot(
                 fence_pos["x_m"] - net_pos["x_m"],
                 fence_pos["y_m"] - net_pos["y_m"],
             ), 3)
-
-        # baseline-to-fence = remaining LiDAR range when the court line was seen
         baseline_to_fence_m = line_to_fence_m
-
-        # net-to-baseline = net_to_fence - baseline_to_fence (approximately)
         net_to_baseline_m = None
         if net_to_fence_m is not None and baseline_to_fence_m is not None:
             net_to_baseline_m = round(net_to_fence_m - baseline_to_fence_m, 3)
+        geo = {
+            "net_world_pos": net_pos,
+            "fence_world_pos": fence_pos,
+            "net_to_fence_m": net_to_fence_m,
+            "baseline_to_fence_m": baseline_to_fence_m,
+            "net_to_baseline_m": net_to_baseline_m,
+        }
+        return status, geo
 
+    def _write_bounds(self, bounds: dict) -> None:
+        self._court_bounds = bounds
+        self.config.output_file.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.config.output_file.with_suffix(".tmp.json")
+        tmp.write_text(json.dumps(bounds, indent=2) + "\n", encoding="utf-8")
+        tmp.replace(self.config.output_file)
+
+    def _finalize_two_point(self) -> None:
+        """Fallback: write two-point result and go to DONE (used if Phase 3/4 fail)."""
+        now = time.time()
+        elapsed = 0.0 if self._started_at is None else now - self._started_at
+        status, geo = self._build_two_point_geometry()
         bounds = {
             "surveyed_at": now,
             "status": status,
@@ -641,13 +841,7 @@ class Ros2LidarCourtSurvey:
             "survey_type": "two_point_net_baseline",
             "net": self._first_obstacle,
             "baseline": self._second_obstacle,
-            "geometry": {
-                "net_world_pos": net_pos,
-                "fence_world_pos": fence_pos,
-                "net_to_fence_m": net_to_fence_m,
-                "baseline_to_fence_m": baseline_to_fence_m,
-                "net_to_baseline_m": net_to_baseline_m,
-            },
+            "geometry": geo,
             "elapsed_s": round(elapsed, 1),
             "court_geometry": {
                 "length_m": self.config.expected_court_length_m,
@@ -655,12 +849,68 @@ class Ros2LidarCourtSurvey:
                 "method": "two_point_visual_survey",
             },
         }
-        self._court_bounds = bounds
-        self.config.output_file.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.config.output_file.with_suffix(".tmp.json")
-        tmp.write_text(json.dumps(bounds, indent=2) + "\n", encoding="utf-8")
-        tmp.replace(self.config.output_file)
+        self._write_bounds(bounds)
         self._enter(LidarSurveyState.DONE, f"two_point_survey_{status.lower()}")
+
+    def _finalize_full_survey(self, failure: str | None) -> None:
+        """Write full perimeter survey result (Phases 1–4) and go to DONE."""
+        now = time.time()
+        elapsed = 0.0 if self._started_at is None else now - self._started_at
+        _status, geo = self._build_two_point_geometry()
+
+        # Sideline measurements
+        def _median(samples: list[float]) -> float | None:
+            if not samples:
+                return None
+            s = sorted(samples)
+            return round(s[len(s) // 2], 3)
+
+        left_m = _median(self._left_range_samples)
+        right_m = _median(self._right_range_samples)
+        long_left_m = _median(self._long_left_range_samples)
+        far_short_m = _median(self._far_short_range_samples)
+        return_m = _median(self._return_range_samples)
+        total_w = round(left_m + right_m, 3) if (left_m and right_m) else None
+
+        # Doubles heuristic: if total measured width > expected + 1 m → doubles
+        is_doubles: bool | None = None
+        if total_w is not None:
+            is_doubles = total_w > self.config.expected_court_width_m - 1.0
+
+        sideline_status = "SUCCESS" if (left_m is not None) else "PARTIAL"
+        overall_status = "SUCCESS" if (_status == "SUCCESS" and sideline_status == "SUCCESS") else "PARTIAL"
+        if failure:
+            overall_status = "PARTIAL"
+
+        bounds = {
+            "surveyed_at": now,
+            "status": overall_status,
+            "survey_complete": overall_status == "SUCCESS",
+            "survey_type": "full_perimeter",
+            "failure_reason": failure,
+            "net": self._first_obstacle,
+            "baseline": self._second_obstacle,
+            "geometry": geo,
+            "sideline": {
+                "left_fence_m": left_m,
+                "right_fence_m": right_m,
+                "long_left_fence_m": long_left_m,
+                "far_short_fence_m": far_short_m,
+                "return_fence_m": return_m,
+                "total_width_measured_m": total_w,
+                "far_baseline_to_fence_m": self._far_baseline_to_fence_m,
+                "far_baseline_crossed": self._far_baseline_crossed,
+                "is_doubles": is_doubles,
+            },
+            "elapsed_s": round(elapsed, 1),
+            "court_geometry": {
+                "length_m": self.config.expected_court_length_m,
+                "width_m": self.config.expected_court_width_m,
+                "method": "full_perimeter_survey",
+            },
+        }
+        self._write_bounds(bounds)
+        self._enter(LidarSurveyState.DONE, f"full_perimeter_survey_{overall_status.lower()}")
 
     # ── Full LiDAR court survey finalize (disabled — future work) ─────────────
     def _finalize(self) -> None:
@@ -731,6 +981,35 @@ class Ros2LidarCourtSurvey:
         tmp.write_text(json.dumps(bounds, indent=2) + "\n", encoding="utf-8")
         tmp.replace(self.config.output_file)
         self._enter(LidarSurveyState.DONE, f"ros2_lidar_map_court_{status.lower()}")
+
+    def _sector_median_range(
+        self,
+        ranges: list[float],
+        center_rad: float,
+        half_rad: float,
+    ) -> float:
+        """Median valid range in the angular sector [center−half, center+half]."""
+        vals: list[float] = []
+        for i, r in enumerate(ranges):
+            if not math.isfinite(r) or r < self.config.lidar_min_range_m or r > self.config.lidar_max_range_m:
+                continue
+            angle = self._lidar_angle_min + i * self._lidar_angle_increment
+            angle = (angle + math.pi) % (2.0 * math.pi) - math.pi
+            if center_rad - half_rad <= angle <= center_rad + half_rad:
+                vals.append(r)
+        if not vals:
+            return math.inf
+        vals.sort()
+        return vals[len(vals) // 2]
+
+    def _drive_straight_heading(self, yaw_rad: float, target_heading: float) -> BaseCommand:
+        """Drive forward while keeping the given world heading (P-controller)."""
+        err = self._angle_delta(target_heading, yaw_rad)
+        turn = max(
+            -self.config.turn_speed_rad_s * 0.5,
+            min(self.config.turn_speed_rad_s * 0.5, err * 1.8),
+        )
+        return BaseCommand(self.config.drive_speed_m_s, turn)
 
     def _fail(self, reason: str) -> None:
         self._failure_reason = reason
