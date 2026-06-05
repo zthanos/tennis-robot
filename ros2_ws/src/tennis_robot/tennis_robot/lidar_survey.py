@@ -290,8 +290,9 @@ class Ros2LidarCourtSurvey:
             "left_fence_sample_count": len(self._left_range_samples),
             "right_fence_sample_count": len(self._right_range_samples),
             "long_left_fence_sample_count": len(self._long_left_range_samples),
-            "sideline_to_fence_m": self._sideline_to_fence_m,
-            "net_passed": self._net_passed,
+            "near_baseline_to_fence_m": self._near_baseline_to_fence_m,
+            "left_sideline_to_fence_m": self._left_sideline_to_fence_m,
+            "right_sideline_to_fence_m": self._right_sideline_to_fence_m,
             "far_baseline_crossed": self._far_baseline_crossed,
             "far_baseline_to_fence_m": self._far_baseline_to_fence_m,
         }
