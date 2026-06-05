@@ -102,6 +102,14 @@ class TennisRobotDB:
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'SUCCESS'",
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS court_length_m DOUBLE",
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS court_width_m DOUBLE",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS is_doubles BOOLEAN",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS near_baseline_to_fence_m DOUBLE",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS far_baseline_to_fence_m DOUBLE",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS left_sideline_to_fence_m DOUBLE",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS right_sideline_to_fence_m DOUBLE",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS net_world_x DOUBLE",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS net_world_y DOUBLE",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS survey_type TEXT",
     ]
 
     def _init_schema(self) -> None:
@@ -223,6 +231,10 @@ class TennisRobotDB:
                        s.point_count, s.fallback_used,
                        s.west_x, s.east_x, s.south_y, s.north_y,
                        s.status, s.court_length_m, s.court_width_m,
+                       s.is_doubles, s.survey_type,
+                       s.near_baseline_to_fence_m, s.far_baseline_to_fence_m,
+                       s.left_sideline_to_fence_m, s.right_sideline_to_fence_m,
+                       s.net_world_x, s.net_world_y,
                        c.name  AS court_name,
                        v.name  AS vendor_name,
                        c.surface
@@ -239,6 +251,10 @@ class TennisRobotDB:
             "point_count", "fallback_used",
             "west_x", "east_x", "south_y", "north_y",
             "status", "court_length_m", "court_width_m",
+            "is_doubles", "survey_type",
+            "near_baseline_to_fence_m", "far_baseline_to_fence_m",
+            "left_sideline_to_fence_m", "right_sideline_to_fence_m",
+            "net_world_x", "net_world_y",
             "court_name", "vendor_name", "surface",
         ]
         return [dict(zip(cols, r)) for r in rows]
@@ -260,12 +276,21 @@ class TennisRobotDB:
             pt_count = int(bounds.get("point_count") or 0)
             cg = bounds.get("court_geometry") or {}
             fg = bounds.get("fence_geometry") or {}
+            bd = bounds.get("boundary_distances") or {}
+            geo = bounds.get("geometry") or {}
+            net_pos = geo.get("net_world_pos") or {}
             self._conn.execute(
                 """
                 INSERT INTO surveys
                   (id, court_id, vendor_id, surveyed_at, point_count, fallback_used,
-                   west_x, east_x, south_y, north_y, status, court_length_m, court_width_m, raw_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   west_x, east_x, south_y, north_y, status,
+                   court_length_m, court_width_m,
+                   is_doubles,
+                   near_baseline_to_fence_m, far_baseline_to_fence_m,
+                   left_sideline_to_fence_m, right_sideline_to_fence_m,
+                   net_world_x, net_world_y,
+                   survey_type, raw_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     next_id,
@@ -281,6 +306,14 @@ class TennisRobotDB:
                     status,
                     cg.get("length_m"),
                     cg.get("width_m"),
+                    bounds.get("is_doubles"),
+                    bd.get("near_baseline_to_fence_m"),
+                    bd.get("far_baseline_to_fence_m"),
+                    bd.get("left_sideline_to_fence_m"),
+                    bd.get("right_sideline_to_fence_m"),
+                    net_pos.get("x_m"),
+                    net_pos.get("y_m"),
+                    bounds.get("survey_type"),
                     json.dumps(bounds),
                 ],
             )

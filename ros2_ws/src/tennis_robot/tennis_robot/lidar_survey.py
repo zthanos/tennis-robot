@@ -144,19 +144,22 @@ class Ros2LidarCourtSurvey:
         self._first_obstacle: dict | None = None   # net/fence found in FIND_BOUNDARY
         self._second_obstacle: dict | None = None  # baseline/fence found in FIND_BASELINE
         self._sideline_heading: float | None = None   # world heading during DRIVE_SIDELINE
-        self._long_side_heading: float | None = None   # world heading during DRIVE_LONG_SIDE
+        self._long_side_heading: float | None = None  # world heading during DRIVE_LONG_SIDE
         self._far_short_heading: float | None = None  # world heading during DRIVE_FAR_SHORT
         self._return_heading: float | None = None     # world heading during DRIVE_RETURN
-        self._left_range_samples: list[float] = []    # left-side LiDAR during sideline drive
-        self._right_range_samples: list[float] = []   # right-side LiDAR during sideline drive
-        self._long_left_range_samples: list[float] = []    # left-side LiDAR during long-side drive
-        self._far_short_range_samples: list[float] = []  # left-side LiDAR during far short side
-        self._return_range_samples: list[float] = []      # left-side LiDAR during return long side
-        self._sideline_to_fence_m: float | None = None
-        self._right_sideline_to_fence_m: float | None = None
-        self._net_passed: bool = False                # robot crossed the net area on the long leg
+        self._left_range_samples: list[float] = []    # cross-track LiDAR during short-side drive
+        self._right_range_samples: list[float] = []
+        self._long_left_range_samples: list[float] = []    # cross-track LiDAR during long-side drive
+        self._far_short_range_samples: list[float] = []    # cross-track LiDAR during far short side
+        self._return_range_samples: list[float] = []       # cross-track LiDAR during return leg
+        # Per-phase line-crossing: front range the first time a court line is detected
+        self._near_baseline_to_fence_m: float | None = None   # Phase 2
+        self._left_sideline_to_fence_m: float | None = None   # Phase 4
+        self._left_sideline_line_crossed: bool = False
+        self._far_baseline_to_fence_m: float | None = None    # Phase 6
         self._far_baseline_crossed: bool = False
-        self._far_baseline_to_fence_m: float | None = None  # front range when far baseline line seen
+        self._right_sideline_to_fence_m: float | None = None  # Phase 8
+        self._right_sideline_line_crossed: bool = False
         self._center_target: tuple[float, float] | None = None  # drive-back waypoint
         self._center_yaw: float | None = None
         self._state_elapsed_s = 0.0
@@ -337,14 +340,21 @@ class Ros2LidarCourtSurvey:
             if self._baseline_survey is None:
                 self._fail("BASELINE_SURVEY_NOT_INITIALIZED")
                 return BaseCommand(0.0, 0.0)
-            # Suppress vision during this leg: the camera sweeps over fences and
-            # the net while rotating, which triggers a premature vision stop
-            # (~164° into the 180° turn) before the robot has actually moved.
-            # The baseline fence is detected reliably by LiDAR range alone.
+            # Pass only line-detection vision (obstacle_class stripped) so the
+            # camera cannot trigger a premature stop during the 180° rotation,
+            # but the baseline line crossing IS recorded for baseline_to_fence_m.
+            line_vision = None
+            if vision is not None:
+                line_vision = SurveyVision(
+                    line_detected=vision.line_detected,
+                    line_offset_m=vision.line_offset_m,
+                    line_heading_error_rad=vision.line_heading_error_rad,
+                    line_confidence=vision.line_confidence,
+                )
             bl_cmd = self._baseline_survey.update(
                 x_m, y_m, yaw_rad,
                 self._last_scan_ranges or None, getattr(self, "_dt_s", 0.0),
-                vision=None,
+                vision=line_vision,
                 lidar_angle_min=self._lidar_angle_min,
                 lidar_angle_increment=self._lidar_angle_increment,
             )
@@ -357,6 +367,8 @@ class Ros2LidarCourtSurvey:
                     "vision_class": result.get("vision_class"),
                     "status": result.get("status"),
                 }
+                # Front range when baseline line was crossed = baseline-to-fence gap
+                self._near_baseline_to_fence_m = self._baseline_survey._court_line_range_m
                 # 90° left from the direction we drove to baseline
                 baseline_bearing = self._baseline_survey._approach_bearing_rad or 0.0
                 self._sideline_heading = baseline_bearing + math.pi / 2
@@ -391,15 +403,15 @@ class Ros2LidarCourtSurvey:
                     self._right_range_samples.append(right_r)
                     if len(self._right_range_samples) > 300:
                         del self._right_range_samples[:150]
-                # Record far-baseline-to-fence gap when court line is first seen
+                # Record left-sideline-to-fence gap when inner sideline line first seen
                 if (
                     vision is not None
                     and vision.line_detected
-                    and not self._far_baseline_crossed
+                    and not self._left_sideline_line_crossed
                     and not math.isinf(self._last_front_range_m)
                 ):
-                    self._far_baseline_to_fence_m = round(self._last_front_range_m, 3)
-                    self._far_baseline_crossed = True
+                    self._left_sideline_to_fence_m = round(self._last_front_range_m, 3)
+                    self._left_sideline_line_crossed = True
             front = self._last_front_range_m
             if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
                 # Short leg complete — turn 90° left again for the long leg
@@ -470,6 +482,15 @@ class Ros2LidarCourtSurvey:
                     self._far_short_range_samples.append(left_r)
                     if len(self._far_short_range_samples) > 300:
                         del self._far_short_range_samples[:150]
+                # Record right-sideline-to-fence gap when inner sideline line first seen
+                if (
+                    vision is not None
+                    and vision.line_detected
+                    and not self._right_sideline_line_crossed
+                    and not math.isinf(self._last_front_range_m)
+                ):
+                    self._right_sideline_to_fence_m = round(self._last_front_range_m, 3)
+                    self._right_sideline_line_crossed = True
             front = self._last_front_range_m
             if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
                 self._return_heading = (self._far_short_heading or 0.0) + math.pi / 2
@@ -865,19 +886,20 @@ class Ros2LidarCourtSurvey:
             s = sorted(samples)
             return round(s[len(s) // 2], 3)
 
-        left_m = _median(self._left_range_samples)
-        right_m = _median(self._right_range_samples)
-        long_left_m = _median(self._long_left_range_samples)
-        far_short_m = _median(self._far_short_range_samples)
-        return_m = _median(self._return_range_samples)
-        total_w = round(left_m + right_m, 3) if (left_m and right_m) else None
-
-        # Doubles heuristic: if total measured width > expected + 1 m → doubles
+        # Doubles detection: compare measured sideline-to-fence against the
+        # known singles-alley width (1.37 m).  If BOTH inner sidelines are
+        # more than 1.8 m from their respective fences → there is room for a
+        # doubles alley → court is played as doubles.
+        left_sl = self._left_sideline_to_fence_m
+        right_sl = self._right_sideline_to_fence_m
+        DOUBLES_ALLEY_M = 1.37
         is_doubles: bool | None = None
-        if total_w is not None:
-            is_doubles = total_w > self.config.expected_court_width_m - 1.0
+        if left_sl is not None and right_sl is not None:
+            is_doubles = (left_sl > DOUBLES_ALLEY_M + 0.4) and (right_sl > DOUBLES_ALLEY_M + 0.4)
+        elif left_sl is not None:
+            is_doubles = left_sl > DOUBLES_ALLEY_M + 0.4
 
-        sideline_status = "SUCCESS" if (left_m is not None) else "PARTIAL"
+        sideline_status = "SUCCESS" if (left_sl is not None) else "PARTIAL"
         overall_status = "SUCCESS" if (_status == "SUCCESS" and sideline_status == "SUCCESS") else "PARTIAL"
         if failure:
             overall_status = "PARTIAL"
@@ -891,17 +913,14 @@ class Ros2LidarCourtSurvey:
             "net": self._first_obstacle,
             "baseline": self._second_obstacle,
             "geometry": geo,
-            "sideline": {
-                "left_fence_m": left_m,
-                "right_fence_m": right_m,
-                "long_left_fence_m": long_left_m,
-                "far_short_fence_m": far_short_m,
-                "return_fence_m": return_m,
-                "total_width_measured_m": total_w,
+            "boundary_distances": {
+                "near_baseline_to_fence_m": self._near_baseline_to_fence_m,
                 "far_baseline_to_fence_m": self._far_baseline_to_fence_m,
+                "left_sideline_to_fence_m": self._left_sideline_to_fence_m,
+                "right_sideline_to_fence_m": self._right_sideline_to_fence_m,
                 "far_baseline_crossed": self._far_baseline_crossed,
-                "is_doubles": is_doubles,
             },
+            "is_doubles": is_doubles,
             "elapsed_s": round(elapsed, 1),
             "court_geometry": {
                 "length_m": self.config.expected_court_length_m,
