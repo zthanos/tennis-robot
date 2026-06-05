@@ -454,12 +454,15 @@ class Ros2LidarCourtSurvey:
                 ):
                     self._far_baseline_to_fence_m = round(self._last_front_range_m, 3)
                     self._far_baseline_crossed = True
-            # 80th-pct ignores sparse net; only a solid fence stops the robot
-            front = self._through_front_range()
+            front = self._last_front_range_m
             if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
-                self._far_short_heading = (self._long_side_heading or 0.0) + math.pi / 2
-                self._enter(LidarSurveyState.TURN_TO_FAR_SHORT, "far_baseline_fence_reached_turning_90_left")
-                return BaseCommand(0.0, 0.0)
+                obs = (vision.obstacle_class or "").strip().lower() if vision else ""
+                if obs in {"net", "net_post", "post", "posts"}:
+                    pass  # net identified — drive straight through
+                else:
+                    self._far_short_heading = (self._long_side_heading or 0.0) + math.pi / 2
+                    self._enter(LidarSurveyState.TURN_TO_FAR_SHORT, "far_baseline_fence_reached_turning_90_left")
+                    return BaseCommand(0.0, 0.0)
             return self._drive_straight_heading(yaw_rad, self._long_side_heading)
 
         # ── Phase 7: third 90° left turn (far baseline → far short side) ────────
@@ -525,10 +528,14 @@ class Ros2LidarCourtSurvey:
                     self._return_range_samples.append(left_r)
                     if len(self._return_range_samples) > 400:
                         del self._return_range_samples[:200]
-            front = self._through_front_range()
+            front = self._last_front_range_m
             if not math.isinf(front) and front <= self.config.sideline_drive_stop_range_m:
-                self._finalize_full_survey(None)
-                return BaseCommand(0.0, 0.0)
+                obs = (vision.obstacle_class or "").strip().lower() if vision else ""
+                if obs in {"net", "net_post", "post", "posts"}:
+                    pass  # net — drive straight through
+                else:
+                    self._finalize_full_survey(None)
+                    return BaseCommand(0.0, 0.0)
             return self._drive_straight_heading(yaw_rad, self._return_heading)
 
         # ── Phases below are disabled (full LiDAR court survey — future work) ──
