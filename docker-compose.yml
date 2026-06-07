@@ -1,131 +1,4 @@
 services:
-  # ── ROS 2 simulation stack (profile: ros2) ─────────────────────────────────
-  # Start with: docker compose --profile ros2 up
-  # Or via:     .\scripts\start_local_webots_control.ps1 -Ros2
-  #
-  # webots-ros2: Webots + ROS 2 Humble in one container.
-  #   The robot controller is webots_bridge.py. Switch the world's controller
-  #   from "ball_detector" to "webots_bridge" to activate.
-  #   noVNC: http://localhost:6082/vnc.html
-  webots-ros2:
-    build:
-      context: .
-      dockerfile: Dockerfile.ros2-webots
-    working_dir: /workspace
-    ports:
-      - "6082:6082"
-      - "5902:5902"
-    shm_size: "2gb"
-    volumes:
-      - .:/workspace
-      - ./docker/ros2/cyclonedds.xml:/cyclonedds.xml:ro
-    networks:
-      - ros2-net
-    environment:
-      - WEBOTS_WORLD=/workspace/worlds/tennis_court.wbt
-      - DISPLAY_SIZE=1280x800x24
-      - NOVNC_PORT=6082
-      - VNC_PORT=5902
-      - ROS_DOMAIN_ID=42
-      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-      - CYCLONEDDS_URI=/cyclonedds.xml
-      - LIBGL_ALWAYS_SOFTWARE=true   # WSL2 lacks /dev/dri; software rendering is the only viable path in Docker
-      - OTEL_ENABLED=true
-      - OTEL_EXPORTER=otlp
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
-      - USE_RGB_VISION=true
-      - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
-      - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
-      - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
-      - COLLECTOR_ALIGN_ANGULAR_GAIN=1.4
-      - COLLECTOR_APPROACH_SPEED_M_S=0.12
-      - COLLECTOR_CAPTURE_SPEED_M_S=0.05
-      - COLLECTOR_REVERSE_SPEED_M_S=0.08
-      - SURVEY_DRIVE_SPEED_M_S=0.24
-      - SURVEY_TURN_SPEED_RAD_S=0.75
-      - SURVEY_HEADING_GAIN=2.2
-    profiles: ["ros2"]
-
-  # WSLg/GPU experiment: Webots opens as a native WSLg window instead of noVNC.
-  # Start this from a WSL shell, not Windows PowerShell:
-  #   docker compose --profile ros2-wslg up webots-ros2-wslg ros2-nodes
-  #
-  # Verify inside the container:
-  #   glxinfo -B
-  # Good: OpenGL renderer string contains D3D12/AMD/NVIDIA and Accelerated: yes.
-  # Bad:  OpenGL renderer string contains llvmpipe and Accelerated: no.
-  webots-ros2-wslg:
-    build:
-      context: .
-      dockerfile: Dockerfile.ros2-webots
-    working_dir: /workspace
-    command: ["bash", "-c", ". /opt/ros/humble/setup.sh && . $${ROS_SETUP} && start-webots-wslg"]
-    shm_size: "2gb"
-    devices:
-      - /dev/dxg
-    volumes:
-      - .:/workspace
-      - ./docker/ros2/cyclonedds.xml:/cyclonedds.xml:ro
-      - /mnt/wslg:/mnt/wslg
-      - /usr/lib/wsl:/usr/lib/wsl:ro
-      - /tmp/.X11-unix:/tmp/.X11-unix
-    networks:
-      - ros2-net
-    environment:
-      - WEBOTS_WORLD=/workspace/worlds/tennis_court.wbt
-      - WEBOTS_MODE=realtime
-      - DISPLAY=:0
-      - WAYLAND_DISPLAY=wayland-0
-      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
-      - PULSE_SERVER=/mnt/wslg/PulseServer
-      - QT_X11_NO_MITSHM=1
-      - LD_LIBRARY_PATH=/usr/lib/wsl/lib
-      - MESA_LOADER_DRIVER_OVERRIDE=d3d12
-      - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-RX 7900 XTX}"
-      - ROS_DOMAIN_ID=42
-      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-      - CYCLONEDDS_URI=/cyclonedds.xml
-      - OTEL_ENABLED=true
-      - OTEL_EXPORTER=otlp
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
-      - USE_RGB_VISION=true
-      - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
-      - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
-      - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
-      - COLLECTOR_ALIGN_ANGULAR_GAIN=1.4
-      - COLLECTOR_APPROACH_SPEED_M_S=0.12
-      - COLLECTOR_CAPTURE_SPEED_M_S=0.05
-      - COLLECTOR_REVERSE_SPEED_M_S=0.08
-      - SURVEY_DRIVE_SPEED_M_S=0.24
-      - SURVEY_TURN_SPEED_RAD_S=0.75
-      - SURVEY_HEADING_GAIN=2.2
-    profiles: ["ros2-wslg"]
-
-  # ros2-nodes: perception + controller + command bridge behavior nodes.
-  ros2-nodes:
-    build:
-      context: .
-      dockerfile: Dockerfile.ros2
-    working_dir: /ros2_ws
-    volumes:
-      - .:/workspace
-      - ./docker/ros2/cyclonedds.xml:/cyclonedds.xml:ro
-    networks:
-      - ros2-net
-    environment:
-      - ROS_DOMAIN_ID=42
-      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-      - CYCLONEDDS_URI=/cyclonedds.xml
-      - PYTHONPATH=/workspace/controllers/ball_detector
-      - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
-      - ROBOT_STATUS_FILE=/workspace/runtime/robot_status.json
-    profiles: ["ros2", "ros2-wslg"]
-
-  # ── Legacy simulation stack (default, no profile needed) ───────────────────
-  # Start with: docker compose up webots
-  # Or via:     .\scripts\start_webots_control.ps1
   otel-collector:
     image: otel/opentelemetry-collector:0.128.0
     command: ["--config=/etc/otelcol/config.yaml"]
@@ -148,40 +21,7 @@ services:
       - UV_PROJECT_ENVIRONMENT=/opt/tennis-robot-venv
       - UV_LINK_MODE=copy
 
-  webots:
-    build:
-      context: .
-      dockerfile: Dockerfile.webots
-    working_dir: /workspace
-    volumes:
-      - .:/workspace
-    ports:
-      - "6080:6080"
-      - "5900:5900"
-    shm_size: "2gb"
-    environment:
-      - WEBOTS_WORLD=/workspace/worlds/tennis_court.wbt
-      - DISPLAY_SIZE=1280x800x24
-      - OTEL_ENABLED=true
-      - OTEL_EXPORTER=otlp
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - OTEL_METRIC_EXPORT_INTERVAL_MS=5000
-      - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
-      - USE_RGB_VISION=true
-      - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
-      - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
-      - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
-      - COLLECTOR_ALIGN_ANGULAR_GAIN=1.4
-      - COLLECTOR_APPROACH_SPEED_M_S=0.12
-      - COLLECTOR_CAPTURE_SPEED_M_S=0.05
-      - COLLECTOR_REVERSE_SPEED_M_S=0.08
-      - SURVEY_DRIVE_SPEED_M_S=0.24
-      - SURVEY_TURN_SPEED_RAD_S=0.75
-      - SURVEY_HEADING_GAIN=2.2
-    depends_on:
-      - otel-collector
-
-  # ── Gazebo Harmonic simulation (replaces Webots for AMD/WSLg) ───────────────
+  # ── Gazebo Harmonic simulation ───────────────────────────────────────────────
   # Start with: docker compose --profile gazebo up gazebo
   # From a WSL shell so /dev/dri and WSLg mounts are available.
   #
@@ -219,7 +59,6 @@ services:
       - ROS_DOMAIN_ID=42
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
       - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
-      - PYTHONPATH=/workspace/controllers/ball_detector
       - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
       - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
       - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
@@ -231,6 +70,61 @@ services:
       - SURVEY_DRIVE_SPEED_M_S=0.24
       - SURVEY_TURN_SPEED_RAD_S=0.75
     profiles: ["gazebo"]
+
+  # Gazebo with survey replay recorder enabled.
+  # Start with:
+  #   docker compose --profile gazebo-rec build gazebo-rec
+  #   docker compose --profile gazebo-rec up gazebo-rec
+  #
+  # The recorder writes runtime/survey_replay_latest.jsonl while Map Court runs.
+  gazebo-rec:
+    build:
+      context: .
+      dockerfile: Dockerfile.gazebo
+    working_dir: /ros2_ws
+    shm_size: "2gb"
+    ports:
+      - "8081:8081"   # web control panel
+    devices:
+      - /dev/dxg
+    volumes:
+      - .:/workspace
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+      - /mnt/wslg:/mnt/wslg
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    networks:
+      - ros2-net
+    environment:
+      - DISPLAY=:0
+      - WAYLAND_DISPLAY=wayland-0
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - PULSE_SERVER=/mnt/wslg/PulseServer
+      - LD_LIBRARY_PATH=/usr/lib/wsl/lib
+      - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-RX 7900 XTX}"
+      - LIBGL_ALWAYS_SOFTWARE=0
+      - GZ_SIM_RESOURCE_PATH=/workspace/gazebo/models
+      - ROS_DOMAIN_ID=42
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
+      - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
+      - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
+      - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
+      - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
+      - COLLECTOR_ALIGN_ANGULAR_GAIN=1.4
+      - COLLECTOR_APPROACH_SPEED_M_S=0.12
+      - COLLECTOR_CAPTURE_SPEED_M_S=0.05
+      - COLLECTOR_REVERSE_SPEED_M_S=0.08
+      - SURVEY_DRIVE_SPEED_M_S=0.24
+      - SURVEY_TURN_SPEED_RAD_S=0.75
+      - ROS2_SURVEY_DRIVE_SPEED_M_S=0.75
+      - ROS2_SURVEY_TURN_SPEED_RAD_S=0.85
+      - SURVEY_REPLAY_DURATION_S=1200
+      - SURVEY_REPLAY_FILE=/workspace/runtime/survey_replay_latest.jsonl
+      - GAZEBO_HEADLESS=${GAZEBO_HEADLESS:-false}
+    command: ["bash", "-c", ". /opt/ros/humble/setup.sh && . /ros2_ws/install/setup.sh && mkdir -p /workspace/runtime && (python3 /workspace/scripts/survey_replay_record.py --out $${SURVEY_REPLAY_FILE} --duration-s $${SURVEY_REPLAY_DURATION_S} > /workspace/runtime/survey_replay_record.out.log 2> /workspace/runtime/survey_replay_record.err.log &) && ros2 launch tennis_robot sim.launch.py headless:=$${GAZEBO_HEADLESS:-false}"]
+    profiles: ["gazebo-rec"]
 
   openscad:
     image: openscad/openscad:bookworm
