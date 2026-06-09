@@ -109,6 +109,48 @@ The current world includes **Concept A: Funnel + Wide Intake Roller** as the fro
 - a top-mounted `front_camera` plus aligned `front_depth` range finder representing the OAK-D-Lite AF RGB-D role for tennis-ball detection, depth, and targeted looks into shadow zones;
 - a low-mounted 360-degree `front_lidar` representing the Waveshare/Slamtec RPLIDAR C1 role for real-time court boundaries, obstacles, range, shadow zones, and route costmaps.
 
+## Robot Description Source
+
+The robot description source is URDF xacro:
+
+```text
+ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro
+```
+
+Component xacro files live under:
+
+```text
+ros2_ws/src/tennis_robot/urdf/components/
+```
+
+Edit the URDF xacro source when changing robot dimensions, wheel geometry,
+sensor mounts, Gazebo sensor sections, or controller geometry constants.
+Generate the runtime URDF locally with:
+
+```powershell
+uv run --with xacro python scripts/generate_robot_urdf.py
+```
+
+Inside the Gazebo Docker image, `ros-humble-xacro` is installed, so
+`python3 scripts/generate_robot_urdf.py` is enough.
+
+The Gazebo launch files regenerate this runtime file on every launch:
+
+```text
+runtime/tennis_robot.urdf
+```
+
+The tennis court world stays SDF and no longer includes `model://tennis_robot`.
+Instead, the launch file spawns the generated URDF into Gazebo. To check whether
+the generated URDF matches the xacro source:
+
+```powershell
+uv run --with xacro python scripts/generate_robot_urdf.py --check
+```
+
+The generated URDF is ignored by Git via `runtime/`. Treat it as a runtime/debug
+view, not as a second source file.
+
 The Webots court is modeled after the reference clay court photos:
 
 - red clay playing surface with lighter wear/brush marks;

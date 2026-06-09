@@ -1,6 +1,8 @@
 """Launch Gazebo Harmonic + ros_gz bridge + all ROS 2 nodes."""
 
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 from launch import LaunchDescription
@@ -18,6 +20,7 @@ WORKSPACE = os.environ.get(
 GZ_MODELS = f"{WORKSPACE}/gazebo/models"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
+ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
 ROS_PYTHONPATH = ":".join(
     [
         "/ros2_ws/install/tennis_robot/lib/python3.10/site-packages",
@@ -33,7 +36,16 @@ CONTROL_PANEL_PYTHONPATH = ":".join(
 )
 
 
+def generate_robot_urdf():
+    script = Path(WORKSPACE) / "scripts" / "generate_robot_urdf.py"
+    if not script.exists():
+        raise RuntimeError(f"Robot URDF generator not found: {script}")
+    subprocess.run([sys.executable, str(script), "--output", ROBOT_URDF], check=True)
+
+
 def generate_launch_description():
+    generate_robot_urdf()
+
     headless_arg = DeclareLaunchArgument(
         "headless", default_value="false",
         description="Run Gazebo without GUI (headless mode)"
@@ -52,6 +64,20 @@ def generate_launch_description():
         cmd=["gz", "sim", "-r", "-s", "--render-engine", "ogre", GZ_WORLD],
         condition=IfCondition(headless),
         additional_env={"GZ_SIM_RESOURCE_PATH": GZ_MODELS},
+        output="screen",
+    )
+
+    spawn_robot = Node(
+        package="ros_gz_sim",
+        executable="create",
+        name="spawn_tennis_robot",
+        arguments=[
+            "-file", ROBOT_URDF,
+            "-name", "tennis_robot",
+            "-x", "-8",
+            "-y", "0",
+            "-z", "0.20",
+        ],
         output="screen",
     )
 
@@ -145,10 +171,16 @@ def generate_launch_description():
         actions=[bridge, perception, controller, navigation, command_bridge, gz_extras, sensor_snapshots],
     )
 
+    delayed_spawn = TimerAction(
+        period=1.0,
+        actions=[spawn_robot],
+    )
+
     return LaunchDescription([
         headless_arg,
         gz_full,
         gz_headless,
+        delayed_spawn,
         control_panel,
         delayed_nodes,
     ])

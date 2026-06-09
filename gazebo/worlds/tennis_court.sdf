@@ -62,11 +62,6 @@
     <pose>0 0 0 0 0 0</pose>
   </include>
 
-  <!-- Robot -->
-  <include>
-    <uri>model://tennis_robot</uri>
-  </include>
-
   <!-- ── TENNIS BALLS ── radius 0.033 m, mass 0.058 kg ─────────── -->
   <!-- Positions extracted from worlds/tennis_court.wbt -->
   <model name="ball_00"><pose>-4.264 -3.713 0.033 0 0 0</pose>

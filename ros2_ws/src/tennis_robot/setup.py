@@ -1,3 +1,5 @@
+from glob import glob
+
 from setuptools import find_packages, setup
 
 package_name = "tennis_robot"
@@ -10,6 +12,8 @@ setup(
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
         (f"share/{package_name}", ["package.xml"]),
         (f"share/{package_name}/launch", ["launch/tennis_robot.launch.py", "launch/sim.launch.py"]),
+        (f"share/{package_name}/urdf", glob("urdf/*.xacro")),
+        (f"share/{package_name}/urdf/components", glob("urdf/components/*.xacro")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,

@@ -1,6 +1,8 @@
 """Launch Gazebo Harmonic + ros_gz bridge + all ROS 2 nodes."""
 
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 from launch import LaunchDescription
@@ -17,10 +19,20 @@ WORKSPACE = os.environ.get(
 GZ_MODELS = f"{WORKSPACE}/gazebo/models"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
+ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
 CONTROLLERS_PATH = f"{WORKSPACE}/controllers/ball_detector"
 
 
+def generate_robot_urdf():
+    script = Path(WORKSPACE) / "scripts" / "generate_robot_urdf.py"
+    if not script.exists():
+        raise RuntimeError(f"Robot URDF generator not found: {script}")
+    subprocess.run([sys.executable, str(script), "--output", ROBOT_URDF], check=True)
+
+
 def generate_launch_description():
+    generate_robot_urdf()
+
     headless_arg = DeclareLaunchArgument(
         "headless", default_value="false",
         description="Run Gazebo without GUI (headless mode)"
@@ -36,6 +48,20 @@ def generate_launch_description():
 
     gz_gui = ExecuteProcess(
         cmd=["gz", "sim", "-g"],
+        output="screen",
+    )
+
+    spawn_robot = Node(
+        package="ros_gz_sim",
+        executable="create",
+        name="spawn_tennis_robot",
+        arguments=[
+            "-file", ROBOT_URDF,
+            "-name", "tennis_robot",
+            "-x", "-8",
+            "-y", "0",
+            "-z", "0.20",
+        ],
         output="screen",
     )
 
@@ -103,10 +129,16 @@ def generate_launch_description():
         actions=[bridge, perception, controller, command_bridge, gz_extras],
     )
 
+    delayed_spawn = TimerAction(
+        period=1.0,
+        actions=[spawn_robot],
+    )
+
     return LaunchDescription([
         headless_arg,
         gz_server,
         gz_gui,
+        delayed_spawn,
         control_panel,
         delayed_nodes,
     ])
