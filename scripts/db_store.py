@@ -13,6 +13,20 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DB_PATH = ROOT / "runtime" / "tennis_robot.db"
 _LEGACY_VENDORS_JSON = ROOT / "runtime" / "vendors.json"
 
+def _canonical_fence_bounds(canonical: dict) -> dict:
+    corners = canonical["corners"]
+    xs = [float(corner["x_m"]) for corner in corners.values()]
+    ys = [float(corner["y_m"]) for corner in corners.values()]
+    if not xs or not ys:
+        raise KeyError("canonical_fence_model.corners")
+    return {
+        "west_x": min(xs),
+        "east_x": max(xs),
+        "south_y": min(ys),
+        "north_y": max(ys),
+    }
+
+
 _SCHEMA = [
     """
     CREATE TABLE IF NOT EXISTS vendors (
@@ -110,6 +124,7 @@ class TennisRobotDB:
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS net_world_x DOUBLE",
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS net_world_y DOUBLE",
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS survey_type TEXT",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS canonical_json TEXT",
     ]
 
     def _init_schema(self) -> None:
@@ -275,7 +290,8 @@ class TennisRobotDB:
             status = bounds.get("status") or ("SUCCESS" if bounds.get("survey_complete") else "FAILED")
             pt_count = int(bounds.get("point_count") or 0)
             cg = bounds.get("court_geometry") or {}
-            fg = bounds.get("fence_geometry") or {}
+            canonical = bounds.get("canonical_fence_model") or {}
+            fg = _canonical_fence_bounds(canonical)
             bd = bounds.get("boundary_distances") or {}
             geo = bounds.get("geometry") or {}
             net_pos = geo.get("net_world_pos") or {}
@@ -289,8 +305,8 @@ class TennisRobotDB:
                    near_baseline_to_fence_m, far_baseline_to_fence_m,
                    left_sideline_to_fence_m, right_sideline_to_fence_m,
                    net_world_x, net_world_y,
-                   survey_type, raw_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   survey_type, canonical_json, raw_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     next_id,
@@ -314,6 +330,7 @@ class TennisRobotDB:
                     net_pos.get("x_m"),
                     net_pos.get("y_m"),
                     bounds.get("survey_type"),
+                    json.dumps(canonical) if canonical else None,
                     json.dumps(bounds),
                 ],
             )

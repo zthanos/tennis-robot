@@ -21,8 +21,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
-sys.path.insert(0, "/workspace/controllers/ball_detector")
-from control_bus import RobotCommandStore, RobotStatusStore
+from tennis_robot.control_bus import RobotCommandStore, RobotStatusStore
 from tennis_robot_msgs.msg import RobotCommand
 
 POLL_INTERVAL_S = 0.05

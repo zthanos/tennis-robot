@@ -67,7 +67,6 @@ WORKDIR /ros2_ws
 
 COPY ros2_ws/src/tennis_robot_msgs src/tennis_robot_msgs
 COPY ros2_ws/src/tennis_robot src/tennis_robot
-COPY controllers/ /workspace/controllers/
 
 RUN . /opt/ros/humble/setup.sh \
   && rosdep update \

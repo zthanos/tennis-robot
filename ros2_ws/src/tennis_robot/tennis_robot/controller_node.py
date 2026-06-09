@@ -15,7 +15,7 @@ Subscribes:
   /sim/balls         (std_msgs/String, JSON) — sim-only ground truth
 
 Publishes:
-  /cmd_vel           (geometry_msgs/Twist)
+  /navigation/cmd_vel (geometry_msgs/Twist, consumed by navigation_node)
   /collector/cmd     (tennis_robot_msgs/CollectorCmd)
   /robot/status      (std_msgs/String, JSON)
   /ball/collected    (std_msgs/String, ball def name) — triggers sim animation
@@ -26,7 +26,6 @@ from __future__ import annotations
 import json
 import math
 import os
-import sys
 import time
 from dataclasses import asdict
 
@@ -39,11 +38,9 @@ from std_msgs.msg import String
 
 from tennis_robot import yaw_from_quaternion
 
-sys.path.insert(0, "/workspace/controllers/ball_detector")
-
-from ball_map import BallMap, BallMapConfig, across_net
-from collect_one_mission import CollectOneMission
-from collector import (
+from tennis_robot.ball_map import BallMap, BallMapConfig, across_net
+from tennis_robot.collect_one_mission import CollectOneMission
+from tennis_robot.collector import (
     BallObservationInput,
     BaseCommand,
     CollectorCommand,
@@ -52,15 +49,13 @@ from collector import (
     ConceptACommand,
     ConceptAConfig,
 )
-from config_utils import _env_float
-from lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
-from mapping import LidarSurveyBoundaryProvider, MapLeftSideMission
-from search import HalfCourtSearchBehavior, SearchState
-try:
-    from tennis_robot.lidar_survey import LidarSurveyState, Ros2LidarCourtSurvey
-except ModuleNotFoundError:
-    from lidar_survey import LidarSurveyState, Ros2LidarCourtSurvey
-from survey import SurveyVision
+from tennis_robot.config_utils import _env_float
+from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
+from tennis_robot.mapping import LidarSurveyBoundaryProvider, MapLeftSideMission
+from tennis_robot.motion_controller import MOTION_COMMAND_TOPIC
+from tennis_robot.search import HalfCourtSearchBehavior, SearchState
+from tennis_robot.lidar_survey import LidarSurveyState, Ros2LidarCourtSurvey
+from tennis_robot.survey import SurveyVision
 from tennis_robot_msgs.msg import BallObservation, CollectorCmd, IrReadings, RobotCommand
 
 TIME_STEP_S = 0.032
@@ -170,7 +165,7 @@ class ControllerNode(Node):
         self.create_subscription(String, "/sim/balls", self._on_sim_balls, 1)
 
         # ── publishers ─────────────────────────────────────────────────────────
-        self._pub_cmd_vel = self.create_publisher(Twist, "/cmd_vel", 1)
+        self._pub_motion_cmd = self.create_publisher(Twist, MOTION_COMMAND_TOPIC, 1)
         self._pub_collector = self.create_publisher(CollectorCmd, "/collector/cmd", 1)
         self._pub_status = self.create_publisher(String, "/robot/status", 10)
         self._pub_ball_collected = self.create_publisher(String, "/ball/collected", 10)
@@ -731,7 +726,7 @@ class ControllerNode(Node):
         twist = Twist()
         twist.linear.x = command.base.linear_speed_m_s
         twist.angular.z = command.base.angular_speed_rad_s
-        self._pub_cmd_vel.publish(twist)
+        self._pub_motion_cmd.publish(twist)
 
         col = CollectorCmd()
         col.lift_wheel_speed = float(command.collector.lift_wheel_speed)
@@ -745,8 +740,7 @@ class ControllerNode(Node):
         self._pub_command.publish(msg)
         # Also write to the file store so the web panel stays in sync
         try:
-            sys.path.insert(0, "/workspace/controllers/ball_detector")
-            from control_bus import RobotCommandStore
+            from tennis_robot.control_bus import RobotCommandStore
             RobotCommandStore.from_env().write(mode, source)
         except Exception:
             pass
@@ -773,6 +767,7 @@ class ControllerNode(Node):
                 "bounds_saved": self.survey_behavior.court_bounds is not None,
                 "bounds": self.survey_behavior.court_bounds,
                 "navigation": self.survey_behavior.telemetry(),
+                "vision": asdict(self._latest_survey_vision) if self._latest_survey_vision is not None else None,
             },
             "uptime_s": round(time.time() - self.started_at, 1),
         }
@@ -785,7 +780,7 @@ class ControllerNode(Node):
         if now - self._last_status_file_write_s >= 0.5:
             self._last_status_file_write_s = now
             try:
-                from control_bus import RobotStatusStore
+                from tennis_robot.control_bus import RobotStatusStore
                 RobotStatusStore.from_env().write(status)
             except Exception:
                 pass

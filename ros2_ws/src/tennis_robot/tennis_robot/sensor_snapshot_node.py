@@ -9,7 +9,6 @@ from __future__ import annotations
 import math
 import os
 import struct
-import sys
 import time
 
 import cv2
@@ -18,11 +17,10 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, LaserScan
 
-sys.path.insert(0, "/workspace/controllers/ball_detector")
-from control_bus import RobotSensorStore
-from debug_display import bgra_bmp_data_url
-from lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
-from perception import detect_obstacle_class, build_survey_vision
+from tennis_robot.control_bus import RobotSensorStore
+from tennis_robot.debug_display import bgra_bmp_data_url
+from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
+from tennis_robot.perception import detect_obstacle_class, build_survey_vision
 
 _STATUS_FILE = os.getenv("ROBOT_STATUS_FILE", "/workspace/runtime/robot_status.json")
 

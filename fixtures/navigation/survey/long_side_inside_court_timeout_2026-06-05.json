@@ -1,0 +1,72 @@
+{
+  "name": "long_side_inside_court_timeout_2026-06-05",
+  "fixture": "long_side_inside_court_timeout_2026-06-05.jsonl",
+  "scenario": "Court Survey / Map Court",
+  "source": "Gazebo recording from runtime/survey_replay_latest.jsonl",
+  "recorded_at": "2026-06-05",
+  "command_trace": {
+    "commands": 2277,
+    "missing_commands": 0,
+    "moving_ticks": 2113,
+    "rotating_ticks": 164,
+    "stopped_ticks": 0
+  },
+  "expected": {
+    "survey_complete": false,
+    "final_state": "find_baseline",
+    "last_event": "net_found_turning_180_for_baseline",
+    "max_required_turn_pending_linear_m_s": 0.0,
+    "first_required_turn_forward": {
+      "tick": 265,
+      "yaw_deg": 182.86,
+      "turn_progress_deg": 180.0,
+      "linear_m_s": 0.7
+    }
+  },
+  "live_observed": {
+    "final_state": "drive_long_side",
+    "last_event": "aligned_for_long_side_drive",
+    "phase_path": [
+      "find_boundary",
+      "find_baseline",
+      "turn_to_left_sideline",
+      "drive_left_sideline",
+      "turn_to_long_side",
+      "drive_long_side"
+    ],
+    "drive_left_sideline": {
+      "start_pose": {
+        "x_m": -6.339,
+        "y_m": -0.005,
+        "yaw_deg": 263.5
+      },
+      "end_pose": {
+        "x_m": -6.368,
+        "y_m": -4.426,
+        "yaw_deg": 270.0
+      },
+      "left_sideline_to_fence_m": null,
+      "front_range_at_turn_m": 1.147
+    },
+    "drive_long_side": {
+      "start_pose": {
+        "x_m": -6.366,
+        "y_m": -4.555,
+        "yaw_deg": 354.8
+      },
+      "end_pose": {
+        "x_m": 16.198,
+        "y_m": -4.969,
+        "yaw_deg": 0.0
+      },
+      "moving_cmd_ticks": 1666,
+      "far_baseline_crossed": true,
+      "far_baseline_to_fence_m": 9.608
+    }
+  },
+  "notes": [
+    "This is the first fixture with a complete cmd_linear_m_s/cmd_angular_rad_s trace.",
+    "Live telemetry turns from drive_left_sideline to drive_long_side before left sideline line crossing is confirmed.",
+    "The long side then runs at y around -4.6 to -5.0, which is likely inside/too close to the court instead of outside the sideline fence path."
+  ]
+}

@@ -18,6 +18,12 @@ def generate_launch_description() -> LaunchDescription:
         ),
         Node(
             package="tennis_robot",
+            executable="navigation_node",
+            name="navigation_node",
+            output="screen",
+        ),
+        Node(
+            package="tennis_robot",
             executable="command_bridge_node",
             name="command_bridge",
             output="screen",

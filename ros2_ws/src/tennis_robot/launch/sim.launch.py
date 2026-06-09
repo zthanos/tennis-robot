@@ -18,13 +18,17 @@ WORKSPACE = os.environ.get(
 GZ_MODELS = f"{WORKSPACE}/gazebo/models"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
-CONTROLLERS_PATH = f"{WORKSPACE}/controllers/ball_detector"
 ROS_PYTHONPATH = ":".join(
     [
-        CONTROLLERS_PATH,
         "/ros2_ws/install/tennis_robot/lib/python3.10/site-packages",
         "/ros2_ws/install/tennis_robot_msgs/local/lib/python3.10/dist-packages",
         os.environ.get("PYTHONPATH", ""),
+    ]
+)
+CONTROL_PANEL_PYTHONPATH = ":".join(
+    [
+        "/ros2_ws/install/tennis_robot/lib/python3.10/site-packages",
+        f"{WORKSPACE}/scripts",
     ]
 )
 
@@ -80,6 +84,13 @@ def generate_launch_description():
         },
     )
 
+    navigation = Node(
+        package="tennis_robot",
+        executable="navigation_node",
+        name="navigation_node",
+        output="screen",
+    )
+
     command_bridge = Node(
         package="tennis_robot",
         executable="command_bridge_node",
@@ -120,7 +131,7 @@ def generate_launch_description():
             f"{WORKSPACE}/runtime/tennis_robot_gazebo.db",
         ],
         additional_env={
-            "PYTHONPATH": f"{CONTROLLERS_PATH}:{WORKSPACE}/scripts",
+            "PYTHONPATH": CONTROL_PANEL_PYTHONPATH,
             "ROBOT_COMMAND_FILE": f"{WORKSPACE}/runtime/robot_command.json",
             "ROBOT_STATUS_FILE": f"{WORKSPACE}/runtime/robot_status.json",
             "ROBOT_SENSOR_FILE": f"{WORKSPACE}/runtime/robot_sensors.json",
@@ -131,7 +142,7 @@ def generate_launch_description():
     # Delay ROS nodes until Gazebo + bridge are up
     delayed_nodes = TimerAction(
         period=4.0,
-        actions=[bridge, perception, controller, command_bridge, gz_extras, sensor_snapshots],
+        actions=[bridge, perception, controller, navigation, command_bridge, gz_extras, sensor_snapshots],
     )
 
     return LaunchDescription([

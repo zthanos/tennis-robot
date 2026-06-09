@@ -1,0 +1,19 @@
+{
+  "name": "find_baseline_fence_stuck_2026-06-05",
+  "fixture": "find_baseline_fence_stuck_2026-06-05.jsonl",
+  "scenario": "Court Survey / Map Court",
+  "source": "Gazebo recording from runtime/survey_replay_latest.jsonl",
+  "recorded_at": "2026-06-05",
+  "expected": {
+    "survey_complete": false,
+    "final_state": "find_boundary",
+    "last_event": "ros2_lidar_map_court_started",
+    "max_required_turn_pending_linear_m_s": 0.0,
+    "first_required_turn_forward": null
+  },
+  "notes": [
+    "The robot confirmed the net and transitioned into the baseline approach.",
+    "The replay asserts that required turns emit no forward command until the turn is complete.",
+    "This fixture is intended for future navigation model and survey controller regression tests."
+  ]
+}

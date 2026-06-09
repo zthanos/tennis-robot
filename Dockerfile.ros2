@@ -28,7 +28,6 @@ RUN . /opt/ros/humble/setup.sh \
     && . install/setup.sh \
     && colcon build --packages-select tennis_robot
 
-ENV PYTHONPATH=/workspace/controllers/ball_detector
 
 CMD ["bash", "-c", \
     ". /opt/ros/humble/setup.sh && \

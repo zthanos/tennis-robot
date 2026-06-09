@@ -16,7 +16,6 @@ import json
 import math
 import os
 import struct
-import sys
 
 import cv2
 import numpy as np
@@ -28,8 +27,7 @@ from std_msgs.msg import String
 
 from tennis_robot import yaw_from_quaternion
 
-sys.path.insert(0, "/workspace/controllers/ball_detector")
-from perception import (
+from tennis_robot.perception import (
     CameraMount,
     RobotPose2D,
     build_survey_vision,
