@@ -24,6 +24,16 @@ else
     echo "WARNING: tennis_robot site-packages not found — did you run colcon build?"
 fi
 
+# Add uv venv site-packages so scripts can use duckdb, numpy, etc.
+if [ ! -d "$SCRIPT_DIR/.venv" ]; then
+    echo "Setting up Python venv..."
+    (cd "$SCRIPT_DIR" && uv sync)
+fi
+VENV_SITE=$(ls -d "$SCRIPT_DIR/.venv/lib/python"*/site-packages 2>/dev/null | head -1)
+if [ -n "$VENV_SITE" ]; then
+    export PYTHONPATH="$VENV_SITE:${PYTHONPATH:-}"
+fi
+
 mkdir -p "$SCRIPT_DIR/runtime"
 
 # ── Launch ───────────────────────────────────────────────────────────────────
