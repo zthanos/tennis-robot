@@ -24,12 +24,18 @@ else
     echo "WARNING: tennis_robot site-packages not found — did you run colcon build?"
 fi
 
-# Add uv venv site-packages so scripts can use duckdb, numpy, etc.
-if [ ! -d "$SCRIPT_DIR/.venv" ]; then
-    echo "Setting up Python venv..."
-    (cd "$SCRIPT_DIR" && uv sync)
+# ROS 2 Humble uses Python 3.10; create a dedicated venv to avoid version mismatch
+VENV_ROS="$SCRIPT_DIR/.venv-ros"
+if [ ! -d "$VENV_ROS" ]; then
+    echo "Creating Python 3.10 venv for ROS scripts..."
+    uv venv --python 3.10 "$VENV_ROS"
+    uv pip install --python "$VENV_ROS/bin/python" \
+        "duckdb>=1.5.3" "numpy>=1.26" "opencv-python-headless>=4.9" \
+        "matplotlib>=3.10" \
+        "opentelemetry-api>=1.34" "opentelemetry-sdk>=1.34" \
+        "opentelemetry-exporter-otlp-proto-http>=1.34"
 fi
-VENV_SITE=$(ls -d "$SCRIPT_DIR/.venv/lib/python"*/site-packages 2>/dev/null | head -1)
+VENV_SITE=$(ls -d "$VENV_ROS/lib/python"*/site-packages 2>/dev/null | head -1)
 if [ -n "$VENV_SITE" ]; then
     export PYTHONPATH="$VENV_SITE:${PYTHONPATH:-}"
 fi
