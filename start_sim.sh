@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
 # Launch Gazebo Harmonic + ROS 2 Humble simulation (native Linux, no Docker)
+#
+# Robot control now runs through ros2_control: the gz_ros2_control plugin hosts
+# the controller_manager inside Gazebo and sim.launch.py spawns
+# joint_state_broadcaster + diff_drive_controller + lift_wheel_velocity_controller.
+#
+# Native prerequisites (Docker users get these from Dockerfile.gazebo):
+#   sudo apt install ros-humble-ros2-control ros-humble-ros2-controllers \
+#                    ros-humble-controller-manager ros-humble-robot-state-publisher
+#   # gz_ros2_control has no Humble+Harmonic binary — build it from source:
+#   #   git clone https://github.com/ros-controls/gz_ros2_control -b humble \
+#   #       ros2_ws/src/gz_ros2_control
+#   #   cd ros2_ws && GZ_VERSION=harmonic colcon build
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,6 +19,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ── ROS 2 + workspace ────────────────────────────────────────────────────────
 source /opt/ros/humble/setup.bash
 source "$SCRIPT_DIR/ros2_ws/install/setup.bash"
+
+# ── ros2_control sanity check ────────────────────────────────────────────────
+if ! ros2 pkg prefix gz_ros2_control >/dev/null 2>&1; then
+    echo "WARNING: gz_ros2_control not found in the workspace. The robot will not"
+    echo "         move until it is built from source (GZ_VERSION=harmonic)."
+    echo "         See docs/ros2-control-migration-el.md."
+fi
 
 # ── Environment ──────────────────────────────────────────────────────────────
 export WORKSPACE="$SCRIPT_DIR"

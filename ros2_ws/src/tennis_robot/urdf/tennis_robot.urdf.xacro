@@ -5,10 +5,17 @@
   <xacro:include filename="components/funnel.urdf.xacro"/>
   <xacro:include filename="components/basket.urdf.xacro"/>
   <xacro:include filename="components/drivetrain.urdf.xacro"/>
+  <xacro:include filename="components/ros2_control.urdf.xacro"/>
   <xacro:include filename="components/lidar.urdf.xacro"/>
   <xacro:include filename="components/oak_d.urdf.xacro"/>
   <xacro:include filename="components/ir_beam.urdf.xacro"/>
   <xacro:include filename="components/body_panels.urdf.xacro"/>
+
+  <!-- ros2_control args. sim_mode swaps the hardware backend (sim vs real).
+       controllers_config is the absolute path to controllers.yaml, injected by
+       scripts/generate_robot_urdf.py / the launch file. -->
+  <xacro:arg name="sim_mode" default="true"/>
+  <xacro:arg name="controllers_config" default="config/controllers.yaml"/>
 
 <xacro:property name="chassis_x" value="0.92"/> 
   <xacro:property name="chassis_y" value="0.58"/> 
@@ -23,10 +30,16 @@
   <xacro:property name="wheel_mass" value="0.25"/> 
   <xacro:property name="wheel_separation" value="${2.0 * wheel_y}"/> 
 
-  <xacro:property name="caster_x" value="0.31"/> 
-  <xacro:property name="caster_y" value="0.35"/> 
-  <xacro:property name="caster_z" value="-0.055"/> 
-  <xacro:property name="caster_radius" value="0.055"/> 
+  <!-- Front swivel casters. Sized for a real clay court (rolling wheel, not a
+       skid/ball). caster_z chosen so the wheel contact is coplanar with the
+       drive wheels at the 3deg design pitch: contact_z = caster_z - caster_radius.
+       Set caster_radius/width/trail to the actual caster hardware you fit. -->
+  <xacro:property name="caster_x" value="0.31"/>
+  <xacro:property name="caster_y" value="0.35"/>
+  <xacro:property name="caster_radius" value="0.0625"/>   <!-- 125 mm wheel dia -->
+  <xacro:property name="caster_width" value="0.035"/>
+  <xacro:property name="caster_trail" value="0.025"/>     <!-- self-aligning offset -->
+  <xacro:property name="caster_z" value="-0.0825"/>       <!-- contact = -0.145 m (coplanar) -->
 
   <xacro:property name="intake_x" value="0.62"/> 
   <xacro:property name="intake_z" value="0.095"/> 
@@ -80,25 +93,25 @@
       width="${intake_width}"
       mass="0.20"/>
 
-<xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}"/> [cite: 4]
-  <xacro:ball_basket parent="base_link"/> [cite: 4]
+<xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}"/>
+  <xacro:ball_basket parent="base_link"/>
 
-  <xacro:caster name="front_left" x="${caster_x}" y="-${caster_y}" z="${caster_z}" radius="${caster_radius}"/> [cite: 4]
-  <xacro:caster name="front_right" x="${caster_x}" y="${caster_y}" z="${caster_z}" radius="${caster_radius}"/> [cite: 4]
+  <xacro:caster name="front_left" x="${caster_x}" y="-${caster_y}" z="${caster_z}" radius="${caster_radius}" width="${caster_width}" trail="${caster_trail}"/>
+  <xacro:caster name="front_right" x="${caster_x}" y="${caster_y}" z="${caster_z}" radius="${caster_radius}" width="${caster_width}" trail="${caster_trail}"/>
   
   <xacro:rplidar_c1_mount
       parent="base_link"
       link_name="lidar_link"
       xyz="${lidar_xyz}"
       rpy="${lidar_rpy}"
-      update_rate="${sensor_update_rate}"/> [cite: 4]
+      update_rate="${sensor_update_rate}"/>
 
   <xacro:oak_d_lite_mount
       parent="base_link"
       link_name="camera_link"
       xyz="${camera_xyz}"
       rpy="${camera_rpy}"
-      update_rate="${sensor_update_rate}"/> [cite: 4, 5]
+      update_rate="${sensor_update_rate}"/>
 
   <xacro:ir_beam_sensor
       parent="base_link"
@@ -107,7 +120,7 @@
       xyz="${ir_x} -${ir_y} ${ir_z}"
       rpy="0 0 -1.5708"
       topic="/gz/ir_left"
-      update_rate="${sensor_update_rate}"/> [cite: 5]
+      update_rate="${sensor_update_rate}"/>
   <xacro:ir_beam_sensor
       parent="base_link"
       link_name="ir_right_link"
@@ -123,7 +136,7 @@
       xyz="${basket_ir_x} -${basket_ir_y} ${basket_ir_z}"
       rpy="0 0 -1.5708"
       topic="/gz/basket_ir_left"
-      update_rate="${sensor_update_rate}"/> [cite: 5, 6]
+      update_rate="${sensor_update_rate}"/>
   <xacro:ir_beam_sensor
       parent="base_link"
       link_name="basket_ir_right_link"
@@ -131,14 +144,11 @@
       xyz="${basket_ir_x} ${basket_ir_y} ${basket_ir_z}"
       rpy="0 0 1.5708"
       topic="/gz/basket_ir_right"
-      update_rate="${sensor_update_rate}"/> [cite: 6]
+      update_rate="${sensor_update_rate}"/>
 
-  <xacro:diff_drive_plugin
-      wheel_separation="${wheel_separation}"
-      wheel_radius="${wheel_radius}"
-      update_rate="${sensor_update_rate}"
-      max_linear_acceleration="${max_linear_acceleration}"
-      max_angular_acceleration="${max_angular_acceleration}"/> [cite: 6]
+  <xacro:tennis_robot_ros2_control
+      sim_mode="$(arg sim_mode)"
+      controllers_config="$(arg controllers_config)"/>
 
 <xacro:robot_body_panels parent="base_link" chassis_z="${chassis_z}"/>      
 </robot>

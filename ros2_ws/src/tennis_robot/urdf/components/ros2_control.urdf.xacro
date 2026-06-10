@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ros2_control hardware description for the tennis robot.
+
+  This is the single contract between the high-level stack and the actuators.
+  Swapping the <hardware> plugin (sim_mode arg) is the ONLY change required to
+  move from Gazebo to the real robot: controllers, command topics and the whole
+  behavior stack above stay identical.
+
+  Joints exposed:
+    left_wheel_joint / right_wheel_joint -> velocity command (diff drive)
+    lift_wheel_joint                     -> velocity command (intake roller)
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="tennis_robot_ros2_control"
+               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 lift_max_vel:=40.0">
+
+    <ros2_control name="TennisRobotSystem" type="system">
+
+      <!-- ── Hardware backend (the only sim/real difference) ─────────────── -->
+      <xacro:if value="${sim_mode}">
+        <hardware>
+          <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+        </hardware>
+      </xacro:if>
+      <xacro:unless value="${sim_mode}">
+        <hardware>
+          <!-- TODO(real-robot): replace with the motor-driver hardware interface,
+               e.g. a custom tennis_robot_hardware/DiffDriveHardware plugin that
+               talks to the wheel controllers over CAN/serial. Same joint names. -->
+          <plugin>tennis_robot_hardware/TennisRobotSystem</plugin>
+          <param name="left_wheel_name">left_wheel_joint</param>
+          <param name="right_wheel_name">right_wheel_joint</param>
+          <param name="lift_wheel_name">lift_wheel_joint</param>
+        </hardware>
+      </xacro:unless>
+
+      <!-- ── Drive joints ────────────────────────────────────────────────── -->
+      <joint name="left_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-${wheel_max_vel}</param>
+          <param name="max">${wheel_max_vel}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="right_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-${wheel_max_vel}</param>
+          <param name="max">${wheel_max_vel}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <!-- ── Intake roller ───────────────────────────────────────────────── -->
+      <joint name="lift_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-${lift_max_vel}</param>
+          <param name="max">${lift_max_vel}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+    </ros2_control>
+
+    <!-- ── gz_ros2_control system plugin (sim only) ─────────────────────────
+         Hosts the controller_manager inside the Gazebo process and loads the
+         controllers from controllers.yaml. On the real robot the
+         controller_manager is launched as a normal ROS 2 node instead. -->
+    <xacro:if value="${sim_mode}">
+      <gazebo>
+        <plugin filename="gz_ros2_control-system"
+                name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+          <parameters>${controllers_config}</parameters>
+        </plugin>
+      </gazebo>
+    </xacro:if>
+
+  </xacro:macro>
+</robot>

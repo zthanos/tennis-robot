@@ -54,7 +54,8 @@ from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m 
 from tennis_robot.mapping import LidarSurveyBoundaryProvider, MapLeftSideMission
 from tennis_robot.motion_controller import MOTION_COMMAND_TOPIC
 from tennis_robot.search import HalfCourtSearchBehavior, SearchState
-from tennis_robot.lidar_survey import LidarSurveyState, Ros2LidarCourtSurvey
+from tennis_robot.lidar_survey import LidarSurveyState
+from tennis_robot.lidar_survey_v2 import LidarCourtSurveyV2 as Ros2LidarCourtSurvey
 from tennis_robot.survey import SurveyVision
 from tennis_robot_msgs.msg import BallObservation, CollectorCmd, IrReadings, RobotCommand
 

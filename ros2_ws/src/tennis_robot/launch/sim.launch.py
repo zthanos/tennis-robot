@@ -22,6 +22,9 @@ GZ_MODELS = f"{WORKSPACE}/gazebo/models"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
+# ros2_control controllers config baked into the gz_ros2_control plugin.
+# /workspace is mounted into the Gazebo container, so this path resolves there.
+CONTROLLERS_CONFIG = f"{WORKSPACE}/ros2_ws/src/tennis_robot/config/controllers.yaml"
 # Docker sets ROS2_INSTALL=/ros2_ws/install; native Linux uses {WORKSPACE}/ros2_ws/install
 ROS2_INSTALL = os.environ.get("ROS2_INSTALL", f"{WORKSPACE}/ros2_ws/install")
 
@@ -45,7 +48,15 @@ def generate_robot_urdf():
     script = Path(WORKSPACE) / "scripts" / "generate_robot_urdf.py"
     if not script.exists():
         raise RuntimeError(f"Robot URDF generator not found: {script}")
-    subprocess.run([sys.executable, str(script), "--output", ROBOT_URDF], check=True)
+    subprocess.run(
+        [
+            sys.executable, str(script),
+            "--output", ROBOT_URDF,
+            "--sim-mode", "true",
+            "--controllers-config", CONTROLLERS_CONFIG,
+        ],
+        check=True,
+    )
 
 
 def generate_launch_description():
@@ -84,6 +95,48 @@ def generate_launch_description():
             "-z", "0.09",
         ],
         output="screen",
+    )
+
+    # ── ros2_control: robot_state_publisher + controller spawners ───────────
+    # robot_state_publisher must be up before Gazebo loads the model: the
+    # gz_ros2_control plugin reads robot_description from it to start the
+    # controller_manager. It also publishes TF from /joint_states (now fed by
+    # joint_state_broadcaster instead of the old gz JointStatePublisher plugin).
+    with open(ROBOT_URDF, "r", encoding="utf-8") as _f:
+        _robot_description = _f.read()
+
+    robot_state_publisher = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        output="screen",
+        parameters=[{"robot_description": _robot_description, "use_sim_time": True}],
+    )
+
+    def _spawner(controller):
+        return Node(
+            package="controller_manager",
+            executable="spawner",
+            name=f"spawn_{controller}",
+            arguments=[
+                controller,
+                "--controller-manager", "/controller_manager",
+                "--controller-manager-timeout", "60",
+            ],
+            output="screen",
+        )
+
+    jsb_spawner = _spawner("joint_state_broadcaster")
+    diff_drive_spawner = _spawner("diff_drive_controller")
+    lift_wheel_spawner = _spawner("lift_wheel_velocity_controller")
+
+    # Actuation layer: the only node that talks to the controller command topics.
+    drive_actuator = Node(
+        package="tennis_robot",
+        executable="drive_actuator_node",
+        name="drive_actuator_node",
+        output="screen",
+        additional_env={"PYTHONPATH": ROS_PYTHONPATH},
     )
 
     # ── ros_gz bridge ────────────────────────────────────────────────────────
@@ -173,7 +226,10 @@ def generate_launch_description():
     # Delay ROS nodes until Gazebo + bridge are up
     delayed_nodes = TimerAction(
         period=4.0,
-        actions=[bridge, perception, controller, navigation, command_bridge, gz_extras, sensor_snapshots],
+        actions=[
+            bridge, perception, controller, navigation,
+            command_bridge, gz_extras, sensor_snapshots, drive_actuator,
+        ],
     )
 
     delayed_spawn = TimerAction(
@@ -181,11 +237,20 @@ def generate_launch_description():
         actions=[spawn_robot],
     )
 
+    # Spawn controllers once the gz_ros2_control plugin has brought up the
+    # controller_manager inside Gazebo (spawners wait up to 60s regardless).
+    delayed_controllers = TimerAction(
+        period=6.0,
+        actions=[jsb_spawner, diff_drive_spawner, lift_wheel_spawner],
+    )
+
     return LaunchDescription([
         headless_arg,
         gz_full,
         gz_headless,
+        robot_state_publisher,
         delayed_spawn,
         control_panel,
         delayed_nodes,
+        delayed_controllers,
     ])

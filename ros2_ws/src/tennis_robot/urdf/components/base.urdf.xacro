@@ -12,14 +12,14 @@
 
   <xacro:macro name="cylinder_inertial" params="mass radius length axis">
     <inertial>
-      <mass value="${mass}"/> [cite: 17]
+      <mass value="${mass}"/>
       <xacro:if value="${axis == 'y'}">
         <inertia
             ixx="${mass * (3.0 * radius * radius + length * length) / 12.0}" ixy="0" ixz="0"
             iyy="${0.5 * mass * radius * radius}" iyz="0"
             izz="${mass * (3.0 * radius * radius + length * length) / 12.0}"/>
       </xacro:if>
-      <xacro:unless value="${axis == 'y'}"> [cite: 18]
+      <xacro:unless value="${axis == 'y'}">
         <inertia
             ixx="${mass * (3.0 * radius * radius + length * length) / 12.0}" ixy="0" ixz="0"
             iyy="${mass * (3.0 * radius * radius + length * length) / 12.0}" iyz="0"
@@ -49,50 +49,50 @@
         <material name="plywood"/>
       </visual>
       
-      <visual name="front_left_cheek_vis"> [cite: 20]
-        <origin xyz="${chassis_x / 2.0} ${0.30 / 2.0 + (chassis_y - 0.30) / 4.0} 0.077" rpy="0 0 0"/> [cite: 20]
-        <geometry><box size="0.025 ${(chassis_y - 0.30) / 2.0} 0.14"/></geometry> [cite: 20]
-        <material name="mount_gray"/> [cite: 20]
+      <visual name="front_left_cheek_vis">
+        <origin xyz="${chassis_x / 2.0} ${0.30 / 2.0 + (chassis_y - 0.30) / 4.0} 0.077" rpy="0 0 0"/>
+        <geometry><box size="0.025 ${(chassis_y - 0.30) / 2.0} 0.14"/></geometry>
+        <material name="mount_gray"/>
       </visual>
-      <visual name="front_right_cheek_vis"> [cite: 20]
-        <origin xyz="${chassis_x / 2.0} ${-(0.30 / 2.0 + (chassis_y - 0.30) / 4.0)} 0.077" rpy="0 0 0"/> [cite: 20]
-        <geometry><box size="0.025 ${(chassis_y - 0.30) / 2.0} 0.14"/></geometry> [cite: 20, 21]
-        <material name="mount_gray"/> [cite: 21]
+      <visual name="front_right_cheek_vis">
+        <origin xyz="${chassis_x / 2.0} ${-(0.30 / 2.0 + (chassis_y - 0.30) / 4.0)} 0.077" rpy="0 0 0"/>
+        <geometry><box size="0.025 ${(chassis_y - 0.30) / 2.0} 0.14"/></geometry>
+        <material name="mount_gray"/>
       </visual>
-      <visual name="rear_wall_vis"> [cite: 21]
-        <origin xyz="${-chassis_x / 2.0} 0 0.077" rpy="0 0 0"/> [cite: 21]
-        <geometry><box size="0.025 ${chassis_y} 0.14"/></geometry> [cite: 21]
-        <material name="mount_gray"/> [cite: 21]
+      <visual name="rear_wall_vis">
+        <origin xyz="${-chassis_x / 2.0} 0 0.077" rpy="0 0 0"/>
+        <geometry><box size="0.025 ${chassis_y} 0.14"/></geometry>
+        <material name="mount_gray"/>
       </visual>
-      <visual name="left_wall_vis"> [cite: 21]
-        <origin xyz="0 ${chassis_y / 2.0} 0.077" rpy="0 0 0"/> [cite: 21]
-        <geometry><box size="${chassis_x} 0.025 0.14"/></geometry> [cite: 22]
-        <material name="mount_gray"/> [cite: 22]
+      <visual name="left_wall_vis">
+        <origin xyz="0 ${chassis_y / 2.0} 0.077" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} 0.025 0.14"/></geometry>
+        <material name="mount_gray"/>
       </visual>
-      <visual name="right_wall_vis"> [cite: 22]
-        <origin xyz="0 ${-chassis_y / 2.0} 0.077" rpy="0 0 0"/> [cite: 22]
-        <geometry><box size="${chassis_x} 0.025 0.14"/></geometry> [cite: 22]
-        <material name="mount_gray"/> [cite: 22]
+      <visual name="right_wall_vis">
+        <origin xyz="0 ${-chassis_y / 2.0} 0.077" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} 0.025 0.14"/></geometry>
+        <material name="mount_gray"/>
       </visual>
-      <visual name="left_axle_bracket_vis"> [cite: 22]
-        <origin xyz="-0.35 0.32 0" rpy="0 0 0"/> [cite: 23]
-        <geometry><box size="0.065 0.060 0.018"/></geometry> [cite: 23]
-        <material name="mount_gray"/> [cite: 23]
+      <visual name="left_axle_bracket_vis">
+        <origin xyz="-0.35 0.32 0" rpy="0 0 0"/>
+        <geometry><box size="0.065 0.060 0.018"/></geometry>
+        <material name="mount_gray"/>
       </visual>
-      <visual name="right_axle_bracket_vis"> [cite: 23]
-        <origin xyz="-0.35 -0.32 0" rpy="0 0 0"/> [cite: 23]
-        <geometry><box size="0.065 0.060 0.018"/></geometry> [cite: 23]
-        <material name="mount_gray"/> [cite: 23]
+      <visual name="right_axle_bracket_vis">
+        <origin xyz="-0.35 -0.32 0" rpy="0 0 0"/>
+        <geometry><box size="0.065 0.060 0.018"/></geometry>
+        <material name="mount_gray"/>
       </visual>
-      <visual name="elec_vis"> [cite: 23]
-        <origin xyz="-0.13 0 0.067" rpy="0 0 0"/> [cite: 23, 24]
-        <geometry><box size="0.34 0.26 0.12"/></geometry> [cite: 24]
-        <material name="anthracite"/> [cite: 24]
+      <visual name="elec_vis">
+        <origin xyz="-0.13 0 0.067" rpy="0 0 0"/>
+        <geometry><box size="0.34 0.26 0.12"/></geometry>
+        <material name="anthracite"/>
       </visual>
-      <visual name="ir_beam_line_vis"> [cite: 24]
-        <origin xyz="0.54 0 0.053" rpy="1.5708 0 0"/> [cite: 24]
-        <geometry><cylinder radius="0.003" length="0.21"/></geometry> [cite: 24]
-        <material name="ir_beam_red"/> [cite: 24]
+      <visual name="ir_beam_line_vis">
+        <origin xyz="0.54 0 0.053" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="0.003" length="0.21"/></geometry>
+        <material name="ir_beam_red"/>
       </visual>
     </link>
 

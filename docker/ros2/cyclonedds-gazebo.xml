@@ -4,7 +4,5 @@
       <AllowMulticast>true</AllowMulticast>
     </General>
     <Discovery>
-      <ParticipantIndex>auto</ParticipantIndex>
-    </Discovery>
-  </Domain>
-</CycloneDDS>
+      <!-- auto + a high cap: the sim runs many nodes (Gazebo, ros2_control,
+           bri

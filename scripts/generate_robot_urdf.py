@@ -14,12 +14,27 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = PROJECT_ROOT / "ros2_ws" / "src" / "tennis_robot" / "urdf" / "tennis_robot.urdf.xacro"
 DEFAULT_OUTPUT = PROJECT_ROOT / "runtime" / "tennis_robot.urdf"
+DEFAULT_CONTROLLERS = (
+    PROJECT_ROOT / "ros2_ws" / "src" / "tennis_robot" / "config" / "controllers.yaml"
+)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--sim-mode",
+        default="true",
+        choices=["true", "false"],
+        help="ros2_control hardware backend: true=GazeboSimSystem, false=real robot.",
+    )
+    parser.add_argument(
+        "--controllers-config",
+        type=Path,
+        default=DEFAULT_CONTROLLERS,
+        help="Absolute path to controllers.yaml baked into the gz_ros2_control plugin.",
+    )
     parser.add_argument(
         "--xacro-command",
         default="xacro",
@@ -53,8 +68,14 @@ def main() -> int:
 
     env = os.environ.copy()
     env.setdefault("PYTHONUTF8", "1")
+    controllers_config = args.controllers_config.resolve()
     result = subprocess.run(
-        [xacro_exe, str(source)],
+        [
+            xacro_exe,
+            str(source),
+            f"sim_mode:={args.sim_mode}",
+            f"controllers_config:={controllers_config}",
+        ],
         check=False,
         env=env,
         stdout=subprocess.PIPE,

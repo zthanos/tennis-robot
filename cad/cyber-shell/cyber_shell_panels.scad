@@ -40,7 +40,7 @@ LIDAR_HOLE_R = 48;
 
 WHEEL_X    = -350;
 WHEEL_Y    = 350;
-WHEEL_R    = 90;
+WHEEL_R    = 90;απο ο
 WHEEL_W    = 80;
 
 // ─── Panel parameters ─────────────────────────────────────────────────────────

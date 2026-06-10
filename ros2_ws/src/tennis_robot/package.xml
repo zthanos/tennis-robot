@@ -20,7 +20,19 @@
   <exec_depend>ros_gz_sim</exec_depend>
   <exec_depend>xacro</exec_depend>
 
-  <export>
-    <build_type>ament_python</build_type>
-  </export>
-</package>
+  <!-- ros2_control stack -->
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>ros2_controllers</exec_depend>
+  <exec_depend>diff_drive_controller</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>forward_command_controller</exec_depend>
+  <!-- Sim hardware backend: build from source, humble branch, GZ_VERSION=harmonic -->
+  <exec_depend>gz_ros2_control</exec_depend>
+
+  <!-- Navigation / mapping stack -->
+  <exec_depend>slam_toolbox</exec_depend>
+  <exec_depend>twist_mux</exec_depend>
+  <exec_depend>teleop_twist_keyboard</exec_depend>
+  <exec_depend>navigation2</exec_depend>
+  <exec_depend>nav2_bringup</exec_de

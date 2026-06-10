@@ -11,9 +11,10 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
         (f"share/{package_name}", ["package.xml"]),
-        (f"share/{package_name}/launch", ["launch/tennis_robot.launch.py", "launch/sim.launch.py"]),
+        (f"share/{package_name}/launch", glob("launch/*.launch.py")),
         (f"share/{package_name}/urdf", glob("urdf/*.xacro")),
         (f"share/{package_name}/urdf/components", glob("urdf/components/*.xacro")),
+        (f"share/{package_name}/config", glob("config/*.yaml")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -29,6 +30,7 @@ setup(
             "command_bridge_node = tennis_robot.command_bridge_node:main",
             "gazebo_extras_node = tennis_robot.gazebo_extras_node:main",
             "sensor_snapshot_node = tennis_robot.sensor_snapshot_node:main",
+            "drive_actuator_node = tennis_robot.drive_actuator_node:main",
         ],
     },
 )
