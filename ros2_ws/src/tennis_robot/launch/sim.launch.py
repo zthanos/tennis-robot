@@ -21,16 +21,18 @@ GZ_MODELS = f"{WORKSPACE}/gazebo/models"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
+# Docker sets ROS2_INSTALL=/ros2_ws/install; native Linux uses {WORKSPACE}/ros2_ws/install
+ROS2_INSTALL = os.environ.get("ROS2_INSTALL", f"{WORKSPACE}/ros2_ws/install")
 ROS_PYTHONPATH = ":".join(
     [
-        "/ros2_ws/install/tennis_robot/lib/python3.10/site-packages",
-        "/ros2_ws/install/tennis_robot_msgs/local/lib/python3.10/dist-packages",
+        f"{ROS2_INSTALL}/tennis_robot/lib/python3.10/site-packages",
+        f"{ROS2_INSTALL}/tennis_robot_msgs/local/lib/python3.10/dist-packages",
         os.environ.get("PYTHONPATH", ""),
     ]
 )
 CONTROL_PANEL_PYTHONPATH = ":".join(
     [
-        "/ros2_ws/install/tennis_robot/lib/python3.10/site-packages",
+        f"{ROS2_INSTALL}/tennis_robot/lib/python3.10/site-packages",
         f"{WORKSPACE}/scripts",
     ]
 )
