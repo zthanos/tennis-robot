@@ -1,5 +1,6 @@
 """Launch Gazebo Harmonic + ros_gz bridge + all ROS 2 nodes."""
 
+import glob as _glob
 import os
 import subprocess
 import sys
@@ -23,18 +24,20 @@ BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
 # Docker sets ROS2_INSTALL=/ros2_ws/install; native Linux uses {WORKSPACE}/ros2_ws/install
 ROS2_INSTALL = os.environ.get("ROS2_INSTALL", f"{WORKSPACE}/ros2_ws/install")
-ROS_PYTHONPATH = ":".join(
-    [
-        f"{ROS2_INSTALL}/tennis_robot/lib/python3.10/site-packages",
-        f"{ROS2_INSTALL}/tennis_robot_msgs/local/lib/python3.10/dist-packages",
-        os.environ.get("PYTHONPATH", ""),
-    ]
-)
+
+
+def _site_packages(install_dir: str, pkg: str) -> list:
+    return (
+        _glob.glob(f"{install_dir}/{pkg}/lib/python*/site-packages")
+        + _glob.glob(f"{install_dir}/{pkg}/local/lib/python*/dist-packages")
+    )
+
+
+_robot_paths = _site_packages(ROS2_INSTALL, "tennis_robot")
+_msgs_paths = _site_packages(ROS2_INSTALL, "tennis_robot_msgs")
+ROS_PYTHONPATH = ":".join(_robot_paths + _msgs_paths + [os.environ.get("PYTHONPATH", "")])
 CONTROL_PANEL_PYTHONPATH = ":".join(
-    [
-        f"{ROS2_INSTALL}/tennis_robot/lib/python3.10/site-packages",
-        f"{WORKSPACE}/scripts",
-    ]
+    _robot_paths + [f"{WORKSPACE}/scripts"] + [os.environ.get("PYTHONPATH", "")]
 )
 
 
