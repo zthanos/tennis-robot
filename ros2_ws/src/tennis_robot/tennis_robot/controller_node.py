@@ -78,6 +78,8 @@ COLLECT_PATTERN_MAX_APPROACH_DISTANCE_M = _env_float(
     "COLLECT_PATTERN_MAX_APPROACH_DISTANCE_M", MAPPED_BALL_MAX_CREATE_DISTANCE_M
 )
 MAPPED_BALL_STALE_AFTER_S = 45.0
+MANUAL_LINEAR_SPEED_M_S = _env_float("MANUAL_LINEAR_SPEED_M_S", 0.40)
+MANUAL_TURN_SPEED_RAD_S = _env_float("MANUAL_TURN_SPEED_RAD_S", 0.80)
 LIDAR_FRONT_INDEX_RATIO = max(0.0, min(1.0, _env_float("LIDAR_FRONT_INDEX_RATIO", 0.5)))
 LIDAR_FRONT_MIN_OBSTACLE_RANGE_M = _env_float("LIDAR_FRONT_MIN_OBSTACLE_RANGE_M", 0.18)
 LIDAR_CANDIDATE_CONFIDENCE = 0.15
@@ -154,6 +156,7 @@ class ControllerNode(Node):
         self._control_command_mode = "idle"
         self._control_command_source = "startup"
         self._sim_balls: list[dict] = []
+        self._turn_180_start_yaw: float = 0.0
 
         # ── subscriptions ──────────────────────────────────────────────────────
         self.create_subscription(BallObservation, "/ball/observation", self._on_observation, 1)
@@ -246,6 +249,8 @@ class ControllerNode(Node):
             )
         elif effective_mode == "map_left_side":
             command = self._map_mission_command_for_mode(effective_mode)
+        elif effective_mode in {"move_forward", "move_backward", "move_left", "move_right", "turn_180"}:
+            command = self._manual_move_command(effective_mode)
         else:
             command = self._collector_command_for_mode(effective_mode, control_observation)
 
@@ -281,7 +286,12 @@ class ControllerNode(Node):
         self.get_logger().info(f"mode → {new_mode}")
         return True
 
+    _MANUAL_MODES = frozenset({"move_forward", "move_backward", "move_left", "move_right", "turn_180"})
+    _AUTONOMOUS_MODES = frozenset({"map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"})
+
     def _effective_control_mode(self, requested_mode: str) -> str:
+        if requested_mode in self._MANUAL_MODES and self.control_mode in self._AUTONOMOUS_MODES:
+            return self.control_mode
         if requested_mode == "collect":
             elapsed = 0.0 if self._collect_start_time is None else time.time() - self._collect_start_time
             if (
@@ -337,6 +347,34 @@ class ControllerNode(Node):
         return ConceptACommand(
             state=CollectorState.IDLE,
             base=BaseCommand(0.0, 0.0),
+            collector=CollectorCommand(0.0, False),
+        )
+
+    def _manual_move_command(self, mode: str) -> ConceptACommand:
+        if self._on_mode_changed(mode) and mode == "turn_180":
+            self._turn_180_start_yaw = self._robot_yaw
+
+        if mode == "turn_180":
+            rotated = abs(_angle_delta_rad(self._robot_yaw, self._turn_180_start_yaw))
+            if rotated >= math.pi - math.radians(10.0):
+                self._publish_command("idle", "controller-turn-180-complete")
+            return ConceptACommand(
+                state=CollectorState.IDLE,
+                base=BaseCommand(0.0, MANUAL_TURN_SPEED_RAD_S),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        if mode == "move_forward":
+            base = BaseCommand(MANUAL_LINEAR_SPEED_M_S, 0.0)
+        elif mode == "move_backward":
+            base = BaseCommand(-MANUAL_LINEAR_SPEED_M_S, 0.0)
+        elif mode == "move_left":
+            base = BaseCommand(0.0, MANUAL_TURN_SPEED_RAD_S)
+        else:  # move_right
+            base = BaseCommand(0.0, -MANUAL_TURN_SPEED_RAD_S)
+        return ConceptACommand(
+            state=CollectorState.IDLE,
+            base=base,
             collector=CollectorCommand(0.0, False),
         )
 

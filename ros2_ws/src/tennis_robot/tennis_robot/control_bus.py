@@ -19,6 +19,11 @@ SUPPORTED_MODES = {
     "scan_side",
     "map_court",
     "map_left_side",
+    "move_forward",
+    "move_backward",
+    "move_left",
+    "move_right",
+    "turn_180",
 }
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMMAND_FILE = PROJECT_ROOT / "runtime" / "robot_command.json"

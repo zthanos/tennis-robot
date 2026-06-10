@@ -263,10 +263,43 @@ HTML = """<!doctype html>
       transition: transform 130ms ease, filter 130ms ease;
     }
     .command:hover { transform: translateY(-1px); filter: brightness(1.05); }
-    .command[value="map_left_side"] { background: #a855f7; color: #0b0514; }
     .command[value="map_court"] { background: var(--accent-2); color: #06101d; }
     .command[value="idle"] { background: var(--danger); color: #1b0604; }
     .command:disabled { opacity: 0.32; cursor: not-allowed; transform: none !important; filter: none !important; }
+    .dpad {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+    .dpad-middle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .dpad-up, .dpad-down, .dpad-left, .dpad-right, .dpad-center {
+      width: 52px;
+      height: 52px;
+      padding: 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dpad-center {
+      font-size: 13px;
+      font-weight: 800;
+      background: #4f6e8a;
+      color: #eaf2ff;
+      width: 52px;
+      height: 52px;
+    }
+    .mission-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .map-cell {
       background: var(--panel-2);
       border: 1px solid var(--line);
@@ -509,13 +542,20 @@ HTML = """<!doctype html>
           <div class="panel">
             <h3>Mode Command</h3>
             <form id="commandForm" class="controls">
-              <button class="command" type="submit" name="mode" value="collect_pattern">Collect</button>
-              <button class="command" type="submit" name="mode" value="collect_one">Collect One</button>
-              <button class="command" type="submit" name="mode" value="search">Search</button>
-              <button class="command" type="submit" name="mode" value="map_court">Map Court</button>
-              <button class="command" type="submit" name="mode" value="map_left_side">Map Left Side</button>
-              <button class="command" type="submit" name="mode" value="scan_side">Scan</button>
-              <button class="command" type="submit" name="mode" value="idle">Stop</button>
+              <div class="dpad">
+                <button class="command dpad-up" type="submit" name="mode" value="move_forward">&#9650;</button>
+                <div class="dpad-middle">
+                  <button class="command dpad-left" type="submit" name="mode" value="move_left">&#9664;</button>
+                  <button class="command dpad-center" type="submit" name="mode" value="turn_180">180°</button>
+                  <button class="command dpad-right" type="submit" name="mode" value="move_right">&#9654;</button>
+                </div>
+                <button class="command dpad-down" type="submit" name="mode" value="move_backward">&#9660;</button>
+              </div>
+              <div class="mission-btns">
+                <button class="command" type="submit" name="mode" value="map_court">Map Court</button>
+                <button class="command" type="submit" name="mode" value="collect_pattern">Collect</button>
+                <button class="command" type="submit" name="mode" value="idle">Stop</button>
+              </div>
             </form>
             <div id="commandHint" style="font-size:12px;color:var(--warn);margin-top:8px;min-height:16px;"></div>
           </div>
@@ -905,36 +945,76 @@ HTML = """<!doctype html>
       }
     }
 
+    const DPAD_MODES = new Set(["move_forward", "move_backward", "move_left", "move_right"]);
+    const AUTONOMOUS_MODES = new Set(["map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"]);
+
     function updateCommandButtons() {
       const active = vendorData.active || {};
       const hasSession = !!(active.vendor_id && active.court_id);
       const cb = diagnostics.court_boundary;
       const hasSurvey = hasSession && !!(cb && cb.survey_complete && cb.court_id === active.court_id);
+      const actualMode = (diagnostics.robot || {}).actual_mode || "idle";
+      const isAutonomous = AUTONOMOUS_MODES.has(actualMode);
 
       const btnMapCourt = document.querySelector('#commandForm [value="map_court"]');
-      const btnCollect  = document.querySelector('#commandForm [value="map_left_side"]');
+      const btnCollect  = document.querySelector('#commandForm [value="collect_pattern"]');
       const hintEl      = document.getElementById("commandHint");
 
-      if (btnMapCourt) btnMapCourt.disabled = !hasSession;
-      if (btnCollect)  btnCollect.disabled  = !hasSurvey;
+      if (btnMapCourt) btnMapCourt.disabled = !hasSession || isAutonomous;
+      if (btnCollect)  btnCollect.disabled  = !hasSurvey || isAutonomous;
+
+      const MANUAL_MODES = new Set([...DPAD_MODES, "turn_180"]);
+      document.querySelectorAll("#commandForm .command").forEach(btn => {
+        if (MANUAL_MODES.has(btn.value)) btn.disabled = isAutonomous;
+      });
 
       if (hintEl) {
-        if (!hasSession)     hintEl.textContent = "Επίλεξε vendor και γήπεδο πρώτα (Vendors →)";
-        else if (!hasSurvey) hintEl.textContent = "Collect Left Side χρειάζεται Map Court για το ενεργό γήπεδο";
+        if (isAutonomous)    hintEl.textContent = `Αυτόνομη λειτουργία ενεργή (${actualMode}) — πάτα Stop για έλεγχο`;
+        else if (!hasSession) hintEl.textContent = "Επίλεξε vendor και γήπεδο πρώτα (Vendors →)";
+        else if (!hasSurvey) hintEl.textContent = "Collect χρειάζεται Map Court για το ενεργό γήπεδο";
         else                 hintEl.textContent = "";
       }
     }
 
-    document.getElementById("commandForm").addEventListener("submit", async event => {
-      event.preventDefault();
-      const mode = event.submitter.value;
+    let _dpadTimer = null;
+
+    async function _sendRawCommand(mode) {
       await fetch("/api/command", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ mode })
       });
-      const activeModes = new Set(["collect", "collect_one", "collect_pattern", "search", "scan_side", "map_court", "map_left_side"]);
-      if (activeModes.has(mode)) setView("sensors");
+    }
+
+    async function _stopDpad() {
+      if (_dpadTimer !== null) {
+        clearInterval(_dpadTimer);
+        _dpadTimer = null;
+        await _sendRawCommand("idle");
+        await refresh();
+      }
+    }
+
+    document.querySelectorAll("#commandForm .command").forEach(btn => {
+      if (!DPAD_MODES.has(btn.value)) return;
+      btn.addEventListener("pointerdown", e => {
+        e.preventDefault();
+        if (_dpadTimer !== null) return;
+        btn.setPointerCapture(e.pointerId);
+        _sendRawCommand(btn.value);
+        _dpadTimer = setInterval(() => _sendRawCommand(btn.value), 120);
+      });
+      btn.addEventListener("pointerup", () => _stopDpad());
+      btn.addEventListener("pointercancel", () => _stopDpad());
+    });
+
+    document.getElementById("commandForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const mode = event.submitter?.value;
+      if (!mode || DPAD_MODES.has(mode)) return;
+      await _sendRawCommand(mode);
+      const switchModes = new Set(["collect", "collect_one", "collect_pattern", "search", "scan_side", "map_court", "map_left_side"]);
+      if (switchModes.has(mode)) setView("sensors");
       await refresh();
     });
 
