@@ -34,6 +34,9 @@ export GZ_SIM_RESOURCE_PATH="$SCRIPT_DIR/gazebo/models"
 export ROBOT_COMMAND_FILE="$SCRIPT_DIR/runtime/robot_command.json"
 export ROS_DOMAIN_ID=42
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+# Raises MaxAutoParticipantIndex so the many nodes (sim + slam + nav2 + explore)
+# don't exhaust DDS participant indices ("free participant index" error).
+export CYCLONEDDS_URI="$SCRIPT_DIR/docker/ros2/cyclonedds-gazebo.xml"
 
 # Add tennis_robot Python package to PYTHONPATH (glob handles any python3.x version)
 SITE_PKG=$(ls -d "$ROS2_INSTALL/tennis_robot/lib/python"*/site-packages 2>/dev/null | head -1)
