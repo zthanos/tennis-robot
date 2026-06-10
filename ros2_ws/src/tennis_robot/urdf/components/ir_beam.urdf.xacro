@@ -23,6 +23,7 @@
         <update_rate>${update_rate}</update_rate>
         <always_on>true</always_on>
         <topic>${topic}</topic>
+        <gz_frame_id>${link_name}</gz_frame_id>
         <lidar>
           <scan>
             <horizontal>

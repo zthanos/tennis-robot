@@ -29,6 +29,7 @@
         <always_on>true</always_on>
         <visualize>false</visualize>
         <topic>/gz/lidar</topic>
+        <gz_frame_id>${link_name}</gz_frame_id>
         <lidar>
           <scan>
             <horizontal>

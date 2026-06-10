@@ -64,7 +64,4 @@ fi
 
 mkdir -p "$SCRIPT_DIR/runtime"
 
-# ── Launch ───────────────────────────────────────────────────────────────────
-HEADLESS="${1:-false}"
-echo "Starting simulation (headless=$HEADLESS)..."
-ros2 launch tennis_robot sim.launch.py headless:="$HEADLESS"
+# ── Launch ─────────────────────────────────────�
