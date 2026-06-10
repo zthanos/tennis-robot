@@ -76,7 +76,7 @@ def generate_launch_description():
             "-name", "tennis_robot",
             "-x", "-8",
             "-y", "0",
-            "-z", "0.20",
+            "-z", "0.09",
         ],
         output="screen",
     )

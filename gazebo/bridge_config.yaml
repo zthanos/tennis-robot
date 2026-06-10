@@ -50,6 +50,18 @@
   ros_type_name: sensor_msgs/msg/LaserScan
   direction: GZ_TO_ROS
 
+- gz_topic_name: /gz/basket_ir_left
+  ros_topic_name: /gz/basket_ir_left/scan
+  gz_type_name: gz.msgs.LaserScan
+  ros_type_name: sensor_msgs/msg/LaserScan
+  direction: GZ_TO_ROS
+
+- gz_topic_name: /gz/basket_ir_right
+  ros_topic_name: /gz/basket_ir_right/scan
+  gz_type_name: gz.msgs.LaserScan
+  ros_type_name: sensor_msgs/msg/LaserScan
+  direction: GZ_TO_ROS
+
 # World pose info — used by gazebo_extras_node to track ball positions
 - gz_topic_name: /world/tennis_court/pose/info
   ros_topic_name: /gz/pose_info

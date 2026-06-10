@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Ball collection basket (floor + three walls), fixed to parent link. -->
+  <xacro:macro name="ball_basket" params="parent">
+    <joint name="basket_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="basket_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+    <link name="basket_link">
+      <inertial>
+        <mass value="0.01"/>
+        <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      </inertial>
+
+      <collision name="basket_floor_col">
+        <origin xyz="0.10 0 0.073" rpy="0 0 0"/>
+        <geometry><box size="0.44 0.34 0.020"/></geometry>
+      </collision>
+      <visual name="basket_floor_vis">
+        <origin xyz="0.10 0 0.073" rpy="0 0 0"/>
+        <geometry><box size="0.44 0.34 0.020"/></geometry>
+        <material name="basket_gray"/>
+      </visual>
+
+      <collision name="basket_left_wall_col">
+        <origin xyz="0.10 0.17 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.44 0.020 0.28"/></geometry>
+      </collision>
+      <visual name="basket_left_wall_vis">
+        <origin xyz="0.10 0.17 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.44 0.020 0.28"/></geometry>
+        <material name="basket_gray"/>
+      </visual>
+
+      <collision name="basket_right_wall_col">
+        <origin xyz="0.10 -0.17 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.44 0.020 0.28"/></geometry>
+      </collision>
+      <visual name="basket_right_wall_vis">
+        <origin xyz="0.10 -0.17 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.44 0.020 0.28"/></geometry>
+        <material name="basket_gray"/>
+      </visual>
+
+      <collision name="basket_rear_wall_col">
+        <origin xyz="-0.12 0 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.020 0.34 0.28"/></geometry>
+      </collision>
+      <visual name="basket_rear_wall_vis">
+        <origin xyz="-0.12 0 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.020 0.34 0.28"/></geometry>
+        <material name="basket_gray"/>
+      </visual>
+
+      <visual name="basket_ir_beam_line_vis">
+        <origin xyz="0.28 0 0.113" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="0.003" length="0.21"/></geometry>
+        <material name="ir_beam_red"/>
+      </visual>
+    </link>
+  </xacro:macro>
+</robot>
