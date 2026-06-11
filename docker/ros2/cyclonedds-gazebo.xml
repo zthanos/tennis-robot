@@ -5,4 +5,11 @@
     </General>
     <Discovery>
       <!-- auto + a high cap: the sim runs many nodes (Gazebo, ros2_control,
-           bri
+           bridge, behavior nodes, SLAM, twist_mux...). The default cap is 9,
+           which exhausts participant indices and causes
+           "Failed to find a free participant index for domain". -->
+      <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>120</MaxAutoParticipantIndex>
+    </Discovery>
+  </Domain>
+</CycloneDDS>
