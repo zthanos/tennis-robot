@@ -24,5 +24,6 @@ export CYCLONEDDS_URI="$SCRIPT_DIR/docker/ros2/cyclonedds-gazebo.xml"
 export WORKSPACE="$SCRIPT_DIR"
 export ROS2_INSTALL="$SCRIPT_DIR/ros2_ws/install"
 export GZ_SIM_RESOURCE_PATH="$SCRIPT_DIR/gazebo/models"
+export GZ_SIM_SYSTEM_PLUGIN_PATH="$ROS2_INSTALL/gz_ros2_control/lib:${GZ_SIM_SYSTEM_PLUGIN_PATH:-}"
 
 echo "tennis-robot env ready (domain 42, cyclonedds)"

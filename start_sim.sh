@@ -38,6 +38,11 @@ export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 # don't exhaust DDS participant indices ("free participant index" error).
 export CYCLONEDDS_URI="$SCRIPT_DIR/docker/ros2/cyclonedds-gazebo.xml"
 
+# Let Gazebo find the gz_ros2_control system plugin (built from source in the
+# workspace). Without this, Gazebo reports "Failed to load system plugin
+# [gz_ros2_control-system]: Could not find shared library" after a fresh shell.
+export GZ_SIM_SYSTEM_PLUGIN_PATH="$ROS2_INSTALL/gz_ros2_control/lib:${GZ_SIM_SYSTEM_PLUGIN_PATH:-}"
+
 # Add tennis_robot Python package to PYTHONPATH (glob handles any python3.x version)
 SITE_PKG=$(ls -d "$ROS2_INSTALL/tennis_robot/lib/python"*/site-packages 2>/dev/null | head -1)
 if [ -n "$SITE_PKG" ]; then
