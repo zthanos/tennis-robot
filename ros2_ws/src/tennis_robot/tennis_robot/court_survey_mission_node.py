@@ -47,7 +47,7 @@ import rclpy.duration
 import rclpy.time
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Twist
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
@@ -81,6 +81,11 @@ NET_APPROACH_MARGIN_M: float = float(os.getenv("COURT_SURVEY_NET_APPROACH_MARGIN
 NET_TO_FENCE_MIN_TRAVEL_M: float = float(os.getenv("COURT_SURVEY_NET_TO_FENCE_MIN_TRAVEL_M", "4.5"))
 NET_TO_FENCE_GOAL_M: float = float(os.getenv("COURT_SURVEY_NET_TO_FENCE_GOAL_M", "8.0"))
 FENCE_TURN_STANDOFF_M: float = float(os.getenv("COURT_SURVEY_FENCE_TURN_STANDOFF_M", "2.50"))
+CROSS_NET_DISTANCE_M: float = float(os.getenv("COURT_SURVEY_CROSS_NET_DISTANCE_M", "3.0"))
+SURVEY_TURN_TOLERANCE_DEG: float = float(os.getenv("COURT_SURVEY_TURN_TOLERANCE_DEG", "5.0"))
+SURVEY_TURN_MAX_RAD_S: float = float(os.getenv("COURT_SURVEY_TURN_MAX_RAD_S", "0.45"))
+SURVEY_TURN_MIN_RAD_S: float = float(os.getenv("COURT_SURVEY_TURN_MIN_RAD_S", "0.14"))
+CROSS_NET_LINEAR_M_S: float = float(os.getenv("COURT_SURVEY_CROSS_NET_LINEAR_M_S", "0.25"))
 
 
 # ---------------------------------------------------------------------------
@@ -191,11 +196,18 @@ class CourtSurveyMissionNode(Node):
         # Stored target yaw for turn states (set once on entry, cleared on _enter())
         # Avoids recalculating from self._robot_yaw on every tick while turning.
         self._turn_target_yaw: float | None = None
+        self._local_turn_active: bool = False
+        self._cross_net_phase: str | None = None
+        self._cross_net_yaw: float | None = None
+        self._cross_net_resume_yaw: float | None = None
+        self._cross_net_start_x: float | None = None
+        self._cross_net_start_y: float | None = None
 
         # Nav2
         self._navigator: BasicNavigator | None = None
         self._nav_active: bool = False
         self._nav2_lifecycle_active: bool = False
+        self._cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel_teleop", 10)
 
         # TF: get robot pose in map frame (more reliable than /odom topic QoS)
         self._tf_buffer = Buffer()
@@ -555,13 +567,63 @@ class CourtSurveyMissionNode(Node):
         """
         # Simplified: turn right 90° → drive past net → turn left 90°
         # A full implementation would use the landmark right-side gap bearing.
-        target_yaw = self._robot_yaw - math.pi / 2   # turn right
-        if not self._nav_active:
-            # Project a goal past the net: forward 3 m after turning right
-            gx, gy = _project(self._robot_x, self._robot_y, target_yaw, 3.0)
-            self._nav_to(gx, gy, target_yaw + math.pi / 2)  # resume original heading
+        if self._cross_net_phase is None:
+            self._cancel_nav()
+            self._cross_net_yaw = self._choose_cross_net_yaw()
+            self._cross_net_resume_yaw = self._robot_yaw
+            self._cross_net_phase = "turn_to_gap"
             self._record("crossing_net_right_side")
-        if self._check_nav_result(SurveyState.SECOND_HALF_FOLLOW_FENCE, "gap_crossed"):
+            self.get_logger().info(
+                f"cross_net: local sequence crossing_yaw={math.degrees(self._cross_net_yaw):.1f}deg "
+                f"distance={CROSS_NET_DISTANCE_M:.2f}m "
+                f"resume_yaw={math.degrees(self._cross_net_resume_yaw):.1f}deg"
+            )
+
+        if self._cross_net_phase == "turn_to_gap":
+            assert self._cross_net_yaw is not None
+            yaw_err = ((self._cross_net_yaw - self._robot_yaw + math.pi) % (2 * math.pi)) - math.pi
+            if self._turn_step_done(yaw_err):
+                self._publish_stop()
+                self._local_turn_active = False
+                self._cross_net_start_x = self._robot_x
+                self._cross_net_start_y = self._robot_y
+                self._cross_net_phase = "drive_gap"
+                self.get_logger().info("cross_net: turn_to_gap complete")
+            return
+
+        if self._cross_net_phase == "drive_gap":
+            if self._cross_net_start_x is None or self._cross_net_start_y is None:
+                self._cross_net_start_x = self._robot_x
+                self._cross_net_start_y = self._robot_y
+            travelled = math.hypot(
+                self._robot_x - self._cross_net_start_x,
+                self._robot_y - self._cross_net_start_y,
+            )
+            if travelled >= CROSS_NET_DISTANCE_M:
+                self._publish_stop()
+                self._cross_net_phase = "resume_heading"
+                self.get_logger().info(f"cross_net: drive_gap complete travelled={travelled:.2f}m")
+                return
+            assert self._cross_net_yaw is not None
+            yaw_err = ((self._cross_net_yaw - self._robot_yaw + math.pi) % (2 * math.pi)) - math.pi
+            twist = Twist()
+            twist.linear.x = CROSS_NET_LINEAR_M_S
+            twist.angular.z = max(-0.25, min(0.25, yaw_err * 0.8))
+            self._cmd_vel_pub.publish(twist)
+            return
+
+        if self._cross_net_phase == "resume_heading":
+            assert self._cross_net_resume_yaw is not None
+            yaw_err = ((self._cross_net_resume_yaw - self._robot_yaw + math.pi) % (2 * math.pi)) - math.pi
+            if self._turn_step_done(yaw_err):
+                self._publish_stop()
+                self._local_turn_active = False
+                self._cross_net_phase = None
+                self._cross_net_yaw = None
+                self._cross_net_resume_yaw = None
+                self._cross_net_start_x = None
+                self._cross_net_start_y = None
+                self._enter(SurveyState.SECOND_HALF_FOLLOW_FENCE, "gap_crossed")
             return
 
     def _state_second_half_follow_fence(self) -> None:
@@ -634,6 +696,21 @@ class CourtSurveyMissionNode(Node):
         if math.isinf(self._front_range_m):
             return requested
         return max(0.15, min(requested, self._front_range_m - clearance))
+
+    def _choose_cross_net_yaw(self) -> float:
+        """Pick the perpendicular heading that points back into the court."""
+        left_yaw = self._robot_yaw + math.pi / 2
+        right_yaw = self._robot_yaw - math.pi / 2
+        if self._loop_ref_x is None or self._loop_ref_y is None:
+            return left_yaw
+
+        to_ref_x = self._loop_ref_x - self._robot_x
+        to_ref_y = self._loop_ref_y - self._robot_y
+
+        def score(yaw: float) -> float:
+            return math.cos(yaw) * to_ref_x + math.sin(yaw) * to_ref_y
+
+        return left_yaw if score(left_yaw) >= score(right_yaw) else right_yaw
 
     def _distance_from_loop_ref(self) -> float:
         if self._loop_ref_x is None or self._loop_ref_y is None:
@@ -813,6 +890,8 @@ class CourtSurveyMissionNode(Node):
         """
         # yaw_err in [-π, π]: positive → need more CCW, negative → overshot
         yaw_err = ((target_yaw - self._robot_yaw + math.pi) % (2 * math.pi)) - math.pi
+        self._drive_local_turn(yaw_err, next_state, event)
+        return
         if not self._nav_active:
             if abs(yaw_err) < math.radians(8.0):
                 if self._state == SurveyState.TURN_LEFT_AT_NET:
@@ -847,6 +926,58 @@ class CourtSurveyMissionNode(Node):
                 f"TF yaw_err now={math.degrees(abs(yaw_err)):.1f}°"
             )
             # Do NOT transition here — next tick rechecks yaw_err from TF
+
+    def _drive_local_turn(self, yaw_err: float, next_state: SurveyState, event: str) -> None:
+        if abs(yaw_err) < math.radians(SURVEY_TURN_TOLERANCE_DEG):
+            self._publish_stop()
+            self._local_turn_active = False
+            if self._state == SurveyState.TURN_LEFT_AT_NET:
+                line_diag = self._side_lidar_line_diagnostic()
+                if line_diag is None:
+                    self.get_logger().info("turn_left_at_net: lidar_parallel_check unavailable")
+                else:
+                    self.get_logger().info(
+                        "turn_left_at_net: "
+                        f"lidar_parallel_angle={line_diag['angle_deg']:.1f}deg "
+                        f"abs={line_diag['abs_angle_deg']:.1f}deg "
+                        f"side={line_diag['side']} "
+                        f"nearest={line_diag['nearest_m']:.2f}m "
+                        f"points={line_diag['points']} "
+                        f"cluster={line_diag['cluster_points']}"
+                    )
+            self.get_logger().info(
+                f"{self._state.value}: local turn complete, "
+                f"TF yaw_err={math.degrees(abs(yaw_err)):.1f}deg"
+            )
+            self._enter(next_state, event)
+            return
+
+        if not self._local_turn_active:
+            self.get_logger().info(
+                f"{self._state.value}: local turn start "
+                f"TF yaw_err={math.degrees(abs(yaw_err)):.1f}deg "
+                f"target_delta={math.degrees(yaw_err):.1f}deg"
+            )
+            self._local_turn_active = True
+
+        twist = Twist()
+        speed = min(SURVEY_TURN_MAX_RAD_S, max(SURVEY_TURN_MIN_RAD_S, abs(yaw_err) * 0.9))
+        twist.angular.z = math.copysign(speed, yaw_err)
+        self._cmd_vel_pub.publish(twist)
+
+    def _publish_stop(self) -> None:
+        self._cmd_vel_pub.publish(Twist())
+
+    def _turn_step_done(self, yaw_err: float) -> bool:
+        if abs(yaw_err) < math.radians(SURVEY_TURN_TOLERANCE_DEG):
+            return True
+        if not self._local_turn_active:
+            self._local_turn_active = True
+        twist = Twist()
+        speed = min(SURVEY_TURN_MAX_RAD_S, max(SURVEY_TURN_MIN_RAD_S, abs(yaw_err) * 0.9))
+        twist.angular.z = math.copysign(speed, yaw_err)
+        self._cmd_vel_pub.publish(twist)
+        return False
 
     def _retry_if_complete(self, label: str) -> None:
         """If the current nav task has finished (success or fail), clear _nav_active.
@@ -915,6 +1046,15 @@ class CourtSurveyMissionNode(Node):
         self._last_event = event
         self._state_entered_at = time.time()
         self._nav_active = False
+        if self._local_turn_active:
+            self._publish_stop()
+        self._local_turn_active = False
+        if state != SurveyState.CROSS_NET:
+            self._cross_net_phase = None
+            self._cross_net_yaw = None
+            self._cross_net_resume_yaw = None
+            self._cross_net_start_x = None
+            self._cross_net_start_y = None
         self._turn_target_yaw = None  # reset so each turn state computes fresh
 
     def _state_timed_out(self) -> bool:
@@ -924,6 +1064,7 @@ class CourtSurveyMissionNode(Node):
         self._failure_reason = reason
         self.get_logger().error(f"survey FAILED: {reason}")
         self._cancel_nav()
+        self._publish_stop()
         self._finalize(success=False)
 
     def _record(self, label: str) -> None:
@@ -942,6 +1083,7 @@ class CourtSurveyMissionNode(Node):
     # ------------------------------------------------------------------
 
     def _finalize(self, success: bool) -> None:
+        self._publish_stop()
         status = "SUCCESS" if success else "FAILED"
         bounds = {
             "surveyed_at": time.time(),
