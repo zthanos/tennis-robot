@@ -14,6 +14,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = PROJECT_ROOT / "ros2_ws" / "src" / "tennis_robot" / "urdf" / "tennis_robot.urdf.xacro"
 DEFAULT_OUTPUT = PROJECT_ROOT / "runtime" / "tennis_robot.urdf"
+DEFAULT_SDF_OUTPUT = PROJECT_ROOT / "runtime" / "tennis_robot.sdf"
 DEFAULT_CONTROLLERS = (
     PROJECT_ROOT / "ros2_ws" / "src" / "tennis_robot" / "config" / "controllers.yaml"
 )
@@ -45,7 +46,60 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fail if the output URDF is missing or does not match the rendered xacro.",
     )
+    parser.add_argument(
+        "--sdf-output",
+        type=Path,
+        default=None,
+        help="Optional Gazebo SDF output generated from the URDF with patched contact surfaces.",
+    )
     return parser.parse_args()
+
+
+def _set_text(parent: ET.Element, tag: str, value: str) -> ET.Element:
+    child = parent.find(tag)
+    if child is None:
+        child = ET.SubElement(parent, tag)
+    child.text = value
+    return child
+
+
+def _patch_collision_surface(collision: ET.Element, mu: str, mu2: str, slip1: str, slip2: str) -> None:
+    surface = collision.find("surface")
+    if surface is None:
+        surface = ET.SubElement(collision, "surface")
+    friction = surface.find("friction")
+    if friction is None:
+        friction = ET.SubElement(surface, "friction")
+    ode = friction.find("ode")
+    if ode is None:
+        ode = ET.SubElement(friction, "ode")
+    _set_text(ode, "mu", mu)
+    _set_text(ode, "mu2", mu2)
+    _set_text(ode, "slip1", slip1)
+    _set_text(ode, "slip2", slip2)
+
+
+def _patch_sdf_contacts(sdf_text: str) -> str:
+    """Move wheel contact tuning into valid SDF collision surface elements."""
+    root = ET.fromstring(sdf_text)
+    surfaces = {
+        "left_wheel_link": ("5.0", "5.0", "0.0", "0.0"),
+        "right_wheel_link": ("5.0", "5.0", "0.0", "0.0"),
+        "front_left_caster_wheel_link": ("0.01", "0.01", "0.0", "0.0"),
+        "front_right_caster_wheel_link": ("0.01", "0.01", "0.0", "0.0"),
+        "lift_wheel_link": ("1.5", "1.5", "0.0", "0.0"),
+    }
+    for link in root.findall(".//link"):
+        name = link.attrib.get("name")
+        if name not in surfaces:
+            continue
+        for invalid in list(link):
+            if invalid.tag in {"mu1", "mu2", "slip1", "slip2"}:
+                link.remove(invalid)
+        for collision in link.findall("collision"):
+            _patch_collision_surface(collision, *surfaces[name])
+    ET.indent(root, space="  ")
+    return ET.tostring(root, encoding="unicode")
 
 
 def main() -> int:
@@ -104,6 +158,22 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(result.stdout, encoding="utf-8")
     print(f"Generated {output.relative_to(PROJECT_ROOT)} from {source.relative_to(PROJECT_ROOT)}")
+
+    if args.sdf_output is not None:
+        sdf_output = args.sdf_output.resolve()
+        sdf_result = subprocess.run(
+            ["gz", "sdf", "-p", str(output)],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if sdf_result.returncode != 0:
+            print(sdf_result.stderr, file=sys.stderr, end="")
+            return sdf_result.returncode
+        sdf_output.parent.mkdir(parents=True, exist_ok=True)
+        sdf_output.write_text(_patch_sdf_contacts(sdf_result.stdout), encoding="utf-8")
+        print(f"Generated {sdf_output.relative_to(PROJECT_ROOT)} with patched contact surfaces")
     return 0
 
 

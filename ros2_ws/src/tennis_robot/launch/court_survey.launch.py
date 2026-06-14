@@ -101,7 +101,6 @@ def generate_launch_description():
     court_survey_mission = Node(
         package="tennis_robot",
         executable="court_survey_mission_node",
-        name="court_survey_mission_node",
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
         # Use additional_env (not env=) so PYTHONPATH is inherited

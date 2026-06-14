@@ -23,7 +23,7 @@ On FAILURE it writes a failed status and shuts down with exit code 1.
 
 Environment variables
 ─────────────────────
-COURT_SURVEY_NET_STANDOFF_M       float  default 0.35
+COURT_SURVEY_NET_STANDOFF_M       float  default 2.00
 COURT_SURVEY_FENCE_STOP_M         float  default 0.40
 COURT_SURVEY_DRIVE_FORWARD_M      float  default 8.0  (FIND_FIRST_OBSTACLE)
 COURT_SURVEY_STATE_TIMEOUT_S      float  default 120.0 (per state)
@@ -69,7 +69,7 @@ COURT_BOUNDARY_FILE = Path(
     os.getenv("ROBOT_STATUS_FILE", str(PROJECT_ROOT / "runtime" / "robot_status.json"))
 ).parent / "court_boundary.json"
 
-NET_STANDOFF_M: float = float(os.getenv("COURT_SURVEY_NET_STANDOFF_M", "0.35"))
+NET_STANDOFF_M: float = float(os.getenv("COURT_SURVEY_NET_STANDOFF_M", "2.00"))
 FENCE_STOP_M: float = float(os.getenv("COURT_SURVEY_FENCE_STOP_M", "0.40"))
 DRIVE_FORWARD_M: float = float(os.getenv("COURT_SURVEY_DRIVE_FORWARD_M", "8.0"))
 STATE_TIMEOUT_S: float = float(os.getenv("COURT_SURVEY_STATE_TIMEOUT_S", "120.0"))
@@ -77,6 +77,10 @@ LANDMARK_MIN_CONF: float = float(os.getenv("COURT_SURVEY_LANDMARK_MIN_CONF", "0.
 BT_XML: str = os.getenv("COURT_SURVEY_BT_XML", "")
 
 FRONT_LIDAR_HALF_DEG: float = 20.0   # ±20° sector for front range
+NET_APPROACH_MARGIN_M: float = float(os.getenv("COURT_SURVEY_NET_APPROACH_MARGIN_M", "0.30"))
+NET_TO_FENCE_MIN_TRAVEL_M: float = float(os.getenv("COURT_SURVEY_NET_TO_FENCE_MIN_TRAVEL_M", "4.5"))
+NET_TO_FENCE_GOAL_M: float = float(os.getenv("COURT_SURVEY_NET_TO_FENCE_GOAL_M", "8.0"))
+FENCE_TURN_STANDOFF_M: float = float(os.getenv("COURT_SURVEY_FENCE_TURN_STANDOFF_M", "2.50"))
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +162,7 @@ class CourtSurveyMissionNode(Node):
         self._last_event: str = "none"
         self._failure_reason: str | None = None
         self._navigation_points: list[dict] = []
+        self._locked_net: dict[str, Any] | None = None
 
         # Sensor caches
         self._robot_x: float = 0.0
@@ -165,12 +170,23 @@ class CourtSurveyMissionNode(Node):
         self._robot_yaw: float = 0.0
         self._front_range_m: float = math.inf
         self._last_landmarks: dict[str, Any] = {}
+        self._last_survey_vision: dict[str, Any] = {}
+        self._last_scan_points: list[tuple[float, float, float]] = []
         self._scan_angle_min: float = -math.pi
         self._scan_angle_inc: float = math.radians(1.0)
+        self._net_approach_start_x: float | None = None
+        self._net_approach_start_y: float | None = None
+        self._net_approach_target_m: float | None = None
+        self._locked_first_obstacle: str | None = None
+        self._locked_net_bearing_rad: float = 0.0
+        self._locked_net_distance_m: float | None = None
+        self._locked_net_confidence: float = 0.0
+        self._locked_net_approach_yaw_rad: float | None = None
 
         # Loop-closure reference (recorded at first net-left-turn)
         self._loop_ref_x: float | None = None
         self._loop_ref_y: float | None = None
+        self._net_follow_heading: float | None = None
 
         # Stored target yaw for turn states (set once on entry, cleared on _enter())
         # Avoids recalculating from self._robot_yaw on every tick while turning.
@@ -193,6 +209,7 @@ class CourtSurveyMissionNode(Node):
 
         self.create_subscription(LaserScan, "/scan", self._scan_cb, sensor_qos)
         self.create_subscription(String, "/court_landmarks", self._landmarks_cb, 10)
+        self.create_subscription(String, "/survey/vision", self._survey_vision_cb, 10)
 
         # Main FSM timer at 5 Hz
         self.create_timer(0.2, self._step)
@@ -225,13 +242,27 @@ class CourtSurveyMissionNode(Node):
     def _scan_cb(self, msg: LaserScan) -> None:
         self._scan_angle_min = float(msg.angle_min)
         self._scan_angle_inc = float(msg.angle_increment)
+        ranges = list(msg.ranges)
         self._front_range_m = _front_range_from_scan(
-            list(msg.ranges), self._scan_angle_min, self._scan_angle_inc
+            ranges, self._scan_angle_min, self._scan_angle_inc
         )
+        points: list[tuple[float, float, float]] = []
+        for i, r in enumerate(ranges):
+            if not math.isfinite(r) or r <= 0.0:
+                continue
+            angle = self._scan_angle_min + i * self._scan_angle_inc
+            points.append((float(r) * math.cos(angle), float(r) * math.sin(angle), float(r)))
+        self._last_scan_points = points
 
     def _landmarks_cb(self, msg: String) -> None:
         try:
             self._last_landmarks = json.loads(msg.data)
+        except json.JSONDecodeError:
+            pass
+
+    def _survey_vision_cb(self, msg: String) -> None:
+        try:
+            self._last_survey_vision = json.loads(msg.data)
         except json.JSONDecodeError:
             pass
 
@@ -290,19 +321,26 @@ class CourtSurveyMissionNode(Node):
     def _state_find_first_obstacle(self) -> None:
         """Drive forward; classify first obstacle as net or fence.
 
-        Net is checked at ANY range — as soon as the landmark detector sees the
-        net with enough confidence we cancel the approach and start the perimeter
-        traverse.  There is no need to drive closer: the net position is recorded
-        here and the robot turns immediately.
+        A net detection can appear several meters before the robot reaches the
+        net.  Use that detection to switch into the net approach state, but only
+        start the perimeter turn after the robot reaches the configured standoff.
         If we reach 2.5 m without a net detection → it's a fence end-wall.
         """
-        # Net detected at any range → start perimeter immediately (no approach)
-        net = self._last_landmarks.get("net")
+        # Net detected from far away -> approach it first, do not turn yet.
+        net = self._first_visible_net_for_initial_approach()
         if net and net.get("confidence", 0) >= LANDMARK_MIN_CONF:
-            self._record("first_obstacle_net")
-            self._cancel_nav()
-            self._enter(SurveyState.TURN_LEFT_AT_NET, "net_detected")
-            return
+            net_dist = self._lock_net_detection(net)
+            if net_dist is not None:
+                self._cancel_nav()
+                close_by_landmark = net_dist <= NET_STANDOFF_M + NET_APPROACH_MARGIN_M
+                close_by_lidar = self._front_range_m <= NET_STANDOFF_M + 0.10
+                if close_by_landmark or close_by_lidar:
+                    self._record("first_obstacle_net")
+                    self._enter(SurveyState.TURN_LEFT_AT_NET, "net_detected_near")
+                else:
+                    self._record("first_obstacle_net_detected")
+                    self._enter(SurveyState.APPROACH_NET, "net_detected_approach")
+                return
 
         # Reached close range with no net → fence end-wall
         if self._front_range_m <= 2.5:
@@ -336,36 +374,84 @@ class CourtSurveyMissionNode(Node):
             self._nav_to(gx, gy, self._robot_yaw)
 
     def _state_approach_net(self) -> None:
-        """Navigate to net standoff using camera bearing + depth."""
-        net = self._last_landmarks.get("net")
-        if net and net.get("distance_m", 0) and net["distance_m"] > NET_STANDOFF_M:
-            # Project goal: along net bearing at (distance - standoff)
-            bearing = float(net["bearing_rad"])
-            dist = float(net["distance_m"]) - NET_STANDOFF_M
-            gx, gy = _project(
-                self._robot_x, self._robot_y,
-                self._robot_yaw + bearing, dist,
-            )
-            # Face the net: heading toward net
-            goal_yaw = self._robot_yaw + bearing
-            if not self._nav_active:
-                self._nav_to(gx, gy, goal_yaw)
-        # Check arrival: front range ≤ standoff + 0.10
-        if self._front_range_m <= NET_STANDOFF_M + 0.10:
+        """Navigate to net standoff using the first net detection as reference."""
+        net = self._first_visible_net_for_initial_approach()
+        if (
+            net
+            and self._locked_first_obstacle != "net"
+            and net.get("confidence", 0) >= LANDMARK_MIN_CONF
+        ):
+            if self._lock_net_detection(net) is None:
+                return
+        net_dist = self._locked_net_distance_m
+        travelled = self._distance_from_net_approach_start()
+
+        close_by_initial_detection = (
+            self._net_approach_target_m is not None
+            and travelled >= self._net_approach_target_m
+        )
+        close_by_landmark = net_dist is not None and net_dist <= NET_STANDOFF_M + NET_APPROACH_MARGIN_M
+        close_by_lidar = self._front_range_m <= NET_STANDOFF_M + 0.10
+        if close_by_initial_detection or close_by_landmark or close_by_lidar:
+            self._record("first_obstacle_net")
             self._record("net_standoff_reached")
             self._cancel_nav()
             self._enter(SurveyState.TURN_LEFT_AT_NET, "near_net")
             return
-        self._check_nav_result(SurveyState.TURN_LEFT_AT_NET, "near_net")
+
+        if self._nav_active and self._navigator is not None and self._navigator.isTaskComplete():
+            result = self._navigator.getResult()
+            self._nav_active = False
+            self.get_logger().info(
+                f"approach_net nav done ({result}); front={self._front_range_m:.2f}m "
+                f"net_dist={net_dist if net_dist is not None else float('nan'):.2f}m "
+                f"travelled={travelled:.2f}m - retrying"
+            )
+
+        if not self._nav_active:
+            bearing = self._locked_net_bearing_rad
+            if self._net_approach_target_m is not None:
+                dist = max(0.0, self._net_approach_target_m - travelled)
+            elif net_dist is not None and net_dist > NET_STANDOFF_M:
+                dist = net_dist - NET_STANDOFF_M
+            else:
+                dist = self._safe_dist(DRIVE_FORWARD_M, clearance=NET_STANDOFF_M)
+            if dist <= NET_APPROACH_MARGIN_M:
+                self._record("first_obstacle_net")
+                self._record("net_standoff_reached")
+                self._enter(SurveyState.TURN_LEFT_AT_NET, "near_net")
+                return
+            gx, gy = _project(
+                self._robot_x, self._robot_y,
+                self._robot_yaw + bearing, dist,
+            )
+            goal_yaw = self._robot_yaw + bearing
+            self.get_logger().info(
+                f"approach_net: front={self._front_range_m:.2f}m "
+                f"net_dist={net_dist if net_dist is not None else float('nan'):.2f}m "
+                f"locked={self._locked_first_obstacle or 'none'} "
+                f"travelled={travelled:.2f}m -> goal {gx:.2f},{gy:.2f} (dist={dist:.2f}m)"
+            )
+            self._nav_to(gx, gy, goal_yaw)
 
     def _state_turn_left_at_net(self) -> None:
         """Rotate 90° left; verify with TF; retry corrective spins until ±8°."""
         if self._turn_target_yaw is None:
-            self._turn_target_yaw = self._robot_yaw + math.pi / 2
+            approach_yaw = (
+                self._locked_net_approach_yaw_rad
+                if self._locked_net_approach_yaw_rad is not None
+                else self._robot_yaw
+            )
+            self._turn_target_yaw = approach_yaw + math.pi / 2
             # Record position before any spinning
             self._loop_ref_x = self._robot_x
             self._loop_ref_y = self._robot_y
+            self._net_follow_heading = self._turn_target_yaw
             self._record("first_net_left_turn_reference")
+            self.get_logger().info(
+                f"turn_left_at_net: approach_yaw={math.degrees(approach_yaw):.1f}deg "
+                f"target_parallel_yaw={math.degrees(self._turn_target_yaw):.1f}deg"
+            )
         self._spin_to_target(
             self._turn_target_yaw,
             SurveyState.FOLLOW_NET_TO_FENCE,
@@ -374,17 +460,39 @@ class CourtSurveyMissionNode(Node):
 
     def _state_follow_net_to_fence(self) -> None:
         """Drive parallel to net until fence detected ahead."""
-        if self._front_range_m <= FENCE_STOP_M + 0.35:
+        travelled = self._distance_from_loop_ref()
+        if travelled >= NET_TO_FENCE_MIN_TRAVEL_M and self._front_range_m <= FENCE_TURN_STANDOFF_M:
             self._record("net_to_fence_corner")
             self._cancel_nav()
+            self.get_logger().info(
+                f"follow_net_to_fence: fence turn trigger travelled={travelled:.2f}m "
+                f"front={self._front_range_m:.2f}m standoff={FENCE_TURN_STANDOFF_M:.2f}m"
+            )
             self._enter(SurveyState.TURN_LEFT_AT_FENCE_1, "near_fence")
             return
         self._retry_if_complete("follow_net_to_fence")
         if not self._nav_active:
-            d = self._safe_dist(15.0)
-            gx, gy = _project(self._robot_x, self._robot_y, self._robot_yaw, d)
-            self._nav_to(gx, gy, self._robot_yaw)
-        self._check_nav_result(SurveyState.TURN_LEFT_AT_FENCE_1, "near_fence")
+            if (
+                self._loop_ref_x is not None
+                and self._loop_ref_y is not None
+                and self._net_follow_heading is not None
+            ):
+                gx, gy = _project(
+                    self._loop_ref_x,
+                    self._loop_ref_y,
+                    self._net_follow_heading,
+                    NET_TO_FENCE_GOAL_M,
+                )
+                goal_yaw = self._net_follow_heading
+            else:
+                d = self._safe_dist(15.0)
+                gx, gy = _project(self._robot_x, self._robot_y, self._robot_yaw, d)
+                goal_yaw = self._robot_yaw
+            self.get_logger().info(
+                f"follow_net_to_fence: travelled={travelled:.2f}m front={self._front_range_m:.2f}m "
+                f"→ goal {gx:.2f},{gy:.2f}"
+            )
+            self._nav_to(gx, gy, goal_yaw)
 
     def _state_turn_left_at_fence_1(self) -> None:
         if self._turn_target_yaw is None:
@@ -521,11 +629,175 @@ class CourtSurveyMissionNode(Node):
         approach hops when very close to the fence without overshooting into the
         inflation / lethal zone.  The follow-state trigger thresholds are set at
         FENCE_STOP_M + 0.35 = 0.75 m to catch the robot before it would need
-        a hop that lands inside the 0.55 m inflation radius.
+        a hop that lands inside the inflated obstacle zone.
         """
         if math.isinf(self._front_range_m):
             return requested
         return max(0.15, min(requested, self._front_range_m - clearance))
+
+    def _distance_from_loop_ref(self) -> float:
+        if self._loop_ref_x is None or self._loop_ref_y is None:
+            return 0.0
+        return math.hypot(self._robot_x - self._loop_ref_x, self._robot_y - self._loop_ref_y)
+
+    def _distance_from_net_approach_start(self) -> float:
+        if self._net_approach_start_x is None or self._net_approach_start_y is None:
+            return 0.0
+        return math.hypot(
+            self._robot_x - self._net_approach_start_x,
+            self._robot_y - self._net_approach_start_y,
+        )
+
+    def _net_distance(self, net: dict[str, Any] | None) -> float | None:
+        if not net:
+            return None
+        try:
+            dist = float(net.get("distance_m", 0.0))
+        except (TypeError, ValueError):
+            return None
+        if dist <= 0.0 or not math.isfinite(dist):
+            return None
+        return dist
+
+    def _first_visible_net_for_initial_approach(self) -> dict[str, Any] | None:
+        if self._state not in (SurveyState.FIND_FIRST_OBSTACLE, SurveyState.APPROACH_NET):
+            return None
+        survey_net = self._survey_vision_net()
+        if survey_net is not None:
+            return survey_net
+        net = self._last_landmarks.get("net")
+        if isinstance(net, dict):
+            return net
+        return None
+
+    def _survey_vision_net(self) -> dict[str, Any] | None:
+        if self._last_survey_vision.get("obstacle_class") != "net":
+            return None
+        try:
+            dist = float(self._last_survey_vision.get("center_m", 0.0))
+        except (TypeError, ValueError):
+            return None
+        if dist <= 0.0 or not math.isfinite(dist):
+            return None
+        return {
+            "label": "net",
+            "distance_m": dist,
+            "oak_depth_m": dist,
+            "bearing_rad": 0.0,
+            "confidence": 1.0,
+            "source": "survey_vision",
+        }
+
+    def _lock_net_detection(self, net: dict[str, Any]) -> float | None:
+        """Freeze the first confident net label and use LiDAR as its range."""
+        if self._locked_first_obstacle == "net":
+            return self._locked_net_distance_m
+
+        try:
+            bearing = float(net.get("bearing_rad", 0.0))
+        except (TypeError, ValueError):
+            bearing = 0.0
+        try:
+            confidence = float(net.get("confidence", 0.0))
+        except (TypeError, ValueError):
+            confidence = 0.0
+
+        source = str(net.get("source", "court_landmarks"))
+        lidar_dist = self._front_range_m if math.isfinite(self._front_range_m) else None
+        oak_depth = self._net_distance(net)
+        selected_range = lidar_dist if lidar_dist is not None else oak_depth
+        if selected_range is None:
+            return None
+
+        self._locked_first_obstacle = "net"
+        self._locked_net_bearing_rad = bearing
+        self._locked_net_distance_m = selected_range
+        self._locked_net_confidence = confidence
+        self._locked_net_approach_yaw_rad = self._robot_yaw + bearing
+        self._net_approach_start_x = self._robot_x
+        self._net_approach_start_y = self._robot_y
+        self._net_approach_target_m = max(0.0, selected_range - NET_STANDOFF_M)
+        map_x, map_y = _project(self._robot_x, self._robot_y, self._robot_yaw + bearing, selected_range)
+        self._locked_net = {
+            "label": "net",
+            "range_m": round(selected_range, 3),
+            "range_source": "lidar" if lidar_dist is not None else "oak_depth",
+            "lidar_range_m": round(lidar_dist, 3) if lidar_dist is not None else None,
+            "oak_depth_m": round(oak_depth, 3) if oak_depth is not None else None,
+            "bearing_rad": round(bearing, 5),
+            "confidence": round(confidence, 3),
+            "vision_source": source,
+            "robot_x_m": round(self._robot_x, 3),
+            "robot_y_m": round(self._robot_y, 3),
+            "robot_yaw_rad": round(self._robot_yaw, 5),
+            "map_x_m": round(map_x, 3),
+            "map_y_m": round(map_y, 3),
+        }
+        self.get_logger().info(
+            f"locked net: range={selected_range:.2f}m "
+            f"range_source={self._locked_net['range_source']} "
+            f"lidar={lidar_dist if lidar_dist is not None else float('nan'):.2f}m "
+            f"oak_depth={oak_depth if oak_depth is not None else float('nan'):.2f}m "
+            f"bearing={math.degrees(bearing):.1f}deg confidence={confidence:.2f} "
+            f"target_travel={self._net_approach_target_m if self._net_approach_target_m is not None else float('nan'):.2f}m"
+        )
+        return selected_range
+
+    def _side_lidar_line_diagnostic(self) -> dict[str, Any] | None:
+        """Estimate side obstacle line angle relative to robot forward axis.
+
+        0 degrees means the nearest LiDAR line is parallel with the robot's
+        forward direction.  This is a diagnostic for the "parallel to net"
+        DoD, not a control input. After the first left turn the net should be
+        visible mainly in a side sector, so front obstacles are ignored here.
+        """
+        best: dict[str, Any] | None = None
+        for side, min_deg, max_deg in (("left", 55.0, 125.0), ("right", -125.0, -55.0)):
+            side_points: list[tuple[float, float, float]] = []
+            for x, y, r in self._last_scan_points:
+                angle_deg = math.degrees(math.atan2(y, x))
+                if min_deg <= angle_deg <= max_deg and r <= 8.0:
+                    side_points.append((x, y, r))
+            if len(side_points) < 8:
+                continue
+
+            nearest = min(p[2] for p in side_points)
+            cluster = [(x, y) for x, y, r in side_points if r <= nearest + 1.25]
+            if len(cluster) < 8:
+                continue
+
+            line_angle = self._fit_line_angle_deg(cluster)
+            if line_angle is None:
+                continue
+
+            diag = {
+                "side": side,
+                "angle_deg": line_angle,
+                "abs_angle_deg": abs(line_angle),
+                "nearest_m": nearest,
+                "points": len(side_points),
+                "cluster_points": len(cluster),
+            }
+            if best is None or nearest < float(best["nearest_m"]):
+                best = diag
+        return best
+
+    def _fit_line_angle_deg(self, cluster: list[tuple[float, float]]) -> float | None:
+        mean_x = sum(p[0] for p in cluster) / len(cluster)
+        mean_y = sum(p[1] for p in cluster) / len(cluster)
+        sxx = sum((x - mean_x) * (x - mean_x) for x, _ in cluster)
+        syy = sum((y - mean_y) * (y - mean_y) for _, y in cluster)
+        sxy = sum((x - mean_x) * (y - mean_y) for x, y in cluster)
+        if sxx + syy <= 1e-9:
+            return None
+
+        angle = 0.5 * math.atan2(2.0 * sxy, sxx - syy)
+        # A line has no direction, so normalize to [-90, 90] relative to robot x.
+        while angle > math.pi / 2:
+            angle -= math.pi
+        while angle < -math.pi / 2:
+            angle += math.pi
+        return math.degrees(angle)
 
     def _spin_to_target(self, target_yaw: float, next_state: SurveyState, event: str) -> None:
         """Turn toward target_yaw using iterative TF-verified spins.
@@ -543,6 +815,20 @@ class CourtSurveyMissionNode(Node):
         yaw_err = ((target_yaw - self._robot_yaw + math.pi) % (2 * math.pi)) - math.pi
         if not self._nav_active:
             if abs(yaw_err) < math.radians(8.0):
+                if self._state == SurveyState.TURN_LEFT_AT_NET:
+                    line_diag = self._side_lidar_line_diagnostic()
+                    if line_diag is None:
+                        self.get_logger().info("turn_left_at_net: lidar_parallel_check unavailable")
+                    else:
+                        self.get_logger().info(
+                            "turn_left_at_net: "
+                            f"lidar_parallel_angle={line_diag['angle_deg']:.1f}deg "
+                            f"abs={line_diag['abs_angle_deg']:.1f}deg "
+                            f"side={line_diag['side']} "
+                            f"nearest={line_diag['nearest_m']:.2f}m "
+                            f"points={line_diag['points']} "
+                            f"cluster={line_diag['cluster_points']}"
+                        )
                 self._enter(next_state, event)
                 return
             # spin_dist = yaw_err handles both CCW (positive) and CW correction (negative)
@@ -668,6 +954,7 @@ class CourtSurveyMissionNode(Node):
                 {"x_m": p["x_m"], "y_m": p["y_m"], "label": p["label"]}
                 for p in self._navigation_points
             ],
+            "locked_net": self._locked_net,
             "loop_reference": (
                 {"x_m": self._loop_ref_x, "y_m": self._loop_ref_y}
                 if self._loop_ref_x is not None else None

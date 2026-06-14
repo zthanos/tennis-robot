@@ -22,6 +22,7 @@ GZ_MODELS = f"{WORKSPACE}/gazebo/models"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
+ROBOT_SDF = f"{WORKSPACE}/runtime/tennis_robot.sdf"
 # ros2_control controllers config baked into the gz_ros2_control plugin.
 # /workspace is mounted into the Gazebo container, so this path resolves there.
 CONTROLLERS_CONFIG = f"{WORKSPACE}/ros2_ws/src/tennis_robot/config/controllers.yaml"
@@ -52,6 +53,7 @@ def generate_robot_urdf():
         [
             sys.executable, str(script),
             "--output", ROBOT_URDF,
+            "--sdf-output", ROBOT_SDF,
             "--sim-mode", "true",
             "--controllers-config", CONTROLLERS_CONFIG,
         ],
@@ -108,7 +110,7 @@ def generate_launch_description():
         executable="create",
         name="spawn_tennis_robot",
         arguments=[
-            "-file", ROBOT_URDF,
+            "-file", ROBOT_SDF,
             "-name", "tennis_robot",
             "-x", "-8",
             "-y", "0",
