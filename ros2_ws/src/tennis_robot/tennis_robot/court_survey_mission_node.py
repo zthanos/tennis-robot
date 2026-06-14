@@ -179,6 +179,7 @@ class CourtSurveyMissionNode(Node):
         # Nav2
         self._navigator: BasicNavigator | None = None
         self._nav_active: bool = False
+        self._nav2_lifecycle_active: bool = False
 
         # TF: get robot pose in map frame (more reliable than /odom topic QoS)
         self._tf_buffer = Buffer()
@@ -274,11 +275,15 @@ class CourtSurveyMissionNode(Node):
         # bt_navigator registers its action server early but rejects goals until ACTIVE.
         # Wait until the navigate_to_pose action server is available (non-blocking).
         if self._navigator is None and BasicNavigator is not None:
-            self._navigator = BasicNavigator()
+            self._navigator = BasicNavigator(node_name="court_survey_navigator")
             self.get_logger().info("Nav2 navigator created, waiting for action server...")
             return
         if not self._navigator.nav_to_pose_client.wait_for_server(timeout_sec=0.0):
             return  # still starting up — check again next tick (5 Hz)
+        if not self._nav2_lifecycle_active:
+            self.get_logger().info("Nav2 action server ready, waiting for lifecycle active...")
+            self._navigator._waitForNodeToActivate("bt_navigator")
+            self._nav2_lifecycle_active = True
         self.get_logger().info("Nav2 action server ready, starting survey")
         self._enter(SurveyState.FIND_FIRST_OBSTACLE, "survey_started")
 
