@@ -82,7 +82,7 @@
 
     <gazebo reference="${name}_caster_wheel_link">
       <mu1>0.8</mu1>
-      <mu2>1.5</mu2>
+      <mu2>0.05</mu2>
     </gazebo>
   </xacro:macro>
 

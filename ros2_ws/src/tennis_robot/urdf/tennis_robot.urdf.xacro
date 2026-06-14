@@ -39,7 +39,7 @@
   <xacro:property name="caster_radius" value="0.0625"/>   <!-- 125 mm wheel dia -->
   <xacro:property name="caster_width" value="0.035"/>
   <xacro:property name="caster_trail" value="0.025"/>     <!-- self-aligning offset -->
-  <xacro:property name="caster_z" value="-0.1175"/>       <!-- contact = -0.180 m -->
+  <xacro:property name="caster_z" value="-0.0825"/>       <!-- contact = -0.145 m (coplanar with drive wheels under 3deg pitch) -->
 
   <xacro:property name="intake_x" value="0.62"/> 
   <xacro:property name="intake_z" value="0.095"/> 
