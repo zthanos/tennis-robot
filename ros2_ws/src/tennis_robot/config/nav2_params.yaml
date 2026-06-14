@@ -137,10 +137,21 @@ planner_server:
     expected_planner_frequency: 1.0
     planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
+      # Smac2D (A*-based) is more robust than NavFn Dijkstra in unknown/sparse
+      # SLAM costmaps.  NavFn Dijkstra produces "Failed to create a plan from
+      # potential" errors when the gradient field can't be extracted — Smac avoids
+      # this by using a proper A* search with a valid path guarantee.
+      plugin: "nav2_smac_planner/SmacPlanner2D"
       tolerance: 0.5
-      use_astar: false
       allow_unknown: true
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      use_final_approach_orientation: false
+      smoother:
+        max_iterations: 1000
+        w_smooth: 0.3
+        w_data: 0.2
+        tolerance: 1.0e-10
 
 behavior_server:
   ros__parameters:
@@ -161,6 +172,8 @@ behavior_server:
     wait:
       plugin: "nav2_behaviors/Wait"
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 2.0
+    # Slow spin: less wheel slip → odom more accurate → SLAM drift reduced.
+    # At 0.25 rad/s, 90° takes ~6s (Spin behavior does closed-loop with odom).
+    max_rotational_vel: 0.25
+    min_rotational_vel: 0.1
+    rotational_acc_lim: 0.5

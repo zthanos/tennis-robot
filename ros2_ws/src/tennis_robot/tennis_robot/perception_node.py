@@ -22,8 +22,10 @@ import numpy as np
 import rclpy
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from rclpy.time import Time as RclpyTime
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
+from tf2_ros import Buffer as TfBuffer, TransformListener as TfListener
 
 from tennis_robot import yaw_from_quaternion
 
@@ -53,6 +55,12 @@ class PerceptionNode(Node):
         self._robot_y = 0.0
         self._robot_yaw = 0.0
 
+        # SLAM-corrected pose (map->base_footprint) preferred over raw /odom:
+        # wheel odometry drifts badly during in-place turns (wheel slip).
+        self._tf_buffer = TfBuffer()
+        self._tf_listener = TfListener(self._tf_buffer, self)
+        self._pose_source = "odom"
+
         self.create_subscription(Image, "/camera/image_raw", self._on_image, 1)
         self.create_subscription(Image, "/camera/depth", self._on_depth, 1)
         self.create_subscription(Odometry, "/odom", self._on_odom, 10)
@@ -67,9 +75,21 @@ class PerceptionNode(Node):
         self.get_logger().info("perception_node started")
 
     def _on_odom(self, msg: Odometry) -> None:
+        if self._pose_source == "slam_tf":
+            return  # SLAM TF is authoritative once available
         self._robot_x = msg.pose.pose.position.x
         self._robot_y = msg.pose.pose.position.y
         self._robot_yaw = yaw_from_quaternion(msg.pose.pose.orientation)
+
+    def _update_pose_from_tf(self) -> None:
+        try:
+            t = self._tf_buffer.lookup_transform("map", "base_footprint", RclpyTime())
+        except Exception:
+            return  # SLAM not up (yet) — keep odom pose
+        self._robot_x = t.transform.translation.x
+        self._robot_y = t.transform.translation.y
+        self._robot_yaw = yaw_from_quaternion(t.transform.rotation)
+        self._pose_source = "slam_tf"
 
     def _on_depth(self, msg: Image) -> None:
         raw = bytes(msg.data)
@@ -79,6 +99,7 @@ class PerceptionNode(Node):
         self._depth_h = msg.height
 
     def _on_image(self, msg: Image) -> None:
+        self._update_pose_from_tf()
         frame = self._decode_image(msg)
         if frame is None:
             return

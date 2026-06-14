@@ -33,7 +33,9 @@ slam_toolbox:
     max_laser_range: 12.0            # RPLIDAR C1 usable range
     minimum_time_between_scans: 0.2
     minimum_travel_distance: 0.3
-    minimum_travel_heading: 0.3
+    # 0.15 rad (~8.6°): more scans during turns so the matcher can track
+    # heading. At 0.3 rad the map broke (rotated submap) after fast rotations.
+    minimum_travel_heading: 0.15
     transform_timeout: 0.2
     tf_buffer_duration: 30.0
     stack_size_to_use: 40000000
@@ -46,8 +48,12 @@ slam_toolbox:
     link_match_minimum_response_fine: 0.1
     link_scan_maximum_distance: 1.5
 
-    # ── Loop closure (conservative for sparse features) ──────────────────────
-    do_loop_closing: true
+    # ── Loop closure ─────────────────────────────────────────────────────────
+    # DISABLED: the court is nearly symmetric (identical fences on all sides,
+    # few distinctive features), so loop closure can match the WRONG wall and
+    # rotate the whole map. Odometry + scan matching alone are sufficient for
+    # a single 33x17 m enclosure.
+    do_loop_closing: false
     loop_search_maximum_distance: 3.0
     loop_match_minimum_chain_size: 10
     loop_match_maximum_variance_coarse: 3.0

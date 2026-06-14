@@ -82,6 +82,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-teleop-twist-keyboard \
     ros-humble-navigation2 \
     ros-humble-nav2-bringup \
+    ros-humble-nav2-simple-commander \
+    ros-humble-rviz2 \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir duckdb
@@ -89,8 +91,8 @@ RUN pip install --no-cache-dir duckdb
 # ── workspace ─────────────────────────────────────────────────────────────────
 WORKDIR /ros2_ws
 
+# ── Dependencies first (rarely change → cached across tennis_robot edits) ──────
 COPY ros2_ws/src/tennis_robot_msgs src/tennis_robot_msgs
-COPY ros2_ws/src/tennis_robot src/tennis_robot
 
 # gz_ros2_control: built from source for Gazebo Harmonic (no Humble binary).
 RUN git clone https://github.com/ros-controls/gz_ros2_control.git \
@@ -102,10 +104,31 @@ RUN git clone https://github.com/robo-friends/m-explore-ros2.git \
 
 # GZ_VERSION=harmonic tells gz_ros2_control to compile against Gazebo 8 (Harmonic).
 ENV GZ_VERSION=harmonic
-RUN . /opt/ros/humble/setup.sh \
+# Build deps + messages (heavy gz_ros2_control compile). Cached unless deps or
+# messages change. apt-get update: earlier layers cleared the apt lists, which
+# rosdep's apt-get install (e.g. ros-humble-image-geometry) needs.
+RUN apt-get update \
+  && . /opt/ros/humble/setup.sh \
   && rosdep update \
   && rosdep install --from-paths src --ignore-src -r -y \
-  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── tennis_robot last: edits here rebuild ONLY this package (seconds) ──────────
+# Bump TENNIS_ROBOT_VER to bust the COPY cache when source changes aren't detected
+ARG TENNIS_ROBOT_VER=21
+COPY ros2_ws/src/tennis_robot src/tennis_robot
+RUN . /opt/ros/humble/setup.sh \
+  && . install/setup.sh \
+  && colcon build --packages-select tennis_robot --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  && sed -i '/self\._navigator\.waitUntilNav2Active/d' \
+       /ros2_ws/src/tennis_robot/tennis_robot/court_survey_mission_node.py \
+  && printf '#!/usr/bin/env python3\nimport sys; sys.path.insert(0, "/ros2_ws/src/tennis_robot")\nfrom tennis_robot.court_landmarks_node import main\nsys.exit(main())\n' \
+       > /ros2_ws/install/tennis_robot/lib/tennis_robot/court_landmarks_node \
+  && printf '#!/usr/bin/env python3\nimport sys; sys.path.insert(0, "/ros2_ws/src/tennis_robot")\nfrom tennis_robot.court_survey_mission_node import main\nsys.exit(main())\n' \
+       > /ros2_ws/install/tennis_robot/lib/tennis_robot/court_survey_mission_node \
+  && chmod +x /ros2_ws/install/tennis_robot/lib/tennis_robot/court_landmarks_node \
+  && chmod +x /ros2_ws/install/tennis_robot/lib/tennis_robot/court_survey_mission_node
 
 ENV ROS_SETUP=/ros2_ws/install/setup.sh
 

@@ -58,6 +58,16 @@ motor leads `AO1`/`AO2`. Μην αλλάξεις τα καλώδια του enco
    - Τρέχει motor + encoder + 2 IR beams μαζί.
    - Είναι το πρώτο ολοκληρωμένο smoke test του collector.
 
+5. `05_wiring_diagnostic`
+   - Δείχνει στο Serial Monitor αν φαίνονται σωστά IR, encoder και TB6612 pin map.
+   - Έχει εντολή `p` για πολύ σύντομο χαμηλό-PWM motor pulse, ώστε να ελέγξεις `VM`, κοινό `GND`, `AO1`/`AO2`, `PWMA`, `AIN1`, `AIN2` και `STBY`.
+   - Ξεκίνα με `i`, μετά σπάσε κάθε IR beam, γύρισε τον άξονα με το χέρι, και τέλος δοκίμασε `p`.
+
+6. `06_motor_driver_wiring_check`
+   - Ελέγχει μόνο Arduino Nano -> TB6612FNG -> motor, χωρίς IR και encoder.
+   - Ξεκίνα με την εντολή `v` και μέτρα `VCC=5V`, `VM=12V`, κοινό `GND`.
+   - Μετά δοκίμασε `p` για ένα πολύ σύντομο χαμηλό-PWM pulse.
+
 ## Πριν Βάλεις 12V Στο VM
 
 Μέτρα με πολύμετρο πάνω στα pins του TB6612:
@@ -92,8 +102,8 @@ pinMode(pin, INPUT_PULLUP);
 Με αυτό το wiring:
 
 ```text
-LOW  = beam unbroken / receiver sees emitter
-HIGH = beam broken / blocked
+LOW  = beam broken / blocked
+HIGH = beam unbroken / receiver sees emitter
 ```
 
 ## Motor Driver Προσοχή

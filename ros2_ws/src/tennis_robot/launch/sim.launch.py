@@ -69,17 +69,37 @@ def generate_launch_description():
     headless = LaunchConfiguration("headless")
 
     # ── Gazebo ──────────────────────────────────────────────────────────────
+    # Tell Gazebo where the gz_ros2_control system plugin lives. Sourcing the
+    # workspace does NOT reliably set this, so Gazebo fails to load the plugin
+    # ("Could not find shared library") and exits before controllers can spawn.
+    _gz_plugin_path = f"{ROS2_INSTALL}/gz_ros2_control/lib:" + os.environ.get(
+        "GZ_SIM_SYSTEM_PLUGIN_PATH", ""
+    )
+    _gz_env = {
+        "GZ_SIM_RESOURCE_PATH": GZ_MODELS,
+        "GZ_SIM_SYSTEM_PLUGIN_PATH": _gz_plugin_path,
+    }
+
+    # Render engines: gpu_lidar is implemented ONLY in ogre2 — under ogre (v1)
+    # the lidar depth buffer is all zeros and every ray reports range_min
+    # (sensor effectively blind). So the SERVER (sensors) must run ogre2.
+    # The GUI window stays on ogre v1, which is more stable under WSLg.
     gz_full = ExecuteProcess(
-        cmd=["gz", "sim", "-r", "--render-engine", "ogre", GZ_WORLD],
+        cmd=[
+            "gz", "sim", "-r",
+            "--render-engine-server", "ogre2",
+            "--render-engine-gui", "ogre",
+            GZ_WORLD,
+        ],
         condition=UnlessCondition(headless),
-        additional_env={"GZ_SIM_RESOURCE_PATH": GZ_MODELS},
+        additional_env=_gz_env,
         output="screen",
     )
 
     gz_headless = ExecuteProcess(
-        cmd=["gz", "sim", "-r", "-s", "--render-engine", "ogre", GZ_WORLD],
+        cmd=["gz", "sim", "-r", "-s", "--render-engine", "ogre2", GZ_WORLD],
         condition=IfCondition(headless),
-        additional_env={"GZ_SIM_RESOURCE_PATH": GZ_MODELS},
+        additional_env=_gz_env,
         output="screen",
     )
 
@@ -139,6 +159,21 @@ def generate_launch_description():
         additional_env={"PYTHONPATH": ROS_PYTHONPATH},
     )
 
+    # cmd_vel arbiter — part of the base robot bring-up so the web D-pad / teleop
+    # can drive without needing the SLAM launch running. Output goes to the
+    # diff_drive_controller; inputs are /cmd_vel_teleop, /cmd_vel_nav, etc.
+    twist_mux = Node(
+        package="twist_mux",
+        executable="twist_mux",
+        name="twist_mux",
+        output="screen",
+        parameters=[
+            f"{WORKSPACE}/ros2_ws/src/tennis_robot/config/twist_mux.yaml",
+            {"use_sim_time": True},
+        ],
+        remappings=[("cmd_vel_out", "/diff_drive_controller/cmd_vel_unstamped")],
+    )
+
     # ── ros_gz bridge ────────────────────────────────────────────────────────
     bridge = Node(
         package="ros_gz_bridge",
@@ -149,12 +184,24 @@ def generate_launch_description():
     )
 
     # ── ROS 2 nodes (same as before — interface unchanged) ──────────────────
+    # /odom remap: after the ros2_control migration odometry is published on
+    # /diff_drive_controller/odom; the old gz DiffDrive plugin that fed /odom is
+    # gone. Without this remap the nodes' pose/yaw silently freeze at 0 (e.g.
+    # survey turn_180_timeout: the turn never completes because yaw never moves).
+    _odom_remap = ("/odom", "/diff_drive_controller/odom")
+
     perception = Node(
         package="tennis_robot",
         executable="perception_node",
         name="perception_node",
         output="screen",
-        additional_env={"PYTHONPATH": ROS_PYTHONPATH},
+        remappings=[_odom_remap],
+        additional_env={
+            "PYTHONPATH": ROS_PYTHONPATH,
+            # Match the RGB camera horizontal_fov in oak_d.urdf.xacro (1.204 rad ≈ 69°).
+            # The perception default of 60° skews bearings ~15% toward frame edges.
+            "CAMERA_FOV_RAD": "1.204",
+        },
     )
 
     controller = Node(
@@ -162,9 +209,14 @@ def generate_launch_description():
         executable="controller_node",
         name="controller_node",
         output="screen",
+        remappings=[_odom_remap],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
             "ROBOT_COMMAND_FILE": f"{WORKSPACE}/runtime/robot_command.json",
+            # Without this, RobotStatusStore.from_env() resolves a default path
+            # inside the colcon install tree (container-internal) and the status
+            # file never lands in the mounted runtime/ dir.
+            "ROBOT_STATUS_FILE": f"{WORKSPACE}/runtime/robot_status.json",
         },
     )
 
@@ -173,6 +225,9 @@ def generate_launch_description():
         executable="navigation_node",
         name="navigation_node",
         output="screen",
+        # Route the legacy /cmd_vel (used by the web control-panel D-pad via
+        # controller_node) through twist_mux instead of the removed gz plugin.
+        remappings=[("/cmd_vel", "/cmd_vel_teleop"), _odom_remap],
     )
 
     command_bridge = Node(
@@ -228,7 +283,7 @@ def generate_launch_description():
         period=4.0,
         actions=[
             bridge, perception, controller, navigation,
-            command_bridge, gz_extras, sensor_snapshots, drive_actuator,
+            command_bridge, gz_extras, sensor_snapshots, drive_actuator, twist_mux,
         ],
     )
 

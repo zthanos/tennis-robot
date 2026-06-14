@@ -23,6 +23,10 @@ SUPPORTED_MODES = {
     "move_backward",
     "move_left",
     "move_right",
+    "move_forward_left",
+    "move_forward_right",
+    "move_backward_left",
+    "move_backward_right",
     "turn_180",
 }
 PROJECT_ROOT = Path(__file__).resolve().parents[2]

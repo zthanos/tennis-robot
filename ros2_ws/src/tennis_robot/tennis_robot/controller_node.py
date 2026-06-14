@@ -33,8 +33,10 @@ import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from rclpy.time import Time as RclpyTime
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
+from tf2_ros import Buffer as TfBuffer, TransformListener as TfListener
 
 from tennis_robot import yaw_from_quaternion
 
@@ -159,6 +161,14 @@ class ControllerNode(Node):
         self._sim_balls: list[dict] = []
         self._turn_180_start_yaw: float = 0.0
 
+        # ── pose source: SLAM-corrected TF with /odom fallback ─────────────────
+        # Raw wheel odometry overestimates in-place turns ~2x (drive wheels slip
+        # against the casters), so map->base_footprint from slam_toolbox is the
+        # authoritative pose. /odom remains the fallback until SLAM publishes.
+        self._tf_buffer = TfBuffer()
+        self._tf_listener = TfListener(self._tf_buffer, self)
+        self._pose_source = "odom"
+
         # ── subscriptions ──────────────────────────────────────────────────────
         self.create_subscription(BallObservation, "/ball/observation", self._on_observation, 1)
         self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
@@ -202,9 +212,22 @@ class ControllerNode(Node):
         self._lidar_angle_increment = float(msg.angle_increment)
 
     def _on_odom(self, msg: Odometry) -> None:
+        if self._pose_source == "slam_tf":
+            return  # SLAM TF is authoritative once available
         self._robot_x = msg.pose.pose.position.x
         self._robot_y = msg.pose.pose.position.y
         self._robot_yaw = yaw_from_quaternion(msg.pose.pose.orientation)
+
+    def _update_pose_from_tf(self) -> None:
+        """Refresh pose from map->base_footprint (slam_toolbox) when available."""
+        try:
+            t = self._tf_buffer.lookup_transform("map", "base_footprint", RclpyTime())
+        except Exception:
+            return  # SLAM not up (yet) — keep odom pose
+        self._robot_x = t.transform.translation.x
+        self._robot_y = t.transform.translation.y
+        self._robot_yaw = yaw_from_quaternion(t.transform.rotation)
+        self._pose_source = "slam_tf"
 
     def _on_ir(self, msg: IrReadings) -> None:
         self._ir_left = msg.left
@@ -223,6 +246,7 @@ class ControllerNode(Node):
     # ── main step (runs at TIME_STEP_S Hz) ─────────────────────────────────────
 
     def _step(self) -> None:
+        self._update_pose_from_tf()
         observation = self._latest_obs
         now = time.time()
         mapped_observation = self._mapping_observation(observation)
@@ -250,7 +274,7 @@ class ControllerNode(Node):
             )
         elif effective_mode == "map_left_side":
             command = self._map_mission_command_for_mode(effective_mode)
-        elif effective_mode in {"move_forward", "move_backward", "move_left", "move_right", "turn_180"}:
+        elif effective_mode in self._MANUAL_MODES:
             command = self._manual_move_command(effective_mode)
         else:
             command = self._collector_command_for_mode(effective_mode, control_observation)
@@ -287,7 +311,11 @@ class ControllerNode(Node):
         self.get_logger().info(f"mode → {new_mode}")
         return True
 
-    _MANUAL_MODES = frozenset({"move_forward", "move_backward", "move_left", "move_right", "turn_180"})
+    _MANUAL_MODES = frozenset({
+        "move_forward", "move_backward", "move_left", "move_right", "turn_180",
+        "move_forward_left", "move_forward_right",
+        "move_backward_left", "move_backward_right",
+    })
     _AUTONOMOUS_MODES = frozenset({"map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"})
 
     def _effective_control_mode(self, requested_mode: str) -> str:
@@ -371,8 +399,16 @@ class ControllerNode(Node):
             base = BaseCommand(-MANUAL_LINEAR_SPEED_M_S, 0.0)
         elif mode == "move_left":
             base = BaseCommand(0.0, MANUAL_TURN_SPEED_RAD_S)
-        else:  # move_right
+        elif mode == "move_right":
             base = BaseCommand(0.0, -MANUAL_TURN_SPEED_RAD_S)
+        elif mode == "move_forward_left":
+            base = BaseCommand(MANUAL_LINEAR_SPEED_M_S, MANUAL_TURN_SPEED_RAD_S)
+        elif mode == "move_forward_right":
+            base = BaseCommand(MANUAL_LINEAR_SPEED_M_S, -MANUAL_TURN_SPEED_RAD_S)
+        elif mode == "move_backward_left":
+            base = BaseCommand(-MANUAL_LINEAR_SPEED_M_S, MANUAL_TURN_SPEED_RAD_S)
+        else:  # move_backward_right
+            base = BaseCommand(-MANUAL_LINEAR_SPEED_M_S, -MANUAL_TURN_SPEED_RAD_S)
         return ConceptACommand(
             state=CollectorState.IDLE,
             base=base,
@@ -795,6 +831,7 @@ class ControllerNode(Node):
             "robot_x_m": round(self._robot_x, 3),
             "robot_y_m": round(self._robot_y, 3),
             "robot_yaw_rad": round(self._robot_yaw, 4),
+            "pose_source": self._pose_source,
             "cmd_linear_m_s": round(command.base.linear_speed_m_s, 3),
             "cmd_angular_rad_s": round(command.base.angular_speed_rad_s, 3),
             "ball_visible": observation.visible,

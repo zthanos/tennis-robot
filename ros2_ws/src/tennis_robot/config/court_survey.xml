@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Court Survey — Nav2 Behavior Tree (BehaviorTree.CPP v4 format)
+
+  Used by bt_navigator when court_survey_mission_node sends NavigateToPose
+  goals. Each goal represents one survey waypoint (net approach, fence corner,
+  net crossing, etc.).
+
+  Design goals
+  ────────────
+  - Low replanning rate (1 Hz) to keep the robot moving smoothly along
+    the court perimeter without over-reacting to sparse LiDAR updates.
+  - Graceful recovery: clear local costmap → back up → spin before giving up.
+  - 6 retries on the outer loop before returning FAILURE to the mission node,
+    which can then decide to skip a waypoint or abort the survey.
+
+  BT node reference (nav2_bt_navigator built-ins used here)
+  ──────────────────────────────────────────────────────────
+  ComputePathToPose      – plan a path to {goal} using GridBased planner
+  FollowPath             – execute {path} with RegulatedPurePursuit controller
+  ClearEntireCostmap     – service call to flush a costmap
+  BackUp                 – drive backwards a fixed distance
+  Spin                   – rotate in place for recovery
+  RateController         – throttle subtree to hz
+  RecoveryNode           – retry(n) + recovery subtree
+  PipelineSequence       – Sequence that re-ticks running children
+-->
+<root BTCPP_format="4" main_tree_to_execute="CourtSurveyNavigateToPose">
+
+  <BehaviorTree ID="CourtSurveyNavigateToPose">
+
+    <!--
+      Outer recovery loop: up to 6 attempts total.
+      On each failure the recovery subtree clears both costmaps and spins.
+    -->
+    <RecoveryNode number_of_retries="6" name="OuterRecovery">
+
+      <PipelineSequence name="NavPipeline">
+
+        <!-- Re-plan at 1 Hz -->
+        <RateController hz="1.0" name="ReplanRate">
+          <RecoveryNode number_of_retries="1" name="PlanWithCostmapClear">
+            <ComputePathToPose
+              goal="{goal}"
+              path="{path}"
+              planner_id="GridBased"
+            />
+            <!-- If planning fails, clear global costmap and retry once -->
+            <ClearEntireCostmap
+              name="ClearGlobalOnPlanFail"
+              service_name="global_costmap/clear_entirely_global_costmap"
+            />
+          </RecoveryNode>
+        </RateController>
+
+        <!-- Follow path; on failure: clear local costmap + back up 30 cm -->
+        <RecoveryNode number_of_retries="1" name="FollowWithRecovery">
+          <FollowPath
+            path="{path}"
+            controller_id="FollowPath"
+          />
+          <Sequence name="LocalRecovery">
+            <ClearEntireCostmap
+              name="ClearLocalOnFollowFail"
+              service_name="local_costmap/clear_entirely_local_costmap"
+            />
+            <BackUp
+              backup_dist="0.30"
+              backup_speed="0.10"
+              time_allowance="8.0"
+            />
+          </Sequence>
+        </RecoveryNode>
+
+      </PipelineSequence>
+
+      <!-- Outer recovery: clear both costmaps + spin 90° -->
+      <Sequence name="OuterRecoverySequence">
+        <ClearEntireCostmap
+          name="ClearLocalFull"
+          service_name="local_costmap/clear_entirely_local_costmap"
+        />
+        <ClearEntireCostmap
+          name="ClearGlobalFull"
+          service_name="global_costmap/clear_entirely_global_costmap"
+        />
+        <Spin
+          spin_dist="1.57"
+          time_allowance="10.0"
+        />
+      </Sequence>
+
+    </RecoveryNode>
+
+  </BehaviorTree>
+
+</root>

@@ -56,7 +56,7 @@ void onEncoderAChange() {
 }
 
 bool beamBroken(byte pin) {
-  return digitalRead(pin) == HIGH;
+  return digitalRead(pin) == LOW;
 }
 
 void motorCoast() {

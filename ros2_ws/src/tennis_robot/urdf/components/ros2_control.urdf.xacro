@@ -64,6 +64,19 @@
         <state_interface name="velocity"/>
       </joint>
 
+      <!-- ── Passive caster joints: NOT in ros2_control ──────────────────────
+           Previously listed here as state-only so joint_state_broadcaster could
+           publish their positions for RViz TF. However, gz_ros2_control owns any
+           joint it has an interface for, and may zero out state-only joints during
+           initialization or write cycles. Locked caster swivel/wheel joints create
+           ~12 N·m of scrub resistance (mu1=0.8 × caster weight × moment arm) that
+           exceeds the ~7.7 N·m drive torque → 82% rotation slip observed.
+           Fix: remove casters from ros2_control entirely; gz-physics handles them
+           freely via URDF <dynamics damping="0.02" friction="0.001"/> on the swivel.
+           Cost: /joint_states won't include casters → RViz "No transform from
+           front_*_caster_*". Navigation is unaffected (caster TF not used by
+           slam_toolbox or nav2). -->
+
     </ros2_control>
 
     <!-- ── gz_ros2_control system plugin (sim only) ─────────────────────────

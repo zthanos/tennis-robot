@@ -34,26 +34,37 @@ diff_drive_controller:
 
     # Plain geometry_msgs/Twist on ~/cmd_vel_unstamped (use_stamped_vel: false)
     use_stamped_vel: false
+    # NOTE: must stay < ~2.1e6 s. The controller computes
+    # static_cast<int>(timeout * 1000) ms — larger values overflow int32 to a
+    # NEGATIVE timeout, so every command is treated as expired and zeroed
+    # (robot accepts Twist but never moves). The old 1.0e9 hit exactly this.
+    # Sim-time fear was unfounded: the unstamped subscriber stamps with the
+    # node clock (sim time under gz_ros2_control), same clock as update().
+    cmd_vel_timeout: 5.0
 
     publish_rate: 50.0
+    # Diagnostic tap: republishes the command as the controller processed it
+    # on ~/cmd_vel_out. Shows whether messages actually reach the controller.
+    publish_limited_velocity: true
     odom_frame_id: odom
-    base_frame_id: base_link
+    # base_footprint (not base_link): the URDF already publishes
+    # base_footprint -> base_link via robot_state_publisher. Pointing odom at
+    # base_link would give base_link two TF parents and orphan base_footprint.
+    # Chain: map -> odom -> base_footprint -> base_link
+    base_frame_id: base_footprint
     enable_odom_tf: true
     open_loop: false
 
     pose_covariance_diagonal: [0.001, 0.001, 0.0, 0.0, 0.0, 0.01]
     twist_covariance_diagonal: [0.001, 0.001, 0.0, 0.0, 0.0, 0.01]
 
-    # Safety / smoothing limits (match xacro max accelerations)
-    linear.x.has_velocity_limits: true
-    linear.x.max_velocity: 1.5
-    linear.x.has_acceleration_limits: true
-    linear.x.max_acceleration: 2.0
-
-    angular.z.has_velocity_limits: true
-    angular.z.max_velocity: 4.0
-    angular.z.has_acceleration_limits: true
-    angular.z.max_acceleration: 4.0
+    # Velocity/acceleration limits — DISABLED for now. With only max (no min) set,
+    # the limiter could clamp the output to 0 under sim time. Re-enable later with
+    # matching min_velocity / min_acceleration values.
+    linear.x.has_velocity_limits: false
+    linear.x.has_acceleration_limits: false
+    angular.z.has_velocity_limits: false
+    angular.z.has_acceleration_limits: false
 
 lift_wheel_velocity_controller:
   ros__parameters:

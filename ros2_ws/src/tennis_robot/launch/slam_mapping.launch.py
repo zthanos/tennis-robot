@@ -45,15 +45,8 @@ def generate_launch_description():
         parameters=[slam_config, {"use_sim_time": use_sim_time}],
     )
 
-    # ── cmd_vel arbiter ───────────────────────────────────────────────────────
-    # twist_mux output -> the diff_drive_controller command topic.
-    twist_mux = Node(
-        package="twist_mux",
-        executable="twist_mux",
-        name="twist_mux",
-        output="screen",
-        parameters=[twist_mux_config, {"use_sim_time": use_sim_time}],
-        remappings=[("cmd_vel_out", "/diff_drive_controller/cmd_vel_unstamped")],
-    )
+    # NOTE: twist_mux (the cmd_vel arbiter) now lives in the base bring-up
+    # (sim.launch.py / real robot), so the web D-pad and teleop work without
+    # SLAM running. This launch only adds the mapping.
 
-    return LaunchDescription(args + [slam_toolbox, twist_mux])
+    return LaunchDescription(args + [slam_toolbox])

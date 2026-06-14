@@ -55,6 +55,7 @@ def generate_launch_description():
         executable="behavior_server",
         output="screen",
         parameters=[params_file, {"use_sim_time": use_sim_time}],
+        remappings=[("cmd_vel", "/cmd_vel_nav")],   # same channel as controller_server
     )
 
     bt_navigator = Node(

@@ -35,6 +35,7 @@ class Ros2MotorAdapter:
         self._command_timeout_s = command_timeout_s
         self._last_command = Twist()
         self._last_command_at = 0.0
+        self._idle_zero_sent = True  # start silent: no command seen yet
         self._robot_x = 0.0
         self._robot_y = 0.0
         self._robot_yaw = 0.0
@@ -54,10 +55,35 @@ class Ros2MotorAdapter:
         self._robot_y = msg.pose.pose.position.y
         self._robot_yaw = yaw_from_quaternion(msg.pose.pose.orientation)
 
+    @staticmethod
+    def _is_zero(command: Twist) -> bool:
+        return (
+            abs(command.linear.x) < 1e-9
+            and abs(command.linear.y) < 1e-9
+            and abs(command.angular.z) < 1e-9
+        )
+
     def _step(self) -> None:
         command = self._last_command
         if time.time() - self._last_command_at > self._command_timeout_s:
             command = Twist()
+        # Publish a zero ONCE per moving->stopped transition, then stay silent
+        # until the next nonzero command. This applies both to the local
+        # timeout zero AND to a continuous stream of zero commands from
+        # upstream (controller_node publishes its FSM command every 0.032 s,
+        # zeros included, when e.g. idle). Relaying zeros at ~31 Hz floods
+        # /cmd_vel(_teleop) and — through twist_mux — stomps every other
+        # publisher: the diff_drive_controller acts on the LAST message
+        # received, so a constant zero stream silently blocks ALL motion.
+        # Nonzero commands keep streaming every tick (heartbeat for the
+        # twist_mux topic timeout).
+        if self._is_zero(command):
+            if self._idle_zero_sent:
+                self._publish_status(command)
+                return
+            self._idle_zero_sent = True
+        else:
+            self._idle_zero_sent = False
         self._pub_cmd_vel.publish(command)
         self._publish_status(command)
 

@@ -25,9 +25,6 @@ twist_mux:
         timeout: 0.5
         priority: 70
 
-    # Optional hard stop input (e.g. bumper / e-stop) — lock zeroes the output.
-    locks:
-      e_stop:
-        topic: /e_stop
-        timeout: 0.0
-        priority: 255
+    # NOTE: no locks. A lock with no publisher is treated as engaged (fail-safe)
+    # by twist_mux, which zeroes the output and blocks ALL motion. Add an e-stop
+    # lock back only together with a node that actually publishes the unlock.

@@ -41,6 +41,15 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 
 Στο RViz: Fixed Frame = `map`, πρόσθεσε display `Map` (topic `/map`) και `TF`.
 
+Σε Docker, το RViz τρέχει ως ξεχωριστό service με έτοιμο config
+(`docker/ros2/tennis_robot.rviz` — Map/TF/LaserScan/RobotModel):
+
+```bash
+docker compose --profile gazebo up gazebo rviz
+# ή σε ήδη τρέχον sim:
+docker compose --profile gazebo up rviz
+```
+
 ## Αποθήκευση χάρτη
 
 ```bash

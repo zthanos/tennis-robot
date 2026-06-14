@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
@@ -325,22 +325,318 @@ def detect_obstacle_class(frame: np.ndarray) -> ObstacleDetection | None:
     bottom_frac = float(roi_y0 + int(np.max(ys))) / float(h)
     height_frac = bottom_frac - top_frac
 
-    # Check edge density in the lower third of the ROI.
-    # Net: bottom is clear (court surface visible under/through net).
-    # Fence: wire pattern extends throughout — lower third also has edges.
+    # Check HORIZONTAL edge density in the lower third of the ROI.
+    # Net: lower third has no horizontal wires — court surface below net is clear.
+    # Fence: wire mesh extends throughout — horizontal wires visible even at bottom.
+    # Use only h_pattern (not combined) to avoid false positives from vertical
+    # court lines (service line stripe) which would appear in v_pattern only.
     roi_h = combined.shape[0]
-    lower_third = combined[2 * roi_h // 3:]
-    lower_density = float(np.count_nonzero(lower_third)) / max(1, lower_third.size)
+    lower_third_h = h_pattern[2 * roi_h // 3:]
+    lower_density = float(np.count_nonzero(lower_third_h)) / max(1, lower_third_h.size)
 
     large_extent = (top_frac < 0.08 and height_frac > 0.42) or height_frac > 0.58
     if large_extent:
-        if lower_density < 0.006:
-            # Lower ROI clear → net filling frame at close range.
+        # At close range the net mesh fills the lower ROI too, so lower_density
+        # is higher than when viewed from far away.  Use a more generous threshold
+        # (0.020) so we don't flip to "fence" as the robot approaches the net.
+        # A real fence has much denser horizontal wire in the lower third (>0.025).
+        if lower_density < 0.020:
             return ObstacleDetection("net", min(1.0, (h_score + v_score) * 20))
         return ObstacleDetection("fence", min(1.0, h_score * 30))
     if 0.08 <= height_frac <= 0.52 and top_frac >= 0.08 and bottom_frac <= 0.82:
         return ObstacleDetection("net", min(1.0, (h_score + v_score) * 20))
     return None
+
+
+@dataclass(frozen=True)
+class CourtCornerDetection:
+    """A detected court corner (L-intersection of baseline + sideline).
+
+    bearing_rad: horizontal angle from camera centre — positive = right.
+    distance_m:  depth estimate at the corner pixel; None if depth unavailable.
+    pixel_x:     corner pixel column in the *original* (not ROI-cropped) frame.
+    pixel_y:     corner pixel row in the original frame.
+    confidence:  0–1 score derived from line lengths and intersection geometry.
+    """
+
+    pixel_x: int
+    pixel_y: int
+    bearing_rad: float
+    distance_m: float | None
+    confidence: float
+
+
+@dataclass(frozen=True)
+class NetPose:
+    """Bearing and distance to the net as seen from the camera."""
+
+    bearing_rad: float
+    distance_m: float | None
+    confidence: float
+
+
+# ---------------------------------------------------------------------------
+# Internal geometry helpers
+# ---------------------------------------------------------------------------
+
+def _hough_segments(
+    frame: np.ndarray,
+    min_len_fraction: float = 0.06,
+) -> list[tuple[float, float, float, float]]:
+    """Return Hough line segments from a BGR frame (white-line mask + Canny)."""
+    h, w = frame.shape[:2]
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    white = cv2.inRange(
+        hsv,
+        np.array([0, 0, 140], dtype=np.uint8),
+        np.array([179, 90, 255], dtype=np.uint8),
+    )
+    white = cv2.morphologyEx(white, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    edges = cv2.Canny(white, 40, 120)
+    min_len = max(20, int(w * min_len_fraction))
+    lines = cv2.HoughLinesP(
+        edges, 1, np.pi / 180.0, threshold=30,
+        minLineLength=min_len, maxLineGap=14,
+    )
+    if lines is None:
+        return []
+    return [(float(x1), float(y1), float(x2), float(y2)) for x1, y1, x2, y2 in lines[:, 0, :]]
+
+
+def _segment_angle(x1: float, y1: float, x2: float, y2: float) -> float:
+    return math.atan2(y2 - y1, x2 - x1)
+
+
+def _line_intersection(
+    x1: float, y1: float, x2: float, y2: float,
+    x3: float, y3: float, x4: float, y4: float,
+) -> tuple[float, float] | None:
+    """Return intersection point of two infinite lines, or None if parallel."""
+    dx1, dy1 = x2 - x1, y2 - y1
+    dx2, dy2 = x4 - x3, y4 - y3
+    denom = dx1 * dy2 - dy1 * dx2
+    if abs(denom) < 1e-6:
+        return None
+    t = ((x3 - x1) * dy2 - (y3 - y1) * dx2) / denom
+    return x1 + t * dx1, y1 + t * dy1
+
+
+def _is_l_intersection(
+    ix: float, iy: float,
+    segs_h: list[tuple[float, float, float, float]],
+    segs_v: list[tuple[float, float, float, float]],
+    frame_w: int,
+    frame_h: int,
+    extend_px: float = 12.0,
+) -> bool:
+    """Return True only if intersection (ix,iy) is an L (exactly 2 quadrants
+    have line coverage), not a T (3) or + (4).
+
+    Strategy: for each of the 4 quadrants around the intersection, check
+    whether any segment endpoint falls within `extend_px` in that quadrant.
+    L-corners have exactly 2 *adjacent* occupied quadrants.
+    """
+    if not (0 <= ix < frame_w and 0 <= iy < frame_h):
+        return False
+
+    # Quadrant occupancy: 0=top-right, 1=bottom-right, 2=bottom-left, 3=top-left
+    occupied = [False, False, False, False]
+
+    def _check(px: float, py: float) -> None:
+        dx, dy = px - ix, py - iy
+        if abs(dx) < 2 and abs(dy) < 2:
+            return
+        if dx >= 0 and dy <= 0:
+            occupied[0] = True
+        elif dx >= 0 and dy > 0:
+            occupied[1] = True
+        elif dx < 0 and dy > 0:
+            occupied[2] = True
+        else:
+            occupied[3] = True
+
+    for x1, y1, x2, y2 in segs_h + segs_v:
+        _check(x1, y1)
+        _check(x2, y2)
+        # Also sample midpoint for long segments
+        _check((x1 + x2) * 0.5, (y1 + y2) * 0.5)
+
+    n_occupied = sum(occupied)
+    if n_occupied != 2:
+        return False
+    # Ensure the two occupied quadrants are adjacent (not diagonal)
+    for i in range(4):
+        if occupied[i] and occupied[(i + 1) % 4]:
+            return True
+    return False
+
+
+def _depth_at_pixel(
+    depth_frame: np.ndarray,
+    px: int,
+    py: int,
+    frame_w: int,
+    frame_h: int,
+    depth_min_m: float = 0.1,
+    depth_max_m: float = 12.0,
+    roi_px: int = 8,
+) -> float | None:
+    """Sample the OAK-D depth frame around (px, py) and return median in metres."""
+    dh, dw = depth_frame.shape[:2]
+    # Scale pixel coords from RGB frame to depth frame dimensions
+    sx = dw / max(1, frame_w)
+    sy = dh / max(1, frame_h)
+    cx = int(round(px * sx))
+    cy = int(round(py * sy))
+    x0, x1 = max(0, cx - roi_px), min(dw, cx + roi_px + 1)
+    y0, y1 = max(0, cy - roi_px), min(dh, cy + roi_px + 1)
+    roi = depth_frame[y0:y1, x0:x1]
+    valid = roi[np.isfinite(roi) & (roi >= depth_min_m) & (roi <= depth_max_m)]
+    if valid.size == 0:
+        return None
+    return float(np.median(valid))
+
+
+# ---------------------------------------------------------------------------
+# Public detection functions
+# ---------------------------------------------------------------------------
+
+def detect_court_corner(
+    frame: np.ndarray,
+    depth_frame: np.ndarray | None = None,
+    camera_fov_rad: float = math.radians(69.0),
+    depth_min_m: float = 0.1,
+    depth_max_m: float = 12.0,
+) -> CourtCornerDetection | None:
+    """Detect the most prominent L-intersection of court lines in *frame*.
+
+    Uses white-line Hough segments; classifies intersections as L (corner),
+    T (service-line junction), or + (centre) by quadrant occupancy, and
+    returns only L-type intersections.
+
+    bearing_rad: positive = right of camera centre.
+    distance_m:  OAK-D depth at the intersection pixel; None if unavailable.
+    """
+    h, w = frame.shape[:2]
+    if h < 60 or w < 60:
+        return None
+
+    segs = _hough_segments(frame)
+    if len(segs) < 2:
+        return None
+
+    # Separate horizontal and vertical segments (±35° tolerance)
+    segs_h: list[tuple[float, float, float, float]] = []
+    segs_v: list[tuple[float, float, float, float]] = []
+    for seg in segs:
+        angle = abs(_segment_angle(*seg))
+        h_err = min(angle, abs(angle - math.pi))  # closeness to 0° / 180°
+        v_err = abs(angle - math.pi / 2)           # closeness to 90°
+        if h_err < math.radians(35):
+            segs_h.append(seg)
+        elif v_err < math.radians(35):
+            segs_v.append(seg)
+
+    if not segs_h or not segs_v:
+        return None
+
+    best: CourtCornerDetection | None = None
+    best_score = 0.0
+
+    for sh in segs_h:
+        lh = math.hypot(sh[2] - sh[0], sh[3] - sh[1])
+        for sv in segs_v:
+            lv = math.hypot(sv[2] - sv[0], sv[3] - sv[1])
+            pt = _line_intersection(*sh, *sv)
+            if pt is None:
+                continue
+            ix, iy = pt
+            if not (0 <= ix < w and 0 <= iy < h):
+                continue
+            if not _is_l_intersection(ix, iy, segs_h, segs_v, w, h):
+                continue
+
+            # Confidence: normalised product of line lengths
+            score = min(1.0, (lh / w) * (lv / h) * 20.0)
+            if score <= best_score:
+                continue
+
+            px_int, py_int = int(round(ix)), int(round(iy))
+            dist = (
+                _depth_at_pixel(depth_frame, px_int, py_int, w, h, depth_min_m, depth_max_m)
+                if depth_frame is not None and depth_frame.size > 0
+                else None
+            )
+            normalised_x = (ix - w * 0.5) / (w * 0.5)
+            bearing = math.atan(normalised_x * math.tan(camera_fov_rad / 2))
+
+            best = CourtCornerDetection(
+                pixel_x=px_int,
+                pixel_y=py_int,
+                bearing_rad=float(bearing),
+                distance_m=dist,
+                confidence=float(score),
+            )
+            best_score = score
+
+    return best
+
+
+def detect_net_pose(
+    frame: np.ndarray,
+    depth_frame: np.ndarray | None = None,
+    camera_fov_rad: float = math.radians(69.0),
+    depth_min_m: float = 0.1,
+    depth_max_m: float = 10.0,
+) -> NetPose | None:
+    """Return bearing + depth to the net when it fills the frame.
+
+    Uses detect_obstacle_class() for label; estimates bearing from the
+    horizontal centre-of-mass of the detected grid pattern, and distance
+    from the centre depth sector of the OAK-D depth frame.
+    """
+    obstacle = detect_obstacle_class(frame)
+    if obstacle is None or obstacle.label != "net":
+        return None
+
+    h, w = frame.shape[:2]
+
+    # Bearing: horizontal CoM of the net grid edges
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 45, 130)
+    h_pattern = cv2.morphologyEx(
+        edges, cv2.MORPH_OPEN,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (18, 1)),
+    )
+    v_pattern = cv2.morphologyEx(
+        edges, cv2.MORPH_OPEN,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (1, 10)),
+    )
+    combined = cv2.bitwise_or(h_pattern, v_pattern)
+    ys, xs = np.nonzero(combined)
+    if xs.size > 0:
+        com_x = float(np.mean(xs))
+        normalised_x = (com_x - w * 0.5) / (w * 0.5)
+    else:
+        normalised_x = 0.0
+    bearing = math.atan(normalised_x * math.tan(camera_fov_rad / 2))
+
+    # Distance: centre column of depth frame, lower-mid rows
+    distance: float | None = None
+    if depth_frame is not None and depth_frame.size > 0:
+        dh, dw = depth_frame.shape[:2]
+        x0, x1 = dw // 3, (2 * dw) // 3
+        y0, y1 = int(dh * 0.3), int(dh * 0.75)
+        roi = depth_frame[y0:y1, x0:x1]
+        valid = roi[np.isfinite(roi) & (roi >= depth_min_m) & (roi <= depth_max_m)]
+        if valid.size >= 4:
+            distance = float(np.percentile(valid, 20))
+
+    return NetPose(
+        bearing_rad=float(bearing),
+        distance_m=distance,
+        confidence=obstacle.confidence,
+    )
 
 
 def build_survey_vision(

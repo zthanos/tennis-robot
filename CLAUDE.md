@@ -17,8 +17,12 @@ New implementation work should start from `docs/architecture-implementation-guid
 ```bash
 # From WSL shell:
 docker compose --profile gazebo up gazebo
+# With RViz visualization (map, TF, /scan, robot model):
+docker compose --profile gazebo up gazebo rviz
 # Or with survey recorder:
 docker compose --profile gazebo-rec up gazebo-rec
+# Motion-chain diagnosis (sim must be running; writes runtime/motion_diag_*/):
+docker compose --profile gazebo exec gazebo bash /workspace/scripts/diagnose_motion.sh
 ```
 
 ### Route simulator (no sim needed)

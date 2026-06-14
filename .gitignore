@@ -10,3 +10,10 @@ __pycache__/
 .ruff_cache/
 runtime/
 controllers/ball_detector/runtime.ini
+
+# ROS 2 / colcon generated artifacts. Source of truth stays under ros2_ws/src/.
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+ros2_ws/src/tennis_robot/build/
+ros2_ws/src/tennis_robot/*.egg-info/

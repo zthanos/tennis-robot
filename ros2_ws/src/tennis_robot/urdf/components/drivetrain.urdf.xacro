@@ -21,9 +21,15 @@
       <dynamics damping="0.001"/>
     </joint>
     <gazebo reference="${side}_wheel_link">
-      <mu1>1.0</mu1>
-      <mu2>0.5</mu2>
-      <fdir1>1 0 0</fdir1>
+      <!-- VER=21: brute-force friction test — mu=5.0 isotropic, no fdir1.
+           VER=20 (mu=1.5) improved rotation from 48° to 73° out of 275° (~73% slip).
+           If mu=5.0 with court mu=2.0 still gives ~73% slip, the URDF <gazebo>
+           friction tags are NOT reaching the physics engine (DART ignoring them)
+           and we need the bullet-featherstone engine or direct SDF injection. -->
+      <mu1>5.0</mu1>
+      <mu2>5.0</mu2>
+      <slip1>0.0</slip1>
+      <slip2>0.0</slip2>
     </gazebo>
   </xacro:macro>
 
@@ -76,8 +82,7 @@
 
     <gazebo reference="${name}_caster_wheel_link">
       <mu1>0.8</mu1>
-      <mu2>0.05</mu2>
-      <fdir1>1 0 0</fdir1>
+      <mu2>1.5</mu2>
     </gazebo>
   </xacro:macro>
 

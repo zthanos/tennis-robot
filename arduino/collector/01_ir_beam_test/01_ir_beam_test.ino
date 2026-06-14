@@ -8,15 +8,15 @@
     Receiver black -> GND
 
   Adafruit break beam receivers are open-collector:
-    LOW  = beam unbroken
-    HIGH = beam broken
+    LOW  = beam broken
+    HIGH = beam unbroken
 */
 
 const byte IR_ENTRY_PIN = 9;
 const byte IR_EXIT_PIN = 10;
 
 bool beamBroken(byte pin) {
-  return digitalRead(pin) == HIGH;
+  return digitalRead(pin) == LOW;
 }
 
 void printBeamState(const char *name, byte pin) {

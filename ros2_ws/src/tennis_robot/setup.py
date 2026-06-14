@@ -14,7 +14,7 @@ setup(
         (f"share/{package_name}/launch", glob("launch/*.launch.py")),
         (f"share/{package_name}/urdf", glob("urdf/*.xacro")),
         (f"share/{package_name}/urdf/components", glob("urdf/components/*.xacro")),
-        (f"share/{package_name}/config", glob("config/*.yaml")),
+        (f"share/{package_name}/config", glob("config/*.yaml") + glob("config/*.xml")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -31,6 +31,8 @@ setup(
             "gazebo_extras_node = tennis_robot.gazebo_extras_node:main",
             "sensor_snapshot_node = tennis_robot.sensor_snapshot_node:main",
             "drive_actuator_node = tennis_robot.drive_actuator_node:main",
+            "court_landmarks_node = tennis_robot.court_landmarks_node:main",
+            "court_survey_mission_node = tennis_robot.court_survey_mission_node:main",
         ],
     },
 )

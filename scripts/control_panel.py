@@ -267,18 +267,14 @@ HTML = """<!doctype html>
     .command[value="idle"] { background: var(--danger); color: #1b0604; }
     .command:disabled { opacity: 0.32; cursor: not-allowed; transform: none !important; filter: none !important; }
     .dpad {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(3, 52px);
       gap: 4px;
       margin-bottom: 14px;
+      justify-content: center;
     }
-    .dpad-middle {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .dpad-up, .dpad-down, .dpad-left, .dpad-right, .dpad-center {
+    .dpad .command {
       width: 52px;
       height: 52px;
       padding: 0;
@@ -292,8 +288,6 @@ HTML = """<!doctype html>
       font-weight: 800;
       background: #4f6e8a;
       color: #eaf2ff;
-      width: 52px;
-      height: 52px;
     }
     .mission-btns {
       display: flex;
@@ -543,13 +537,15 @@ HTML = """<!doctype html>
             <h3>Mode Command</h3>
             <form id="commandForm" class="controls">
               <div class="dpad">
+                <button class="command dpad-ul" type="submit" name="mode" value="move_forward_left">&#8598;</button>
                 <button class="command dpad-up" type="submit" name="mode" value="move_forward">&#9650;</button>
-                <div class="dpad-middle">
-                  <button class="command dpad-left" type="submit" name="mode" value="move_left">&#9664;</button>
-                  <button class="command dpad-center" type="submit" name="mode" value="turn_180">180°</button>
-                  <button class="command dpad-right" type="submit" name="mode" value="move_right">&#9654;</button>
-                </div>
+                <button class="command dpad-ur" type="submit" name="mode" value="move_forward_right">&#8599;</button>
+                <button class="command dpad-left" type="submit" name="mode" value="move_left">&#9664;</button>
+                <button class="command dpad-center" type="submit" name="mode" value="turn_180">180°</button>
+                <button class="command dpad-right" type="submit" name="mode" value="move_right">&#9654;</button>
+                <button class="command dpad-dl" type="submit" name="mode" value="move_backward_left">&#8601;</button>
                 <button class="command dpad-down" type="submit" name="mode" value="move_backward">&#9660;</button>
+                <button class="command dpad-dr" type="submit" name="mode" value="move_backward_right">&#8600;</button>
               </div>
               <div class="mission-btns">
                 <button class="command" type="submit" name="mode" value="map_court">Map Court</button>
@@ -945,7 +941,8 @@ HTML = """<!doctype html>
       }
     }
 
-    const DPAD_MODES = new Set(["move_forward", "move_backward", "move_left", "move_right"]);
+    const DPAD_MODES = new Set(["move_forward", "move_backward", "move_left", "move_right",
+      "move_forward_left", "move_forward_right", "move_backward_left", "move_backward_right"]);
     const AUTONOMOUS_MODES = new Set(["map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"]);
 
     function updateCommandButtons() {

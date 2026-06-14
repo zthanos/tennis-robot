@@ -14,11 +14,17 @@ DEFAULT_DB_PATH = ROOT / "runtime" / "tennis_robot.db"
 _LEGACY_VENDORS_JSON = ROOT / "runtime" / "vendors.json"
 
 def _canonical_fence_bounds(canonical: dict) -> dict:
-    corners = canonical["corners"]
+    """Fence bounds from a canonical fence model.
+
+    V2 open-loop surveys have no canonical_fence_model/corners — return empty
+    bounds instead of raising so import_survey (and the panel's diagnostics
+    endpoint) keep working with NULL fence columns.
+    """
+    corners = canonical.get("corners") or {}
     xs = [float(corner["x_m"]) for corner in corners.values()]
     ys = [float(corner["y_m"]) for corner in corners.values()]
     if not xs or not ys:
-        raise KeyError("canonical_fence_model.corners")
+        return {}
     return {
         "west_x": min(xs),
         "east_x": max(xs),
@@ -102,6 +108,14 @@ class TennisRobotDB:
 
     def __init__(self, path: Path = DEFAULT_DB_PATH) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
+        # A 0-byte file (truncated reset / interrupted write) is not a valid
+        # DuckDB database and connect() refuses it — remove it and any stale
+        # WAL so a fresh database is created instead of crashing the panel.
+        if path.exists() and path.stat().st_size == 0:
+            path.unlink(missing_ok=True)
+            wal = path.with_name(path.name + ".wal")
+            if wal.exists():
+                wal.unlink(missing_ok=True)
         self._conn = duckdb.connect(str(path))
         self._lock = threading.Lock()
         self._init_schema()

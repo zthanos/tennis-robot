@@ -10,7 +10,8 @@ $models = @(
   "motor_pod",
   "drive_wheel_direct_hub",
   "stabilizer_foot",
-  "handle_socket"
+  "handle_socket",
+  "collector_breadboard_base"
 )
 
 foreach ($model in $models) {
