@@ -197,6 +197,9 @@ class SensorSnapshotNode(Node):
             "format": "lidar-bmp",
             "min_range_m": min_range,
             "max_range_m": max_range,
+            "angle_min_rad": float(msg.angle_min),
+            "angle_max_rad": float(msg.angle_max),
+            "angle_increment_rad": float(msg.angle_increment),
             "front_range_m": lidar_front_range_m(
                 ranges, LIDAR_FRONT_INDEX_RATIO, LIDAR_FRONT_MIN_OBSTACLE_RANGE_M
             ),

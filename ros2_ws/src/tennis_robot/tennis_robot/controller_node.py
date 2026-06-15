@@ -261,7 +261,7 @@ class ControllerNode(Node):
         )
 
         if effective_mode == "map_court":
-            command = self._survey_command_for_mode(effective_mode)
+            command = self._external_map_court_command(effective_mode)
         elif effective_mode == "search":
             command = self._search_command_for_mode(
                 effective_mode, self._same_side_search_observation(control_observation)
@@ -290,6 +290,17 @@ class ControllerNode(Node):
         self._apply_command(command)
         self._publish_status(command, control_observation)
         self.loop_count += 1
+
+    def _external_map_court_command(self, mode: str) -> ConceptACommand:
+        if self._on_mode_changed(mode):
+            self.get_logger().info(
+                "map_court delegated to court_survey.launch.py; controller drive output idle"
+            )
+        return ConceptACommand(
+            state=CollectorState.SURVEY,
+            base=BaseCommand(0.0, 0.0),
+            collector=CollectorCommand(0.0, False),
+        )
 
     # ── mode orchestration (logic unchanged from BallDetectorController) ───────
 
