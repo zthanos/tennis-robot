@@ -20,3 +20,10 @@ class SurveyVision:
     valid_count: int = 0
     corner_detected: bool = False
     corner_confidence: float = 0.0
+    # Classified court-line junction from the camera (L=baseline corner,
+    # T=service-line junction, +=centre). Enables along-court localisation
+    # when the net is beyond camera depth range.
+    junction_type: str | None = None
+    junction_distance_m: float | None = None
+    junction_bearing_rad: float | None = None
+    junction_confidence: float = 0.0

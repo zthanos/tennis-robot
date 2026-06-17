@@ -119,6 +119,16 @@ class LidarSurveyConfig:
     pattern_length_tolerance_m: float = 3.0
     # Doubles detection
     doubles_alley_m: float = 1.37
+    # ── Live occupancy map (real LiDAR points, sim + real world) ──────────────
+    # These only feed the Sensor Views overlay; they never affect the FSM.
+    map_enabled: bool = True
+    map_voxel_m: float = 0.10          # downsample grid; one point kept per cell
+    map_max_voxels: int = 6000         # hard cap on accumulated cells (memory bound)
+    map_sample_max: int = 1500         # max points serialized into telemetry JSON
+    map_publish_every: int = 5         # rebuild serialized sample every N ticks
+    map_lidar_offset_x_m: float = 0.0  # LiDAR mount offset in base frame (forward+)
+    map_lidar_offset_y_m: float = 0.0  # LiDAR mount offset in base frame (left+)
+    map_sensor_frame: str = "laser"    # label only, shown in the panel
     output_file: Path = DEFAULT_BOUNDARY_FILE
 
     @classmethod
@@ -158,6 +168,14 @@ class LidarSurveyConfig:
             turn_timeout_s=_env_float("SURVEY_TURN_TIMEOUT_S", d.turn_timeout_s),
             turn_settle_ticks=int(os.getenv("SURVEY_TURN_SETTLE_TICKS", str(d.turn_settle_ticks))),
             guard_reject_limit=int(os.getenv("SURVEY_GUARD_REJECT_LIMIT", str(d.guard_reject_limit))),
+            map_enabled=os.getenv("SURVEY_MAP_ENABLED", "1" if d.map_enabled else "0") not in ("0", "false", "False"),
+            map_voxel_m=_env_float("SURVEY_MAP_VOXEL_M", d.map_voxel_m),
+            map_max_voxels=int(os.getenv("SURVEY_MAP_MAX_VOXELS", str(d.map_max_voxels))),
+            map_sample_max=int(os.getenv("SURVEY_MAP_SAMPLE_MAX", str(d.map_sample_max))),
+            map_publish_every=int(os.getenv("SURVEY_MAP_PUBLISH_EVERY", str(d.map_publish_every))),
+            map_lidar_offset_x_m=_env_float("SURVEY_MAP_LIDAR_OFFSET_X_M", d.map_lidar_offset_x_m),
+            map_lidar_offset_y_m=_env_float("SURVEY_MAP_LIDAR_OFFSET_Y_M", d.map_lidar_offset_y_m),
+            map_sensor_frame=os.getenv("SURVEY_MAP_SENSOR_FRAME", d.map_sensor_frame),
             output_file=Path(os.getenv("SURVEY_OUTPUT_FILE", str(d.output_file))),
         )
 
@@ -307,6 +325,14 @@ class Ros2LidarCourtSurvey:
         self._guard_reject_count: int = 0
         self._last_corner_reject_reason: str | None = None
 
+        # ── Live occupancy map (isolated from the FSM) ───────────────────────────
+        # Voxel grid of world-frame LiDAR hits. key=(ix,iy) -> (x_m, y_m).
+        self._map_voxels: dict[tuple[int, int], tuple[float, float]] = {}
+        self._map_sample_cache: list[dict] = []
+        self._map_extents_cache: dict | None = None
+        self._map_full_warned: bool = False
+        self._map_tick: int = 0
+
     @classmethod
     def from_env(cls) -> "Ros2LidarCourtSurvey":
         return cls(LidarSurveyConfig.from_env())
@@ -349,6 +375,12 @@ class Ros2LidarCourtSurvey:
                 else 2.0 * math.pi / max(1, n)
             )
             self._last_scan_ranges = lidar_ranges
+            # Isolated occupancy mapping — uses the same scan but never the FSM.
+            if self.config.map_enabled:
+                self._accumulate_map_points(
+                    x_m, y_m, yaw_rad, lidar_ranges,
+                    self._lidar_angle_min, self._lidar_angle_increment,
+                )
 
         self._last_front_range_m = self._front_range(self._last_scan_ranges or None)
 
@@ -356,6 +388,119 @@ class Ros2LidarCourtSurvey:
         return self._cmd(self._apply_safety(command))
 
     # ── Telemetry ──────────────────────────────────────────────────────────────
+
+    # ── Live occupancy map (isolated from the FSM) ──────────────────────────────
+
+    def _accumulate_map_points(
+        self,
+        x_m: float,
+        y_m: float,
+        yaw_rad: float,
+        ranges: list[float],
+        angle_min: float,
+        angle_increment: float,
+    ) -> None:
+        """Project the current scan into world frame and voxel-accumulate it.
+
+        Read-only with respect to survey state: it touches only the map buffers.
+        Identical math to the FSM's scan interpretation (sensor +x = forward),
+        so it behaves the same in simulation and on the physical RPLIDAR — the
+        live angle_min/increment from the actual scan drive the projection.
+        """
+        cfg = self.config
+        if not ranges or angle_increment in (None, 0.0):
+            return
+        voxels = self._map_voxels
+        voxel = cfg.map_voxel_m if cfg.map_voxel_m > 1e-3 else 0.10
+        cap = cfg.map_max_voxels
+        cos_y = math.cos(yaw_rad)
+        sin_y = math.sin(yaw_rad)
+        off_x = cfg.map_lidar_offset_x_m
+        off_y = cfg.map_lidar_offset_y_m
+        rmin = cfg.lidar_min_range_m
+        rmax = cfg.lidar_max_range_m
+        full = len(voxels) >= cap
+
+        for i, r in enumerate(ranges):
+            if not (isinstance(r, (int, float)) and math.isfinite(r)):
+                continue
+            if r < rmin or r > rmax:
+                continue
+            angle = angle_min + i * angle_increment
+            # Point in sensor frame, then mount offset, both in base frame.
+            sx = r * math.cos(angle) + off_x
+            sy = r * math.sin(angle) + off_y
+            # Rotate by robot yaw and translate to world.
+            wx = x_m + sx * cos_y - sy * sin_y
+            wy = y_m + sx * sin_y + sy * cos_y
+            key = (int(math.floor(wx / voxel)), int(math.floor(wy / voxel)))
+            if key in voxels:
+                continue
+            if full:
+                if not self._map_full_warned:
+                    self._map_full_warned = True
+                continue
+            voxels[key] = (wx, wy)
+            if len(voxels) >= cap:
+                full = True
+
+        self._map_tick += 1
+        if self._map_tick % max(1, cfg.map_publish_every) == 0:
+            self._rebuild_map_cache()
+
+    def _rebuild_map_cache(self) -> None:
+        """Rebuild the serialized point sample + world extents (throttled)."""
+        pts = list(self._map_voxels.values())
+        if not pts:
+            self._map_sample_cache = []
+            self._map_extents_cache = None
+            return
+        sample_max = max(1, self.config.map_sample_max)
+        if len(pts) > sample_max:
+            step = len(pts) / sample_max
+            pts_sample = [pts[int(k * step)] for k in range(sample_max)]
+        else:
+            pts_sample = pts
+        self._map_sample_cache = [
+            {"x_m": round(px, 3), "y_m": round(py, 3)} for px, py in pts_sample
+        ]
+        xs = [pt[0] for pt in pts]
+        ys = [pt[1] for pt in pts]
+        self._map_extents_cache = {
+            "min_x_m": round(min(xs), 3),
+            "max_x_m": round(max(xs), 3),
+            "min_y_m": round(min(ys), 3),
+            "max_y_m": round(max(ys), 3),
+        }
+
+    def _scan_clearance(self, center_rad: float, half_rad: float = math.radians(15.0)) -> float | None:
+        """Nearest finite range within a sector of the latest scan (display only)."""
+        ranges = self._last_scan_ranges
+        if not ranges:
+            return None
+        amin = self._lidar_angle_min
+        ainc = self._lidar_angle_increment
+        best = math.inf
+        for i, r in enumerate(ranges):
+            if not (isinstance(r, (int, float)) and math.isfinite(r)):
+                continue
+            if r < self.config.lidar_min_range_m or r > self.config.lidar_max_range_m:
+                continue
+            angle = amin + i * ainc
+            # Circular angular distance — correct even across the ±pi seam (rear).
+            delta = abs((angle - center_rad + math.pi) % (2.0 * math.pi) - math.pi)
+            if delta <= half_rad and r < best:
+                best = r
+        return None if math.isinf(best) else round(best, 3)
+
+    def _scan_coverage(self) -> dict:
+        return {
+            "world_extents": self._map_extents_cache,
+            "front_m": self._scan_clearance(0.0),
+            "rear_m": self._scan_clearance(math.pi),
+            "left_m": self._scan_clearance(math.pi / 2),
+            "right_m": self._scan_clearance(-math.pi / 2),
+        }
 
     def telemetry(self) -> dict:
         elapsed = 0.0 if self._started_at is None else time.time() - self._started_at
@@ -400,6 +545,11 @@ class Ros2LidarCourtSurvey:
             "survey_route": self._survey_route_points(),
             "survey_navigation_point_count": len(self._survey_navigation_points),
             "survey_pattern": self._survey_pattern_status(),
+            # Live occupancy map for the Sensor Views overlay (real LiDAR hits).
+            "map_points": self._map_sample_cache,
+            "map_point_count": len(self._map_voxels),
+            "scan_coverage": self._scan_coverage(),
+            "sensor_frame": self.config.map_sensor_frame,
         }
 
     # ── State machine ──────────────────────────────────────────────────────────

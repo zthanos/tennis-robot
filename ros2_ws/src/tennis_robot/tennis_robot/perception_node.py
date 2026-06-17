@@ -170,6 +170,10 @@ class PerceptionNode(Node):
             "right_m": sv.right_m,
             "valid_count": sv.valid_count,
             "obstacle_class": sv.obstacle_class,
+            "junction_type": sv.junction_type,
+            "junction_distance_m": sv.junction_distance_m,
+            "junction_bearing_rad": sv.junction_bearing_rad,
+            "junction_confidence": sv.junction_confidence,
         }
         msg = String()
         msg.data = json.dumps(payload)

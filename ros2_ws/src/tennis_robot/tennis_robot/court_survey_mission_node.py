@@ -74,6 +74,15 @@ FENCE_STOP_M: float = float(os.getenv("COURT_SURVEY_FENCE_STOP_M", "0.40"))
 DRIVE_FORWARD_M: float = float(os.getenv("COURT_SURVEY_DRIVE_FORWARD_M", "8.0"))
 STATE_TIMEOUT_S: float = float(os.getenv("COURT_SURVEY_STATE_TIMEOUT_S", "180.0"))
 SECOND_HALF_RETURN_TIMEOUT_S: float = float(os.getenv("COURT_SURVEY_SECOND_HALF_RETURN_TIMEOUT_S", "420.0"))
+
+# ── Live occupancy map (real LiDAR points in the map frame, for the panel) ──────
+COURT_SURVEY_LIVE_FILE = COURT_BOUNDARY_FILE.parent / "court_survey_live.json"
+MAP_VOXEL_M: float = float(os.getenv("COURT_SURVEY_MAP_VOXEL_M", "0.10"))
+MAP_MAX_VOXELS: int = int(os.getenv("COURT_SURVEY_MAP_MAX_VOXELS", "8000"))
+MAP_SAMPLE_MAX: int = int(os.getenv("COURT_SURVEY_MAP_SAMPLE_MAX", "1500"))
+MAP_WRITE_EVERY: int = int(os.getenv("COURT_SURVEY_MAP_WRITE_EVERY", "2"))
+MAP_MIN_RANGE_M: float = float(os.getenv("COURT_SURVEY_MAP_MIN_RANGE_M", "0.20"))
+MAP_MAX_RANGE_M: float = float(os.getenv("COURT_SURVEY_MAP_MAX_RANGE_M", "15.0"))
 LANDMARK_MIN_CONF: float = float(os.getenv("COURT_SURVEY_LANDMARK_MIN_CONF", "0.25"))
 BT_XML: str = os.getenv("COURT_SURVEY_BT_XML", "")
 
@@ -105,6 +114,7 @@ SURVEY_TURN_MAX_RAD_S: float = float(os.getenv("COURT_SURVEY_TURN_MAX_RAD_S", "0
 SURVEY_TURN_MIN_RAD_S: float = float(os.getenv("COURT_SURVEY_TURN_MIN_RAD_S", "0.14"))
 CROSS_NET_LINEAR_M_S: float = float(os.getenv("COURT_SURVEY_CROSS_NET_LINEAR_M_S", "0.25"))
 SURVEY_STRAIGHT_LINEAR_M_S: float = float(os.getenv("COURT_SURVEY_STRAIGHT_LINEAR_M_S", "0.30"))
+MAX_CROSS_TRACK_M: float = float(os.getenv("COURT_SURVEY_MAX_CROSS_TRACK_M", "1.50"))
 SURVEY_STRAIGHT_YAW_KP: float = float(os.getenv("COURT_SURVEY_STRAIGHT_YAW_KP", "1.2"))
 SURVEY_STRAIGHT_CROSSTRACK_KP: float = float(os.getenv("COURT_SURVEY_STRAIGHT_CROSSTRACK_KP", "0.25"))
 
@@ -188,7 +198,7 @@ class CourtSurveyMissionNode(Node):
         super().__init__("court_survey_mission_node")
 
         self._state = SurveyState.INIT
-        self._state_entered_at: float = time.time()
+        self._state_entered_at: float | None = None  # sim-time seconds (use_sim_time)
         self._last_event: str = "none"
         self._failure_reason: str | None = None
         self._navigation_points: list[dict] = []
@@ -204,6 +214,11 @@ class CourtSurveyMissionNode(Node):
         self._last_landmarks: dict[str, Any] = {}
         self._last_survey_vision: dict[str, Any] = {}
         self._last_scan_points: list[tuple[float, float, float]] = []
+        # Live occupancy map: voxel grid of world(map)-frame LiDAR hits.
+        self._map_voxels: dict[tuple[int, int], tuple[float, float]] = {}
+        self._scan_frame_id: str = ""
+        self._map_error: str | None = "no /scan received yet"
+        self._live_write_tick: int = 0
         self._scan_angle_min: float = -math.pi
         self._scan_angle_inc: float = math.radians(1.0)
         self._net_approach_start_x: float | None = None
@@ -286,6 +301,7 @@ class CourtSurveyMissionNode(Node):
             pass  # keep previous values until TF is available
 
     def _scan_cb(self, msg: LaserScan) -> None:
+        self._scan_frame_id = msg.header.frame_id
         self._scan_angle_min = float(msg.angle_min)
         self._scan_angle_inc = float(msg.angle_increment)
         ranges = list(msg.ranges)
@@ -299,6 +315,79 @@ class CourtSurveyMissionNode(Node):
             angle = self._scan_angle_min + i * self._scan_angle_inc
             points.append((float(r) * math.cos(angle), float(r) * math.sin(angle), float(r)))
         self._last_scan_points = points
+
+    def _accumulate_and_write_live(self) -> None:
+        """Accumulate live LiDAR points in the MAP frame and write the live file.
+
+        Clean + fail-loud: points are transformed through the real TF
+        map -> <scan frame>. If that TF is unavailable we record an explicit
+        error and add NO points — never a stale frame, never fabricated data.
+        """
+        err: str | None = None
+        if not self._scan_frame_id:
+            err = "no /scan received yet"
+        else:
+            try:
+                t = self._tf_buffer.lookup_transform(
+                    "map", self._scan_frame_id, rclpy.time.Time(),
+                    rclpy.duration.Duration(seconds=0.05),
+                )
+            except (LookupException, ExtrapolationException, ConnectivityException) as exc:
+                err = f"no TF map->{self._scan_frame_id}: {type(exc).__name__}"
+                t = None
+            if t is not None:
+                tx = float(t.transform.translation.x)
+                ty = float(t.transform.translation.y)
+                tyaw = _yaw_from_quaternion(t.transform.rotation)
+                cy, sy = math.cos(tyaw), math.sin(tyaw)
+                voxels = self._map_voxels
+                full = len(voxels) >= MAP_MAX_VOXELS
+                for sx, syl, r in self._last_scan_points:
+                    if r < MAP_MIN_RANGE_M or r > MAP_MAX_RANGE_M:
+                        continue
+                    mx = tx + sx * cy - syl * sy
+                    my = ty + sx * sy + syl * cy
+                    key = (int(math.floor(mx / MAP_VOXEL_M)), int(math.floor(my / MAP_VOXEL_M)))
+                    if key in voxels:
+                        continue
+                    if full:
+                        break
+                    voxels[key] = (mx, my)
+                    if len(voxels) >= MAP_MAX_VOXELS:
+                        full = True
+        self._map_error = err
+        self._live_write_tick += 1
+        if self._live_write_tick % max(1, MAP_WRITE_EVERY) == 0:
+            self._write_live_status()
+
+    def _write_live_status(self) -> None:
+        pts = list(self._map_voxels.values())
+        if len(pts) > MAP_SAMPLE_MAX:
+            stride = len(pts) / MAP_SAMPLE_MAX
+            pts = [pts[int(k * stride)] for k in range(MAP_SAMPLE_MAX)]
+        payload = {
+            "updated_at": time.time(),
+            "running": True,
+            "state": self._state.value,
+            "error": self._map_error,
+            "sensor_frame": self._scan_frame_id or None,
+            "front_range_m": (None if math.isinf(self._front_range_m) else round(self._front_range_m, 3)),
+            "robot": {
+                "x_m": round(self._robot_x, 3),
+                "y_m": round(self._robot_y, 3),
+                "yaw_rad": round(self._robot_yaw, 4),
+            },
+            "map_points": [{"x_m": round(px, 3), "y_m": round(py, 3)} for px, py in pts],
+            "map_point_count": len(self._map_voxels),
+            "net": self._locked_net,
+            "navigation_points": list(self._navigation_points),
+        }
+        try:
+            tmp = COURT_SURVEY_LIVE_FILE.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(payload))
+            tmp.replace(COURT_SURVEY_LIVE_FILE)
+        except OSError as exc:
+            self.get_logger().warning(f"could not write live status: {exc}")
 
     def _landmarks_cb(self, msg: String) -> None:
         try:
@@ -322,6 +411,7 @@ class CourtSurveyMissionNode(Node):
 
         # Update robot pose from TF every tick (replaces /odom subscription)
         self._update_pose_from_tf()
+        self._accumulate_and_write_live()
 
         if self._state_timed_out():
             self._fail(f"{self._state.value}_timeout")
@@ -640,6 +730,19 @@ class CourtSurveyMissionNode(Node):
             if self._cross_net_start_x is None or self._cross_net_start_y is None:
                 self._cross_net_start_x = self._robot_x
                 self._cross_net_start_y = self._robot_y
+            # FAIL-LOUD: never push into the net. If anything is within the
+            # crossing distance straight ahead, the robot is NOT aligned with the
+            # net-post -> fence gap (it is facing the net body), so a straight
+            # crossing is impossible. Stop and report instead of slipping forward
+            # and advancing the FSM on drifted pose.
+            if self._front_range_m <= CROSS_NET_DISTANCE_M + 0.30:
+                self._publish_stop()
+                self._fail(
+                    f"cross_net_blocked: obstacle ahead at {self._front_range_m:.2f}m "
+                    f"(< {CROSS_NET_DISTANCE_M + 0.30:.2f}m) — robot not in net-post gap, "
+                    f"y must be beyond the post (|y|>5.65 m relative to net)"
+                )
+                return
             travelled = math.hypot(
                 self._robot_x - self._cross_net_start_x,
                 self._robot_y - self._cross_net_start_y,
@@ -963,6 +1066,18 @@ class CourtSurveyMissionNode(Node):
     ) -> None:
         self._cancel_nav()
         cross_track = self._cross_track_from_ref(ref_x, ref_y, heading)
+        # FAIL-LOUD: a locked-heading leg must stay on its line. If it drifts
+        # past MAX_CROSS_TRACK_M the robot has lost the perimeter (e.g. being
+        # pushed by the net) — stop and report instead of veering further and
+        # timing out.
+        if abs(cross_track) > MAX_CROSS_TRACK_M:
+            self._publish_stop()
+            self._fail(
+                f"{label}_lost_line: cross_track={cross_track:.2f}m "
+                f"(> {MAX_CROSS_TRACK_M:.2f}m) at travelled={travelled:.2f}m "
+                f"front={self._front_range_m:.2f}m"
+            )
+            return
         correction = max(-0.35, min(0.35, cross_track * SURVEY_STRAIGHT_CROSSTRACK_KP))
         target_yaw = heading - correction
         yaw_err = ((target_yaw - self._robot_yaw + math.pi) % (2 * math.pi)) - math.pi
@@ -1362,7 +1477,7 @@ class CourtSurveyMissionNode(Node):
         self.get_logger().info(f"survey: {self._state.value} â†’ {state.value} [{event}]")
         self._state = state
         self._last_event = event
-        self._state_entered_at = time.time()
+        self._state_entered_at = self._sim_now_s()
         self._state_start_x = self._robot_x
         self._state_start_y = self._robot_y
         self._nav_active = False
@@ -1382,9 +1497,22 @@ class CourtSurveyMissionNode(Node):
             self._second_half_return_start_y = None
         self._turn_target_yaw = None  # reset so each turn state computes fresh
 
+    def _sim_now_s(self) -> float:
+        """Current SIM time in seconds (node runs with use_sim_time=true).
+
+        State timeouts must use sim time, not wall-clock: under a low Gazebo
+        real-time factor a wall-clock timeout fires long before the robot has
+        had its full allotted *simulated* time to travel.
+        """
+        return self.get_clock().now().nanoseconds / 1e9
+
     def _state_timed_out(self) -> bool:
+        now = self._sim_now_s()
+        if self._state_entered_at is None:
+            self._state_entered_at = now
+            return False
         timeout_s = SECOND_HALF_RETURN_TIMEOUT_S if self._state == SurveyState.SECOND_HALF_RETURN else STATE_TIMEOUT_S
-        return time.time() - self._state_entered_at > timeout_s
+        return now - self._state_entered_at > timeout_s
 
     def _fail(self, reason: str) -> None:
         self._failure_reason = reason

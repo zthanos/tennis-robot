@@ -421,23 +421,24 @@ def _line_intersection(
     return x1 + t * dx1, y1 + t * dy1
 
 
-def _is_l_intersection(
+def _classify_junction(
     ix: float, iy: float,
     segs_h: list[tuple[float, float, float, float]],
     segs_v: list[tuple[float, float, float, float]],
     frame_w: int,
     frame_h: int,
     extend_px: float = 12.0,
-) -> bool:
-    """Return True only if intersection (ix,iy) is an L (exactly 2 quadrants
-    have line coverage), not a T (3) or + (4).
+) -> str | None:
+    """Classify a line intersection by quadrant occupancy.
 
-    Strategy: for each of the 4 quadrants around the intersection, check
-    whether any segment endpoint falls within `extend_px` in that quadrant.
-    L-corners have exactly 2 *adjacent* occupied quadrants.
+    Returns "L" (2 adjacent quadrants), "T" (3) or "+" (4); None for a
+    diagonal/ambiguous 2-quadrant case or out-of-frame point.
+
+    Court geometry: an inverted-T marks where the centre service line meets a
+    SERVICE line; an L marks a BASELINE/sideline corner; a + is the centre.
     """
     if not (0 <= ix < frame_w and 0 <= iy < frame_h):
-        return False
+        return None
 
     # Quadrant occupancy: 0=top-right, 1=bottom-right, 2=bottom-left, 3=top-left
     occupied = [False, False, False, False]
@@ -462,13 +463,27 @@ def _is_l_intersection(
         _check((x1 + x2) * 0.5, (y1 + y2) * 0.5)
 
     n_occupied = sum(occupied)
-    if n_occupied != 2:
-        return False
-    # Ensure the two occupied quadrants are adjacent (not diagonal)
-    for i in range(4):
-        if occupied[i] and occupied[(i + 1) % 4]:
-            return True
-    return False
+    if n_occupied == 4:
+        return "+"
+    if n_occupied == 3:
+        return "T"
+    if n_occupied == 2:
+        for i in range(4):
+            if occupied[i] and occupied[(i + 1) % 4]:
+                return "L"
+    return None
+
+
+def _is_l_intersection(
+    ix: float, iy: float,
+    segs_h: list[tuple[float, float, float, float]],
+    segs_v: list[tuple[float, float, float, float]],
+    frame_w: int,
+    frame_h: int,
+    extend_px: float = 12.0,
+) -> bool:
+    """Return True only for an L-corner (2 adjacent occupied quadrants)."""
+    return _classify_junction(ix, iy, segs_h, segs_v, frame_w, frame_h, extend_px) == "L"
 
 
 def _depth_at_pixel(
@@ -582,6 +597,92 @@ def detect_court_corner(
     return best
 
 
+@dataclass(frozen=True)
+class CourtJunctionDetection:
+    """A classified court-line junction (L = baseline corner, T = service-line
+    junction, + = centre). Used to localise the robot along the court length
+    even when the net is beyond camera depth range.
+
+    bearing_rad: positive = right of camera centre.
+    distance_m:  OAK-D depth at the junction pixel; None if unavailable.
+    """
+
+    junction_type: str   # "L" | "T" | "+"
+    bearing_rad: float
+    distance_m: float | None
+    confidence: float
+
+
+def detect_court_junction(
+    frame: np.ndarray,
+    depth_frame: np.ndarray | None = None,
+    camera_fov_rad: float = math.radians(69.0),
+    depth_min_m: float = 0.1,
+    depth_max_m: float = 12.0,
+) -> CourtJunctionDetection | None:
+    """Detect the most prominent court-line junction and classify it L/T/+.
+
+    Unlike detect_court_corner (which keeps only L-corners), this keeps the
+    best junction of any type so callers can tell a SERVICE line (T) from a
+    BASELINE corner (L).
+    """
+    h, w = frame.shape[:2]
+    if h < 60 or w < 60:
+        return None
+
+    segs = _hough_segments(frame)
+    if len(segs) < 2:
+        return None
+
+    segs_h: list[tuple[float, float, float, float]] = []
+    segs_v: list[tuple[float, float, float, float]] = []
+    for seg in segs:
+        angle = abs(_segment_angle(*seg))
+        h_err = min(angle, abs(angle - math.pi))
+        v_err = abs(angle - math.pi / 2)
+        if h_err < math.radians(35):
+            segs_h.append(seg)
+        elif v_err < math.radians(35):
+            segs_v.append(seg)
+    if not segs_h or not segs_v:
+        return None
+
+    best: CourtJunctionDetection | None = None
+    best_score = 0.0
+    for sh in segs_h:
+        lh = math.hypot(sh[2] - sh[0], sh[3] - sh[1])
+        for sv in segs_v:
+            lv = math.hypot(sv[2] - sv[0], sv[3] - sv[1])
+            pt = _line_intersection(*sh, *sv)
+            if pt is None:
+                continue
+            ix, iy = pt
+            if not (0 <= ix < w and 0 <= iy < h):
+                continue
+            jtype = _classify_junction(ix, iy, segs_h, segs_v, w, h)
+            if jtype is None:
+                continue
+            score = min(1.0, (lh / w) * (lv / h) * 20.0)
+            if score <= best_score:
+                continue
+            px_int, py_int = int(round(ix)), int(round(iy))
+            dist = (
+                _depth_at_pixel(depth_frame, px_int, py_int, w, h, depth_min_m, depth_max_m)
+                if depth_frame is not None and depth_frame.size > 0
+                else None
+            )
+            normalised_x = (ix - w * 0.5) / (w * 0.5)
+            bearing = math.atan(normalised_x * math.tan(camera_fov_rad / 2))
+            best = CourtJunctionDetection(
+                junction_type=jtype,
+                bearing_rad=float(bearing),
+                distance_m=dist,
+                confidence=float(score),
+            )
+            best_score = score
+    return best
+
+
 def detect_net_pose(
     frame: np.ndarray,
     depth_frame: np.ndarray | None = None,
@@ -653,6 +754,15 @@ def build_survey_vision(
     line = detect_court_line(frame) if frame is not None else None
     obstacle = detect_obstacle_class(frame) if frame is not None else None
     obstacle_class = obstacle.label if obstacle is not None else None
+    junction = detect_court_junction(
+        frame, depth_frame, depth_min_m=depth_min_range, depth_max_m=depth_max_range,
+    ) if frame is not None else None
+    junction_kwargs: dict = {
+        "junction_type": junction.junction_type if junction is not None else None,
+        "junction_distance_m": junction.distance_m if junction is not None else None,
+        "junction_bearing_rad": junction.bearing_rad if junction is not None else None,
+        "junction_confidence": junction.confidence if junction is not None else 0.0,
+    }
 
     line_kwargs: dict = {
         "line_detected": False,
@@ -673,11 +783,11 @@ def build_survey_vision(
         }
 
     if depth_frame is None or depth_frame.size == 0:
-        return SurveyVision(obstacle_class=obstacle_class, **line_kwargs)
+        return SurveyVision(obstacle_class=obstacle_class, **line_kwargs, **junction_kwargs)
 
     h, w = depth_frame.shape[:2]
     if h < 4 or w < 6:
-        return SurveyVision(obstacle_class=obstacle_class, **line_kwargs)
+        return SurveyVision(obstacle_class=obstacle_class, **line_kwargs, **junction_kwargs)
 
     y0, y1 = int(h * 0.56), int(h * 0.92)
 
@@ -699,4 +809,5 @@ def build_survey_vision(
         valid_count=ln + cn + rn,
         obstacle_class=obstacle_class,
         **line_kwargs,
+        **junction_kwargs,
     )

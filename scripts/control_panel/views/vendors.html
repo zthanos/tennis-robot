@@ -1,0 +1,64 @@
+        <div class="grid" style="gap:14px;">
+          <div class="panel" style="grid-column:1/-1;">
+            <h3>Active Session</h3>
+            <div id="activeSessionDisplay" style="margin-bottom:14px;padding:12px 16px;background:var(--panel-2);border-radius:7px;border:1px solid var(--line);font-size:14px;">
+              <span style="color:var(--muted);font-size:13px;">No active session — select a vendor and court below.</span>
+            </div>
+            <form id="activeSessionForm" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+              <div>
+                <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">Vendor</label>
+                <select id="activeVendorSelect" style="background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;min-width:200px;"></select>
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">Court / Γήπεδο</label>
+                <select id="activeCourtSelect" style="background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;min-width:200px;"></select>
+              </div>
+              <button type="submit" class="command">Set Active</button>
+            </form>
+          </div>
+          <div class="grid two" style="gap:14px;">
+            <div class="panel">
+              <h3>Vendors / Χώροι</h3>
+              <div id="vendorList" style="margin-bottom:16px;"></div>
+              <form id="addVendorForm">
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Name *</label>
+                  <input id="vendorName" type="text" required placeholder="π.χ. Athens Tennis Club" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Address</label>
+                  <input id="vendorAddress" type="text" placeholder="προαιρετικό" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                </div>
+                <button type="submit" class="command" style="background:var(--accent-2);color:#06101d;">Add Vendor</button>
+              </form>
+            </div>
+            <div class="panel">
+              <h3>Courts / Γήπεδα</h3>
+              <div id="courtList" style="margin-bottom:16px;"></div>
+              <form id="addCourtForm">
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Vendor *</label>
+                  <select id="courtVendorSelect" required style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;"><option value="">— select vendor —</option></select>
+                </div>
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Court Name *</label>
+                  <input id="courtName" type="text" required placeholder="π.χ. Γήπεδο 1" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                </div>
+                <div style="margin-bottom:10px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Surface</label>
+                  <select id="courtSurface" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                    <option value="clay">Clay (χώμα)</option>
+                    <option value="hard">Hard (σκληρό)</option>
+                    <option value="grass">Grass (χορτάρι)</option>
+                    <option value="carpet">Carpet (χαλί)</option>
+                  </select>
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;">Notes</label>
+                  <input id="courtNotes" type="text" placeholder="προαιρετικό" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:7px;font:inherit;">
+                </div>
+                <button type="submit" class="command" style="background:var(--accent-2);color:#06101d;">Add Court</button>
+              </form>
+            </div>
+          </div>
+        </div>

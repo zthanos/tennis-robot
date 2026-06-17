@@ -31,6 +31,7 @@ slam_toolbox:
     map_update_interval: 1.0
     resolution: 0.05
     max_laser_range: 12.0            # RPLIDAR C1 usable range
+    min_laser_range: 0.20            # match RPLIDAR C1 min; ignore invalid near-zero returns that destabilise scan-matching near the net
     minimum_time_between_scans: 0.2
     minimum_travel_distance: 0.3
     # 0.15 rad (~8.6°): more scans during turns so the matcher can track

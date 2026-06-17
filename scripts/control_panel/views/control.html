@@ -1,0 +1,41 @@
+        <div class="grid two">
+          <div class="panel">
+            <h3>Mode Command</h3>
+            <form id="commandForm" class="controls">
+              <div class="dpad">
+                <button class="command dpad-ul" type="submit" name="mode" value="move_forward_left">&#8598;</button>
+                <button class="command dpad-up" type="submit" name="mode" value="move_forward">&#9650;</button>
+                <button class="command dpad-ur" type="submit" name="mode" value="move_forward_right">&#8599;</button>
+                <button class="command dpad-left" type="submit" name="mode" value="move_left">&#9664;</button>
+                <button class="command dpad-center" type="submit" name="mode" value="turn_180">180°</button>
+                <button class="command dpad-right" type="submit" name="mode" value="move_right">&#9654;</button>
+                <button class="command dpad-dl" type="submit" name="mode" value="move_backward_left">&#8601;</button>
+                <button class="command dpad-down" type="submit" name="mode" value="move_backward">&#9660;</button>
+                <button class="command dpad-dr" type="submit" name="mode" value="move_backward_right">&#8600;</button>
+              </div>
+              <div class="mission-btns">
+                <button class="command" type="submit" name="mode" value="map_court">Map Court</button>
+                <button class="command" type="submit" name="mode" value="collect_pattern">Collect</button>
+                <button class="command" type="submit" name="mode" value="idle">Stop</button>
+              </div>
+            </form>
+            <div id="commandHint" style="font-size:12px;color:var(--warn);margin-top:8px;min-height:16px;"></div>
+          </div>
+          <div class="panel">
+            <h3>Selected Mode</h3>
+            <div id="selectedMode" class="kv"></div>
+          </div>
+        </div>
+        <div class="panel map-panel">
+          <h3>Collection Map</h3>
+          <canvas id="courtMap" class="court-map" width="1200" height="600"></canvas>
+          <div class="legend">
+            <span>Confirmed ball</span>
+            <span class="depth">OAK depth</span>
+            <span class="pending">Pending (building confidence)</span>
+            <span class="across">Across net</span>
+            <span class="route">Planned route</span>
+            <span class="robot">Robot</span>
+            <span class="fov">Camera FOV</span>
+          </div>
+        </div>

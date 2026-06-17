@@ -254,6 +254,13 @@ class PathHistoryStore:
 
 
 HTML_PATH = ROOT / "scripts" / "control_panel.html"
+# Split SPA assets (style.css, app.js, views/<name>.html) served under /static/.
+STATIC_DIR = ROOT / "scripts" / "control_panel"
+_STATIC_CONTENT_TYPES = {
+    ".css": "text/css; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".html": "text/html; charset=utf-8",
+}
 
 
 def _load_control_panel_html() -> str:
@@ -301,6 +308,9 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/surveys":
             self._send_json({"surveys": self.db.surveys()})
+            return
+        if path.startswith("/static/"):
+            self._send_static(path[len("/static/"):])
             return
         if path == "/favicon.ico":
             self.send_response(HTTPStatus.NO_CONTENT)
@@ -421,81 +431,34 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             pass
 
     def _read_live_court_survey(self) -> dict:
-        """Extract live Map Court discovery waypoints from the launch log.
+        """Read the live occupancy map written by court_survey_mission_node.
 
-        court_survey_mission_node only writes court_boundary.json when it exits.
-        For the Sensor Views checkpoint we also want partial discoveries while
-        the run is active, so we parse the recent log since the latest survey start.
+        Clean + fail-loud: the mission node writes runtime/court_survey_live.json
+        with real map-frame LiDAR points, robot pose, the locked net and waypoints.
+        If that file is missing or stale we return an explicit error and NO
+        fabricated waypoints/net, so a problem is visible rather than masked.
         """
-        log_path = ROOT / "runtime" / "court_survey_control_panel.log"
         status = self.survey_launch.status()
-        if not log_path.exists():
-            return {"running": status.get("running", False), "navigation_points": []}
-        try:
-            lines = log_path.read_text(errors="replace").splitlines()
-        except OSError:
-            return {"running": status.get("running", False), "navigation_points": []}
-
-        start_idx = 0
-        for i, line in enumerate(lines):
-            if "survey: init" in line and "find_first_obstacle" in line:
-                start_idx = i
-        waypoint_re = re.compile(
-            r"survey waypoint recorded: (?P<label>[a-zA-Z0-9_]+) "
-            r"\((?P<x>-?\d+(?:\.\d+)?), (?P<y>-?\d+(?:\.\d+)?)\)"
-        )
-        transition_re = re.compile(r"survey: [^ ]+ .* (?P<state>[a-zA-Z0-9_]+) \[(?P<event>[^\]]+)\]")
-        points: list[dict[str, object]] = []
-        seen: set[str] = set()
-        state = "idle"
-        event = "none"
-        status_text = "RUNNING" if status.get("running") else "IDLE"
-        failure_reason = None
-        for line in lines[start_idx:]:
-            match = waypoint_re.search(line)
-            if match:
-                label = match.group("label")
-                if label not in seen:
-                    seen.add(label)
-                    points.append({
-                        "label": label,
-                        "x_m": float(match.group("x")),
-                        "y_m": float(match.group("y")),
-                    })
-                continue
-            match = transition_re.search(line)
-            if match:
-                state = match.group("state")
-                event = match.group("event")
-                continue
-            if "survey FAILED:" in line:
-                status_text = "FAILED"
-                failure_reason = line.rsplit("survey FAILED:", 1)[-1].strip()
-            elif "survey SUCCESS" in line:
-                status_text = "SUCCESS"
-
-        by_label = {str(p["label"]): p for p in points}
-        loop_ref = by_label.get("first_net_left_turn_reference")
-        locked_net = None
-        first_net = by_label.get("first_obstacle_net_detected")
-        if first_net and loop_ref:
-            locked_net = {
-                "label": "net",
-                "center": {"x_m": loop_ref["x_m"], "y_m": loop_ref["y_m"]},
-                "source": "live_waypoints",
+        live_path = ROOT / "runtime" / "court_survey_live.json"
+        if not live_path.exists():
+            return {
+                "running": status.get("running", False),
+                "error": "court_survey_live.json missing (mission node not writing yet)",
+                "map_points": [], "navigation_points": [],
             }
-        return {
-            "running": status.get("running", False),
-            "status": status_text,
-            "state": state,
-            "last_event": event,
-            "failure_reason": failure_reason,
-            "navigation_points": points,
-            "navigation_route": [{"x_m": p["x_m"], "y_m": p["y_m"], "label": p["label"]} for p in points],
-            "locked_net": locked_net,
-            "point_count": len(points),
-            "updated_at": time.time(),
-        }
+        try:
+            data = json.loads(live_path.read_text())
+        except (OSError, ValueError) as exc:
+            return {
+                "running": status.get("running", False),
+                "error": f"court_survey_live.json unreadable: {exc}",
+                "map_points": [], "navigation_points": [],
+            }
+        age = time.time() - float(data.get("updated_at", 0.0) or 0.0)
+        data["age_s"] = age
+        data["stale"] = age > 3.0
+        data["running"] = status.get("running", data.get("running", False))
+        return data
 
     def _diagnostics(self) -> dict[str, object]:
         history = self.store.read_history(200)
@@ -541,6 +504,45 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def _send_static(self, rel_path: str) -> None:
+        # Serve split SPA assets (CSS, JS, view partials) from STATIC_DIR,
+        # guarding against path traversal outside that directory.
+        candidate = (STATIC_DIR / rel_path).resolve()
+        try:
+            candidate.relative_to(STATIC_DIR.resolve())
+        except ValueError:
+            self.send_error(HTTPStatus.FORBIDDEN)
+            return
+        if not candidate.is_file():
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        content_type = _STATIC_CONTENT_TYPES.get(
+            candidate.suffix.lower(), "application/octet-stream"
+        )
+        try:
+            payload = candidate.read_bytes()
+        except OSError:
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        try:
+            self.wfile.write(payload)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def _send_json(self, data: dict[str, object]) -> None:
+        payload = json.dumps(data).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
