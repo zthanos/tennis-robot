@@ -33,7 +33,7 @@ slam_toolbox:
     max_laser_range: 12.0            # RPLIDAR C1 usable range
     min_laser_range: 0.20            # match RPLIDAR C1 min; ignore invalid near-zero returns that destabilise scan-matching near the net
     minimum_time_between_scans: 0.2
-    minimum_travel_distance: 0.3
+    minimum_travel_distance: 0.25
     # 0.15 rad (~8.6°): more scans during turns so the matcher can track
     # heading. At 0.3 rad the map broke (rotated submap) after fast rotations.
     minimum_travel_heading: 0.15
@@ -44,22 +44,29 @@ slam_toolbox:
     # ── Scan matching ────────────────────────────────────────────────────────
     use_scan_matching: true
     use_scan_barycenter: true
-    scan_buffer_size: 10
+    scan_buffer_size: 15
     scan_buffer_maximum_scan_distance: 12.0
     link_match_minimum_response_fine: 0.1
     link_scan_maximum_distance: 1.5
 
     # ── Loop closure ─────────────────────────────────────────────────────────
-    # DISABLED: the court is nearly symmetric (identical fences on all sides,
-    # few distinctive features), so loop closure can match the WRONG wall and
-    # rotate the whole map. Odometry + scan matching alone are sufficient for
-    # a single 33x17 m enclosure.
-    do_loop_closing: false
+    # ENABLED, but CONSTRAINED to be safe on a symmetric court:
+    #  * loop_search_maximum_distance 3.0 m -> only closes loops with geometry the
+    #    robot was physically NEAR; the opposite fence (>10 m away) is never a
+    #    candidate, so it cannot match the wrong wall and rotate the map.
+    #  * strict response thresholds (coarse 0.45 / fine 0.55) reject the weak,
+    #    ambiguous matches a featureless straight wall would produce.
+    #  * the net (a distinctive perpendicular line + posts across the middle) and
+    #    the corners break the along-wall sliding ambiguity.
+    # Without this there is NO global correction, so odometry drift between the
+    # two court halves smears the net into a double line. The coverage path now
+    # re-observes the net (return pass) so this loop can actually close.
+    do_loop_closing: true
     loop_search_maximum_distance: 3.0
-    loop_match_minimum_chain_size: 10
+    loop_match_minimum_chain_size: 12
     loop_match_maximum_variance_coarse: 3.0
-    loop_match_minimum_response_coarse: 0.35
-    loop_match_minimum_response_fine: 0.45
+    loop_match_minimum_response_coarse: 0.45
+    loop_match_minimum_response_fine: 0.55
 
     # ── Correlation search ───────────────────────────────────────────────────
     correlation_search_space_dimension: 0.5
