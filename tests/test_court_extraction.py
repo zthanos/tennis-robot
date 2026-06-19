@@ -75,3 +75,21 @@ except ce.CourtExtractionError as e:
     print("T6 nonstandard fail-loud OK:", e.reason)
 
 print("\nALL COURT EXTRACTION TESTS PASSED")
+
+# T9 smart fence-artifact filter: parallel-to-fence scatter rejected; a real
+# obstacle protruding inward (perpendicular) near the same fence is kept.
+def _cluster(cx, cy, w, h, n=40):
+    import random; random.seed(1)
+    return [(cx + (random.random()-0.5)*w, cy + (random.random()-0.5)*h) for _ in range(n)]
+
+_spec = ce.CourtSpec()
+_fence = {"x_near": -16.6, "x_far": 16.4, "y_left": -8.5, "y_right": 8.8}
+# strip hugging the near (vertical) fence, elongated along y' -> artifact
+_strip = _cluster(-15.4, 4.0, 0.4, 1.0)
+# real object near the same fence but protruding inward (elongated along x') -> keep
+_real  = _cluster(-15.2, -2.0, 1.2, 0.4)
+_obs = ce.extract_obstacles(_strip + _real, _fence, _spec)
+_cxs = [round(o["center_court"][0], 1) for o in _obs]
+assert not any(abs(c - (-15.4)) < 0.3 for c in _cxs), f"strip not rejected: {_cxs}"
+assert any(abs(c - (-15.2)) < 0.3 for c in _cxs), f"real inward obstacle dropped: {_cxs}"
+print("T9 fence-artifact filter OK: rejected parallel strip, kept inward obstacle")

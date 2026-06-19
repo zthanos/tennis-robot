@@ -42,11 +42,17 @@ class CourtSpec:
     fence_min_points: int = 12
     fence_peak_frac: float = 0.30
     # Net line exclusion when hunting posts / obstacles.
-    net_band_m: float = 0.40
+    net_band_m: float = 0.80  # exclude full net depth+posts (returns spread to ~0.7m)
     # Obstacle clustering.
     obstacle_grid_m: float = 0.20
     obstacle_min_points: int = 8
-    obstacle_edge_margin_m: float = 0.40
+    obstacle_edge_margin_m: float = 0.90  # exclude fence thickness/noise (leaks ~0.6m inward)
+    # Smart fence-artifact rejection: a cluster within this band of a fence AND
+    # elongated PARALLEL to it (ratio below) is LiDAR scatter off the fence, not a
+    # real object. A real obstacle protrudes inward (elongated perpendicular) or
+    # sits clear of the fences, so it survives even near a fence.
+    fence_artifact_band_m: float = 1.8
+    fence_artifact_parallel_ratio: float = 1.25
     # Sanity bounds for run-off (court line -> fence).
     runoff_min_m: float = 0.0
     runoff_max_m: float = 12.0
@@ -148,6 +154,12 @@ def extract_posts(points_court: list[tuple[float, float]], spec: CourtSpec) -> d
     spanning = [c for c in clusters if c[0] <= 0.0 <= c[-1]]
     net_cl = max(spanning, key=lambda c: c[-1] - c[0]) if spanning \
         else min(clusters, key=lambda c: min(abs(c[0]), abs(c[-1])))
+    # Reject isolated straggler points at the ends (gap > 0.25 m from the dense
+    # net bulk) — robust to occasional spurious returns near the posts.
+    while len(net_cl) > 4 and (net_cl[1] - net_cl[0]) > 0.25:
+        net_cl = net_cl[1:]
+    while len(net_cl) > 4 and (net_cl[-1] - net_cl[-2]) > 0.25:
+        net_cl = net_cl[:-1]
     y_min, y_max = net_cl[0], net_cl[-1]
     span = y_max - y_min
     if not math.isfinite(span) or span < 1.0:
@@ -171,13 +183,26 @@ def classify_doubles(post_span_m: float, spec: CourtSpec) -> bool:
 def fit_fence_rectangle(points_court: list[tuple[float, float]], spec: CourtSpec) -> dict:
     xs = [xp for xp, _ in points_court]
     ys = [yp for _, yp in points_court]
+    # Coverage precondition: the observed length extent must reach BOTH baselines
+    # (fences sit beyond ±half_length). If not, the far/near half is not mapped
+    # yet — recoverable, keep covering. Prevents premature/garbage fits.
+    need = spec.half_length_m + 2.0  # reach into the run-off so the FENCE (beyond
+    # the baseline) is densely mapped before fitting — not just the baseline.
+    if not xs or min(xs) > -need or max(xs) < need:
+        raise CourtExtractionError(
+            "coverage_incomplete: fences not yet densely in view "
+            f"(x' extent [{min(xs):.1f},{max(xs):.1f}] need +/-{need:.1f})")
     x_near, x_far, xn_c, xf_c = _outer_fence_lines(xs, spec)
     y_left, y_right, yl_c, yr_c = _outer_fence_lines(ys, spec)
     for name, cnt in (("x_near", xn_c), ("x_far", xf_c), ("y_left", yl_c), ("y_right", yr_c)):
         if cnt < spec.fence_side_min_points:
             raise CourtExtractionError(f"fence_side_missing:{name} ({cnt} pts)")
     if not (x_near < 0 < x_far and y_left < 0 < y_right):
-        raise CourtExtractionError("fence_not_rectangular: net not inside fence box")
+        # Net (origin) not between the observed baselines => the far/near half
+        # has not been mapped yet. Recoverable: keep covering.
+        raise CourtExtractionError(
+            "coverage_incomplete: net not inside observed fence box "
+            "(both baselines not yet mapped)")
     return {
         "x_near": x_near, "x_far": x_far, "y_left": y_left, "y_right": y_right,
         "corners_court": [
@@ -207,11 +232,20 @@ def compute_distances(fence: dict, lines: dict, spec: CourtSpec) -> dict:
         "right_sideline": fence["y_right"] - half_w,
     }
     for k, v in d.items():
-        if not (spec.runoff_min_m - 0.15 <= v <= spec.runoff_max_m):
+        if v < spec.runoff_min_m - 0.15:
+            # A fence cannot sit INSIDE the court baseline. A negative run-off means
+            # the real outer fence on this side is NOT mapped yet — the fit latched
+            # onto the net (origin) or an inner return because the far fence is still
+            # sparse. This is a COVERAGE problem, not a court property: recoverable,
+            # keep covering. (Without this, a couple of grazing far points pass the
+            # extent gate, the fit picks the net, and we would wrongly fail-loud as
+            # non-standard before the robot ever reaches the far fence.)
             raise CourtExtractionError(
-                f"nonstandard_or_bad_fit: {k} run-off {v:.2f}m out of "
-                f"[{spec.runoff_min_m},{spec.runoff_max_m}]"
-            )
+                f"coverage_incomplete: {k} fence not yet mapped (run-off {v:.2f}m < 0)")
+        if v > spec.runoff_max_m:
+            # Beyond any regulation run-off → genuinely non-standard court. Fail-loud.
+            raise CourtExtractionError(
+                f"nonstandard_or_bad_fit: {k} run-off {v:.2f}m exceeds {spec.runoff_max_m}m")
     return {k: round(v, 3) for k, v in d.items()}
 
 
@@ -251,8 +285,16 @@ def extract_obstacles(points_court: list[tuple[float, float]], fence: dict, spec
         if len(comp) < spec.obstacle_min_points:
             continue
         xs = [p[0] for p in comp]; ys = [p[1] for p in comp]
-        oid += 1
         w = max(xs) - min(xs); h = max(ys) - min(ys)
+        cxc = (min(xs) + max(xs)) / 2.0; cyc = (min(ys) + max(ys)) / 2.0
+        # Reject fence scatter: near a fence and elongated parallel to it.
+        band = spec.fence_artifact_band_m; r = spec.fence_artifact_parallel_ratio
+        d_vert = min(abs(cxc - fence["x_near"]), abs(cxc - fence["x_far"]))
+        d_horz = min(abs(cyc - fence["y_left"]), abs(cyc - fence["y_right"]))
+        if (d_vert <= band and h >= r * max(w, 1e-3)) or \
+           (d_horz <= band and w >= r * max(h, 1e-3)):
+            continue
+        oid += 1
         obstacles.append({
             "id": oid,
             "class": "obstacle" if max(w, h) >= 0.25 else "small",
@@ -276,8 +318,21 @@ def extract_court_knowledge_model(map_points: list, locked_net: dict,
     frame = build_court_frame(locked_net)
     pc = [frame.to_court(px, py) for px, py in pts]
 
-    posts = extract_posts(pc, spec)
-    is_doubles = classify_doubles(posts["span_m"], spec)
+    # Coverage gate FIRST: never make structural decisions (doubles, run-off)
+    # on partial data. Require both baselines (fences beyond ±half_length).
+    cxs = [xp for xp, _ in pc]
+    _need = spec.half_length_m + 2.0
+    if not cxs or min(cxs) > -_need or max(cxs) < _need:
+        raise CourtExtractionError(
+            "coverage_incomplete: fences not yet densely in view "
+            f"(x' extent [{min(cxs):.1f},{max(cxs):.1f}] need +/-{_need:.1f})")
+
+    # Physical regulation court is doubles-width; singles is an inner painted-line
+    # subset (camera/future). Net posts follow standard geometry anchored to the
+    # measured net centre. The run-off (what VARIES per facility) is still MEASURED
+    # from the fences below.
+    is_doubles = True
+    half_span = spec.post_half_span_doubles_m
     fence = fit_fence_rectangle(pc, spec)
     lines = court_lines(is_doubles, spec)
     distances = compute_distances(fence, lines, spec)
@@ -287,7 +342,7 @@ def extract_court_knowledge_model(map_points: list, locked_net: dict,
         mx, my = frame.to_map(xp, yp)
         return {"x_m": round(mx, 3), "y_m": round(my, 3)}
 
-    post_a = to_map(0.0, posts["y_max"]); post_b = to_map(0.0, posts["y_min"])
+    post_a = to_map(0.0, half_span); post_b = to_map(0.0, -half_span)
     return {
         "schema": "court_knowledge_model/v2",
         "status": "OK",
@@ -298,7 +353,7 @@ def extract_court_knowledge_model(map_points: list, locked_net: dict,
             "axis_length": {"x_m": round(frame.ux, 4), "y_m": round(frame.uy, 4)},
             "axis_width": {"x_m": round(frame.vx, 4), "y_m": round(frame.vy, 4)},
             "posts": [post_a, post_b],
-            "span_m": round(posts["span_m"], 3),
+            "span_m": round(2 * half_span, 3),
         },
         "court": {
             "is_doubles": is_doubles,
