@@ -6,7 +6,8 @@ accumulated 360° LiDAR occupancy map, not traced by a fragile perimeter drive.
 
 Flow (see docs/court-survey-v2-spec-el.md):
   INIT → FIND_NET (drive to net, lock it → court frame)
-       → COVERAGE (Nav2 to each vantage point; Nav2 routes around the net/obstacles)
+       → COVERAGE (deterministic drive-to-waypoint on the SLAM pose to each
+                   vantage point; NOT Nav2 — Nav2 proved too flaky run-to-run)
        → after each vantage: try extraction
             OK         → write court_boundary.json (v2) → DONE
             recoverable→ next vantage
@@ -28,6 +29,7 @@ from pathlib import Path
 import rclpy
 import rclpy.duration
 import rclpy.time
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from geometry_msgs.msg import PoseStamped, Twist
@@ -565,12 +567,18 @@ def main(args=None) -> None:
     node = CourtSurveyV2Node()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
+        # Launch teardown (the panel SIGINTs us on going idle) — clean exit, the
+        # measurement is already written. Swallow so we don't print a scary trace.
         pass
     finally:
-        node.destroy_node()
         try:
-            rclpy.shutdown()
+            node.destroy_node()
+        except Exception:
+            pass
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
         except Exception:
             pass
 

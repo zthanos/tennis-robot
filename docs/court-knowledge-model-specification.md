@@ -1,5 +1,12 @@
 # Court Knowledge Model Specification
 
+> **As-built, LiDAR-first.** This document defines *what* the Court Knowledge
+> Model is and *when* it is considered done. The *how* (coverage controller,
+> extraction algorithms, output schema) is specified in
+> [`court-survey-v2-spec-el.md`](court-survey-v2-spec-el.md), which is the
+> authoritative as-built survey spec. The two are kept consistent: this file
+> must never re-introduce the obsolete camera-driven perimeter-traversal FSM.
+
 ## Purpose
 
 The purpose of the Court Knowledge Model process is to enable the robot to
@@ -13,21 +20,20 @@ It does not perform ball collection, route optimization, coverage planning, or
 task execution.
 
 The output of the Court Knowledge Model process is a complete environmental
-representation that can later be consumed by other subsystems.
+representation (`court_boundary.json`, schema `court_knowledge_model/v2`) that
+can later be consumed by other subsystems.
 
 ## Objectives
 
 The Court Knowledge Model process must determine:
 
-- Court dimensions.
-- Court boundaries.
-- Fence locations.
-- Obstacles inside and around the court.
-- Free movement corridors.
-- Entry and exit points.
-- Clearance between court lines and surrounding fences.
-- Areas accessible to the robot.
-- Areas inaccessible to the robot.
+- Court orientation and reference frame (the **court frame**, anchored to the
+  measured net centre).
+- Court dimensions and line geometry (from the net anchor + ITF standard
+  dimensions).
+- Fence locations (the outer rectangle around the court).
+- Run-off clearance between each court line and the surrounding fence.
+- Obstacles inside the fences (position + size).
 
 The Court Knowledge Model process creates environmental knowledge only.
 
@@ -35,340 +41,232 @@ The Court Knowledge Model process creates environmental knowledge only.
 
 ### Sensors
 
-#### OAK-D Camera
+#### LiDAR (primary, Phase 1)
 
-Used for:
+The 360° LiDAR is the primary sensor for the Court Knowledge Model. All
+**geometry** — anything vertical (fences, net position, posts, obstacles) and
+every distance — is measured from the LiDAR. It is used for:
 
-- Tennis court line detection.
-- Court boundary identification.
-- Visual localization support.
-- Verification of detected court geometry.
+- Net **position/distance** (front LiDAR range → net lock → court frame).
+- Fence detection and the fence rectangle fit.
+- Obstacle detection inside the fences.
+- Distance (run-off) measurement.
+- SLAM and localization (slam_toolbox, with conservative loop closure).
 
-#### LiDAR
+#### OAK-D Camera (net confirmation only)
 
-Used for:
-
-- Obstacle detection.
-- Fence detection.
-- Distance measurements.
-- Environment mapping.
-- SLAM and localization.
+The OAK-D camera is used in Phase 1 for **one purpose only: confirming the net.**
+The net lock is triggered when the camera classifies a "net" ahead (via
+`/survey/vision`), while the **distance and position of the net come from the
+front LiDAR range**, not from the camera. The camera contributes **no geometry**:
+painted court lines (invisible to LiDAR) are derived from the net anchor plus ITF
+standard dimensions, and fences, obstacles, and all distances come from the LiDAR
+alone. Camera-based singles-line refinement is a future extension and is out of
+scope for this spec.
 
 ## Preconditions
 
 Before the Court Knowledge Model process begins:
 
 - Robot is placed somewhere inside the tennis court.
-- Sensors are operational.
-- LiDAR calibration completed.
-- OAK-D calibration completed.
+- LiDAR is operational and calibrated.
+- SLAM (slam_toolbox) is running and publishing the `map` frame and TF.
 - Battery level above minimum operational threshold.
 
-No prior map is assumed.
-
-No knowledge of the environment is available.
+No prior map is assumed. No knowledge of the environment is available.
 
 ## Court Knowledge Strategy
 
-### Step 1 - Court Boundary Detection
+The strategy is **LiDAR occupancy → Court Knowledge Model**. Motion is the
+*means*, not the goal: the deliverable is the MEASUREMENT, taken from the
+accumulated map rather than from any instantaneous pose. The same code runs in
+Gazebo and on the physical robot; differences are expressed only through env
+vars / topics.
 
-The robot uses the OAK-D camera to locate the external court boundary lines.
+> **No-fallbacks principle.** There are no silent estimates or defaults. If a
+> step lacks data or a structural check fails, the survey **fails loudly** with
+> a named reason and does **not** write an invented boundary. The only allowed
+> constants are the ITF regulation dimensions.
 
-The objective is to identify:
+### Step 1 - Accumulate occupancy
 
-- Left sideline.
-- Right sideline.
-- Baseline A.
-- Baseline B.
+Accumulate `/scan` returns into a map-frame voxel grid as the robot moves. Live
+points are streamed to `court_survey_live.json` for the panel.
 
-The robot establishes an initial court reference frame.
+### Step 2 - Find the net and establish the court frame
 
-### Step 2 - Positioning Outside The Court Boundary
+Drive forward until the net is confirmed ahead. The **net lock** is triggered by
+the OAK-D net classification and takes the net distance from the front LiDAR
+range. The lock defines the court frame: origin at net centre, `+x'` = robot→net
+direction (length axis), `+y'` = along the net (width axis). Posts (±5.65 m,
+doubles) are placed by standard geometry anchored to the measured net centre.
 
-To map the complete environment, the robot must position itself outside the
-playable area.
+### Step 3 - Deterministic coverage drive
 
-The robot navigates so that:
+Visit 8 vantage points expressed in the court frame (**not** Nav2 — closed-loop
+deterministic drive-to-waypoint on the SLAM pose, since Nav2 proved unstable
+run-to-run): drive deep into each half toward the fences, cross the net through
+the post→fence gaps, then a **return pass** re-crosses the net and revisits the
+near half so slam_toolbox loop closure can align the two halves and complete the
+map. A fence-approach stop halts the robot ~1.5 m short of each fence (footprint
+aware) for dense mapping without collision.
 
-- The external court boundary line remains on its right side.
-- The robot travels in the clearance area between the court line and the
-  surrounding fence.
+Measurement **decouples** from driving: it locks on the first successful
+extraction, but the robot continues the full path and re-extracts on the
+fuller, loop-closed map. The process reaches `DONE` only at the end.
 
-This guarantees visibility of:
+### Step 4 - Extraction (pure functions)
 
-- Court lines.
-- Fence locations.
-- Clearance distances.
+From the accumulated map points and the locked net, compute (offline-testable,
+no ROS):
 
-### Step 3 - Perimeter Traversal
+- **Net + posts** → court frame.
+- **Fence rectangle** via court-frame histograms (the two extreme dense peaks
+  per axis), gated on sufficient coverage beyond both baselines.
+- **Court lines** from the net anchor + ITF standard dimensions.
+- **Obstacles** inside the fences via clustering, with a smart fence-artifact
+  filter (clusters hugging and parallel to a fence are rejected).
+- **Distances (run-off)** as position differences on the map.
 
-The robot performs a complete perimeter traversal around the court.
+### Step 5 - Fail-loud validation
 
-The robot continuously:
+Distinguish **structural** failures (fail-loud, abort) from **recoverable**
+ones (keep visiting vantage points):
 
-- Detects court lines using OAK-D.
-- Maps surroundings using LiDAR.
-- Records obstacles.
-- Measures fence distances.
-- Updates localization.
+- Structural: net not observed; positive run-off > 12 m (nonstandard/bad fit);
+  all vantage points exhausted with no measurement.
+- Recoverable: a fence side missing or thin coverage; **negative** run-off (the
+  far fence is simply not mapped yet) → continue coverage.
 
-The traversal must cover the entire perimeter.
+> A fence cannot lie **inside** the baseline; negative run-off means "the real
+> fence is not mapped yet" = a coverage problem, not a nonstandard court. This
+> classification prevents the survey from aborting before it reaches the far
+> fence.
 
-#### Required Map Court Traversal FSM
+### Step 6 - SLAM map serialization (best-effort)
 
-The Map Court traversal must be deterministic and sensor-driven. It must not use
-simulator/world-specific waypoints or pre-recorded court coordinates. The same
-behavior must run in simulation and on the physical robot when given equivalent
-OAK-D, LiDAR, and localization inputs.
-
-The required traversal order is:
-
-1. `FIND_FIRST_OBSTACLE`
-   - Drive forward from the current robot heading until the first obstacle is
-     close enough to classify.
-   - Do not begin by spinning in place and do not begin from an arbitrary
-     wall-following loop.
-   - Classify the first obstacle using OAK-D close-range evidence and LiDAR
-     front-sector evidence.
-   - OAK-D-only net classification must not be accepted immediately at startup;
-     it requires either explicit visual classification or a minimum forward
-     travel distance so stale/near-field depth cannot start the wrong path.
-   - If the first obstacle is the net, continue with the net-first traversal.
-   - If the first obstacle is a fence, begin the left-turn perimeter traversal
-     from that fence and complete only after returning to the same reference
-     point.
-
-2. `APPROACH_NET`
-   - Drive toward the detected net until the robot reaches a safe standoff
-     distance of 0.10 m from the measured net boundary.
-   - Maintain obstacle avoidance using LiDAR and OAK-D depth.
-
-3. `TURN_LEFT_AT_NET`
-   - When the robot is near the net, turn left.
-   - Record this first net-left-turn location as the loop-completion reference.
-
-4. `FOLLOW_NET_TO_FENCE`
-   - Move parallel to the net.
-   - Continue until LiDAR/OAK-D indicates the robot is near the surrounding
-     fence or a corner constraint.
-
-5. `TURN_LEFT_AT_FENCE`
-   - At the fence/corner, turn left.
-   - The turn trigger must come from sensor evidence, not from an absolute
-     coordinate.
-
-6. `FOLLOW_FENCE_TO_NEXT_FENCE`
-   - Follow the fence boundary until the next fence/corner is detected.
-   - Record fence geometry, obstacles, clearance, and blocked passages while
-     moving.
-
-7. `TURN_LEFT_AT_FENCE`
-   - Turn left at the next fence/corner and continue perimeter traversal.
-
-8. `FOLLOW_FENCE_TO_NET`
-   - Continue until the net is detected again from the opposite approach.
-
-9. `CROSS_NET_ON_RIGHT_SIDE`
-   - Cross around the net through the right-side available gap.
-   - Use LiDAR side clearances and OAK-D depth to keep the robot centered in
-     the gap and away from the net post/fence.
-
-10. `FOLLOW_SECOND_HALF_PERIMETER`
-    - Repeat the same left-turn perimeter pattern for the other half of the
-      court: fence -> left turn -> fence -> left turn -> net.
-
-11. `COMPLETE_AT_FIRST_NET_TURN_REFERENCE`
-    - Complete only when the robot returns near the first net-left-turn
-      reference after traversing both halves.
-    - Completion requires loop closure, sufficient traveled distance, valid
-      sensor coverage, and successful map validation.
-
-The state transitions must be based on named sensor events:
-
-- `first_obstacle_net`
-- `first_obstacle_fence`
-- `net_detected`
-- `near_net`
-- `near_fence`
-- `corner_detected`
-- `right_side_net_gap_detected`
-- `gap_crossed`
-- `loop_closed`
-
-The Map Court process must fail with a structured reason if any required sensor
-event cannot be detected with sufficient confidence.
-
-### Step 4 - Environment Mapping
-
-During traversal the robot creates:
-
-#### Court Map
-
-Contains:
-
-- Court dimensions.
-- Court orientation.
-- Court boundaries.
-
-#### Obstacle Map
-
-Contains:
-
-- Fixed obstacles.
-- Temporary obstacles.
-- Fence structures.
-
-#### Clearance Map
-
-Contains:
-
-- Distance from court boundaries to fences.
-- Narrow passages.
-- Areas too small for traversal.
-
-#### Accessibility Map
-
-Contains:
-
-- Reachable regions.
-- Unreachable regions.
-- Traversable paths.
-
-### Step 5 - Validation Pass
-
-After the initial environment mapping pass, the robot validates:
-
-- Court perimeter closure.
-- Consistency of dimensions.
-- Completeness of obstacle detection.
-- Fence continuity.
-
-Any missing area triggers another Court Knowledge Model attempt for the missing
-segment.
+On completion (`SAVING_MAP` before `DONE`) the node best-effort serializes the
+slam_toolbox map (`.posegraph` + `.data` for localization mode, `.pgm` + `.yaml`
+occupancy grid) under `runtime/maps/court_<ts>.*`, and records the paths plus
+the court frame in `court_boundary.json` as `map_artifact`. This never blocks:
+on missing services or timeout the survey still completes with a valid
+measurement and `map_artifact.status` = `error`/`pending`.
 
 ## Outputs
 
-The Court Knowledge Model process produces a Court Knowledge Model containing:
+The Court Knowledge Model process produces `court_boundary.json` (schema
+`court_knowledge_model/v2`) containing:
+
+### Net Geometry
+
+- Net centre, length/width axes, the two posts, and post span.
 
 ### Court Geometry
 
-- Length.
-- Width.
-- Orientation.
-- Court boundaries.
+- Length, width, doubles flag, and the line geometry in the court frame
+  (baselines, service lines, sidelines, centre line).
 
 ### Fence Geometry
 
-- Fence positions.
-- Fence distances from court.
+- Fence corners (map frame) and extents in the court frame.
+
+### Clearance (run-off)
+
+- Distance from each baseline and each sideline to the surrounding fence.
 
 ### Obstacles
 
-- Obstacle locations.
-- Obstacle dimensions.
+- For each obstacle inside the fences: id, class, centre, size, point count.
 
-### Accessibility Data
+### Map Artifact (best-effort)
 
-- Traversable areas.
-- Non-traversable areas.
-- Entry points.
-- Exit points.
+- Serialized SLAM map paths + shared court frame, for Nav2 reuse in the
+  collection phase.
 
-### Navigation Data
-
-- Safe movement corridors.
-- Boundary-following routes.
+> Free-movement corridors, entry/exit points, and an explicit accessibility map
+> are **not** produced by this process. Downstream navigation derives reachable
+> space from the fence rectangle, obstacles, and the serialized occupancy grid.
 
 ## Constraints
 
 The Court Knowledge Model process:
 
 - Must not collect balls.
-- Must not perform coverage planning.
+- Must not perform coverage planning for collection.
 - Must not assume a navigation matrix exists.
 - Must not require a predefined map.
 - Must not depend on Collection logic.
+- Must not use OAK-D camera evidence for geometry (court lines, fences,
+  obstacles, distances). In Phase 1 the camera is used only to confirm the net.
+- Must not use simulator/world-specific waypoints: all waypoints are derived
+  from the measured net frame, so the same behaviour runs in sim and on the
+  physical robot.
 
 The Court Knowledge Model process is responsible only for environmental
 knowledge acquisition.
 
 ## Error Conditions
 
-Court Knowledge Model creation fails if:
+Court Knowledge Model creation fails (structural fail-loud) if:
 
-- Court boundaries cannot be detected.
-- Full perimeter traversal cannot be completed.
-- Localization confidence falls below acceptable thresholds.
-- LiDAR mapping becomes inconsistent.
-- Significant areas remain unexplored.
-- Fence locations cannot be determined.
+- The net cannot be observed with sufficient points (`net_not_observed`).
+- All vantage points are visited without a valid measurement
+  (`coverage_incomplete: all vantage points visited`).
+- A fitted run-off is nonstandard/implausible (`nonstandard_or_bad_fit`).
+- Fewer than the minimum required occupancy points are available.
 
-A failed Court Knowledge Model attempt must return a failure status and no
-operational phase may start.
+A failed Court Knowledge Model attempt returns `status = FAILED` with a
+structured `failure_reason` and writes no invented boundary. No operational
+phase may start from a failed model.
 
 ## Definition Of Done
 
 The Court Knowledge Model process is considered complete only when all of the
-following conditions are satisfied.
+following are satisfied.
 
 ### Court Geometry
 
-- Court length has been measured.
-- Court width has been measured.
-- Court boundaries have been identified.
-- Court orientation has been established.
+- Court frame established from the locked net.
+- Court length, width, and line geometry recorded.
 
 ### Fence Mapping
 
-- All surrounding fences have been detected.
-- Fence locations have been mapped.
-- Distance between court boundaries and fences has been measured.
+- All four fence sides detected and the fence rectangle fitted.
+- Run-off distance between each baseline/sideline and the fence measured
+  (all positive and plausible).
 
 ### Obstacle Mapping
 
-- All detected obstacles have been recorded.
-- Obstacle locations have been stored in the environment map.
+- All detected obstacles inside the fences recorded (position + size), with
+  fence artifacts filtered out.
 
-### Accessibility Analysis
+### Map Completeness
 
-- Traversable areas have been identified.
-- Non-traversable areas have been identified.
-- Entry and exit paths have been discovered.
-
-### Coverage Completeness
-
-- Entire court perimeter has been traversed.
-- No unexplored perimeter segments remain.
-- Environment map is fully connected.
+- Both halves mapped and loop-closed into a single connected map (net appears
+  as a single line, not a drift double-line).
 
 ### Validation
 
-- Court geometry passes consistency checks.
-- Fence geometry passes consistency checks.
-- Localization confidence is above the minimum threshold.
-- Mapping confidence is above the minimum threshold.
+- Coverage gate passed (fences densely in view beyond both baselines).
+- No structural fail-loud condition triggered.
 
 ### Deliverables
 
-The robot has produced:
-
-- Court Geometry Model.
-- Fence Geometry Model.
-- Obstacle Map.
-- Accessibility Map.
-- Traversable Route Information.
+- `court_boundary.json` (schema `court_knowledge_model/v2`): net, court, fence,
+  distances, obstacles, occupancy, and (best-effort) `map_artifact`.
 
 ### Completion Result
 
 ```text
-Court Knowledge Model Status = SUCCESS
+status = OK
+failure_reason = null
 ```
 
-If any of the above conditions are not met:
+If any required condition is not met:
 
 ```text
-Court Knowledge Model Status = FAILED
-Reason = <Failure Cause>
+status = FAILED
+failure_reason = <named cause>
 ```
 
 A failed Court Knowledge Model cannot be used by the Collection subsystem.
