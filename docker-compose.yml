@@ -7,6 +7,10 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+    networks:
+      - default
+      - ros2-net
+
   sim-dev:
     build: .
     working_dir: /workspace
@@ -16,26 +20,65 @@ services:
       - PYTHONPATH=/workspace
       - UV_PROJECT_ENVIRONMENT=/opt/tennis-robot-venv
       - UV_LINK_MODE=copy
-  webots:
+
+  # ── Gazebo Harmonic simulation ───────────────────────────────────────────────
+  # Start with: docker compose --profile gazebo up gazebo
+  # From a WSL shell so /dev/dri and WSLg mounts are available.
+  #
+  # GPU check:  docker compose --profile gazebo run --rm gazebo glxinfo -B
+  # Good output: "OpenGL renderer string: AMD Radeon RX ..."
+  # Bad output:  "OpenGL renderer string: llvmpipe" → GPU not available
+  gazebo:
     build:
       context: .
-      dockerfile: Dockerfile.webots
-    working_dir: /workspace
+      dockerfile: Dockerfile.gazebo
+    image: tennis-robot-gazebo
+    working_dir: /ros2_ws
+    shm_size: "2gb"
+    # Headless by default: the WSLg GPU can't reliably render the Gazebo GUI
+    # window (D3D12 device reset / Ogre out-of-memory). View in RViz instead
+    # (rviz service below: docker compose --profile gazebo up gazebo rviz).
+    # Set GAZEBO_HEADLESS=false to try the GUI.
+    # One command brings up everything: sim + controllers + twist_mux + control
+    # panel (sim.launch.py, backgrounded) and then SLAM mapping (foreground).
+    command:
+      - bash
+      - -lc
+      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; ros2 launch tennis_robot sim.launch.py headless:=${GAZEBO_HEADLESS:-true} & sleep 12; ros2 launch tennis_robot slam_mapping.launch.py"
+    ports:
+      - "8081:8081"   # web control panel
+    devices:
+      - /dev/dxg
     volumes:
       - .:/workspace
-    ports:
-      - "6080:6080"
-      - "5900:5900"
-    shm_size: "2gb"
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+      - /mnt/wslg:/mnt/wslg
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    networks:
+      - ros2-net
     environment:
-      - WEBOTS_WORLD=/workspace/worlds/tennis_court.wbt
-      - DISPLAY_SIZE=1280x800x24
-      - OTEL_ENABLED=true
-      - OTEL_EXPORTER=otlp
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - OTEL_METRIC_EXPORT_INTERVAL_MS=5000
+      - DISPLAY=:0
+      - WAYLAND_DISPLAY=wayland-0
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - PULSE_SERVER=/mnt/wslg/PulseServer
+      - LD_LIBRARY_PATH=/usr/lib/wsl/lib
+      - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      # The discrete RX 7900 XTX is not enumerated inside the container; only the
+      # integrated 890M is reachable via WSL. 890M is plenty for the sim.
+      - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
+      - LIBGL_ALWAYS_SOFTWARE=0
+      - GZ_SIM_RESOURCE_PATH=/workspace/gazebo/models
+      - ROS2_INSTALL=/ros2_ws/install
+      - ROS_DOMAIN_ID=42
+      # Fast DDS by default. Under rmw_cyclonedds_cpp the diff_drive_controller's
+      # cmd_vel subscription inside the gz process silently never received
+      # messages (matched at DDS level, visible to `ros2 topic echo`, but the
+      # callback never fired) -> robot accepted Twist but never moved.
+      # Verified 2026-06-12 via ~/cmd_vel_out A/B test; Fast DDS delivers fine.
+      - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+      - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
       - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
-      - USE_RGB_VISION=true
       - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
       - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
       - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
@@ -45,15 +88,111 @@ services:
       - COLLECTOR_REVERSE_SPEED_M_S=0.08
       - SURVEY_DRIVE_SPEED_M_S=0.24
       - SURVEY_TURN_SPEED_RAD_S=0.75
-      - SURVEY_HEADING_GAIN=2.2
-    depends_on:
-      - otel-collector
+    profiles: ["gazebo"]
+
+  # RViz2 — visualization for the running sim (map, TF, /scan, robot model).
+  # Start alongside the sim:
+  #   docker compose --profile gazebo up gazebo rviz
+  # Or attach later to an already-running sim:
+  #   docker compose --profile gazebo up rviz
+  rviz:
+    image: tennis-robot-gazebo
+    build:
+      context: .
+      dockerfile: Dockerfile.gazebo
+    command:
+      - bash
+      - -lc
+      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; rviz2 -d /workspace/docker/ros2/tennis_robot.rviz"
+    devices:
+      - /dev/dxg
+    volumes:
+      - .:/workspace
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+      - /mnt/wslg:/mnt/wslg
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    networks:
+      - ros2-net
+    environment:
+      - DISPLAY=:0
+      - WAYLAND_DISPLAY=wayland-0
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - PULSE_SERVER=/mnt/wslg/PulseServer
+      - LD_LIBRARY_PATH=/usr/lib/wsl/lib
+      - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
+      - LIBGL_ALWAYS_SOFTWARE=0
+      - ROS_DOMAIN_ID=42
+      - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+      - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
+    profiles: ["gazebo", "gazebo-rec"]
+
+  # Gazebo with survey replay recorder enabled.
+  # Start with:
+  #   docker compose --profile gazebo-rec build gazebo-rec
+  #   docker compose --profile gazebo-rec up gazebo-rec
+  #
+  # The recorder writes runtime/survey_replay_latest.jsonl while Map Court runs.
+  gazebo-rec:
+    build:
+      context: .
+      dockerfile: Dockerfile.gazebo
+    working_dir: /ros2_ws
+    shm_size: "2gb"
+    ports:
+      - "8081:8081"   # web control panel
+    devices:
+      - /dev/dxg
+    volumes:
+      - .:/workspace
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+      - /mnt/wslg:/mnt/wslg
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    networks:
+      - ros2-net
+    environment:
+      - DISPLAY=:0
+      - WAYLAND_DISPLAY=wayland-0
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - PULSE_SERVER=/mnt/wslg/PulseServer
+      - LD_LIBRARY_PATH=/usr/lib/wsl/lib
+      - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      # The discrete RX 7900 XTX is not enumerated inside the container; only the
+      # integrated 890M is reachable via WSL. 890M is plenty for the sim.
+      - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
+      - LIBGL_ALWAYS_SOFTWARE=0
+      - GZ_SIM_RESOURCE_PATH=/workspace/gazebo/models
+      - ROS2_INSTALL=/ros2_ws/install
+      - ROS_DOMAIN_ID=42
+      - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+      - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
+      - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
+      - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
+      - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
+      - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
+      - COLLECTOR_ALIGN_ANGULAR_GAIN=1.4
+      - COLLECTOR_APPROACH_SPEED_M_S=0.12
+      - COLLECTOR_CAPTURE_SPEED_M_S=0.05
+      - COLLECTOR_REVERSE_SPEED_M_S=0.08
+      - SURVEY_DRIVE_SPEED_M_S=0.24
+      - SURVEY_TURN_SPEED_RAD_S=0.75
+      - ROS2_SURVEY_DRIVE_SPEED_M_S=0.75
+      - ROS2_SURVEY_TURN_SPEED_RAD_S=0.85
+      - SURVEY_REPLAY_DURATION_S=1200
+      - SURVEY_REPLAY_FILE=/workspace/runtime/survey_replay_latest.jsonl
+      - GAZEBO_HEADLESS=${GAZEBO_HEADLESS:-false}
+    command: ["bash", "-c", ". /opt/ros/humble/setup.sh && . /ros2_ws/install/setup.sh && mkdir -p /workspace/runtime && (python3 /workspace/scripts/survey_replay_record.py --out $${SURVEY_REPLAY_FILE} --duration-s $${SURVEY_REPLAY_DURATION_S} > /workspace/runtime/survey_replay_record.out.log 2> /workspace/runtime/survey_replay_record.err.log &) && ros2 launch tennis_robot sim.launch.py headless:=$${GAZEBO_HEADLESS:-false}"]
+    profiles: ["gazebo-rec"]
+
   openscad:
     image: openscad/openscad:bookworm
     profiles: ["cad"]
     working_dir: /workspace
     volumes:
       - .:/workspace
+
   openscad-gui:
     build:
       context: .
@@ -69,3 +208,7 @@ services:
       - OPENSCAD_FILE=/workspace/cad/3d-printable-base/full_robot_concept.scad
     volumes:
       - .:/workspace
+
+networks:
+  ros2-net:
+    driver: bridge

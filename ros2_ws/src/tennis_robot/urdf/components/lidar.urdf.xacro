@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="rplidar_c1_mount" params="parent link_name xyz rpy update_rate">
+    <link name="${link_name}">
+      <inertial>
+        <mass value="0.05"/>
+        <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
+      </inertial>
+      <visual name="mast_vis">
+        <origin xyz="0 0 -0.30" rpy="0 0 0"/>
+        <geometry><box size="0.025 0.025 0.57"/></geometry>
+        <material name="anthracite"/>
+      </visual>
+      <visual name="head_vis">
+        <geometry><cylinder radius="0.047" length="0.045"/></geometry>
+        <material name="sensor_black"/>
+      </visual>
+    </link>
+    <joint name="lidar_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${link_name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+    <gazebo reference="${link_name}">
+      <sensor name="front_lidar" type="gpu_lidar">
+        <!-- Raised above head_vis (cylinder r=0.047, z=±0.0225): gpu_lidar
+             renders VISUALS, and a sensor origin inside its own housing makes
+             every ray hit the cylinder interior at ~5 cm (lidar goes blind). -->
+        <pose>0 0 0.035 0 0 0</pose>
+        <update_rate>${update_rate}</update_rate>
+        <always_on>true</always_on>
+        <visualize>false</visualize>
+        <topic>/gz/lidar</topic>
+        <gz_frame_id>${link_name}</gz_frame_id>
+        <lidar>
+          <scan>
+            <horizontal>
+              <samples>500</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.14159265358979</min_angle>
+              <max_angle>3.14159265358979</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <!-- RPLIDAR C1 spec min is 0.1 m; 0.15 also rejects any residual
+                 self-hits from the robot's own body. -->
+            <min>0.15</min>
+            <max>12.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise><type>gaussian</type><mean>0</mean><stddev>0.005</stddev></noise>
+        </lidar>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

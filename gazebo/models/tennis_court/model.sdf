@@ -1,0 +1,564 @@
+﻿<?xml version="1.0"?>
+<!--
+  Tennis Court model Ã¢â‚¬â€ Gazebo Harmonic SDF 1.9
+  Runtime visuals use Gazebo-native primitives for WSLg stability. The source
+  SketchUp/DAE model remains the material and dimension reference.
+  Collision geometry uses simple boxes for physics/LiDAR stability.
+
+  Standard dimensions (ITF regulation):
+    Doubles width: 10.97 m  (sidelines at y = Ã‚Â±5.485 m)
+    Singles width:  8.23 m  (sidelines at y = Ã‚Â±4.115 m)
+    Length:        23.77 m  (baselines at x = Ã‚Â±11.885 m)
+    Service lines: x = Ã‚Â±6.4 m
+    Net posts:     y = Ã‚Â±5.65 m (0.165 m outside doubles sideline)
+    Net height:    0.914 m at centre, 1.07 m at posts
+    Fences:        x = Ã‚Â±14.5 m,  y = Ã‚Â±7.5 m
+
+  DAE-derived material palette:
+    mat_2 dark net/metal:                0.11373 0.11373 0.11373
+-->
+<sdf version="1.9">
+<model name="tennis_court">
+  <static>true</static>
+
+  <!-- Ã¢â€â‚¬Ã¢â€â‚¬ OUTER GROUND (grass/vegetation outside the fence) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+  <link name="outer_ground">
+    <visual name="vis">
+      <pose>0 0 -0.014 0 0 0</pose>
+      <geometry><box><size>80 60 0.02</size></box></geometry>
+      <material>
+        <ambient>0.16 0.28 0.12 1</ambient>
+        <diffuse>0.18 0.32 0.14 1</diffuse>
+        <specular>0.02 0.04 0.02 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Ã¢â€â‚¬Ã¢â€â‚¬ COURT SURFACE Ã¢â‚¬â€ DAE mat_1 main flat surface tone Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+  <link name="ground">
+    <collision name="col">
+      <geometry><box><size>33.0 17.0 0.02</size></box></geometry>
+      <!-- Clay court surface friction for wheel contact. -->
+      <surface>
+        <friction>
+          <ode>
+            <mu>1.5</mu>
+            <mu2>1.5</mu2>
+          </ode>
+        </friction>
+      </surface>
+    </collision>
+    <visual name="vis">
+      <pose>0 0 -0.01 0 0 0</pose>
+      <geometry><box><size>33.0 17.0 0.02</size></box></geometry>
+      <material>
+        <ambient>0.64 0.20 0.09 1</ambient>
+        <diffuse>0.68 0.23 0.11 1</diffuse>
+        <specular>0.08 0.08 0.08 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Ã¢â€â‚¬Ã¢â€â‚¬ COURT LINES (visual only) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+  <link name="baseline_east"><pose>11.885 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.05 10.97 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="baseline_west"><pose>-11.885 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.05 10.97 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="doubles_sideline_north"><pose>0 5.485 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>23.77 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="doubles_sideline_south"><pose>0 -5.485 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>23.77 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="singles_sideline_north"><pose>0 4.115 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>23.77 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="singles_sideline_south"><pose>0 -4.115 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>23.77 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="service_line_east"><pose>6.4 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.05 8.23 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="service_line_west"><pose>-6.4 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.05 8.23 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="centre_service_line"><pose>0 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>12.8 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="centre_mark_east"><pose>11.835 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.10 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+  <link name="centre_mark_west"><pose>-11.835 0 0.001 0 0 0</pose>
+    <visual name="v"><geometry><box><size>0.10 0.05 0.003</size></box></geometry>
+      <material><ambient>0.96 0.96 0.96 1</ambient><diffuse>0.96 0.96 0.96 1</diffuse></material></visual></link>
+
+  <!-- Ã¢â€â‚¬Ã¢â€â‚¬ NET POSTS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+  <link name="net_post_north"><pose>0 5.65 0.535 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.025</radius><length>1.07</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.025</radius><length>1.07</length></cylinder></geometry>
+      <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.2 0.2 0.2 1</diffuse><specular>0.4 0.4 0.4 1</specular></material></visual></link>
+  <link name="net_post_south"><pose>0 -5.65 0.535 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.025</radius><length>1.07</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.025</radius><length>1.07</length></cylinder></geometry>
+      <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.2 0.2 0.2 1</diffuse><specular>0.4 0.4 0.4 1</specular></material></visual></link>
+
+  <!-- Ã¢â€â‚¬Ã¢â€â‚¬ NET Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+       Collision: solid box (robot cannot cross, LiDAR detects it).
+       Visual: DAE mesh with horizontal ropes + vertical strings.
+       Link pose rotated Ã¢Ë†â€™Ãâ‚¬/2 around Z so mesh X (Ã‚Â±5.65 m) Ã¢â€ â€™ world Ã¢Ë†â€œY.  -->
+  <link name="net_wall">
+    <pose>0 0 0 0 0 -1.5708</pose>
+
+    <!-- Collision box centred in local frame -->
+    <collision name="col">
+      <pose>0 0 0.457 0 0 0</pose>
+      <geometry><box><size>11.3 0.02 0.914</size></box></geometry>
+    </collision>
+
+    <!-- Continuous strand AT the LiDAR scan height (z~0.713 m). gpu_lidar senses
+         VISUALS, and the 5 cm strand grid leaves a gap at this exact height; this
+         box gives every scan a clean, dense net return at the right place so the
+         one-shot net lock (which anchors the whole court frame) is stable. -->
+    <visual name="net_lidar_strand"><pose>0 0 0.713 0 0 0</pose><geometry><box><size>11.3 0.02 0.03</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+
+    <!-- Procedural net visual: 5 cm DAE mat_2 strand grid, visible to the camera. -->
+    <visual name="net_h_01"><pose>0 0 0.05 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_02"><pose>0 0 0.10 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_03"><pose>0 0 0.15 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_04"><pose>0 0 0.20 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_05"><pose>0 0 0.25 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_06"><pose>0 0 0.30 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_07"><pose>0 0 0.35 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_08"><pose>0 0 0.40 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_09"><pose>0 0 0.45 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_10"><pose>0 0 0.50 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_11"><pose>0 0 0.55 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_12"><pose>0 0 0.60 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_13"><pose>0 0 0.65 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_14"><pose>0 0 0.70 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_15"><pose>0 0 0.75 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_16"><pose>0 0 0.80 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_h_17"><pose>0 0 0.85 0 0 0</pose><geometry><box><size>11.3 0.006 0.006</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_001"><pose>-5.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_002"><pose>-5.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_003"><pose>-5.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_004"><pose>-5.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_005"><pose>-5.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_006"><pose>-5.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_007"><pose>-4.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_008"><pose>-4.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_009"><pose>-4.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_010"><pose>-4.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_011"><pose>-4.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_012"><pose>-4.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_013"><pose>-4.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_014"><pose>-4.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_015"><pose>-4.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_016"><pose>-4.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_017"><pose>-4.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_018"><pose>-4.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_019"><pose>-4.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_020"><pose>-4.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_021"><pose>-4.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_022"><pose>-4.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_023"><pose>-4.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_024"><pose>-4.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_025"><pose>-4.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_026"><pose>-4.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_027"><pose>-3.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_028"><pose>-3.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_029"><pose>-3.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_030"><pose>-3.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_031"><pose>-3.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_032"><pose>-3.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_033"><pose>-3.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_034"><pose>-3.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_035"><pose>-3.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_036"><pose>-3.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_037"><pose>-3.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_038"><pose>-3.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_039"><pose>-3.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_040"><pose>-3.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_041"><pose>-3.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_042"><pose>-3.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_043"><pose>-3.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_044"><pose>-3.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_045"><pose>-3.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_046"><pose>-3.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_047"><pose>-2.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_048"><pose>-2.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_049"><pose>-2.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_050"><pose>-2.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_051"><pose>-2.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_052"><pose>-2.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_053"><pose>-2.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_054"><pose>-2.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_055"><pose>-2.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_056"><pose>-2.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_057"><pose>-2.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_058"><pose>-2.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_059"><pose>-2.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_060"><pose>-2.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_061"><pose>-2.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_062"><pose>-2.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_063"><pose>-2.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_064"><pose>-2.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_065"><pose>-2.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_066"><pose>-2.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_067"><pose>-1.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_068"><pose>-1.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_069"><pose>-1.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_070"><pose>-1.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_071"><pose>-1.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_072"><pose>-1.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_073"><pose>-1.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_074"><pose>-1.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_075"><pose>-1.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_076"><pose>-1.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_077"><pose>-1.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_078"><pose>-1.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_079"><pose>-1.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_080"><pose>-1.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_081"><pose>-1.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_082"><pose>-1.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_083"><pose>-1.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_084"><pose>-1.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_085"><pose>-1.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_086"><pose>-1.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_087"><pose>-0.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_088"><pose>-0.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_089"><pose>-0.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_090"><pose>-0.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_091"><pose>-0.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_092"><pose>-0.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_093"><pose>-0.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_094"><pose>-0.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_095"><pose>-0.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_096"><pose>-0.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_097"><pose>-0.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_098"><pose>-0.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_099"><pose>-0.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_100"><pose>-0.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_101"><pose>-0.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_102"><pose>-0.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_103"><pose>-0.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_104"><pose>-0.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_105"><pose>-0.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_106"><pose>-0.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_107"><pose>0.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_108"><pose>0.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_109"><pose>0.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_110"><pose>0.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_111"><pose>0.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_112"><pose>0.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_113"><pose>0.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_114"><pose>0.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_115"><pose>0.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_116"><pose>0.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_117"><pose>0.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_118"><pose>0.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_119"><pose>0.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_120"><pose>0.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_121"><pose>0.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_122"><pose>0.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_123"><pose>0.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_124"><pose>0.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_125"><pose>0.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_126"><pose>1.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_127"><pose>1.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_128"><pose>1.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_129"><pose>1.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_130"><pose>1.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_131"><pose>1.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_132"><pose>1.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_133"><pose>1.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_134"><pose>1.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_135"><pose>1.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_136"><pose>1.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_137"><pose>1.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_138"><pose>1.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_139"><pose>1.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_140"><pose>1.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_141"><pose>1.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_142"><pose>1.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_143"><pose>1.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_144"><pose>1.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_145"><pose>1.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_146"><pose>2.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_147"><pose>2.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_148"><pose>2.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_149"><pose>2.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_150"><pose>2.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_151"><pose>2.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_152"><pose>2.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_153"><pose>2.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_154"><pose>2.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_155"><pose>2.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_156"><pose>2.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_157"><pose>2.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_158"><pose>2.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_159"><pose>2.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_160"><pose>2.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_161"><pose>2.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_162"><pose>2.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_163"><pose>2.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_164"><pose>2.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_165"><pose>2.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_166"><pose>3.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_167"><pose>3.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_168"><pose>3.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_169"><pose>3.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_170"><pose>3.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_171"><pose>3.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_172"><pose>3.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_173"><pose>3.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_174"><pose>3.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_175"><pose>3.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_176"><pose>3.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_177"><pose>3.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_178"><pose>3.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_179"><pose>3.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_180"><pose>3.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_181"><pose>3.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_182"><pose>3.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_183"><pose>3.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_184"><pose>3.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_185"><pose>3.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_186"><pose>4.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_187"><pose>4.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_188"><pose>4.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_189"><pose>4.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_190"><pose>4.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_191"><pose>4.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_192"><pose>4.30 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_193"><pose>4.35 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_194"><pose>4.40 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_195"><pose>4.45 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_196"><pose>4.50 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_197"><pose>4.55 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_198"><pose>4.60 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_199"><pose>4.65 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_200"><pose>4.70 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_201"><pose>4.75 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_202"><pose>4.80 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_203"><pose>4.85 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_204"><pose>4.90 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_205"><pose>4.95 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_206"><pose>5.00 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_207"><pose>5.05 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_208"><pose>5.10 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_209"><pose>5.15 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_210"><pose>5.20 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+    <visual name="net_v_211"><pose>5.25 0 0.43 0 0 0</pose><geometry><box><size>0.006 0.006 0.86</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
+
+    <!-- White top band: a flat box at z = 0.914 Ã¢Ë†â€™ 0.031 = 0.883, height 0.063 m -->
+    <visual name="top_band">
+      <pose>0 0 0.883 0 0 0</pose>
+      <geometry><box><size>11.3 0.02 0.063</size></box></geometry>
+      <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material>
+    </visual>
+  </link>
+
+  <!-- Ã¢â€â‚¬Ã¢â€â‚¬ PERIMETER FENCES Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+       Collision: box (stable for LiDAR raycasting).
+       Visual: DAE mesh with 4 cm rhombus chain-link pattern.
+
+       East/West fences use fence_long.dae (width=15 m Ãƒâ€” height=4 m).
+         Link pose yaw = Ã¢Ë†â€™Ãâ‚¬/2 so mesh X (horizontal) Ã¢â€ â€™ world Ã¢Ë†â€™Y.
+         Collision box in local frame: size (15, 0.08, 4), centre (0, 0, 2).
+
+       North/South fences use fence_wide.dae (width=29.08 m Ãƒâ€” height=4 m).
+         Link pose yaw = 0 (mesh X already = world X).
+         Collision box: size (29.08, 0.08, 4), centre (0, 0, 2).              -->
+
+  <link name="fence_east">
+    <pose>16.5 0 0 0 0 -1.5708</pose>
+    <collision name="col">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>17.0 0.08 4.0</size></box></geometry>
+    </collision>
+    <!-- Near-invisible solid pane so the gpu_lidar (which raycasts against
+         visual GEOMETRY, ignoring alpha) gets dense returns from the fence.
+         The chain-link DAE has real 4 cm holes, so ~80% of rays pass through
+         and SLAM never sees the boundary. -->
+    <visual name="lidar_screen">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>17.0 0.02 4.0</size></box></geometry>
+      <material>
+        <ambient>0.08 0.20 0.10 0.05</ambient>
+        <diffuse>0.08 0.20 0.10 0.05</diffuse>
+      </material>
+      <transparency>0.95</transparency>
+    </visual>
+    <visual name="v">
+      <geometry><mesh><uri>model://tennis_court/meshes/fence_long.dae</uri></mesh></geometry>
+      <!-- Transparent chain-link fence mesh with 4 cm rhombus pattern. -->
+      <material>
+        <double_sided>true</double_sided>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fence_west">
+    <pose>-16.5 0 0 0 0 -1.5708</pose>
+    <collision name="col">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>17.0 0.08 4.0</size></box></geometry>
+    </collision>
+    <visual name="lidar_screen">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>17.0 0.02 4.0</size></box></geometry>
+      <material>
+        <ambient>0.08 0.20 0.10 0.05</ambient>
+        <diffuse>0.08 0.20 0.10 0.05</diffuse>
+      </material>
+      <transparency>0.95</transparency>
+    </visual>
+    <visual name="v">
+      <geometry><mesh><uri>model://tennis_court/meshes/fence_long.dae</uri></mesh></geometry>
+      <!-- Transparent chain-link fence mesh with 4 cm rhombus pattern. -->
+      <material>
+        <double_sided>true</double_sided>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fence_north">
+    <pose>0 8.5 0 0 0 0</pose>
+    <collision name="col">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>33.08 0.08 4.0</size></box></geometry>
+    </collision>
+    <visual name="lidar_screen">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>33.08 0.02 4.0</size></box></geometry>
+      <material>
+        <ambient>0.08 0.20 0.10 0.05</ambient>
+        <diffuse>0.08 0.20 0.10 0.05</diffuse>
+      </material>
+      <transparency>0.95</transparency>
+    </visual>
+    <visual name="v">
+      <geometry><mesh><uri>model://tennis_court/meshes/fence_wide.dae</uri></mesh></geometry>
+      <!-- Transparent chain-link fence mesh with 4 cm rhombus pattern. -->
+      <material>
+        <double_sided>true</double_sided>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fence_south_west">
+    <pose>-8.77 -8.5 0 0 0 0</pose>
+    <collision name="col">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>15.54 0.08 4.0</size></box></geometry>
+    </collision>
+    <visual name="lidar_screen">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>15.54 0.02 4.0</size></box></geometry>
+      <material>
+        <ambient>0.08 0.20 0.10 0.05</ambient>
+        <diffuse>0.08 0.20 0.10 0.05</diffuse>
+      </material>
+      <transparency>0.95</transparency>
+    </visual>
+    <visual name="v">
+      <geometry><mesh><uri>model://tennis_court/meshes/fence_gate_side.dae</uri></mesh></geometry>
+      <!-- South fence split leaves a 2 m center gate opening. -->
+      <material>
+        <double_sided>true</double_sided>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fence_south_east">
+    <pose>8.77 -8.5 0 0 0 0</pose>
+    <collision name="col">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>15.54 0.08 4.0</size></box></geometry>
+    </collision>
+    <visual name="lidar_screen">
+      <pose>0 0 2.0 0 0 0</pose>
+      <geometry><box><size>15.54 0.02 4.0</size></box></geometry>
+      <material>
+        <ambient>0.08 0.20 0.10 0.05</ambient>
+        <diffuse>0.08 0.20 0.10 0.05</diffuse>
+      </material>
+      <transparency>0.95</transparency>
+    </visual>
+    <visual name="v">
+      <geometry><mesh><uri>model://tennis_court/meshes/fence_gate_side.dae</uri></mesh></geometry>
+      <material>
+        <double_sided>true</double_sided>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <!-- fence_south_full_visual removed: was a single-sided-mesh workaround.
+       The split south panels (fence_south_west/east) are now genuinely
+       double-sided, so the overlapping full pane is redundant and caused
+       coplanar z-fighting. -->
+
+  <link name="gate_leaf_west">
+    <pose>-0.5 -8.5 0 0 0 0</pose>
+    <visual name="v">
+      <geometry><mesh><uri>model://tennis_court/meshes/gate_leaf.dae</uri></mesh></geometry>
+      <material>
+        <double_sided>true</double_sided>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <link name="gate_leaf_east">
+    <pose>0.5 -8.5 0 0 0 0</pose>
+    <visual name="v">
+      <geometry><mesh><uri>model://tennis_court/meshes/gate_leaf.dae</uri></mesh></geometry>
+      <material>
+        <double_sided>true</double_sided>
+        <ambient>0.06 0.16 0.08 0.88</ambient>
+        <diffuse>0.08 0.20 0.10 0.88</diffuse>
+        <specular>0.04 0.08 0.04 1</specular>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Ã¢â€â‚¬Ã¢â€â‚¬ FLOODLIGHT POLES Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+  <link name="pole_ne"><pose>15.0 8.0 5.0 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
+      <material><ambient>0.35 0.35 0.40 1</ambient><diffuse>0.4 0.4 0.45 1</diffuse></material></visual></link>
+  <link name="pole_nw"><pose>-15.0 8.0 5.0 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
+      <material><ambient>0.35 0.35 0.40 1</ambient><diffuse>0.4 0.4 0.45 1</diffuse></material></visual></link>
+  <link name="pole_se"><pose>15.0 -8.0 5.0 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
+      <material><ambient>0.35 0.35 0.40 1</ambient><diffuse>0.4 0.4 0.45 1</diffuse></material></visual></link>
+  <link name="pole_sw"><pose>-15.0 -8.0 5.0 0 0 0</pose>
+    <collision name="col"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry></collision>
+    <visual name="v"><geometry><cylinder><radius>0.06</radius><length>10.0</length></cylinder></geometry>
+      <material><ambient>0.35 0.35 0.40 1</ambient><diffuse>0.4 0.4 0.45 1</diffuse></material></visual></link>
+
+</model>
+</sdf>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="robot_body_panels" params="parent chassis_z">
+    
+    <joint name="panels_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="panels_link"/>
+      <origin xyz="0 0 ${chassis_z / 2}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="panels_link">
+      <inertial>
+        <mass value="2.5"/> <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+      </inertial>
+
+<visual name="front_left_housing">
+        <origin xyz="0.44 0.18 0.22" rpy="0 0 0"/>
+        <geometry><box size="0.04 0.22 0.44"/></geometry>
+        <material name="body_white">
+          <color rgba="0.92 0.92 0.92 1.0"/>
+        </material>
+      </visual>
+
+      <visual name="front_right_housing">
+        <origin xyz="0.44 -0.18 0.22" rpy="0 0 0"/>
+        <geometry><box size="0.04 0.22 0.44"/></geometry>
+        <material name="body_white"/>
+      </visual>
+
+      <visual name="front_top_brow">
+        <origin xyz="0.44 0 0.38" rpy="0 0 0"/>
+        <geometry><box size="0.04 0.58 0.12"/></geometry>
+        <material name="body_white"/>
+      </visual>
+
+      <visual name="rear_curve_panel">
+        <origin xyz="-0.46 0 0.22" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.05 0.58 0.44"/>
+        </geometry>
+        <material name="body_white"/>
+      </visual>
+
+      <visual name="left_side_panel">
+        <origin xyz="0 0.29 0.22" rpy="0 0 0"/>
+        <geometry><box size="0.88 0.004 0.44"/></geometry>
+        <material name="body_dark_grey">
+          <color rgba="0.2 0.2 0.2 1.0"/>
+        </material>
+      </visual>
+      <visual name="right_side_panel">
+        <origin xyz="0 -0.29 0.22" rpy="0 0 0"/>
+        <geometry><box size="0.88 0.004 0.44"/></geometry>
+        <material name="body_dark_grey"/>
+      </visual>
+
+      <visual name="top_cover_panel">
+        <origin xyz="0 0 0.44" rpy="0 0 0"/>
+        <geometry><box size="0.88 0.58 0.004"/></geometry>
+        <material name="body_white"/>
+      </visual>
+    </link>
+
+  </xacro:macro>
+</robot>

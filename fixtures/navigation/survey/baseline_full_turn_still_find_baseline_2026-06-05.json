@@ -1,0 +1,48 @@
+{
+  "name": "baseline_full_turn_still_find_baseline_2026-06-05",
+  "fixture": "baseline_full_turn_still_find_baseline_2026-06-05.jsonl",
+  "scenario": "Court Survey / Map Court",
+  "source": "Gazebo recording from runtime/survey_replay_latest.jsonl",
+  "recorded_at": "2026-06-05",
+  "expected": {
+    "survey_complete": false,
+    "final_state": "find_baseline",
+    "last_event": "net_found_turning_180_for_baseline",
+    "max_required_turn_pending_linear_m_s": 0.0,
+    "first_required_turn_forward": null
+  },
+  "live_observed": {
+    "final_state": "done",
+    "last_event": "full_perimeter_survey_partial",
+    "failure_reason": "long_side_drive_timeout",
+    "phase_path": [
+      "find_baseline",
+      "turn_to_left_sideline",
+      "drive_left_sideline",
+      "turn_to_long_side",
+      "drive_long_side",
+      "done"
+    ],
+    "drive_long_side": {
+      "start_tick": 493,
+      "end_tick": 2319,
+      "start_pose": {
+        "x_m": -5.705,
+        "y_m": -6.783,
+        "yaw_deg": 353.3
+      },
+      "end_pose": {
+        "x_m": -1.308,
+        "y_m": -6.733,
+        "yaw_deg": 0.0
+      },
+      "stuck_ticks": 1655,
+      "far_baseline_crossed": true
+    }
+  },
+  "notes": [
+    "The baseline 180-degree turn completes before forward motion starts.",
+    "Live telemetry reached drive_long_side, moved only part of the long side, then stayed at the same pose until long_side_drive_timeout.",
+    "The recorder version for this run did not include cmd_linear_m_s/cmd_angular_rad_s, so follow-up recordings should use the updated recorder."
+  ]
+}

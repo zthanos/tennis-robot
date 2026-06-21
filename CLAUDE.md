@@ -4,111 +4,103 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Simulation-first tennis ball collection robot. Stack: Webots (simulation) + Python (controller). ROS 2 planned for later. The active design is "Concept A": pitched chassis, orange funnel, wide intake roller, optional OAK-D depth camera.
+Simulation-first tennis ball collection robot. Stack: Gazebo Harmonic (simulation) + ROS 2 Humble + Python. The active design is "Concept A": pitched chassis, orange funnel, wide intake roller, optional OAK-D depth camera.
 
 ## Current Architecture Direction
 
-Treat the current Webots controller, control panel, and world as legacy reference
-for the next implementation phase. New implementation work should start from
-`docs/architecture-implementation-guide-el.md` and the active baseline docs in
-`docs/`, especially validation, search strategy, collection state machine, and
-mission dashboard plans. Reuse existing code only when it supports the new
-contracts; do not let old controller states or UI labels define the new design.
+New implementation work should start from `docs/architecture-implementation-guide-el.md` and the active baseline docs in `docs/`, especially validation, search strategy, collection state machine, and mission dashboard plans.
 
 ## Commands
 
-### Run the simulation
-```powershell
-# 1. Open worlds/tennis_court.wbt in Webots and press Play
-# 2. Controller at controllers/ball_detector/ball_detector.py runs automatically
+### Run the simulation (Gazebo)
+
+```bash
+# From WSL shell:
+docker compose --profile gazebo up gazebo
+# With RViz visualization (map, TF, /scan, robot model):
+docker compose --profile gazebo up gazebo rviz
+# Or with survey recorder:
+docker compose --profile gazebo-rec up gazebo-rec
+# Motion-chain diagnosis (sim must be running; writes runtime/motion_diag_*/):
+docker compose --profile gazebo exec gazebo bash /workspace/scripts/diagnose_motion.sh
 ```
 
-### Web control panel (sends commands to a running Webots controller)
-```powershell
-uv run python scripts/control_panel.py
-# Open http://127.0.0.1:8081
-```
+### Route simulator (no sim needed)
 
-### Route simulator (no Webots needed)
 ```powershell
 uv run python scripts/simulation_panel.py
 # Open http://127.0.0.1:8082
 ```
 
-### Smoke tests (no Webots needed)
-```powershell
-uv run python scripts/perception_smoke.py
-uv run python scripts/collector_behavior_smoke.py
-uv run python scripts/survey_behavior_smoke.py
-```
-
-### Syntax check
-```powershell
-uv run python -m py_compile controllers/ball_detector/ball_detector.py
-```
-
 ### Route benchmarking (Monte Carlo)
+
 ```powershell
 uv run python scripts/route_benchmark.py --runs 100 --balls 40
 ```
 
+### Survey replay
+
+```powershell
+uv run python scripts/replay_ros2_lidar_survey.py <fixture.jsonl>
+uv run python scripts/replay_survey_cmd_vel.py <fixture.jsonl>
+```
+
 ### Docker workflows
+
 ```powershell
 docker compose run --rm sim-dev              # Python dev shell
-docker compose up webots                     # Webots GUI via noVNC on port 6080
+docker compose --profile gazebo up gazebo    # Gazebo GUI via WSLg
 docker compose --profile cad up openscad-gui # OpenSCAD GUI on port 6081
 ```
 
 ## Architecture
 
-### Controller modules (`controllers/ball_detector/`)
+### ROS 2 nodes (`ros2_ws/src/tennis_robot/tennis_robot/`)
 
 | File | Role |
-|---|---|
-| `ball_detector.py` | Webots controller entry point; wires perception → state machine → telemetry each timestep |
-| `perception.py` | OpenCV HSV blob detection; monocular and depth distance estimation; camera→world coordinate transforms |
-| `collector.py` | `ConceptACollectorBehavior` — 8-state FSM (idle → scan → align → approach → capture → collected); drives wheel and lift-wheel motors |
-| `survey.py` | `CourtSurveyBehavior` — boustrophedon waypoint navigation; writes measurements to `runtime/court_survey.csv` |
-| `control_bus.py` | `RobotCommandStore` — file-backed IPC via `runtime/robot_command.json`; bridges web UI ↔ Webots |
-| `telemetry.py` | Optional OpenTelemetry setup (metrics, spans); enabled via `OTEL_ENABLED=true` |
-
-### Data flow (single timestep)
-```
-Webots camera frame
-  → perception.detect_largest_ball()      # HSV mask → contour → pixel coords
-  → estimate_ball_observation()            # monocular focal-length distance
-  → (optional) estimate_depth_ball_observation()  # median depth pixels
-  → observation_to_world()                # camera mount + robot pose → world XY
-  → ConceptACollectorBehavior.update()    # FSM → motor velocity commands
-```
+| --- | --- |
+| `controller_node.py` | Main ROS 2 node; integrates survey + motion; publishes cmd_vel and status |
+| `court_survey_v2_node.py` | **Active** survey coverage controller (`INIT→FIND_NET→COVERAGE→SAVING_MAP→DONE/FAILED`); writes `runtime/court_boundary.json` (schema `court_knowledge_model/v2`) |
+| `court_extraction.py` | Pure extraction functions (net/posts, fence rectangle, court lines, obstacles, run-off distances, fail-loud checks) — offline-testable |
+| `court_coverage.py` | Vantage points (8 + return pass) and recoverable-failure classifier |
+| `lidar_survey.py` | Legacy dead-reckoning perimeter survey FSM (`Ros2LidarCourtSurvey`) — **superseded by the v2 nodes above** |
+| `motion.py` | Turn tracking and motion primitives |
+| `motion_controller.py` | Translates survey/collector commands to `cmd_vel` Twist messages |
+| `navigation_node.py` | Navigation node (in progress) |
 
 ### Scripts (`scripts/`)
 
 | File | Role |
-|---|---|
-| `control_panel.py` | Minimal HTTP server + HTML UI; writes to `runtime/robot_command.json` |
+| --- | --- |
 | `simulation_panel.py` | Browser-based route simulator (fast planning sandbox) |
-| `generate_balls.py` | Generates random/realistic-biased ball positions as Webots Solid nodes |
 | `route_benchmark.py` | Monte Carlo scenario evaluator; generates training data for policy learning |
 | `train_next_ball_policy.py` | Trains next-ball selection model from benchmark output |
 | `evaluate_*.py` | Compare planning strategies: defer/edge-pass, skip-risky, scan-replan |
+| `survey_replay_record.py` | Records live survey ticks to JSONL for deterministic replay |
+| `replay_ros2_lidar_survey.py` | Deterministic replay of recorded survey ticks |
+| `replay_survey_cmd_vel.py` | Replay recorded cmd_vel commands |
+| `replay_navigation_fixtures.py` | Replay navigation fixtures |
 
-### IPC: web UI ↔ Webots
-`runtime/robot_command.json` is a file written by the web panel and polled by the controller's `RobotCommandStore`. No message queues or ROS yet.
+### IPC: web UI ↔ robot
 
-### Perception modes
-Two modes controlled by `USE_RGB_VISION`:
-- **Depth** (preferred when `USE_RGB_VISION=true`): OAK-D camera; `estimate_depth_ball_observation()` uses median of valid depth pixels.
-- **Monocular** (fallback): single camera; `estimate_ball_observation()` uses known ball diameter and focal length.
+`runtime/robot_command.json` — written by external UI, polled by controller node.
+`runtime/robot_status.json` — written by controller node, read by UI and replay scripts.
+
+### Survey output
+
+`runtime/court_boundary.json` — written by `court_survey_v2_node.py` after survey completes (schema `court_knowledge_model/v2`). Contains net center/posts, court line geometry (court frame), fence corners + extents, run-off distances to fence, obstacles, occupancy point count, and a best-effort `map_artifact` (serialized SLAM map for Nav2 reuse). See `docs/court-survey-v2-spec-el.md`.
+
+### Gazebo world (`gazebo/models/tennis_court/`)
+
+Red clay court (23.77 m × 10.97 m). Net at x=0, baselines at x=±11.885 m, service lines at x=±6.4 m. Perimeter fencing modeled as separate DAE meshes.
 
 ### Configuration via environment variables
-All behavioral parameters are tunable without code changes (speeds, PID gains, tolerances, telemetry). Key vars: `ROBOT_COMMAND_FILE`, `USE_RGB_VISION`, `OTEL_ENABLED`, `OTEL_EXPORTER`, `ROUTE_VISUALIZATION`, `ROUTE_VISUALIZATION_PRESET`, `COLLECTOR_*`, `SURVEY_*`.
 
-### Webots world (`worlds/tennis_court.wbt`)
-Red clay court (23.77 m × 10.97 m). Net at x=0, baselines at x=±11.885 m, service lines at x=±6.4 m. Perimeter fencing, survey depth targets (floodlight poles, chairs) around the court.
+All behavioral parameters are tunable without code changes (speeds, PID gains, tolerances, telemetry). Key vars: `ROBOT_COMMAND_FILE`, `ROBOT_STATUS_FILE`, `OTEL_ENABLED`, `OTEL_EXPORTER`, `COLLECTOR_*`, `SURVEY_*`, `ROS2_SURVEY_*`.
 
 ## Key Constraints
+
 - Python 3.12+, managed with `uv` (not pip directly).
-- No formal test framework — smoke tests in `scripts/` are the test suite.
-- `runtime/` is gitignored; generated files (command JSON, survey CSV, benchmark results) live there.
+- No formal test framework — replay scripts in `scripts/` and `fixtures/` are the test suite.
+- `runtime/` is gitignored; generated files (command JSON, survey JSON, benchmark results) live there.
 - Concept A is the active hardware baseline; earlier concept docs in `docs/research/` are archived.

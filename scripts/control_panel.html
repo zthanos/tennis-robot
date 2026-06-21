@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tennis Robot Console</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand">
+        <h1>Tennis Robot Console</h1>
+        <p>Remote control and live diagnostics for the Gazebo + ROS 2 simulation.</p>
+      </div>
+      <nav aria-label="Console sections">
+        <button class="active" data-view="dashboard">Dashboard</button>
+        <button data-view="control">Control</button>
+        <button data-view="sensors">Sensor Views</button>
+        <button data-view="telemetry">Telemetry</button>
+        <button data-view="stats">Command Stats</button>
+        <button data-view="history">History</button>
+        <button data-view="webcam">Webcam</button>
+        <button data-view="vendors">Vendors</button>
+        <button data-view="surveys">Court Maps</button>
+      </nav>
+      <div class="connection">
+        <div><span id="liveDot" class="dot"></span><span id="connectionText">Waiting for robot status</span></div>
+        <div id="commandFile">Command file: runtime/robot_command.json</div>
+        <div id="activeSessionSidebar" style="margin-top:8px;font-size:12px;color:var(--muted);">Session: none</div>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <h2 id="viewTitle">Dashboard</h2>
+          <p id="viewHelp">Observe the robot mode, collector state, current target, and command stream while the simulation runs.</p>
+        </div>
+        <div id="lastRefresh" class="timestamp">Not refreshed yet</div>
+      </header>
+
+      <!-- View partials are lazy-loaded into these containers from /static/views/<id>.html -->
+      <section id="dashboard" class="view active" data-partial="dashboard"></section>
+      <section id="control" class="view" data-partial="control"></section>
+      <section id="sensors" class="view" data-partial="sensors"></section>
+      <section id="telemetry" class="view" data-partial="telemetry"></section>
+      <section id="stats" class="view" data-partial="stats"></section>
+      <section id="history" class="view" data-partial="history"></section>
+      <section id="webcam" class="view" data-partial="webcam"></section>
+      <section id="surveys" class="view" data-partial="surveys"></section>
+      <section id="vendors" class="view" data-partial="vendors"></section>
+    </main>
+  </div>
+
+  <script src="/static/survey_map_v2.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

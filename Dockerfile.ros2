@@ -1,0 +1,35 @@
+# Pure ROS 2 Humble image for the behavior nodes (no Webots).
+# On real hardware, hardware driver nodes replace webots_bridge.py,
+# publishing identical topics (/camera/image_raw, /scan, /odom, etc.).
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        python3-colcon-common-extensions \
+        python3-opencv \
+        python3-pip \
+        ros-humble-cv-bridge \
+        ros-humble-rosbridge-suite \
+        ros-humble-rmw-cyclonedds-cpp \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /ros2_ws
+
+# Build messages first (nodes depend on them)
+COPY ros2_ws/src/tennis_robot_msgs src/tennis_robot_msgs
+RUN . /opt/ros/humble/setup.sh \
+    && colcon build --packages-select tennis_robot_msgs
+
+# Build behavior nodes
+COPY ros2_ws/src/tennis_robot src/tennis_robot
+RUN . /opt/ros/humble/setup.sh \
+    && . install/setup.sh \
+    && colcon build --packages-select tennis_robot
+
+
+CMD ["bash", "-c", \
+    ". /opt/ros/humble/setup.sh && \
+     . /ros2_ws/install/setup.sh && \
+     ros2 launch tennis_robot tennis_robot.launch.py"]

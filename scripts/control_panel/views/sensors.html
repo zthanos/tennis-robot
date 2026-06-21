@@ -1,0 +1,82 @@
+        <div class="grid sensors-top">
+          <div class="panel">
+            <h3>360° LiDAR</h3>
+            <div id="lidarScanView" class="sensor-empty" style="background:#090d12;border:1px solid var(--line);border-radius:8px;min-height:200px;">waiting for LiDAR scan</div>
+            <div id="lidarScanMeta" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px 0 2px;color:var(--muted);font-size:12px;"></div>
+          </div>
+          <div class="panel">
+            <h3>Front Camera</h3>
+            <div id="sensorsCameraView" class="sensor-empty">waiting for image</div>
+          </div>
+          <div class="panel">
+            <h3>OAK-D Depth</h3>
+            <div id="sensorsDepthView" class="sensor-empty">waiting for depth</div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:14px;">
+          <h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">Map Court Discovery <span id="surveyDiscoveryStatus" style="font-size:13px;font-weight:400;color:var(--muted);">waiting for points</span>
+            <button type="button" onclick="clearSurveyPath()" style="margin-left:auto;font:inherit;font-size:12px;cursor:pointer;background:var(--panel-2);color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:4px 10px;">Clear path</button>
+          </h3>
+          <canvas id="surveyDiscoveryMap" width="1000" height="520" style="display:block;width:100%;max-height:520px;background:#090d12;border:1px solid var(--line);border-radius:8px;"></canvas>
+          <div id="surveyDiscoveryMeta" class="kv" style="margin-top:10px;"></div>
+        </div>
+        <div id="surveyBoundaryPanel" class="panel" style="margin-top:14px;">
+          <h3>Court Map Boundary &nbsp;<span id="surveyBoundaryStatus" style="font-size:13px;font-weight:400;color:var(--muted);">no court map data</span></h3>
+          <div id="surveyBoundaryKv" class="kv" style="margin-top:10px;"></div>
+        </div>
+        <div class="panel" style="margin-top:14px;">
+          <h3>IR Intake Sensors</h3>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Collection trigger fires when either sensor exceeds threshold. Value 1000 = object detected, 0 = clear.</p>
+          <div id="irIntakeView" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div id="irLeftPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">LEFT</div>
+              <div id="irLeftValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">—</div>
+              <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
+                <div id="irLeftBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
+              </div>
+            </div>
+            <div id="irRightPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">RIGHT</div>
+              <div id="irRightValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">—</div>
+              <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
+                <div id="irRightBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
+              </div>
+            </div>
+          </div>
+          <div id="irTriggeredBadge" style="margin-top:12px;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;text-align:center;background:rgba(255,255,255,0.04);color:var(--muted);">
+            TRIGGERED: —
+          </div>
+        </div>
+        <div class="panel" style="margin-top:14px;">
+          <h3>Obstacle Survey Debug &nbsp;<span id="obsState" style="font-size:13px;font-weight:400;color:var(--muted);">idle</span></h3>
+          <div id="obsKv" class="kv" style="margin-top:8px;margin-bottom:10px;"></div>
+          <div id="obsLog" style="font-family:monospace;font-size:11px;line-height:1.5;background:#090d12;border:1px solid var(--line);border-radius:6px;padding:8px 10px;max-height:260px;overflow-y:auto;white-space:pre;"></div>
+          <details style="margin-top:12px;">
+            <summary style="cursor:pointer;font-size:12px;color:var(--muted);user-select:none;">Previous runs (history)</summary>
+            <div id="obsRunsTable" style="margin-top:8px;font-size:12px;"></div>
+          </details>
+        </div>
+        <div id="mapMissionPanel" class="panel" style="margin-top:14px;">
+          <h3>Half-Court Mapping Grid &nbsp;<span id="mapMissionStatus" style="font-size:13px;font-weight:400;color:var(--muted);">idle</span></h3>
+          <div style="display:grid;grid-template-columns:88px repeat(3,1fr);gap:6px;margin-top:14px;font-size:13px;text-align:center;align-items:center;">
+            <div></div>
+            <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Αριστερά</div>
+            <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Κέντρο</div>
+            <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Δεξιά</div>
+            <div style="color:var(--muted);font-size:11px;text-align:right;padding-right:10px;">Φράχτης</div>
+            <div id="mapCell00" class="map-cell">—</div><div id="mapCell01" class="map-cell">—</div><div id="mapCell02" class="map-cell">—</div>
+            <div style="color:var(--muted);font-size:11px;text-align:right;padding-right:10px;">Μέση</div>
+            <div id="mapCell10" class="map-cell">—</div><div id="mapCell11" class="map-cell">—</div><div id="mapCell12" class="map-cell">—</div>
+            <div style="color:var(--muted);font-size:11px;text-align:right;padding-right:10px;">Φιλέ</div>
+            <div id="mapCell20" class="map-cell">—</div><div id="mapCell21" class="map-cell">—</div><div id="mapCell22" class="map-cell">—</div>
+          </div>
+          <div id="mapMissionProgress" style="display:none;margin-top:12px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px;">
+              <span id="mapMissionPhaseLabel"></span><span id="mapMissionPosesLabel"></span>
+            </div>
+            <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+              <div id="mapMissionBar" style="height:100%;width:0%;background:#a855f7;border-radius:2px;transition:width 0.5s;"></div>
+            </div>
+          </div>
+          <div id="mapMissionTotals" style="margin-top:10px;color:var(--muted);font-size:12px;"></div>
+        </div>

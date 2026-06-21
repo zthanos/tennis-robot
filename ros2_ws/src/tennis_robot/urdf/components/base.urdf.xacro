@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="box_inertial" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia
+          ixx="${mass * (y*y + z*z) / 12.0}" ixy="0" ixz="0"
+          iyy="${mass * (x*x + z*z) / 12.0}" iyz="0"
+          izz="${mass * (x*x + y*y) / 12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="cylinder_inertial" params="mass radius length axis">
+    <inertial>
+      <mass value="${mass}"/>
+      <xacro:if value="${axis == 'y'}">
+        <inertia
+            ixx="${mass * (3.0 * radius * radius + length * length) / 12.0}" ixy="0" ixz="0"
+            iyy="${0.5 * mass * radius * radius}" iyz="0"
+            izz="${mass * (3.0 * radius * radius + length * length) / 12.0}"/>
+      </xacro:if>
+      <xacro:unless value="${axis == 'y'}">
+        <inertia
+            ixx="${mass * (3.0 * radius * radius + length * length) / 12.0}" ixy="0" ixz="0"
+            iyy="${mass * (3.0 * radius * radius + length * length) / 12.0}" iyz="0"
+            izz="${0.5 * mass * radius * radius}"/>
+      </xacro:unless>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="tennis_robot_base" params="chassis_x chassis_y chassis_z chassis_mass">
+    <link name="base_footprint"/>
+
+    <joint name="base_footprint_joint" type="fixed">
+      <parent link="base_footprint"/>
+      <child link="base_link"/>
+      <origin xyz="0 0 0.09" rpy="0 0.053 0"/>
+    </joint>
+
+    <link name="base_link"> 
+      <xacro:box_inertial mass="${chassis_mass}" x="${chassis_x}" y="${chassis_y}" z="${chassis_z}"/> 
+      <collision name="chassis_col">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} ${chassis_y} ${chassis_z}"/></geometry> 
+      </collision>
+      <visual name="chassis_vis">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} ${chassis_y} ${chassis_z}"/></geometry> 
+        <material name="plywood"/>
+      </visual>
+      
+      <visual name="front_left_cheek_vis">
+        <origin xyz="${chassis_x / 2.0} ${0.30 / 2.0 + (chassis_y - 0.30) / 4.0} 0.077" rpy="0 0 0"/>
+        <geometry><box size="0.025 ${(chassis_y - 0.30) / 2.0} 0.14"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="front_right_cheek_vis">
+        <origin xyz="${chassis_x / 2.0} ${-(0.30 / 2.0 + (chassis_y - 0.30) / 4.0)} 0.077" rpy="0 0 0"/>
+        <geometry><box size="0.025 ${(chassis_y - 0.30) / 2.0} 0.14"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="rear_wall_vis">
+        <origin xyz="${-chassis_x / 2.0} 0 0.077" rpy="0 0 0"/>
+        <geometry><box size="0.025 ${chassis_y} 0.14"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="left_wall_vis">
+        <origin xyz="0 ${chassis_y / 2.0} 0.077" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} 0.025 0.14"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="right_wall_vis">
+        <origin xyz="0 ${-chassis_y / 2.0} 0.077" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} 0.025 0.14"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="left_axle_bracket_vis">
+        <origin xyz="-0.35 0.32 0" rpy="0 0 0"/>
+        <geometry><box size="0.065 0.060 0.018"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="right_axle_bracket_vis">
+        <origin xyz="-0.35 -0.32 0" rpy="0 0 0"/>
+        <geometry><box size="0.065 0.060 0.018"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="elec_vis">
+        <origin xyz="-0.13 0 0.067" rpy="0 0 0"/>
+        <geometry><box size="0.34 0.26 0.12"/></geometry>
+        <material name="anthracite"/>
+      </visual>
+      <visual name="ir_beam_line_vis">
+        <origin xyz="0.54 0 0.053" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="0.003" length="0.21"/></geometry>
+        <material name="ir_beam_red"/>
+      </visual>
+    </link>
+
+    <gazebo reference="base_link">
+      <material>Gazebo/Wood</material>
+    </gazebo>
+  </xacro:macro>
+</robot>

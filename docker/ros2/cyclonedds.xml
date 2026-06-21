@@ -1,0 +1,16 @@
+<CycloneDDS>
+  <Domain>
+    <General>
+      <AllowMulticast>false</AllowMulticast>
+    </General>
+    <Discovery>
+      <!-- Container service names resolve to IPs on the ros2-net bridge network -->
+      <Peers>
+        <Peer address="webots-ros2"/>
+        <Peer address="webots-ros2-wslg"/>
+        <Peer address="ros2-nodes"/>
+      </Peers>
+      <ParticipantIndex>auto</ParticipantIndex>
+    </Discovery>
+  </Domain>
+</CycloneDDS>

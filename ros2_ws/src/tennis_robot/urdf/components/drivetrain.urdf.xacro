@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="drive_wheel" params="side y wheel_x wheel_z radius width mass">
+    <link name="${side}_wheel_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="y"/>
+      <collision name="col">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+      </collision>
+      <visual name="vis">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+        <material name="rubber_black"/>
+      </visual>
+    </link>
+    <joint name="${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${side}_wheel_link"/>
+      <origin xyz="${wheel_x} ${y} ${wheel_z}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <dynamics damping="0.001"/>
+    </joint>
+    <gazebo reference="${side}_wheel_link">
+      <!-- VER=21: brute-force friction test — mu=5.0 isotropic, no fdir1.
+           VER=20 (mu=1.5) improved rotation from 48° to 73° out of 275° (~73% slip).
+           If mu=5.0 with court mu=2.0 still gives ~73% slip, the URDF <gazebo>
+           friction tags are NOT reaching the physics engine (DART ignoring them)
+           and we need the bullet-featherstone engine or direct SDF injection. -->
+      <mu1>5.0</mu1>
+      <mu2>5.0</mu2>
+      <slip1>0.0</slip1>
+      <slip2>0.0</slip2>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="caster" params="name x y z radius width:=0.030 trail:=0.0">
+    <link name="${name}_caster_swivel_link">
+      <inertial>
+        <mass value="0.03"/>
+        <inertia ixx="5e-5" ixy="0" ixz="0" iyy="5e-5" iyz="0" izz="5e-5"/>
+      </inertial>
+      <visual name="swivel_stem_vis">
+        <origin xyz="0 0 0.045" rpy="0 0 0"/>
+        <geometry><cylinder radius="0.014" length="0.09"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="caster_fork_vis">
+        <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+        <geometry><box size="0.075 0.020 0.055"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+    </link>
+    <joint name="${name}_caster_swivel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${name}_caster_swivel_link"/>
+      <origin xyz="${x} ${y} ${z + radius}" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.02" friction="0.001"/>
+    </joint>
+
+    <link name="${name}_caster_wheel_link">
+      <xacro:cylinder_inertial mass="0.05" radius="${radius}" length="${width}" axis="y"/>
+      <collision name="col">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+      </collision>
+      <visual name="vis">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+        <material name="rubber_black"/>
+      </visual>
+    </link>
+    <joint name="${name}_caster_wheel_joint" type="continuous">
+      <parent link="${name}_caster_swivel_link"/>
+      <child link="${name}_caster_wheel_link"/>
+      <!-- trail: wheel contact sits behind the vertical swivel axis so the
+           caster self-aligns with the direction of travel (no scrub/shimmy). -->
+      <origin xyz="-${trail} 0 -${radius}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <dynamics damping="0.001" friction="0.0"/>
+    </joint>
+
+    <gazebo reference="${name}_caster_wheel_link">
+      <mu1>0.8</mu1>
+      <mu2>0.05</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="intake_roller" params="x z radius width mass">
+    <link name="lift_wheel_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="y"/>
+      <collision name="col">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+      </collision>
+      <visual name="vis">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+        <material name="rubber_black"/>
+      </visual>
+    </link>
+    <joint name="lift_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="lift_wheel_link"/>
+      <origin xyz="${x} 0 ${z}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+    <gazebo reference="lift_wheel_link">
+      <mu1>1.5</mu1>
+      <mu2>1.5</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <!--
+    NOTE: The legacy Gazebo control plugins (gz-sim-diff-drive-system,
+    gz-sim-joint-state-publisher-system, gz-sim-joint-controller-system) were
+    removed during the ros2_control migration. Wheel + intake actuation is now
+    owned by ros2_control via components/ros2_control.urdf.xacro. Odometry,
+    /tf and /joint_states are published by diff_drive_controller +
+    joint_state_broadcaster instead of these plugins.
+  -->
+</robot>

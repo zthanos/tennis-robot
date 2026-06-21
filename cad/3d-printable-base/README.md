@@ -121,9 +121,15 @@ Recommended first exports:
   rear drive wheels, front casters, cover mounting rails, removable panels, and
   transport handle. Do not print it as one object.
 - The intended ball path in `full_robot_concept.scad` is:
-  front intake -> wide compliant roller -> transfer chute -> collect-mode bin
-  position -> raised/tilted throw-mode bin -> gravity feed chute -> metering
-  gate -> dual flywheels -> guarded launch chute.
+  loose ball -> floor-level left/right funnels -> 12 cm full-width front roller
+  -> collection channel -> hopper behind the roller -> metering/feed throat ->
+  front dual flywheels with a forward-facing guarded opening. The OAK-D
+  reference mount sits at the front, roughly 45 cm above ground, between the
+  roller and flywheel opening. It looks forward with only a 10-15 degree
+  downward tilt so court lines, net, fences, and tennis balls remain in view.
+  A raised LiDAR mast sits above the protective frame for clear wide-area
+  visibility, and an IR break-beam pair sits immediately after the roller throat
+  to detect balls entering the collector path.
 - The transparent cover panels in the concept are placeholders for removable
   polycarbonate/ABS panels. They show where the outer shell can land on rails
   and standoffs while leaving service access to the intake, feed gate, and

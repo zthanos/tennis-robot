@@ -1,0 +1,30 @@
+# twist_mux — canonical cmd_vel arbiter.
+#
+# Multiplexes velocity command sources by priority and forwards the winner to
+# the diff_drive_controller. This is the by-the-book replacement for a custom
+# relay node: teleop overrides navigation, navigation overrides idle behaviors.
+#
+# Output is remapped to /diff_drive_controller/cmd_vel_unstamped in the launch.
+# Higher priority wins. A topic must publish within `timeout` s to stay active.
+
+twist_mux:
+  ros__parameters:
+    use_sim_time: true   # set false on the real robot
+
+    topics:
+      teleop:
+        topic: /cmd_vel_teleop
+        timeout: 0.5
+        priority: 100
+      navigation:
+        topic: /cmd_vel_nav      # Nav2 controller output (milestone B)
+        timeout: 0.5
+        priority: 50
+      collection:
+        topic: /cmd_vel_collection   # fine-approach FSM (milestone C)
+        timeout: 0.5
+        priority: 70
+
+    # NOTE: no locks. A lock with no publisher is treated as engaged (fail-safe)
+    # by twist_mux, which zeroes the output and blocks ALL motion. Add an e-stop
+    # lock back only together with a node that actually publishes the unlock.

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="ir_beam_sensor" params="parent link_name joint_name xyz rpy topic update_rate">
+    <link name="${link_name}">
+      <inertial>
+        <mass value="0.005"/>
+        <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+      </inertial>
+      <visual name="sensor_body_vis">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><box size="0.035 0.020 0.025"/></geometry>
+        <material name="sensor_black"/>
+      </visual>
+    </link>
+    <joint name="${joint_name}" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${link_name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+    <gazebo reference="${link_name}">
+      <sensor name="${link_name}" type="gpu_lidar">
+        <update_rate>${update_rate}</update_rate>
+        <always_on>true</always_on>
+        <topic>${topic}</topic>
+        <gz_frame_id>${link_name}</gz_frame_id>
+        <lidar>
+          <scan>
+            <horizontal>
+              <samples>1</samples>
+              <resolution>1</resolution>
+              <min_angle>0</min_angle>
+              <max_angle>0</max_angle>
+            </horizontal>
+          </scan>
+          <range><min>0.01</min><max>0.25</max><resolution>0.001</resolution></range>
+        </lidar>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

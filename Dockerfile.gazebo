@@ -1,0 +1,139 @@
+# Gazebo Harmonic + ROS 2 Humble + AMD GPU (Mesa/DRI via WSLg)
+#
+# Build:  docker compose --profile gazebo build gazebo
+# Run:    docker compose --profile gazebo up gazebo
+#
+# GPU check inside container:
+#   glxinfo -B   → should show "Renderer: AMD Radeon" (not llvmpipe)
+#   gz sim --version   → should print Gazebo Harmonic
+#
+# WSL2 AMD GPU notes:
+#   - Requires Windows 11 + AMD driver 21.50+ (WSLg GPU support)
+#   - Passes /dev/dri and /usr/lib/wsl/lib into container
+#   - MESA_LOADER_DRIVER_OVERRIDE=d3d12 uses the D3D12 Mesa translation layer
+#   - If GPU fails Gazebo falls back to software rendering automatically
+
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV WORKSPACE=/workspace
+
+# ── Gazebo Harmonic ───────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl lsb-release gnupg2 ca-certificates wget \
+  && curl https://packages.osrfoundation.org/gazebo.gpg \
+       --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) \
+       signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] \
+       http://packages.osrfoundation.org/gazebo/ubuntu-stable \
+       $(lsb_release -cs) main" \
+       > /etc/apt/sources.list.d/gazebo-stable.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends gz-harmonic \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── ros_gz bridge (Humble ↔ Harmonic) ────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-ros-gzharmonic \
+    ros-humble-tf2-ros \
+    ros-humble-cv-bridge \
+    ros-humble-rmw-cyclonedds-cpp \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── Mesa / AMD GPU (WSLg DRI) ─────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-dri \
+    libgl1-mesa-glx \
+    libgles2-mesa \
+    mesa-utils \
+    libegl1-mesa \
+    libgbm1 \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── Python / build tools ──────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    python3-pip \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-cv-bridge \
+    python3-numpy \
+    python3-opencv \
+    ros-humble-xacro \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── ros2_control stack ────────────────────────────────────────────────────────
+# Controllers + manager + robot_state_publisher come as Humble binaries.
+# gz_ros2_control has NO Humble+Harmonic binary, so it is built from source
+# below (humble branch, GZ_VERSION=harmonic). libgz-sim8-dev provides the
+# Harmonic headers that source build needs.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-ros2-control \
+    ros-humble-ros2-controllers \
+    ros-humble-controller-manager \
+    ros-humble-robot-state-publisher \
+    libgz-sim8-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── Navigation / mapping stack ────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-slam-toolbox \
+    ros-humble-twist-mux \
+    ros-humble-teleop-twist-keyboard \
+    ros-humble-navigation2 \
+    ros-humble-nav2-bringup \
+    ros-humble-nav2-simple-commander \
+    ros-humble-rviz2 \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir duckdb
+
+# ── workspace ─────────────────────────────────────────────────────────────────
+WORKDIR /ros2_ws
+
+# ── Dependencies first (rarely change → cached across tennis_robot edits) ──────
+COPY ros2_ws/src/tennis_robot_msgs src/tennis_robot_msgs
+
+# gz_ros2_control: built from source for Gazebo Harmonic (no Humble binary).
+RUN git clone https://github.com/ros-controls/gz_ros2_control.git \
+      -b humble src/gz_ros2_control
+
+# explore_lite (m-explore-ros2): frontier exploration, built from source.
+RUN git clone https://github.com/robo-friends/m-explore-ros2.git \
+      src/m-explore-ros2
+
+# GZ_VERSION=harmonic tells gz_ros2_control to compile against Gazebo 8 (Harmonic).
+ENV GZ_VERSION=harmonic
+# Build deps + messages (heavy gz_ros2_control compile). Cached unless deps or
+# messages change. apt-get update: earlier layers cleared the apt lists, which
+# rosdep's apt-get install (e.g. ros-humble-image-geometry) needs.
+RUN apt-get update \
+  && . /opt/ros/humble/setup.sh \
+  && rosdep update \
+  && rosdep install --from-paths src --ignore-src -r -y \
+  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  && rm -rf /var/lib/apt/lists/*
+
+# ── tennis_robot last: edits here rebuild ONLY this package (seconds) ──────────
+# Bump TENNIS_ROBOT_VER to bust the COPY cache when source changes aren't detected
+ARG TENNIS_ROBOT_VER=21
+COPY ros2_ws/src/tennis_robot src/tennis_robot
+RUN . /opt/ros/humble/setup.sh \
+  && . install/setup.sh \
+  && colcon build --packages-select tennis_robot --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  && sed -i '/self\._navigator\.waitUntilNav2Active/d' \
+       /ros2_ws/src/tennis_robot/tennis_robot/court_survey_mission_node.py \
+  && printf '#!/usr/bin/env python3\nimport sys; sys.path.insert(0, "/ros2_ws/src/tennis_robot")\nfrom tennis_robot.court_landmarks_node import main\nsys.exit(main())\n' \
+       > /ros2_ws/install/tennis_robot/lib/tennis_robot/court_landmarks_node \
+  && printf '#!/usr/bin/env python3\nimport sys; sys.path.insert(0, "/ros2_ws/src/tennis_robot")\nfrom tennis_robot.court_survey_mission_node import main\nsys.exit(main())\n' \
+       > /ros2_ws/install/tennis_robot/lib/tennis_robot/court_survey_mission_node \
+  && chmod +x /ros2_ws/install/tennis_robot/lib/tennis_robot/court_landmarks_node \
+  && chmod +x /ros2_ws/install/tennis_robot/lib/tennis_robot/court_survey_mission_node
+
+ENV ROS_SETUP=/ros2_ws/install/setup.sh
+
+COPY docker/ros2/cyclonedds-gazebo.xml /cyclonedds-gazebo.xml
+
+CMD ["bash", "-c", \
+  ". /opt/ros/humble/setup.sh && . /ros2_ws/install/setup.sh && \
+   ros2 launch tennis_robot sim.launch.py"]
