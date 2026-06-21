@@ -139,6 +139,12 @@ class TennisRobotDB:
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS net_world_y DOUBLE",
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS survey_type TEXT",
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS canonical_json TEXT",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS failure_reason TEXT",
+        "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS obstacle_count INTEGER",
+        # One-shot cleanup: drop stale pre-v2 survey rows (old BT/perimeter
+        # systems, court_id NULL, no v2 measurements). Idempotent — these
+        # survey_type values are never produced again.
+        "DELETE FROM surveys WHERE survey_type IN ('court_survey_mission_bt', 'v2_open_loop_perimeter')",
     ]
 
     def _init_schema(self) -> None:
@@ -264,6 +270,7 @@ class TennisRobotDB:
                        s.near_baseline_to_fence_m, s.far_baseline_to_fence_m,
                        s.left_sideline_to_fence_m, s.right_sideline_to_fence_m,
                        s.net_world_x, s.net_world_y,
+                       s.failure_reason, s.obstacle_count,
                        c.name  AS court_name,
                        v.name  AS vendor_name,
                        c.surface
@@ -284,15 +291,25 @@ class TennisRobotDB:
             "near_baseline_to_fence_m", "far_baseline_to_fence_m",
             "left_sideline_to_fence_m", "right_sideline_to_fence_m",
             "net_world_x", "net_world_y",
+            "failure_reason", "obstacle_count",
             "court_name", "vendor_name", "surface",
         ]
         return [dict(zip(cols, r)) for r in rows]
 
-    def import_survey(self, bounds: dict) -> bool:
-        """Insert a Court Knowledge Model output dict. Returns True if it was a new row."""
+    def import_survey(self, bounds: dict, court_id: str | None = None,
+                      vendor_id: str | None = None) -> bool:
+        """Insert a Court Knowledge Model output (v1 or v2 schema). Returns True if
+        a new row was written. Tags the survey to the given court/vendor (falling
+        back to fields in `bounds`) and prunes that court's history to the 10 most
+        recent rows (audit trail)."""
         surveyed_at = float(bounds.get("mapped_at") or bounds.get("surveyed_at") or 0)
         if not surveyed_at:
             return False
+        cid = court_id or bounds.get("court_id")
+        vid = vendor_id or bounds.get("vendor_id")
+        schema = str(bounds.get("schema") or "")
+        f = (self._v2_survey_fields(bounds) if schema.startswith("court_knowledge_model/v2")
+             else self._v1_survey_fields(bounds))
         with self._lock:
             if self._conn.execute(
                 "SELECT COUNT(*) FROM surveys WHERE surveyed_at=?", [surveyed_at]
@@ -301,54 +318,111 @@ class TennisRobotDB:
             next_id = self._conn.execute(
                 "SELECT COALESCE(MAX(id), 0) + 1 FROM surveys"
             ).fetchone()[0]
-            status = bounds.get("status") or ("SUCCESS" if bounds.get("survey_complete") else "FAILED")
-            pt_count = int(bounds.get("point_count") or 0)
-            cg = bounds.get("court_geometry") or {}
-            canonical = bounds.get("canonical_fence_model") or {}
-            fg = _canonical_fence_bounds(canonical)
-            bd = bounds.get("boundary_distances") or {}
-            geo = bounds.get("geometry") or {}
-            net_pos = geo.get("net_world_pos") or {}
             self._conn.execute(
                 """
                 INSERT INTO surveys
                   (id, court_id, vendor_id, surveyed_at, point_count, fallback_used,
                    west_x, east_x, south_y, north_y, status,
-                   court_length_m, court_width_m,
-                   is_doubles,
+                   court_length_m, court_width_m, is_doubles,
                    near_baseline_to_fence_m, far_baseline_to_fence_m,
                    left_sideline_to_fence_m, right_sideline_to_fence_m,
-                   net_world_x, net_world_y,
-                   survey_type, canonical_json, raw_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   net_world_x, net_world_y, survey_type, failure_reason,
+                   obstacle_count, canonical_json, raw_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                [
-                    next_id,
-                    bounds.get("court_id"),
-                    bounds.get("vendor_id"),
-                    surveyed_at,
-                    pt_count,
-                    pt_count < 500,
-                    fg.get("west_x"),
-                    fg.get("east_x"),
-                    fg.get("south_y"),
-                    fg.get("north_y"),
-                    status,
-                    cg.get("length_m"),
-                    cg.get("width_m"),
-                    bounds.get("is_doubles"),
-                    bd.get("near_baseline_to_fence_m"),
-                    bd.get("far_baseline_to_fence_m"),
-                    bd.get("left_sideline_to_fence_m"),
-                    bd.get("right_sideline_to_fence_m"),
-                    net_pos.get("x_m"),
-                    net_pos.get("y_m"),
-                    bounds.get("survey_type"),
-                    json.dumps(canonical) if canonical else None,
-                    json.dumps(bounds),
-                ],
+                [next_id, cid, vid, surveyed_at,
+                 f["point_count"], f["fallback_used"],
+                 f["west_x"], f["east_x"], f["south_y"], f["north_y"], f["status"],
+                 f["court_length_m"], f["court_width_m"], f["is_doubles"],
+                 f["near"], f["far"], f["left"], f["right"],
+                 f["net_x"], f["net_y"], f["survey_type"], f["failure_reason"],
+                 f["obstacle_count"], f["canonical_json"], json.dumps(bounds)],
             )
+            if cid:
+                self._prune_court_history(cid, keep=10)
         return True
+
+    @staticmethod
+    def _v2_survey_fields(bounds: dict) -> dict:
+        net = bounds.get("net") or {}
+        center = net.get("center") or {}
+        court = bounds.get("court") or {}
+        dist = bounds.get("distances_to_fence_m") or {}
+        fence = bounds.get("fence") or {}
+        corners = fence.get("corners") or []
+        xs = [c.get("x_m") for c in corners if isinstance(c, dict) and isinstance(c.get("x_m"), (int, float))]
+        ys = [c.get("y_m") for c in corners if isinstance(c, dict) and isinstance(c.get("y_m"), (int, float))]
+        occ = bounds.get("occupancy") or {}
+        ok = bounds.get("status") == "OK"
+        return {
+            "status": "SUCCESS" if ok else "FAILED",
+            "failure_reason": bounds.get("failure_reason"),
+            "point_count": int(occ.get("point_count") or 0),
+            "fallback_used": False,  # v2 is no-fallbacks by design
+            "west_x": min(xs) if xs else None, "east_x": max(xs) if xs else None,
+            "south_y": min(ys) if ys else None, "north_y": max(ys) if ys else None,
+            "court_length_m": court.get("length_m"), "court_width_m": court.get("width_m"),
+            "is_doubles": court.get("is_doubles"),
+            "near": dist.get("near_baseline"), "far": dist.get("far_baseline"),
+            "left": dist.get("left_sideline"), "right": dist.get("right_sideline"),
+            "net_x": center.get("x_m"), "net_y": center.get("y_m"),
+            "survey_type": "v2",
+            "obstacle_count": len(bounds.get("obstacles") or []),
+            "canonical_json": json.dumps(fence) if fence else None,
+        }
+
+    @staticmethod
+    def _v1_survey_fields(bounds: dict) -> dict:
+        cg = bounds.get("court_geometry") or {}
+        canonical = bounds.get("canonical_fence_model") or {}
+        fg = _canonical_fence_bounds(canonical)
+        bd = bounds.get("boundary_distances") or {}
+        geo = bounds.get("geometry") or {}
+        net_pos = geo.get("net_world_pos") or {}
+        pt_count = int(bounds.get("point_count") or 0)
+        status = bounds.get("status") or ("SUCCESS" if bounds.get("survey_complete") else "FAILED")
+        return {
+            "status": status, "failure_reason": bounds.get("failure_reason"),
+            "point_count": pt_count, "fallback_used": pt_count < 500,
+            "west_x": fg.get("west_x"), "east_x": fg.get("east_x"),
+            "south_y": fg.get("south_y"), "north_y": fg.get("north_y"),
+            "court_length_m": cg.get("length_m"), "court_width_m": cg.get("width_m"),
+            "is_doubles": bounds.get("is_doubles"),
+            "near": bd.get("near_baseline_to_fence_m"), "far": bd.get("far_baseline_to_fence_m"),
+            "left": bd.get("left_sideline_to_fence_m"), "right": bd.get("right_sideline_to_fence_m"),
+            "net_x": net_pos.get("x_m"), "net_y": net_pos.get("y_m"),
+            "survey_type": bounds.get("survey_type"),
+            "obstacle_count": len(bounds.get("obstacles") or []),
+            "canonical_json": json.dumps(canonical) if canonical else None,
+        }
+
+    def _prune_court_history(self, court_id: str, keep: int = 10) -> None:
+        """Keep only the `keep` most recent surveys for a court (audit trail).
+        Caller must already hold self._lock."""
+        self._conn.execute(
+            """
+            DELETE FROM surveys WHERE court_id = ? AND id NOT IN (
+                SELECT id FROM surveys WHERE court_id = ?
+                ORDER BY surveyed_at DESC LIMIT ?
+            )
+            """,
+            [court_id, court_id, keep],
+        )
+
+    def current_survey(self, court_id: str) -> dict | None:
+        """The active (most recent successful) survey for a court, parsed from
+        raw_json. This is the 'one per court' the collection phase consumes."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT raw_json FROM surveys WHERE court_id=? AND status='SUCCESS'"
+                " ORDER BY surveyed_at DESC LIMIT 1", [court_id]
+            ).fetchone()
+        if not row or not row[0]:
+            return None
+        try:
+            return json.loads(row[0])
+        except (json.JSONDecodeError, TypeError):
+            return None
 
     # ── Obstacle survey runs ───────────────────────────────────────────────────
 

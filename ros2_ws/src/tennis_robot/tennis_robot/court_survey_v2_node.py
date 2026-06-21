@@ -42,6 +42,12 @@ except ImportError:
     TaskResult = None
 
 try:
+    from slam_toolbox.srv import SaveMap, SerializePoseGraph
+except ImportError:  # graceful: survey still completes, just without a saved map
+    SaveMap = None
+    SerializePoseGraph = None
+
+try:
     from tennis_robot.court_extraction import (
         extract_court_knowledge_model, CourtExtractionError, CourtSpec,
     )
@@ -85,6 +91,10 @@ OBSTACLE_STOP_M = float(os.getenv("COURT_SURVEY_OBSTACLE_STOP_M", "0.5"))
 # ramming it — the robot body cannot reach the fence, only the LiDAR sees it.
 FENCE_APPROACH_M = float(os.getenv("COURT_SURVEY_FENCE_APPROACH_M", "1.4"))
 
+# Saved SLAM map artifacts (for Nav2 reuse in the collection phase).
+MAPS_DIR = RUNTIME_DIR / "maps"
+MAP_SAVE_TIMEOUT_S = float(os.getenv("COURT_SURVEY_MAP_SAVE_TIMEOUT_S", "12.0"))
+
 
 def _yaw_from_quaternion(q) -> float:
     s = 2.0 * (q.w * q.z + q.x * q.y)
@@ -96,6 +106,7 @@ class V2State(Enum):
     INIT = "init"
     FIND_NET = "find_net"
     COVERAGE = "coverage"
+    SAVING_MAP = "saving_map"
     DONE = "done"
     FAILED = "failed"
 
@@ -135,6 +146,15 @@ class CourtSurveyV2Node(Node):
         # result is the last successful extraction on the most complete map.
         self._measured = False
         self._last_model: dict | None = None
+        self._final_live_written = False  # write one terminal live update on DONE/FAILED
+        # SLAM map serialization (best-effort, for Nav2 reuse in the collection phase)
+        self._save_clients: dict = {}
+        self._save_futures: dict = {}
+        self._map_base: str | None = None
+        self._saving_started = 0.0
+        if SaveMap is not None and SerializePoseGraph is not None:
+            self._save_clients["serialize"] = self.create_client(SerializePoseGraph, "/slam_toolbox/serialize_map")
+            self._save_clients["occupancy"] = self.create_client(SaveMap, "/slam_toolbox/save_map")
 
         self._cmd_pub = self.create_publisher(Twist, "/cmd_vel_teleop", 10)
         self._tf_buffer = Buffer()
@@ -227,7 +247,12 @@ class CourtSurveyV2Node(Node):
 
     def _write_live(self) -> None:
         payload = {
-            "updated_at": time.time(), "running": True, "state": self._state.value,
+            "updated_at": time.time(),
+            "running": self._state not in (V2State.DONE, V2State.FAILED),
+            "state": self._state.value,
+            "result": ("OK" if self._state == V2State.DONE
+                       else "FAILED" if self._state == V2State.FAILED else None),
+            "failure_reason": self._failure_reason,
             "error": self._map_error, "sensor_frame": self._scan_frame_id or None,
             "front_range_m": None if math.isinf(self._front_range_m) else round(self._front_range_m, 3),
             "robot": {"x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
@@ -384,9 +409,80 @@ class CourtSurveyV2Node(Node):
         except OSError as exc:
             self.get_logger().warning(f"could not write court_boundary.json: {exc}")
 
+    # ── SLAM map serialization (best-effort, for Nav2 reuse) ──────────────────
+    def _begin_map_save(self) -> None:
+        """Serialize the slam_toolbox map (+ occupancy grid) so the collection
+        phase can reload it for Nav2. NEVER blocks the survey: missing services or
+        a timeout still finishes with the (valid) measurement."""
+        if SaveMap is None or not self._save_clients:
+            self._finalize_done(map_error="slam_save_services_unavailable")
+            return
+        try:
+            MAPS_DIR.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+        base = str(MAPS_DIR / f"court_{int(time.time())}")
+        self._map_base = base
+        started = False
+        ser = self._save_clients.get("serialize")
+        occ = self._save_clients.get("occupancy")
+        try:
+            if ser is not None and ser.service_is_ready():
+                req = SerializePoseGraph.Request(); req.filename = base
+                self._save_futures["serialize"] = ser.call_async(req); started = True
+            if occ is not None and occ.service_is_ready():
+                req2 = SaveMap.Request(); req2.name = String(data=base)
+                self._save_futures["occupancy"] = occ.call_async(req2); started = True
+        except Exception as exc:  # best-effort: never break the survey
+            self.get_logger().warning(f"map save request error: {exc}")
+        if not started:
+            self.get_logger().warning("slam_toolbox save services not ready; finishing without map artifact")
+            self._finalize_done(map_error="slam_save_services_not_ready")
+            return
+        self.get_logger().info(f"saving slam map -> {base}.*")
+        self._saving_started = self._now()
+        self._enter(V2State.SAVING_MAP)
+
+    def _build_map_artifact(self, map_error: str | None) -> dict:
+        if map_error:
+            return {"status": "error", "reason": map_error}
+        base = self._map_base
+        files = {}
+        if base:
+            for ext in ("posegraph", "data", "yaml", "pgm"):
+                if Path(f"{base}.{ext}").exists():
+                    files[ext] = f"{base}.{ext}"
+        net = (self._last_model or {}).get("net") or {}
+        return {
+            "status": "saved" if files else "pending",
+            "basename": base,
+            "files": files,
+            # the court frame ties the Court Knowledge Model measurements to the
+            # saved occupancy grid -> Nav2 + collection share one coordinate frame.
+            "court_frame": {
+                "center": net.get("center"),
+                "axis_length": net.get("axis_length"),
+                "axis_width": net.get("axis_width"),
+            },
+            "saved_at": time.time(),
+        }
+
+    def _finalize_done(self, map_error: str | None = None) -> None:
+        model = self._last_model
+        if model is not None:
+            model["map_artifact"] = self._build_map_artifact(map_error)
+            self._write_result(status="OK", model=model)
+            self.get_logger().info(
+                f"survey OK (map complete): dist={model['distances_to_fence_m']} "
+                f"obstacles={len(model['obstacles'])} map={model['map_artifact'].get('status')}")
+        self._enter(V2State.DONE)
+
     # ── main step ────────────────────────────────────────────────────────────
     def _step(self) -> None:
         if self._state in (V2State.DONE, V2State.FAILED):
+            if not self._final_live_written:
+                self._write_live()  # persist running=false + result so the UI sees completion
+                self._final_live_written = True
             return
         self._update_pose_from_tf()
         self._accumulate_map()
@@ -411,6 +507,12 @@ class CourtSurveyV2Node(Node):
             self._drive(0.0 if self._front_range_m <= NET_STANDOFF_M else FIND_NET_SPEED)
             return
 
+        if self._state == V2State.SAVING_MAP:
+            done = all(fu.done() for fu in self._save_futures.values()) if self._save_futures else True
+            if done or (self._now() - self._saving_started) > MAP_SAVE_TIMEOUT_S:
+                self._finalize_done()
+            return
+
         if self._state == V2State.COVERAGE:
             # Extract continuously as the map fills (locks the measurement once,
             # keeps refitting on the completing map; fail-loud only if a structural
@@ -424,12 +526,7 @@ class CourtSurveyV2Node(Node):
                 # never managed a valid measurement.
                 if self._last_model is not None:
                     self._stop()
-                    self._write_result(status="OK", model=self._last_model)
-                    self.get_logger().info(
-                        f"survey OK (map complete): "
-                        f"dist={self._last_model['distances_to_fence_m']} "
-                        f"obstacles={len(self._last_model['obstacles'])}")
-                    self._enter(V2State.DONE)
+                    self._begin_map_save()  # -> SAVING_MAP (serialize) -> DONE
                 else:
                     self._fail(self._failure_reason or "coverage_incomplete: all vantage points visited")
                 return

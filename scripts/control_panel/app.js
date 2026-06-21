@@ -383,7 +383,14 @@
       safe(() => renderSurveyBoundary(robot.survey || {}));
       // Persisted breadcrumb trail served by the backend (survives reloads/restarts).
       if (Array.isArray(diagnostics.robot_path)) robotPath = diagnostics.robot_path;
-      safe(() => renderSurveyDiscovery(robot.survey || {}));
+      safe(() => {
+        const _cb = diagnostics.court_boundary;
+        if (window.SurveyMapV2 && _cb && _cb.schema === "court_knowledge_model/v2") {
+          window.SurveyMapV2.render(diagnostics, robot.survey || {});
+        } else {
+          renderSurveyDiscovery(robot.survey || {});
+        }
+      });
       safe(() => renderObstacleSurveyDebug((robot.survey || {}).navigation || {}));
       safe(() => renderObstacleRunsHistory(diagnostics.obstacle_runs || []));
       safe(() => renderMapMission(robot.map_mission || {}));
@@ -2094,30 +2101,29 @@
       tbody.innerHTML = surveys.map(s => {
         const dt = s.surveyed_at ? new Date(s.surveyed_at * 1000).toLocaleString() : "—";
         const status = s.status || "SUCCESS";
+        const reasonTip = s.failure_reason ? ` title="${escHtml(s.failure_reason)}"` : "";
         const statusEl = status === "SUCCESS"
           ? `<span style="color:var(--accent);font-size:11px;font-weight:600;">SUCCESS</span>`
-          : `<span style="color:var(--danger);font-size:11px;font-weight:600;">FAILED</span>`;
+          : `<span style="color:var(--danger);font-size:11px;font-weight:600;cursor:help;"${reasonTip}>FAILED</span>`;
         const lengthM = s.court_length_m != null ? s.court_length_m.toFixed(2) : (
           s.east_x != null && s.west_x != null ? (s.east_x - s.west_x).toFixed(2) : "—");
         const widthM = s.court_width_m != null ? s.court_width_m.toFixed(2) : (
           s.north_y != null && s.south_y != null ? (s.north_y - s.south_y).toFixed(2) : "—");
-        const w  = s.west_x  != null ? s.west_x.toFixed(2)  : "—";
-        const e  = s.east_x  != null ? s.east_x.toFixed(2)  : "—";
-        const sY = s.south_y != null ? s.south_y.toFixed(2) : "—";
-        const n  = s.north_y != null ? s.north_y.toFixed(2) : "—";
+        const ro = (v) => (v != null && Number.isFinite(v) ? v.toFixed(2) : "—");
         return `<tr>
           <td style="color:var(--muted);">${s.id}</td>
           <td>${dt}</td>
           <td>${escHtml(s.vendor_name || "—")}</td>
           <td>${escHtml(s.court_name || "—")}</td>
-          <td style="color:var(--muted);">${escHtml(s.surface || "—")}</td>
           <td>${statusEl}</td>
-          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${lengthM} m</td>
-          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${widthM} m</td>
-          <td style="font-variant-numeric:tabular-nums;color:var(--muted);">${w}</td>
-          <td style="font-variant-numeric:tabular-nums;color:var(--muted);">${e}</td>
-          <td style="font-variant-numeric:tabular-nums;color:var(--muted);">${sY}</td>
-          <td style="font-variant-numeric:tabular-nums;color:var(--muted);">${n}</td>
+          <td style="color:var(--muted);font-size:11px;">${escHtml(s.survey_type || "—")}</td>
+          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${lengthM}</td>
+          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${widthM}</td>
+          <td style="font-variant-numeric:tabular-nums;">${ro(s.near_baseline_to_fence_m)}</td>
+          <td style="font-variant-numeric:tabular-nums;">${ro(s.far_baseline_to_fence_m)}</td>
+          <td style="font-variant-numeric:tabular-nums;">${ro(s.left_sideline_to_fence_m)}</td>
+          <td style="font-variant-numeric:tabular-nums;">${ro(s.right_sideline_to_fence_m)}</td>
+          <td style="color:var(--muted);">${s.obstacle_count ?? "—"}</td>
           <td style="color:var(--muted);">${s.point_count ?? "—"}</td>
         </tr>`;
       }).join("");

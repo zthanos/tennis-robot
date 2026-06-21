@@ -121,7 +121,7 @@ class CourtSurveyLaunchManager:
         surveyed_at = float(data.get("surveyed_at") or 0.0)
         if surveyed_at < self._started_at - 1.0:
             return False
-        return data.get("status") in {"SUCCESS", "FAILED"} or bool(data.get("survey_complete"))
+        return data.get("status") in {"SUCCESS", "OK", "FAILED"} or bool(data.get("survey_complete"))
 
     def _terminate_process_group(self, process: subprocess.Popen) -> None:
         try:
@@ -412,8 +412,15 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             bounds = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             return None
-        if bounds and (bounds.get("survey_complete") or bounds.get("status") == "SUCCESS"):
-            self.db.import_survey(bounds)
+        # Persist completed surveys (v1 SUCCESS or v2 OK/FAILED) tagged to the
+        # active court. FAILED runs are kept too — they are the audit trail for
+        # spotting process errors. import_survey prunes each court to the last 10.
+        done = bool(bounds) and (
+            bounds.get("survey_complete") or bounds.get("status") in ("SUCCESS", "OK", "FAILED")
+        )
+        if done:
+            act = self.db.active_session()
+            self.db.import_survey(bounds, court_id=act.get("court_id"), vendor_id=act.get("vendor_id"))
         return bounds
 
     def _maybe_save_obstacle_run(self, robot_status: dict) -> None:
