@@ -437,7 +437,8 @@
       if (collectionActive || surveyActive) {
         const activeView = document.querySelector("section.view.active");
         const targetView = collectionActive ? "collection" : "survey";
-        if (activeView && activeView.id !== targetView) setView(targetView);
+        const autoRouteFrom = new Set(["dashboard", "control"]);
+        if (activeView && activeView.id !== targetView && autoRouteFrom.has(activeView.id)) setView(targetView);
       }
     }
     function renderSurveyBoundary(survey) {
