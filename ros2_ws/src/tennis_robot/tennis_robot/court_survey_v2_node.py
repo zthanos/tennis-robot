@@ -123,6 +123,7 @@ class CourtSurveyV2Node(Node):
         self._robot_x = 0.0
         self._robot_y = 0.0
         self._robot_yaw = 0.0
+        self._pose_valid = False
         self._scan_frame_id = ""
         self._front_range_m = math.inf
         self._scan_angle_min = -math.pi
@@ -137,6 +138,7 @@ class CourtSurveyV2Node(Node):
         # court frame / coverage
         self._locked_net: dict | None = None
         self._vantages: list[dict] = []
+        self._survey_start_pose: dict | None = None
         self._home: dict | None = None
         self._vantage_i = 0
         self._goal_active = False
@@ -207,6 +209,7 @@ class CourtSurveyV2Node(Node):
             self._robot_x = float(t.transform.translation.x)
             self._robot_y = float(t.transform.translation.y)
             self._robot_yaw = _yaw_from_quaternion(t.transform.rotation)
+            self._pose_valid = True
         except (LookupException, ExtrapolationException, ConnectivityException):
             pass
 
@@ -262,7 +265,8 @@ class CourtSurveyV2Node(Node):
             "robot": {"x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
                       "yaw_rad": round(self._robot_yaw, 4)},
             "map_points": self._map_points(), "map_point_count": len(self._map_voxels),
-            "net": self._locked_net, "navigation_points": [],
+            "net": self._locked_net, "survey_start_pose": self._survey_start_pose,
+            "navigation_points": [],
         }
         try:
             tmp = COURT_SURVEY_LIVE_FILE.with_suffix(".json.tmp")
@@ -395,7 +399,6 @@ class CourtSurveyV2Node(Node):
         self._last_model = model
         if not self._measured:
             self._measured = True
-            self._write_result(status="OK", model=model)  # publish the measurement now
             self.get_logger().info(
                 f"survey measurable (model locked): doubles={model['court']['is_doubles']} "
                 f"dist={model['distances_to_fence_m']} obstacles={len(model['obstacles'])}; "
@@ -464,6 +467,7 @@ class CourtSurveyV2Node(Node):
             "status": "saved" if files else "pending",
             "basename": base,
             "files": files,
+            "survey_start_pose": self._survey_start_pose,
             # the court frame ties the Court Knowledge Model measurements to the
             # saved occupancy grid -> Nav2 + collection share one coordinate frame.
             "court_frame": {
@@ -479,7 +483,8 @@ class CourtSurveyV2Node(Node):
         if model is not None:
             model["map_artifact"] = self._build_map_artifact(map_error)
             model["completed"] = True
-            model["notice"] = "Court survey complete — boundaries saved, robot returned to start."
+            model["survey_start_pose"] = self._survey_start_pose
+            model["notice"] = "Court survey complete; boundaries saved, robot returned to survey start pose."
             self._write_result(status="OK", model=model)
             self.get_logger().info(
                 "===== SURVEY COMPLETE ===== "
@@ -500,6 +505,16 @@ class CourtSurveyV2Node(Node):
         self._write_live()
 
         if self._state == V2State.INIT:
+            if not self._pose_valid:
+                self._stop()
+                return
+            if self._survey_start_pose is None:
+                self._survey_start_pose = {
+                    "x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
+                    "yaw_rad": round(self._robot_yaw, 4),
+                    "label": "survey_start_pose", "role": "return_anchor",
+                    "court_x": None, "court_y": None, "stop_short": False, "is_home": True,
+                }
             self._enter(V2State.FIND_NET)
             return
 
@@ -511,12 +526,12 @@ class CourtSurveyV2Node(Node):
                 self._stop()
                 self._vantages = vantage_points(_build_frame(self._locked_net), self._spec)
                 # Return-home: after the coverage/return path, drive back to where
-                # the survey began (near-side start, captured here at net lock) so
-                # the robot ends at its start pose instead of stranded on the far side.
-                self._home = {
+                # the survey began, not merely to the net-lock standoff pose.
+                self._home = self._survey_start_pose or {
                     "x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
                     "yaw_rad": round(self._robot_yaw, 4),
-                    "court_x": 0.0, "court_y": 0.0, "stop_short": False, "is_home": True,
+                    "label": "survey_start_pose", "role": "return_anchor",
+                    "court_x": None, "court_y": None, "stop_short": False, "is_home": True,
                 }
                 self._vantages.append(self._home)
                 self._vantage_i = 0
