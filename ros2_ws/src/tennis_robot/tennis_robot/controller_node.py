@@ -355,18 +355,7 @@ class ControllerNode(Node):
         if requested_mode in self._MANUAL_MODES and self.control_mode in self._AUTONOMOUS_MODES:
             return self.control_mode
         if requested_mode == "collect":
-            elapsed = 0.0 if self._collect_start_time is None else time.time() - self._collect_start_time
-            if (
-                self.ball_map.all_collected(time.time())
-                and elapsed > self.behavior.config.scan_full_turn_s
-            ):
-                if not self._collection_complete_reported:
-                    self.get_logger().info(f"collection complete; total={self.collection_count}")
-                    self._publish_command("idle", "controller-complete")
-                    self._collection_complete_reported = True
-                return "idle"
-            if not self.ball_map.all_collected(time.time()):
-                self._collection_complete_reported = False
+            self._collection_complete_reported = False
         if requested_mode != "collect_one":
             self.collect_one_mission._complete_reported = False
         return requested_mode
