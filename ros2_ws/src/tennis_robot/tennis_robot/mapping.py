@@ -484,6 +484,7 @@ class ServiceLineDistributionScanMission:
         self.side_id: str = "unknown"
         self.side_sign: int = -1
         self.candidates: list[_Cand] = []
+        self.local_candidates: list[_Cand] = []
         self.grid: list[list[int]] = [[0] * 3 for _ in range(3)]
         self.unassigned_candidates: int = 0
         self.service_pose_map: tuple[float, float] | None = None
@@ -515,6 +516,7 @@ class ServiceLineDistributionScanMission:
         self.side_sign = sign
         self.side_id = "side_neg_x" if sign < 0 else "side_pos_x"
         self.candidates = []
+        self.local_candidates = []
         self.grid = [[0] * 3 for _ in range(3)]
         self.unassigned_candidates = 0
         self.service_pose_map = (target_x, target_y)
@@ -543,6 +545,7 @@ class ServiceLineDistributionScanMission:
         self._scan_accumulated_rad = 0.0
         self.target_grid_cell = None
         self.target_pose_map = None
+        self.local_candidates = []
 
     def update(self, rx: float, ry: float, ryaw: float, _dt_s: float) -> ConceptACommand:
         if self._state == "transit":
@@ -551,6 +554,8 @@ class ServiceLineDistributionScanMission:
             return self._step_scan(rx, ry, ryaw)
         if self._state == "transit_to_grid_cell":
             return self._step_transit_to_grid_cell(rx, ry, ryaw)
+        if self._state == "local_scanning":
+            return self._step_local_scan(rx, ry, ryaw)
         return _idle_cmd()
 
     def telemetry(self) -> dict:
@@ -585,18 +590,24 @@ class ServiceLineDistributionScanMission:
             "assigned_candidates": sum(sum(row) for row in self.grid),
             "unassigned_candidates": self.unassigned_candidates,
             "candidates": self._candidate_telemetry(),
+            "local_candidates": self._candidate_telemetry(self.local_candidates, "local_scan"),
             "grid": [row[:] for row in self.grid],
             "elapsed_s": round(elapsed, 1),
         }
 
-    def _candidate_telemetry(self) -> list[dict]:
+    def _candidate_telemetry(
+        self,
+        candidates: list[_Cand] | None = None,
+        source: str = "collection_scan",
+    ) -> list[dict]:
+        cands = self.candidates if candidates is None else candidates
         rows: list[dict] = []
-        for idx, c in enumerate(self.candidates, start=1):
+        for idx, c in enumerate(cands, start=1):
             item: dict = {
                 "id": idx,
                 "x_m": round(c.x_m, 3),
                 "y_m": round(c.y_m, 3),
-                "source": "collection_scan",
+                "source": source,
             }
             if self._frame is not None and self._bounds is not None:
                 cx, cy = self._frame.map_to_court(c.x_m, c.y_m)
@@ -662,14 +673,38 @@ class ServiceLineDistributionScanMission:
         cmd = _nav_to(rx, ry, ryaw, tx, ty)
         if cmd is not None:
             return cmd
-        self._finish()
-        return _idle_cmd()
+        self._state = "local_scanning"
+        self._scan_started_at = time.time()
+        self._last_scan_yaw = ryaw
+        self._scan_accumulated_rad = 0.0
+        self.local_candidates = []
+        return _scan_cmd()
+
+    def _step_local_scan(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
+        self._sample_local_balls(rx, ry)
+        if self._last_scan_yaw is not None:
+            self._scan_accumulated_rad += abs(_angle_delta(ryaw, self._last_scan_yaw))
+        self._last_scan_yaw = ryaw
+
+        if self._scan_accumulated_rad >= 2 * math.pi:
+            self._finish()
+            return _scan_cmd()
+        return ConceptACommand(
+            state=CollectorState.SCAN,
+            base=BaseCommand(0.0, NAV_MAX_TURN_RAD_S * 0.35),
+            collector=CollectorCommand(0.0, False),
+        )
 
     def _sample_balls(self, rx: float, ry: float) -> None:
         for bx, by in self._ball_source():
             if math.hypot(bx - rx, by - ry) <= DETECTION_RANGE_M:
                 _add_candidate(self.candidates, bx, by, COLLECTION_SCAN_CLUSTER_RADIUS_M)
         self._rebuild_grid()
+
+    def _sample_local_balls(self, rx: float, ry: float) -> None:
+        for bx, by in self._ball_source():
+            if math.hypot(bx - rx, by - ry) <= DETECTION_RANGE_M:
+                _add_candidate(self.local_candidates, bx, by, COLLECTION_SCAN_CLUSTER_RADIUS_M)
 
     def _rebuild_grid(self) -> None:
         if self._frame is None or self._bounds is None:
@@ -731,6 +766,9 @@ class ServiceLineDistributionScanMission:
                 return "Navigating to estimated collection cell"
             row, col = self.target_grid_cell
             return f"Navigating to estimated collection cell r{row + 1}c{col + 1}"
+        if self._state == "local_scanning":
+            progress = min(100.0, self._scan_accumulated_rad / (2 * math.pi) * 100.0)
+            return f"Local scan ({progress:.0f}%)"
         if self._state == "complete":
             return "Distribution scan complete"
         return self._state

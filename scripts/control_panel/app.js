@@ -1887,13 +1887,13 @@
 
       const activeTargetId = map.active_target_id;
       const collectionScan = (diagnostics.robot || {}).collection_scan || {};
-      const collectionCandidates = Array.isArray(collectionScan.candidates) ? collectionScan.candidates : [];
+      const localCandidates = Array.isArray(collectionScan.local_candidates) ? collectionScan.local_candidates : [];
       const allBalls = Array.isArray(map.balls) && map.balls.length
         ? map.balls
-        : collectionCandidates
+        : localCandidates
             .filter(ball => Number.isFinite(ball.x_m) && Number.isFinite(ball.y_m))
             .map((ball, index) => ({
-              id: `scan-${ball.id ?? index + 1}`,
+              id: `local-${ball.id ?? index + 1}`,
               x_m: ball.x_m,
               y_m: ball.y_m,
               side: "same_side",
@@ -1901,7 +1901,7 @@
               confirmed: true,
               planned: false,
               order: null,
-              source: ball.source || "collection_scan",
+              source: ball.source || "local_scan",
             }));
 
       const scanGrid = Array.isArray(collectionScan.grid) ? collectionScan.grid : null;

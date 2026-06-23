@@ -690,11 +690,12 @@ class ControllerNode(Node):
             self._robot_x, self._robot_y, self._robot_yaw, TIME_STEP_S
         )
         if self._collection_scan.complete and not self._collection_scan_completion_reported:
-            seeded = self.ball_map.seed_from_candidates(self._collection_scan.candidates, time.time())
+            seeded = self.ball_map.seed_from_candidates(self._collection_scan.local_candidates, time.time())
             self.get_logger().info(
                 "collect distribution scan complete; "
                 f"side={self._collection_scan.side_id} "
-                f"candidates={len(self._collection_scan.candidates)} seeded={seeded} "
+                f"estimate_candidates={len(self._collection_scan.candidates)} "
+                f"local_candidates={len(self._collection_scan.local_candidates)} seeded={seeded} "
                 f"grid={self._collection_scan.grid}"
             )
             self._publish_command("idle", "controller-collect-distribution-scan-complete")
