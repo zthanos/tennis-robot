@@ -1,0 +1,48 @@
+        <div class="workspace collection-workspace">
+          <div class="workspace-main panel map-panel">
+            <h3>Collection Map</h3>
+            <canvas id="courtMap" class="court-map" width="1200" height="600"></canvas>
+            <div class="legend">
+              <span>Confirmed ball</span>
+              <span class="depth">OAK depth</span>
+              <span class="pending">Pending</span>
+              <span class="across">Across net</span>
+              <span class="route">Planned route</span>
+              <span class="robot">Robot</span>
+              <span class="fov">Camera FOV</span>
+            </div>
+          </div>
+          <div class="workspace-side">
+            <div id="mapMissionPanel" class="panel">
+              <h3>Half-Court Mapping Grid <span id="mapMissionStatus">idle</span></h3>
+              <div class="matrix-grid">
+                <div></div>
+                <div class="matrix-label">Left</div>
+                <div class="matrix-label">Center</div>
+                <div class="matrix-label">Right</div>
+                <div class="matrix-row-label">Fence</div>
+                <div id="mapCell00" class="map-cell">-</div><div id="mapCell01" class="map-cell">-</div><div id="mapCell02" class="map-cell">-</div>
+                <div class="matrix-row-label">Middle</div>
+                <div id="mapCell10" class="map-cell">-</div><div id="mapCell11" class="map-cell">-</div><div id="mapCell12" class="map-cell">-</div>
+                <div class="matrix-row-label">Net</div>
+                <div id="mapCell20" class="map-cell">-</div><div id="mapCell21" class="map-cell">-</div><div id="mapCell22" class="map-cell">-</div>
+              </div>
+              <div id="mapMissionProgress" style="display:none;margin-top:12px;">
+                <div class="progress-head">
+                  <span id="mapMissionPhaseLabel"></span><span id="mapMissionPosesLabel"></span>
+                </div>
+                <div class="progress-track">
+                  <div id="mapMissionBar"></div>
+                </div>
+              </div>
+              <div id="mapMissionTotals" class="workspace-note"></div>
+            </div>
+            <div class="panel">
+              <h3>Controls</h3>
+              <div class="mission-actions">
+                <button class="command" type="button" data-command-mode="collect">Collect</button>
+                <button class="command" type="button" data-command-mode="idle" value="idle">Stop</button>
+              </div>
+            </div>
+          </div>
+        </div>

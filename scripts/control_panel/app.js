@@ -1,13 +1,15 @@
     const titles = {
       dashboard: ["Dashboard", "Observe the robot mode, collector state, current target, and command stream while the simulation runs."],
-      control: ["Control", "Send high-level commands to the running controller."],
-      sensors: ["Sensor Views", "Live RPLIDAR C1 360° ground scan, front camera, OAK-D depth image, court boundary from last Map Court run, and half-court mapping grid. Run Map Court first to measure boundaries; then Collect Left Side uses them automatically."],
+      control: ["Command Center", "Send high-level commands and inspect the selected robot mode."],
+      survey: ["Survey Workspace", "Run Map Court with the native live survey map, camera feed, survey metrics, and boundary status in one operational view."],
+      collection: ["Collection Workspace", "Run collection with the court map and half-court mapping grid visible together."],
+      sensors: ["Diagnostics", "Inspect raw sensor feeds and lower-level debug data without mixing them into the mission workspaces."],
       telemetry: ["Telemetry", "Inspect live robot pose, detection, command output, survey data, and raw status."],
       stats: ["Command Stats", "Review per-mode command counts and recent command usage."],
       history: ["History", "Audit the local command stream written by this console and controller startup."],
       webcam: ["Webcam", "Live webcam feed with HSV tennis ball detection and monocular distance estimation."],
       vendors: ["Vendors", "Manage vendors, venues and courts. Set the active session so survey results are tagged with the correct location."],
-      surveys: ["Court Map History", "Ιστορικό χαρτογράφησης γηπέδου αποθηκευμένο στη DuckDB — ένα row ανά Map Court run."]
+      surveys: ["Court Map History", "Saved Map Court runs from DuckDB, grouped by active vendor and court."]
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
@@ -141,8 +143,8 @@
       await loadView(name);
       document.querySelectorAll("section.view").forEach(view => view.classList.toggle("active", view.id === name));
       if (name === "webcam") startWebcam(); else stopWebcam();
-      if (name === "vendors") loadVendors();
-      if (name === "surveys") loadSurveys();
+      if (name === "vendors") window.ControlPanelVendors.load();
+      if (name === "surveys") window.ControlPanelSurveyHistory.load();
     }
     document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 
@@ -195,7 +197,7 @@
     const AUTONOMOUS_MODES = new Set(["map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"]);
 
     function updateCommandButtons() {
-      const active = vendorData.active || {};
+      const active = window.ControlPanelVendors?.getActive() || {};
       const hasSession = !!(active.vendor_id && active.court_id);
       const cb = diagnostics.court_boundary;
       const surveyReady = !!(cb && (cb.survey_complete || cb.completed || cb.status === "OK"));
@@ -234,6 +236,27 @@
       });
     }
 
+    function routeForMode(mode) {
+      if (mode === "map_court") return "survey";
+      if (["collect", "collect_one", "collect_pattern", "search", "scan_side", "map_left_side"].includes(mode)) return "collection";
+      return null;
+    }
+
+    function wireMissionCommands(rootId) {
+      const root = document.getElementById(rootId);
+      if (!root) return;
+      root.querySelectorAll("[data-command-mode]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const mode = btn.dataset.commandMode;
+          if (!mode) return;
+          await _sendRawCommand(mode);
+          const nextView = routeForMode(mode);
+          if (nextView) setView(nextView);
+          await refresh();
+        });
+      });
+    }
+
     async function _stopDpad() {
       if (_dpadTimer !== null) {
         clearInterval(_dpadTimer);
@@ -264,12 +287,14 @@
         const mode = event.submitter?.value;
         if (!mode || DPAD_MODES.has(mode)) return;
         await _sendRawCommand(mode);
-        const switchModes = new Set(["collect", "collect_one", "collect_pattern", "search", "scan_side", "map_court", "map_left_side"]);
-        if (switchModes.has(mode)) setView("sensors");
+        const nextView = routeForMode(mode);
+        if (nextView) setView(nextView);
         await refresh();
       });
       updateCommandButtons();
     };
+    VIEW_INIT.survey = function () { wireMissionCommands("survey"); };
+    VIEW_INIT.collection = function () { wireMissionCommands("collection"); };
 
     async function refresh() {
       const response = await fetch("/api/diagnostics", { cache: "no-store" });
@@ -404,11 +429,15 @@
       safe(() => renderMapMission(mapMissionForGrid));
       safe(updateCommandButtons);
 
-      // Auto-navigate to sensors when mapping mission or survey is active
+      // Auto-navigate to the mission workspace while survey/collection is active.
       const mapMission = robot.map_mission || {};
-      if ((mapMission.active && !mapMission.complete) || (collectionScan.active && !collectionScan.complete)) {
+      const liveSurvey = diagnostics.court_survey_live || {};
+      const surveyActive = liveSurvey.running || (survey.state && !["idle", "done", "complete", "completed"].includes(String(survey.state)));
+      const collectionActive = (mapMission.active && !mapMission.complete) || (collectionScan.active && !collectionScan.complete);
+      if (collectionActive || surveyActive) {
         const activeView = document.querySelector("section.view.active");
-        if (activeView && activeView.id !== "sensors") setView("sensors");
+        const targetView = collectionActive ? "collection" : "survey";
+        if (activeView && activeView.id !== targetView) setView(targetView);
       }
     }
     function renderSurveyBoundary(survey) {
@@ -1895,246 +1924,8 @@
       refresh();
       setInterval(refresh, 1000);
     });
-    // Load vendor data at startup so the sidebar session indicator and command
-    // gating (updateCommandButtons) work before the Vendors view is opened.
-    // renderVendors() is null-safe for the not-yet-loaded Vendors view elements.
-    loadVendors();
-
-    // ── Vendors ───────────────────────────────────────────────────────────────
-    let vendorData = { vendors: [], courts: [], active: {} };
-
-    function escHtml(s) {
-      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    }
-
-    async function loadVendors() {
-      try {
-        const res = await fetch("/api/vendors", { cache: "no-store" });
-        vendorData = await res.json();
-      } catch (_) {}
-      renderVendors();
-    }
-
-    async function saveVendors(data) {
-      try {
-        await fetch("/api/vendors", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
-        vendorData = data;
-      } catch (_) {}
-      renderVendors();
-    }
-
-    function renderVendors() {
-      const { vendors, courts, active } = vendorData;
-
-      // Sidebar session indicator
-      const sidebarEl = document.getElementById("activeSessionSidebar");
-      if (sidebarEl) {
-        if (active && active.vendor_id) {
-          const v = vendors.find(x => x.id === active.vendor_id);
-          const c = courts.find(x => x.id === active.court_id);
-          sidebarEl.textContent = `Session: ${v ? v.name : "?"} · ${c ? c.name : "?"}`;
-          sidebarEl.style.color = "var(--accent)";
-        } else {
-          sidebarEl.textContent = "Session: none";
-          sidebarEl.style.color = "var(--muted)";
-        }
-      }
-
-      // Active session display banner
-      const displayEl = document.getElementById("activeSessionDisplay");
-      if (displayEl) {
-        if (active && active.vendor_id) {
-          const v = vendors.find(x => x.id === active.vendor_id);
-          const c = courts.find(x => x.id === active.court_id);
-          displayEl.innerHTML = `
-            <strong style="color:var(--accent);font-size:15px;">${escHtml(v ? v.name : "Unknown vendor")}</strong>
-            <span style="color:var(--muted);margin:0 8px;">/</span>
-            <span style="color:var(--ink);">${escHtml(c ? c.name : "Unknown court")}</span>
-            ${c && c.surface ? `<span style="color:var(--muted);font-size:12px;margin-left:10px;">${escHtml(c.surface)}</span>` : ""}
-            ${v && v.address ? `<div style="color:var(--muted);font-size:12px;margin-top:4px;">${escHtml(v.address)}</div>` : ""}
-          `;
-        } else {
-          displayEl.innerHTML = `<span style="color:var(--muted);font-size:13px;">No active session — select a vendor and court below.</span>`;
-        }
-      }
-
-      // Vendor dropdowns (activeVendorSelect + courtVendorSelect)
-      ["activeVendorSelect", "courtVendorSelect"].forEach(id => {
-        const sel = document.getElementById(id);
-        if (!sel) return;
-        const prevVal = sel.value;
-        sel.innerHTML = `<option value="">— select vendor —</option>` +
-          vendors.map(v => `<option value="${escHtml(v.id)}"${v.id === prevVal ? " selected" : ""}>${escHtml(v.name)}</option>`).join("");
-      });
-
-      // Pre-select active vendor and refresh court dropdown
-      const avSel = document.getElementById("activeVendorSelect");
-      if (avSel && !avSel.value && active && active.vendor_id) avSel.value = active.vendor_id;
-      updateCourtSelect("activeCourtSelect", avSel ? avSel.value : "");
-
-      // Vendor list
-      const vendorList = document.getElementById("vendorList");
-      if (vendorList) {
-        if (!vendors.length) {
-          vendorList.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;">Δεν υπάρχουν vendors ακόμα.</div>`;
-        } else {
-          vendorList.innerHTML = vendors.map(v => `
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);">
-              <div>
-                <strong>${escHtml(v.name)}</strong>
-                ${v.address ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;">${escHtml(v.address)}</div>` : ""}
-              </div>
-              <button onclick="deleteVendor('${escHtml(v.id)}')" style="background:rgba(255,107,95,0.12);border:1px solid rgba(255,107,95,0.28);color:var(--danger);border-radius:5px;padding:5px 10px;cursor:pointer;font:inherit;font-size:12px;flex-shrink:0;margin-left:12px;">Διαγραφή</button>
-            </div>
-          `).join("");
-        }
-      }
-
-      // Court list
-      const courtList = document.getElementById("courtList");
-      if (courtList) {
-        if (!courts.length) {
-          courtList.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;">Δεν υπάρχουν γήπεδα ακόμα.</div>`;
-        } else {
-          courtList.innerHTML = courts.map(c => {
-            const v = vendors.find(x => x.id === c.vendor_id);
-            const isActive = active && active.court_id === c.id;
-            return `
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px ${isActive ? "8px" : "0"};border-bottom:1px solid var(--line);${isActive ? "background:rgba(47,208,143,0.05);border-radius:6px;" : ""}">
-                <div>
-                  <strong>${escHtml(c.name)}</strong>${isActive ? ` <span style="font-size:11px;color:var(--accent);">● active</span>` : ""}
-                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">${escHtml(v ? v.name : "—")} · ${escHtml(c.surface || "—")}</div>
-                  ${c.notes ? `<div style="font-size:12px;color:var(--muted);">${escHtml(c.notes)}</div>` : ""}
-                </div>
-                <button onclick="deleteCourt('${escHtml(c.id)}')" style="background:rgba(255,107,95,0.12);border:1px solid rgba(255,107,95,0.28);color:var(--danger);border-radius:5px;padding:5px 10px;cursor:pointer;font:inherit;font-size:12px;flex-shrink:0;margin-left:12px;">Διαγραφή</button>
-              </div>
-            `;
-          }).join("");
-        }
-      }
-      updateCommandButtons();
-    }
-
-    function updateCourtSelect(selectId, vendorId) {
-      const sel = document.getElementById(selectId);
-      if (!sel) return;
-      const { courts, active } = vendorData;
-      const list = vendorId ? courts.filter(c => c.vendor_id === vendorId) : courts;
-      sel.innerHTML = `<option value="">— select court —</option>` +
-        list.map(c => `<option value="${escHtml(c.id)}"${c.id === (active && active.court_id) ? " selected" : ""}>${escHtml(c.name)}</option>`).join("");
-    }
-
-    function deleteVendor(id) {
-      const d = JSON.parse(JSON.stringify(vendorData));
-      d.vendors = d.vendors.filter(v => v.id !== id);
-      d.courts = d.courts.filter(c => c.vendor_id !== id);
-      if (d.active && d.active.vendor_id === id) d.active = {};
-      saveVendors(d);
-    }
-
-    function deleteCourt(id) {
-      const d = JSON.parse(JSON.stringify(vendorData));
-      d.courts = d.courts.filter(c => c.id !== id);
-      if (d.active && d.active.court_id === id) d.active = Object.assign({}, d.active, { court_id: null });
-      saveVendors(d);
-    }
-
-    // Wired after the Vendors view partial is injected (see loadView). The
-    // setView() handler calls loadVendors() on every open to refresh the data.
-    VIEW_INIT.vendors = function () {
-      const activeVendorSelect = document.getElementById("activeVendorSelect");
-      if (activeVendorSelect) activeVendorSelect.addEventListener("change", function () {
-        updateCourtSelect("activeCourtSelect", this.value);
-      });
-
-      const activeSessionForm = document.getElementById("activeSessionForm");
-      if (activeSessionForm) activeSessionForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const vendorId = document.getElementById("activeVendorSelect").value;
-        const courtId = document.getElementById("activeCourtSelect").value;
-        if (!vendorId || !courtId) return;
-        const d = JSON.parse(JSON.stringify(vendorData));
-        d.active = { vendor_id: vendorId, court_id: courtId };
-        saveVendors(d);
-      });
-
-      const addVendorForm = document.getElementById("addVendorForm");
-      if (addVendorForm) addVendorForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const name = document.getElementById("vendorName").value.trim();
-        const address = document.getElementById("vendorAddress").value.trim();
-        if (!name) return;
-        const d = JSON.parse(JSON.stringify(vendorData));
-        d.vendors.push({ id: "v" + Date.now(), name, address });
-        saveVendors(d);
-        this.reset();
-      });
-
-      const addCourtForm = document.getElementById("addCourtForm");
-      if (addCourtForm) addCourtForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const vendor_id = document.getElementById("courtVendorSelect").value;
-        const name = document.getElementById("courtName").value.trim();
-        const surface = document.getElementById("courtSurface").value;
-        const notes = document.getElementById("courtNotes").value.trim();
-        if (!vendor_id || !name) return;
-        d.courts.push({ id: "c" + Date.now(), vendor_id, name, surface, notes });
-        saveVendors(d);
-        this.reset();
-      });
-    };
-
-    // ── Survey history ────────────────────────────────────────────────────────
-    async function loadSurveys() {
-      try {
-        const res = await fetch("/api/surveys", { cache: "no-store" });
-        const data = await res.json();
-        renderSurveys(data.surveys || []);
-      } catch (_) {}
-    }
-
-    function renderSurveys(surveys) {
-      const tbody = document.getElementById("surveyRows");
-      const empty = document.getElementById("surveyEmpty");
-      const table = document.getElementById("surveyTable");
-      if (!surveys.length) {
-        table.style.display = "none";
-        empty.style.display = "block";
-        return;
-      }
-      table.style.display = "";
-      empty.style.display = "none";
-      tbody.innerHTML = surveys.map(s => {
-        const dt = s.surveyed_at ? new Date(s.surveyed_at * 1000).toLocaleString() : "—";
-        const status = s.status || "SUCCESS";
-        const reasonTip = s.failure_reason ? ` title="${escHtml(s.failure_reason)}"` : "";
-        const statusEl = status === "SUCCESS"
-          ? `<span style="color:var(--accent);font-size:11px;font-weight:600;">SUCCESS</span>`
-          : `<span style="color:var(--danger);font-size:11px;font-weight:600;cursor:help;"${reasonTip}>FAILED</span>`;
-        const lengthM = s.court_length_m != null ? s.court_length_m.toFixed(2) : (
-          s.east_x != null && s.west_x != null ? (s.east_x - s.west_x).toFixed(2) : "—");
-        const widthM = s.court_width_m != null ? s.court_width_m.toFixed(2) : (
-          s.north_y != null && s.south_y != null ? (s.north_y - s.south_y).toFixed(2) : "—");
-        const ro = (v) => (v != null && Number.isFinite(v) ? v.toFixed(2) : "—");
-        return `<tr>
-          <td style="color:var(--muted);">${s.id}</td>
-          <td>${dt}</td>
-          <td>${escHtml(s.vendor_name || "—")}</td>
-          <td>${escHtml(s.court_name || "—")}</td>
-          <td>${statusEl}</td>
-          <td style="color:var(--muted);font-size:11px;">${escHtml(s.survey_type || "—")}</td>
-          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${lengthM}</td>
-          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${widthM}</td>
-          <td style="font-variant-numeric:tabular-nums;">${ro(s.near_baseline_to_fence_m)}</td>
-          <td style="font-variant-numeric:tabular-nums;">${ro(s.far_baseline_to_fence_m)}</td>
-          <td style="font-variant-numeric:tabular-nums;">${ro(s.left_sideline_to_fence_m)}</td>
-          <td style="font-variant-numeric:tabular-nums;">${ro(s.right_sideline_to_fence_m)}</td>
-          <td style="color:var(--muted);">${s.obstacle_count ?? "—"}</td>
-          <td style="color:var(--muted);">${s.point_count ?? "—"}</td>
-        </tr>`;
-      }).join("");
-    }
+    // Load vendor/session data at startup so sidebar status and command gating
+    // work before the Vendors view is opened.
+    window.ControlPanelVendors.setOnChange(updateCommandButtons);
+    window.ControlPanelVendors.load();
+    VIEW_INIT.vendors = function () { window.ControlPanelVendors.initView(); };
