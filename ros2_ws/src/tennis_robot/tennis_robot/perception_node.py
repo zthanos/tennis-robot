@@ -16,6 +16,7 @@ import json
 import math
 import os
 import struct
+import zlib
 
 import cv2
 import numpy as np
@@ -55,6 +56,7 @@ class PerceptionNode(Node):
         self._robot_y = 0.0
         self._robot_yaw = 0.0
         self._last_image_stamp_ns: int | None = None
+        self._last_image_signature: int | None = None
 
         # SLAM-corrected pose (map->base_footprint) preferred over raw /odom:
         # wheel odometry drifts badly during in-place turns (wheel slip).
@@ -108,6 +110,10 @@ class PerceptionNode(Node):
         frame = self._decode_image(msg)
         if frame is None:
             return
+        signature = self._image_signature(frame)
+        if self._last_image_signature == signature:
+            return
+        self._last_image_signature = signature
         self._publish_ball_observation(frame, msg.width, msg.height)
         self._publish_survey_vision(frame)
 
@@ -123,6 +129,11 @@ class PerceptionNode(Node):
             return arr.reshape((msg.height, msg.width, 3))
         self.get_logger().warn(f"unsupported image encoding: {msg.encoding}")
         return None
+
+    @staticmethod
+    def _image_signature(frame: np.ndarray) -> int:
+        sample = np.ascontiguousarray(frame[::8, ::8])
+        return zlib.adler32(sample.tobytes())
 
     def _publish_ball_observation(self, frame: np.ndarray, w: int, h: int) -> None:
         from tennis_robot_msgs.msg import BallObservation
