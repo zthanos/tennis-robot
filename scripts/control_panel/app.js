@@ -1923,9 +1923,6 @@
           return "rgba(47,208,143,0.20)";
         };
         ctx.save();
-        ctx.font = "bold 18px system-ui";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
         for (let row = 0; row < 3; row++) {
           for (let col = 0; col < 3; col++) {
             const xa = xEdges[row];
@@ -1934,19 +1931,8 @@
             const yb = yEdges[col + 1];
             const count = Number((scanGrid[row] || [])[col] || 0);
             fillCourtPolygon([[xa, ya], [xb, ya], [xb, yb], [xa, yb]], colorForCount(count), "rgba(238,244,248,0.38)", 1.4);
-            const center = courtFrame
-              ? courtFrame.toMap((xa + xb) / 2, (ya + yb) / 2)
-              : { x_m: (xa + xb) / 2, y_m: (ya + yb) / 2 };
-            ctx.fillStyle = count > 0 ? "#eef4f8" : "rgba(238,244,248,0.38)";
-            ctx.fillText(String(count), sx(center.x_m), sy(center.y_m));
           }
         }
-        const labelPoint = courtFrame
-          ? courtFrame.toMap((xFence + xNet) / 2, yMax)
-          : { x_m: (xFence + xNet) / 2, y_m: yMax };
-        ctx.fillStyle = "rgba(238,244,248,0.82)";
-        ctx.font = "bold 12px system-ui";
-        ctx.fillText(isNegSide ? "selected side: negative-x half" : "selected side: positive-x half", sx(labelPoint.x_m), sy(labelPoint.y_m) - 14);
         ctx.restore();
       }
 
