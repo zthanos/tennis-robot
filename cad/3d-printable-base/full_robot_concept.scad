@@ -16,15 +16,13 @@ base_w = 460;
 wood_t = 12;
 frame_tube = 22;
 
-rear_wheel_d = 190;
-rear_wheel_w = 48;
-front_caster_d = 85;
-front_caster_w = 32;
-front_caster_outboard_gap = 18;
-front_caster_left_y = -front_caster_w / 2 - front_caster_outboard_gap;
-front_caster_right_y = base_w + front_caster_w / 2 + front_caster_outboard_gap;
+// 4WD: four identical 190 mm driven wheels, two per side, placed symmetrically
+// about the chassis center (no casters, no chassis pitch).
+drive_wheel_d = 190;
+drive_wheel_w = 48;
+wheel_outboard_gap = 18;
 rear_axle_x = 150;
-front_caster_x = base_len - 105;
+front_axle_x = base_len - rear_axle_x;   // symmetric about base_len/2 = 410
 
 roller_d = 120;
 roller_w = base_w + 80;
@@ -177,31 +175,27 @@ module chassis_base() {
     }
 }
 
-module drive_and_casters() {
+module drive_wheels_4wd() {
+    left_y = -drive_wheel_w / 2 - wheel_outboard_gap;
+    right_y = base_w + drive_wheel_w / 2 + wheel_outboard_gap;
+
+    // Motor pods (one per wheel) at all four corners.
     material_frame() {
-        translate([rear_axle_x, -rear_wheel_w / 2, rear_wheel_d / 2])
-            cube([150, 36, 95], center=true);
-        translate([rear_axle_x, base_w + rear_wheel_w / 2, rear_wheel_d / 2])
-            cube([150, 36, 95], center=true);
+        for (x = [rear_axle_x, front_axle_x]) {
+            translate([x, -drive_wheel_w / 2, drive_wheel_d / 2])
+                cube([150, 36, 95], center=true);
+            translate([x, base_w + drive_wheel_w / 2, drive_wheel_d / 2])
+                cube([150, 36, 95], center=true);
+        }
     }
 
+    // Four driven wheels.
     color([0.02, 0.02, 0.02]) {
-        translate([rear_axle_x, -rear_wheel_w / 2 - 18, rear_wheel_d / 2])
-            wheel(rear_wheel_d, rear_wheel_w);
-        translate([rear_axle_x, base_w + rear_wheel_w / 2 + 18, rear_wheel_d / 2])
-            wheel(rear_wheel_d, rear_wheel_w);
-        translate([front_caster_x, front_caster_left_y, front_caster_d / 2])
-            wheel(front_caster_d, front_caster_w);
-        translate([front_caster_x, front_caster_right_y, front_caster_d / 2])
-            wheel(front_caster_d, front_caster_w);
-    }
-
-    material_frame() {
-        for (y = [front_caster_left_y, front_caster_right_y]) {
-            translate([front_caster_x, y, front_caster_d + 18])
-                rounded_box([88, 64, 18], 6);
-            translate([front_caster_x, y, front_caster_d / 2 + 24])
-                cube([24, 18, 58], center=true);
+        for (x = [rear_axle_x, front_axle_x]) {
+            translate([x, left_y, drive_wheel_d / 2])
+                wheel(drive_wheel_d, drive_wheel_w);
+            translate([x, right_y, drive_wheel_d / 2])
+                wheel(drive_wheel_d, drive_wheel_w);
         }
     }
 }
@@ -455,7 +449,7 @@ module ball_flow_reference() {
 }
 
 module full_robot_concept() {
-    drive_and_casters();
+    drive_wheels_4wd();
     chassis_base();
     electronics_battery_module();
     collector_intake();

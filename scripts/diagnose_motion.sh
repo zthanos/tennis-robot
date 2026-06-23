@@ -110,9 +110,8 @@ wait "$PUB_PID" 2>/dev/null
 
 # ── 4b. TEST C: lift wheel via ForwardCommandController ─────────────────────
 # Exercises the same gz_ros2_control write path with a different controller.
-# If this worked before the caster state-only joints were added to the
-# ros2_control block but fails now, the caster change broke the hardware
-# write path and should be reverted.
+# If the diff_drive wheels move but this does not, the issue is isolated to the
+# lift controller rather than the shared gz_ros2_control write path.
 log "TEST C: lift wheel 10 rad/s via /lift_wheel_velocity_controller/commands (5 s)"
 timeout 5 ros2 topic pub -r 10 /lift_wheel_velocity_controller/commands \
   std_msgs/msg/Float64MultiArray '{data: [10.0]}' >/dev/null 2>&1 &

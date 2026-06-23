@@ -114,8 +114,9 @@ class MotionDiagnostic:
         start_positions = dict(zip(start_joint_state.name, start_joint_state.position))
         end_positions = dict(zip(end_joint_state.name, end_joint_state.position))
         end_velocities = dict(zip(end_joint_state.name, end_joint_state.velocity))
-        left_delta = end_positions.get("left_wheel_joint", 0.0) - start_positions.get("left_wheel_joint", 0.0)
-        right_delta = end_positions.get("right_wheel_joint", 0.0) - start_positions.get("right_wheel_joint", 0.0)
+        # 4WD skid-steer: sample one wheel per side (front+rear share a command).
+        left_delta = end_positions.get("rear_left_wheel_joint", 0.0) - start_positions.get("rear_left_wheel_joint", 0.0)
+        right_delta = end_positions.get("rear_right_wheel_joint", 0.0) - start_positions.get("rear_right_wheel_joint", 0.0)
         distance_from_wheels = WHEEL_RADIUS_M * (left_delta + right_delta) / 2.0
         yaw_from_wheels = WHEEL_RADIUS_M * (right_delta - left_delta) / WHEEL_SEPARATION_M
 
@@ -130,8 +131,8 @@ class MotionDiagnostic:
             print(f"yaw_rate_sim_rad_s={dyaw / sim_dt:+.3f}")
         print(
             "last_wheel_velocity_rad_s="
-            f"left={end_velocities.get('left_wheel_joint', 0.0):+.3f} "
-            f"right={end_velocities.get('right_wheel_joint', 0.0):+.3f}"
+            f"left={end_velocities.get('rear_left_wheel_joint', 0.0):+.3f} "
+            f"right={end_velocities.get('rear_right_wheel_joint', 0.0):+.3f}"
         )
         if self.cmd_out is not None:
             print(

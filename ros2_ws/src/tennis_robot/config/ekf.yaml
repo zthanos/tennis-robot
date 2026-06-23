@@ -1,0 +1,45 @@
+# robot_localization EKF — fuses wheel odometry + IMU into a corrected
+# odom -> base_footprint transform. This is what makes the 4WD skid-steer
+# usable: forward velocity comes from the wheels, YAW comes from the IMU gyro
+# (which the wheels cannot observe — the whole reason in-place turns smeared the
+# SLAM map). slam_toolbox still provides map -> odom on top of this.
+#
+# TF chain: map -(slam_toolbox)-> odom -(this EKF)-> base_footprint -(RSP)-> base_link
+ekf_filter_node:
+  ros__parameters:
+    use_sim_time: true
+    frequency: 30.0
+    sensor_timeout: 0.2
+    two_d_mode: true            # ground robot: zero z, roll, pitch
+    publish_tf: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom           # EKF outputs odom -> base_footprint
+
+    # Wheel odometry: trust forward velocity (vx) ONLY. Skid-steer wheel yaw is
+    # unreliable, so we deliberately do NOT fuse its yaw or yaw-rate.
+    odom0: /diff_drive_controller/odom
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  false, false,
+                   false, false, false,
+                   false, false, false]
+    odom0_differential: false
+    odom0_relative: false
+    odom0_queue_size: 10
+
+    # IMU (MPU6050): trust yaw-RATE (gyro z) and forward acceleration. The
+    # MPU6050 has no magnetometer, so there is no absolute heading — fuse the
+    # rate, not the angle.
+    imu0: /imu/data
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true,
+                  true,  false, false]
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true

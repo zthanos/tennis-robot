@@ -70,7 +70,7 @@ top OAK-D S2, rigidly mounted above the intake/upper frame
   -> primary ball detection, depth, and targeted looks into LiDAR shadow zones
 ```
 
-Keep the LiDAR mount clear of the front funnel lips, casters, and drive wheels.
+Keep the LiDAR mount clear of the front funnel lips and the four drive wheels.
 The scan plane should be low enough to see real obstacles and court boundaries,
 but tennis balls should remain an OAK-D target. The OAK-D mount should be higher
 and stiffer, with a repeatable downward/front angle for calibration.
@@ -98,14 +98,14 @@ The preferred first build is not a sealed beautiful mechanism. It is a tunable r
 
 ### Updated Chassis Geometry
 
-The current CAD direction uses a pitched chassis instead of a flat body:
+The current CAD direction uses a level (un-pitched) 4WD chassis:
 
-- larger rear driven wheels and smaller front casters create the base pitch;
-- the front casters sit outboard of the base edges, leaving the center intake/funnel unobstructed;
+- four identical driven 180 mm wheels, two per side, placed symmetrically about the chassis center (no casters), so the body stays flat;
+- the two motors on each side are wired in parallel to one BTS7960 driver (4WD skid-steer), giving more traction and eliminating the caster scrub that previously stalled in-place turns;
 - the bin has two modeled positions: a lower collect-mode reference and a raised/tilted throw-mode position;
 - throw mode uses a gravity feed chute from the raised bin into the flywheel throat.
 
-This keeps the pickup path low while still giving the launcher a downhill feed path. Before cutting final holes, verify the actual caster plate, wheel diameter, and front clearance against `cad/3d-printable-base/full_robot_concept.scad` and `cad/3d-printable-base/base_mounting_plate.scad`.
+This keeps the pickup path low and the launcher feed predictable on a level body. Before cutting final holes, verify the actual motor pod footprint, 180 mm wheel diameter, and front clearance against `cad/3d-printable-base/full_robot_concept.scad` and `cad/3d-printable-base/base_mounting_plate.scad`.
 
 ### Scope
 
@@ -331,4 +331,4 @@ These links are not final purchase recommendations; they anchor the rough cost r
 | Collector motor voltage | 12 V DC for simple sourcing. |
 | Hopper capacity | Start with 3-6 balls. |
 | Launch architecture | Dual flywheel, fixed angle at first. |
-| Mobile base | Differential-drive base with larger rear wheels, outboard front casters, and pitched body geometry. |
+| Mobile base | 4WD skid-steer base: four driven 180 mm wheels (two per side, parallel-wired per BTS7960), level body geometry, no casters. |

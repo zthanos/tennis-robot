@@ -41,8 +41,7 @@ cad/3d-printable-base/base_mounting_plate.scad
 | 3 | 390 x 45 | Cross rails | Mount on edge: rear motor area, middle battery area, front collector area. |
 | 2 | 180 x 90 | Collector upright plates | Side/back support for collector intake roller and hopper mouth. |
 | 2 | 220 x 80 | Hopper/back-plate supports | Trim/drill after collector height is confirmed. |
-| 2 | 120 x 80 | Motor pod reinforcement plates | Under or above the motor pod bolt area. |
-| 2 | 100 x 80 | Front caster reinforcement plates | Under or above caster mounts. |
+| 4 | 120 x 80 | Motor pod reinforcement plates | Under or above each motor pod bolt area (4WD: one per pod). |
 | 2 | 130 x 60 | Stabilizer bracket blocks | Front stabilizer / anti-tip mounting area. |
 | 2 | 100 x 60 | Handle socket backing plates | Rear handle/socket reinforcement. |
 
@@ -98,9 +97,8 @@ Keep all mechanical modules removable.
 |---|---|---|
 | Long side rails to base | D4 wood glue + 3.5x30 or 4x30 wood screws | Makes the plywood plate much stiffer. |
 | Cross rails to base | D4 wood glue + 3.5x30 or 4x30 wood screws | Adds torsional stiffness and supports module loads. |
-| Small backing plates | D4 wood glue + screws or clamps while curing | Spreads wheel/caster/collector loads. |
-| Motor pods | M5 bolts + washers + T-nuts or threaded inserts | Must be removable and adjustable. |
-| Front caster mounts | M5 bolts + washers + T-nuts or threaded inserts | Must be removable for height/level tuning. |
+| Small backing plates | D4 wood glue + screws or clamps while curing | Spreads wheel/motor-pod/collector loads. |
+| Motor pods (x4) | M5 bolts + washers + T-nuts or threaded inserts | All four must be removable and adjustable. |
 | Collector module | M5 bolts through slots + washers | Needs adjustment for lip height and roller gap. |
 | Electronics trays | M4 screws + standoffs | Serviceable wiring and board access. |
 | Battery straps | Bolts/screws + strap slots | Battery must be removable for charging/service. |
@@ -127,13 +125,13 @@ the rail firmly into the base.
 
 2. Dry-fit the long side rails.
    - Place the two 760 x 45 mm rails on edge along the left and right sides.
-   - Keep them inset enough that motor pods and caster brackets still sit flat.
+   - Keep them inset enough that all four motor pods still sit flat.
    - Clamp them first, before glue.
 
 3. Dry-fit the cross rails.
    - Use one cross rail near the rear motor pod area.
    - Use one cross rail around the battery/electronics area.
-   - Use one cross rail near the front collector/caster area.
+   - Use one cross rail near the front motor pod / collector area.
    - Check that none of the rails blocks planned bolt holes.
 
 4. Glue and screw only the wooden rails.
@@ -144,8 +142,7 @@ the rail firmly into the base.
    - Wipe excess glue before it cures.
 
 5. Add backing plates.
-   - Glue/screw motor pod reinforcement plates around the wheel mount zones.
-   - Glue/screw caster reinforcement plates around the front caster zones.
+   - Glue/screw motor pod reinforcement plates around all four wheel mount zones.
    - Add handle backing plates at the rear.
    - Let glue cure fully before mounting moving parts.
 
@@ -156,9 +153,8 @@ the rail firmly into the base.
    - Use washers on both sides where possible.
 
 7. Mount wheel system first.
-   - Bolt motor pods loosely.
-   - Bolt front caster mounts.
-   - Place the base on a flat floor and check that all wheels touch correctly.
+   - Bolt all four motor pods loosely.
+   - Place the base on a flat floor and check that all four wheels touch correctly.
    - Tighten only after the base rolls straight.
 
 8. Add battery and electronics.

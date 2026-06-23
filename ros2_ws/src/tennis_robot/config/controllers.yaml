@@ -24,12 +24,18 @@ controller_manager:
 
 diff_drive_controller:
   ros__parameters:
-    left_wheel_names: ["left_wheel_joint"]
-    right_wheel_names: ["right_wheel_joint"]
+    # 4WD skid-steer: two driven wheels per side, both commanded together.
+    left_wheel_names: ["rear_left_wheel_joint", "front_left_wheel_joint"]
+    right_wheel_names: ["rear_right_wheel_joint", "front_right_wheel_joint"]
 
     # Geometry — keep in sync with urdf/tennis_robot.urdf.xacro
-    # wheel_separation = 2 * wheel_y = 2 * 0.35 = 0.70 m
-    wheel_separation: 0.70
+    # Geometric track = 2 * wheel_y = 0.70 m. BUT this is a 4WD skid-steer: the
+    # wheels scrub sideways when turning, so the EFFECTIVE rotational track is
+    # larger than the geometric one. Using 0.70 made odom OVER-estimate yaw, which
+    # smeared the SLAM map into a pinwheel and failed the court survey.
+    # 1.0 ~= 0.70 * 1.4 (typical skid-steer correction). TUNE: if the SLAM map
+    # still over-rotates raise this; if it under-rotates lower it toward 0.70.
+    wheel_separation: 1.0
     wheel_radius: 0.09
 
     # Plain geometry_msgs/Twist on ~/cmd_vel_unstamped (use_stamped_vel: false)
@@ -38,8 +44,6 @@ diff_drive_controller:
     # static_cast<int>(timeout * 1000) ms — larger values overflow int32 to a
     # NEGATIVE timeout, so every command is treated as expired and zeroed
     # (robot accepts Twist but never moves). The old 1.0e9 hit exactly this.
-    # Sim-time fear was unfounded: the unstamped subscriber stamps with the
-    # node clock (sim time under gz_ros2_control), same clock as update().
     cmd_vel_timeout: 5.0
 
     publish_rate: 50.0
@@ -52,7 +56,11 @@ diff_drive_controller:
     # base_link would give base_link two TF parents and orphan base_footprint.
     # Chain: map -> odom -> base_footprint -> base_link
     base_frame_id: base_footprint
-    enable_odom_tf: true
+    # EKF (robot_localization) now publishes odom -> base_footprint by fusing
+    # this odometry with the IMU. diff_drive still publishes the /odom TOPIC
+    # (consumed by the EKF) but must NOT also broadcast the TF, or it fights the
+    # EKF for the same transform.
+    enable_odom_tf: false
     open_loop: false
 
     pose_covariance_diagonal: [0.001, 0.001, 0.0, 0.0, 0.0, 0.01]

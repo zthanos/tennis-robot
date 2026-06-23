@@ -14,6 +14,7 @@ Use these files for purchasing, cutting, CAD alignment, and software assumptions
 - `concept-a-funnel-lift-wheel-plan.md` - active Concept A build plan.
 - `mission-dashboard-plan-el.md` - active mission-control dashboard evolution plan.
 - `collector-wiring-reference-el.md` - active bench wiring reference for the first Arduino Nano + TB6612FNG collector prototype.
+- `motion-perfboard-wiring-el.md` - active perfboard wiring reference for the Arduino Mega + 2x BTS7960 4WD motion prototype.
 - `court-knowledge-model-specification.md` - active environment knowledge model specification and definition of done.
 - `court-survey-v2-spec-el.md` - **active, as-built** court survey spec (LiDAR occupancy -> Court Knowledge Model). Replaces the old perimeter / Nav2-explore / FSM-fix survey docs.
 - `project-board-plan-el.md` - proposed GitHub Project board workstreams, labels, and initial cards.

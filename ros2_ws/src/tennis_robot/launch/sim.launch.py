@@ -26,6 +26,7 @@ ROBOT_SDF = f"{WORKSPACE}/runtime/tennis_robot.sdf"
 # ros2_control controllers config baked into the gz_ros2_control plugin.
 # /workspace is mounted into the Gazebo container, so this path resolves there.
 CONTROLLERS_CONFIG = f"{WORKSPACE}/ros2_ws/src/tennis_robot/config/controllers.yaml"
+EKF_CONFIG = f"{WORKSPACE}/ros2_ws/src/tennis_robot/config/ekf.yaml"
 # Docker sets ROS2_INSTALL=/ros2_ws/install; native Linux uses {WORKSPACE}/ros2_ws/install
 ROS2_INSTALL = os.environ.get("ROS2_INSTALL", f"{WORKSPACE}/ros2_ws/install")
 
@@ -280,12 +281,24 @@ def generate_launch_description():
         output="screen",
     )
 
+    # Sensor fusion: wheel odom (/diff_drive_controller/odom) + IMU (/imu/data)
+    # -> corrected odom->base_footprint TF. Required for skid-steer, whose wheel
+    # odometry mis-estimates yaw; slam_toolbox still provides map->odom on top.
+    ekf = Node(
+        package="robot_localization",
+        executable="ekf_node",
+        name="ekf_filter_node",
+        output="screen",
+        parameters=[EKF_CONFIG, {"use_sim_time": True}],
+    )
+
     # Delay ROS nodes until Gazebo + bridge are up
     delayed_nodes = TimerAction(
         period=4.0,
         actions=[
             bridge, perception, controller, navigation,
             command_bridge, gz_extras, sensor_snapshots, drive_actuator, twist_mux,
+            ekf,
         ],
     )
 

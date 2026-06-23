@@ -71,7 +71,7 @@ These are intentionally not final yet. We should choose them after the simulatio
 - The depth camera helps distance, but it does not replace proper navigation logic.
 - For a moving outdoor robot, fixed mechanical mounting and vibration isolation matter.
 - The LiDAR should be mounted low on the body with a protective guard and clean 360-degree line of sight, but not treated as a ball-height detector.
-- Very low LiDAR mounting will see more dust, collector structure, wheel/caster occlusions, and court texture; bracket geometry matters.
+- Very low LiDAR mounting will see more dust, collector structure, wheel occlusions, and court texture; bracket geometry matters.
 
 ## Next Simulation Task
 

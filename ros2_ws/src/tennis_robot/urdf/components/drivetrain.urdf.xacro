@@ -21,70 +21,21 @@
       <dynamics damping="0.001"/>
     </joint>
     <gazebo reference="${side}_wheel_link">
-      <!-- VER=21: brute-force friction test — mu=5.0 isotropic, no fdir1.
-           VER=20 (mu=1.5) improved rotation from 48° to 73° out of 275° (~73% slip).
-           If mu=5.0 with court mu=2.0 still gives ~73% slip, the URDF <gazebo>
-           friction tags are NOT reaching the physics engine (DART ignoring them)
-           and we need the bullet-featherstone engine or direct SDF injection. -->
-      <mu1>5.0</mu1>
-      <mu2>5.0</mu2>
+      <!-- Moderate friction on all four driven wheels. 4WD skid-steer turning
+           relies on lateral slip; the previous mu=5.0 over-resisted rotation,
+           making in-place turns crawl and survey waypoints time out. mu=1.2
+           keeps enough forward grip (court surface adds more) while letting the
+           robot rotate quickly. -->
+      <mu1>1.2</mu1>
+      <mu2>1.2</mu2>
       <slip1>0.0</slip1>
       <slip2>0.0</slip2>
     </gazebo>
   </xacro:macro>
 
-  <xacro:macro name="caster" params="name x y z radius width:=0.030 trail:=0.0">
-    <link name="${name}_caster_swivel_link">
-      <inertial>
-        <mass value="0.03"/>
-        <inertia ixx="5e-5" ixy="0" ixz="0" iyy="5e-5" iyz="0" izz="5e-5"/>
-      </inertial>
-      <visual name="swivel_stem_vis">
-        <origin xyz="0 0 0.045" rpy="0 0 0"/>
-        <geometry><cylinder radius="0.014" length="0.09"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="caster_fork_vis">
-        <origin xyz="0 0 -0.025" rpy="0 0 0"/>
-        <geometry><box size="0.075 0.020 0.055"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-    </link>
-    <joint name="${name}_caster_swivel_joint" type="continuous">
-      <parent link="base_link"/>
-      <child link="${name}_caster_swivel_link"/>
-      <origin xyz="${x} ${y} ${z + radius}" rpy="0 0 0"/>
-      <axis xyz="0 0 1"/>
-      <dynamics damping="0.02" friction="0.001"/>
-    </joint>
-
-    <link name="${name}_caster_wheel_link">
-      <xacro:cylinder_inertial mass="0.05" radius="${radius}" length="${width}" axis="y"/>
-      <collision name="col">
-        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
-      </collision>
-      <visual name="vis">
-        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
-        <material name="rubber_black"/>
-      </visual>
-    </link>
-    <joint name="${name}_caster_wheel_joint" type="continuous">
-      <parent link="${name}_caster_swivel_link"/>
-      <child link="${name}_caster_wheel_link"/>
-      <!-- trail: wheel contact sits behind the vertical swivel axis so the
-           caster self-aligns with the direction of travel (no scrub/shimmy). -->
-      <origin xyz="-${trail} 0 -${radius}" rpy="0 0 0"/>
-      <axis xyz="0 1 0"/>
-      <dynamics damping="0.001" friction="0.0"/>
-    </joint>
-
-    <gazebo reference="${name}_caster_wheel_link">
-      <mu1>0.8</mu1>
-      <mu2>0.05</mu2>
-    </gazebo>
-  </xacro:macro>
+  <!-- Casters removed: the robot is now 4WD skid-steer (four driven wheels via
+       the drive_wheel macro above). The old swivel-caster macro and its scrub
+       resistance are gone. -->
 
   <xacro:macro name="intake_roller" params="x z radius width mass">
     <link name="lift_wheel_link">

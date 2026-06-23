@@ -212,7 +212,11 @@
     } else if (hasModel) {
       setStatus(`v2 · OK · net locked · ${npts} pts · ${running ? "live" : "saved"}`, "var(--ok)");
     } else {
-      setStatus(`measuring… ${npts} pts`, "var(--muted)");
+      const cov = live.coverage || {};
+      const phase = live.state === "find_net" ? "finding net"
+        : live.state === "saving_map" ? "saving map"
+        : (cov.n ? `coverage ${cov.i + 1}/${cov.n}` : "measuring…");
+      setStatus(`${phase} · ${npts} pts`, "var(--muted)");
     }
 
     if (metaEl) {

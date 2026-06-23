@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Simulation-first tennis ball collection robot. Stack: Gazebo Harmonic (simulation) + ROS 2 Humble + Python. The active design is "Concept A": pitched chassis, orange funnel, wide intake roller, optional OAK-D depth camera.
+Simulation-first tennis ball collection robot. Stack: Gazebo Harmonic (simulation) + ROS 2 Humble + Python. The active design is "Concept A": level (un-pitched) 4WD skid-steer chassis with four driven 180 mm wheels (two per side, no casters), orange funnel, wide intake roller, optional OAK-D depth camera, and an MPU6050 IMU (gyro+accel) for fusing with wheel odometry.
 
 ## Current Architecture Direction
 
@@ -92,15 +92,4 @@ docker compose --profile cad up openscad-gui # OpenSCAD GUI on port 6081
 
 ### Gazebo world (`gazebo/models/tennis_court/`)
 
-Red clay court (23.77 m × 10.97 m). Net at x=0, baselines at x=±11.885 m, service lines at x=±6.4 m. Perimeter fencing modeled as separate DAE meshes.
-
-### Configuration via environment variables
-
-All behavioral parameters are tunable without code changes (speeds, PID gains, tolerances, telemetry). Key vars: `ROBOT_COMMAND_FILE`, `ROBOT_STATUS_FILE`, `OTEL_ENABLED`, `OTEL_EXPORTER`, `COLLECTOR_*`, `SURVEY_*`, `ROS2_SURVEY_*`.
-
-## Key Constraints
-
-- Python 3.12+, managed with `uv` (not pip directly).
-- No formal test framework — replay scripts in `scripts/` and `fixtures/` are the test suite.
-- `runtime/` is gitignored; generated files (command JSON, survey JSON, benchmark results) live there.
-- Concept A is the active hardware baseline; earlier concept docs in `docs/research/` are archived.
+Red clay court (23.77 m × 10.97 m). Ne

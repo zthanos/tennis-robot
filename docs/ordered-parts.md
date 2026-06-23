@@ -15,16 +15,25 @@
 | 5 | Power Supply 100-240V 12V 2A 24W 5.5x2.5mm Connector Without Power Cable | Collector | 1 | 6,40 € | 6,40 € | Vexio | Πέμ, 04 Ιουν - Τετ, 10 Ιουν | Προετοιμασία παραγγελίας |
 | 6 | SparkFun Motor Driver - Dual TB6612FNG | Collector | 1 | 6,50 € | 6,50 € | Radel S.A. | Τρίτη | Προετοιμασία παραγγελίας |
 
+## Additional Ordered Parts
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Εκτιμώμενη παραλαβή | Κατάσταση |
+|---:|---|---|---:|---:|---:|---|---|---|
+| 7 | Waveshare Slamtec RPLIDAR C1 Laser Ranging Sensor, 360° Omnidirectional Lidar, Millimetre Level High Definition, Anti-Interference and Anti-Adhesion, Compact and Easy to Integrate | Sensors / Navigation LiDAR | 1 | 83,35 € | 83,35 € | TBD | Παρασκευή | Αγοράστηκε |
+
 ## Cost Summary
 
 | Περιγραφή | Ποσό |
 |---|---:|
-| Αξία προϊόντων | 48,30 € |
-| Μεταφορικά | 10,00 € |
-| **Σύνολο** | **58,30 €** |
+| Αξία προϊόντων αρχικής Skroutz παραγγελίας | 48,30 € |
+| Μεταφορικά αρχικής Skroutz παραγγελίας | 10,00 € |
+| Σύνολο αρχικής Skroutz παραγγελίας | 58,30 € |
+| RPLIDAR C1 | 83,35 € |
+| **Σύνολο καταγεγραμμένων αγορών** | **141,65 €** |
 
 ## Notes
 
 - Οι τιμές και οι παραδόσεις καταγράφηκαν από το screenshot της παραγγελίας.
 - Για το `Male to Male - Pack of 10 Καλώδιο Jumper - 0.15m`, το screenshot δείχνει `2 x 1,80 €`, άρα το σύνολο γραμμής υπολογίζεται σε `3,60 €`.
 - Η παραλαβή γίνεται σε Skroutz Point `Dr. Shoe Νέα Ερυθραία`, σύμφωνα με το screenshot.
+- Το RPLIDAR C1 προστέθηκε ως ξεχωριστή αγορά αισθητήρα. Να συμπληρωθεί ο πωλητής όταν υπάρχει screenshot/receipt.
