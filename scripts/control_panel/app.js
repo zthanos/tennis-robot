@@ -51,6 +51,42 @@
         north_y: Math.max(...ys),
       };
     }
+    function courtFrameModel(bounds) {
+      if (!bounds || bounds.schema !== "court_knowledge_model/v2") return null;
+      const frame = (bounds.map_artifact || {}).court_frame || {};
+      const center = frame.center || bounds.net?.center || {};
+      const axisLength = frame.axis_length || bounds.net?.axis_length || {};
+      const axisWidth = frame.axis_width || bounds.net?.axis_width || {};
+      const lines = bounds.court?.lines_court_frame || {};
+      const baselines = Array.isArray(lines.baselines_x) ? lines.baselines_x.map(Number).filter(Number.isFinite).sort((a, b) => a - b) : [];
+      const service = Array.isArray(lines.service_x) ? lines.service_x.map(Number).filter(Number.isFinite).sort((a, b) => a - b) : [];
+      const sidelines = Array.isArray(lines.sidelines_y) ? lines.sidelines_y.map(Number).filter(Number.isFinite).sort((a, b) => a - b) : [];
+      const ok = [center.x_m, center.y_m, axisLength.x_m, axisLength.y_m, axisWidth.x_m, axisWidth.y_m].every(Number.isFinite);
+      if (!ok || baselines.length < 2 || service.length < 2 || sidelines.length < 2) return null;
+      const toMap = (x, y) => ({
+        x_m: center.x_m + x * axisLength.x_m + y * axisWidth.x_m,
+        y_m: center.y_m + x * axisLength.y_m + y * axisWidth.y_m,
+      });
+      const xs = [baselines[0], baselines[baselines.length - 1]];
+      const ys = [sidelines[0], sidelines[sidelines.length - 1]];
+      const corners = [
+        toMap(xs[0], ys[0]), toMap(xs[1], ys[0]),
+        toMap(xs[1], ys[1]), toMap(xs[0], ys[1]),
+      ];
+      return {
+        baselines_x: xs,
+        service_x: [service[0], service[service.length - 1]],
+        sidelines_y: ys,
+        toMap,
+        bounds: {
+          min_x: Math.min(...corners.map(p => p.x_m)),
+          max_x: Math.max(...corners.map(p => p.x_m)),
+          min_y: Math.min(...corners.map(p => p.y_m)),
+          max_y: Math.max(...corners.map(p => p.y_m)),
+          net_x: center.x_m,
+        },
+      };
+    }
     function timeText(seconds) {
       if (!seconds) return "0.0s";
       if (seconds < 90) return `${seconds.toFixed(1)}s`;
@@ -1663,44 +1699,91 @@
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
       const map = (diagnostics.robot || {}).map || {};
-      const court = map.court || { min_x: -11.885, max_x: 11.885, min_y: -5.485, max_y: 5.485, net_x: 0 };
+      const survBounds = diagnostics.court_boundary || ((diagnostics.robot || {}).survey || {}).bounds;
+      const courtFrame = courtFrameModel(survBounds);
+      const court = courtFrame
+        ? {
+            min_x: courtFrame.bounds.min_x - 1.0,
+            max_x: courtFrame.bounds.max_x + 1.0,
+            min_y: courtFrame.bounds.min_y - 1.0,
+            max_y: courtFrame.bounds.max_y + 1.0,
+            net_x: courtFrame.bounds.net_x,
+          }
+        : (map.court || { min_x: -11.885, max_x: 11.885, min_y: -5.485, max_y: 5.485, net_x: 0 });
       const width = canvas.width;
       const height = canvas.height;
       const pad = 42;
       const sx = x => pad + (x - court.min_x) / (court.max_x - court.min_x) * (width - pad * 2);
       const sy = y => height - pad - (y - court.min_y) / (court.max_y - court.min_y) * (height - pad * 2);
       const scaleM = (width - pad * 2) / (court.max_x - court.min_x);
+      const strokeCourtLine = (x0, y0, x1, y1, style = "rgba(255,255,255,0.55)", lineWidth = 2) => {
+        const a = courtFrame ? courtFrame.toMap(x0, y0) : { x_m: x0, y_m: y0 };
+        const b = courtFrame ? courtFrame.toMap(x1, y1) : { x_m: x1, y_m: y1 };
+        ctx.beginPath();
+        ctx.moveTo(sx(a.x_m), sy(a.y_m));
+        ctx.lineTo(sx(b.x_m), sy(b.y_m));
+        ctx.strokeStyle = style;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      };
+      const fillCourtPolygon = (points, fillStyle, strokeStyle = null, lineWidth = 1) => {
+        const mapped = points.map(([x, y]) => courtFrame ? courtFrame.toMap(x, y) : { x_m: x, y_m: y });
+        ctx.beginPath();
+        mapped.forEach((point, index) => {
+          if (index === 0) ctx.moveTo(sx(point.x_m), sy(point.y_m));
+          else ctx.lineTo(sx(point.x_m), sy(point.y_m));
+        });
+        ctx.closePath();
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+        if (strokeStyle) {
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = lineWidth;
+          ctx.stroke();
+        }
+      };
 
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#7a3329";
       ctx.fillRect(0, 0, width, height);
-      ctx.fillStyle = "#8f3f32";
-      ctx.fillRect(pad, pad, width - pad * 2, height - pad * 2);
+      if (courtFrame) {
+        const [xMin, xMax] = courtFrame.baselines_x;
+        const [serviceNear, serviceFar] = courtFrame.service_x;
+        const [yMin, yMax] = courtFrame.sidelines_y;
+        fillCourtPolygon([[xMin, yMin], [xMax, yMin], [xMax, yMax], [xMin, yMax]], "#8f3f32", "rgba(255,255,255,0.78)", 3);
+        strokeCourtLine(0, yMin, 0, yMax, "rgba(18,24,30,0.95)", 5);
+        [serviceNear, serviceFar].forEach(x => strokeCourtLine(x, yMin, x, yMax));
+        [yMin, yMax].forEach(y => strokeCourtLine(xMin, y, xMax, y));
+        strokeCourtLine(serviceNear, 0, serviceFar, 0);
+      } else {
+        ctx.fillStyle = "#8f3f32";
+        ctx.fillRect(pad, pad, width - pad * 2, height - pad * 2);
 
-      ctx.strokeStyle = "rgba(255,255,255,0.78)";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
-      ctx.beginPath();
-      ctx.moveTo(sx(court.net_x || 0), pad);
-      ctx.lineTo(sx(court.net_x || 0), height - pad);
-      ctx.strokeStyle = "rgba(18,24,30,0.95)";
-      ctx.lineWidth = 5;
-      ctx.stroke();
+        ctx.strokeStyle = "rgba(255,255,255,0.78)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
+        ctx.beginPath();
+        ctx.moveTo(sx(court.net_x || 0), pad);
+        ctx.lineTo(sx(court.net_x || 0), height - pad);
+        ctx.strokeStyle = "rgba(18,24,30,0.95)";
+        ctx.lineWidth = 5;
+        ctx.stroke();
 
-      ctx.strokeStyle = "rgba(255,255,255,0.55)";
-      ctx.lineWidth = 2;
-      [-6.4, 6.4].forEach(x => {
-        ctx.beginPath();
-        ctx.moveTo(sx(x), pad);
-        ctx.lineTo(sx(x), height - pad);
-        ctx.stroke();
-      });
-      [-4.115, 4.115, 0].forEach(y => {
-        ctx.beginPath();
-        ctx.moveTo(pad, sy(y));
-        ctx.lineTo(width - pad, sy(y));
-        ctx.stroke();
-      });
+        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.lineWidth = 2;
+        [-6.4, 6.4].forEach(x => {
+          ctx.beginPath();
+          ctx.moveTo(sx(x), pad);
+          ctx.lineTo(sx(x), height - pad);
+          ctx.stroke();
+        });
+        [-4.115, 4.115, 0].forEach(y => {
+          ctx.beginPath();
+          ctx.moveTo(pad, sy(y));
+          ctx.lineTo(width - pad, sy(y));
+          ctx.stroke();
+        });
+      }
 
       const bounds = map.active_bounds;
       if (bounds) {
@@ -1709,7 +1792,6 @@
       }
 
       // Survey fence measurements overlay — prefer persistent court_boundary.json over in-memory survey state
-      const survBounds = diagnostics.court_boundary || ((diagnostics.robot || {}).survey || {}).bounds;
       if (survBounds && survBounds.survey_complete) {
         const fg = canonicalFenceBounds(survBounds);
         ctx.save();
@@ -1821,6 +1903,52 @@
               order: null,
               source: ball.source || "collection_scan",
             }));
+
+      const scanGrid = Array.isArray(collectionScan.grid) ? collectionScan.grid : null;
+      if (scanGrid && (collectionScan.active || collectionScan.complete)) {
+        const side = collectionScan.side || "side_neg_x";
+        const isNegSide = side === "side_neg_x" || side === "left";
+        const xFence = courtFrame
+          ? (isNegSide ? courtFrame.baselines_x[0] : courtFrame.baselines_x[1])
+          : (isNegSide ? court.min_x : court.max_x);
+        const xNet = courtFrame ? 0 : (court.net_x || 0);
+        const yMin = courtFrame ? courtFrame.sidelines_y[0] : court.min_y;
+        const yMax = courtFrame ? courtFrame.sidelines_y[1] : court.max_y;
+        const xEdges = [0, 1, 2, 3].map(i => xFence + (xNet - xFence) * (i / 3));
+        const yEdges = [0, 1, 2, 3].map(i => yMax + (yMin - yMax) * (i / 3));
+        const colorForCount = count => {
+          if (count <= 0) return "rgba(255,255,255,0.025)";
+          if (count <= 2) return "rgba(87,166,255,0.16)";
+          if (count <= 5) return "rgba(255,189,90,0.18)";
+          return "rgba(47,208,143,0.20)";
+        };
+        ctx.save();
+        ctx.font = "bold 18px system-ui";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 3; col++) {
+            const xa = xEdges[row];
+            const xb = xEdges[row + 1];
+            const ya = yEdges[col];
+            const yb = yEdges[col + 1];
+            const count = Number((scanGrid[row] || [])[col] || 0);
+            fillCourtPolygon([[xa, ya], [xb, ya], [xb, yb], [xa, yb]], colorForCount(count), "rgba(238,244,248,0.38)", 1.4);
+            const center = courtFrame
+              ? courtFrame.toMap((xa + xb) / 2, (ya + yb) / 2)
+              : { x_m: (xa + xb) / 2, y_m: (ya + yb) / 2 };
+            ctx.fillStyle = count > 0 ? "#eef4f8" : "rgba(238,244,248,0.38)";
+            ctx.fillText(String(count), sx(center.x_m), sy(center.y_m));
+          }
+        }
+        const labelPoint = courtFrame
+          ? courtFrame.toMap((xFence + xNet) / 2, yMax)
+          : { x_m: (xFence + xNet) / 2, y_m: yMax };
+        ctx.fillStyle = "rgba(238,244,248,0.82)";
+        ctx.font = "bold 12px system-ui";
+        ctx.fillText(isNegSide ? "selected side: negative-x half" : "selected side: positive-x half", sx(labelPoint.x_m), sy(labelPoint.y_m) - 14);
+        ctx.restore();
+      }
 
       // pending balls (below seen_count threshold) — drawn first so confirmed render on top
       allBalls.filter(b => !b.confirmed).forEach(ball => {
