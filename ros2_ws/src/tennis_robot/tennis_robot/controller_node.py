@@ -84,6 +84,7 @@ MAPPED_BALL_MAX_CREATE_DISTANCE_M = 3.0
 COLLECT_PATTERN_MAX_APPROACH_DISTANCE_M = _env_float(
     "COLLECT_PATTERN_MAX_APPROACH_DISTANCE_M", MAPPED_BALL_MAX_CREATE_DISTANCE_M
 )
+COLLECTION_LANE_CAPTURE_RANGE_M = _env_float("COLLECTION_LANE_CAPTURE_RANGE_M", 2.5)
 MAPPED_BALL_STALE_AFTER_S = 45.0
 MANUAL_LINEAR_SPEED_M_S = _env_float("MANUAL_LINEAR_SPEED_M_S", 0.40)
 MANUAL_TURN_SPEED_RAD_S = _env_float("MANUAL_TURN_SPEED_RAD_S", 0.80)
@@ -140,6 +141,8 @@ class ControllerNode(Node):
         self.collect_pattern_phase = "idle"
         self.collect_pattern_collect_elapsed_s = 0.0
         self.collect_pattern_failures = 0
+        self._collection_lane_collecting = False
+        self._collection_lane_collect_elapsed_s = 0.0
         self.collection_confirmed = False
         self._collect_start_time: float | None = None
         self.scan_side_started_at: float | None = None
@@ -382,7 +385,7 @@ class ControllerNode(Node):
                 self._collect_start_time = time.time()
 
         if mode == "collect":
-            return self._collection_distribution_scan_command_for_mode(mode)
+            return self._collection_distribution_scan_command_for_mode(mode, observation)
 
         if mode == "collect_one":
             cmd = self.collect_one_mission.update(
@@ -673,7 +676,9 @@ class ControllerNode(Node):
             self._map_completion_reported = True
         return command
 
-    def _collection_distribution_scan_command_for_mode(self, _mode: str) -> ConceptACommand:
+    def _collection_distribution_scan_command_for_mode(
+        self, _mode: str, observation: BallObservationInput
+    ) -> ConceptACommand:
         if not self._collection_scan.active and not self._collection_scan.complete:
             try:
                 self._collection_scan.start(self._robot_x, self._robot_y, self._robot_yaw)
@@ -685,6 +690,21 @@ class ControllerNode(Node):
                     base=BaseCommand(0.0, 0.0),
                     collector=CollectorCommand(0.0, False),
                 )
+
+        if self._collection_lane_collecting:
+            return self._collection_lane_collect_command(observation)
+
+        if (
+            self._collection_scan.active
+            and not self._collection_scan.complete
+            and observation.visible
+            and observation.distance_m <= COLLECTION_LANE_CAPTURE_RANGE_M
+        ):
+            self._collection_lane_collecting = True
+            self._collection_lane_collect_elapsed_s = 0.0
+            self.behavior.reset()
+            self.behavior.start_tracking(observation)
+            return self.behavior.update(observation, TIME_STEP_S, collection_confirmed=False)
 
         command = self._collection_scan.update(
             self._robot_x, self._robot_y, self._robot_yaw, TIME_STEP_S
@@ -701,6 +721,45 @@ class ControllerNode(Node):
             self._publish_command("idle", "controller-collect-distribution-scan-complete")
             self._collection_scan_completion_reported = True
         return command
+
+    def _collection_lane_collect_command(self, observation: BallObservationInput) -> ConceptACommand:
+        if self.collection_confirmed:
+            self.behavior.reset()
+            self.active_mapped_target_id = None
+            self._collection_lane_collecting = False
+            self._collection_lane_collect_elapsed_s = 0.0
+            return ConceptACommand(
+                state=CollectorState.SURVEY,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        self._collection_lane_collect_elapsed_s += TIME_STEP_S
+        if self._collection_lane_collect_elapsed_s > COLLECT_PATTERN_COLLECTION_TIMEOUT_S:
+            self.behavior.reset()
+            self.active_mapped_target_id = None
+            self._collection_lane_collecting = False
+            self._collection_lane_collect_elapsed_s = 0.0
+            return ConceptACommand(
+                state=CollectorState.SCAN,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        if self.behavior.state == CollectorState.SCAN and observation.visible:
+            self.behavior.start_tracking(observation)
+        cmd = self.behavior.update(observation, TIME_STEP_S, collection_confirmed=False)
+        if self.behavior.gave_up:
+            self.behavior.reset()
+            self.active_mapped_target_id = None
+            self._collection_lane_collecting = False
+            self._collection_lane_collect_elapsed_s = 0.0
+            return ConceptACommand(
+                state=CollectorState.SCAN,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+        return cmd
 
     def _scan_side_command(self) -> ConceptACommand:
         now = time.time()
@@ -863,6 +922,8 @@ class ControllerNode(Node):
         self.collect_pattern_phase = "idle"
         self.collect_pattern_collect_elapsed_s = 0.0
         self.collect_pattern_failures = 0
+        self._collection_lane_collecting = False
+        self._collection_lane_collect_elapsed_s = 0.0
 
     def _apply_command(self, command: ConceptACommand) -> None:
         twist = Twist()
@@ -905,6 +966,7 @@ class ControllerNode(Node):
             "ball_visible": observation.visible,
             "ball_distance_m": round(observation.distance_m, 3) if observation.visible else None,
             "collect_pattern_phase": self.collect_pattern_phase,
+            "collection_lane_collecting": self._collection_lane_collecting,
             "collection_scan": self._collection_scan.telemetry(),
             "map_mission": self._map_mission.telemetry(),
             "survey": {

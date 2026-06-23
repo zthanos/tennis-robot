@@ -37,6 +37,11 @@ SCAN_OFFSET_M = _env_float("MAP_SCAN_OFFSET_M", 3.0)
 DETECTION_RANGE_M = _env_float("MAP_DETECTION_RANGE_M", 8.0)   # simulated OAK-D range per scan pose
 CLUSTER_RADIUS_M = _env_float("MAP_CLUSTER_RADIUS_M", 0.35)   # deduplicate detections within this radius
 COLLECTION_SCAN_CLUSTER_RADIUS_M = _env_float("COLLECTION_SCAN_CLUSTER_RADIUS_M", 0.75)
+COLLECTION_LANE_RELIABLE_RANGE_M = _env_float("COLLECTION_LANE_RELIABLE_RANGE_M", 2.5)
+COLLECTION_LANE_OVERLAP = max(0.0, min(0.8, _env_float("COLLECTION_LANE_OVERLAP", 0.30)))
+COLLECTION_CAMERA_FOV_RAD = _env_float("COLLECTION_CAMERA_FOV_RAD", math.radians(60.0))
+COLLECTION_NET_CLEARANCE_M = _env_float("COLLECTION_NET_CLEARANCE_M", 0.65)
+COLLECTION_FENCE_CLEARANCE_M = _env_float("COLLECTION_FENCE_CLEARANCE_M", 0.85)
 RETURN_TO_START = os.getenv("MAP_RETURN_TO_START", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 # Each entry: (pose_name, should_scan)
@@ -377,7 +382,8 @@ class MapLeftSideMission:
             "scan_poses_total": _SCAN_POSE_COUNT,
             "scan_elapsed_s": scan_elapsed,
             "scan_duration_s": SCAN_DURATION_S,
-            "total_candidates": len(self.candidates),
+            "total_candidates": len(self.local_candidates),
+            "estimate_candidates": len(self.candidates),
             "grid": [row[:] for row in self.grid],
             "elapsed_s": elapsed,
             "complete": self.complete,
@@ -465,10 +471,10 @@ class MapLeftSideMission:
 
 
 class ServiceLineDistributionScanMission:
-    """Move to the selected side service line, spin once, and build a 3x3 grid.
+    """Sweep the selected half-court with boustrophedon lanes.
 
-    This is the first collection smoke test: it produces matrix distribution
-    telemetry without starting the intake or target-by-target collection.
+    The matrix is updated only from confirmed/local ball-map entries observed
+    during the sweep; coarse service-line estimates do not produce map dots.
     """
 
     def __init__(
@@ -490,8 +496,12 @@ class ServiceLineDistributionScanMission:
         self.service_pose_map: tuple[float, float] | None = None
         self.target_grid_cell: tuple[int, int] | None = None
         self.target_pose_map: tuple[float, float] | None = None
+        self.lane_count: int = 0
+        self.lane_spacing_m: float = 0.0
 
         self._state: str = "idle"
+        self._waypoints: list[tuple[float, float]] = []
+        self._waypoint_index: int = 0
         self._elapsed_start: float | None = None
         self._scan_started_at: float | None = None
         self._last_scan_yaw: float | None = None
@@ -503,13 +513,10 @@ class ServiceLineDistributionScanMission:
         frame, lines = self._load_v2_model()
         court_x, _court_y = frame.map_to_court(rx, ry)
         sign = -1 if court_x < 0.0 else 1
-        service_candidates = sorted(float(v) for v in lines["service_x"])
         baseline_candidates = sorted(float(v) for v in lines["baselines_x"])
         sidelines = sorted(float(v) for v in lines["sidelines_y"])
 
-        service_x = service_candidates[0] if sign < 0 else service_candidates[-1]
         baseline_x = baseline_candidates[0] if sign < 0 else baseline_candidates[-1]
-        target_x, target_y = frame.court_to_map(service_x, 0.0)
 
         self.active = True
         self.complete = False
@@ -519,10 +526,13 @@ class ServiceLineDistributionScanMission:
         self.local_candidates = []
         self.grid = [[0] * 3 for _ in range(3)]
         self.unassigned_candidates = 0
-        self.service_pose_map = (target_x, target_y)
+        self.service_pose_map = None
         self.target_grid_cell = None
         self.target_pose_map = None
-        self._state = "transit"
+        self.lane_count = 0
+        self.lane_spacing_m = 0.0
+        self._state = "sweeping"
+        self._waypoint_index = 0
         self._elapsed_start = time.time()
         self._scan_started_at = None
         self._last_scan_yaw = None
@@ -535,27 +545,32 @@ class ServiceLineDistributionScanMission:
             sidelines[0],
             sidelines[-1],
         )
+        _lane_count, _lane_spacing, self._waypoints = self._build_lawnmower_waypoints(
+            rx, ry, frame, self._bounds
+        )
+        self.lane_count = _lane_count
+        self.lane_spacing_m = _lane_spacing
+        if self._waypoints:
+            self.target_pose_map = self._waypoints[0]
 
     def reset(self) -> None:
         self.active = False
         self.complete = False
         self._state = "idle"
+        self._waypoints = []
+        self._waypoint_index = 0
         self._scan_started_at = None
         self._last_scan_yaw = None
         self._scan_accumulated_rad = 0.0
         self.target_grid_cell = None
         self.target_pose_map = None
         self.local_candidates = []
+        self.lane_count = 0
+        self.lane_spacing_m = 0.0
 
     def update(self, rx: float, ry: float, ryaw: float, _dt_s: float) -> ConceptACommand:
-        if self._state == "transit":
-            return self._step_transit(rx, ry, ryaw)
-        if self._state == "scanning":
-            return self._step_scan(rx, ry, ryaw)
-        if self._state == "transit_to_grid_cell":
-            return self._step_transit_to_grid_cell(rx, ry, ryaw)
-        if self._state == "local_scanning":
-            return self._step_local_scan(rx, ry, ryaw)
+        if self._state == "sweeping":
+            return self._step_sweep(rx, ry, ryaw)
         return _idle_cmd()
 
     def telemetry(self) -> dict:
@@ -586,6 +601,10 @@ class ServiceLineDistributionScanMission:
             "scan_progress_pct": round(progress * 100.0, 1),
             "scan_accumulated_rad": round(self._scan_accumulated_rad, 3),
             "scan_elapsed_s": round(scan_elapsed, 1),
+            "lane_count": self.lane_count,
+            "lane_spacing_m": round(self.lane_spacing_m, 3),
+            "waypoint_index": self._waypoint_index,
+            "waypoint_count": len(self._waypoints),
             "total_candidates": len(self.candidates),
             "assigned_candidates": sum(sum(row) for row in self.grid),
             "unassigned_candidates": self.unassigned_candidates,
@@ -633,122 +652,73 @@ class ServiceLineDistributionScanMission:
             raise RuntimeError(f"Court survey v2 not ready - run Map Court first. Reason: {reason}")
         return _load_v2_court_frame(data), _load_v2_lines(data)
 
-    def _step_transit(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
-        if self.service_pose_map is None:
-            self._finish()
-            return _idle_cmd()
-        tx, ty = self.service_pose_map
-        cmd = _nav_to(rx, ry, ryaw, tx, ty)
-        if cmd is not None:
-            return cmd
-        self._state = "scanning"
-        self._scan_started_at = time.time()
-        self._last_scan_yaw = ryaw
-        self._scan_accumulated_rad = 0.0
-        return _scan_cmd()
-
-    def _step_scan(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
+    def _step_sweep(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
         self._sample_balls(rx, ry)
-        if self._last_scan_yaw is not None:
-            self._scan_accumulated_rad += abs(_angle_delta(ryaw, self._last_scan_yaw))
-        self._last_scan_yaw = ryaw
-
-        if self._scan_accumulated_rad >= 2 * math.pi:
-            if self._select_best_grid_target():
-                self._state = "transit_to_grid_cell"
-            else:
-                self._finish()
-            return _scan_cmd()
-        return ConceptACommand(
-            state=CollectorState.SCAN,
-            base=BaseCommand(0.0, NAV_MAX_TURN_RAD_S * 0.45),
-            collector=CollectorCommand(0.0, False),
-        )
-
-    def _step_transit_to_grid_cell(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
-        if self.target_pose_map is None:
+        while self._waypoint_index < len(self._waypoints):
+            tx, ty = self._waypoints[self._waypoint_index]
+            if math.hypot(tx - rx, ty - ry) > NAV_POSITION_TOL_M:
+                break
+            self._waypoint_index += 1
+        if self._waypoint_index >= len(self._waypoints):
             self._finish()
             return _idle_cmd()
+        self.target_pose_map = self._waypoints[self._waypoint_index]
         tx, ty = self.target_pose_map
         cmd = _nav_to(rx, ry, ryaw, tx, ty)
-        if cmd is not None:
-            return cmd
-        self._state = "local_scanning"
-        self._scan_started_at = time.time()
-        self._last_scan_yaw = ryaw
-        self._scan_accumulated_rad = 0.0
-        self.local_candidates = []
-        return _scan_cmd()
-
-    def _step_local_scan(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
-        self._sample_local_balls(rx, ry)
-        if self._last_scan_yaw is not None:
-            self._scan_accumulated_rad += abs(_angle_delta(ryaw, self._last_scan_yaw))
-        self._last_scan_yaw = ryaw
-
-        if self._scan_accumulated_rad >= 2 * math.pi:
-            self._finish()
-            return _scan_cmd()
-        return ConceptACommand(
-            state=CollectorState.SCAN,
-            base=BaseCommand(0.0, NAV_MAX_TURN_RAD_S * 0.35),
-            collector=CollectorCommand(0.0, False),
-        )
+        return cmd if cmd is not None else _scan_cmd()
 
     def _sample_balls(self, rx: float, ry: float) -> None:
         for bx, by in self._ball_source():
-            if math.hypot(bx - rx, by - ry) <= DETECTION_RANGE_M:
-                _add_candidate(self.candidates, bx, by, COLLECTION_SCAN_CLUSTER_RADIUS_M)
-        self._rebuild_grid()
-
-    def _sample_local_balls(self, rx: float, ry: float) -> None:
-        for bx, by in self._ball_source():
-            if math.hypot(bx - rx, by - ry) <= DETECTION_RANGE_M:
+            if math.hypot(bx - rx, by - ry) <= COLLECTION_LANE_RELIABLE_RANGE_M:
                 _add_candidate(self.local_candidates, bx, by, COLLECTION_SCAN_CLUSTER_RADIUS_M)
+        self._rebuild_grid()
 
     def _rebuild_grid(self) -> None:
         if self._frame is None or self._bounds is None:
             return
         g: list[list[int]] = [[0] * 3 for _ in range(3)]
-        for c in self.candidates:
+        for c in self.local_candidates:
             cx, cy = self._frame.map_to_court(c.x_m, c.y_m)
             cell = _classify(cx, cy, self._bounds)
             if cell is not None:
                 g[cell[0]][cell[1]] += 1
         self.grid = g
-        self.unassigned_candidates = len(self.candidates) - sum(sum(row) for row in g)
+        self.unassigned_candidates = len(self.local_candidates) - sum(sum(row) for row in g)
 
-    def _select_best_grid_target(self) -> bool:
-        if self._frame is None or self._bounds is None:
-            return False
-        cell = self._best_grid_cell()
-        if cell is None:
-            return False
-        court_x, court_y = self._cell_center_court(*cell)
-        self.target_grid_cell = cell
-        self.target_pose_map = self._frame.court_to_map(court_x, court_y)
-        return True
+    def _build_lawnmower_waypoints(
+        self,
+        rx: float,
+        ry: float,
+        frame: CourtFrame,
+        bounds: HalfCourtBounds,
+    ) -> tuple[int, float, list[tuple[float, float]]]:
+        swath_m = 2.0 * COLLECTION_LANE_RELIABLE_RANGE_M * math.tan(COLLECTION_CAMERA_FOV_RAD / 2.0)
+        lane_spacing_m = max(0.4, swath_m * (1.0 - COLLECTION_LANE_OVERLAP))
+        lane_count = max(1, math.ceil(bounds.span_y / lane_spacing_m))
+        lane_step_m = bounds.span_y / lane_count
 
-    def _best_grid_cell(self) -> tuple[int, int] | None:
-        best_cell: tuple[int, int] | None = None
-        best_count = 0
-        for row, values in enumerate(self.grid):
-            for col, count in enumerate(values):
-                if count > best_count:
-                    best_count = count
-                    best_cell = (row, col)
-        return best_cell
-
-    def _cell_center_court(self, row: int, col: int) -> tuple[float, float]:
-        assert self._bounds is not None
-        b = self._bounds
-        row_offset = (row + 0.5) * b.span_x / 3.0
-        if b.side in {"left", "side_neg_x"}:
-            x_m = b.x_min + row_offset
+        court_x, court_y = frame.map_to_court(rx, ry)
+        if bounds.side in {"left", "side_neg_x"}:
+            fence_x = bounds.x_min + COLLECTION_FENCE_CLEARANCE_M
+            net_x = bounds.x_max - COLLECTION_NET_CLEARANCE_M
         else:
-            x_m = b.x_max - row_offset
-        y_m = b.y_max - (col + 0.5) * b.span_y / 3.0
-        return x_m, y_m
+            fence_x = bounds.x_max - COLLECTION_FENCE_CLEARANCE_M
+            net_x = bounds.x_min + COLLECTION_NET_CLEARANCE_M
+
+        from_north = abs(court_y - bounds.y_max) <= abs(court_y - bounds.y_min)
+        lane_ys = [
+            bounds.y_max - (idx + 0.5) * lane_step_m
+            for idx in range(lane_count)
+        ]
+        if not from_north:
+            lane_ys.reverse()
+
+        waypoints: list[tuple[float, float]] = []
+        for idx, lane_y in enumerate(lane_ys):
+            start_x, end_x = (fence_x, net_x) if idx % 2 == 0 else (net_x, fence_x)
+            waypoints.append(frame.court_to_map(start_x, lane_y))
+            waypoints.append(frame.court_to_map(end_x, lane_y))
+        return lane_count, lane_step_m, waypoints
 
     def _finish(self) -> None:
         self._state = "complete"
@@ -756,19 +726,8 @@ class ServiceLineDistributionScanMission:
         self.complete = True
 
     def _phase_label(self) -> str:
-        if self._state == "transit":
-            return f"Navigating to {self.side_id} service line"
-        if self._state == "scanning":
-            progress = min(100.0, self._scan_accumulated_rad / (2 * math.pi) * 100.0)
-            return f"360 distribution scan ({progress:.0f}%)"
-        if self._state == "transit_to_grid_cell":
-            if self.target_grid_cell is None:
-                return "Navigating to estimated collection cell"
-            row, col = self.target_grid_cell
-            return f"Navigating to estimated collection cell r{row + 1}c{col + 1}"
-        if self._state == "local_scanning":
-            progress = min(100.0, self._scan_accumulated_rad / (2 * math.pi) * 100.0)
-            return f"Local scan ({progress:.0f}%)"
+        if self._state == "sweeping":
+            return f"Lawnmower lane {min(self._waypoint_index + 1, len(self._waypoints))}/{len(self._waypoints)}"
         if self._state == "complete":
-            return "Distribution scan complete"
+            return "Lawnmower sweep complete"
         return self._state
