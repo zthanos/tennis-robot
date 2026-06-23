@@ -12,6 +12,7 @@ import duckdb
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DB_PATH = ROOT / "runtime" / "tennis_robot.db"
 _LEGACY_VENDORS_JSON = ROOT / "runtime" / "vendors.json"
+SURVEY_ARCHIVE_RETENTION_S = 183 * 24 * 60 * 60
 
 def _canonical_fence_bounds(canonical: dict) -> dict:
     """Fence bounds from a canonical fence model.
@@ -58,6 +59,29 @@ _SCHEMA = [
     """
     CREATE TABLE IF NOT EXISTS surveys (
         id             INTEGER PRIMARY KEY,
+        court_id       TEXT,
+        vendor_id      TEXT,
+        surveyed_at    DOUBLE,
+        point_count    INTEGER,
+        fallback_used  BOOLEAN,
+        west_x         DOUBLE,
+        east_x         DOUBLE,
+        south_y        DOUBLE,
+        north_y        DOUBLE,
+        status         TEXT DEFAULT 'SUCCESS',
+        court_length_m DOUBLE,
+        court_width_m  DOUBLE,
+        raw_json       TEXT
+    )
+    """,
+    """
+    CREATE SEQUENCE IF NOT EXISTS survey_archive_id_seq START 1
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS survey_audit_archive (
+        archive_id     INTEGER PRIMARY KEY,
+        archived_at    DOUBLE NOT NULL,
+        id             INTEGER,
         court_id       TEXT,
         vendor_id      TEXT,
         surveyed_at    DOUBLE,
@@ -141,6 +165,17 @@ class TennisRobotDB:
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS canonical_json TEXT",
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS failure_reason TEXT",
         "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS obstacle_count INTEGER",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS is_doubles BOOLEAN",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS near_baseline_to_fence_m DOUBLE",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS far_baseline_to_fence_m DOUBLE",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS left_sideline_to_fence_m DOUBLE",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS right_sideline_to_fence_m DOUBLE",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS net_world_x DOUBLE",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS net_world_y DOUBLE",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS survey_type TEXT",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS canonical_json TEXT",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS failure_reason TEXT",
+        "ALTER TABLE survey_audit_archive ADD COLUMN IF NOT EXISTS obstacle_count INTEGER",
         # One-shot cleanup: drop stale pre-v2 survey rows (old BT/perimeter
         # systems, court_id NULL, no v2 measurements). Idempotent — these
         # survey_type values are never produced again.
@@ -156,6 +191,8 @@ class TennisRobotDB:
                     self._conn.execute(stmt)
                 except Exception:
                     pass
+            self._archive_superseded_surveys()
+            self._purge_expired_survey_archive(time.time())
 
     def _migrate_legacy(self) -> None:
         """One-shot import from vendors.json when the vendors table is still empty."""
@@ -258,6 +295,16 @@ class TennisRobotDB:
 
     # ── Surveys ────────────────────────────────────────────────────────────────
 
+    _SURVEY_COLUMNS = """
+        id, court_id, vendor_id, surveyed_at, point_count, fallback_used,
+        west_x, east_x, south_y, north_y, status,
+        court_length_m, court_width_m, is_doubles,
+        near_baseline_to_fence_m, far_baseline_to_fence_m,
+        left_sideline_to_fence_m, right_sideline_to_fence_m,
+        net_world_x, net_world_y, survey_type, failure_reason,
+        obstacle_count, canonical_json, raw_json
+    """
+
     def surveys(self, limit: int = 200) -> list[dict]:
         with self._lock:
             rows = self._conn.execute(
@@ -296,12 +343,52 @@ class TennisRobotDB:
         ]
         return [dict(zip(cols, r)) for r in rows]
 
+    def survey_archive(self, limit: int = 500) -> list[dict]:
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT a.archive_id, a.archived_at,
+                       a.id, a.court_id, a.vendor_id, a.surveyed_at,
+                       a.point_count, a.fallback_used,
+                       a.west_x, a.east_x, a.south_y, a.north_y,
+                       a.status, a.court_length_m, a.court_width_m,
+                       a.is_doubles, a.survey_type,
+                       a.near_baseline_to_fence_m, a.far_baseline_to_fence_m,
+                       a.left_sideline_to_fence_m, a.right_sideline_to_fence_m,
+                       a.net_world_x, a.net_world_y,
+                       a.failure_reason, a.obstacle_count,
+                       c.name  AS court_name,
+                       v.name  AS vendor_name,
+                       c.surface
+                FROM   survey_audit_archive a
+                LEFT JOIN courts  c ON a.court_id  = c.id
+                LEFT JOIN vendors v ON a.vendor_id = v.id
+                ORDER  BY a.archived_at DESC, a.surveyed_at DESC
+                LIMIT  ?
+                """,
+                [limit],
+            ).fetchall()
+        cols = [
+            "archive_id", "archived_at",
+            "id", "court_id", "vendor_id", "surveyed_at",
+            "point_count", "fallback_used",
+            "west_x", "east_x", "south_y", "north_y",
+            "status", "court_length_m", "court_width_m",
+            "is_doubles", "survey_type",
+            "near_baseline_to_fence_m", "far_baseline_to_fence_m",
+            "left_sideline_to_fence_m", "right_sideline_to_fence_m",
+            "net_world_x", "net_world_y",
+            "failure_reason", "obstacle_count",
+            "court_name", "vendor_name", "surface",
+        ]
+        return [dict(zip(cols, r)) for r in rows]
+
     def import_survey(self, bounds: dict, court_id: str | None = None,
                       vendor_id: str | None = None) -> bool:
         """Insert a Court Knowledge Model output (v1 or v2 schema). Returns True if
         a new row was written. Tags the survey to the given court/vendor (falling
-        back to fields in `bounds`) and prunes that court's history to the 10 most
-        recent rows (audit trail)."""
+        back to fields in `bounds`). The surveys table keeps only the latest
+        row per court; superseded rows move to survey_audit_archive."""
         surveyed_at = float(bounds.get("mapped_at") or bounds.get("surveyed_at") or 0)
         if not surveyed_at:
             return False
@@ -312,7 +399,19 @@ class TennisRobotDB:
              else self._v1_survey_fields(bounds))
         with self._lock:
             if self._conn.execute(
-                "SELECT COUNT(*) FROM surveys WHERE surveyed_at=?", [surveyed_at]
+                """
+                SELECT COUNT(*) FROM surveys
+                WHERE surveyed_at=? AND (court_id=? OR (court_id IS NULL AND ? IS NULL))
+                """,
+                [surveyed_at, cid, cid],
+            ).fetchone()[0]:
+                return False
+            if self._conn.execute(
+                """
+                SELECT COUNT(*) FROM survey_audit_archive
+                WHERE surveyed_at=? AND (court_id=? OR (court_id IS NULL AND ? IS NULL))
+                """,
+                [surveyed_at, cid, cid],
             ).fetchone()[0]:
                 return False
             next_id = self._conn.execute(
@@ -339,7 +438,8 @@ class TennisRobotDB:
                  f["obstacle_count"], f["canonical_json"], json.dumps(bounds)],
             )
             if cid:
-                self._prune_court_history(cid, keep=10)
+                self._archive_superseded_surveys(cid)
+            self._purge_expired_survey_archive(time.time())
         return True
 
     @staticmethod
@@ -396,17 +496,64 @@ class TennisRobotDB:
             "canonical_json": json.dumps(canonical) if canonical else None,
         }
 
-    def _prune_court_history(self, court_id: str, keep: int = 10) -> None:
-        """Keep only the `keep` most recent surveys for a court (audit trail).
+    def _archive_superseded_surveys(self, court_id: str | None = None) -> None:
+        """Move non-current per-court surveys to the audit archive.
         Caller must already hold self._lock."""
+        params: list[object] = []
+        court_filter = "court_id IS NOT NULL"
+        if court_id is not None:
+            court_filter = "court_id = ?"
+            params.append(court_id)
+        now = time.time()
         self._conn.execute(
-            """
-            DELETE FROM surveys WHERE court_id = ? AND id NOT IN (
-                SELECT id FROM surveys WHERE court_id = ?
-                ORDER BY surveyed_at DESC LIMIT ?
+            f"""
+            INSERT INTO survey_audit_archive
+              (archive_id, archived_at, {self._SURVEY_COLUMNS})
+            SELECT nextval('survey_archive_id_seq'), ?, {self._SURVEY_COLUMNS}
+            FROM (
+                SELECT s.*,
+                       ROW_NUMBER() OVER (
+                         PARTITION BY court_id
+                         ORDER BY surveyed_at DESC, id DESC
+                       ) AS survey_rank
+                FROM surveys s
+                WHERE {court_filter}
+            ) s
+            WHERE survey_rank > 1
+              AND NOT EXISTS (
+                SELECT 1 FROM survey_audit_archive a
+                WHERE a.surveyed_at = s.surveyed_at
+                  AND (a.court_id = s.court_id OR (a.court_id IS NULL AND s.court_id IS NULL))
+              )
+            """,
+            [now, *params],
+        )
+        self._conn.execute(
+            f"""
+            DELETE FROM surveys
+            WHERE id IN (
+                SELECT id FROM (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                             PARTITION BY court_id
+                             ORDER BY surveyed_at DESC, id DESC
+                           ) AS survey_rank
+                    FROM surveys
+                    WHERE {court_filter}
+                ) ranked
+                WHERE survey_rank > 1
             )
             """,
-            [court_id, court_id, keep],
+            params,
+        )
+
+    def _purge_expired_survey_archive(self, now: float) -> None:
+        """Drop archived survey rows beyond the six-month retention window.
+        Caller must already hold self._lock."""
+        cutoff = now - SURVEY_ARCHIVE_RETENTION_S
+        self._conn.execute(
+            "DELETE FROM survey_audit_archive WHERE archived_at < ?",
+            [cutoff],
         )
 
     def current_survey(self, court_id: str) -> dict | None:

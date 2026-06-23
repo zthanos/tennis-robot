@@ -47,6 +47,10 @@ class CourtSpec:
     obstacle_grid_m: float = 0.20
     obstacle_min_points: int = 8
     obstacle_edge_margin_m: float = 0.90  # exclude fence thickness/noise (leaks ~0.6m inward)
+    obstacle_corner_margin_m: float = 0.12  # allow compact fixtures close to fence corners
+    obstacle_corner_band_m: float = 1.40
+    obstacle_corner_max_size_m: float = 1.35
+    obstacle_corner_min_points: int = 2
     # Smart fence-artifact rejection: a cluster within this band of a fence AND
     # elongated PARALLEL to it (ratio below) is LiDAR scatter off the fence, not a
     # real object. A real obstacle protrudes inward (elongated perpendicular) or
@@ -252,11 +256,20 @@ def compute_distances(fence: dict, lines: dict, spec: CourtSpec) -> dict:
 def extract_obstacles(points_court: list[tuple[float, float]], fence: dict, spec: CourtSpec) -> list[dict]:
     """Cluster interior points that are not net, not fence -> obstacles."""
     m = spec.obstacle_edge_margin_m
+    cm = spec.obstacle_corner_margin_m
     interior = []
     for xp, yp in points_court:
-        if not (fence["x_near"] + m < xp < fence["x_far"] - m):
-            continue
-        if not (fence["y_left"] + m < yp < fence["y_right"] - m):
+        safely_inside = (
+            fence["x_near"] + m < xp < fence["x_far"] - m
+            and fence["y_left"] + m < yp < fence["y_right"] - m
+        )
+        near_corner_fixture_zone = (
+            fence["x_near"] + cm < xp < fence["x_far"] - cm
+            and fence["y_left"] + cm < yp < fence["y_right"] - cm
+            and min(abs(xp - fence["x_near"]), abs(xp - fence["x_far"])) <= spec.obstacle_corner_band_m
+            and min(abs(yp - fence["y_left"]), abs(yp - fence["y_right"])) <= spec.obstacle_corner_band_m
+        )
+        if not (safely_inside or near_corner_fixture_zone):
             continue
         if abs(xp) <= spec.net_band_m:  # exclude the net line/posts
             continue
@@ -282,8 +295,6 @@ def extract_obstacles(points_court: list[tuple[float, float]], fence: dict, spec
                     nk = (cx + dx, cy + dy)
                     if nk in cells and nk not in seen:
                         seen.add(nk); stack.append(nk)
-        if len(comp) < spec.obstacle_min_points:
-            continue
         xs = [p[0] for p in comp]; ys = [p[1] for p in comp]
         w = max(xs) - min(xs); h = max(ys) - min(ys)
         cxc = (min(xs) + max(xs)) / 2.0; cyc = (min(ys) + max(ys)) / 2.0
@@ -291,18 +302,55 @@ def extract_obstacles(points_court: list[tuple[float, float]], fence: dict, spec
         band = spec.fence_artifact_band_m; r = spec.fence_artifact_parallel_ratio
         d_vert = min(abs(cxc - fence["x_near"]), abs(cxc - fence["x_far"]))
         d_horz = min(abs(cyc - fence["y_left"]), abs(cyc - fence["y_right"]))
-        if (d_vert <= band and h >= r * max(w, 1e-3)) or \
-           (d_horz <= band and w >= r * max(h, 1e-3)):
+        near_corner = d_vert <= spec.obstacle_corner_band_m and d_horz <= spec.obstacle_corner_band_m
+        compact_corner_fixture = near_corner and max(w, h) <= spec.obstacle_corner_max_size_m
+        min_points = spec.obstacle_corner_min_points if compact_corner_fixture else spec.obstacle_min_points
+        if len(comp) < min_points:
+            continue
+        if near_corner and not compact_corner_fixture:
+            continue
+        if not compact_corner_fixture and (
+            (d_vert <= band and h >= r * max(w, 1e-3))
+            or (d_horz <= band and w >= r * max(h, 1e-3))
+        ):
             continue
         oid += 1
         obstacles.append({
             "id": oid,
-            "class": "obstacle" if max(w, h) >= 0.25 else "small",
+            "class": "perimeter_fixture" if compact_corner_fixture
+                     else "obstacle" if max(w, h) >= 0.25 else "small",
             "center_court": ((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0),
             "size_m": {"w": round(w, 3), "h": round(h, 3)},
             "point_count": len(comp),
         })
-    return obstacles
+    return _dedupe_corner_fixtures(obstacles, fence)
+
+
+def _dedupe_corner_fixtures(obstacles: list[dict], fence: dict) -> list[dict]:
+    """Keep one compact perimeter fixture per fence corner.
+
+    Sparse LiDAR returns from a corner light pole can split into adjacent small
+    grid components. For the Court Knowledge Model we want the stable semantic
+    fixture, not duplicate fragments from the same corner.
+    """
+    best_by_corner: dict[tuple[str, str], dict] = {}
+    other: list[dict] = []
+    for obs in obstacles:
+        if obs.get("class") != "perimeter_fixture":
+            other.append(obs)
+            continue
+        cx, cy = obs["center_court"]
+        x_key = "near" if abs(cx - fence["x_near"]) <= abs(cx - fence["x_far"]) else "far"
+        y_key = "left" if abs(cy - fence["y_left"]) <= abs(cy - fence["y_right"]) else "right"
+        key = (x_key, y_key)
+        current = best_by_corner.get(key)
+        if current is None or int(obs.get("point_count") or 0) > int(current.get("point_count") or 0):
+            best_by_corner[key] = obs
+    merged = other + list(best_by_corner.values())
+    merged.sort(key=lambda o: (o["center_court"][0], o["center_court"][1]))
+    for idx, obs in enumerate(merged, start=1):
+        obs["id"] = idx
+    return merged
 
 
 # ── top-level ──────────────────────────────────────────────────────────────

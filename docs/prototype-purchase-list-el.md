@@ -439,56 +439,54 @@ Accessory 12V fuse: 5A-10A, αν μπει buck-boost/accessory rail
 
 ## 6. Υπολογιστής / On-Board Compute
 
-Candidate για development και πιθανό on-board computer:
+**Απόφαση: Raspberry Pi 5 (16GB) ως on-board computer** — αντικαθιστά το παλιό
+candidate Lenovo i5 mini-PC. Πλήρες σκεπτικό και κόστος στο
+[`hardware-bom-el.md`](hardware-bom-el.md).
+
+Σύνοψη επιλεγμένου compute:
 
 ```text
-Lenovo ThinkCentre M710q Mini PC
-Intel Core i5-7400T, 4 cores, έως 3.6 GHz
-16 GB DDR4 RAM dual channel
-256 GB NVMe SSD
-Intel HD Graphics / DirectX 12
-HDMI + DisplayPort
-4x USB 3.0 + 2x USB 2.0
-Gigabit Ethernet
-Wi-Fi μέσω μικρού USB adapter
-Windows 11 Pro 64-bit activated
-Case: 18 x 18 x 3.5 cm
-External PSU: περίπου 90 W
+Raspberry Pi 5, 16GB LPDDR4X
+Broadcom BCM2712, quad-core Cortex-A76 @ 2.4 GHz
+M.2 NVMe HAT + επίσημος Raspberry Pi SSD 256GB (boot από NVMe, ΟΧΙ microSD)
+Active cooler (υποχρεωτικός σε αυτό το φορτίο)
+Τροφοδοσία: 5V/5A — από την μπαταρία μέσω 12V->5V buck converter 5A+
 ```
 
-Χρήση στο project:
+Γιατί Pi 5 αντί για i5 mini-PC (το ρομπότ είναι μπαταριοκίνητο/κινούμενο):
 
-| Ρόλος | Απόφαση |
-|---|---|
-| Bench development | Πολύ καλό |
-| Webots/OpenSCAD/general CAD support | Καλό για basic χρήση |
-| Python/OpenCV/DepthAI host | Καλό candidate |
-| On-board robot computer | Πιθανό, μετά από δοκιμή κατανάλωσης/στήριξης |
-| Τελικό OS για robot | Προτίμηση Ubuntu Linux ή dual boot Windows + Ubuntu |
+| Κριτήριο | Pi 5 16GB | i5 mini-PC | Νικητής |
+|---|---|---|---|
+| Κατανάλωση | ~5-10W | ~25-45W | **Pi** (3-5x λιγότερο → μικρότερη μπαταρία/μεγαλύτερη αυτονομία) |
+| Τροφοδοσία | 5V, απευθείας από buck | 12-19V, θέλει ειδικό DC-DC | **Pi** |
+| Μέγεθος/βάρος | μικροσκοπικό | μεγαλύτερο | **Pi** |
+| Σύνδεση MCU (Mega/Nano) | USB serial | USB serial | ισοπαλία (USB CDC) |
+| Θερμότητα σε κλειστό σασί | εύκολη ψύξη | πιο δύσκολη | **Pi** |
+| Compute headroom | αρκετό (+OAK-D offload) | περισσότερο | i5 |
+| Dev: Gazebo onboard | όχι (δεν χρειάζεται onboard) | ναι | i5 (μόνο για bench) |
+
+Το μόνο πλεονέκτημα του i5 (compute headroom) ακυρώνεται επειδή το βαρύ vision
+(stereo depth + ανίχνευση) γίνεται offload στην **OAK-D** (Myriad X VPU). Δες
+`docs/telemetry-architecture-el.md` και την ανάλυση compute budget.
 
 Σημαντική σημείωση τροφοδοσίας:
 
 ```text
-Το M710q δεν τροφοδοτείται απευθείας από 12V μπαταρία χωρίς κατάλληλο DC-DC.
-Πριν μπει πάνω στο robot, πρέπει να επιβεβαιωθεί η είσοδος του original PSU
-και να διαλεχθεί ασφαλής τρόπος τροφοδοσίας.
+Το Pi 5 θέλει σταθερά 5V/5A. Πάνω στο robot τροφοδοτείται από την LiFePO4
+μέσω του 12V->5V buck converter 5A+ (ήδη στη λίστα). Καλό 5V/5A rail είναι
+ΑΠΑΡΑΙΤΗΤΟ για σταθερό NVMe — υποτροφοδοσία προκαλεί throttle/αστάθεια δίσκου.
+Το επίσημο 27W PSU του kit είναι μόνο για bench/development.
 ```
 
-Προτιμώμενες επιλογές τροφοδοσίας για on-board χρήση:
+Τι να επιβεβαιώσουμε πριν την τοποθέτηση:
 
-1. DC-DC boost/buck-boost από LiFePO4 battery προς την τάση που χρειάζεται το
-   Lenovo, με αρκετό wattage και σωστό βύσμα.
-2. Ξεχωριστή power bank/USB-C PD λύση μόνο αν υπάρχει αξιόπιστος adapter.
-3. Inverter 230V μόνο για πάγκο/δοκιμές, όχι ως πρώτη on-board επιλογή λόγω
-   απωλειών και περιττής πολυπλοκότητας.
-
-Τι να επιβεβαιώσουμε πριν την αγορά/τοποθέτηση:
-
-- πραγματική τάση/ρεύμα του Lenovo power input,
-- μέγιστη κατανάλωση με camera + USB devices,
-- αν χωράει στο electronics bay χωρίς να εμποδίζει την αφαίρεση μπαταρίας,
-- αν αντέχει κραδασμούς ή χρειάζεται rubber isolation,
-- αν το Wi-Fi USB adapter είναι αρκετό ή θέλουμε καλύτερο antenna/USB extension.
+- ότι ο buck converter δίνει σταθερά 5V υπό φορτίο (Pi + OAK-D + LiDAR USB),
+- ότι το metal case του kit αφήνει πρόσβαση στις **4 θύρες USB** (OAK-D, LiDAR,
+  Mega, Nano), αλλιώς βγάζουμε τη board από το case για το on-robot mount,
+  (ο IMU MPU6050 είναι στο I2C του Mega, όχι στα GPIO του Pi — δες hardware-bom-el.md §5),
+- ότι ο NVMe SSD είναι Pi-5-compatible (δες incompatibility list στο BOM),
+- αν αντέχει κραδασμούς ή χρειάζεται rubber isolation/standoffs,
+- επαρκές Wi-Fi για το telemetry link (αλλιώς external antenna/USB).
 
 ## 7. Βίδες, Ροδέλες, Inserts
 
@@ -541,7 +539,8 @@ production-like εναλλακτική: 2 dual-channel quality drivers ή 4 sing
 1 LiFePO4 charger 14.6V 5A
 1 12V DC-DC buck-boost regulator για σταθερό accessory 12V rail, αν χρειαστεί
 1 12V -> 5V buck converter 5A+ για SBC/camera/sensors
-1 Lenovo ThinkCentre M710q i5-7400T / 16GB / 256GB candidate για bench/on-board compute
+1 Raspberry Pi 5 16GB kit (M.2 NVMe HAT + active cooler + 27W PSU + metal case) ως on-board compute
+1 επίσημος Raspberry Pi SSD 256GB (NVMe, Pi-5-compatible) — boot drive, ΟΧΙ microSD
 1 emergency stop switch
 1 fuse holder + ασφάλειες
 κόκκινο/μαύρο καλώδιο 2.5mm² για μπαταρία/motors

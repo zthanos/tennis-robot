@@ -309,6 +309,9 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         if path == "/api/surveys":
             self._send_json({"surveys": self.db.surveys()})
             return
+        if path == "/api/survey-archive":
+            self._send_json({"surveys": self.db.survey_archive()})
+            return
         if path.startswith("/static/"):
             self._send_static(path[len("/static/"):])
             return
@@ -400,7 +403,7 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         self._send_json(result)
 
     def log_message(self, format: str, *args: object) -> None:
-        if urlparse(self.path).path in {"/api/status", "/api/robot-status", "/api/sensors", "/api/diagnostics", "/api/webcam/frame", "/api/vendors", "/api/surveys", "/favicon.ico"}:
+        if urlparse(self.path).path in {"/api/status", "/api/robot-status", "/api/sensors", "/api/diagnostics", "/api/webcam/frame", "/api/vendors", "/api/surveys", "/api/survey-archive", "/favicon.ico"}:
             return
         print(f"{self.address_string()} - {format % args}")
 

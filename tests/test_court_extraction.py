@@ -93,3 +93,23 @@ _cxs = [round(o["center_court"][0], 1) for o in _obs]
 assert not any(abs(c - (-15.4)) < 0.3 for c in _cxs), f"strip not rejected: {_cxs}"
 assert any(abs(c - (-15.2)) < 0.3 for c in _cxs), f"real inward obstacle dropped: {_cxs}"
 print("T9 fence-artifact filter OK: rejected parallel strip, kept inward obstacle")
+
+# T10 compact fixture near a fence corner (e.g. light pole) is kept even though
+# it is inside the normal edge exclusion band.
+_corner_pole = _cluster(_fence["x_far"] - 0.35, _fence["y_right"] - 0.35, 0.35, 0.55, n=28)
+_obs = ce.extract_obstacles(_corner_pole, _fence, _spec)
+assert len(_obs) == 1, _obs
+assert _obs[0]["class"] == "perimeter_fixture", _obs
+print("T10 corner fixture OK:", _obs[0]["center_court"], _obs[0]["size_m"])
+
+# T11 four corner fixtures are retained as one semantic fixture per corner even
+# if one pole is split into adjacent sparse LiDAR fragments.
+_corner_poles = []
+for _cx in (_fence["x_near"] + 0.35, _fence["x_far"] - 0.35):
+    for _cy in (_fence["y_left"] + 0.35, _fence["y_right"] - 0.35):
+        _corner_poles += _cluster(_cx, _cy, 0.35, 0.45, n=12)
+_corner_poles += _cluster(_fence["x_far"] - 0.85, _fence["y_right"] - 0.35, 0.20, 0.20, n=5)
+_obs = ce.extract_obstacles(_corner_poles, _fence, _spec)
+assert len(_obs) == 4, _obs
+assert all(o["class"] == "perimeter_fixture" for o in _obs), _obs
+print("T11 four corner fixtures OK:", [(o["center_court"], o["point_count"]) for o in _obs])
