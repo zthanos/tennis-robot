@@ -53,7 +53,11 @@ from tennis_robot.collector import (
 )
 from tennis_robot.config_utils import _env_float
 from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
-from tennis_robot.mapping import LidarSurveyBoundaryProvider, MapLeftSideMission
+from tennis_robot.mapping import (
+    LidarSurveyBoundaryProvider,
+    MapLeftSideMission,
+    ServiceLineDistributionScanMission,
+)
 from tennis_robot.motion_controller import MOTION_COMMAND_TOPIC
 from tennis_robot.search import HalfCourtSearchBehavior, SearchState
 from tennis_robot.lidar_survey import LidarSurveyState
@@ -125,6 +129,7 @@ class ControllerNode(Node):
         self._map_mission = MapLeftSideMission(
             LidarSurveyBoundaryProvider(), self._map_supervisor_balls
         )
+        self._collection_scan = ServiceLineDistributionScanMission(self._collection_scan_balls)
 
         # ── state ──────────────────────────────────────────────────────────────
         self.control_mode = "idle"
@@ -142,6 +147,7 @@ class ControllerNode(Node):
         self._search_complete_reported = False
         self._survey_complete_reported = False
         self._map_completion_reported = False
+        self._collection_scan_completion_reported = False
         self._last_survey_log_key: tuple[str, str] | None = None
         self._last_status_file_write_s: float = 0.0
 
@@ -313,12 +319,15 @@ class ControllerNode(Node):
             self.survey_behavior.reset()
         if self.control_mode == "map_left_side" and not self._map_mission.complete:
             self._map_mission.reset()
+        if self.control_mode == "collect" and not self._collection_scan.complete:
+            self._collection_scan.reset()
         self.control_mode = new_mode
         self.collect_one_mission.reset()
         self._reset_collect_pattern()
         self.scan_side_started_at = None
         self._collect_start_time = None
         self.active_mapped_target_id = None
+        self._collection_scan_completion_reported = False
         self.get_logger().info(f"mode → {new_mode}")
         return True
 
@@ -355,6 +364,7 @@ class ControllerNode(Node):
         if self._on_mode_changed(mode):
             if mode == "collect":
                 self.ball_map.reset()
+                self._collection_scan.reset()
                 self._collect_start_time = time.time()
             elif mode == "collect_one":
                 self.ball_map.reset()
@@ -362,13 +372,7 @@ class ControllerNode(Node):
                 self._collect_start_time = time.time()
 
         if mode == "collect":
-            if (
-                self.behavior.state == CollectorState.SCAN
-                and observation.visible
-                and observation.source == "lidar_candidate"
-            ):
-                self.behavior.start_tracking(observation)
-            return self.behavior.update(observation, TIME_STEP_S, self.collection_confirmed)
+            return self._collection_distribution_scan_command_for_mode(mode)
 
         if mode == "collect_one":
             cmd = self.collect_one_mission.update(
@@ -659,6 +663,34 @@ class ControllerNode(Node):
             self._map_completion_reported = True
         return command
 
+    def _collection_distribution_scan_command_for_mode(self, _mode: str) -> ConceptACommand:
+        if not self._collection_scan.active and not self._collection_scan.complete:
+            try:
+                self._collection_scan.start(self._robot_x, self._robot_y, self._robot_yaw)
+            except RuntimeError as exc:
+                self.get_logger().error(f"collect distribution scan blocked: {exc}")
+                self._publish_command("idle", "controller-collect-scan-blocked")
+                return ConceptACommand(
+                    state=CollectorState.IDLE,
+                    base=BaseCommand(0.0, 0.0),
+                    collector=CollectorCommand(0.0, False),
+                )
+
+        command = self._collection_scan.update(
+            self._robot_x, self._robot_y, self._robot_yaw, TIME_STEP_S
+        )
+        if self._collection_scan.complete and not self._collection_scan_completion_reported:
+            seeded = self.ball_map.seed_from_candidates(self._collection_scan.candidates, time.time())
+            self.get_logger().info(
+                "collect distribution scan complete; "
+                f"side={self._collection_scan.side_id} "
+                f"candidates={len(self._collection_scan.candidates)} seeded={seeded} "
+                f"grid={self._collection_scan.grid}"
+            )
+            self._publish_command("idle", "controller-collect-distribution-scan-complete")
+            self._collection_scan_completion_reported = True
+        return command
+
     def _scan_side_command(self) -> ConceptACommand:
         now = time.time()
         if self.scan_side_started_at is None:
@@ -798,6 +830,19 @@ class ControllerNode(Node):
             result.append((x, y))
         return result
 
+    def _collection_scan_balls(self) -> list[tuple[float, float]]:
+        now = time.time()
+        result: list[tuple[float, float]] = []
+        for ball in self.ball_map.balls.values():
+            if ball.state in {"collected", "collection_failed"}:
+                continue
+            if ball.seen_count < self.ball_map.config.min_seen_count:
+                continue
+            if now - ball.last_seen_s > self.ball_map.config.stale_after_s:
+                continue
+            result.append((ball.x_m, ball.y_m))
+        return result
+
     def _seed_mapped_balls_from_map_mission(self) -> int:
         if not self._map_mission.complete or not self._map_mission.candidates:
             return 0
@@ -838,6 +883,7 @@ class ControllerNode(Node):
             "requested_mode": self._control_command_mode,
             "collector_state": command.state.value,
             "collection_count": self.collection_count,
+            "balls_collected": self.collection_count,
             "loop_count": self.loop_count,
             "robot_x_m": round(self._robot_x, 3),
             "robot_y_m": round(self._robot_y, 3),
@@ -848,6 +894,8 @@ class ControllerNode(Node):
             "ball_visible": observation.visible,
             "ball_distance_m": round(observation.distance_m, 3) if observation.visible else None,
             "collect_pattern_phase": self.collect_pattern_phase,
+            "collection_scan": self._collection_scan.telemetry(),
+            "map_mission": self._map_mission.telemetry(),
             "survey": {
                 "state": self.survey_behavior.state.value,
                 "sample_count": self.survey_behavior.sample_count,

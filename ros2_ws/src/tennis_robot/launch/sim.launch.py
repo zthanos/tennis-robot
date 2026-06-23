@@ -40,9 +40,10 @@ def _site_packages(install_dir: str, pkg: str) -> list:
 
 _robot_paths = _site_packages(ROS2_INSTALL, "tennis_robot")
 _msgs_paths = _site_packages(ROS2_INSTALL, "tennis_robot_msgs")
-ROS_PYTHONPATH = ":".join(_robot_paths + _msgs_paths + [os.environ.get("PYTHONPATH", "")])
+_source_robot_path = f"{WORKSPACE}/ros2_ws/src/tennis_robot"
+ROS_PYTHONPATH = ":".join([_source_robot_path] + _robot_paths + _msgs_paths + [os.environ.get("PYTHONPATH", "")])
 CONTROL_PANEL_PYTHONPATH = ":".join(
-    _robot_paths + [f"{WORKSPACE}/scripts"] + [os.environ.get("PYTHONPATH", "")]
+    [_source_robot_path] + _robot_paths + [f"{WORKSPACE}/scripts"] + [os.environ.get("PYTHONPATH", "")]
 )
 
 

@@ -17,8 +17,12 @@ from typing import Callable, Optional, Protocol, Tuple
 from tennis_robot.config_utils import _env_float
 from tennis_robot.collector import BaseCommand, CollectorCommand, CollectorState, ConceptACommand
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_BOUNDARY_FILE = PROJECT_ROOT / "runtime" / "court_boundary.json"
+_SOURCE_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = Path(os.getenv("TENNIS_ROBOT_ROOT", os.getenv("WORKSPACE", str(_SOURCE_ROOT))))
+RUNTIME_DIR = Path(
+    os.getenv("ROBOT_STATUS_FILE", str(PROJECT_ROOT / "runtime" / "robot_status.json"))
+).parent
+DEFAULT_BOUNDARY_FILE = RUNTIME_DIR / "court_boundary.json"
 
 
 # ── Config ─────────────────────────────────────────────────────────────────────
@@ -32,6 +36,7 @@ NAV_MAX_TURN_RAD_S = _env_float("MAP_NAV_MAX_TURN_RAD_S", 1.7)
 SCAN_OFFSET_M = _env_float("MAP_SCAN_OFFSET_M", 3.0)
 DETECTION_RANGE_M = _env_float("MAP_DETECTION_RANGE_M", 8.0)   # simulated OAK-D range per scan pose
 CLUSTER_RADIUS_M = _env_float("MAP_CLUSTER_RADIUS_M", 0.35)   # deduplicate detections within this radius
+COLLECTION_SCAN_CLUSTER_RADIUS_M = _env_float("COLLECTION_SCAN_CLUSTER_RADIUS_M", 0.75)
 RETURN_TO_START = os.getenv("MAP_RETURN_TO_START", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 # Each entry: (pose_name, should_scan)
@@ -73,6 +78,30 @@ class HalfCourtBounds:
     @property
     def span_y(self) -> float:
         return self.y_max - self.y_min
+
+
+@dataclass(frozen=True)
+class CourtFrame:
+    center_x_m: float
+    center_y_m: float
+    axis_length_x: float
+    axis_length_y: float
+    axis_width_x: float
+    axis_width_y: float
+
+    def court_to_map(self, x_m: float, y_m: float) -> tuple[float, float]:
+        return (
+            self.center_x_m + x_m * self.axis_length_x + y_m * self.axis_width_x,
+            self.center_y_m + x_m * self.axis_length_y + y_m * self.axis_width_y,
+        )
+
+    def map_to_court(self, x_m: float, y_m: float) -> tuple[float, float]:
+        dx = x_m - self.center_x_m
+        dy = y_m - self.center_y_m
+        return (
+            dx * self.axis_length_x + dy * self.axis_length_y,
+            dx * self.axis_width_x + dy * self.axis_width_y,
+        )
 
 
 class BoundaryProvider(Protocol):
@@ -156,6 +185,40 @@ def _canonical_fence_bounds(data: dict) -> dict:
     }
 
 
+def _load_v2_court_frame(data: dict) -> CourtFrame:
+    frame = (data.get("map_artifact") or {}).get("court_frame") or {}
+    center = frame.get("center") or data.get("net", {}).get("center") or {}
+    axis_length = frame.get("axis_length") or data.get("net", {}).get("axis_length") or {}
+    axis_width = frame.get("axis_width") or data.get("net", {}).get("axis_width") or {}
+    try:
+        return CourtFrame(
+            center_x_m=float(center["x_m"]),
+            center_y_m=float(center["y_m"]),
+            axis_length_x=float(axis_length["x_m"]),
+            axis_length_y=float(axis_length["y_m"]),
+            axis_width_x=float(axis_width["x_m"]),
+            axis_width_y=float(axis_width["y_m"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError(f"Court survey v2 frame malformed: {exc}") from exc
+
+
+def _load_v2_lines(data: dict) -> dict:
+    try:
+        lines = data["court"]["lines_court_frame"]
+        return {
+            "baselines_x": [float(v) for v in lines["baselines_x"]],
+            "service_x": [float(v) for v in lines["service_x"]],
+            "sidelines_y": [float(v) for v in lines["sidelines_y"]],
+        }
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError(f"Court survey v2 lines malformed: {exc}") from exc
+
+
+def _angle_delta(a: float, b: float) -> float:
+    return (a - b + math.pi) % (2 * math.pi) - math.pi
+
+
 def _classify(x_m: float, y_m: float, b: HalfCourtBounds) -> Optional[Tuple[int, int]]:
     """Map world (x, y) → (row, col), or None if outside operational area.
 
@@ -171,7 +234,7 @@ def _classify(x_m: float, y_m: float, b: HalfCourtBounds) -> Optional[Tuple[int,
         return None
 
     # x_frac: 0 at fence → row 0, 1 at net → row 2
-    if b.side == "left":
+    if b.side in {"left", "side_neg_x"}:
         xf = (x_m - b.x_min) / b.span_x
     else:
         xf = (b.x_max - x_m) / b.span_x
@@ -190,10 +253,10 @@ class _Cand:
     y_m: float
 
 
-def _add_candidate(cands: list[_Cand], x_m: float, y_m: float) -> None:
+def _add_candidate(cands: list[_Cand], x_m: float, y_m: float, radius_m: float = CLUSTER_RADIUS_M) -> None:
     """Add (x, y) only if no existing candidate is within CLUSTER_RADIUS_M."""
     for c in cands:
-        if math.hypot(c.x_m - x_m, c.y_m - y_m) < CLUSTER_RADIUS_M:
+        if math.hypot(c.x_m - x_m, c.y_m - y_m) < radius_m:
             return
     cands.append(_Cand(x_m, y_m))
 
@@ -398,4 +461,189 @@ class MapLeftSideMission:
             return "Returning to start"
         if self._state == "complete":
             return "Complete"
+        return self._state
+
+
+class ServiceLineDistributionScanMission:
+    """Move to the selected side service line, spin once, and build a 3x3 grid.
+
+    This is the first collection smoke test: it produces matrix distribution
+    telemetry without starting the intake or target-by-target collection.
+    """
+
+    def __init__(
+        self,
+        ball_source_fn: BallSourceFn,
+        boundary_path: Path | None = None,
+    ) -> None:
+        self._ball_source = ball_source_fn
+        self._path = boundary_path or DEFAULT_BOUNDARY_FILE
+
+        self.active: bool = False
+        self.complete: bool = False
+        self.side_id: str = "unknown"
+        self.side_sign: int = -1
+        self.candidates: list[_Cand] = []
+        self.grid: list[list[int]] = [[0] * 3 for _ in range(3)]
+        self.unassigned_candidates: int = 0
+        self.service_pose_map: tuple[float, float] | None = None
+
+        self._state: str = "idle"
+        self._elapsed_start: float | None = None
+        self._scan_started_at: float | None = None
+        self._last_scan_yaw: float | None = None
+        self._scan_accumulated_rad: float = 0.0
+        self._frame: CourtFrame | None = None
+        self._bounds: HalfCourtBounds | None = None
+
+    def start(self, rx: float, ry: float, _ryaw: float) -> None:
+        frame, lines = self._load_v2_model()
+        court_x, _court_y = frame.map_to_court(rx, ry)
+        sign = -1 if court_x < 0.0 else 1
+        service_candidates = sorted(float(v) for v in lines["service_x"])
+        baseline_candidates = sorted(float(v) for v in lines["baselines_x"])
+        sidelines = sorted(float(v) for v in lines["sidelines_y"])
+
+        service_x = service_candidates[0] if sign < 0 else service_candidates[-1]
+        baseline_x = baseline_candidates[0] if sign < 0 else baseline_candidates[-1]
+        target_x, target_y = frame.court_to_map(service_x, 0.0)
+
+        self.active = True
+        self.complete = False
+        self.side_sign = sign
+        self.side_id = "side_neg_x" if sign < 0 else "side_pos_x"
+        self.candidates = []
+        self.grid = [[0] * 3 for _ in range(3)]
+        self.unassigned_candidates = 0
+        self.service_pose_map = (target_x, target_y)
+        self._state = "transit"
+        self._elapsed_start = time.time()
+        self._scan_started_at = None
+        self._last_scan_yaw = None
+        self._scan_accumulated_rad = 0.0
+        self._frame = frame
+        self._bounds = HalfCourtBounds(
+            self.side_id,
+            min(0.0, baseline_x),
+            max(0.0, baseline_x),
+            sidelines[0],
+            sidelines[-1],
+        )
+
+    def reset(self) -> None:
+        self.active = False
+        self.complete = False
+        self._state = "idle"
+        self._scan_started_at = None
+        self._last_scan_yaw = None
+        self._scan_accumulated_rad = 0.0
+
+    def update(self, rx: float, ry: float, ryaw: float, _dt_s: float) -> ConceptACommand:
+        if self._state == "transit":
+            return self._step_transit(rx, ry, ryaw)
+        if self._state == "scanning":
+            return self._step_scan(rx, ry, ryaw)
+        return _idle_cmd()
+
+    def telemetry(self) -> dict:
+        elapsed = 0.0 if self._elapsed_start is None else time.time() - self._elapsed_start
+        scan_elapsed = 0.0 if self._scan_started_at is None else time.time() - self._scan_started_at
+        progress = min(1.0, self._scan_accumulated_rad / (2 * math.pi))
+        return {
+            "active": self.active and not self.complete,
+            "complete": self.complete,
+            "phase": self._state,
+            "phase_label": self._phase_label(),
+            "side": self.side_id,
+            "service_pose_map": (
+                {"x_m": round(self.service_pose_map[0], 3), "y_m": round(self.service_pose_map[1], 3)}
+                if self.service_pose_map is not None
+                else None
+            ),
+            "scan_progress_pct": round(progress * 100.0, 1),
+            "scan_accumulated_rad": round(self._scan_accumulated_rad, 3),
+            "scan_elapsed_s": round(scan_elapsed, 1),
+            "total_candidates": len(self.candidates),
+            "assigned_candidates": sum(sum(row) for row in self.grid),
+            "unassigned_candidates": self.unassigned_candidates,
+            "grid": [row[:] for row in self.grid],
+            "elapsed_s": round(elapsed, 1),
+        }
+
+    def _load_v2_model(self) -> tuple[CourtFrame, dict]:
+        try:
+            with self._path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                f"Court survey file not found: {self._path} - run Map Court first."
+            ) from exc
+        except OSError as exc:
+            raise RuntimeError(f"Cannot read court survey file: {exc}") from exc
+
+        if data.get("schema") != "court_knowledge_model/v2" or data.get("status") != "OK":
+            reason = data.get("failure_reason") or data.get("status") or data.get("schema")
+            raise RuntimeError(f"Court survey v2 not ready - run Map Court first. Reason: {reason}")
+        return _load_v2_court_frame(data), _load_v2_lines(data)
+
+    def _step_transit(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
+        if self.service_pose_map is None:
+            self._finish()
+            return _idle_cmd()
+        tx, ty = self.service_pose_map
+        cmd = _nav_to(rx, ry, ryaw, tx, ty)
+        if cmd is not None:
+            return cmd
+        self._state = "scanning"
+        self._scan_started_at = time.time()
+        self._last_scan_yaw = ryaw
+        self._scan_accumulated_rad = 0.0
+        return _scan_cmd()
+
+    def _step_scan(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
+        self._sample_balls(rx, ry)
+        if self._last_scan_yaw is not None:
+            self._scan_accumulated_rad += abs(_angle_delta(ryaw, self._last_scan_yaw))
+        self._last_scan_yaw = ryaw
+
+        if self._scan_accumulated_rad >= 2 * math.pi:
+            self._finish()
+            return _scan_cmd()
+        return ConceptACommand(
+            state=CollectorState.SCAN,
+            base=BaseCommand(0.0, NAV_MAX_TURN_RAD_S * 0.45),
+            collector=CollectorCommand(0.0, False),
+        )
+
+    def _sample_balls(self, rx: float, ry: float) -> None:
+        for bx, by in self._ball_source():
+            if math.hypot(bx - rx, by - ry) <= DETECTION_RANGE_M:
+                _add_candidate(self.candidates, bx, by, COLLECTION_SCAN_CLUSTER_RADIUS_M)
+        self._rebuild_grid()
+
+    def _rebuild_grid(self) -> None:
+        if self._frame is None or self._bounds is None:
+            return
+        g: list[list[int]] = [[0] * 3 for _ in range(3)]
+        for c in self.candidates:
+            cx, cy = self._frame.map_to_court(c.x_m, c.y_m)
+            cell = _classify(cx, cy, self._bounds)
+            if cell is not None:
+                g[cell[0]][cell[1]] += 1
+        self.grid = g
+        self.unassigned_candidates = len(self.candidates) - sum(sum(row) for row in g)
+
+    def _finish(self) -> None:
+        self._state = "complete"
+        self.active = False
+        self.complete = True
+
+    def _phase_label(self) -> str:
+        if self._state == "transit":
+            return f"Navigating to {self.side_id} service line"
+        if self._state == "scanning":
+            progress = min(100.0, self._scan_accumulated_rad / (2 * math.pi) * 100.0)
+            return f"360 distribution scan ({progress:.0f}%)"
+        if self._state == "complete":
+            return "Distribution scan complete"
         return self._state

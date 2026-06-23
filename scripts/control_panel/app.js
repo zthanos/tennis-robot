@@ -198,12 +198,14 @@
       const active = vendorData.active || {};
       const hasSession = !!(active.vendor_id && active.court_id);
       const cb = diagnostics.court_boundary;
-      const hasSurvey = hasSession && !!(cb && cb.survey_complete && cb.court_id === active.court_id);
+      const surveyReady = !!(cb && (cb.survey_complete || cb.completed || cb.status === "OK"));
+      const surveyCourtMatches = !cb?.court_id || cb.court_id === active.court_id;
+      const hasSurvey = hasSession && surveyReady && surveyCourtMatches;
       const actualMode = (diagnostics.robot || {}).actual_mode || "idle";
       const isAutonomous = AUTONOMOUS_MODES.has(actualMode);
 
       const btnMapCourt = document.querySelector('#commandForm [value="map_court"]');
-      const btnCollect  = document.querySelector('#commandForm [value="collect_pattern"]');
+      const btnCollect  = document.querySelector('#commandForm [value="collect"]');
       const hintEl      = document.getElementById("commandHint");
 
       if (btnMapCourt) btnMapCourt.disabled = !hasSession || isAutonomous;
@@ -393,12 +395,18 @@
       });
       safe(() => renderObstacleSurveyDebug((robot.survey || {}).navigation || {}));
       safe(() => renderObstacleRunsHistory(diagnostics.obstacle_runs || []));
-      safe(() => renderMapMission(robot.map_mission || {}));
+      const collectionScan = robot.collection_scan || {};
+      const mapMissionForGrid = (
+        collectionScan.active || collectionScan.complete
+          ? { ...collectionScan, source_label: "Collection scan" }
+          : { ...(robot.map_mission || {}), source_label: "Mapping mission" }
+      );
+      safe(() => renderMapMission(mapMissionForGrid));
       safe(updateCommandButtons);
 
       // Auto-navigate to sensors when mapping mission or survey is active
       const mapMission = robot.map_mission || {};
-      if (mapMission.active && !mapMission.complete) {
+      if ((mapMission.active && !mapMission.complete) || (collectionScan.active && !collectionScan.complete)) {
         const activeView = document.querySelector("section.view.active");
         if (activeView && activeView.id !== "sensors") setView("sensors");
       }
@@ -1386,12 +1394,14 @@
           progressEl.style.display = "block";
           const done = m.scan_poses_done ?? 0;
           const total = m.scan_poses_total ?? 5;
-          const pct = total > 0 ? Math.round(done / total * 100) : 0;
+          const pct = m.scan_progress_pct != null
+            ? Math.round(m.scan_progress_pct)
+            : (total > 0 ? Math.round(done / total * 100) : 0);
           const phaseEl = document.getElementById("mapMissionPhaseLabel");
           const posesEl = document.getElementById("mapMissionPosesLabel");
           const barEl   = document.getElementById("mapMissionBar");
           if (phaseEl) phaseEl.textContent = m.phase_label || m.phase || "";
-          if (posesEl) posesEl.textContent = `${done} / ${total} poses`;
+          if (posesEl) posesEl.textContent = m.scan_progress_pct != null ? `${pct}%` : `${done} / ${total} poses`;
           if (barEl)   barEl.style.width   = `${pct}%`;
         } else {
           progressEl.style.display = "none";
