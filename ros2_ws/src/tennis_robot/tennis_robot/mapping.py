@@ -487,6 +487,8 @@ class ServiceLineDistributionScanMission:
         self.grid: list[list[int]] = [[0] * 3 for _ in range(3)]
         self.unassigned_candidates: int = 0
         self.service_pose_map: tuple[float, float] | None = None
+        self.target_grid_cell: tuple[int, int] | None = None
+        self.target_pose_map: tuple[float, float] | None = None
 
         self._state: str = "idle"
         self._elapsed_start: float | None = None
@@ -516,6 +518,8 @@ class ServiceLineDistributionScanMission:
         self.grid = [[0] * 3 for _ in range(3)]
         self.unassigned_candidates = 0
         self.service_pose_map = (target_x, target_y)
+        self.target_grid_cell = None
+        self.target_pose_map = None
         self._state = "transit"
         self._elapsed_start = time.time()
         self._scan_started_at = None
@@ -537,12 +541,16 @@ class ServiceLineDistributionScanMission:
         self._scan_started_at = None
         self._last_scan_yaw = None
         self._scan_accumulated_rad = 0.0
+        self.target_grid_cell = None
+        self.target_pose_map = None
 
     def update(self, rx: float, ry: float, ryaw: float, _dt_s: float) -> ConceptACommand:
         if self._state == "transit":
             return self._step_transit(rx, ry, ryaw)
         if self._state == "scanning":
             return self._step_scan(rx, ry, ryaw)
+        if self._state == "transit_to_grid_cell":
+            return self._step_transit_to_grid_cell(rx, ry, ryaw)
         return _idle_cmd()
 
     def telemetry(self) -> dict:
@@ -558,6 +566,16 @@ class ServiceLineDistributionScanMission:
             "service_pose_map": (
                 {"x_m": round(self.service_pose_map[0], 3), "y_m": round(self.service_pose_map[1], 3)}
                 if self.service_pose_map is not None
+                else None
+            ),
+            "target_grid_cell": (
+                {"row": self.target_grid_cell[0], "col": self.target_grid_cell[1]}
+                if self.target_grid_cell is not None
+                else None
+            ),
+            "target_pose_map": (
+                {"x_m": round(self.target_pose_map[0], 3), "y_m": round(self.target_pose_map[1], 3)}
+                if self.target_pose_map is not None
                 else None
             ),
             "scan_progress_pct": round(progress * 100.0, 1),
@@ -625,13 +643,27 @@ class ServiceLineDistributionScanMission:
         self._last_scan_yaw = ryaw
 
         if self._scan_accumulated_rad >= 2 * math.pi:
-            self._finish()
+            if self._select_best_grid_target():
+                self._state = "transit_to_grid_cell"
+            else:
+                self._finish()
             return _scan_cmd()
         return ConceptACommand(
             state=CollectorState.SCAN,
             base=BaseCommand(0.0, NAV_MAX_TURN_RAD_S * 0.45),
             collector=CollectorCommand(0.0, False),
         )
+
+    def _step_transit_to_grid_cell(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
+        if self.target_pose_map is None:
+            self._finish()
+            return _idle_cmd()
+        tx, ty = self.target_pose_map
+        cmd = _nav_to(rx, ry, ryaw, tx, ty)
+        if cmd is not None:
+            return cmd
+        self._finish()
+        return _idle_cmd()
 
     def _sample_balls(self, rx: float, ry: float) -> None:
         for bx, by in self._ball_source():
@@ -651,6 +683,38 @@ class ServiceLineDistributionScanMission:
         self.grid = g
         self.unassigned_candidates = len(self.candidates) - sum(sum(row) for row in g)
 
+    def _select_best_grid_target(self) -> bool:
+        if self._frame is None or self._bounds is None:
+            return False
+        cell = self._best_grid_cell()
+        if cell is None:
+            return False
+        court_x, court_y = self._cell_center_court(*cell)
+        self.target_grid_cell = cell
+        self.target_pose_map = self._frame.court_to_map(court_x, court_y)
+        return True
+
+    def _best_grid_cell(self) -> tuple[int, int] | None:
+        best_cell: tuple[int, int] | None = None
+        best_count = 0
+        for row, values in enumerate(self.grid):
+            for col, count in enumerate(values):
+                if count > best_count:
+                    best_count = count
+                    best_cell = (row, col)
+        return best_cell
+
+    def _cell_center_court(self, row: int, col: int) -> tuple[float, float]:
+        assert self._bounds is not None
+        b = self._bounds
+        row_offset = (row + 0.5) * b.span_x / 3.0
+        if b.side in {"left", "side_neg_x"}:
+            x_m = b.x_min + row_offset
+        else:
+            x_m = b.x_max - row_offset
+        y_m = b.y_max - (col + 0.5) * b.span_y / 3.0
+        return x_m, y_m
+
     def _finish(self) -> None:
         self._state = "complete"
         self.active = False
@@ -662,6 +726,11 @@ class ServiceLineDistributionScanMission:
         if self._state == "scanning":
             progress = min(100.0, self._scan_accumulated_rad / (2 * math.pi) * 100.0)
             return f"360 distribution scan ({progress:.0f}%)"
+        if self._state == "transit_to_grid_cell":
+            if self.target_grid_cell is None:
+                return "Navigating to estimated collection cell"
+            row, col = self.target_grid_cell
+            return f"Navigating to estimated collection cell r{row + 1}c{col + 1}"
         if self._state == "complete":
             return "Distribution scan complete"
         return self._state
