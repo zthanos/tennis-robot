@@ -572,6 +572,10 @@ class ServiceLineDistributionScanMission:
             return self._step_sweep(rx, ry, ryaw)
         return _idle_cmd()
 
+    @property
+    def lane_started(self) -> bool:
+        return self._waypoint_index > 0
+
     def telemetry(self) -> dict:
         elapsed = 0.0 if self._elapsed_start is None else time.time() - self._elapsed_start
         scan_elapsed = 0.0 if self._scan_started_at is None else time.time() - self._scan_started_at
@@ -604,6 +608,7 @@ class ServiceLineDistributionScanMission:
             "lane_spacing_m": round(self.lane_spacing_m, 3),
             "waypoint_index": self._waypoint_index,
             "waypoint_count": len(self._waypoints),
+            "lane_started": self._waypoint_index > 0,
             "total_candidates": len(self.local_candidates),
             "estimate_candidates": len(self.candidates),
             "assigned_candidates": sum(sum(row) for row in self.grid),

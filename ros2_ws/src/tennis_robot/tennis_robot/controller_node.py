@@ -686,6 +686,7 @@ class ControllerNode(Node):
         if (
             self._collection_scan.active
             and not self._collection_scan.complete
+            and self._collection_scan.lane_started
             and observation.visible
             and observation.distance_m <= COLLECTION_LANE_CAPTURE_RANGE_M
         ):
