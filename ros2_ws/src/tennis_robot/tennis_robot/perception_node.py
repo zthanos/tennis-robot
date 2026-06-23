@@ -54,6 +54,7 @@ class PerceptionNode(Node):
         self._robot_x = 0.0
         self._robot_y = 0.0
         self._robot_yaw = 0.0
+        self._last_image_stamp_ns: int | None = None
 
         # SLAM-corrected pose (map->base_footprint) preferred over raw /odom:
         # wheel odometry drifts badly during in-place turns (wheel slip).
@@ -99,6 +100,10 @@ class PerceptionNode(Node):
         self._depth_h = msg.height
 
     def _on_image(self, msg: Image) -> None:
+        stamp_ns = int(msg.header.stamp.sec) * 1_000_000_000 + int(msg.header.stamp.nanosec)
+        if self._last_image_stamp_ns == stamp_ns:
+            return
+        self._last_image_stamp_ns = stamp_ns
         self._update_pose_from_tf()
         frame = self._decode_image(msg)
         if frame is None:

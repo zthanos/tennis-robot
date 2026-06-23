@@ -153,6 +153,8 @@ class ControllerNode(Node):
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
+        self._latest_obs_seq = 0
+        self._mapped_obs_seq = 0
         self._latest_survey_vision: SurveyVision | None = None
         self._lidar_ranges: list[float] | None = None
         self._lidar_angle_min: float = -math.pi
@@ -197,6 +199,7 @@ class ControllerNode(Node):
     # ── subscription callbacks (cache only) ────────────────────────────────────
 
     def _on_observation(self, msg: BallObservation) -> None:
+        self._latest_obs_seq += 1
         self._latest_obs = BallObservationInput(
             visible=msg.visible,
             bearing_rad=msg.bearing_rad,
@@ -255,15 +258,22 @@ class ControllerNode(Node):
         self._update_pose_from_tf()
         observation = self._latest_obs
         now = time.time()
-        mapped_observation = self._mapping_observation(observation)
+        mapping_observation = (
+            observation
+            if self._latest_obs_seq != self._mapped_obs_seq
+            else BallObservationInput(visible=False, source="observation_already_mapped")
+        )
+        mapped_observation = self._mapping_observation(mapping_observation)
+        self._mapped_obs_seq = self._latest_obs_seq
         mapped_ball_id, is_new_ball = self.ball_map.update(mapped_observation, now)
+        control_mapping_observation = self._mapping_observation(observation)
 
         if self.loop_count % 90 == 0:
             self.ball_map.prune_phantoms(now)
 
         effective_mode = self._effective_control_mode(self._control_command_mode)
         control_observation = self._control_observation_for_mode(
-            effective_mode, mapped_observation, mapped_ball_id
+            effective_mode, control_mapping_observation, mapped_ball_id
         )
 
         if effective_mode == "map_court":
@@ -275,7 +285,7 @@ class ControllerNode(Node):
         elif effective_mode == "collect_pattern":
             command = self._collect_pattern_command_for_mode(
                 effective_mode,
-                self._same_side_search_observation(mapped_observation),
+                self._same_side_search_observation(control_mapping_observation),
                 mapped_ball_id,
             )
         elif effective_mode == "map_left_side":
