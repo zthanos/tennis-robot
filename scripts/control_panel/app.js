@@ -1804,7 +1804,23 @@
       }
 
       const activeTargetId = map.active_target_id;
-      const allBalls = map.balls || [];
+      const collectionScan = (diagnostics.robot || {}).collection_scan || {};
+      const collectionCandidates = Array.isArray(collectionScan.candidates) ? collectionScan.candidates : [];
+      const allBalls = Array.isArray(map.balls) && map.balls.length
+        ? map.balls
+        : collectionCandidates
+            .filter(ball => Number.isFinite(ball.x_m) && Number.isFinite(ball.y_m))
+            .map((ball, index) => ({
+              id: `scan-${ball.id ?? index + 1}`,
+              x_m: ball.x_m,
+              y_m: ball.y_m,
+              side: "same_side",
+              visible_candidate: true,
+              confirmed: true,
+              planned: false,
+              order: null,
+              source: ball.source || "collection_scan",
+            }));
 
       // pending balls (below seen_count threshold) — drawn first so confirmed render on top
       allBalls.filter(b => !b.confirmed).forEach(ball => {

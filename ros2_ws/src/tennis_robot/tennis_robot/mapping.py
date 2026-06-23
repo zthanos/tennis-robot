@@ -566,9 +566,27 @@ class ServiceLineDistributionScanMission:
             "total_candidates": len(self.candidates),
             "assigned_candidates": sum(sum(row) for row in self.grid),
             "unassigned_candidates": self.unassigned_candidates,
+            "candidates": self._candidate_telemetry(),
             "grid": [row[:] for row in self.grid],
             "elapsed_s": round(elapsed, 1),
         }
+
+    def _candidate_telemetry(self) -> list[dict]:
+        rows: list[dict] = []
+        for idx, c in enumerate(self.candidates, start=1):
+            item: dict = {
+                "id": idx,
+                "x_m": round(c.x_m, 3),
+                "y_m": round(c.y_m, 3),
+                "source": "collection_scan",
+            }
+            if self._frame is not None and self._bounds is not None:
+                cx, cy = self._frame.map_to_court(c.x_m, c.y_m)
+                cell = _classify(cx, cy, self._bounds)
+                if cell is not None:
+                    item["grid_cell"] = {"row": cell[0], "col": cell[1]}
+            rows.append(item)
+        return rows
 
     def _load_v2_model(self) -> tuple[CourtFrame, dict]:
         try:
