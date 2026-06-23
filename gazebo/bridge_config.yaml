@@ -16,6 +16,12 @@
   ros_type_name: sensor_msgs/msg/LaserScan
   direction: GZ_TO_ROS
 
+- gz_topic_name: /gz/imu
+  ros_topic_name: /imu/data
+  gz_type_name: gz.msgs.IMU
+  ros_type_name: sensor_msgs/msg/Imu
+  direction: GZ_TO_ROS
+
 - gz_topic_name: /odom
   ros_topic_name: /odom
   gz_type_name: gz.msgs.Odometry

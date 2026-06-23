@@ -101,7 +101,7 @@ Detections are projected into robot-base and court/world XY coordinates using th
 
 The current world includes **Concept A: Funnel + Wide Intake Roller** as the front collector module:
 
-- a pitched chassis layout based on larger rear drive wheels and smaller outboard front casters;
+- a level (un-pitched) 4WD skid-steer chassis with four driven 180 mm wheels, two per side (no casters);
 - orange funnel plates and a low intake lip on the robot front;
 - a rubber-like wide intake roller driven by `lift_wheel_motor` (historical device name);
 - a transparent visual hopper raised for throw-mode gravity feed;

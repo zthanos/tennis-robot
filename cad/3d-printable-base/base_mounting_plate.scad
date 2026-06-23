@@ -3,8 +3,8 @@ include <common.scad>
 // Full-size chassis mounting/drill template for the first tennis robot base.
 // This is intended as a CAD reference for a 21 mm birch/marine plywood plate.
 // It can also be split into printable base sections later. It shows the mounting holes and
-// module envelopes for the collector, motor pods, front casters, stabilizers,
-// battery, electronics, handle sockets, and a reserved launcher/feed zone.
+// module envelopes for the collector, four motor pods (4WD), battery,
+// electronics, handle sockets, and a reserved launcher/feed zone.
 // With show_verticals=true it also shows the upright posts, trays, and rails
 // that components will bolt to above the base plate.
 
@@ -30,13 +30,10 @@ motor_pod_w = 76;
 motor_pod_flange_len = 174;
 motor_pod_flange_w = 100;
 
-caster_mount_x = 92;
-caster_mount_y = 78;
-front_caster_outboard_gap = 18;
-front_caster_w = 32;
-front_caster_left_y = -front_caster_w / 2 - front_caster_outboard_gap;
-front_caster_right_y = base_w + front_caster_w / 2 + front_caster_outboard_gap;
-front_caster_anchor_ys = [34, base_w - 34];
+// 4WD: front motor pods mirror the rear pods about the chassis center
+// (base_len / 2). Same flange hole pattern, drive at the front corners.
+rear_pod_hole_xs = [110, 170, 230];
+front_pod_hole_xs = [base_len - 230, base_len - 170, base_len - 110];
 
 collector_len = 360;
 collector_w = 360;
@@ -178,21 +175,10 @@ module plywood_rail_y(x, y0, y1, h=plywood_rail_h) {
 }
 
 module chassis_plate_cutouts() {
-    // Motor pod chassis flange holes. Pods sit at the rear/side edges.
-    for (x = [110, 170, 230]) {
+    // Motor pod chassis flange holes (4WD: rear + front pods, both side edges).
+    for (x = concat(rear_pod_hole_xs, front_pod_hole_xs)) {
         for (y = [18, 86]) translate([x, y, 0]) screw_hole(hole_d, plate_t + 4);
         for (y = [base_w - 86, base_w - 18]) translate([x, y, 0]) screw_hole(hole_d, plate_t + 4);
-    }
-
-    // Outboard front caster outrigger anchors. The caster wheel/plate sits
-    // outside the base edge; these slots fasten the inner outrigger bracket.
-    for (y_center = front_caster_anchor_ys) {
-        x0 = base_len - 110 - caster_mount_x / 2;
-        y0 = y_center - caster_mount_y / 2;
-        for (x = [x0 + 22, x0 + caster_mount_x - 22]) {
-            translate([x, y0 + 12, 0]) slot_x();
-            translate([x, y0 + caster_mount_y - 12, 0]) slot_y();
-        }
     }
 
     // Collector mounting plate slots, matching collector_funnel_bin.scad.
@@ -231,11 +217,7 @@ module chassis_plate_cutouts() {
         }
     }
 
-    // Front stabilizer brackets / hinge blocks.
-    for (y = [base_w / 2 - 62, base_w / 2 + 62]) {
-        translate([base_len - 120, y - 22, 0]) slot_x(34, hole_d);
-        translate([base_len - 120, y + 22, 0]) slot_x(34, hole_d);
-    }
+    // (Front stabilizer brackets removed — 4WD needs no front stabilizer.)
 
     // Reserved launcher/feed module inserts. These are pilot holes only.
     for (x = [500, 570, 640]) {
@@ -256,22 +238,17 @@ module chassis_plate_markers() {
     label("FRONT", [base_len - 70, base_w / 2], 16);
     label("REAR", [58, base_w / 2], 14);
 
-    // Module envelopes.
+    // Module envelopes — four motor pods (rear + front, both sides).
     material_drive() {
-        translate([83, -8, 0]) envelope([motor_pod_flange_len, motor_pod_flange_w], 10);
-        translate([83, base_w - motor_pod_flange_w + 8, 0]) envelope([motor_pod_flange_len, motor_pod_flange_w], 10);
-    }
-    label("LEFT MOTOR POD", [170, 47], 10);
-    label("RIGHT MOTOR POD", [170, base_w - 47], 10);
-
-    material_caster() {
-        for (y_center = [front_caster_left_y, front_caster_right_y]) {
-            translate([base_len - 110 - caster_mount_x / 2, y_center - caster_mount_y / 2, 0])
-                envelope([caster_mount_x, caster_mount_y], 8);
+        for (cx = [83, base_len - 83 - motor_pod_flange_len]) {
+            translate([cx, -8, 0]) envelope([motor_pod_flange_len, motor_pod_flange_w], 10);
+            translate([cx, base_w - motor_pod_flange_w + 8, 0]) envelope([motor_pod_flange_len, motor_pod_flange_w], 10);
         }
     }
-    label("OUTBOARD CASTER", [base_len - 110, 18], 8);
-    label("OUTBOARD CASTER", [base_len - 110, base_w - 18], 8);
+    label("REAR LEFT POD", [170, 47], 10);
+    label("REAR RIGHT POD", [170, base_w - 47], 10);
+    label("FRONT LEFT POD", [base_len - 170, 47], 10);
+    label("FRONT RIGHT POD", [base_len - 170, base_w - 47], 10);
 
     material_collector()
         translate([collector_origin_x, base_w / 2 - collector_w / 2, 0])
@@ -306,27 +283,13 @@ module chassis_plate_markers() {
     label("HANDLE", [49, 89], 8);
     label("HANDLE", [49, base_w - 79], 8);
 
-    material_stabilizer() {
-        translate([base_len - 155, base_w / 2 - 88, 0]) envelope([70, 52], 8);
-        translate([base_len - 155, base_w / 2 + 36, 0]) envelope([70, 52], 8);
-    }
-    label("STAB", [base_len - 120, base_w / 2 - 62], 9);
-    label("STAB", [base_len - 120, base_w / 2 + 62], 9);
+    // (Front stabilizer envelopes removed — replaced by front motor pods.)
 
     // Hole/slot markers, repeated above the plate so the drill pattern is easy
     // to inspect even when the through-cut holes are hard to see in preview.
-    for (x = [110, 170, 230]) {
+    for (x = concat(rear_pod_hole_xs, front_pod_hole_xs)) {
         for (y = [18, 86]) translate([x, y, 0]) screw_marker();
         for (y = [base_w - 86, base_w - 18]) translate([x, y, 0]) screw_marker();
-    }
-
-    for (y_center = front_caster_anchor_ys) {
-        x0 = base_len - 110 - caster_mount_x / 2;
-        y0 = y_center - caster_mount_y / 2;
-        for (x = [x0 + 22, x0 + caster_mount_x - 22]) {
-            translate([x, y0 + 12, 0]) drill_slot_marker_x();
-            translate([x, y0 + caster_mount_y - 12, 0]) drill_slot_marker_y();
-        }
     }
 
     for (x = collector_slot_xs) {
@@ -351,11 +314,6 @@ module chassis_plate_markers() {
         for (x = [22, 72]) {
             for (y = [8, 46]) translate([x, y0 + y, 0]) screw_marker();
         }
-    }
-
-    for (y = [base_w / 2 - 62, base_w / 2 + 62]) {
-        translate([base_len - 120, y - 22, 0]) drill_slot_marker_x(34, hole_d);
-        translate([base_len - 120, y + 22, 0]) drill_slot_marker_x(34, hole_d);
     }
 
     for (x = [500, 570, 640]) {

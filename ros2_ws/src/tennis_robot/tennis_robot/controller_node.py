@@ -162,9 +162,9 @@ class ControllerNode(Node):
         self._turn_180_start_yaw: float = 0.0
 
         # ── pose source: SLAM-corrected TF with /odom fallback ─────────────────
-        # Raw wheel odometry overestimates in-place turns ~2x (drive wheels slip
-        # against the casters), so map->base_footprint from slam_toolbox is the
-        # authoritative pose. /odom remains the fallback until SLAM publishes.
+        # Raw wheel odometry mis-estimates in-place turns (4WD skid-steer slips
+        # laterally during rotation), so map->base_footprint from slam_toolbox is
+        # the authoritative pose. /odom remains the fallback until SLAM publishes.
         self._tf_buffer = TfBuffer()
         self._tf_listener = TfListener(self._tf_buffer, self)
         self._pose_source = "odom"

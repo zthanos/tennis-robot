@@ -78,6 +78,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ── Navigation / mapping stack ────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-slam-toolbox \
+    ros-humble-robot-localization \
     ros-humble-twist-mux \
     ros-humble-teleop-twist-keyboard \
     ros-humble-navigation2 \
@@ -116,7 +117,7 @@ RUN apt-get update \
 
 # ── tennis_robot last: edits here rebuild ONLY this package (seconds) ──────────
 # Bump TENNIS_ROBOT_VER to bust the COPY cache when source changes aren't detected
-ARG TENNIS_ROBOT_VER=21
+ARG TENNIS_ROBOT_VER=23
 COPY ros2_ws/src/tennis_robot src/tennis_robot
 RUN . /opt/ros/humble/setup.sh \
   && . install/setup.sh \

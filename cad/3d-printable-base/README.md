@@ -6,10 +6,9 @@ Scope:
 
 - printable modular base tiles
 - full-size base mounting/drill template with component mounting points
-- printable side motor pods
+- printable motor pods (x4, one per driven wheel — 4WD)
 - printable direct-drive wheels
 - printable stabilizer feet
-- printable passive front caster mounts
 - printable trolley-handle sockets
 - first-pass collector funnel, wide roller bracket, and receiving bin
 - full concept assembly showing the expected wooden-base robot layout
@@ -38,7 +37,6 @@ load-bearing axles are not recommended for a tennis robot base.
 | Wheel core | PETG/ASA/nylon-CF | Print strong, then add rubber/TPU tire if possible. |
 | Tire sleeve | TPU 95A | Optional but strongly recommended for grip. |
 | Stabilizer feet | TPU or PETG with rubber pad | Rubber contact is better on court. |
-| Front caster mounts | PETG/ASA/nylon-CF | Use with bought swivel caster wheels. |
 | Handle sockets | PETG/ASA | Bolt to the base tiles and inner frame. |
 
 ## Editing and exporting
@@ -66,8 +64,9 @@ Recommended first exports:
 5. `stabilizer_foot.scad`
 6. `handle_socket.scad`
 7. `collector_funnel_bin.scad`
-8. `front_caster_mount.scad`
-9. `full_robot_concept.scad`
+8. `full_robot_concept.scad`
+
+(`front_caster_mount.scad` is deprecated — the 4WD base uses four `motor_pod.scad` pods instead of casters.)
 
 ## Starting print settings
 
@@ -83,12 +82,12 @@ Recommended first exports:
 - A wooden base is a practical first mobile prototype. Use 21 mm birch marine
   plywood for the rugged first chassis, or 9-12 mm plywood after the geometry is
   proven and reinforced with rails. For the 21 mm cut plan, see
-  `docs/plywood-cut-list.md`. Bolt the printed motor pods,
-  front caster mounts, collector rig, electronics, and battery onto it. This is
+  `docs/plywood-cut-list.md`. Bolt the four printed motor pods,
+  collector rig, electronics, and battery onto it. This is
   faster to drill, adjust, and replace than a fully printed chassis while the
   robot geometry is still changing.
 - Use `base_mounting_plate.scad` as the first drill/CAD reference for the
-  physical chassis. It keeps the mounting points for motor pods, front casters,
+  physical chassis. It keeps the mounting points for the four motor pods,
   collector, battery straps, electronics standoffs, handle sockets, stabilizer
   brackets, and a reserved launcher/feed zone visible in one model. With the
   default `show_verticals=true`, it also shows the upright frame, electronics
@@ -97,14 +96,15 @@ Recommended first exports:
 - The battery bay is intentionally removable: split cross rails leave side
   access, and the model shows a removable top strap/clamp instead of glued
   blocks that trap the battery.
-- Do not support the robot only on two wheels during launch. Use stabilizer feet.
-- For the collection-only MVP, prefer two driven side wheels plus two passive
-  outboard front swivel casters. Keep the front caster wheels outside the base
-  edges so the center intake/funnel stays clear. Avoid servo steering until the
-  differential-drive base proves insufficient.
-- The current concept assembly shows a pitched chassis from larger rear wheels
-  and smaller front casters. Treat that as a layout hypothesis: the wheels stay
-  on the ground while the wooden body and mounted modules pitch as one unit.
+- During launch, stabilizer feet still help damp recoil even with 4WD. Use them.
+- The base is 4WD skid-steer: four driven 180 mm wheels, two per side, placed
+  symmetrically about the chassis center (no casters). The two motors on each
+  side are wired in parallel to one BTS7960 driver. This gives more traction and
+  removes the caster scrub that previously stalled in-place turns. Avoid servo
+  steering — skid-steer turning needs no steering mechanism.
+- The concept assembly shows a level (un-pitched) body: all four wheels are the
+  same diameter and sit coplanar, so the wooden body and mounted modules stay
+  flat to the ground.
 - Keep the battery low and near the middle of the footprint.
 - Make motor pods replaceable; they will be the first parts to revise.
 - Print one wheel at reduced width first to verify motor shaft fit.
@@ -118,7 +118,7 @@ Recommended first exports:
 - Use `full_robot_concept.scad` as an assembly/reference model. It is meant to
   communicate layout and mounting relationships: wooden base, upper frame,
   electronics/battery module, receiving bin, collector intake, launcher wheels,
-  rear drive wheels, front casters, cover mounting rails, removable panels, and
+  the four drive wheels, cover mounting rails, removable panels, and
   transport handle. Do not print it as one object.
 - The intended ball path in `full_robot_concept.scad` is:
   loose ball -> floor-level left/right funnels -> 12 cm full-width front roller

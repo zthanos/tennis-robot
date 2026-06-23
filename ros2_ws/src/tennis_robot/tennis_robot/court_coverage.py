@@ -47,22 +47,28 @@ def vantage_points(frame: CourtFrame, spec: CourtSpec,
     yaw = math.atan2(frame.uy, frame.ux)  # +x' heading (irrelevant for 360-deg scan)
     gap_y = spec.post_half_span_doubles_m + 1.05  # ~6.7 m: past the post, inside fence
     deep = spec.half_length_m + 4.0               # into the run-off toward the fence
+    # stop_short=True ONLY for the deep fence-approach points, where the front
+    # fence-stop is meant to halt the robot ~1.4 m short for dense fence mapping.
+    # For gap-crossing / intermediate / return points it MUST be False: the net
+    # is now LiDAR-visible, and a True here makes the robot mistake the net for
+    # the target fence and stop instead of crossing to the far half.
+    # (court_x, court_y, stop_short)
     court_path = [
-        (-deep, 0.0),      # deep near half -> near fence solidly mapped
-        (-2.0, gap_y),     # out to the gap, near side
-        (2.0, gap_y),      # cross x'=0 at the gap (clear of the net), far side
-        (quarter, 0.0),    # far-half centre (intermediate hop)
-        (deep, 0.0),       # deep far half -> far fence solidly mapped
+        (-deep, 0.0, True),     # deep near half -> near fence solidly mapped
+        (-2.0, gap_y, False),   # out to the gap, near side
+        (2.0, gap_y, False),    # cross x'=0 at the gap (clear of the net), far side
+        (quarter, 0.0, False),  # far-half centre (intermediate hop)
+        (deep, 0.0, True),      # deep far half -> far fence solidly mapped
         # Return pass: re-cross the net through the OTHER gap and come back to the
         # near half -> loop-closure overlap aligns the two halves and finishes the
         # map. Measurement is already locked by now; this pass is purely for a
         # clean, complete map.
-        (2.0, -gap_y),     # back out to the gap, far side (opposite side)
-        (-2.0, -gap_y),    # cross x'=0 again -> re-observe the net (loop overlap)
-        (-quarter, 0.0),   # near-half centre -> overlap with the start -> loop closes
+        (2.0, -gap_y, False),   # back out to the gap, far side (opposite side)
+        (-2.0, -gap_y, False),  # cross x'=0 again -> re-observe the net (loop overlap)
+        (-quarter, 0.0, False), # near-half centre -> overlap with the start -> loop closes
     ]
     poses: list[dict] = []
-    for court_x, court_y in court_path:
+    for court_x, court_y, stop_short in court_path:
         mx, my = frame.to_map(court_x, court_y)
         poses.append({
             "x_m": round(mx, 3),
@@ -70,5 +76,6 @@ def vantage_points(frame: CourtFrame, spec: CourtSpec,
             "yaw_rad": round(yaw, 4),
             "court_x": round(court_x, 3),
             "court_y": round(court_y, 3),
+            "stop_short": stop_short,
         })
     return poses

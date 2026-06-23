@@ -54,8 +54,7 @@ Encoders + IMU -> odometry / robot pose
 | 3 | 390 x 45 | Εγκάρσιες νευρώσεις |
 | 2 | 180 x 90 | Collector upright plates |
 | 2 | 220 x 80 | Hopper/back-plate supports |
-| 2 | 120 x 80 | Motor pod reinforcement plates |
-| 2 | 100 x 80 | Front caster reinforcement plates |
+| 4 | 120 x 80 | Motor pod reinforcement plates (4WD: one per pod) |
 | 2 | 130 x 60 | Stabilizer bracket blocks |
 | 2 | 100 x 60 | Handle socket backing plates |
 
@@ -68,7 +67,7 @@ Encoders + IMU -> odometry / robot pose
 Ζητάμε:
 
 ```text
-2 τεμάχια DC gear motor 12V με encoder
+4 τεμάχια DC gear motor 12V με encoder
 ```
 
 Ιδανικά χαρακτηριστικά:
@@ -76,19 +75,18 @@ Encoders + IMU -> odometry / robot pose
 | Χαρακτηριστικό | Στόχος |
 |---|---|
 | Τάση | 12 V DC |
-| Ταχύτητα | 80-120 RPM |
+| Ταχύτητα | περίπου 120 RPM με τροχό 180 mm |
 | Encoder | Ναι, quadrature αν γίνεται |
 | Άξονας | 6 mm ή 8 mm D-shaft |
-| Rated torque | τουλάχιστον 7-10 kg.cm |
+| Rated torque | τουλάχιστον 15-18 kg.cm |
 | Stall current | να αναγράφεται στο datasheet |
 | Gearbox | μεταλλικό |
 
 Προτεινόμενο συγκεκριμένο μοντέλο για το prototype:
 
 ```text
-2 τεμάχια DFRobot 12V Metal DC Geared Motor with Encoder
-Model: GB37Y3530-12V-83R
-Link: https://www.dfrobot.com/product-633.html
+4 τεμάχια Metal DC Geared Motor w/Encoder - 12V 122RPM 38Kg.cm
+Link: https://grobotronics.com/metal-dc-geared-motor-w-encoder-12v-122rpm-38kg.cm.html
 ```
 
 Χαρακτηριστικά του συγκεκριμένου μοτέρ:
@@ -97,26 +95,21 @@ Link: https://www.dfrobot.com/product-633.html
 |---|---|
 | Motor type | Brushed DC gear motor με integrated quadrature encoder |
 | Rated voltage | 12 V DC |
-| Gear ratio | 131:1 |
-| No-load speed | 83 RPM ±10% |
-| No-load current | 350 mA |
-| Start voltage | 1.0 V |
-| Stall torque | 45 kg.cm |
-| Stall current | 7 A |
-| Encoder resolution | 16 counts/rev στο motor shaft, 2096 counts/rev στο gearbox output shaft |
-| Output shaft | 6 mm D-shaped shaft, μήκος περίπου 0.61 in / 15.5 mm |
-| Mounting | 6x M3 face holes σε hex pattern |
-| Screw depth warning | Οι M3 βίδες να μην μπουν πάνω από 3 mm μέσα στο μοτέρ |
+| No-load speed | 122 RPM |
+| Rated torque | 38 kg.cm |
+| Encoder | Ναι |
+| Wheel target | 180 mm driven wheels |
 
-Αυτό το μοντέλο είναι καλή επιλογή για τη βάση: η ταχύτητα 83 RPM ταιριάζει
-στον στόχο 80-120 RPM, το stall current 7 A είναι διαχειρίσιμο με σωστό driver,
-και ο encoder έχει αρκετή ανάλυση για odometry/closed-loop speed control.
+Αυτό το setup αλλάζει τη βάση σε 4WD differential/skid-steer, χωρίς μπροστινούς
+casters. Με τροχό 180 mm και 122 RPM η θεωρητική ταχύτητα είναι περίπου
+1.15 m/s χωρίς φορτίο. Το χαμηλότερο RPM και η μεγαλύτερη ροπή είναι πιο
+κατάλληλα για σταθερό πρώτο prototype, ειδικά με 4WD skid-steer σε γήπεδο.
 
 Αν δεν υπάρχει με encoder:
 
 ```text
-Μπορούμε να πάρουμε 2x 12V 100RPM gear motors χωρίς encoder μόνο για rolling
-test, αλλά για αυτόνομη κίνηση θα χρειαστούμε encoder αργότερα.
+Δεν το προτιμάμε για τη βάση. Για αυτόνομη κίνηση και odometry θέλουμε encoder
+σε κάθε drive motor ή τουλάχιστον αξιόπιστο encoder ανά πλευρά.
 ```
 
 Να ρωτήσουμε στο μαγαζί:
@@ -131,14 +124,14 @@ test, αλλά για αυτόνομη κίνηση θα χρειαστούμε 
 Ζητάμε:
 
 ```text
-2 τεμάχια driven wheels 150-180 mm διάμετρο
+4 τεμάχια driven wheels 180 mm διάμετρο
 ```
 
 Προτίμηση:
 
 | Χαρακτηριστικό | Στόχος |
 |---|---|
-| Διάμετρος | 150-180 mm |
+| Διάμετρος | 180 mm |
 | Πλάτος | 35-55 mm |
 | Πάτημα | rubber / PU / TPU, όχι σκληρό πλαστικό |
 | Hub | να ταιριάζει με 6 mm ή 8 mm D-shaft |
@@ -153,30 +146,19 @@ test, αλλά για αυτόνομη κίνηση θα χρειαστούμε 
 
 ### Front Casters
 
-Ζητάμε:
+Δεν ζητάμε πλέον front casters για την κύρια κινητήρια βάση:
 
 ```text
-2 τεμάχια περιστρεφόμενες ρόδες / swivel casters με πλάκα
+Νέα baseline: 4 driven wheels, χωρίς casters, για καλύτερη πρόσφυση και πιο
+προβλέψιμο έλεγχο σε ταχύτητα/στροφή.
 ```
 
-Χαρακτηριστικά:
-
-| Χαρακτηριστικό | Στόχος |
-|---|---|
-| Διάμετρος | 75-85 mm |
-| Αντοχή | τουλάχιστον 40-60 kg ανά caster |
-| Τροχός | TPE / PU / rubber |
-| Βάση | μεταλλική πλάκα με 4 τρύπες |
-| Φρένο | όχι απαραίτητο |
-
-Σημείωση CAD:
+Σημείωση CAD redesign:
 
 ```text
-Οι μπροστινοί casters μπαίνουν πλέον outboard, έξω από τα πλαϊνά της βάσης,
-ώστε το κέντρο μπροστά να μείνει καθαρό για funnel/intake. Η τρέχουσα γεωμετρία
-χρησιμοποιεί μεγαλύτερους πίσω τροχούς και μικρότερους μπροστινούς casters για
-να δώσει κλίση στο chassis. Πριν τρυπηθεί η βάση, ελέγχουμε την πραγματική
-πλάκα caster στο cad/3d-printable-base/base_mounting_plate.scad.
+Το CAD πρέπει να ενημερωθεί από 2WD + front casters σε 4WD skid-steer:
+δύο αριστεροί και δύο δεξιοί κινητήριοι τροχοί, με αντίστοιχα motor pods και
+χώρο για 4 drivers / καλωδίωση / ασφάλειες.
 ```
 
 ## 3. Motor Drivers Και Τροφοδοσία Κίνησης
@@ -184,32 +166,52 @@ test, αλλά για αυτόνομη κίνηση θα χρειαστούμε 
 Ζητάμε:
 
 ```text
-2 τεμάχια motor driver για brushed DC motor
+2 τεμάχια motor driver για brushed DC motor στο πρώτο prototype
 ```
 
 Budget επιλογή:
 
 ```text
-BTS7960 / IBT-2 driver, ένας ανά μοτέρ
+BTS7960 / IBT-2 driver, ένας ανά πλευρά
+Link: https://grobotronics.com/high-power-dc-motor-driver-dual-bts7960-half-bridge-43a.html
 ```
 
-Προτιμώμενη αγορά μετά τη συναρμολόγηση της βάσης:
+Στο πρώτο prototype κάθε BTS7960 οδηγεί τα δύο μοτέρ της ίδιας πλευράς
+παράλληλα:
 
 ```text
-Cytron motor driver candidate:
-https://www.amazon.de/-/en/gp/product/B0GV4LQ1VP/ref=ox_sc_act_title_1?smid=A2PMBAYX6G8IJ&th=1
+Left BTS7960  -> left front motor + left rear motor
+Right BTS7960 -> right front motor + right rear motor
 ```
+
+Αν δούμε θερμοκρασίες, υπερβολικό ρεύμα, άνισο τράβηγμα ή κακή απόκριση στα
+encoders, προσθέτουμε άλλα 2 BTS7960 ώστε να πάμε σε ένα driver ανά μοτέρ.
+
+Prototype drive cost snapshot, 2026-06-21:
+
+| Qty | Είδος | Link | Τιμή μονάδας | Σύνολο |
+|---:|---|---|---:|---:|
+| 4 | Metal DC Geared Motor w/Encoder - 12V 122RPM 38Kg.cm | https://grobotronics.com/metal-dc-geared-motor-w-encoder-12v-122rpm-38kg.cm.html | 36,00 € | 144,00 € |
+| 2 | High-Power DC Motor Driver Dual BTS7960 Half-bridge 43A | https://grobotronics.com/high-power-dc-motor-driver-dual-bts7960-half-bridge-43a.html | 15,90 € | 31,80 € |
+| 1 | Arduino Mega 2560 Rev3 | https://grobotronics.com/arduino-mega-2560-rev3.html | 39,00 € | 39,00 € |
+|  | **Subtotal κίνησης χωρίς τροχούς/μεταφορικά** |  |  | **214,80 €** |
+
+Το Arduino Mega μπαίνει ως ξεχωριστό motion MCU για encoders, PID ταχύτητας,
+acceleration ramps και watchdog. Teensy/ESP32 παραμένουν καλύτερες/εναλλακτικές
+επιλογές, αλλά το Mega είναι απλό και διαθέσιμο για πρώτο bring-up.
 
 Να αγοραστεί αφού:
 
 1. κουμπώσει η ξύλινη βάση,
-2. τοποθετηθούν motor pods / τροχοί / casters,
+2. τοποθετηθούν motor pods / τροχοί,
 3. ξέρουμε το πραγματικό ρεύμα των drive motors,
 4. επιβεβαιώσουμε ότι ο driver καλύπτει το stall/peak current των μοτέρ.
 
-Αν τελικά πάρουμε Cytron drivers, κρατάμε πάλι έναν driver ανά drive motor.
-Ο collector μπορεί να χρησιμοποιήσει μικρότερο H-bridge ή τρίτο αντίστοιχο
-driver αν θέλουμε κοινό hardware.
+Για production-like έκδοση, αντικαθιστούμε τα BTS7960 με 2 ποιοτικούς
+dual-channel DC motor drivers ή 4 ποιοτικούς single-channel drivers με
+τεκμηριωμένο continuous current, προστασίες και ιδανικά current sensing.
+Ο collector μπορεί να χρησιμοποιήσει μικρότερο H-bridge ή άλλο BTS7960 αν
+θέλουμε κοινό hardware.
 
 Χαρακτηριστικά:
 
@@ -294,10 +296,14 @@ driver αν θέλουμε κοινό hardware.
 
 | Qty | Είδος | Σημειώσεις |
 |---:|---|---|
-| 1 | Emergency stop switch | Να κόβει τροφοδοσία στα μοτέρ |
+| 1 | Emergency stop switch | Normally-closed, latching mushroom, να κόβει φυσικά την τροφοδοσία στα μοτέρ |
 | 1 | Fuse holder | Για την κύρια γραμμή μπαταρίας |
-| 2-4 | Ασφάλειες αυτοκινήτου | Τιμή ανάλογα με τα μοτέρ |
+| 2-4 | Ασφάλειες αυτοκινήτου | Main motor fuse 20A αρχικά, electronics fuse 3A-5A, accessory fuse αν χρειαστεί |
 | 1 | Κεντρικός διακόπτης | Battery on/off |
+| 1 | Start/arm push button | Logic input προς Arduino Mega, δεν αντικαθιστά το E-stop |
+| 1 | MPU6050 IMU module | 3-axis gyroscope + 3-axis accelerometer, I2C, Arduino/ROS support, για odometry diagnostics |
+| 1 | Power distribution block / terminal blocks | Διανομή +12V/GND προς BTS7960 χωρίς να περνάει ρεύμα από perfboard |
+| 1 | Motor-power relay/contactor, optional | Μόνο αν δεν περνάμε το motor current απευθείας από το E-stop/main switch |
 | 1 set | Καλώδια σιλικόνης ή automotive | Για ρεύμα μοτέρ/μπαταρίας |
 | 1 set | Dupont/JST/terminal connectors | Για logic και sensors |
 | 1 set | Heat shrink tubing | Μόνωση συνδέσεων |
@@ -433,56 +439,54 @@ Accessory 12V fuse: 5A-10A, αν μπει buck-boost/accessory rail
 
 ## 6. Υπολογιστής / On-Board Compute
 
-Candidate για development και πιθανό on-board computer:
+**Απόφαση: Raspberry Pi 5 (16GB) ως on-board computer** — αντικαθιστά το παλιό
+candidate Lenovo i5 mini-PC. Πλήρες σκεπτικό και κόστος στο
+[`hardware-bom-el.md`](hardware-bom-el.md).
+
+Σύνοψη επιλεγμένου compute:
 
 ```text
-Lenovo ThinkCentre M710q Mini PC
-Intel Core i5-7400T, 4 cores, έως 3.6 GHz
-16 GB DDR4 RAM dual channel
-256 GB NVMe SSD
-Intel HD Graphics / DirectX 12
-HDMI + DisplayPort
-4x USB 3.0 + 2x USB 2.0
-Gigabit Ethernet
-Wi-Fi μέσω μικρού USB adapter
-Windows 11 Pro 64-bit activated
-Case: 18 x 18 x 3.5 cm
-External PSU: περίπου 90 W
+Raspberry Pi 5, 16GB LPDDR4X
+Broadcom BCM2712, quad-core Cortex-A76 @ 2.4 GHz
+M.2 NVMe HAT + επίσημος Raspberry Pi SSD 256GB (boot από NVMe, ΟΧΙ microSD)
+Active cooler (υποχρεωτικός σε αυτό το φορτίο)
+Τροφοδοσία: 5V/5A — από την μπαταρία μέσω 12V->5V buck converter 5A+
 ```
 
-Χρήση στο project:
+Γιατί Pi 5 αντί για i5 mini-PC (το ρομπότ είναι μπαταριοκίνητο/κινούμενο):
 
-| Ρόλος | Απόφαση |
-|---|---|
-| Bench development | Πολύ καλό |
-| Webots/OpenSCAD/general CAD support | Καλό για basic χρήση |
-| Python/OpenCV/DepthAI host | Καλό candidate |
-| On-board robot computer | Πιθανό, μετά από δοκιμή κατανάλωσης/στήριξης |
-| Τελικό OS για robot | Προτίμηση Ubuntu Linux ή dual boot Windows + Ubuntu |
+| Κριτήριο | Pi 5 16GB | i5 mini-PC | Νικητής |
+|---|---|---|---|
+| Κατανάλωση | ~5-10W | ~25-45W | **Pi** (3-5x λιγότερο → μικρότερη μπαταρία/μεγαλύτερη αυτονομία) |
+| Τροφοδοσία | 5V, απευθείας από buck | 12-19V, θέλει ειδικό DC-DC | **Pi** |
+| Μέγεθος/βάρος | μικροσκοπικό | μεγαλύτερο | **Pi** |
+| Σύνδεση MCU (Mega/Nano) | USB serial | USB serial | ισοπαλία (USB CDC) |
+| Θερμότητα σε κλειστό σασί | εύκολη ψύξη | πιο δύσκολη | **Pi** |
+| Compute headroom | αρκετό (+OAK-D offload) | περισσότερο | i5 |
+| Dev: Gazebo onboard | όχι (δεν χρειάζεται onboard) | ναι | i5 (μόνο για bench) |
+
+Το μόνο πλεονέκτημα του i5 (compute headroom) ακυρώνεται επειδή το βαρύ vision
+(stereo depth + ανίχνευση) γίνεται offload στην **OAK-D** (Myriad X VPU). Δες
+`docs/telemetry-architecture-el.md` και την ανάλυση compute budget.
 
 Σημαντική σημείωση τροφοδοσίας:
 
 ```text
-Το M710q δεν τροφοδοτείται απευθείας από 12V μπαταρία χωρίς κατάλληλο DC-DC.
-Πριν μπει πάνω στο robot, πρέπει να επιβεβαιωθεί η είσοδος του original PSU
-και να διαλεχθεί ασφαλής τρόπος τροφοδοσίας.
+Το Pi 5 θέλει σταθερά 5V/5A. Πάνω στο robot τροφοδοτείται από την LiFePO4
+μέσω του 12V->5V buck converter 5A+ (ήδη στη λίστα). Καλό 5V/5A rail είναι
+ΑΠΑΡΑΙΤΗΤΟ για σταθερό NVMe — υποτροφοδοσία προκαλεί throttle/αστάθεια δίσκου.
+Το επίσημο 27W PSU του kit είναι μόνο για bench/development.
 ```
 
-Προτιμώμενες επιλογές τροφοδοσίας για on-board χρήση:
+Τι να επιβεβαιώσουμε πριν την τοποθέτηση:
 
-1. DC-DC boost/buck-boost από LiFePO4 battery προς την τάση που χρειάζεται το
-   Lenovo, με αρκετό wattage και σωστό βύσμα.
-2. Ξεχωριστή power bank/USB-C PD λύση μόνο αν υπάρχει αξιόπιστος adapter.
-3. Inverter 230V μόνο για πάγκο/δοκιμές, όχι ως πρώτη on-board επιλογή λόγω
-   απωλειών και περιττής πολυπλοκότητας.
-
-Τι να επιβεβαιώσουμε πριν την αγορά/τοποθέτηση:
-
-- πραγματική τάση/ρεύμα του Lenovo power input,
-- μέγιστη κατανάλωση με camera + USB devices,
-- αν χωράει στο electronics bay χωρίς να εμποδίζει την αφαίρεση μπαταρίας,
-- αν αντέχει κραδασμούς ή χρειάζεται rubber isolation,
-- αν το Wi-Fi USB adapter είναι αρκετό ή θέλουμε καλύτερο antenna/USB extension.
+- ότι ο buck converter δίνει σταθερά 5V υπό φορτίο (Pi + OAK-D + LiDAR USB),
+- ότι το metal case του kit αφήνει πρόσβαση στις **4 θύρες USB** (OAK-D, LiDAR,
+  Mega, Nano), αλλιώς βγάζουμε τη board από το case για το on-robot mount,
+  (ο IMU MPU6050 είναι στο I2C του Mega, όχι στα GPIO του Pi — δες hardware-bom-el.md §5),
+- ότι ο NVMe SSD είναι Pi-5-compatible (δες incompatibility list στο BOM),
+- αν αντέχει κραδασμούς ή χρειάζεται rubber isolation/standoffs,
+- επαρκές Wi-Fi για το telemetry link (αλλιώς external antenna/USB).
 
 ## 7. Βίδες, Ροδέλες, Inserts
 
@@ -490,7 +494,7 @@ External PSU: περίπου 90 W
 
 | Qty | Είδος | Χρήση |
 |---:|---|---|
-| 30-50 | M5 bolts, διάφορα μήκη | motor pods, caster, collector, handle |
+| 30-50 | M5 bolts, διάφορα μήκη | motor pods (x4), collector, handle |
 | 30-50 | M5 washers | κάτω από όλες τις κεφαλές |
 | 20-30 | M5 nyloc nuts ή T-nuts | αφαιρούμενες συνδέσεις |
 | 20-30 | M4 bolts + washers | electronics, μικρά brackets |
@@ -522,19 +526,21 @@ External PSU: περίπου 90 W
 
 ```text
 1 φύλλο κόντρα πλακέ θαλάσσης σημύδα 12-15 mm, 70x100 cm, κομμένο σύμφωνα με λίστα
-2 DFRobot GB37Y3530-12V-83R DC gear motors 12V, 83RPM, 45kg.cm, encoder, 6mm D-shaft: https://www.dfrobot.com/product-633.html
-2 motor drivers για brushed DC motors, π.χ. BTS7960/IBT-2
-2 driven wheels 150-180mm rubber/PU ή hubs για τους άξονες
-2 swivel casters 75-85mm με πλάκα
+4 Metal DC Geared Motor w/Encoder - 12V 122RPM 38Kg.cm: https://grobotronics.com/metal-dc-geared-motor-w-encoder-12v-122rpm-38kg.cm.html
+2 BTS7960/IBT-2 motor drivers για brushed DC motors, ένας ανά πλευρά στο πρώτο prototype: https://grobotronics.com/high-power-dc-motor-driver-dual-bts7960-half-bridge-43a.html
+προαιρετικά +2 BTS7960 αν χρειαστεί ένα driver ανά μοτέρ
+1 Arduino Mega 2560 Rev3 για motion MCU: https://grobotronics.com/arduino-mega-2560-rev3.html
+4 driven wheels 180mm rubber/PU ή hubs για τους άξονες
 1 DC gear motor 12V 100-300RPM για collector intake roller
 1 wide rubber/PU/TPU roller/cylinder 240-300mm x 60-90mm για collector
 1 μικρός H-bridge driver για collector ή τρίτος αντίστοιχος driver
-2 Cytron motor drivers ή ισοδύναμοι brushed DC drivers, αγορά μετά το μηχανικό fit της βάσης
+production-like εναλλακτική: 2 dual-channel quality drivers ή 4 single-channel quality drivers
 1 ECO-WORTHY 12V 20Ah LiFePO4 battery με BMS ή ισοδύναμη 12.8V 20Ah >=20A discharge
 1 LiFePO4 charger 14.6V 5A
 1 12V DC-DC buck-boost regulator για σταθερό accessory 12V rail, αν χρειαστεί
 1 12V -> 5V buck converter 5A+ για SBC/camera/sensors
-1 Lenovo ThinkCentre M710q i5-7400T / 16GB / 256GB candidate για bench/on-board compute
+1 Raspberry Pi 5 16GB kit (M.2 NVMe HAT + active cooler + 27W PSU + metal case) ως on-board compute
+1 επίσημος Raspberry Pi SSD 256GB (NVMe, Pi-5-compatible) — boot drive, ΟΧΙ microSD
 1 emergency stop switch
 1 fuse holder + ασφάλειες
 κόκκινο/μαύρο καλώδιο 2.5mm² για μπαταρία/motors

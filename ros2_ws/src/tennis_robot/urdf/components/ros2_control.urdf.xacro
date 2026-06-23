@@ -7,9 +7,10 @@
   move from Gazebo to the real robot: controllers, command topics and the whole
   behavior stack above stay identical.
 
-  Joints exposed:
-    left_wheel_joint / right_wheel_joint -> velocity command (diff drive)
-    lift_wheel_joint                     -> velocity command (intake roller)
+  Joints exposed (4WD skid-steer):
+    rear_left_wheel_joint  / front_left_wheel_joint  -> velocity command (left side)
+    rear_right_wheel_joint / front_right_wheel_joint -> velocity command (right side)
+    lift_wheel_joint                                 -> velocity command (intake roller)
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <xacro:macro name="tennis_robot_ros2_control"
@@ -17,7 +18,7 @@
 
     <ros2_control name="TennisRobotSystem" type="system">
 
-      <!-- ── Hardware backend (the only sim/real difference) ─────────────── -->
+      <!-- Hardware backend (the only sim/real difference) -->
       <xacro:if value="${sim_mode}">
         <hardware>
           <plugin>gz_ros2_control/GazeboSimSystem</plugin>
@@ -27,16 +28,20 @@
         <hardware>
           <!-- TODO(real-robot): replace with the motor-driver hardware interface,
                e.g. a custom tennis_robot_hardware/DiffDriveHardware plugin that
-               talks to the wheel controllers over CAN/serial. Same joint names. -->
+               talks to the BTS7960 drivers over serial/PWM. Same joint names.
+               Real wiring: the two motors on each side are wired in PARALLEL to a
+               single BTS7960 driver, with ONE encoder per side. So the front/rear
+               joints on a side share one velocity command and one feedback source
+               (front mirrors rear). Map both side joints to the same side channel. -->
           <plugin>tennis_robot_hardware/TennisRobotSystem</plugin>
-          <param name="left_wheel_name">left_wheel_joint</param>
-          <param name="right_wheel_name">right_wheel_joint</param>
+          <param name="left_wheel_names">rear_left_wheel_joint,front_left_wheel_joint</param>
+          <param name="right_wheel_names">rear_right_wheel_joint,front_right_wheel_joint</param>
           <param name="lift_wheel_name">lift_wheel_joint</param>
         </hardware>
       </xacro:unless>
 
-      <!-- ── Drive joints ────────────────────────────────────────────────── -->
-      <joint name="left_wheel_joint">
+      <!-- Drive joints (4WD skid-steer: 2 per side) -->
+      <joint name="rear_left_wheel_joint">
         <command_interface name="velocity">
           <param name="min">-${wheel_max_vel}</param>
           <param name="max">${wheel_max_vel}</param>
@@ -45,7 +50,7 @@
         <state_interface name="velocity"/>
       </joint>
 
-      <joint name="right_wheel_joint">
+      <joint name="front_left_wheel_joint">
         <command_interface name="velocity">
           <param name="min">-${wheel_max_vel}</param>
           <param name="max">${wheel_max_vel}</param>
@@ -54,7 +59,25 @@
         <state_interface name="velocity"/>
       </joint>
 
-      <!-- ── Intake roller ───────────────────────────────────────────────── -->
+      <joint name="rear_right_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-${wheel_max_vel}</param>
+          <param name="max">${wheel_max_vel}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="front_right_wheel_joint">
+        <command_interface name="velocity">
+          <param name="min">-${wheel_max_vel}</param>
+          <param name="max">${wheel_max_vel}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <!-- Intake roller -->
       <joint name="lift_wheel_joint">
         <command_interface name="velocity">
           <param name="min">-${lift_max_vel}</param>
@@ -64,25 +87,9 @@
         <state_interface name="velocity"/>
       </joint>
 
-      <!-- ── Passive caster joints: NOT in ros2_control ──────────────────────
-           Previously listed here as state-only so joint_state_broadcaster could
-           publish their positions for RViz TF. However, gz_ros2_control owns any
-           joint it has an interface for, and may zero out state-only joints during
-           initialization or write cycles. Locked caster swivel/wheel joints create
-           ~12 N·m of scrub resistance (mu1=0.8 × caster weight × moment arm) that
-           exceeds the ~7.7 N·m drive torque → 82% rotation slip observed.
-           Fix: remove casters from ros2_control entirely; gz-physics handles them
-           freely via URDF <dynamics damping="0.02" friction="0.001"/> on the swivel.
-           Cost: /joint_states won't include casters → RViz "No transform from
-           front_*_caster_*". Navigation is unaffected (caster TF not used by
-           slam_toolbox or nav2). -->
-
     </ros2_control>
 
-    <!-- ── gz_ros2_control system plugin (sim only) ─────────────────────────
-         Hosts the controller_manager inside the Gazebo process and loads the
-         controllers from controllers.yaml. On the real robot the
-         controller_manager is launched as a normal ROS 2 node instead. -->
+    <!-- gz_ros2_control system plugin (sim only) -->
     <xacro:if value="${sim_mode}">
       <gazebo>
         <plugin filename="gz_ros2_control-system"

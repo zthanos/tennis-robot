@@ -83,10 +83,10 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
     """Move wheel contact tuning into valid SDF collision surface elements."""
     root = ET.fromstring(sdf_text)
     surfaces = {
-        "left_wheel_link": ("5.0", "5.0", "0.0", "0.0"),
-        "right_wheel_link": ("5.0", "5.0", "0.0", "0.0"),
-        "front_left_caster_wheel_link": ("0.01", "0.01", "0.0", "0.0"),
-        "front_right_caster_wheel_link": ("0.01", "0.01", "0.0", "0.0"),
+        "rear_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
+        "rear_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
+        "front_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
+        "front_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "lift_wheel_link": ("1.5", "1.5", "0.0", "0.0"),
     }
     for link in root.findall(".//link"):

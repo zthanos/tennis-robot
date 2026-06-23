@@ -69,8 +69,8 @@ COURT_BOUNDARY_FILE = RUNTIME_DIR / "court_boundary.json"
 COURT_SURVEY_LIVE_FILE = RUNTIME_DIR / "court_survey_live.json"
 
 NET_STANDOFF_M = float(os.getenv("COURT_SURVEY_NET_STANDOFF_M", "2.00"))
-FIND_NET_SPEED = float(os.getenv("COURT_SURVEY_FIND_NET_SPEED_M_S", "0.30"))
-DWELL_S = float(os.getenv("COURT_SURVEY_VANTAGE_DWELL_S", "4.0"))
+FIND_NET_SPEED = float(os.getenv("COURT_SURVEY_FIND_NET_SPEED_M_S", "0.45"))
+DWELL_S = float(os.getenv("COURT_SURVEY_VANTAGE_DWELL_S", "2.0"))
 GOAL_TIMEOUT_S = float(os.getenv("COURT_SURVEY_GOAL_TIMEOUT_S", "90.0"))
 FIND_NET_TIMEOUT_S = float(os.getenv("COURT_SURVEY_FIND_NET_TIMEOUT_S", "60.0"))
 NET_MIN_CONF = float(os.getenv("COURT_SURVEY_LANDMARK_MIN_CONF", "0.25"))
@@ -85,8 +85,8 @@ FRONT_HALF_DEG = 20.0
 # Deterministic drive-to-waypoint (closed-loop on SLAM pose; Nav2 too flaky here).
 WAYPOINT_TOL_M = float(os.getenv("COURT_SURVEY_WAYPOINT_TOL_M", "0.6"))
 WAYPOINT_TIMEOUT_S = float(os.getenv("COURT_SURVEY_WAYPOINT_TIMEOUT_S", "45.0"))
-DRIVE_SPEED = float(os.getenv("COURT_SURVEY_DRIVE_SPEED_M_S", "0.4"))
-TURN_SPEED = float(os.getenv("COURT_SURVEY_TURN_SPEED_RAD_S", "0.5"))
+DRIVE_SPEED = float(os.getenv("COURT_SURVEY_DRIVE_SPEED_M_S", "0.85"))
+TURN_SPEED = float(os.getenv("COURT_SURVEY_TURN_SPEED_RAD_S", "1.1"))
 OBSTACLE_STOP_M = float(os.getenv("COURT_SURVEY_OBSTACLE_STOP_M", "0.5"))
 # Stop this far from a fence when approaching it head-on. Accounts for the robot
 # footprint (LiDAR ~0.4 m behind the front) so we map the fence densely WITHOUT
@@ -118,11 +118,15 @@ class CourtSurveyV2Node(Node):
         super().__init__("court_survey_mission_node")
         self._state = V2State.INIT
         self._entered_at: float | None = None
+        self._survey_started_at: float | None = None
+        self._phase_started_at: float | None = None
+        self._phase_durations_s: dict[str, float] = {}
         self._failure_reason: str | None = None
 
         self._robot_x = 0.0
         self._robot_y = 0.0
         self._robot_yaw = 0.0
+        self._pose_valid = False
         self._scan_frame_id = ""
         self._front_range_m = math.inf
         self._scan_angle_min = -math.pi
@@ -137,6 +141,8 @@ class CourtSurveyV2Node(Node):
         # court frame / coverage
         self._locked_net: dict | None = None
         self._vantages: list[dict] = []
+        self._survey_start_pose: dict | None = None
+        self._home: dict | None = None
         self._vantage_i = 0
         self._goal_active = False
         self._goal_started_at = 0.0
@@ -206,6 +212,7 @@ class CourtSurveyV2Node(Node):
             self._robot_x = float(t.transform.translation.x)
             self._robot_y = float(t.transform.translation.y)
             self._robot_yaw = _yaw_from_quaternion(t.transform.rotation)
+            self._pose_valid = True
         except (LookupException, ExtrapolationException, ConnectivityException):
             pass
 
@@ -255,12 +262,15 @@ class CourtSurveyV2Node(Node):
             "result": ("OK" if self._state == V2State.DONE
                        else "FAILED" if self._state == V2State.FAILED else None),
             "failure_reason": self._failure_reason,
+            "coverage": {"i": self._vantage_i, "n": len(self._vantages)},
+            "timing": self._timing_snapshot(),
             "error": self._map_error, "sensor_frame": self._scan_frame_id or None,
             "front_range_m": None if math.isinf(self._front_range_m) else round(self._front_range_m, 3),
             "robot": {"x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
                       "yaw_rad": round(self._robot_yaw, 4)},
             "map_points": self._map_points(), "map_point_count": len(self._map_voxels),
-            "net": self._locked_net, "navigation_points": [],
+            "net": self._locked_net, "survey_start_pose": self._survey_start_pose,
+            "navigation_points": [],
         }
         try:
             tmp = COURT_SURVEY_LIVE_FILE.with_suffix(".json.tmp")
@@ -274,9 +284,30 @@ class CourtSurveyV2Node(Node):
         return self.get_clock().now().nanoseconds / 1e9
 
     def _enter(self, state: V2State) -> None:
+        now = self._now()
+        if self._phase_started_at is not None:
+            elapsed = max(0.0, now - self._phase_started_at)
+            key = self._state.value
+            self._phase_durations_s[key] = self._phase_durations_s.get(key, 0.0) + elapsed
         self.get_logger().info(f"survey: {self._state.value} -> {state.value}")
         self._state = state
-        self._entered_at = self._now()
+        self._entered_at = now
+        self._phase_started_at = now
+
+    def _timing_snapshot(self) -> dict:
+        now = self._now()
+        durations = dict(self._phase_durations_s)
+        current_phase_s = 0.0
+        if self._phase_started_at is not None:
+            current_phase_s = max(0.0, now - self._phase_started_at)
+            durations[self._state.value] = durations.get(self._state.value, 0.0) + current_phase_s
+        elapsed_s = 0.0 if self._survey_started_at is None else max(0.0, now - self._survey_started_at)
+        return {
+            "elapsed_s": round(elapsed_s, 1),
+            "current_phase": self._state.value,
+            "current_phase_s": round(current_phase_s, 1),
+            "phase_durations_s": {k: round(v, 1) for k, v in durations.items()},
+        }
 
     def _timed_out(self, limit_s: float) -> bool:
         if self._entered_at is None:
@@ -297,8 +328,10 @@ class CourtSurveyV2Node(Node):
         self._failure_reason = reason
         self.get_logger().error(f"survey FAILED: {reason}")
         self._stop()
-        self._write_result(status="FAILED")
         self._enter(V2State.FAILED)
+        self._write_result(status="FAILED")
+        self._write_live()
+        self._final_live_written = True
 
     # ── net locking → court frame ────────────────────────────────────────────
     def _try_lock_net(self) -> bool:
@@ -358,7 +391,10 @@ class CourtSurveyV2Node(Node):
         yaw_err = ((desired - self._robot_yaw + math.pi) % (2 * math.pi)) - math.pi
         # Reached a fence ahead (dense mapping) while still far from the waypoint:
         # the waypoint is set beyond the fence on purpose; stop at the fence.
-        if dist > 2.0 and self._front_range_m < FENCE_APPROACH_M and abs(yaw_err) < math.radians(30):
+        # Only for stop_short waypoints (deep fence points) -- NOT for gap-cross
+        # points, or the LiDAR-visible net would be mistaken for the fence and
+        # the robot would never cross to the far half.
+        if target.get("stop_short", True) and dist > 2.0 and self._front_range_m < FENCE_APPROACH_M and abs(yaw_err) < math.radians(30):
             self._stop()
             return True
         tw = Twist()
@@ -390,7 +426,6 @@ class CourtSurveyV2Node(Node):
         self._last_model = model
         if not self._measured:
             self._measured = True
-            self._write_result(status="OK", model=model)  # publish the measurement now
             self.get_logger().info(
                 f"survey measurable (model locked): doubles={model['court']['is_doubles']} "
                 f"dist={model['distances_to_fence_m']} obstacles={len(model['obstacles'])}; "
@@ -403,6 +438,7 @@ class CourtSurveyV2Node(Node):
                 "failure_reason": self._failure_reason, "frame": "map",
                 "net": self._locked_net, "occupancy": {"point_count": len(self._map_voxels)},
             }
+        model["timing"] = self._timing_snapshot()
         model["surveyed_at"] = time.time()
         try:
             tmp = COURT_BOUNDARY_FILE.with_suffix(".json.tmp")
@@ -459,6 +495,7 @@ class CourtSurveyV2Node(Node):
             "status": "saved" if files else "pending",
             "basename": base,
             "files": files,
+            "survey_start_pose": self._survey_start_pose,
             # the court frame ties the Court Knowledge Model measurements to the
             # saved occupancy grid -> Nav2 + collection share one coordinate frame.
             "court_frame": {
@@ -473,11 +510,18 @@ class CourtSurveyV2Node(Node):
         model = self._last_model
         if model is not None:
             model["map_artifact"] = self._build_map_artifact(map_error)
+            model["completed"] = True
+            model["survey_start_pose"] = self._survey_start_pose
+            model["notice"] = "Court survey complete; boundaries saved, robot returned to survey start pose."
             self._write_result(status="OK", model=model)
             self.get_logger().info(
-                f"survey OK (map complete): dist={model['distances_to_fence_m']} "
-                f"obstacles={len(model['obstacles'])} map={model['map_artifact'].get('status')}")
+                "===== SURVEY COMPLETE ===== "
+                f"dist={model['distances_to_fence_m']} "
+                f"obstacles={len(model['obstacles'])} map={model['map_artifact'].get('status')} "
+                "(robot returned to start)")
         self._enter(V2State.DONE)
+        self._write_live()
+        self._final_live_written = True
 
     # ── main step ────────────────────────────────────────────────────────────
     def _step(self) -> None:
@@ -491,6 +535,17 @@ class CourtSurveyV2Node(Node):
         self._write_live()
 
         if self._state == V2State.INIT:
+            if not self._pose_valid:
+                self._stop()
+                return
+            if self._survey_start_pose is None:
+                self._survey_started_at = self._now()
+                self._survey_start_pose = {
+                    "x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
+                    "yaw_rad": round(self._robot_yaw, 4),
+                    "label": "survey_start_pose", "role": "return_anchor",
+                    "court_x": None, "court_y": None, "stop_short": False, "is_home": True,
+                }
             self._enter(V2State.FIND_NET)
             return
 
@@ -501,6 +556,15 @@ class CourtSurveyV2Node(Node):
             if self._try_lock_net():
                 self._stop()
                 self._vantages = vantage_points(_build_frame(self._locked_net), self._spec)
+                # Return-home: after the coverage/return path, drive back to where
+                # the survey began, not merely to the net-lock standoff pose.
+                self._home = self._survey_start_pose or {
+                    "x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
+                    "yaw_rad": round(self._robot_yaw, 4),
+                    "label": "survey_start_pose", "role": "return_anchor",
+                    "court_x": None, "court_y": None, "stop_short": False, "is_home": True,
+                }
+                self._vantages.append(self._home)
                 self._vantage_i = 0
                 self._goal_active = False
                 self._enter(V2State.COVERAGE)

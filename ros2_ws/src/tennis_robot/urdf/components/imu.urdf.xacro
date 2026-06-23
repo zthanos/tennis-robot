@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- MPU6050-class 6-DoF IMU: 3-axis gyro + 3-axis accelerometer, I2C on the
+       real robot. In sim it feeds angular velocity + linear acceleration to an
+       odometry filter (robot_localization EKF), correcting the skid-steer yaw
+       drift that wheel encoders cannot observe. Mount rigidly, near the centre
+       of rotation, axes aligned with base_link (x fwd, y left, z up). -->
+  <xacro:macro name="mpu6050_imu" params="parent link_name xyz rpy update_rate topic">
+    <link name="${link_name}">
+      <inertial>
+        <mass value="0.005"/>
+        <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
+      </inertial>
+      <visual name="imu_vis">
+        <geometry><box size="0.021 0.016 0.003"/></geometry>
+        <material name="sensor_black"/>
+      </visual>
+    </link>
+    <joint name="${link_name}_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${link_name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+    <gazebo reference="${link_name}">
+      <sensor name="imu_sensor" type="imu">
+        <always_on>true</always_on>
+        <update_rate>${update_rate}</update_rate>
+        <topic>${topic}</topic>
+        <gz_frame_id>${link_name}</gz_frame_id>
+        <imu>
+          <angular_velocity>
+            <x><noise type="gaussian"><mean>0.0</mean><stddev>0.0009</stddev><bias_mean>0.00008</bias_mean><bias_stddev>0.0000008</bias_stddev></noise></x>
+            <y><noise type="gaussian"><mean>0.0</mean><stddev>0.0009</stddev><bias_mean>0.00008</bias_mean><bias_stddev>0.0000008</bias_stddev></noise></y>
+            <z><noise type="gaussian"><mean>0.0</mean><stddev>0.0009</stddev><bias_mean>0.00008</bias_mean><bias_stddev>0.0000008</bias_stddev></noise></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev><bias_mean>0.05</bias_mean><bias_stddev>0.005</bias_stddev></noise></x>
+            <y><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev><bias_mean>0.05</bias_mean><bias_stddev>0.005</bias_stddev></noise></y>
+            <z><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev><bias_mean>0.05</bias_mean><bias_stddev>0.005</bias_stddev></noise></z>
+          </linear_acceleration>
+        </imu>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

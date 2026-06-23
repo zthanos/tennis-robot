@@ -14,6 +14,11 @@ xs = [v["court_x"] for v in vps]
 assert min(xs) < 0 and max(xs) > 0, "covers both halves"
 gaps = [v for v in vps if abs(v["court_y"]) > 1]
 assert gaps and all(spec.post_half_span_doubles_m < abs(v["court_y"]) for v in gaps), "gap beyond post"
+stop_short = [v for v in vps if v.get("stop_short")]
+assert len(stop_short) == 2, stop_short
+assert all(abs(v["court_y"]) < 0.01 for v in stop_short), stop_short
+assert all(abs(v["court_x"]) > spec.half_length_m for v in stop_short), stop_short
+assert all(not v.get("stop_short") for v in gaps), "gap crossings must not stop on the net"
 # return pass crosses the net through BOTH gaps (positive and negative y')
 assert any(v["court_y"] > 1 for v in gaps) and any(v["court_y"] < -1 for v in gaps), "return uses other gap"
 for v in vps:  # map round-trips back to court coords
