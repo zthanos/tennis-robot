@@ -14,6 +14,7 @@
     text: "#eef4f8", muted: "rgba(238,244,248,0.6)", grid: "rgba(255,255,255,0.05)",
   };
   const f2 = (v, s = "") => (Number.isFinite(v) ? v.toFixed(2) + s : "—");
+  const fs = (v) => (Number.isFinite(v) ? (v < 90 ? `${v.toFixed(1)}s` : `${Math.floor(v / 60)}m ${Math.floor(v % 60)}s`) : "—");
 
   // court-frame (x' length, y' width) -> map, via the net frame in the v2 model
   function makeToMap(net) {
@@ -34,6 +35,54 @@
     return { minx, maxx, miny, maxy };
   }
 
+  function surveyLifecycle(cb, live) {
+    const boundaryNewer = Number.isFinite(cb.surveyed_at) && Number.isFinite(live.updated_at)
+      ? cb.surveyed_at >= live.updated_at
+      : cb.completed === true && !live.updated_at;
+    const running = !!live.running;
+    const failed = live.result === "FAILED" || cb.status === "FAILED";
+    const completed = live.result === "OK"
+      || (cb.completed === true && (!running || boundaryNewer))
+      || (cb.status === "OK" && cb.map_artifact && (!running || boundaryNewer));
+    const cov = live.coverage || {};
+    const n = Number.isFinite(cov.n) ? cov.n : 0;
+    const i = Number.isFinite(cov.i) ? cov.i : 0;
+    if (failed) {
+      return {
+        phase: "failed",
+        failedStep: Math.min(3, Math.max(0, live.state === "saving_map" ? 2 : live.state === "coverage" ? 1 : 0)),
+        progress: Math.max(8, n ? Math.min(95, (i / n) * 100) : 100),
+      };
+    }
+    if (completed) return { phase: "completed", progress: 100 };
+    if (running && live.state === "saving_map") return { phase: "saving", progress: 88 };
+    if (running && live.state === "coverage") return { phase: "running", progress: n ? Math.max(28, Math.min(82, 28 + (i / n) * 54)) : 32 };
+    if (running || live.state || live.survey_start_pose || live.net) return { phase: "started", progress: 14 };
+    return { phase: "idle", progress: 0 };
+  }
+
+  function setLifecycle(cb, live) {
+    const life = surveyLifecycle(cb || {}, live || {});
+    const order = ["started", "running", "saving", "completed"];
+    const phaseRank = { idle: -1, failed: -1, started: 0, running: 1, saving: 2, completed: 3 };
+    const rank = phaseRank[life.phase] ?? -1;
+    order.forEach((step, idx) => {
+      const el = document.querySelector(`#surveyLifecycle .survey-step[data-step="${step}"]`);
+      if (!el) return;
+      el.classList.toggle("is-active", life.phase === step);
+      el.classList.toggle("is-complete", life.phase !== "failed" && idx < rank);
+      el.classList.toggle("is-failed", life.phase === "failed" && idx === life.failedStep);
+    });
+    const bar = document.querySelector("#surveyLifecycleProgress");
+    const fill = bar ? bar.querySelector("span") : null;
+    if (bar && fill) {
+      bar.classList.toggle("is-complete", life.phase === "completed");
+      bar.classList.toggle("is-failed", life.phase === "failed");
+      fill.style.width = `${Math.max(0, Math.min(100, life.progress))}%`;
+    }
+    return life;
+  }
+
   function render(diagnostics, survey) {
     const canvas = document.getElementById("surveyDiscoveryMap");
     const statusEl = document.getElementById("surveyDiscoveryStatus");
@@ -44,6 +93,7 @@
     const cb = diagnostics.court_boundary || {};
     const live = diagnostics.court_survey_live || {};
     const setStatus = (t, col) => { if (statusEl) { statusEl.textContent = t; statusEl.style.color = col || "var(--muted)"; } };
+    const lifecycle = setLifecycle(cb, live);
 
     // Fail-loud: a running survey that cannot build the map must be visible.
     if (live.running && live.error) {
@@ -69,13 +119,13 @@
     } else if (points.length) {
       bb = bbox(points);
     } else {
-      const failed = cb.status === "FAILED";
+      const failed = live.result === "FAILED" || cb.status === "FAILED";
       ctx.fillStyle = failed ? "#1a0d0d" : "#090d12"; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = failed ? "#ff6b6b" : C.muted; ctx.font = "13px system-ui";
-      ctx.fillText(failed ? ("survey FAILED: " + (cb.failure_reason || "unknown"))
+      ctx.fillText(failed ? ("survey FAILED: " + (live.failure_reason || cb.failure_reason || "unknown"))
         : running ? "measuring… waiting for LiDAR points" : "no court map yet — run Map Court", 24, 36);
-      setStatus(failed ? ("v2 · FAILED · " + (cb.failure_reason || "unknown"))
-        : running ? "measuring… 0 points" : "waiting for points",
+      setStatus(failed ? ("v2 - FAILED - " + (live.failure_reason || cb.failure_reason || "unknown"))
+        : running ? "survey started - waiting for LiDAR points" : "idle - waiting for Map Court",
         failed ? "var(--warn)" : undefined);
       if (metaEl) metaEl.innerHTML = "";
       return;
@@ -207,19 +257,34 @@
 
     // ---- status + meta ----
     const npts = Number.isFinite(live.map_point_count) ? live.map_point_count : points.length;
-    if (cb.status === "FAILED") {
-      setStatus("v2 · FAILED · " + (cb.failure_reason || "unknown"), "var(--warn)");
-    } else if (hasModel) {
-      setStatus(`v2 · OK · net locked · ${npts} pts · ${running ? "live" : "saved"}`, "var(--ok)");
-    } else {
+    const lifecycleText = lifecycle.phase === "completed" ? "completed"
+      : lifecycle.phase === "saving" ? "saving map"
+      : lifecycle.phase === "running" ? "running"
+      : lifecycle.phase === "failed" ? "failed"
+      : lifecycle.phase === "started" ? "started" : "idle";
+    if (live.result === "FAILED" || cb.status === "FAILED") {
+      setStatus("v2 - FAILED - " + (live.failure_reason || cb.failure_reason || "unknown"), "var(--warn)");
+    } else if (lifecycle.phase === "completed" && hasModel) {
+      setStatus(`v2 - completed - ${npts} pts - saved`, "var(--ok)");
+    } else if (running) {
       const cov = live.coverage || {};
       const phase = live.state === "find_net" ? "finding net"
         : live.state === "saving_map" ? "saving map"
-        : (cov.n ? `coverage ${cov.i + 1}/${cov.n}` : "measuring…");
-      setStatus(`${phase} · ${npts} pts`, "var(--muted)");
+        : (cov.n ? `coverage ${Math.min(cov.i + 1, cov.n)}/${cov.n}` : "survey running");
+      setStatus(`${phase} - ${npts} pts`, live.state === "saving_map" ? "var(--ok)" : "var(--accent-2)");
+    } else if (hasModel) {
+      setStatus(`v2 - completed - ${npts} pts - saved`, "var(--ok)");
+    } else {
+      setStatus("idle - waiting for Map Court", "var(--muted)");
     }
 
     if (metaEl) {
+      const timing = live.timing || cb.timing || {};
+      const phaseDurations = timing.phase_durations_s || {};
+      const currentPhase = timing.current_phase || lifecycle.phase;
+      const currentPhaseS = Number.isFinite(timing.current_phase_s)
+        ? timing.current_phase_s
+        : (Number.isFinite(phaseDurations[currentPhase]) ? phaseDurations[currentPhase] : null);
       if (hasModel) {
         const c = cb.court || {}, net = cb.net, D2 = cb.distances_to_fence_m || {};
         const obsRows = (cb.obstacles || []).map((o, i) =>
@@ -227,6 +292,9 @@
           `<td>${o.size_m ? f2(o.size_m.w) + "×" + f2(o.size_m.h) + " m" : "—"}</td>` +
           `<td>${o.point_count != null ? o.point_count : "—"}</td></tr>`).join("");
         metaEl.innerHTML =
+          `<div><span>Survey</span><strong>${lifecycleText}</strong></div>` +
+          `<div><span>Elapsed</span><strong>${fs(timing.elapsed_s)}</strong></div>` +
+          `<div><span>Phase</span><strong>${currentPhase} ${fs(currentPhaseS)}</strong></div>` +
           `<div><span>Court</span><strong>${f2(c.length_m)} × ${f2(c.width_m)} m · ${c.is_doubles ? "doubles" : "singles"}</strong></div>` +
           `<div><span>Net centre (map)</span><strong>${f2(net.center.x_m)}, ${f2(net.center.y_m)} · span ${f2(net.span_m, "m")}</strong></div>` +
           `<div><span>Run-off N/F</span><strong>${f2(D2.near_baseline, "m")} / ${f2(D2.far_baseline, "m")}</strong></div>` +
@@ -235,7 +303,9 @@
           `<div><span>Obstacles</span><strong>${(cb.obstacles || []).length}</strong></div>` +
           (obsRows ? `<table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="color:var(--muted);text-align:left;"><th>ID</th><th>Class</th><th>Size</th><th>Pts</th></tr></thead><tbody>${obsRows}</tbody></table>` : "");
       } else {
-        metaEl.innerHTML = `<div><span>State</span><strong>${running ? "measuring…" : "no court map"}</strong></div>` +
+        metaEl.innerHTML = `<div><span>Survey</span><strong>${lifecycleText}</strong></div>` +
+          `<div><span>Elapsed</span><strong>${fs(timing.elapsed_s)}</strong></div>` +
+          `<div><span>Phase</span><strong>${currentPhase} ${fs(currentPhaseS)}</strong></div>` +
           `<div><span>Points</span><strong>${npts}</strong></div>`;
       }
     }

@@ -85,8 +85,8 @@ FRONT_HALF_DEG = 20.0
 # Deterministic drive-to-waypoint (closed-loop on SLAM pose; Nav2 too flaky here).
 WAYPOINT_TOL_M = float(os.getenv("COURT_SURVEY_WAYPOINT_TOL_M", "0.6"))
 WAYPOINT_TIMEOUT_S = float(os.getenv("COURT_SURVEY_WAYPOINT_TIMEOUT_S", "45.0"))
-DRIVE_SPEED = float(os.getenv("COURT_SURVEY_DRIVE_SPEED_M_S", "0.75"))
-TURN_SPEED = float(os.getenv("COURT_SURVEY_TURN_SPEED_RAD_S", "0.9"))
+DRIVE_SPEED = float(os.getenv("COURT_SURVEY_DRIVE_SPEED_M_S", "0.85"))
+TURN_SPEED = float(os.getenv("COURT_SURVEY_TURN_SPEED_RAD_S", "1.1"))
 OBSTACLE_STOP_M = float(os.getenv("COURT_SURVEY_OBSTACLE_STOP_M", "0.5"))
 # Stop this far from a fence when approaching it head-on. Accounts for the robot
 # footprint (LiDAR ~0.4 m behind the front) so we map the fence densely WITHOUT
@@ -118,6 +118,9 @@ class CourtSurveyV2Node(Node):
         super().__init__("court_survey_mission_node")
         self._state = V2State.INIT
         self._entered_at: float | None = None
+        self._survey_started_at: float | None = None
+        self._phase_started_at: float | None = None
+        self._phase_durations_s: dict[str, float] = {}
         self._failure_reason: str | None = None
 
         self._robot_x = 0.0
@@ -260,6 +263,7 @@ class CourtSurveyV2Node(Node):
                        else "FAILED" if self._state == V2State.FAILED else None),
             "failure_reason": self._failure_reason,
             "coverage": {"i": self._vantage_i, "n": len(self._vantages)},
+            "timing": self._timing_snapshot(),
             "error": self._map_error, "sensor_frame": self._scan_frame_id or None,
             "front_range_m": None if math.isinf(self._front_range_m) else round(self._front_range_m, 3),
             "robot": {"x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
@@ -280,9 +284,30 @@ class CourtSurveyV2Node(Node):
         return self.get_clock().now().nanoseconds / 1e9
 
     def _enter(self, state: V2State) -> None:
+        now = self._now()
+        if self._phase_started_at is not None:
+            elapsed = max(0.0, now - self._phase_started_at)
+            key = self._state.value
+            self._phase_durations_s[key] = self._phase_durations_s.get(key, 0.0) + elapsed
         self.get_logger().info(f"survey: {self._state.value} -> {state.value}")
         self._state = state
-        self._entered_at = self._now()
+        self._entered_at = now
+        self._phase_started_at = now
+
+    def _timing_snapshot(self) -> dict:
+        now = self._now()
+        durations = dict(self._phase_durations_s)
+        current_phase_s = 0.0
+        if self._phase_started_at is not None:
+            current_phase_s = max(0.0, now - self._phase_started_at)
+            durations[self._state.value] = durations.get(self._state.value, 0.0) + current_phase_s
+        elapsed_s = 0.0 if self._survey_started_at is None else max(0.0, now - self._survey_started_at)
+        return {
+            "elapsed_s": round(elapsed_s, 1),
+            "current_phase": self._state.value,
+            "current_phase_s": round(current_phase_s, 1),
+            "phase_durations_s": {k: round(v, 1) for k, v in durations.items()},
+        }
 
     def _timed_out(self, limit_s: float) -> bool:
         if self._entered_at is None:
@@ -303,8 +328,10 @@ class CourtSurveyV2Node(Node):
         self._failure_reason = reason
         self.get_logger().error(f"survey FAILED: {reason}")
         self._stop()
-        self._write_result(status="FAILED")
         self._enter(V2State.FAILED)
+        self._write_result(status="FAILED")
+        self._write_live()
+        self._final_live_written = True
 
     # ── net locking → court frame ────────────────────────────────────────────
     def _try_lock_net(self) -> bool:
@@ -411,6 +438,7 @@ class CourtSurveyV2Node(Node):
                 "failure_reason": self._failure_reason, "frame": "map",
                 "net": self._locked_net, "occupancy": {"point_count": len(self._map_voxels)},
             }
+        model["timing"] = self._timing_snapshot()
         model["surveyed_at"] = time.time()
         try:
             tmp = COURT_BOUNDARY_FILE.with_suffix(".json.tmp")
@@ -492,6 +520,8 @@ class CourtSurveyV2Node(Node):
                 f"obstacles={len(model['obstacles'])} map={model['map_artifact'].get('status')} "
                 "(robot returned to start)")
         self._enter(V2State.DONE)
+        self._write_live()
+        self._final_live_written = True
 
     # ── main step ────────────────────────────────────────────────────────────
     def _step(self) -> None:
@@ -509,6 +539,7 @@ class CourtSurveyV2Node(Node):
                 self._stop()
                 return
             if self._survey_start_pose is None:
+                self._survey_started_at = self._now()
                 self._survey_start_pose = {
                     "x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
                     "yaw_rad": round(self._robot_yaw, 4),

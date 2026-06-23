@@ -263,6 +263,84 @@
       font-weight: 650;
       word-break: break-word;
     }
+    .survey-lifecycle {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+      gap: 8px;
+      margin: -2px 0 10px;
+      min-height: 34px;
+    }
+    .survey-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.025);
+      color: var(--muted);
+      font-size: 12px;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+    }
+    .survey-step span {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 9px;
+      border-radius: 50%;
+      background: rgba(145,162,178,0.55);
+      box-shadow: 0 0 0 3px rgba(145,162,178,0.08);
+    }
+    .survey-step strong {
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .survey-step.is-active {
+      border-color: rgba(87,166,255,0.55);
+      background: rgba(87,166,255,0.10);
+      color: var(--ink);
+    }
+    .survey-step.is-active span {
+      background: var(--accent-2);
+      box-shadow: 0 0 0 3px rgba(87,166,255,0.16);
+    }
+    .survey-step.is-complete {
+      border-color: rgba(47,208,143,0.42);
+      background: rgba(47,208,143,0.08);
+      color: var(--ink);
+    }
+    .survey-step.is-complete span {
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47,208,143,0.14);
+    }
+    .survey-step.is-failed {
+      border-color: rgba(255,107,95,0.55);
+      background: rgba(255,107,95,0.10);
+      color: var(--ink);
+    }
+    .survey-step.is-failed span {
+      background: var(--danger);
+      box-shadow: 0 0 0 3px rgba(255,107,95,0.16);
+    }
+    .survey-progress {
+      height: 4px;
+      margin: 0 0 10px;
+      overflow: hidden;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.07);
+    }
+    .survey-progress span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
+      background: var(--accent-2);
+      transition: width 0.35s ease, background 0.2s;
+    }
+    .survey-progress.is-complete span { background: var(--accent); }
+    .survey-progress.is-failed span { background: var(--danger); }
     table {
       width: 100%;
       border-collapse: collapse;
