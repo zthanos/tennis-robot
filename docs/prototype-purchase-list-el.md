@@ -98,7 +98,7 @@ Link: https://grobotronics.com/metal-dc-geared-motor-w-encoder-12v-122rpm-38kg.c
 | No-load speed | 122 RPM |
 | Rated torque | 38 kg.cm |
 | Encoder | Ναι |
-| Wheel target | 180 mm driven wheels |
+| Wheel target | 170 mm driven wheels (HPI Dirt Buster Block, αγοράστηκαν) |
 
 Αυτό το setup αλλάζει τη βάση σε 4WD differential/skid-steer, χωρίς μπροστινούς
 casters. Με τροχό 180 mm και 122 RPM η θεωρητική ταχύτητα είναι περίπου
@@ -112,37 +112,28 @@ casters. Με τροχό 180 mm και 122 RPM η θεωρητική ταχύτ�
 σε κάθε drive motor ή τουλάχιστον αξιόπιστο encoder ανά πλευρά.
 ```
 
-Να ρωτήσουμε στο μαγαζί:
+Specs επιβεβαιωμένα (DFRobot FIT0403):
 
-- Έχει encoder; πόσα pulses per revolution;
-- Ποια είναι η διάμετρος και το σχήμα του shaft;
-- Ποιο είναι το rated current και stall current;
-- Υπάρχει matching wheel hub/coupler για τον άξονα;
+- Encoder: ναι, quadrature· gearbox 90:1.
+- **Shaft: 6 mm D-shaft** (επιβεβαιωμένο από datasheet + μέτρηση).
+- Rated/stall current: ~7 A stall @ 12 V.
+- Hub: **απαιτείται adapter 6 mm D-shaft → 24 mm hex** (βλ. ordered-parts.md → Parts To Order).
 
 ### Driven Wheels
 
-Ζητάμε:
+**ΑΓΟΡΑΣΤΗΚΑΝ:** 4 × HPI Racing Dirt Buster Block Tire S Compound on Black Wheel
+(Baja 5B Rear, 170x80 mm, μονταρισμένα με foam inserts). 2 ζευγάρια, μεταχειρισμένα
+από RC offroad (8 kg, 90+ χλμ/ώ τελική) — άφθονη αντοχή για συλλέκτη μπαλών.
 
-```text
-4 τεμάχια driven wheels 180 mm διάμετρο
-```
-
-Προτίμηση:
-
-| Χαρακτηριστικό | Στόχος |
+| Χαρακτηριστικό | Πραγματικό |
 |---|---|
-| Διάμετρος | 180 mm |
-| Πλάτος | 35-55 mm |
-| Πάτημα | rubber / PU / TPU, όχι σκληρό πλαστικό |
-| Hub | να ταιριάζει με 6 mm ή 8 mm D-shaft |
-| Στήριξη | set screw, clamp hub, ή adapter hub |
+| Διάμετρος | 170 mm (radius 0.085 → ενημερώθηκε στο URDF + controllers.yaml) |
+| Πλάτος | 80 mm |
+| Πάτημα | rubber, S (soft) compound — καλό grip σε clay |
+| Hub | **24 mm hex** (πρότυπο Baja 5B) |
+| Στήριξη | **24 mm hex adapter, 6 mm bore (D-shaft)** προς τον FIT0403 (βλ. ordered-parts.md → Parts To Order) |
 
-Αν δεν βρεθεί έτοιμη ρόδα:
-
-```text
-Παίρνουμε hubs/couplers για τον άξονα και κρατάμε το CAD για printed wheel core
-με rubber/TPU sleeve.
-```
+> Επόμενο βήμα: παραγγελία 4× hub adapters **6 mm D-shaft → 24 mm hex**.
 
 ### Front Casters
 

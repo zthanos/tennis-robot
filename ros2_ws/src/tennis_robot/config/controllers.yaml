@@ -36,7 +36,7 @@ diff_drive_controller:
     # 1.0 ~= 0.70 * 1.4 (typical skid-steer correction). TUNE: if the SLAM map
     # still over-rotates raise this; if it under-rotates lower it toward 0.70.
     wheel_separation: 1.0
-    wheel_radius: 0.09
+    wheel_radius: 0.085  # 170 mm HPI Dirt Buster Block wheels (was 0.09 / 180 mm)
 
     # Plain geometry_msgs/Twist on ~/cmd_vel_unstamped (use_stamped_vel: false)
     use_stamped_vel: false

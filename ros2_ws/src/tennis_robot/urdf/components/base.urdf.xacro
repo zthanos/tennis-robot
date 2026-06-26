@@ -35,10 +35,10 @@
       <parent link="base_footprint"/>
       <child link="base_link"/>
       <!-- Level chassis (no pitch). base_link is the chassis plate at axle height
-           + wheel drop: z = wheel_radius - wheel_z = 0.09 - (-0.09) = 0.18, so the
+           + wheel drop: z = wheel_radius - wheel_z = 0.085 - (-0.09) = 0.175, so the
            four wheel contacts land exactly on the ground plane and base_footprint
            sits on the ground. -->
-      <origin xyz="0 0 0.18" rpy="0 0 0"/>
+      <origin xyz="0 0 0.175" rpy="0 0 0"/>
     </joint>
 
     <link name="base_link">

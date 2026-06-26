@@ -12,6 +12,16 @@ prototype του tennis robot.
 - MPU6050 IMU για yaw-rate/acceleration diagnostics μέσω I2C
 - κοινό logic ground, 5V encoder rail και καθαρά control signals
 
+## Διαγράμματα
+
+Επισκόπηση συστήματος (power domain εκτός perfboard vs logic domain):
+
+![Motion control wiring](images/motion-control-wiring.svg)
+
+Pinout των headers J1-J9 — πώς ενώνεται κάθε component στην perfboard:
+
+![Motion perfboard header pinout](images/motion-perfboard-pinout.svg)
+
 ## 1. Σημαντικό Όριο Της Perfboard
 
 Η perfboard **δεν μεταφέρει ρεύμα μοτέρ**.
