@@ -27,6 +27,7 @@ import json
 import math
 import os
 import time
+from collections import deque
 from dataclasses import asdict
 
 import rclpy
@@ -59,6 +60,13 @@ from tennis_robot.mapping import (
     ServiceLineDistributionScanMission,
 )
 from tennis_robot.motion_controller import MOTION_COMMAND_TOPIC
+try:
+    from tennis_robot.nav2_lane_navigator import Nav2LaneNavigator, LaneNavState
+    _NAV2_AVAILABLE = True
+except Exception:  # nav2_msgs / action deps not present
+    Nav2LaneNavigator = None
+    LaneNavState = None
+    _NAV2_AVAILABLE = False
 from tennis_robot.search import HalfCourtSearchBehavior, SearchState
 from tennis_robot.lidar_survey import LidarSurveyState
 from tennis_robot.lidar_survey_v2 import LidarCourtSurveyV2 as Ros2LidarCourtSurvey
@@ -66,6 +74,7 @@ from tennis_robot.survey import SurveyVision
 from tennis_robot_msgs.msg import BallObservation, CollectorCmd, IrReadings, RobotCommand
 
 TIME_STEP_S = 0.032
+COLLECTION_EVENT_SCHEMA_VERSION = 2
 NET_X_M = 0.0
 NET_SIDE_CLEARANCE_M = 0.25
 COURT_MAX_X_M = 11.885
@@ -131,6 +140,17 @@ class ControllerNode(Node):
             LidarSurveyBoundaryProvider(), self._map_supervisor_balls
         )
         self._collection_scan = ServiceLineDistributionScanMission(self._collection_scan_balls)
+        self._nav2_requested = os.getenv(
+            "COLLECTION_USE_NAV2", "false"
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        if self._nav2_requested and not _NAV2_AVAILABLE:
+            self.get_logger().error(
+                "COLLECTION_USE_NAV2 is set but nav2_msgs/rclpy.action are unavailable - "
+                "Nav2 lane navigation will NOT run and there is no P-controller fallback. "
+                "Source the Nav2 install or set COLLECTION_USE_NAV2=false to use the P-controller deliberately."
+            )
+        self._use_nav2_lanes = self._nav2_requested and _NAV2_AVAILABLE
+        self._nav2_lane = Nav2LaneNavigator(self) if self._use_nav2_lanes else None
 
         # ── state ──────────────────────────────────────────────────────────────
         self.control_mode = "idle"
@@ -142,6 +162,7 @@ class ControllerNode(Node):
         self.collect_pattern_collect_elapsed_s = 0.0
         self.collect_pattern_failures = 0
         self._collection_lane_collecting = False
+        self._collection_opportunistic_collecting = False
         self._collection_lane_collect_elapsed_s = 0.0
         self.collection_confirmed = False
         self._collect_start_time: float | None = None
@@ -153,6 +174,9 @@ class ControllerNode(Node):
         self._collection_scan_completion_reported = False
         self._last_survey_log_key: tuple[str, str] | None = None
         self._last_status_file_write_s: float = 0.0
+        self._collection_events: deque[dict] = deque(maxlen=60)
+        self._last_collection_event_key: tuple | None = None
+        self._last_collection_scan_key: tuple | None = None
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
@@ -326,6 +350,10 @@ class ControllerNode(Node):
     def _on_mode_changed(self, new_mode: str) -> bool:
         if new_mode == self.control_mode:
             return False
+        previous_mode = self.control_mode
+        if previous_mode == "collect" and new_mode != "collect" and self._nav2_lane is not None:
+            self._record_collection_event("nav2_goal_cancel", reason=f"mode_exit:{new_mode}")
+            self._nav2_lane.reset()
         self.behavior.reset()
         self.search_behavior.reset()
         if not (self.control_mode == "map_court" and new_mode == "idle"):
@@ -342,6 +370,13 @@ class ControllerNode(Node):
         self.active_mapped_target_id = None
         self._collection_scan_completion_reported = False
         self.get_logger().info(f"mode → {new_mode}")
+        if new_mode == "collect":
+            self._collection_events.clear()
+            if self._nav2_lane is not None:
+                self._nav2_lane.reset()
+            self._last_collection_event_key = None
+            self._last_collection_scan_key = None
+            self._record_collection_event("mode_enter", requested=self._control_command_mode)
         return True
 
     _MANUAL_MODES = frozenset({
@@ -671,8 +706,17 @@ class ControllerNode(Node):
         if not self._collection_scan.active and not self._collection_scan.complete:
             try:
                 self._collection_scan.start(self._robot_x, self._robot_y, self._robot_yaw)
+                scan = self._collection_scan.telemetry()
+                self._record_collection_event(
+                    "scan_start",
+                    side=scan.get("side"),
+                    lane_count=scan.get("lane_count"),
+                    lane_spacing_m=scan.get("lane_spacing_m"),
+                    waypoint_count=scan.get("waypoint_count"),
+                )
             except RuntimeError as exc:
                 self.get_logger().error(f"collect distribution scan blocked: {exc}")
+                self._record_collection_event("scan_blocked", reason=str(exc))
                 self._publish_command("idle", "controller-collect-scan-blocked")
                 return ConceptACommand(
                     state=CollectorState.IDLE,
@@ -680,25 +724,86 @@ class ControllerNode(Node):
                     collector=CollectorCommand(0.0, False),
                 )
 
+        # Hard half-court gate. The court is mapped, so any detection beyond the
+        # collect half-court bounds (across the net, past the fence, the other
+        # half) is ignored outright; it must never start or abort a lane collect.
+        if (
+            observation.visible
+            and observation.world_x_m is not None
+            and observation.world_y_m is not None
+            and not self._collection_scan.observation_in_half_court(
+                observation.world_x_m, observation.world_y_m
+            )
+        ):
+            observation = BallObservationInput(visible=False, source="out_of_half_court")
+
         if self._collection_lane_collecting:
             return self._collection_lane_collect_command(observation)
 
         if (
             self._collection_scan.active
             and not self._collection_scan.complete
+            and not self._collection_scan.lane_started
+            and self._collection_pre_lane_observation_valid(observation)
+        ):
+            self._collection_lane_collecting = True
+            self._collection_opportunistic_collecting = True
+            self._collection_lane_collect_elapsed_s = 0.0
+            self.behavior.reset()
+            self.behavior.start_tracking(observation)
+            if self._nav2_lane is not None:
+                self._nav2_lane.cancel()
+            self._record_collection_event(
+                "opportunistic_collect_start",
+                ball_distance_m=observation.distance_m,
+                ball_x_m=observation.world_x_m,
+                ball_y_m=observation.world_y_m,
+                source=observation.source,
+                confidence=observation.confidence,
+            )
+            return self.behavior.update(observation, TIME_STEP_S, collection_confirmed=False)
+
+        if (
+            self._collection_scan.active
+            and not self._collection_scan.complete
             and self._collection_scan.lane_started
-            and observation.visible
-            and observation.distance_m <= COLLECTION_LANE_CAPTURE_RANGE_M
+            and self._collection_lane_observation_valid(observation)
         ):
             self._collection_lane_collecting = True
             self._collection_lane_collect_elapsed_s = 0.0
             self.behavior.reset()
             self.behavior.start_tracking(observation)
+            if self._nav2_lane is not None:
+                self._nav2_lane.cancel()
+            self._record_collection_event(
+                "lane_collect_start",
+                ball_distance_m=observation.distance_m,
+                ball_x_m=observation.world_x_m,
+                ball_y_m=observation.world_y_m,
+                source=observation.source,
+                confidence=observation.confidence,
+            )
             return self.behavior.update(observation, TIME_STEP_S, collection_confirmed=False)
 
-        command = self._collection_scan.update(
-            self._robot_x, self._robot_y, self._robot_yaw, TIME_STEP_S
-        )
+        if self._use_nav2_lanes and self._nav2_lane is not None:
+            command = self._collection_nav2_sweep_step()
+        elif self._nav2_requested:
+            # Nav2 requested but its deps are missing: fail loud, never silently
+            # drive with the P-controller while we are debugging the Nav2 path.
+            self._record_collection_event(
+                "nav2_unavailable",
+                detail="nav2_msgs/rclpy.action not importable; robot stopped (no fallback)",
+            )
+            command = ConceptACommand(
+                state=CollectorState.IDLE,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+        else:
+            command = self._collection_scan.update(
+                self._robot_x, self._robot_y, self._robot_yaw, TIME_STEP_S
+            )
+        self._record_collection_scan_snapshot()
         if self._collection_scan.complete and not self._collection_scan_completion_reported:
             seeded = self.ball_map.seed_from_candidates(self._collection_scan.local_candidates, time.time())
             self.get_logger().info(
@@ -708,16 +813,59 @@ class ControllerNode(Node):
                 f"local_candidates={len(self._collection_scan.local_candidates)} seeded={seeded} "
                 f"grid={self._collection_scan.grid}"
             )
+            self._record_collection_event(
+                "scan_complete",
+                local_candidates=len(self._collection_scan.local_candidates),
+                seeded=seeded,
+                grid=self._collection_scan.grid,
+            )
             self._publish_command("idle", "controller-collect-distribution-scan-complete")
             self._collection_scan_completion_reported = True
         return command
+
+    def _collection_nav2_sweep_step(self) -> ConceptACommand:
+        """Drive the current lawnmower waypoint via Nav2. The controller emits
+        an idle command so the motor adapter goes silent and twist_mux hands the
+        wheels to Nav2 (/cmd_vel_nav). There is NO P-controller fallback: if the
+        Nav2 action server is not up the robot stops and the reason is logged,
+        so a broken Nav2 stack is loud instead of silently masked."""
+        target = self._collection_scan.nav2_target(self._robot_x, self._robot_y)
+        if target is None:
+            self._nav2_lane.reset()
+            return ConceptACommand(
+                state=CollectorState.IDLE,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+        tx, ty = target
+        goal_yaw = math.atan2(ty - self._robot_y, tx - self._robot_x)
+        self._nav2_lane.request(tx, ty, goal_yaw)
+        if self._nav2_lane.state == LaneNavState.UNAVAILABLE:
+            self._record_collection_event(
+                "nav2_unavailable",
+                detail="navigate_to_pose action server not up; robot stopped (no fallback)",
+                target_x_m=tx,
+                target_y_m=ty,
+            )
+            return ConceptACommand(
+                state=CollectorState.IDLE,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+        return ConceptACommand(
+            state=CollectorState.SURVEY,
+            base=BaseCommand(0.0, 0.0),
+            collector=CollectorCommand(0.0, False),
+        )
 
     def _collection_lane_collect_command(self, observation: BallObservationInput) -> ConceptACommand:
         if self.collection_confirmed:
             self.behavior.reset()
             self.active_mapped_target_id = None
             self._collection_lane_collecting = False
+            self._collection_opportunistic_collecting = False
             self._collection_lane_collect_elapsed_s = 0.0
+            self._record_collection_event("lane_collect_confirmed")
             return ConceptACommand(
                 state=CollectorState.SURVEY,
                 base=BaseCommand(0.0, 0.0),
@@ -725,11 +873,37 @@ class ControllerNode(Node):
             )
 
         self._collection_lane_collect_elapsed_s += TIME_STEP_S
-        if self._collection_lane_collect_elapsed_s > COLLECT_PATTERN_COLLECTION_TIMEOUT_S:
+        reject_reason = self._collection_lane_reject_reason(observation)
+        if observation.visible and reject_reason is not None:
             self.behavior.reset()
             self.active_mapped_target_id = None
             self._collection_lane_collecting = False
+            self._collection_opportunistic_collecting = False
             self._collection_lane_collect_elapsed_s = 0.0
+            self._record_collection_event(
+                "lane_collect_abort",
+                reason=reject_reason,
+                ball_distance_m=observation.distance_m,
+                ball_x_m=observation.world_x_m,
+                ball_y_m=observation.world_y_m,
+            )
+            return ConceptACommand(
+                state=CollectorState.SURVEY,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        if self._collection_lane_collect_elapsed_s > COLLECT_PATTERN_COLLECTION_TIMEOUT_S:
+            elapsed_s = self._collection_lane_collect_elapsed_s
+            self.behavior.reset()
+            self.active_mapped_target_id = None
+            self._collection_lane_collecting = False
+            self._collection_opportunistic_collecting = False
+            self._collection_lane_collect_elapsed_s = 0.0
+            self._record_collection_event(
+                "lane_collect_timeout",
+                elapsed_s=elapsed_s,
+            )
             return ConceptACommand(
                 state=CollectorState.SCAN,
                 base=BaseCommand(0.0, 0.0),
@@ -743,13 +917,186 @@ class ControllerNode(Node):
             self.behavior.reset()
             self.active_mapped_target_id = None
             self._collection_lane_collecting = False
+            self._collection_opportunistic_collecting = False
             self._collection_lane_collect_elapsed_s = 0.0
+            self._record_collection_event("lane_collect_gave_up")
             return ConceptACommand(
                 state=CollectorState.SCAN,
                 base=BaseCommand(0.0, 0.0),
                 collector=CollectorCommand(0.0, False),
             )
         return cmd
+
+    def _collection_lane_observation_valid(self, observation: BallObservationInput) -> bool:
+        return self._collection_lane_reject_reason(observation) is None
+
+    def _collection_pre_lane_observation_valid(self, observation: BallObservationInput) -> bool:
+        if not observation.visible:
+            return False
+        if observation.distance_m > COLLECTION_LANE_CAPTURE_RANGE_M:
+            return False
+        if observation.world_x_m is None or observation.world_y_m is None:
+            return False
+        return self._collection_scan.observation_in_half_court(observation.world_x_m, observation.world_y_m)
+
+    def _collection_lane_reject_reason(self, observation: BallObservationInput) -> str | None:
+        if not observation.visible:
+            return "no_visible_ball"
+        if observation.distance_m > COLLECTION_LANE_CAPTURE_RANGE_M:
+            return "out_of_range"
+        if self._collection_opportunistic_collecting:
+            if not self._collection_scan.observation_in_half_court(observation.world_x_m, observation.world_y_m):
+                return "outside_collect_half_court"
+            return None
+        if not self._collection_scan.observation_in_active_lane(observation.world_x_m, observation.world_y_m):
+            return "outside_active_lane"
+        return None
+
+    def _record_collection_event(self, event_type: str, **fields: object) -> None:
+        now = time.time()
+        truth = self._collection_truth()
+        event = {
+            "schema_version": COLLECTION_EVENT_SCHEMA_VERSION,
+            "t_s": round(now - self.started_at, 1),
+            "type": event_type,
+            "mode": self.control_mode,
+            "lane": self._collection_scan.telemetry().get("phase_label"),
+            "phase": truth["phase"],
+            "motion_owner": truth["motion_owner"],
+            "motion_path": truth["motion_path"],
+            "fallback_mode": truth["fallback_mode"],
+            "current_blocker": truth["current_blocker"],
+            "nav2_state": truth["nav2_state"],
+            "robot_x_m": round(self._robot_x, 3),
+            "robot_y_m": round(self._robot_y, 3),
+        }
+        for key, value in fields.items():
+            if isinstance(value, float):
+                event[key] = round(value, 3)
+            else:
+                event[key] = value
+        key = tuple(sorted((k, json.dumps(v, sort_keys=True) if isinstance(v, (dict, list)) else v) for k, v in event.items() if k != "t_s"))
+        if key == self._last_collection_event_key:
+            return
+        self._last_collection_event_key = key
+        self._collection_events.append(event)
+
+    def _collection_truth(self, command: ConceptACommand | None = None) -> dict[str, object]:
+        scan = self._collection_scan.telemetry()
+        nav2_state = self._nav2_lane.state.value if self._nav2_lane is not None else "disabled"
+        nav2_busy = bool(self._nav2_lane.busy) if self._nav2_lane is not None else False
+        nav2_goal = self._nav2_lane.goal_xy if self._nav2_lane is not None else None
+        nav2_goal_xy = (
+            [round(float(nav2_goal[0]), 3), round(float(nav2_goal[1]), 3)]
+            if nav2_goal is not None
+            else None
+        )
+
+        if self.control_mode in self._MANUAL_MODES:
+            phase = "manual"
+            motion_owner = "manual"
+            motion_path = "manual_teleop"
+            fallback_mode = "none"
+            current_blocker = "none"
+        elif self.control_mode == "collect" and self._collection_lane_collecting:
+            phase = "fine_collect"
+            motion_owner = "collector_fsm"
+            motion_path = "collector_fine_approach"
+            fallback_mode = "none"
+            current_blocker = "none"
+        elif self.control_mode == "collect" and scan.get("active") and not scan.get("complete"):
+            phase = "lane_sweep" if scan.get("lane_started") else "transit_to_lane_start"
+            if self._use_nav2_lanes:
+                motion_owner = "nav2"
+                motion_path = "nav2_lawnmower"
+                fallback_mode = "none"
+                current_blocker = (
+                    "nav2_action_unavailable"
+                    if nav2_state == "unavailable"
+                    else "waiting_for_lane_start"
+                    if not scan.get("lane_started")
+                    else "none"
+                )
+            elif self._nav2_requested:
+                motion_owner = "none"
+                motion_path = "stopped"
+                fallback_mode = "nav2_import_missing_stop"
+                current_blocker = "nav2_import_missing"
+            else:
+                motion_owner = "controller_fsm"
+                motion_path = "local_lawnmower"
+                fallback_mode = "deliberate_local_controller"
+                current_blocker = "waiting_for_lane_start" if not scan.get("lane_started") else "none"
+        elif self.control_mode == "collect":
+            phase = "complete" if scan.get("complete") else "preflight"
+            motion_owner = "none"
+            motion_path = "stopped"
+            fallback_mode = "none"
+            current_blocker = "none"
+        elif nav2_busy or nav2_goal_xy is not None:
+            phase = "external_nav2_goal"
+            motion_owner = "nav2"
+            motion_path = "nav2_lawnmower"
+            fallback_mode = "none"
+            current_blocker = "nav2_goal_active_outside_collect"
+        elif command is not None and (
+            abs(command.base.linear_speed_m_s) > 1e-9
+            or abs(command.base.angular_speed_rad_s) > 1e-9
+        ):
+            phase = self.control_mode
+            motion_owner = "controller_fsm"
+            motion_path = self.control_mode
+            fallback_mode = "none"
+            current_blocker = "none"
+        else:
+            phase = self.control_mode
+            motion_owner = "none"
+            motion_path = "stopped"
+            fallback_mode = "none"
+            current_blocker = "none"
+
+        return {
+            "schema_version": COLLECTION_EVENT_SCHEMA_VERSION,
+            "phase": phase,
+            "motion_owner": motion_owner,
+            "motion_path": motion_path,
+            "fallback_mode": fallback_mode,
+            "current_blocker": current_blocker,
+            "nav2_requested": self._nav2_requested,
+            "nav2_enabled": self._use_nav2_lanes,
+            "nav2_state": nav2_state,
+            "nav2_busy": nav2_busy,
+            "nav2_goal_xy": nav2_goal_xy,
+            "lane_started": bool(scan.get("lane_started")),
+            "scan_phase": scan.get("phase"),
+            "scan_phase_label": scan.get("phase_label"),
+            "waypoint_index": scan.get("waypoint_index"),
+            "waypoint_count": scan.get("waypoint_count"),
+        }
+
+    def _record_collection_scan_snapshot(self) -> None:
+        scan = self._collection_scan.telemetry()
+        target = scan.get("target_pose_map") or {}
+        key = (
+            scan.get("phase"),
+            scan.get("phase_label"),
+            scan.get("waypoint_index"),
+            target.get("x_m"),
+            target.get("y_m"),
+        )
+        if key == self._last_collection_scan_key:
+            return
+        self._last_collection_scan_key = key
+        self._record_collection_event(
+            "lane_target",
+            phase=scan.get("phase"),
+            waypoint_index=scan.get("waypoint_index"),
+            waypoint_count=scan.get("waypoint_count"),
+            target_x_m=target.get("x_m"),
+            target_y_m=target.get("y_m"),
+            candidates=scan.get("total_candidates"),
+            assigned=scan.get("assigned_candidates"),
+        )
 
     def _scan_side_command(self) -> ConceptACommand:
         now = time.time()
@@ -913,6 +1260,7 @@ class ControllerNode(Node):
         self.collect_pattern_collect_elapsed_s = 0.0
         self.collect_pattern_failures = 0
         self._collection_lane_collecting = False
+        self._collection_opportunistic_collecting = False
         self._collection_lane_collect_elapsed_s = 0.0
 
     def _apply_command(self, command: ConceptACommand) -> None:
@@ -957,7 +1305,16 @@ class ControllerNode(Node):
             "ball_distance_m": round(observation.distance_m, 3) if observation.visible else None,
             "collect_pattern_phase": self.collect_pattern_phase,
             "collection_lane_collecting": self._collection_lane_collecting,
+            "collection_opportunistic_collecting": self._collection_opportunistic_collecting,
             "collection_scan": self._collection_scan.telemetry(),
+            "collection_truth": self._collection_truth(command),
+            "collection_events": list(self._collection_events),
+            "collection_nav2": {
+                "enabled": self._use_nav2_lanes,
+                "requested": self._nav2_requested,
+                "state": self._nav2_lane.state.value if self._nav2_lane is not None else "disabled",
+                "goal_xy": self._nav2_lane.goal_xy if self._nav2_lane is not None else None,
+            },
             "map_mission": self._map_mission.telemetry(),
             "survey": {
                 "state": self.survey_behavior.state.value,

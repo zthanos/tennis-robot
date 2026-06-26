@@ -8,6 +8,7 @@ import base64
 import json
 import math
 import os
+import shlex
 import signal
 import subprocess
 import sys
@@ -35,6 +36,14 @@ except ImportError:
     _VISION_AVAILABLE = False
 
 WEBCAM_FOV_DEG = 60.0  # typical webcam horizontal FOV; tune if distance estimates are off
+
+
+def _text_from_subprocess_output(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
 
 
 class CourtSurveyLaunchManager:
@@ -330,6 +339,9 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             self.path_store.clear()
             self._send_json({"ok": True})
             return
+        if path == "/api/nav-test":
+            self._handle_nav_test_post()
+            return
         if path not in {"/command", "/api/command"}:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -362,6 +374,119 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             return
         self.db.write_all(data)
         self._send_json({"ok": True})
+
+    def _handle_nav_test_post(self) -> None:
+        length = int(self.headers.get("Content-Length", "0"))
+        try:
+            data = json.loads(self.rfile.read(length).decode("utf-8"))
+        except (json.JSONDecodeError, ValueError):
+            self.send_error(HTTPStatus.BAD_REQUEST, "Invalid JSON")
+            return
+        if not isinstance(data, dict):
+            self.send_error(HTTPStatus.BAD_REQUEST, "Expected JSON object")
+            return
+        try:
+            x_m = float(data["x_m"])
+            y_m = float(data["y_m"])
+            yaw_rad = float(data.get("yaw_rad", 0.0))
+        except (KeyError, TypeError, ValueError):
+            self.send_error(HTTPStatus.BAD_REQUEST, "Expected numeric x_m, y_m, yaw_rad")
+            return
+        if not all(math.isfinite(v) for v in (x_m, y_m, yaw_rad)):
+            self.send_error(HTTPStatus.BAD_REQUEST, "Pose values must be finite")
+            return
+
+        half = yaw_rad / 2.0
+        goal = {
+            "pose": {
+                "header": {"frame_id": "map"},
+                "pose": {
+                    "position": {"x": x_m, "y": y_m, "z": 0.0},
+                    "orientation": {"z": math.sin(half), "w": math.cos(half)},
+                },
+            }
+        }
+        preflight_command = (
+            "source /opt/ros/humble/setup.bash; "
+            "source /ros2_ws/install/setup.bash; "
+            "ros2 action info /navigate_to_pose"
+        )
+        try:
+            preflight = subprocess.run(
+                ["bash", "-lc", preflight_command],
+                cwd=str(ROOT),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=8,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            output = _text_from_subprocess_output(exc.stdout)
+            self._send_json(
+                {
+                    "ok": False,
+                    "message": "Nav2 preflight timed out; NavigateToPose is not ready.",
+                    "output": output[-4000:],
+                },
+                status=HTTPStatus.SERVICE_UNAVAILABLE,
+            )
+            return
+
+        preflight_output = _text_from_subprocess_output(preflight.stdout)
+        if preflight.returncode != 0 or "Action servers: 0" in preflight_output:
+            self._send_json(
+                {
+                    "ok": False,
+                    "message": "Nav2 NavigateToPose action server is not active yet.",
+                    "output": preflight_output[-4000:],
+                },
+                status=HTTPStatus.SERVICE_UNAVAILABLE,
+            )
+            return
+
+        goal_json = json.dumps(goal, separators=(",", ":"))
+        command = (
+            "source /opt/ros/humble/setup.bash; "
+            "source /ros2_ws/install/setup.bash; "
+            "ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "
+            f"{shlex.quote(goal_json)}"
+        )
+        try:
+            result = subprocess.run(
+                ["bash", "-lc", command],
+                cwd=str(ROOT),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=45,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            output = _text_from_subprocess_output(exc.stdout)
+            self._send_json(
+                {
+                    "ok": False,
+                    "timeout": True,
+                    "message": "NavigateToPose command timed out; the goal may still be active.",
+                    "output": output[-4000:],
+                },
+                status=HTTPStatus.GATEWAY_TIMEOUT,
+            )
+            return
+
+        output = _text_from_subprocess_output(result.stdout)
+        self._send_json(
+            {
+                "ok": result.returncode == 0,
+                "returncode": result.returncode,
+                "goal": {"x_m": x_m, "y_m": y_m, "yaw_rad": yaw_rad},
+                "accepted": "Goal accepted" in output,
+                "succeeded": "status: SUCCEEDED" in output or "Goal succeeded" in output,
+                "output": output[-4000:],
+            },
+            status=HTTPStatus.OK if result.returncode == 0 else HTTPStatus.BAD_GATEWAY,
+        )
 
     def _handle_webcam_frame(self) -> None:
         if not _VISION_AVAILABLE:
@@ -548,18 +673,9 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def _send_json(self, data: dict[str, object]) -> None:
+    def _send_json(self, data: dict[str, object], status: HTTPStatus = HTTPStatus.OK) -> None:
         payload = json.dumps(data).encode("utf-8")
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Cache-Control", "no-store, max-age=0")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
-    def _send_json(self, data: dict[str, object]) -> None:
-        payload = json.dumps(data).encode("utf-8")
-        self.send_response(HTTPStatus.OK)
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Content-Length", str(len(payload)))

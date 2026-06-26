@@ -39,7 +39,9 @@ controller_server:
     general_goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      # Lane waypoints do not need a specific final heading; a tight yaw
+      # tolerance made the robot spin in place at each lane end. Ignore yaw.
+      yaw_goal_tolerance: 3.14
       stateful: true
 
     # Regulated Pure Pursuit — robust for differential drive.

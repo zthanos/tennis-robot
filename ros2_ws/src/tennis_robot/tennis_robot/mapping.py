@@ -42,6 +42,7 @@ COLLECTION_LANE_OVERLAP = max(0.0, min(0.8, _env_float("COLLECTION_LANE_OVERLAP"
 COLLECTION_CAMERA_FOV_RAD = _env_float("COLLECTION_CAMERA_FOV_RAD", math.radians(60.0))
 COLLECTION_NET_CLEARANCE_M = _env_float("COLLECTION_NET_CLEARANCE_M", 0.65)
 COLLECTION_FENCE_CLEARANCE_M = _env_float("COLLECTION_FENCE_CLEARANCE_M", 0.85)
+COLLECTION_LANE_LATERAL_MARGIN_M = _env_float("COLLECTION_LANE_LATERAL_MARGIN_M", 0.25)
 RETURN_TO_START = os.getenv("MAP_RETURN_TO_START", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 # Each entry: (pose_name, should_scan)
@@ -576,6 +577,57 @@ class ServiceLineDistributionScanMission:
     def lane_started(self) -> bool:
         return self._waypoint_index > 0
 
+    def observation_in_active_lane(self, map_x: float | None, map_y: float | None) -> bool:
+        if (
+            map_x is None
+            or map_y is None
+            or self._frame is None
+            or self._bounds is None
+            or not self._waypoints
+            or self._waypoint_index >= len(self._waypoints)
+        ):
+            return False
+        court_x, court_y = self._frame.map_to_court(map_x, map_y)
+        if _classify(court_x, court_y, self._bounds) is None:
+            return False
+        target_court_x, target_court_y = self._frame.map_to_court(*self._waypoints[self._waypoint_index])
+        lane_half_width_m = (
+            COLLECTION_LANE_RELIABLE_RANGE_M * math.tan(COLLECTION_CAMERA_FOV_RAD / 2.0)
+            + COLLECTION_LANE_LATERAL_MARGIN_M
+        )
+        if abs(court_y - target_court_y) > lane_half_width_m:
+            return False
+
+        if self._bounds.side in {"left", "side_neg_x"}:
+            min_x = self._bounds.x_min + COLLECTION_FENCE_CLEARANCE_M
+            max_x = self._bounds.x_max - COLLECTION_NET_CLEARANCE_M
+        else:
+            min_x = self._bounds.x_min + COLLECTION_NET_CLEARANCE_M
+            max_x = self._bounds.x_max - COLLECTION_FENCE_CLEARANCE_M
+        return min(min_x, max_x) <= court_x <= max(min_x, max_x)
+
+    def observation_in_half_court(self, map_x: "float | None", map_y: "float | None") -> bool:
+        """True if the map-frame point lies inside the mapped collect half-court
+        (between the fence and net clearances, within the sidelines, on the side
+        being swept). Unlike ``observation_in_active_lane`` this ignores the lane
+        band, so it is the hard court boundary: detections across the net, past
+        the fence, or in the other half return False and must be ignored.
+
+        Returns True when the court frame/bounds are not yet known (permissive),
+        so it never blocks before the survey model is loaded."""
+        if map_x is None or map_y is None or self._frame is None or self._bounds is None:
+            return True
+        court_x, court_y = self._frame.map_to_court(map_x, map_y)
+        if _classify(court_x, court_y, self._bounds) is None:
+            return False
+        if self._bounds.side in {"left", "side_neg_x"}:
+            min_x = self._bounds.x_min + COLLECTION_FENCE_CLEARANCE_M
+            max_x = self._bounds.x_max - COLLECTION_NET_CLEARANCE_M
+        else:
+            min_x = self._bounds.x_min + COLLECTION_NET_CLEARANCE_M
+            max_x = self._bounds.x_max - COLLECTION_FENCE_CLEARANCE_M
+        return min(min_x, max_x) <= court_x <= max(min_x, max_x)
+
     def telemetry(self) -> dict:
         elapsed = 0.0 if self._elapsed_start is None else time.time() - self._elapsed_start
         scan_elapsed = 0.0 if self._scan_started_at is None else time.time() - self._scan_started_at
@@ -608,6 +660,10 @@ class ServiceLineDistributionScanMission:
             "lane_spacing_m": round(self.lane_spacing_m, 3),
             "waypoint_index": self._waypoint_index,
             "waypoint_count": len(self._waypoints),
+            "waypoints": [
+                {"x_m": round(wx, 3), "y_m": round(wy, 3)}
+                for wx, wy in self._waypoints
+            ],
             "lane_started": self._waypoint_index > 0,
             "total_candidates": len(self.local_candidates),
             "estimate_candidates": len(self.candidates),
@@ -671,6 +727,25 @@ class ServiceLineDistributionScanMission:
         tx, ty = self.target_pose_map
         cmd = _nav_to(rx, ry, ryaw, tx, ty)
         return cmd if cmd is not None else _scan_cmd()
+
+    def nav2_target(self, rx: float, ry: float) -> "tuple[float, float] | None":
+        """Nav2 driving mode: sample balls + advance lane waypoints by proximity
+        and return the current waypoint in the map frame (or None when the sweep
+        is complete). Mirrors ``_step_sweep`` but emits no velocity command —
+        Nav2 owns the wheels for the lane leg."""
+        if self._state != "sweeping":
+            return None
+        self._sample_balls(rx, ry)
+        while self._waypoint_index < len(self._waypoints):
+            tx, ty = self._waypoints[self._waypoint_index]
+            if math.hypot(tx - rx, ty - ry) > NAV_POSITION_TOL_M:
+                break
+            self._waypoint_index += 1
+        if self._waypoint_index >= len(self._waypoints):
+            self._finish()
+            return None
+        self.target_pose_map = self._waypoints[self._waypoint_index]
+        return self.target_pose_map
 
     def _sample_balls(self, rx: float, ry: float) -> None:
         for bx, by in self._ball_source():

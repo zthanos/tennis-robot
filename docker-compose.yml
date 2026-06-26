@@ -40,11 +40,13 @@ services:
     # (rviz service below: docker compose --profile gazebo up gazebo rviz).
     # Set GAZEBO_HEADLESS=false to try the GUI.
     # One command brings up everything: sim + controllers + twist_mux + control
-    # panel (sim.launch.py, backgrounded) and then SLAM mapping (foreground).
+    # panel (sim.launch.py) and SLAM mapping (backgrounded), then the Nav2 core
+    # (navigation.launch.py, foreground) so the navigate_to_pose action server is
+    # up for collection lane navigation.
     command:
       - bash
       - -lc
-      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; ros2 launch tennis_robot sim.launch.py headless:=${GAZEBO_HEADLESS:-true} & sleep 12; ros2 launch tennis_robot slam_mapping.launch.py"
+      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; ros2 launch tennis_robot sim.launch.py headless:=${GAZEBO_HEADLESS:-true} & sleep 12; ros2 launch tennis_robot slam_${SLAM_MODE:-mapping}.launch.py & sleep ${NAV2_START_DELAY_S:-25}; ros2 launch tennis_robot navigation.launch.py"
     ports:
       - "8081:8081"   # web control panel
     devices:
@@ -78,6 +80,7 @@ services:
       # Verified 2026-06-12 via ~/cmd_vel_out A/B test; Fast DDS delivers fine.
       - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
       - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
+      - NAV2_START_DELAY_S=${NAV2_START_DELAY_S:-25}
       - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
       - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
       - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35

@@ -13,6 +13,8 @@
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
+    let _lastCollectionEvents = [];
+    let _collectionLogClearedAtS = null;
     let lastSurveyDiscovery = null;
     let robotPath = [];
     let discoveryCleared = false;
@@ -142,6 +144,86 @@
           <div><strong>${escapeHtml(event.type || "event")}</strong><br><span>${escapeHtml(details || "no details")}</span></div>
         </div>`;
       }).join("");
+    }
+    function renderCollectionTerminal(events) {
+      const target = document.getElementById("collectionTerminalLog");
+      const status = document.getElementById("collectionLogStatus");
+      if (!target) return;
+      const sourceEvents = Array.isArray(events) ? events : [];
+      const newestTime = sourceEvents.reduce((max, event) => Math.max(max, Number(event.t_s) || 0), 0);
+      if (_collectionLogClearedAtS !== null && newestTime > 0 && newestTime < _collectionLogClearedAtS) {
+        _collectionLogClearedAtS = null;
+      }
+      const visibleEvents = _collectionLogClearedAtS === null
+        ? sourceEvents
+        : sourceEvents.filter(event => (Number(event.t_s) || 0) > _collectionLogClearedAtS);
+      _lastCollectionEvents = visibleEvents;
+      const rows = visibleEvents.slice(-32).reverse();
+      if (status) status.textContent = rows.length ? `${rows.length} events` : (_collectionLogClearedAtS === null ? "waiting" : "cleared");
+      if (!rows.length) {
+        target.innerHTML = `<div class="terminal-empty">${_collectionLogClearedAtS === null ? "No collection decisions yet." : "Log cleared. Waiting for new collection decisions."}</div>`;
+        return;
+      }
+      const hidden = new Set(["t_s", "type", "mode"]);
+      const labelFor = {
+        mode_enter: "mode",
+        scan_start: "scan start",
+        scan_blocked: "blocked",
+        lane_target: "lane target",
+        lane_collect_start: "collect start",
+        opportunistic_collect_start: "local collect",
+        lane_collect_abort: "abort",
+        lane_collect_timeout: "timeout",
+        lane_collect_gave_up: "gave up",
+        lane_collect_confirmed: "confirmed",
+        scan_complete: "complete",
+        nav2_unavailable: "nav2 down",
+        nav2_goal_cancel: "nav2 cancel",
+      };
+      const severityFor = type => (
+        type === "scan_blocked" || type === "lane_collect_timeout" || type === "lane_collect_gave_up" || type === "nav2_unavailable"
+          ? "error"
+          : type === "lane_collect_abort"
+            ? "warn"
+            : "info"
+      );
+      const detailText = event => Object.entries(event)
+        .filter(([key, value]) => !hidden.has(key) && value !== null && value !== undefined && value !== "")
+        .map(([key, value]) => {
+          const rendered = Array.isArray(value) || typeof value === "object" ? JSON.stringify(value) : value;
+          return `${key}=${rendered}`;
+        })
+        .join("  ");
+      target.innerHTML = rows.map(event => {
+        const type = event.type || "event";
+        const severity = severityFor(type);
+        return `<div class="terminal-row">
+          <span class="terminal-time">${escapeHtml(fmt(event.t_s, "s"))}</span>
+          <span class="terminal-type ${severity === "info" ? "" : severity}">${escapeHtml(labelFor[type] || type)}</span>
+          <span class="terminal-detail">${escapeHtml(detailText(event) || "ok")}</span>
+        </div>`;
+      }).join("");
+    }
+    function renderCollectionTruth(truth) {
+      const status = document.getElementById("collectionTruthStatus");
+      const kv = document.getElementById("collectionTruthKv");
+      if (!kv) return;
+      const t = truth || {};
+      if (status) {
+        status.textContent = t.current_blocker && t.current_blocker !== "none"
+          ? t.current_blocker
+          : (t.motion_owner || "idle");
+        status.style.color = t.current_blocker && t.current_blocker !== "none" ? "var(--warn)" : "var(--accent)";
+      }
+      setKv("collectionTruthKv", [
+        ["Phase", t.phase || "-"],
+        ["Motion owner", t.motion_owner || "-"],
+        ["Motion path", t.motion_path || "-"],
+        ["Fallback", t.fallback_mode || "none"],
+        ["Blocker", t.current_blocker || "none"],
+        ["Nav2", `${t.nav2_enabled ? "enabled" : "disabled"} / ${t.nav2_state || "-"}`],
+        ["Lane", `${t.lane_started ? "started" : "not started"} | ${t.waypoint_index ?? "-"} / ${t.waypoint_count ?? "-"}`],
+      ]);
     }
     // --- Lazy view loading ----------------------------------------------------
     // Each <section class="view" data-partial="X"> starts empty; its markup lives
@@ -330,7 +412,139 @@
       updateCommandButtons();
     };
     VIEW_INIT.survey = function () { wireMissionCommands("survey"); };
-    VIEW_INIT.collection = function () { wireMissionCommands("collection"); };
+    VIEW_INIT.collection = function () {
+      wireMissionCommands("collection");
+      const copyBtn = document.getElementById("collectionLogCopy");
+      if (copyBtn) copyBtn.addEventListener("click", copyCollectionLog);
+      const clearBtn = document.getElementById("collectionLogClear");
+      if (clearBtn) clearBtn.addEventListener("click", clearCollectionLog);
+      wireNavTestControls();
+    };
+    function currentRobotPose() {
+      const robot = diagnostics.robot || {};
+      const nested = robot.robot || {};
+      const x = Number.isFinite(nested.x_m) ? nested.x_m : robot.robot_x_m;
+      const y = Number.isFinite(nested.y_m) ? nested.y_m : robot.robot_y_m;
+      const yaw = Number.isFinite(nested.yaw_rad) ? nested.yaw_rad : robot.robot_yaw_rad;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      return { x_m: x, y_m: y, yaw_rad: Number.isFinite(yaw) ? yaw : 0 };
+    }
+    function setNavTestStatus(text, tone = "muted") {
+      const status = document.getElementById("navTestStatus");
+      const output = document.getElementById("navTestOutput");
+      const color = tone === "ok" ? "var(--accent)" : tone === "error" ? "var(--danger)" : tone === "warn" ? "var(--warn)" : "var(--muted)";
+      if (status) {
+        status.textContent = text;
+        status.style.color = color;
+      }
+      if (output) {
+        output.textContent = text;
+        output.style.color = color;
+      }
+    }
+    function setNavInputs(pose) {
+      const xEl = document.getElementById("navGoalX");
+      const yEl = document.getElementById("navGoalY");
+      const yawEl = document.getElementById("navGoalYaw");
+      if (!xEl || !yEl || !yawEl || !pose) return;
+      xEl.value = Number(pose.x_m).toFixed(2);
+      yEl.value = Number(pose.y_m).toFixed(2);
+      yawEl.value = Number(pose.yaw_rad || 0).toFixed(2);
+    }
+    function readNavInputs() {
+      const x = Number(document.getElementById("navGoalX")?.value);
+      const y = Number(document.getElementById("navGoalY")?.value);
+      const yaw = Number(document.getElementById("navGoalYaw")?.value || 0);
+      if (![x, y, yaw].every(Number.isFinite)) return null;
+      return { x_m: x, y_m: y, yaw_rad: yaw };
+    }
+    function wireNavTestControls() {
+      const useCurrent = document.getElementById("navUseCurrent");
+      const forward = document.getElementById("navForwardSmall");
+      const send = document.getElementById("navSendGoal");
+      if (useCurrent) useCurrent.addEventListener("click", () => {
+        const pose = currentRobotPose();
+        if (!pose) { setNavTestStatus("No live robot pose", "error"); return; }
+        setNavInputs(pose);
+        setNavTestStatus("Loaded current pose", "ok");
+      });
+      if (forward) forward.addEventListener("click", () => {
+        const pose = currentRobotPose();
+        if (!pose) { setNavTestStatus("No live robot pose", "error"); return; }
+        setNavInputs({
+          x_m: pose.x_m + Math.cos(pose.yaw_rad) * 0.5,
+          y_m: pose.y_m + Math.sin(pose.yaw_rad) * 0.5,
+          yaw_rad: pose.yaw_rad,
+        });
+        setNavTestStatus("Prepared forward 0.5m goal", "ok");
+      });
+      if (send) send.addEventListener("click", sendNavTestGoal);
+    }
+    async function sendNavTestGoal() {
+      const send = document.getElementById("navSendGoal");
+      const pose = readNavInputs();
+      if (!pose) { setNavTestStatus("Enter numeric x, y, yaw", "error"); return; }
+      const robot = diagnostics.robot || {};
+      if ((robot.actual_mode || robot.mode) !== "idle") {
+        setNavTestStatus("Stop robot before Nav Test", "warn");
+        return;
+      }
+      if (send) send.disabled = true;
+      setNavTestStatus(`Sending (${pose.x_m.toFixed(2)}, ${pose.y_m.toFixed(2)})`, "muted");
+      try {
+        const response = await fetch("/api/nav-test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pose),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) {
+          setNavTestStatus(result.message || `Nav goal failed (${response.status})`, "error");
+          return;
+        }
+        setNavTestStatus(result.succeeded ? "Nav goal succeeded" : "Nav goal sent", result.succeeded ? "ok" : "warn");
+        await refresh();
+      } catch (error) {
+        setNavTestStatus(`Nav request failed: ${error.message || error}`, "error");
+      } finally {
+        if (send) send.disabled = false;
+      }
+    }
+    async function copyCollectionLog() {
+      const btn = document.getElementById("collectionLogCopy");
+      const events = _lastCollectionEvents;
+      if (!events.length) { if (btn) { btn.textContent = "No events"; setTimeout(() => (btn.textContent = "Copy"), 1200); } return; }
+      const lines = events.map(ev => {
+        const head = `[${fmt(ev.t_s, "s")}] ${ev.type || "event"}`;
+        const detail = Object.entries(ev)
+          .filter(([k, v]) => !["t_s", "type"].includes(k) && v !== null && v !== undefined && v !== "")
+          .map(([k, v]) => `${k}=${(Array.isArray(v) || typeof v === "object") ? JSON.stringify(v) : v}`)
+          .join("  ");
+        return detail ? `${head}  ${detail}` : head;
+      });
+      const text = lines.join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (e) {
+        const ta = document.createElement("textarea");
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+      if (btn) { btn.textContent = `Copied ${events.length}`; setTimeout(() => (btn.textContent = "Copy"), 1400); }
+    }
+    function clearCollectionLog() {
+      const btn = document.getElementById("collectionLogClear");
+      _collectionLogClearedAtS = _lastCollectionEvents.reduce(
+        (max, event) => Math.max(max, Number(event.t_s) || 0),
+        _collectionLogClearedAtS || 0
+      );
+      renderCollectionTerminal([]);
+      if (btn) {
+        btn.textContent = "Cleared";
+        setTimeout(() => (btn.textContent = "Clear"), 1200);
+      }
+    }
 
     async function refresh() {
       const response = await fetch("/api/diagnostics", { cache: "no-store" });
@@ -463,6 +677,9 @@
           : { ...(robot.map_mission || {}), source_label: "Mapping mission" }
       );
       safe(() => renderMapMission(mapMissionForGrid));
+      safe(() => renderCollectionTruth(robot.collection_truth || {}));
+      safe(() => renderCollectionTerminal(robot.collection_events || []));
+      safe(() => renderCollectionIr(sensors.ir_intake));
       safe(updateCommandButtons);
 
       // Auto-navigate to the mission workspace while survey/collection is active.
@@ -1694,12 +1911,54 @@
       ].map(([label, val]) => `<div style="border-top:1px solid var(--line);padding-top:8px;">${label}${val}</div>`).join("");
       drawLidarScan(document.getElementById(canvasId), ranges, minRange, maxRange, candList, sensor);
     }
+    function renderCollectionIr(ir) {
+      const threshold = ir?.threshold ?? 500;
+      const available = ir?.left_available || ir?.right_available;
+      const statusEl = document.getElementById("collIrStatus");
+      if (statusEl) statusEl.textContent = available ? "live" : "no signal";
+      function renderOne(valueId, barId, panelId, value, avail) {
+        const valEl = document.getElementById(valueId);
+        const barEl = document.getElementById(barId);
+        const panelEl = document.getElementById(panelId);
+        if (!valEl || !barEl || !panelEl) return;
+        if (!avail || value === null || value === undefined) {
+          valEl.textContent = "N/A";
+          barEl.style.width = "0%";
+          barEl.style.background = "rgba(255,255,255,0.15)";
+          panelEl.style.borderColor = "var(--line)";
+          return;
+        }
+        const pct = Math.min(100, Math.round((value / 1000) * 100));
+        const triggered = value > threshold;
+        valEl.textContent = Math.round(value);
+        barEl.style.width = `${pct}%`;
+        barEl.style.background = triggered ? "#2fd08f" : "rgba(145,162,178,0.45)";
+        panelEl.style.borderColor = triggered ? "rgba(47,208,143,0.55)" : "var(--line)";
+      }
+      renderOne("collIrLeftValue", "collIrLeftBar", "collIrLeftPanel", ir?.left, ir?.left_available ?? (ir !== undefined));
+      renderOne("collIrRightValue", "collIrRightBar", "collIrRightPanel", ir?.right, ir?.right_available ?? (ir !== undefined));
+      const badge = document.getElementById("collIrBadge");
+      if (badge) {
+        const triggered = !!ir?.triggered;
+        badge.textContent = available ? (triggered ? "TRIGGERED: YES — collection gate open" : "TRIGGERED: NO — ball not in intake zone") : "TRIGGERED: sensors not available";
+        badge.style.background = triggered ? "rgba(47,208,143,0.15)" : (available ? "rgba(255,255,255,0.04)" : "rgba(255,80,80,0.10)");
+        badge.style.color = triggered ? "#2fd08f" : (available ? "var(--muted)" : "#ff6060");
+      }
+    }
     function renderCourtMap() {
       const canvas = document.getElementById("courtMap");
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
-      const map = (diagnostics.robot || {}).map || {};
-      const survBounds = diagnostics.court_boundary || ((diagnostics.robot || {}).survey || {}).bounds;
+      const robotStatus = diagnostics.robot || {};
+      const map = robotStatus.map || {};
+      const survBounds = diagnostics.court_boundary || (robotStatus.survey || {}).bounds;
+      const mapRobot = map.robot || {};
+      const liveRobot = robotStatus.robot || {};
+      const robotPose = {
+        x_m: Number.isFinite(mapRobot.x_m) ? mapRobot.x_m : (Number.isFinite(liveRobot.x_m) ? liveRobot.x_m : robotStatus.robot_x_m),
+        y_m: Number.isFinite(mapRobot.y_m) ? mapRobot.y_m : (Number.isFinite(liveRobot.y_m) ? liveRobot.y_m : robotStatus.robot_y_m),
+        yaw_rad: Number.isFinite(mapRobot.yaw_rad) ? mapRobot.yaw_rad : (Number.isFinite(liveRobot.yaw_rad) ? liveRobot.yaw_rad : robotStatus.robot_yaw_rad),
+      };
       const courtFrame = courtFrameModel(survBounds);
       const court = courtFrame
         ? {
@@ -1845,11 +2104,10 @@
       }
 
       // camera FOV cone
-      const robot = map.robot || {};
-      if (robot.x_m !== undefined && robot.y_m !== undefined) {
-        const rx = sx(robot.x_m);
-        const ry = sy(robot.y_m);
-        const yaw = robot.yaw_rad || 0;
+      if (Number.isFinite(robotPose.x_m) && Number.isFinite(robotPose.y_m)) {
+        const rx = sx(robotPose.x_m);
+        const ry = sy(robotPose.y_m);
+        const yaw = Number.isFinite(robotPose.yaw_rad) ? robotPose.yaw_rad : 0;
         const fov = map.camera_fov_rad || 1.05;
         const fovRange = (map.camera_max_range_m || 4.5) * scaleM;
         ctx.save();
@@ -1887,6 +2145,33 @@
 
       const activeTargetId = map.active_target_id;
       const collectionScan = (diagnostics.robot || {}).collection_scan || {};
+      const laneWaypoints = Array.isArray(collectionScan.waypoints) ? collectionScan.waypoints : [];
+      if (laneWaypoints.length >= 2) {
+        const activeIdx = Number.isFinite(collectionScan.waypoint_index) ? collectionScan.waypoint_index : -1;
+        ctx.save();
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        for (let i = 0; i + 1 < laneWaypoints.length; i += 2) {
+          const a = laneWaypoints[i], b = laneWaypoints[i + 1];
+          if (!a || !b) continue;
+          const isActive = (i === activeIdx || i + 1 === activeIdx);
+          ctx.beginPath();
+          ctx.moveTo(sx(a.x_m), sy(a.y_m));
+          ctx.lineTo(sx(b.x_m), sy(b.y_m));
+          ctx.strokeStyle = isActive ? "rgba(168,85,247,0.95)" : "rgba(168,85,247,0.45)";
+          ctx.lineWidth = isActive ? 4 : 2;
+          ctx.setLineDash(isActive ? [] : [8, 6]);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        laneWaypoints.forEach((wp, idx) => {
+          ctx.beginPath();
+          ctx.arc(sx(wp.x_m), sy(wp.y_m), 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = idx === activeIdx ? "#a855f7" : "rgba(168,85,247,0.55)";
+          ctx.fill();
+        });
+        ctx.restore();
+      }
       const localCandidates = Array.isArray(collectionScan.local_candidates) ? collectionScan.local_candidates : [];
       const allBalls = Array.isArray(map.balls) && map.balls.length
         ? map.balls
@@ -1987,20 +2272,45 @@
       });
 
       // robot arrow
-      if (robot.x_m !== undefined && robot.y_m !== undefined) {
-        const x = sx(robot.x_m);
-        const y = sy(robot.y_m);
-        const yaw = robot.yaw_rad || 0;
+      if (Number.isFinite(robotPose.x_m) && Number.isFinite(robotPose.y_m)) {
+        const x = sx(robotPose.x_m);
+        const y = sy(robotPose.y_m);
+        const yaw = Number.isFinite(robotPose.yaw_rad) ? robotPose.yaw_rad : 0;
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(-yaw);
+        ctx.shadowColor = "rgba(0,0,0,0.45)";
+        ctx.shadowBlur = 8;
         ctx.fillStyle = "#ffbd5a";
         ctx.beginPath();
-        ctx.moveTo(16, 0);
-        ctx.lineTo(-10, -9);
-        ctx.lineTo(-10, 9);
+        ctx.moveTo(18, 0);
+        ctx.lineTo(-11, -10);
+        ctx.lineTo(-6, 0);
+        ctx.lineTo(-11, 10);
         ctx.closePath();
         ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(12,17,22,0.9)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#0c1116";
+        ctx.fill();
+        ctx.restore();
+
+        const poseText = `${robotPose.x_m.toFixed(2)}, ${robotPose.y_m.toFixed(2)}`;
+        ctx.save();
+        ctx.font = "bold 11px system-ui";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        const labelX = Math.min(width - pad - 84, x + 14);
+        const labelY = Math.max(pad + 12, Math.min(height - pad - 12, y - 16));
+        const labelW = ctx.measureText(poseText).width + 16;
+        ctx.fillStyle = "rgba(12,17,22,0.78)";
+        ctx.fillRect(labelX - 6, labelY - 10, labelW, 20);
+        ctx.fillStyle = "#ffbd5a";
+        ctx.fillText(poseText, labelX + 2, labelY);
         ctx.restore();
       }
 

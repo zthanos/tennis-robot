@@ -70,6 +70,51 @@ class CollectionLawnmowerTests(unittest.TestCase):
         self.assertEqual(sum(sum(row) for row in mission.grid), 2)
         self.assertEqual(mission.unassigned_candidates, 0)
 
+    def test_active_lane_filter_rejects_off_lane_observations(self) -> None:
+        mission = self._mission(HalfCourtBounds("side_neg_x", -6.0, 0.0, -3.0, 3.0))
+        mission._waypoints = [(-5.15, -2.0), (-0.65, -2.0)]
+        mission._waypoint_index = 1
+
+        self.assertTrue(mission.observation_in_active_lane(-1.0, -2.1))
+        self.assertFalse(mission.observation_in_active_lane(-1.0, 0.5))
+        self.assertFalse(mission.observation_in_active_lane(1.0, -2.1))
+
+    def test_nav2_target_advances_waypoints_and_finishes(self) -> None:
+        mission = self._mission(HalfCourtBounds("side_neg_x", -6.0, 0.0, -3.0, 3.0))
+        mission._state = "sweeping"
+        mission._waypoints = [(-5.0, 2.0), (-0.5, 2.0)]
+        mission._waypoint_index = 0
+
+        # Far from the first waypoint -> keep targeting it.
+        self.assertEqual(mission.nav2_target(-2.0, 2.0), (-5.0, 2.0))
+        self.assertEqual(mission._waypoint_index, 0)
+
+        # Arrived at the first waypoint -> advance to the second.
+        self.assertEqual(mission.nav2_target(-5.0, 2.0), (-0.5, 2.0))
+        self.assertEqual(mission._waypoint_index, 1)
+
+        # Arrived at the last waypoint -> sweep completes.
+        self.assertIsNone(mission.nav2_target(-0.5, 2.0))
+        self.assertTrue(mission.complete)
+        self.assertEqual(mission._state, "complete")
+
+    def test_half_court_gate_rejects_out_of_bounds(self) -> None:
+        mission = self._mission(HalfCourtBounds("side_neg_x", -6.0, 0.0, -3.0, 3.0))
+        # inside the collect half-court
+        self.assertTrue(mission.observation_in_half_court(-3.0, 0.0))
+        # inside the net clearance band (too close to the net) -> excluded
+        self.assertFalse(mission.observation_in_half_court(-0.3, 0.0))
+        # across the net, in the other half -> excluded
+        self.assertFalse(mission.observation_in_half_court(2.0, 0.0))
+        # past the fence -> excluded
+        self.assertFalse(mission.observation_in_half_court(-5.8, 0.0))
+        # outside the sidelines -> excluded
+        self.assertFalse(mission.observation_in_half_court(-3.0, 4.0))
+
+    def test_half_court_gate_permissive_without_bounds(self) -> None:
+        mission = ServiceLineDistributionScanMission(lambda: [])
+        self.assertTrue(mission.observation_in_half_court(10.0, 10.0))
+
 
 if __name__ == "__main__":
     unittest.main()
