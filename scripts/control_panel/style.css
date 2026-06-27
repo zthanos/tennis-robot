@@ -567,6 +567,7 @@
     .legend .robot::before { background: var(--warn); }
     .legend .fov::before { background: rgba(87,166,255,0.15); border: 1px solid rgba(87,166,255,0.4); border-radius: 2px; }
     .legend .lane::before { border-radius: 2px; background: #a855f7; }
+    .legend .goal::before { background: #57a6ff; box-shadow: 0 0 0 2px rgba(87,166,255,0.35); }
     .collection-log-full {
       margin-top: 14px;
     }

@@ -15,6 +15,13 @@
     let sensors = {};
     let _lastCollectionEvents = [];
     let _collectionLogClearedAtS = null;
+    // Client-side Nav Test entries, merged into the Collection Log so manual
+    // nav goals/cancels/errors appear alongside the robot's collection events.
+    let _navTestLog = [];
+    let _lastServerCollectionEvents = [];
+    // Last Nav Test goal (map frame) to draw as a marker on the Collection Map.
+    let _navTestGoal = null;
+    function setNavTestGoal(goal) { _navTestGoal = goal; }
     let lastSurveyDiscovery = null;
     let robotPath = [];
     let discoveryCleared = false;
@@ -149,7 +156,10 @@
       const target = document.getElementById("collectionTerminalLog");
       const status = document.getElementById("collectionLogStatus");
       if (!target) return;
-      const sourceEvents = Array.isArray(events) ? events : [];
+      _lastServerCollectionEvents = Array.isArray(events) ? events : [];
+      // Merge server collection events with local Nav Test entries, ordered by time.
+      const sourceEvents = [..._lastServerCollectionEvents, ..._navTestLog]
+        .sort((a, b) => (Number(a.t_s) || 0) - (Number(b.t_s) || 0));
       const newestTime = sourceEvents.reduce((max, event) => Math.max(max, Number(event.t_s) || 0), 0);
       if (_collectionLogClearedAtS !== null && newestTime > 0 && newestTime < _collectionLogClearedAtS) {
         _collectionLogClearedAtS = null;
@@ -164,7 +174,7 @@
         target.innerHTML = `<div class="terminal-empty">${_collectionLogClearedAtS === null ? "No collection decisions yet." : "Log cleared. Waiting for new collection decisions."}</div>`;
         return;
       }
-      const hidden = new Set(["t_s", "type", "mode"]);
+      const hidden = new Set(["t_s", "type", "mode", "clock"]);
       const labelFor = {
         mode_enter: "mode",
         scan_start: "scan start",
@@ -179,11 +189,19 @@
         scan_complete: "complete",
         nav2_unavailable: "nav2 down",
         nav2_goal_cancel: "nav2 cancel",
+        nav_test_dispatch: "nav sent",
+        nav_test_sent: "nav goal",
+        nav_test_succeeded: "nav ok",
+        nav_test_cancel: "nav cancel",
+        nav_test_timeout: "nav running",
+        nav_test_out_of_bounds: "out of bounds",
+        nav_test_error: "nav2 down",
       };
       const severityFor = type => (
-        type === "scan_blocked" || type === "lane_collect_timeout" || type === "lane_collect_gave_up" || type === "nav2_unavailable"
+        type === "scan_blocked" || type === "lane_collect_timeout" || type === "lane_collect_gave_up"
+          || type === "nav2_unavailable" || type === "nav_test_out_of_bounds" || type === "nav_test_error"
           ? "error"
-          : type === "lane_collect_abort"
+          : type === "lane_collect_abort" || type === "nav_test_timeout"
             ? "warn"
             : "info"
       );
@@ -198,11 +216,17 @@
         const type = event.type || "event";
         const severity = severityFor(type);
         return `<div class="terminal-row">
-          <span class="terminal-time">${escapeHtml(fmt(event.t_s, "s"))}</span>
+          <span class="terminal-time">${escapeHtml(event.clock || fmt(event.t_s, "s"))}</span>
           <span class="terminal-type ${severity === "info" ? "" : severity}">${escapeHtml(labelFor[type] || type)}</span>
           <span class="terminal-detail">${escapeHtml(detailText(event) || "ok")}</span>
         </div>`;
       }).join("");
+    }
+    function addNavTestLog(type, detail = {}) {
+      _navTestLog.push({ t_s: Date.now() / 1000, clock: new Date().toLocaleTimeString(), type, ...detail });
+      if (_navTestLog.length > 50) _navTestLog = _navTestLog.slice(-50);
+      // Re-render immediately, merging with the last server events.
+      renderCollectionTerminal(_lastServerCollectionEvents);
     }
     function renderCollectionTruth(truth) {
       const status = document.getElementById("collectionTruthStatus");
@@ -418,106 +442,17 @@
       if (copyBtn) copyBtn.addEventListener("click", copyCollectionLog);
       const clearBtn = document.getElementById("collectionLogClear");
       if (clearBtn) clearBtn.addEventListener("click", clearCollectionLog);
-      wireNavTestControls();
+      // Nav Test lives in its own module (nav_test.js); wire its controls here.
+      window.ControlPanelNavTest.wire();
     };
-    function currentRobotPose() {
-      const robot = diagnostics.robot || {};
-      const nested = robot.robot || {};
-      const x = Number.isFinite(nested.x_m) ? nested.x_m : robot.robot_x_m;
-      const y = Number.isFinite(nested.y_m) ? nested.y_m : robot.robot_y_m;
-      const yaw = Number.isFinite(nested.yaw_rad) ? nested.yaw_rad : robot.robot_yaw_rad;
-      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-      return { x_m: x, y_m: y, yaw_rad: Number.isFinite(yaw) ? yaw : 0 };
-    }
-    function setNavTestStatus(text, tone = "muted") {
-      const status = document.getElementById("navTestStatus");
-      const output = document.getElementById("navTestOutput");
-      const color = tone === "ok" ? "var(--accent)" : tone === "error" ? "var(--danger)" : tone === "warn" ? "var(--warn)" : "var(--muted)";
-      if (status) {
-        status.textContent = text;
-        status.style.color = color;
-      }
-      if (output) {
-        output.textContent = text;
-        output.style.color = color;
-      }
-    }
-    function setNavInputs(pose) {
-      const xEl = document.getElementById("navGoalX");
-      const yEl = document.getElementById("navGoalY");
-      const yawEl = document.getElementById("navGoalYaw");
-      if (!xEl || !yEl || !yawEl || !pose) return;
-      xEl.value = Number(pose.x_m).toFixed(2);
-      yEl.value = Number(pose.y_m).toFixed(2);
-      yawEl.value = Number(pose.yaw_rad || 0).toFixed(2);
-    }
-    function readNavInputs() {
-      const x = Number(document.getElementById("navGoalX")?.value);
-      const y = Number(document.getElementById("navGoalY")?.value);
-      const yaw = Number(document.getElementById("navGoalYaw")?.value || 0);
-      if (![x, y, yaw].every(Number.isFinite)) return null;
-      return { x_m: x, y_m: y, yaw_rad: yaw };
-    }
-    function wireNavTestControls() {
-      const useCurrent = document.getElementById("navUseCurrent");
-      const forward = document.getElementById("navForwardSmall");
-      const send = document.getElementById("navSendGoal");
-      if (useCurrent) useCurrent.addEventListener("click", () => {
-        const pose = currentRobotPose();
-        if (!pose) { setNavTestStatus("No live robot pose", "error"); return; }
-        setNavInputs(pose);
-        setNavTestStatus("Loaded current pose", "ok");
-      });
-      if (forward) forward.addEventListener("click", () => {
-        const pose = currentRobotPose();
-        if (!pose) { setNavTestStatus("No live robot pose", "error"); return; }
-        setNavInputs({
-          x_m: pose.x_m + Math.cos(pose.yaw_rad) * 0.5,
-          y_m: pose.y_m + Math.sin(pose.yaw_rad) * 0.5,
-          yaw_rad: pose.yaw_rad,
-        });
-        setNavTestStatus("Prepared forward 0.5m goal", "ok");
-      });
-      if (send) send.addEventListener("click", sendNavTestGoal);
-    }
-    async function sendNavTestGoal() {
-      const send = document.getElementById("navSendGoal");
-      const pose = readNavInputs();
-      if (!pose) { setNavTestStatus("Enter numeric x, y, yaw", "error"); return; }
-      const robot = diagnostics.robot || {};
-      if ((robot.actual_mode || robot.mode) !== "idle") {
-        setNavTestStatus("Stop robot before Nav Test", "warn");
-        return;
-      }
-      if (send) send.disabled = true;
-      setNavTestStatus(`Sending (${pose.x_m.toFixed(2)}, ${pose.y_m.toFixed(2)})`, "muted");
-      try {
-        const response = await fetch("/api/nav-test", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(pose),
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.ok) {
-          setNavTestStatus(result.message || `Nav goal failed (${response.status})`, "error");
-          return;
-        }
-        setNavTestStatus(result.succeeded ? "Nav goal succeeded" : "Nav goal sent", result.succeeded ? "ok" : "warn");
-        await refresh();
-      } catch (error) {
-        setNavTestStatus(`Nav request failed: ${error.message || error}`, "error");
-      } finally {
-        if (send) send.disabled = false;
-      }
-    }
     async function copyCollectionLog() {
       const btn = document.getElementById("collectionLogCopy");
       const events = _lastCollectionEvents;
       if (!events.length) { if (btn) { btn.textContent = "No events"; setTimeout(() => (btn.textContent = "Copy"), 1200); } return; }
       const lines = events.map(ev => {
-        const head = `[${fmt(ev.t_s, "s")}] ${ev.type || "event"}`;
+        const head = `[${ev.clock || fmt(ev.t_s, "s")}] ${ev.type || "event"}`;
         const detail = Object.entries(ev)
-          .filter(([k, v]) => !["t_s", "type"].includes(k) && v !== null && v !== undefined && v !== "")
+          .filter(([k, v]) => !["t_s", "type", "clock"].includes(k) && v !== null && v !== undefined && v !== "")
           .map(([k, v]) => `${k}=${(Array.isArray(v) || typeof v === "object") ? JSON.stringify(v) : v}`)
           .join("  ");
         return detail ? `${head}  ${detail}` : head;
@@ -2314,6 +2249,51 @@
         ctx.restore();
       }
 
+      // Nav Test goal marker (map frame, same transform as the robot)
+      if (_navTestGoal && Number.isFinite(_navTestGoal.x_m) && Number.isFinite(_navTestGoal.y_m)) {
+        const gx = sx(_navTestGoal.x_m);
+        const gy = sy(_navTestGoal.y_m);
+        const gyaw = Number.isFinite(_navTestGoal.yaw_rad) ? _navTestGoal.yaw_rad : 0;
+        ctx.save();
+        ctx.strokeStyle = "#57a6ff";
+        ctx.fillStyle = "#57a6ff";
+        ctx.lineWidth = 2;
+        // dashed target ring
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.arc(gx, gy, 12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // crosshair
+        ctx.beginPath();
+        ctx.moveTo(gx - 17, gy); ctx.lineTo(gx - 5, gy);
+        ctx.moveTo(gx + 5, gy); ctx.lineTo(gx + 17, gy);
+        ctx.moveTo(gx, gy - 17); ctx.lineTo(gx, gy - 5);
+        ctx.moveTo(gx, gy + 5); ctx.lineTo(gx, gy + 17);
+        ctx.stroke();
+        // yaw direction arrow
+        ctx.save();
+        ctx.translate(gx, gy);
+        ctx.rotate(-gyaw);
+        ctx.beginPath();
+        ctx.moveTo(22, 0); ctx.lineTo(13, -5); ctx.lineTo(13, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        // label
+        const goalText = `goal ${_navTestGoal.x_m.toFixed(2)}, ${_navTestGoal.y_m.toFixed(2)}`;
+        ctx.font = "bold 11px system-ui";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        const glx = Math.min(width - pad - 110, gx + 16);
+        const gly = Math.max(pad + 12, Math.min(height - pad - 12, gy + 20));
+        ctx.fillStyle = "rgba(12,17,22,0.78)";
+        ctx.fillRect(glx - 6, gly - 10, ctx.measureText(goalText).width + 12, 20);
+        ctx.fillStyle = "#57a6ff";
+        ctx.fillText(goalText, glx, gly);
+        ctx.restore();
+      }
+
       // summary box
       const metrics = map.metrics || {};
       const confirmedCount = allBalls.filter(b => b.confirmed && b.side !== "across_net").length;
@@ -2370,3 +2350,5 @@
     window.ControlPanelVendors.setOnChange(updateCommandButtons);
     window.ControlPanelVendors.load();
     VIEW_INIT.vendors = function () { window.ControlPanelVendors.initView(); };
+    // Give the Nav Test module access to live diagnostics and the refresh loop.
+    window.ControlPanelNavTest.init({ getDiagnostics: () => diagnostics, refresh, log: addNavTestLog, onGoal: setNavTestGoal });
