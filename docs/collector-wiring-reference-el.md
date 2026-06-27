@@ -112,8 +112,8 @@ TB6612 GND
 
 | Χρώμα | Χρήση |
 |---|---|
-| Κόκκινο | Motor |
-| Μαύρο | Motor |
+| Κόκκινο |  Motor Lead (AO1)|
+| Μαύρο | Motor Lead (AO2) |
 | Μπλε | Encoder A |
 | Πράσινο | Encoder B |
 | Κίτρινο | Encoder VCC |
