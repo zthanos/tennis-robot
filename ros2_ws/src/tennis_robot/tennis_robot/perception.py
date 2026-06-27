@@ -115,7 +115,8 @@ class ObstacleDetection:
     confidence: float
 
 
-def detect_largest_ball(frame: np.ndarray) -> BallDetection | None:
+def detect_balls(frame: np.ndarray) -> list[BallDetection]:
+    """All tennis-ball detections in the frame, ordered largest-area first."""
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
     for lower, upper in HSV_RANGES:
@@ -134,9 +135,13 @@ def detect_largest_ball(frame: np.ndarray) -> BallDetection | None:
         if not MIN_BALL_ASPECT_RATIO <= aspect_ratio <= MAX_BALL_ASPECT_RATIO:
             continue
         candidates.append(BallDetection(x, y, width, height))
-    if not candidates:
-        return None
-    return max(candidates, key=lambda detection: detection.area_px)
+    candidates.sort(key=lambda detection: detection.area_px, reverse=True)
+    return candidates
+
+
+def detect_largest_ball(frame: np.ndarray) -> BallDetection | None:
+    balls = detect_balls(frame)
+    return balls[0] if balls else None
 
 
 def estimate_depth_ball_observation(

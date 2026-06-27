@@ -183,6 +183,7 @@ class ControllerNode(Node):
         self._latest_obs_seq = 0
         self._mapped_obs_seq = 0
         self._latest_survey_vision: SurveyVision | None = None
+        self._latest_camera_balls: list[dict] = []
         self._lidar_ranges: list[float] | None = None
         self._lidar_angle_min: float = -math.pi
         self._lidar_angle_increment: float | None = None
@@ -207,6 +208,7 @@ class ControllerNode(Node):
         # ── subscriptions ──────────────────────────────────────────────────────
         self.create_subscription(BallObservation, "/ball/observation", self._on_observation, 1)
         self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
+        self.create_subscription(String, "/ball/observations", self._on_ball_observations, 1)
         self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
         self.create_subscription(Odometry, "/odom", self._on_odom, 10)
         self.create_subscription(IrReadings, "/ir/readings", self._on_ir, 10)
@@ -241,6 +243,16 @@ class ControllerNode(Node):
 
     def _on_survey_vision(self, msg: String) -> None:
         self._latest_survey_vision = _survey_vision_from_json(msg.data)
+
+    def _on_ball_observations(self, msg: String) -> None:
+        """Latest list of in-frame camera balls (bearing/distance), surfaced in
+        status so the console can draw every detected ball."""
+        try:
+            data = json.loads(msg.data)
+            balls = data.get("balls", []) if isinstance(data, dict) else []
+            self._latest_camera_balls = balls if isinstance(balls, list) else []
+        except (ValueError, AttributeError):
+            self._latest_camera_balls = []
 
     def _on_scan(self, msg: LaserScan) -> None:
         self._lidar_ranges = [float(r) for r in msg.ranges]
@@ -1303,6 +1315,11 @@ class ControllerNode(Node):
             "cmd_angular_rad_s": round(command.base.angular_speed_rad_s, 3),
             "ball_visible": observation.visible,
             "ball_distance_m": round(observation.distance_m, 3) if observation.visible else None,
+            # Camera bearing (rad, +left per ROS) so the console can draw the live
+            # detected ball on the map before it is mapped/confirmed.
+            "ball_bearing_rad": round(observation.bearing_rad, 4) if observation.visible else None,
+            # All in-frame camera balls (bearing/distance/source) for the map.
+            "camera_balls": self._latest_camera_balls,
             "collect_pattern_phase": self.collect_pattern_phase,
             "collection_lane_collecting": self._collection_lane_collecting,
             "collection_opportunistic_collecting": self._collection_opportunistic_collecting,

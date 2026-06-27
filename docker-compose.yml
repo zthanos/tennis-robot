@@ -66,6 +66,11 @@ services:
       - PULSE_SERVER=/mnt/wslg/PulseServer
       - LD_LIBRARY_PATH=/usr/lib/wsl/lib
       - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      # GPU (D3D12) only works for OFFSCREEN/EGL (headless sensors). Forcing
+      # GALLIUM_DRIVER=d3d12 here breaks the GLX path used by the Gazebo/RViz GUI
+      # on WSLg (drisw/GLXCreateNewContext fails). So it is set per-run only in
+      # headless mode via GALLIUM_DRIVER below, not globally.
+      - "GALLIUM_DRIVER=${GALLIUM_DRIVER:-}"
       # The discrete RX 7900 XTX is not enumerated inside the container; only the
       # integrated 890M is reachable via WSL. 890M is plenty for the sim.
       - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
@@ -124,6 +129,11 @@ services:
       - PULSE_SERVER=/mnt/wslg/PulseServer
       - LD_LIBRARY_PATH=/usr/lib/wsl/lib
       - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      # GPU (D3D12) only works for OFFSCREEN/EGL (headless sensors). Forcing
+      # GALLIUM_DRIVER=d3d12 here breaks the GLX path used by the Gazebo/RViz GUI
+      # on WSLg (drisw/GLXCreateNewContext fails). So it is set per-run only in
+      # headless mode via GALLIUM_DRIVER below, not globally.
+      - "GALLIUM_DRIVER=${GALLIUM_DRIVER:-}"
       - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
       - LIBGL_ALWAYS_SOFTWARE=0
       - ROS_DOMAIN_ID=42
@@ -162,6 +172,11 @@ services:
       - PULSE_SERVER=/mnt/wslg/PulseServer
       - LD_LIBRARY_PATH=/usr/lib/wsl/lib
       - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      # GPU (D3D12) only works for OFFSCREEN/EGL (headless sensors). Forcing
+      # GALLIUM_DRIVER=d3d12 here breaks the GLX path used by the Gazebo/RViz GUI
+      # on WSLg (drisw/GLXCreateNewContext fails). So it is set per-run only in
+      # headless mode via GALLIUM_DRIVER below, not globally.
+      - "GALLIUM_DRIVER=${GALLIUM_DRIVER:-}"
       # The discrete RX 7900 XTX is not enumerated inside the container; only the
       # integrated 890M is reachable via WSL. 890M is plenty for the sim.
       - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"

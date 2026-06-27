@@ -34,6 +34,7 @@ from tennis_robot.perception import (
     CameraMount,
     RobotPose2D,
     build_survey_vision,
+    detect_balls,
     detect_largest_ball,
     estimate_depth_ball_observation,
     observation_to_world,
@@ -74,6 +75,9 @@ class PerceptionNode(Node):
             10,
         )
         self._pub_survey = self.create_publisher(String, "/survey/vision", 1)
+        # All in-frame balls (JSON list) so the console can show every detected
+        # ball, not just the largest one carried on /ball/observation.
+        self._pub_obs_list = self.create_publisher(String, "/ball/observations", 1)
 
         self.get_logger().info("perception_node started")
 
@@ -115,6 +119,7 @@ class PerceptionNode(Node):
             return
         self._last_image_signature = signature
         self._publish_ball_observation(frame, msg.width, msg.height)
+        self._publish_ball_observations(frame, msg.width, msg.height)
         self._publish_survey_vision(frame)
 
     def _decode_image(self, msg: Image) -> np.ndarray | None:
@@ -171,6 +176,34 @@ class PerceptionNode(Node):
         obs.robot_x_m = float(world.robot_x_m or 0.0)
         obs.robot_y_m = float(world.robot_y_m or 0.0)
         self._pub_obs.publish(obs)
+
+    def _publish_ball_observations(self, frame: np.ndarray, w: int, h: int) -> None:
+        """Publish every in-frame ball (bearing + distance) as a JSON list, so
+        the console can render all detected balls — not only the largest."""
+        balls: list[dict] = []
+        if self._depth is not None:
+            for detection in detect_balls(frame)[:6]:
+                ball_obs = estimate_depth_ball_observation(
+                    detection, self._depth, w, h, CAMERA_FOV_RAD
+                )
+                if ball_obs is None:
+                    continue
+                world = observation_to_world(
+                    ball_obs,
+                    RobotPose2D(self._robot_x, self._robot_y, self._robot_yaw),
+                    FRONT_CAMERA_MOUNT,
+                )
+                balls.append({
+                    "bearing_rad": round(float(ball_obs.bearing_rad), 4),
+                    "distance_m": round(float(ball_obs.distance_m), 3),
+                    "source": ball_obs.distance_source,
+                    "confidence": round(float(min(1.0, detection.area_px / 6000)), 3),
+                    "world_x_m": round(float(world.world_x_m or 0.0), 3),
+                    "world_y_m": round(float(world.world_y_m or 0.0), 3),
+                })
+        msg = String()
+        msg.data = json.dumps({"balls": balls})
+        self._pub_obs_list.publish(msg)
 
     def _publish_survey_vision(self, frame: np.ndarray) -> None:
         sv = build_survey_vision(frame, self._depth, DEPTH_MIN_RANGE, DEPTH_MAX_RANGE)

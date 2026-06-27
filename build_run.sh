@@ -1,8 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-true}"
-export MESA_D3D12_DEFAULT_ADAPTER_NAME="${MESA_D3D12_DEFAULT_ADAPTER_NAME:-7900 XTX}"
+export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-false}"
+# Only the integrated 890M is enumerated inside the container via WSL D3D12 —
+# the discrete 7900 XTX is NOT reachable, and naming it makes Mesa's d3d12 driver
+# find no adapter and fall back to llvmpipe (software). Use 890M for HW accel.
+export MESA_D3D12_DEFAULT_ADAPTER_NAME="${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
+
+# GPU acceleration on WSL works only for OFFSCREEN/EGL rendering = HEADLESS.
+# With the GUI (GLX via WSLg/Xwayland) the d3d12 driver crashes
+# (drisw/GLXCreateNewContext fails), so we enable it ONLY when headless and
+# leave the GUI on software (llvmpipe) where the window renders fine.
+#   GPU + fast sim, no GUI:   GAZEBO_HEADLESS=true  ./build_run.sh
+#   GUI (software, slower):   ./build_run.sh        (default)
+if [ "$GAZEBO_HEADLESS" = "true" ]; then
+  export GALLIUM_DRIVER="${GALLIUM_DRIVER:-d3d12}"
+else
+  export GALLIUM_DRIVER=""
+fi
 
 # SLAM mode for the bring-up:
 # - mapping: use this for surveying / Map Court.

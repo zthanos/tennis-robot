@@ -568,6 +568,7 @@
     .legend .fov::before { background: rgba(87,166,255,0.15); border: 1px solid rgba(87,166,255,0.4); border-radius: 2px; }
     .legend .lane::before { border-radius: 2px; background: #a855f7; }
     .legend .goal::before { background: #57a6ff; box-shadow: 0 0 0 2px rgba(87,166,255,0.35); }
+    .legend .camball::before { background: #ffd24a; box-shadow: 0 0 0 2px rgba(255,210,74,0.3); }
     .collection-log-full {
       margin-top: 14px;
     }
