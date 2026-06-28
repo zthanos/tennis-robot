@@ -204,6 +204,27 @@ services:
     command: ["bash", "-c", ". /opt/ros/humble/setup.sh && . /ros2_ws/install/setup.sh && mkdir -p /workspace/runtime && (python3 /workspace/scripts/survey_replay_record.py --out $${SURVEY_REPLAY_FILE} --duration-s $${SURVEY_REPLAY_DURATION_S} > /workspace/runtime/survey_replay_record.out.log 2> /workspace/runtime/survey_replay_record.err.log &) && ros2 launch tennis_robot sim.launch.py headless:=$${GAZEBO_HEADLESS:-false}"]
     profiles: ["gazebo-rec"]
 
+  foxglove:
+    image: tennis-robot-gazebo
+    build:
+      context: .
+      dockerfile: Dockerfile.gazebo
+    command:
+      - bash
+      - -lc
+      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765"
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+    networks:
+      - ros2-net
+    environment:
+      - ROS_DOMAIN_ID=42
+      - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+      - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
+    profiles: ["gazebo", "gazebo-rec"]
+
   openscad:
     image: openscad/openscad:bookworm
     profiles: ["cad"]
