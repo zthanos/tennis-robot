@@ -60,6 +60,8 @@ docker compose --profile cad up openscad-gui # OpenSCAD GUI on port 6081
 | File | Role |
 | --- | --- |
 | `controller_node.py` | Main ROS 2 node; integrates survey + motion; publishes cmd_vel and status |
+| `perception_node.py` | Simulated OAK-D AI pipeline: runs the NN detector on synchronized Gazebo RGB/depth and publishes the canonical `BallDetectionArray` contract consumed by the controller. See `docs/perception-oakd-sim-el.md` |
+| `ball_detector.py` | Required neural ball detector: `YoloOnnxBallDetector` (YOLOv8/v11n via ONNX Runtime). Missing/invalid models fail startup; there is no HSV fallback. |
 | `court_survey_v2_node.py` | **Active** survey coverage controller (`INIT→FIND_NET→COVERAGE→SAVING_MAP→DONE/FAILED`); writes `runtime/court_boundary.json` (schema `court_knowledge_model/v2`) |
 | `court_extraction.py` | Pure extraction functions (net/posts, fence rectangle, court lines, obstacles, run-off distances, fail-loud checks) — offline-testable |
 | `court_coverage.py` | Vantage points (8 + return pass) and recoverable-failure classifier |

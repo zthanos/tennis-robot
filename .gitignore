@@ -17,3 +17,7 @@ ros2_ws/install/
 ros2_ws/log/
 ros2_ws/src/tennis_robot/build/
 ros2_ws/src/tennis_robot/*.egg-info/
+
+# Perception model weights (reproducible via scripts/export_yolo_onnx.py)
+models/*.onnx
+models/*.pt

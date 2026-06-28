@@ -205,6 +205,14 @@ def generate_launch_description():
             # Match the RGB camera horizontal_fov in oak_d.urdf.xacro (1.204 rad ≈ 69°).
             # The perception default of 60° skews bearings ~15% toward frame edges.
             "CAMERA_FOV_RAD": "1.204",
+            # Simulated OAK-D AI: run the YOLO ONNX detector on Gazebo RGB frames.
+            # The model is mandatory; node startup fails if it is absent or invalid.
+            # Produce it with scripts/export_yolo_onnx.py.
+            "BALL_DETECTOR_BACKEND": os.getenv("BALL_DETECTOR_BACKEND", "yolo_onnx"),
+            "BALL_MODEL_PATH": os.getenv("BALL_MODEL_PATH", f"{WORKSPACE}/models/yolov8n.onnx"),
+            "BALL_CONF_THRESHOLD": os.getenv("BALL_CONF_THRESHOLD", "0.35"),
+            "BALL_CLASS_IDS": os.getenv("BALL_CLASS_IDS", "32"),
+            "CAMERA_FRAME_ID": "camera_link_optical_frame",
         },
     )
 

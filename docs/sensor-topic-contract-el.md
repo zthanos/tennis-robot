@@ -11,6 +11,7 @@
 | `/scan` | `sensor_msgs/LaserScan` | `lidar_link` | gz `/gz/lidar` → ros_gz_bridge | rplidar driver |
 | `/camera/image_raw` | `sensor_msgs/Image` (rgb8) | `camera_link` | gz `/gz/camera` → bridge | DepthAI/OAK-D driver |
 | `/camera/depth` | `sensor_msgs/Image` (32FC1) | `camera_link` | gz `/gz/depth` → bridge | DepthAI/OAK-D driver |
+| `/perception/ball_detections` | `tennis_robot_msgs/BallDetectionArray` | `camera_link_optical_frame` | simulated OAK-D neural pipeline | OAK-D DepthAI adapter |
 | `/odom` | `nav_msgs/Odometry` | `odom`→`base_link` | `diff_drive_controller` | `diff_drive_controller` |
 | `/ir/readings` | `tennis_robot_msgs/IrReadings` | `base_link` | `gazebo_extras_node` (από `/gz/ir_*`) | IR GPIO node |
 

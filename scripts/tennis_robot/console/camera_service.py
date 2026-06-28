@@ -16,7 +16,8 @@ from .config import WEBCAM_FOV_DEG
 
 try:
     import cv2
-    from tennis_robot.perception import detect_largest_ball, TENNIS_BALL_DIAMETER_M
+    from tennis_robot.ball_detector import load_ball_detector
+    from tennis_robot.perception import TENNIS_BALL_DIAMETER_M
     _VISION_AVAILABLE = True
 except ImportError:
     _VISION_AVAILABLE = False
@@ -28,10 +29,17 @@ class CameraService:
         self._device_index = device_index
         self._cap = None
         self._lock = threading.Lock()
+        self._detector = None
+        self._detector_error = ""
+        if _VISION_AVAILABLE:
+            try:
+                self._detector = load_ball_detector()
+            except (FileNotFoundError, RuntimeError, ValueError) as exc:
+                self._detector_error = str(exc)
 
     @property
     def available(self) -> bool:
-        return _VISION_AVAILABLE
+        return _VISION_AVAILABLE and self._detector is not None
 
     def _get_frame(self) -> tuple[bool, object]:
         if not _VISION_AVAILABLE:
@@ -51,14 +59,16 @@ class CameraService:
 
     def frame(self) -> dict[str, object]:
         """Capture, detect, annotate; return the webcam payload dict."""
-        if not _VISION_AVAILABLE:
-            return {"available": False, "error": "cv2 / perception not installed"}
+        if not self.available:
+            error = self._detector_error or "cv2 / neural perception not installed"
+            return {"available": False, "error": error}
         ok, frame = self._get_frame()
         if not ok or frame is None:
             return {"available": False, "error": "no webcam or read failed"}
 
         h, w = frame.shape[:2]
-        detection = detect_largest_ball(frame)
+        detections = self._detector.detect(frame)
+        detection = detections[0] if detections else None
         result: dict[str, object] = {"available": True, "detected": detection is not None, "width": w, "height": h}
 
         if detection:

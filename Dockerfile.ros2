@@ -15,6 +15,11 @@ RUN apt-get update \
         ros-humble-rmw-cyclonedds-cpp \
     && rm -rf /var/lib/apt/lists/*
 
+# Simulated OAK-D AI: ONNX Runtime executes the YOLO ball detector on CPU.
+# ROS Humble's apt OpenCV bindings are compiled against NumPy 1.x.
+# (No torch/ultralytics at runtime — the model is pre-exported to .onnx.)
+RUN pip3 install --no-cache-dir "numpy<2" "onnxruntime>=1.16,<2"
+
 WORKDIR /ros2_ws
 
 # Build messages first (nodes depend on them)

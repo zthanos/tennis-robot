@@ -429,19 +429,29 @@ window.ControlPanelCollectionMap = (() => {
         ctx.restore();
       }
 
-      // Live camera-detected balls (from /ball/observations via status), each
-      // placed from robot pose + bearing + distance — shown before they are mapped.
-      const drawCamBall = (bearing, dist) => {
-        if (!Number.isFinite(bearing) || !Number.isFinite(dist)
-            || !Number.isFinite(robotPose.x_m) || !Number.isFinite(robotPose.y_m)) return;
-        // perception bearing_rad is +right (image x); the map is CCW, so subtract.
-        const yaw = robotPose.yaw_rad || 0;
-        const ang = yaw - bearing;
-        // Distance is measured from the camera (0.535 m ahead of base), not base.
-        const camX = robotPose.x_m + 0.535 * Math.cos(yaw);
-        const camY = robotPose.y_m + 0.535 * Math.sin(yaw);
-        const bx = sx(camX + dist * Math.cos(ang));
-        const by = sy(camY + dist * Math.sin(ang));
+      // Live camera-detected balls (from BallDetectionArray via status). Drawn at
+      // the world point where perception recognized them (world_x_m/world_y_m);
+      // only when those are missing do we fall back to reprojecting from the live
+      // robot pose + bearing + distance (which drifts as the robot moves).
+      const drawCamBall = (ball) => {
+        const dist = ball && Number.isFinite(ball.distance_m) ? ball.distance_m : NaN;
+        let bx, by;
+        if (ball && Number.isFinite(ball.world_x_m) && Number.isFinite(ball.world_y_m)) {
+          bx = sx(ball.world_x_m);
+          by = sy(ball.world_y_m);
+        } else {
+          const bearing = ball ? ball.bearing_rad : NaN;
+          if (!Number.isFinite(bearing) || !Number.isFinite(dist)
+              || !Number.isFinite(robotPose.x_m) || !Number.isFinite(robotPose.y_m)) return;
+          // Canonical perception bearing_rad is +left / counter-clockwise.
+          const yaw = robotPose.yaw_rad || 0;
+          const ang = yaw + bearing;
+          // Distance is measured from the camera (0.535 m ahead of base), not base.
+          const camX = robotPose.x_m + 0.535 * Math.cos(yaw);
+          const camY = robotPose.y_m + 0.535 * Math.sin(yaw);
+          bx = sx(camX + dist * Math.cos(ang));
+          by = sy(camY + dist * Math.sin(ang));
+        }
         ctx.save();
         ctx.setLineDash([4, 3]);
         ctx.strokeStyle = "#ffd24a"; ctx.lineWidth = 1.5;
@@ -450,7 +460,7 @@ window.ControlPanelCollectionMap = (() => {
         ctx.beginPath(); ctx.arc(bx, by, 7, 0, Math.PI * 2);
         ctx.fillStyle = "#ffd24a"; ctx.fill();
         ctx.strokeStyle = "#0c1116"; ctx.lineWidth = 2; ctx.stroke();
-        const t = `cam ball ${dist.toFixed(2)}m`;
+        const t = Number.isFinite(dist) ? `cam ball ${dist.toFixed(2)}m` : "cam ball";
         ctx.font = "bold 11px system-ui";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
@@ -464,15 +474,20 @@ window.ControlPanelCollectionMap = (() => {
       };
       const camBalls = Array.isArray(robotStatus.camera_balls) ? robotStatus.camera_balls : [];
       if (camBalls.length) {
-        camBalls.forEach(b => drawCamBall(b.bearing_rad, b.distance_m));
+        camBalls.forEach(b => drawCamBall(b));
       } else if (robotStatus.ball_visible) {
-        drawCamBall(robotStatus.ball_bearing_rad, robotStatus.ball_distance_m);
+        drawCamBall({
+          bearing_rad: robotStatus.ball_bearing_rad,
+          distance_m: robotStatus.ball_distance_m,
+          world_x_m: robotStatus.ball_world_x_m,
+          world_y_m: robotStatus.ball_world_y_m,
+        });
       }
 
       // summary box
       const metrics = map.metrics || {};
       const confirmedCount = allBalls.filter(b => b.confirmed && b.side !== "across_net").length;
-      const depthCount = allBalls.filter(b => b.confirmed && b.source === "oak_depth" && b.side !== "across_net").length;
+      const depthCount = allBalls.filter(b => b.confirmed && ["oak_depth", "oak_ai_depth"].includes(b.source) && b.side !== "across_net").length;
       const pendingCount = allBalls.filter(b => !b.confirmed && b.side !== "across_net").length;
       const plannedCount = metrics.balls_collectable ?? 0;
       const summaryLine1 = `confirmed ${confirmedCount} · depth ${depthCount} · planned ${plannedCount}${pendingCount > 0 ? ` · pending ${pendingCount}` : ""}`;

@@ -6,7 +6,7 @@ The underlying behavior modules (collector.py, survey.py, ball_map.py, etc.)
 are imported unchanged from the controllers/ tree.
 
 Subscribes:
-  /ball/observation  (tennis_robot_msgs/BallObservation)
+  /perception/ball_detections (tennis_robot_msgs/BallDetectionArray)
   /survey/vision     (std_msgs/String, JSON)
   /scan              (sensor_msgs/LaserScan)
   /odom              (nav_msgs/Odometry)
@@ -71,9 +71,16 @@ from tennis_robot.search import HalfCourtSearchBehavior, SearchState
 from tennis_robot.lidar_survey import LidarSurveyState
 from tennis_robot.lidar_survey_v2 import LidarCourtSurveyV2 as Ros2LidarCourtSurvey
 from tennis_robot.survey import SurveyVision
-from tennis_robot_msgs.msg import BallObservation, CollectorCmd, IrReadings, RobotCommand
+from tennis_robot_msgs.msg import BallDetectionArray, CollectorCmd, IrReadings, RobotCommand
 
 TIME_STEP_S = 0.032
+PERCEPTION_OBSERVATION_TIMEOUT_S = float(
+    os.getenv("PERCEPTION_OBSERVATION_TIMEOUT_S", "1.0")
+)
+PERCEPTION_FRAME_ID = os.getenv(
+    "PERCEPTION_FRAME_ID", "camera_link_optical_frame"
+)
+PERCEPTION_CAMERA_X_M = float(os.getenv("PERCEPTION_CAMERA_X_M", "0.535"))
 COLLECTION_EVENT_SCHEMA_VERSION = 2
 NET_X_M = 0.0
 NET_SIDE_CLEARANCE_M = 0.25
@@ -180,10 +187,13 @@ class ControllerNode(Node):
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
+        self._latest_obs_received_at = 0.0
         self._latest_obs_seq = 0
         self._mapped_obs_seq = 0
         self._latest_survey_vision: SurveyVision | None = None
         self._latest_camera_balls: list[dict] = []
+        self._latest_camera_balls_received_at = 0.0
+        self._last_bad_perception_frame = ""
         self._lidar_ranges: list[float] | None = None
         self._lidar_angle_min: float = -math.pi
         self._lidar_angle_increment: float | None = None
@@ -206,9 +216,13 @@ class ControllerNode(Node):
         self._pose_source = "odom"
 
         # ── subscriptions ──────────────────────────────────────────────────────
-        self.create_subscription(BallObservation, "/ball/observation", self._on_observation, 1)
+        self.create_subscription(
+            BallDetectionArray,
+            "/perception/ball_detections",
+            self._on_ball_detections,
+            1,
+        )
         self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
-        self.create_subscription(String, "/ball/observations", self._on_ball_observations, 1)
         self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
         self.create_subscription(Odometry, "/odom", self._on_odom, 10)
         self.create_subscription(IrReadings, "/ir/readings", self._on_ir, 10)
@@ -227,32 +241,76 @@ class ControllerNode(Node):
 
     # ── subscription callbacks (cache only) ────────────────────────────────────
 
-    def _on_observation(self, msg: BallObservation) -> None:
-        self._latest_obs_seq += 1
-        self._latest_obs = BallObservationInput(
-            visible=msg.visible,
-            bearing_rad=msg.bearing_rad,
-            distance_m=msg.distance_m,
-            confidence=msg.confidence,
-            source=msg.source,
-            world_x_m=msg.world_x_m if msg.visible else None,
-            world_y_m=msg.world_y_m if msg.visible else None,
-            robot_x_m=msg.robot_x_m if msg.visible else None,
-            robot_y_m=msg.robot_y_m if msg.visible else None,
-        )
-
     def _on_survey_vision(self, msg: String) -> None:
         self._latest_survey_vision = _survey_vision_from_json(msg.data)
 
-    def _on_ball_observations(self, msg: String) -> None:
-        """Latest list of in-frame camera balls (bearing/distance), surfaced in
-        status so the console can draw every detected ball."""
-        try:
-            data = json.loads(msg.data)
-            balls = data.get("balls", []) if isinstance(data, dict) else []
-            self._latest_camera_balls = balls if isinstance(balls, list) else []
-        except (ValueError, AttributeError):
+    def _on_ball_detections(self, msg: BallDetectionArray) -> None:
+        """Consume the canonical sim/real OAK-D perception contract."""
+        if msg.header.frame_id != PERCEPTION_FRAME_ID:
+            if msg.header.frame_id != self._last_bad_perception_frame:
+                self.get_logger().error(
+                    f"rejecting perception frame {msg.header.frame_id!r}; "
+                    f"expected {PERCEPTION_FRAME_ID!r}"
+                )
+                self._last_bad_perception_frame = msg.header.frame_id
+            self._latest_obs = BallObservationInput(
+                visible=False, source="invalid_perception_frame"
+            )
             self._latest_camera_balls = []
+            return
+
+        received_at = time.monotonic()
+        observations: list[BallObservationInput] = []
+        camera_balls: list[dict] = []
+        for detection in msg.detections:
+            if (
+                not detection.has_spatial
+                or not math.isfinite(detection.distance_m)
+                or detection.distance_m <= 0.0
+            ):
+                continue
+
+            # Optical XYZ is +right/+down/+forward. Convert it to the robot
+            # planar frame (+forward/+left), then through the authoritative
+            # controller pose into map/world coordinates.
+            local_x = PERCEPTION_CAMERA_X_M + float(detection.position_z)
+            local_y = -float(detection.position_x)
+            cos_yaw = math.cos(self._robot_yaw)
+            sin_yaw = math.sin(self._robot_yaw)
+            world_x = self._robot_x + cos_yaw * local_x - sin_yaw * local_y
+            world_y = self._robot_y + sin_yaw * local_x + cos_yaw * local_y
+            observation = BallObservationInput(
+                visible=True,
+                bearing_rad=float(detection.bearing_rad),
+                distance_m=float(detection.distance_m),
+                confidence=float(detection.confidence),
+                source="oak_ai_depth",
+                world_x_m=world_x,
+                world_y_m=world_y,
+                robot_x_m=self._robot_x,
+                robot_y_m=self._robot_y,
+            )
+            observations.append(observation)
+            camera_balls.append(
+                {
+                    "bearing_rad": round(observation.bearing_rad, 4),
+                    "distance_m": round(observation.distance_m, 3),
+                    "source": observation.source,
+                    "confidence": round(observation.confidence, 3),
+                    "world_x_m": round(world_x, 3),
+                    "world_y_m": round(world_y, 3),
+                }
+            )
+
+        self._latest_obs = (
+            min(observations, key=lambda obs: obs.distance_m)
+            if observations
+            else BallObservationInput(visible=False, source="no_detection")
+        )
+        self._latest_camera_balls = camera_balls
+        self._latest_obs_received_at = received_at
+        self._latest_camera_balls_received_at = received_at
+        self._latest_obs_seq += 1
 
     def _on_scan(self, msg: LaserScan) -> None:
         self._lidar_ranges = [float(r) for r in msg.ranges]
@@ -293,9 +351,28 @@ class ControllerNode(Node):
 
     # ── main step (runs at TIME_STEP_S Hz) ─────────────────────────────────────
 
+    def _fresh_perception_observation(
+        self, monotonic_now: float | None = None
+    ) -> BallObservationInput:
+        """Return the current observation or an explicit timeout sentinel."""
+        now = time.monotonic() if monotonic_now is None else monotonic_now
+        if (
+            self._latest_camera_balls_received_at <= 0.0
+            or now - self._latest_camera_balls_received_at
+            > PERCEPTION_OBSERVATION_TIMEOUT_S
+        ):
+            self._latest_camera_balls = []
+        if (
+            self._latest_obs_received_at > 0.0
+            and now - self._latest_obs_received_at
+            <= PERCEPTION_OBSERVATION_TIMEOUT_S
+        ):
+            return self._latest_obs
+        return BallObservationInput(visible=False, source="observation_timeout")
+
     def _step(self) -> None:
         self._update_pose_from_tf()
-        observation = self._latest_obs
+        observation = self._fresh_perception_observation()
         now = time.time()
         mapping_observation = (
             observation
@@ -1298,6 +1375,31 @@ class ControllerNode(Node):
         except Exception:
             pass
 
+    def _build_map_payload(self) -> dict:
+        """Collection Map payload: recognized balls at their detected world points,
+        plus the active target, robot pose and camera cone for the renderer."""
+        cfg = self.ball_map.config
+        balls = self.ball_map.to_console_balls(
+            self._robot_x, self.active_mapped_target_id, now=time.time()
+        )
+        confirmed = [b for b in balls if b["confirmed"] and b["side"] != "across_net"]
+        return {
+            "balls": balls,
+            "active_target_id": self.active_mapped_target_id,
+            "robot": {
+                "x_m": round(self._robot_x, 3),
+                "y_m": round(self._robot_y, 3),
+                "yaw_rad": round(self._robot_yaw, 4),
+            },
+            "camera_fov_rad": round(cfg.supervised_fov_rad, 4),
+            "camera_max_range_m": round(cfg.supervised_max_range_m, 2),
+            "metrics": {
+                "balls_mapped": len(balls),
+                "balls_confirmed": len(confirmed),
+                "balls_collectable": len(confirmed),
+            },
+        }
+
     def _publish_status(self, command: ConceptACommand, observation: BallObservationInput) -> None:
         status = {
             "mode": self.control_mode,
@@ -1318,8 +1420,15 @@ class ControllerNode(Node):
             # Camera bearing (rad, +left per ROS) so the console can draw the live
             # detected ball on the map before it is mapped/confirmed.
             "ball_bearing_rad": round(observation.bearing_rad, 4) if observation.visible else None,
-            # All in-frame camera balls (bearing/distance/source) for the map.
+            # Recognized world point of the primary ball, so the map can pin it where
+            # it was detected instead of reprojecting from the (moving) live pose.
+            "ball_world_x_m": round(observation.world_x_m, 3) if observation.visible and observation.world_x_m is not None else None,
+            "ball_world_y_m": round(observation.world_y_m, 3) if observation.visible and observation.world_y_m is not None else None,
+            # All in-frame camera balls (bearing/distance/world/source) for the map.
             "camera_balls": self._latest_camera_balls,
+            # Recognized-ball registry surfaced for the Collection Map: every ball
+            # drawn at the world point where it was detected (see ball_map).
+            "map": self._build_map_payload(),
             "collect_pattern_phase": self.collect_pattern_phase,
             "collection_lane_collecting": self._collection_lane_collecting,
             "collection_opportunistic_collecting": self._collection_opportunistic_collecting,

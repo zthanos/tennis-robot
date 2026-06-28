@@ -26,6 +26,13 @@
       <child link="${link_name}"/>
       <origin xyz="${xyz}" rpy="${rpy}"/>
     </joint>
+    <!-- REP-103 optical frame: +X right, +Y down, +Z forward. -->
+    <link name="${link_name}_optical_frame"/>
+    <joint name="${link_name}_optical_joint" type="fixed">
+      <parent link="${link_name}"/>
+      <child link="${link_name}_optical_frame"/>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
 
     <gazebo reference="${link_name}">
       <sensor name="front_camera" type="camera">
