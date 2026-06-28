@@ -343,6 +343,20 @@ arduino/collector/
 2. `02_encoder_hand_test` - ελέγχει encoder pulses γυρίζοντας τον άξονα με το χέρι.
 3. `03_motor_tb6612_test` - ελέγχει ότι ο TB6612 γυρίζει το μοτέρ με χαμηλό PWM.
 4. `04_collector_smoke_test` - ελέγχει motor, encoder και IR beams μαζί.
+
+### Επιβεβαιωμένη δοκιμή motor driver
+
+Το `06_motor_driver_wiring_check` πέρασε σε πραγματικό collector wiring στις
+28/06/2026 με:
+
+- Arduino Nano → TB6612FNG → 12V motor,
+- `D3=PWMA`, `D4=AIN1`, `D5=AIN2`, `D6=STBY`,
+- Serial Monitor `9600 baud`, χωρίς line ending,
+- `START_PWM=255`, `MAX_SAFE_PWM=255`,
+- pulse διάρκειας `300 ms`.
+
+Η επιτυχία επιβεβαιώνει το control path και την κοινή γείωση για αυτή τη
+συνδεσμολογία. Δεν αποτελεί ακόμη validation των IR sensors ή του encoder.
 5. `05_wiring_diagnostic` - δείχνει live status για IR, encoder και TB6612 wiring, με ασφαλές σύντομο motor pulse μέσω της εντολής `p`.
 6. `06_motor_driver_wiring_check` - απομονώνει μόνο Arduino Nano, TB6612FNG, 12V τροφοδοσία και motor, χωρίς IR/encoder.
 

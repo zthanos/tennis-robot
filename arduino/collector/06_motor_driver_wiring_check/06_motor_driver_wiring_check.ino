@@ -24,18 +24,18 @@
     Connect the 12V PSU minus to the common GND.
 
   Serial Monitor:
-    Baud rate: 115200
+    Baud rate: 9600
     Line ending: No line ending
 
   Commands:
     v = print voltage checklist
     t = toggle TB6612 STBY enable/disable
     p = one short forward pulse, then stop
-    f = forward low PWM
-    r = reverse low PWM
+    f = forward at current PWM
+    r = reverse at current PWM
     s = stop/coast
     b = brake
-    + = increase PWM by 10, max 120
+    + = increase PWM by 10, max 255
     - = decrease PWM by 10
     ? = help
 */
@@ -45,8 +45,8 @@ const byte MOTOR_AIN1_PIN = 4;
 const byte MOTOR_AIN2_PIN = 5;
 const byte MOTOR_STBY_PIN = 6;
 
-const byte START_PWM = 60;
-const byte MAX_SAFE_PWM = 120;
+const byte START_PWM = 255;
+const byte MAX_SAFE_PWM = 255;
 const unsigned int PULSE_MS = 300;
 
 byte motorPwm = START_PWM;
@@ -141,11 +141,11 @@ void printHelp() {
   Serial.println("  v = voltage checklist");
   Serial.println("  t = toggle STBY enable/disable");
   Serial.println("  p = one short forward pulse, then stop");
-  Serial.println("  f = forward low PWM");
-  Serial.println("  r = reverse low PWM");
+  Serial.println("  f = forward at current PWM");
+  Serial.println("  r = reverse at current PWM");
   Serial.println("  s = stop/coast");
   Serial.println("  b = brake");
-  Serial.println("  + = PWM +10, max 120");
+  Serial.println("  + = PWM +10, max 255");
   Serial.println("  - = PWM -10");
   Serial.println("  ? = help");
   Serial.println();
@@ -216,7 +216,7 @@ void handleSerial() {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   pinMode(MOTOR_PWM_PIN, OUTPUT);
   pinMode(MOTOR_AIN1_PIN, OUTPUT);

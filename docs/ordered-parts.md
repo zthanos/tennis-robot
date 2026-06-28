@@ -29,6 +29,16 @@
 | 9 | 24 mm hex wheel hub / adapter, **6 mm bore (D-shaft)** → Baja 5B 24 mm hex | Drive / Wheels | 4 | TBD | TBD | TBD | Προς παραγγελία |
 | 10 | MPU-6050 IMU module (6-axis gyro + accel, GY-521, I2C) | Sensors / Odometry | 1 | ~3-5 € | ~3-5 € | TBD | Προς παραγγελία |
 
+### Current compute basket — not yet ordered
+
+Snapshot date: `28/06/2026`
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
+|---:|---|---|---:|---:|---:|---|---|
+| 22 | db-tronic Raspberry Pi 5 16GB PCIe M.2 NVMe Set — 64GB Edition (metal housing, active cooler, M.2 board, 27W PSU) | Compute | 1 | 385,54 € | 385,54 € | Amazon | Στο καλάθι — δεν έχει παραγγελθεί |
+| 23 | Silicon Power P34A60 256GB NVMe M.2 PCIe Gen3x4 2280 (`SP256GBP34A60M28AY`) | Compute / Storage | 1 | 50,99 € | 50,99 € | Amazon | Στο καλάθι — απαιτεί validation με Pi 5 |
+| | **Basket subtotal** | | **2 items** | | **436,53 €** | | |
+
 ### Motion control board — εκκρεμή
 
 > Ήδη διαθέσιμα (επιβεβαιωμένο): 4× FIT0403 drive μοτέρ, 2× BTS7960/IBT-2 drivers, Arduino Mega 2560. Λείπουν τα παρακάτω για να ολοκληρωθεί η perfboard + safety chain (βλ. `motion-perfboard-wiring-el.md`).
