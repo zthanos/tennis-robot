@@ -100,6 +100,12 @@ class ConsoleApp:
         # Validation happens inside the command store; unknown modes map to idle.
         return self.command_store.write(mode)
 
+    def collector_control(self, action: str) -> dict[str, object]:
+        return self.ros.collector_control(action)
+
+    def collector_status(self) -> dict[str, object]:
+        return self.ros.collector_status()
+
     def clear_path(self) -> None:
         self.path.clear()
 

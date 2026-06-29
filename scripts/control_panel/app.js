@@ -354,6 +354,26 @@
       if (clearBtn) clearBtn.addEventListener("click", clearCollectionLog);
       // Nav Test lives in its own module (nav_test.js); wire its controls here.
       window.ControlPanelNavTest.wire();
+      const collectorAction = async action => {
+        const response = await fetch("/api/collector", {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({action})
+        });
+        const state = await response.json();
+        const target = document.getElementById("collectorManualStatus");
+        const pwm = Number(state.speed);
+        if (target) {
+          target.textContent = state.ok
+            ? `${state.running ? "running" : "stopped"} · commanded PWM ${Number.isFinite(pwm) ? pwm : "—"}/255 · ${state.port || "simulation"}`
+            : `collector error · ${state.message || "command failed"}`;
+        }
+        const bar = document.getElementById("collectorSpeedBar");
+        if (bar) bar.style.width = `${Number.isFinite(pwm) ? Math.max(0, Math.min(100, pwm / 255 * 100)) : 0}%`;
+      };
+      document.getElementById("collectorStart")?.addEventListener("click", () => collectorAction("start"));
+      document.getElementById("collectorStop")?.addEventListener("click", () => collectorAction("stop"));
+      document.getElementById("collectorSpeedDown")?.addEventListener("click", () => collectorAction("speed_down"));
+      document.getElementById("collectorSpeedUp")?.addEventListener("click", () => collectorAction("speed_up"));
     };
     async function copyCollectionLog() {
       const btn = document.getElementById("collectionLogCopy");

@@ -80,7 +80,7 @@ def _patch_collision_surface(collision: ET.Element, mu: str, mu2: str, slip1: st
 
 
 def _patch_sdf_contacts(sdf_text: str) -> str:
-    """Move wheel contact tuning into valid SDF collision surface elements."""
+    """Patch contact tuning and Gazebo-native intake collision geometry."""
     root = ET.fromstring(sdf_text)
     surfaces = {
         "rear_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
@@ -98,6 +98,38 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
                 link.remove(invalid)
         for collision in link.findall("collision"):
             _patch_collision_surface(collision, *surfaces[name])
+
+    # URDF has no triangular-prism primitive, and DART does not handle a thin
+    # STL collision reliably here. Replace only the generated SDF collision
+    # with a native extruded polyline. The 2-D x/z profile is extruded 240 mm
+    # across the intake after rotating the polyline's extrusion axis onto Y.
+    for collision in root.findall(".//collision"):
+        if "roller_exit_floor_col" not in collision.attrib.get("name", ""):
+            continue
+        pose = collision.find("pose")
+        if pose is None:
+            pose = ET.SubElement(collision, "pose")
+        # The collision profile represents the bevel, not the full visible
+        # 2 mm sheet. Both front vertices meet at a zero-height tip exactly on
+        # the court so the blade gets underneath the rigid sphere.
+        pose.text = "0.54 0.12 0.038 1.57079632679 0 0"
+        geometry = collision.find("geometry")
+        if geometry is None:
+            geometry = ET.SubElement(collision, "geometry")
+        geometry.clear()
+        polyline = ET.SubElement(geometry, "polyline")
+        ET.SubElement(polyline, "height").text = "0.24"
+        for point in (
+            "0.120 -0.038",
+            "0.120 -0.038",
+            "-0.120 0.0043",
+            "-0.120 0.0038",
+        ):
+            ET.SubElement(polyline, "point").text = point
+        # Smooth plastic / sheet-metal ramp. The roller supplies traction; the
+        # ramp must not pin the ball against the court through default friction.
+        _patch_collision_surface(collision, "0.15", "0.15", "0.0", "0.0")
+
     ET.indent(root, space="  ")
     return ET.tostring(root, encoding="unicode")
 

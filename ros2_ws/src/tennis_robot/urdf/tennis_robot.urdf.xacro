@@ -18,10 +18,13 @@
   <xacro:arg name="sim_mode" default="true"/>
   <xacro:arg name="controllers_config" default="config/controllers.yaml"/>
 
-<xacro:property name="chassis_x" value="0.92"/> 
+  <xacro:property name="chassis_x" value="0.92"/>
   <xacro:property name="chassis_y" value="0.58"/> 
   <xacro:property name="chassis_z" value="0.014"/> 
   <xacro:property name="chassis_mass" value="7.2"/> 
+  <!-- base_link is the chassis plate centre. The plate top is 52 mm above
+       ground, below the 85 mm motor-shaft/wheel-axle centreline. -->
+  <xacro:property name="base_link_height" value="0.045"/>
 
   <!-- 4WD skid-steer drivetrain. Four identical 170 mm (radius 0.085) driven
        wheels (HPI Dirt Buster Block, 170x80 mm, Baja 5B), two per side, placed
@@ -30,19 +33,29 @@
        (now level, un-pitched) robot sits flat. Casters removed. -->
   <xacro:property name="wheel_base_x" value="0.33"/>  <!-- rear at -x, front at +x; wheelbase = 0.66 m -->
   <xacro:property name="wheel_y" value="0.35"/>
-  <xacro:property name="wheel_z" value="-0.09"/>
   <xacro:property name="wheel_radius" value="0.085"/>  <!-- 170 mm diameter (HPI Dirt Buster Block) -->
+  <xacro:property name="wheel_z" value="${wheel_radius - base_link_height}"/>
   <xacro:property name="wheel_width" value="0.08"/>
   <xacro:property name="wheel_mass" value="0.25"/>
   <xacro:property name="wheel_separation" value="${2.0 * wheel_y}"/>
+  <xacro:property name="motor_y" value="${chassis_y / 2.0 - 0.05}"/>
+  <xacro:property name="motor_radius" value="0.03"/>
+  <xacro:property name="motor_length" value="0.10"/>
 
-  <xacro:property name="intake_x" value="0.62"/> 
-  <xacro:property name="intake_z" value="0.095"/> 
-  <xacro:property name="intake_radius" value="0.03"/> 
+  <!-- The 0.66 m scooper lip must meet the ball first. The single roller sits
+       60 mm behind it, over the rising ramp, so the scoop supports the ball
+       while the flaps drive it upward and inward. -->
+  <xacro:property name="intake_x" value="0.60"/>
+  <!-- Single-shaft flap roller: 100 mm swept diameter, with its tip envelope
+       still 64 mm above ground. The rigid core is smaller; eight paddles on
+       the same rotating link provide the compliant-roller approximation. -->
+  <xacro:property name="intake_z" value="0.069"/>
+  <xacro:property name="intake_radius" value="0.05"/>
   <xacro:property name="intake_width" value="0.24"/> 
+  <xacro:property name="scooper_pitch" value="0.1745"/>  <!-- 10 degrees -->
 
-  <xacro:property name="lidar_xyz" value="-0.08 0 0.498"/>  <!-- z chosen so the scan plane sits at world ~0.713 m (the net_lidar_strand height, well below the 0.914 m net-center top) now that base_link is level at 0.18 -->
-  <xacro:property name="lidar_rpy" value="0 0 0"/>  <!-- chassis is now level (no pitch): scan plane is already horizontal -->
+  <xacro:property name="lidar_xyz" value="-0.08 0 0.498"/>
+  <xacro:property name="lidar_rpy" value="0 0 0"/>  <!-- level chassis: horizontal scan plane -->
   <xacro:property name="camera_xyz" value="0.535 0 0.443"/>
   <xacro:property name="camera_rpy" value="0 0.273 0"/>  <!-- forward-down tilt ~15.6deg; preserves the old world aim (0.22 cam + 0.053 chassis pitch) now that the chassis is level -->
   <xacro:property name="sensor_update_rate" value="31.25"/> 
@@ -61,7 +74,19 @@
       chassis_x="${chassis_x}"
       chassis_y="${chassis_y}"
       chassis_z="${chassis_z}"
+      base_link_height="${base_link_height}"
       chassis_mass="${chassis_mass}"/>
+
+  <!-- Motors are fixed to the chassis top. Each shaft shares its x/z centre
+       with the corresponding wheel joint; only y differs along the shaft. -->
+  <xacro:drive_motor side="rear_left" y="${motor_y}" motor_x="-${wheel_base_x}"
+      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="0.65"/>
+  <xacro:drive_motor side="rear_right" y="-${motor_y}" motor_x="-${wheel_base_x}"
+      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="0.65"/>
+  <xacro:drive_motor side="front_left" y="${motor_y}" motor_x="${wheel_base_x}"
+      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="0.65"/>
+  <xacro:drive_motor side="front_right" y="-${motor_y}" motor_x="${wheel_base_x}"
+      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="0.65"/>
 
   <xacro:drive_wheel
       side="rear_left"
@@ -106,7 +131,7 @@
       width="${intake_width}"
       mass="0.20"/>
 
-<xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}"/>
+  <xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}" pitch="${scooper_pitch}"/>
   <xacro:ball_basket parent="base_link"/>
 
   <xacro:rplidar_c1_mount
@@ -170,5 +195,5 @@
       sim_mode="$(arg sim_mode)"
       controllers_config="$(arg controllers_config)"/>
 
-<xacro:robot_body_panels parent="base_link" chassis_z="${chassis_z}"/>      
+  <xacro:robot_body_panels parent="base_link" chassis_z="${chassis_z}"/>
 </robot>

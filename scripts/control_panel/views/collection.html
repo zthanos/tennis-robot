@@ -22,6 +22,17 @@
                 <button class="command" type="button" data-command-mode="collect">Collect</button>
                 <button class="command" type="button" data-command-mode="idle" value="idle">Stop</button>
               </div>
+              <h4 style="margin:18px 0 8px;">Collector manual test</h4>
+              <div class="mission-actions">
+                <button id="collectorStart" class="command" type="button">Start</button>
+                <button id="collectorStop" class="secondary-action" type="button">Stop</button>
+                <button id="collectorSpeedDown" class="secondary-action" type="button">Speed −</button>
+                <button id="collectorSpeedUp" class="secondary-action" type="button">Speed +</button>
+              </div>
+              <div id="collectorManualStatus" class="workspace-note">stopped · commanded PWM —/255</div>
+              <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
+                <div id="collectorSpeedBar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 0.15s;"></div>
+              </div>
             </div>
             <div class="panel">
               <h3>Nav Test <span id="navTestStatus">idle</span></h3>

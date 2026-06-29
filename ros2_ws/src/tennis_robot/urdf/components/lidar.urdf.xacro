@@ -7,8 +7,11 @@
         <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
       </inertial>
       <visual name="mast_vis">
-        <origin xyz="0 0 -0.30" rpy="0 0 0"/>
-        <geometry><box size="0.025 0.025 0.57"/></geometry>
+        <!-- Runs from just under the LiDAR head down to the chassis top.
+             With lidar_xyz.z=0.498 and a 14 mm plate, the lower end is
+             base_link z=+0.007; it must never protrude below the chassis. -->
+        <origin xyz="0 0 -0.253" rpy="0 0 0"/>
+        <geometry><box size="0.025 0.025 0.476"/></geometry>
         <material name="anthracite"/>
       </visual>
       <visual name="head_vis">

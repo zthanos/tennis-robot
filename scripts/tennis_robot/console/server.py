@@ -42,6 +42,7 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         "/api/vendors": "vendors",
         "/api/surveys": "surveys",
         "/api/survey-archive": "survey_archive",
+        "/api/collector": "collector_status",
     }
     # Quiet access-log paths (polled frequently by the UI).
     _QUIET_PATHS = {
@@ -95,6 +96,12 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/nav-test/cancel":
             self._send_json(self.app.nav_cancel())
+            return
+        if path == "/api/collector":
+            data = self._read_json_body()
+            if not isinstance(data, dict):
+                return
+            self._send_json(self.app.collector_control(str(data.get("action", ""))))
             return
         if path in {"/command", "/api/command"}:
             self._post_command(path)

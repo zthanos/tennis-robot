@@ -19,6 +19,8 @@ import signal
 import subprocess
 import threading
 import time
+import json
+import socket
 from dataclasses import dataclass
 
 from .config import ConsoleConfig, text_from_subprocess_output
@@ -48,6 +50,7 @@ class RosService:
         # several seconds of latency to every nav command.
         self._ros2_on_path = shutil.which("ros2") is not None
         self._preflight_ok_until = 0.0
+        self._collector_state = {"running": False, "speed": 10.0, "manual_override": False}
 
         # Survey launch process.
         self._survey_lock = threading.Lock()
@@ -59,6 +62,59 @@ class RosService:
         # Nav-test send_goal process.
         self._nav_lock = threading.Lock()
         self._nav_process: subprocess.Popen | None = None
+
+    def collector_control(self, action: str) -> dict[str, object]:
+        allowed = {"start", "stop", "speed_up", "speed_down", "release"}
+        if action not in allowed:
+            return {"ok": False, "message": "Unknown collector action."}
+        bridge = os.getenv("COLLECTOR_SERIAL_BRIDGE", "").strip()
+        if bridge:
+            host, port_text = bridge.rsplit(":", 1)
+            try:
+                with socket.create_connection((host, int(port_text)), timeout=3.0) as connection:
+                    connection.sendall(
+                        (json.dumps({"action": action}, separators=(",", ":")) + "\n").encode()
+                    )
+                    response = connection.makefile("r", encoding="utf-8").readline()
+                state = json.loads(response)
+                if state.get("ok"):
+                    self._collector_state.update(
+                        running=bool(state.get("running")),
+                        speed=float(state.get("speed", 0)),
+                        manual_override=True,
+                    )
+                return {**state, "manual_override": True, "action": action}
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                return {"ok": False, "message": f"Collector serial bridge unavailable: {exc}"}
+
+        payload = json.dumps({"action": action}, separators=(",", ":"))
+        result = subprocess.run(
+            self._ros2_argv([
+                "topic", "pub", "--once", "/collector/manual_control",
+                "std_msgs/msg/String", f"data: '{payload}'",
+            ]),
+            cwd=str(self._cfg.root),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=8.0,
+            check=False,
+        )
+        state = self._collector_state
+        if action == "start":
+            state.update(running=True, manual_override=True)
+        elif action == "stop":
+            state.update(running=False, manual_override=True)
+        elif action == "speed_up":
+            state["speed"] = min(40.0, float(state["speed"]) + 2.0)
+        elif action == "speed_down":
+            state["speed"] = max(-40.0, float(state["speed"]) - 2.0)
+        elif action == "release":
+            state["manual_override"] = False
+        return {"ok": result.returncode == 0, **state, "action": action}
+
+    def collector_status(self) -> dict[str, object]:
+        return {"ok": True, **self._collector_state}
 
     def _ros2_argv(self, args: list[str]) -> list[str]:
         """Build subprocess argv for a ros2 command. Directly (`ros2 …`,

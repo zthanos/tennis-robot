@@ -1,5 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="drive_motor" params="side y motor_x shaft_z radius length mass">
+    <link name="${side}_motor_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${length}" axis="y"/>
+      <collision name="motor_col">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+      </collision>
+      <visual name="motor_vis">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+    </link>
+    <joint name="${side}_motor_mount_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${side}_motor_link"/>
+      <origin xyz="${motor_x} ${y} ${shaft_z}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
   <xacro:macro name="drive_wheel" params="side y wheel_x wheel_z radius width mass">
     <link name="${side}_wheel_link">
       <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="y"/>
@@ -37,18 +57,45 @@
        the drive_wheel macro above). The old swivel-caster macro and its scrub
        resistance are gone. -->
 
+  <!-- One paddle belonging to the single intake-roller link. `angle` is in the
+       link's x-z plane; rotating the link rotates core and all paddles together. -->
+  <xacro:macro name="intake_flap" params="name angle radius width">
+    <collision name="${name}_col">
+      <origin
+          xyz="${radius * 0.72 * cos(angle)} 0 ${radius * 0.72 * sin(angle)}"
+          rpy="0 ${-angle} 0"/>
+      <geometry><box size="${radius * 0.56} ${width} 0.004"/></geometry>
+    </collision>
+    <visual name="${name}_vis">
+      <origin
+          xyz="${radius * 0.72 * cos(angle)} 0 ${radius * 0.72 * sin(angle)}"
+          rpy="0 ${-angle} 0"/>
+      <geometry><box size="${radius * 0.56} ${width} 0.004"/></geometry>
+      <material name="rubber_black"/>
+    </visual>
+  </xacro:macro>
+
   <xacro:macro name="intake_roller" params="x z radius width mass">
     <link name="lift_wheel_link">
       <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="y"/>
-      <collision name="col">
+      <!-- Small rigid hub; the paddles define the 100 mm swept envelope. -->
+      <collision name="core_col">
         <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+        <geometry><cylinder radius="${radius * 0.44}" length="${width}"/></geometry>
       </collision>
-      <visual name="vis">
+      <visual name="core_vis">
         <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+        <geometry><cylinder radius="${radius * 0.44}" length="${width}"/></geometry>
         <material name="rubber_black"/>
       </visual>
+      <xacro:intake_flap name="flap_0" angle="0.0" radius="${radius}" width="${width}"/>
+      <xacro:intake_flap name="flap_1" angle="${pi / 4.0}" radius="${radius}" width="${width}"/>
+      <xacro:intake_flap name="flap_2" angle="${pi / 2.0}" radius="${radius}" width="${width}"/>
+      <xacro:intake_flap name="flap_3" angle="${3.0 * pi / 4.0}" radius="${radius}" width="${width}"/>
+      <xacro:intake_flap name="flap_4" angle="${pi}" radius="${radius}" width="${width}"/>
+      <xacro:intake_flap name="flap_5" angle="${5.0 * pi / 4.0}" radius="${radius}" width="${width}"/>
+      <xacro:intake_flap name="flap_6" angle="${3.0 * pi / 2.0}" radius="${radius}" width="${width}"/>
+      <xacro:intake_flap name="flap_7" angle="${7.0 * pi / 4.0}" radius="${radius}" width="${width}"/>
     </link>
     <joint name="lift_wheel_joint" type="continuous">
       <parent link="base_link"/>

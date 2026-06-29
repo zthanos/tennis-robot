@@ -94,6 +94,8 @@ services:
       - COLLECTOR_APPROACH_SPEED_M_S=0.12
       - COLLECTOR_CAPTURE_SPEED_M_S=0.05
       - COLLECTOR_REVERSE_SPEED_M_S=0.08
+      # Windows host bridge for the hardware-validated Arduino collector on COM8.
+      - COLLECTOR_SERIAL_BRIDGE=${COLLECTOR_SERIAL_BRIDGE:-host.docker.internal:8091}
       - SURVEY_DRIVE_SPEED_M_S=0.24
       - SURVEY_TURN_SPEED_RAD_S=0.75
     profiles: ["gazebo"]

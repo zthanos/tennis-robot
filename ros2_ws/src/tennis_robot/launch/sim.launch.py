@@ -162,6 +162,13 @@ def generate_launch_description():
         output="screen",
         additional_env={"PYTHONPATH": ROS_PYTHONPATH},
     )
+    collector_logic = Node(
+        package="tennis_robot",
+        executable="collector_logic_node",
+        name="collector_logic_node",
+        output="screen",
+        additional_env={"PYTHONPATH": ROS_PYTHONPATH, "COLLECTOR_BACKEND": "gazebo"},
+    )
 
     # cmd_vel arbiter — part of the base robot bring-up so the web D-pad / teleop
     # can drive without needing the SLAM launch running. Output goes to the
@@ -268,6 +275,9 @@ def generate_launch_description():
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
             "ROBOT_SENSOR_FILE": f"{WORKSPACE}/runtime/robot_sensors.json",
+            "COLLECTOR_SERIAL_BRIDGE": os.getenv(
+                "COLLECTOR_SERIAL_BRIDGE", "host.docker.internal:8091"
+            ),
         },
     )
 
@@ -306,7 +316,7 @@ def generate_launch_description():
         period=4.0,
         actions=[
             bridge, perception, controller, navigation,
-            command_bridge, gz_extras, sensor_snapshots, drive_actuator, twist_mux,
+            command_bridge, gz_extras, sensor_snapshots, drive_actuator, collector_logic, twist_mux,
             ekf,
         ],
     )

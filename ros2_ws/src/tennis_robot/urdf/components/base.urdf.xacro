@@ -28,17 +28,15 @@
     </inertial>
   </xacro:macro>
 
-  <xacro:macro name="tennis_robot_base" params="chassis_x chassis_y chassis_z chassis_mass">
+  <xacro:macro name="tennis_robot_base" params="chassis_x chassis_y chassis_z base_link_height chassis_mass">
     <link name="base_footprint"/>
 
     <joint name="base_footprint_joint" type="fixed">
       <parent link="base_footprint"/>
       <child link="base_link"/>
-      <!-- Level chassis (no pitch). base_link is the chassis plate at axle height
-           + wheel drop: z = wheel_radius - wheel_z = 0.085 - (-0.09) = 0.175, so the
-           four wheel contacts land exactly on the ground plane and base_footprint
-           sits on the ground. -->
-      <origin xyz="0 0 0.175" rpy="0 0 0"/>
+      <!-- base_footprint is the ground plane. base_link is the centre of the
+           chassis plate, deliberately below the motor/axle centreline. -->
+      <origin xyz="0 0 ${base_link_height}" rpy="0 0 0"/>
     </joint>
 
     <link name="base_link">
@@ -79,22 +77,22 @@
         <material name="mount_gray"/>
       </visual>
       <visual name="rear_left_axle_bracket_vis">
-        <origin xyz="-0.33 0.32 0" rpy="0 0 0"/>
+        <origin xyz="-0.33 0.24 ${0.5 * chassis_z + 0.009}" rpy="0 0 0"/>
         <geometry><box size="0.065 0.060 0.018"/></geometry>
         <material name="mount_gray"/>
       </visual>
       <visual name="rear_right_axle_bracket_vis">
-        <origin xyz="-0.33 -0.32 0" rpy="0 0 0"/>
+        <origin xyz="-0.33 -0.24 ${0.5 * chassis_z + 0.009}" rpy="0 0 0"/>
         <geometry><box size="0.065 0.060 0.018"/></geometry>
         <material name="mount_gray"/>
       </visual>
       <visual name="front_left_axle_bracket_vis">
-        <origin xyz="0.33 0.32 0" rpy="0 0 0"/>
+        <origin xyz="0.33 0.24 ${0.5 * chassis_z + 0.009}" rpy="0 0 0"/>
         <geometry><box size="0.065 0.060 0.018"/></geometry>
         <material name="mount_gray"/>
       </visual>
       <visual name="front_right_axle_bracket_vis">
-        <origin xyz="0.33 -0.32 0" rpy="0 0 0"/>
+        <origin xyz="0.33 -0.24 ${0.5 * chassis_z + 0.009}" rpy="0 0 0"/>
         <geometry><box size="0.065 0.060 0.018"/></geometry>
         <material name="mount_gray"/>
       </visual>

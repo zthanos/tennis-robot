@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="intake_funnel" params="parent chassis_z">
+  <xacro:macro name="intake_funnel" params="parent chassis_z pitch">
     <joint name="funnel_joint" type="fixed">
       <parent link="${parent}"/>
       <child link="funnel_link"/>
@@ -13,24 +13,26 @@
       </inertial>
 
       <visual name="funnel_left_cheek_vis">
-        <origin xyz="0.54 0.14 0.08" rpy="0 0 0.25"/>
-        <geometry><box size="0.18 0.01 0.14"/></geometry>
+        <origin xyz="0.54 0.14 0.052" rpy="0 ${pitch} 0.25"/>
+        <geometry><box size="0.24 0.01 0.10"/></geometry>
         <material name="intake_orange"/>
       </visual>
 
       <visual name="funnel_right_cheek_vis">
-        <origin xyz="0.54 -0.14 0.08" rpy="0 0 -0.25"/>
-        <geometry><box size="0.18 0.01 0.14"/></geometry>
+        <origin xyz="0.54 -0.14 0.052" rpy="0 ${pitch} -0.25"/>
+        <geometry><box size="0.24 0.01 0.10"/></geometry>
         <material name="intake_orange"/>
       </visual>
 
       <collision name="roller_exit_floor_col">
-        <origin xyz="0.54 0 0.01" rpy="0 0 0"/>
-        <geometry><box size="0.16 0.24 0.005"/></geometry>
+        <!-- Closed 2 mm wedge: its front underside is exactly at the ground
+             plane and its 0.32 rad top surface rises toward the roller. -->
+        <origin xyz="0.54 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="package://tennis_robot/meshes/scooper_wedge.stl"/></geometry>
       </collision>
       <visual name="roller_exit_floor_vis">
-        <origin xyz="0.54 0 0.01" rpy="0 0 0"/>
-        <geometry><box size="0.16 0.24 0.005"/></geometry>
+        <origin xyz="0.54 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="package://tennis_robot/meshes/scooper_wedge.stl"/></geometry>
         <material name="intake_orange"/>
       </visual>
 
