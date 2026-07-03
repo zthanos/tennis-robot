@@ -114,6 +114,27 @@ LOW  = beam broken / blocked
 HIGH = beam unbroken / receiver sees emitter
 ```
 
+Το runtime sketch `collector_driver` διαβάζει και τα δύο IR beams με debounce
+`25 ms` και στέλνει status σε αλλαγή ή heartbeat κάθε `500 ms`:
+
+```text
+ir:<entry_broken>,<exit_broken>,<cycle_state>
+```
+
+Παράδειγμα `ir:1,0,moving_to_exit`: το entry beam είναι κομμένο, το exit beam
+είναι ελεύθερο και η μπάλα κινείται προς το exit.
+
+Η αυτόματη ακολουθία του runtime sketch είναι:
+
+1. `entry=BROKEN`: εκκίνηση του roller προς τα εμπρός.
+2. `exit=BROKEN`: η μπάλα έφτασε στο exit.
+3. `exit=CLEAR`: η μπάλα πέρασε, ο roller σταματά.
+4. Νέος κύκλος οπλίζει μόνο αφού το `entry` γίνει ξανά `CLEAR`.
+
+Αν το `exit` δεν ολοκληρώσει τη μετάβαση μέσα σε `5 s`, το sketch σταματά τον
+roller, αναφέρει `timed_out` και οπλίζει ξανά μόνο όταν καθαρίσουν και τα δύο
+IR beams.
+
 ## Motor Driver Προσοχή
 
 Ο TB6612FNG είναι μικρός driver για το GB37Y3530, ειδικά αν ο roller κολλήσει.

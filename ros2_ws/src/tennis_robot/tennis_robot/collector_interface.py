@@ -12,6 +12,9 @@ class CollectorStatus:
     running: bool
     speed_rad_s: float
     manual_override: bool
+    entry_beam_broken: bool | None
+    exit_beam_broken: bool | None
+    collection_cycle_state: str | None
 
 
 class CollectorInterface:
@@ -51,4 +54,12 @@ class CollectorInterface:
 
     @property
     def status(self) -> CollectorStatus:
-        return CollectorStatus(self._running, self._speed, self.manual_override)
+        sensors = self._driver.sensor_status()
+        return CollectorStatus(
+            self._running,
+            self._speed,
+            self.manual_override,
+            sensors.entry_beam_broken if sensors else None,
+            sensors.exit_beam_broken if sensors else None,
+            sensors.collection_cycle_state if sensors else None,
+        )

@@ -34,3 +34,16 @@ def test_validated_serial_protocol_bytes():
     assert SerialProtocol.direction(0) == b"s"
     assert SerialProtocol.speed_step(True) == b"+"
     assert SerialProtocol.speed_step(False) == b"-"
+
+
+def test_parse_ir_status():
+    status = SerialProtocol.parse_ir_status("ir:1,0,moving_to_exit")
+    assert status is not None
+    assert status.entry_beam_broken
+    assert not status.exit_beam_broken
+    assert status.collection_cycle_state == "moving_to_exit"
+    legacy_status = SerialProtocol.parse_ir_status("ir:0,1")
+    assert legacy_status is not None
+    assert legacy_status.collection_cycle_state is None
+    assert SerialProtocol.parse_ir_status("ir:broken,0") is None
+    assert SerialProtocol.parse_ir_status("debug text") is None
