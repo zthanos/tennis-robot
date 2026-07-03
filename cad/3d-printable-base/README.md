@@ -65,6 +65,50 @@ Recommended first exports:
 6. `handle_socket.scad`
 7. `collector_funnel_bin.scad`
 8. `full_robot_concept.scad`
+9. `collector_curved_scoop.scad`
+
+### Curved collector scoop
+
+`collector_curved_scoop.scad` is the parametric centre ramp for lifting a tennis
+ball smoothly from floor level. Its defaults are 180 mm wide, 180 mm long,
+100 mm high, and 4 mm thick. `curve_exponent` controls the profile: larger
+values keep the front flatter and make the rear steeper.
+
+A continuous keyed rail is enabled across the rear edge. Print two copies of
+`collector_curved_scoop_mounting_ear.stl`; the identical detachable ears slide
+onto the rail from its ends and each contains a 5.5 mm clearance hole for an M5
+bolt. `mount_fit_clearance` defaults to 0.30 mm per side for a PETG prototype.
+Print one ear first and tune this clearance before committing to the scoop.
+In the slicer, stand each ear on its narrow end so the keyed channel is vertical;
+it then prints without internal supports.
+
+The assembly preview also contains the 120 mm wide x 45 mm diameter roller with
+a 6.35 mm shaft bore, a 190 mm reference shaft, two provisional supports, a shaft
+coupler, and a 37 mm motor envelope. The shaft and motor are reference geometry,
+not printable plastic parts. The support and motor-hole geometry must be
+finalized from measurements of the real bearings, coupler, and motor face.
+
+The full scoop fits on common hobby printers. If a smaller printer or easier
+prototype is preferred, export two 90 mm halves from the repository root:
+
+```powershell
+docker compose --profile cad run --rm openscad openscad `
+  -D 'render_part="left"' `
+  -o cad/3d-printable-base/stl/collector_curved_scoop_left.stl `
+  cad/3d-printable-base/collector_curved_scoop.scad
+
+docker compose --profile cad run --rm openscad openscad `
+  -D 'render_part="right"' `
+  -o cad/3d-printable-base/stl/collector_curved_scoop_right.stl `
+  cad/3d-printable-base/collector_curved_scoop.scad
+```
+
+For a first PETG prototype, rotate the full scoop 90 degrees and print it on one
+straight side edge. It then occupies roughly 208 x 100 mm of bed area including
+the rear mounting tabs and normally needs no support. Use 0.24-0.28 mm layers,
+5 perimeters, 6 top/bottom layers, and 20-30% gyroid infill. A brim is
+recommended because the part stands 180 mm tall in this orientation. Each
+optional half can instead be printed on its straight split edge.
 
 (`front_caster_mount.scad` is deprecated — the 4WD base uses four `motor_pod.scad` pods instead of casters.)
 
