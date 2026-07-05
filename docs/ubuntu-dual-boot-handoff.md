@@ -53,6 +53,11 @@ second Windows control path during the migration.
    UBUNTU_GPU=true ./run_ubuntu.sh foxglove  # only with /dev/dri
    ```
 
+   The GPU override defaults to the AMD `radeonsi` Mesa driver and
+   `DRI_PRIME=0`, which selects the RX 7900 XTX on the validated Ubuntu host.
+   Override `UBUNTU_MESA_DRIVER` or `DRI_PRIME` when validating a different
+   Linux graphics stack.
+
    Run the launcher from the logged-in Ubuntu desktop session. It passes the
    active Xwayland authorization cookie into both GUI containers; running it
    from a shell without `DISPLAY`/`XAUTHORITY` fails early with an explanation.

@@ -5,8 +5,9 @@ services:
     devices:
       - /dev/dri:/dev/dri
     environment:
-      MESA_LOADER_DRIVER_OVERRIDE: ""
-      GALLIUM_DRIVER: ""
+      MESA_LOADER_DRIVER_OVERRIDE: "${UBUNTU_MESA_DRIVER:-radeonsi}"
+      GALLIUM_DRIVER: "${UBUNTU_MESA_DRIVER:-radeonsi}"
+      DRI_PRIME: "${DRI_PRIME:-0}"
       LIBGL_ALWAYS_SOFTWARE: "0"
       GAZEBO_GPU: "true"
 
@@ -14,15 +15,17 @@ services:
     devices:
       - /dev/dri:/dev/dri
     environment:
-      MESA_LOADER_DRIVER_OVERRIDE: ""
-      GALLIUM_DRIVER: ""
+      MESA_LOADER_DRIVER_OVERRIDE: "${UBUNTU_MESA_DRIVER:-radeonsi}"
+      GALLIUM_DRIVER: "${UBUNTU_MESA_DRIVER:-radeonsi}"
+      DRI_PRIME: "${DRI_PRIME:-0}"
       LIBGL_ALWAYS_SOFTWARE: "0"
 
   gazebo-rec:
     devices:
       - /dev/dri:/dev/dri
     environment:
-      MESA_LOADER_DRIVER_OVERRIDE: ""
-      GALLIUM_DRIVER: ""
+      MESA_LOADER_DRIVER_OVERRIDE: "${UBUNTU_MESA_DRIVER:-radeonsi}"
+      GALLIUM_DRIVER: "${UBUNTU_MESA_DRIVER:-radeonsi}"
+      DRI_PRIME: "${DRI_PRIME:-0}"
       LIBGL_ALWAYS_SOFTWARE: "0"
       GAZEBO_GPU: "true"
