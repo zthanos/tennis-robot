@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Native Ubuntu Docker bring-up. The existing run.sh remains the WSL 2 path.
 #
-# CPU/headless (safe default):
+# Gazebo GUI with software rendering (safe default):
 #   ./run_ubuntu.sh
 #
 # Native Intel/AMD DRI acceleration:
@@ -11,7 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-true}"
+export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-false}"
 export SLAM_MODE="${SLAM_MODE:-localization}"
 export NAV2_START_DELAY_S="${NAV2_START_DELAY_S:-25}"
 

@@ -37,12 +37,12 @@ second Windows control path during the migration.
 3. The base Compose file contains WSL-specific GPU/UI integration:
    `/dev/dxg`, `/mnt/wslg`, `/usr/lib/wsl`, and the Mesa D3D12 adapter setting.
    These paths do not exist on native Ubuntu. `docker-compose.ubuntu.yml`
-   removes those mounts and provides a CPU/headless-safe default, while
+   removes those mounts and provides a software-rendered GUI default, while
    `docker-compose.ubuntu-gpu.yml` optionally exposes `/dev/dri`:
 
    - keep the existing WSL settings available;
    - use `/dev/dri` for Intel/AMD native Linux rendering;
-   - keep CPU/headless as the default fallback;
+   - keep CPU/software rendering as the default fallback;
    - treat NVIDIA Container Toolkit support as a separate future override;
    - do not remove the stable ROS topic and perception contracts.
 4. Start Gazebo alone first, then add RViz and Foxglove:
@@ -192,10 +192,10 @@ for `start_sim.sh` and source the matching setup file in this group.
 
 ### 4. Simulation smoke test
 
-For the native Ubuntu Compose workflow, start the simulator in one terminal:
+For the native Ubuntu Compose workflow, start the Gazebo GUI in one terminal:
 
 ```bash
-GAZEBO_HEADLESS=true ./run_ubuntu.sh
+./run_ubuntu.sh
 ```
 
 Then run the checks below in a second terminal:

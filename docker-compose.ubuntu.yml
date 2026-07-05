@@ -4,8 +4,8 @@
 #   docker compose -f docker-compose.yml -f docker-compose.ubuntu.yml \
 #     --profile gazebo up gazebo
 #
-# This is deliberately CPU/headless-safe. Add docker-compose.ubuntu-gpu.yml
-# only on a host where /dev/dri exists.
+# This defaults to software rendering and supports the native X11 Gazebo GUI.
+# Add docker-compose.ubuntu-gpu.yml only on a host where /dev/dri exists.
 services:
   gazebo:
     devices: !reset []
