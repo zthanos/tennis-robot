@@ -45,13 +45,17 @@ second Windows control path during the migration.
    - keep CPU/software rendering as the default fallback;
    - treat NVIDIA Container Toolkit support as a separate future override;
    - do not remove the stable ROS topic and perception contracts.
-4. Start Gazebo alone first, then add RViz and Foxglove:
+4. Start Gazebo and RViz together, then optionally add Foxglove:
 
    ```bash
    ./run_ubuntu.sh
-   ./run_ubuntu.sh rviz foxglove
-   UBUNTU_GPU=true ./run_ubuntu.sh rviz foxglove  # only with /dev/dri
+   ./run_ubuntu.sh foxglove
+   UBUNTU_GPU=true ./run_ubuntu.sh foxglove  # only with /dev/dri
    ```
+
+   Run the launcher from the logged-in Ubuntu desktop session. It passes the
+   active Xwayland authorization cookie into both GUI containers; running it
+   from a shell without `DISPLAY`/`XAUTHORITY` fails early with an explanation.
 
 5. Verify the neural detector started. Classical HSV detection is not an
    allowed runtime fallback:
@@ -192,7 +196,8 @@ for `start_sim.sh` and source the matching setup file in this group.
 
 ### 4. Simulation smoke test
 
-For the native Ubuntu Compose workflow, start the Gazebo GUI in one terminal:
+For the native Ubuntu Compose workflow, start the Gazebo GUI and RViz in one
+terminal:
 
 ```bash
 ./run_ubuntu.sh

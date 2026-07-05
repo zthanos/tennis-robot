@@ -13,8 +13,10 @@ services:
       - .:/workspace
       - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ${XAUTHORITY:-/dev/null}:/tmp/.docker.xauth:ro
     environment:
       DISPLAY: "${DISPLAY:-:0}"
+      XAUTHORITY: /tmp/.docker.xauth
       WAYLAND_DISPLAY: ""
       XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR:-/tmp}"
       PULSE_SERVER: ""
@@ -31,8 +33,10 @@ services:
       - .:/workspace
       - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ${XAUTHORITY:-/dev/null}:/tmp/.docker.xauth:ro
     environment:
       DISPLAY: "${DISPLAY:-:0}"
+      XAUTHORITY: /tmp/.docker.xauth
       WAYLAND_DISPLAY: ""
       XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR:-/tmp}"
       PULSE_SERVER: ""
@@ -48,8 +52,10 @@ services:
       - .:/workspace
       - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ${XAUTHORITY:-/dev/null}:/tmp/.docker.xauth:ro
     environment:
       DISPLAY: "${DISPLAY:-:0}"
+      XAUTHORITY: /tmp/.docker.xauth
       WAYLAND_DISPLAY: ""
       XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR:-/tmp}"
       PULSE_SERVER: ""
