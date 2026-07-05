@@ -1,47 +1,61 @@
 #!/usr/bin/env bash
-# Launch Gazebo Harmonic + ROS 2 Humble simulation (native Linux, no Docker)
+# Launch Gazebo Harmonic + ROS 2 simulation (native Linux, no Docker).
+# Ubuntu 24.04 defaults to ROS 2 Jazzy; override ROS_DISTRO_TARGET if needed.
 #
 # Robot control now runs through ros2_control: the gz_ros2_control plugin hosts
 # the controller_manager inside Gazebo and sim.launch.py spawns
 # joint_state_broadcaster + diff_drive_controller + lift_wheel_velocity_controller.
 #
-# Native prerequisites (Docker users get these from Dockerfile.gazebo):
-#   sudo apt install ros-humble-ros2-control ros-humble-ros2-controllers \
-#                    ros-humble-controller-manager ros-humble-robot-state-publisher
-#   # gz_ros2_control has no Humble+Harmonic binary — build it from source:
-#   #   git clone https://github.com/ros-controls/gz_ros2_control -b humble \
-#   #       ros2_ws/src/gz_ros2_control
-#   #   cd ros2_ws && GZ_VERSION=harmonic colcon build
+# Native Jazzy prerequisites:
+#   sudo apt install ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+#                    ros-jazzy-controller-manager ros-jazzy-gz-ros2-control \
+#                    ros-jazzy-robot-state-publisher
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── ROS 2 + workspace ────────────────────────────────────────────────────────
-source /opt/ros/humble/setup.bash
-source "$SCRIPT_DIR/ros2_ws/install/setup.bash"
+ROS_DISTRO_TARGET="${ROS_DISTRO_TARGET:-jazzy}"
+ROS_SETUP="/opt/ros/$ROS_DISTRO_TARGET/setup.bash"
+WORKSPACE_SETUP="$SCRIPT_DIR/ros2_ws/install/setup.bash"
+
+if [ ! -r "$ROS_SETUP" ]; then
+    echo "ERROR: ROS setup not found: $ROS_SETUP"
+    exit 1
+fi
+if [ ! -r "$WORKSPACE_SETUP" ]; then
+    echo "ERROR: Workspace is not built. Run:"
+    echo "  cd \"$SCRIPT_DIR/ros2_ws\""
+    echo "  source \"$ROS_SETUP\""
+    echo "  colcon build --symlink-install"
+    exit 1
+fi
+
+source "$ROS_SETUP"
+source "$WORKSPACE_SETUP"
 
 # ── ros2_control sanity check ────────────────────────────────────────────────
 if ! ros2 pkg prefix gz_ros2_control >/dev/null 2>&1; then
-    echo "WARNING: gz_ros2_control not found in the workspace. The robot will not"
-    echo "         move until it is built from source (GZ_VERSION=harmonic)."
-    echo "         See docs/ros2-control-migration-el.md."
+    echo "ERROR: gz_ros2_control is not installed for ROS $ROS_DISTRO_TARGET."
+    exit 1
 fi
 
 # ── Environment ──────────────────────────────────────────────────────────────
 export WORKSPACE="$SCRIPT_DIR"
 export ROS2_INSTALL="$SCRIPT_DIR/ros2_ws/install"
-export GZ_SIM_RESOURCE_PATH="$SCRIPT_DIR/gazebo/models"
+export GZ_SIM_RESOURCE_PATH="$SCRIPT_DIR/gazebo/models:$SCRIPT_DIR/ros2_ws/src"
 export ROBOT_COMMAND_FILE="$SCRIPT_DIR/runtime/robot_command.json"
+export ROS_LOG_DIR="${ROS_LOG_DIR:-$SCRIPT_DIR/runtime/ros_logs}"
 export ROS_DOMAIN_ID=42
-export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-# Raises MaxAutoParticipantIndex so the many nodes (sim + slam + nav2 + explore)
-# don't exhaust DDS participant indices ("free participant index" error).
-export CYCLONEDDS_URI="$SCRIPT_DIR/docker/ros2/cyclonedds-gazebo.xml"
+export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
-# Let Gazebo find the gz_ros2_control system plugin (built from source in the
-# workspace). Without this, Gazebo reports "Failed to load system plugin
-# [gz_ros2_control-system]: Could not find shared library" after a fresh shell.
-export GZ_SIM_SYSTEM_PLUGIN_PATH="$ROS2_INSTALL/gz_ros2_control/lib:${GZ_SIM_SYSTEM_PLUGIN_PATH:-}"
+# Gazebo does not automatically search the ROS prefix for system plugins when
+# launched directly with `gz sim`. Include Jazzy's binary plugin directory and
+# then any source-built workspace plugin.
+export GZ_SIM_SYSTEM_PLUGIN_PATH="/opt/ros/$ROS_DISTRO_TARGET/lib:${GZ_SIM_SYSTEM_PLUGIN_PATH:-}"
+if [ -d "$ROS2_INSTALL/gz_ros2_control/lib" ]; then
+    export GZ_SIM_SYSTEM_PLUGIN_PATH="$ROS2_INSTALL/gz_ros2_control/lib:$GZ_SIM_SYSTEM_PLUGIN_PATH"
+fi
 
 # Add tennis_robot Python package to PYTHONPATH (glob handles any python3.x version)
 SITE_PKG=$(ls -d "$ROS2_INSTALL/tennis_robot/lib/python"*/site-packages 2>/dev/null | head -1)
@@ -51,23 +65,14 @@ else
     echo "WARNING: tennis_robot site-packages not found — did you run colcon build?"
 fi
 
-# ROS 2 Humble uses Python 3.10; create a dedicated venv to avoid version mismatch
-VENV_ROS="$SCRIPT_DIR/.venv-ros"
-if [ ! -d "$VENV_ROS" ]; then
-    echo "Creating Python 3.10 venv for ROS scripts..."
-    uv venv --python 3.10 "$VENV_ROS"
-    uv pip install --python "$VENV_ROS/bin/python" \
-        "duckdb>=1.5.3" "numpy>=1.26" "opencv-python-headless>=4.9" \
-        "matplotlib>=3.10" \
-        "opentelemetry-api>=1.34" "opentelemetry-sdk>=1.34" \
-        "opentelemetry-exporter-otlp-proto-http>=1.34"
-fi
-VENV_SITE=$(ls -d "$VENV_ROS/lib/python"*/site-packages 2>/dev/null | head -1)
+# Reuse the project environment for non-ROS Python dependencies. Jazzy and the
+# project environment both use Python 3.12 on Ubuntu 24.04.
+VENV_SITE=$(ls -d "$SCRIPT_DIR/.venv/lib/python"*/site-packages 2>/dev/null | head -1)
 if [ -n "$VENV_SITE" ]; then
     export PYTHONPATH="$VENV_SITE:${PYTHONPATH:-}"
 fi
 
-mkdir -p "$SCRIPT_DIR/runtime"
+mkdir -p "$SCRIPT_DIR/runtime" "$ROS_LOG_DIR"
 
 # ── Launch ───────────────────────────────────────────────────────────────────
 HEADLESS="${1:-false}"

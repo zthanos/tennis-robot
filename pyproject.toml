@@ -11,6 +11,7 @@ dependencies = [
     "opencv-python-headless>=4.9",
     "duckdb>=1.5.3",
     "matplotlib>=3.10.9",
+    "onnxruntime>=1.20",
 ]
 
 [dependency-groups]

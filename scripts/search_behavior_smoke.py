@@ -7,10 +7,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "controllers" / "ball_detector"))
+sys.path.insert(0, str(ROOT / "ros2_ws" / "src" / "tennis_robot"))
 
-from collector import BallObservationInput  # noqa: E402
-from search import HalfCourtSearchBehavior, SearchConfig, SearchState  # noqa: E402
+from tennis_robot.collector import BallObservationInput  # noqa: E402
+from tennis_robot.search import HalfCourtSearchBehavior, SearchConfig, SearchState  # noqa: E402
 
 
 def main() -> None:

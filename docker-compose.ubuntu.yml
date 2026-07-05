@@ -1,0 +1,61 @@
+# Native Ubuntu override for the WSL-oriented services in docker-compose.yml.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.ubuntu.yml \
+#     --profile gazebo up gazebo
+#
+# This is deliberately CPU/headless-safe. Add docker-compose.ubuntu-gpu.yml
+# only on a host where /dev/dri exists.
+services:
+  gazebo:
+    devices: !reset []
+    volumes: !override
+      - .:/workspace
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    environment:
+      DISPLAY: "${DISPLAY:-:0}"
+      WAYLAND_DISPLAY: ""
+      XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR:-/tmp}"
+      PULSE_SERVER: ""
+      LD_LIBRARY_PATH: ""
+      MESA_D3D12_DEFAULT_ADAPTER_NAME: null
+      MESA_LOADER_DRIVER_OVERRIDE: "${MESA_LOADER_DRIVER_OVERRIDE:-llvmpipe}"
+      GALLIUM_DRIVER: "${GALLIUM_DRIVER:-llvmpipe}"
+      LIBGL_ALWAYS_SOFTWARE: "${LIBGL_ALWAYS_SOFTWARE:-1}"
+      GAZEBO_GPU: "false"
+
+  rviz:
+    devices: !reset []
+    volumes: !override
+      - .:/workspace
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    environment:
+      DISPLAY: "${DISPLAY:-:0}"
+      WAYLAND_DISPLAY: ""
+      XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR:-/tmp}"
+      PULSE_SERVER: ""
+      LD_LIBRARY_PATH: ""
+      MESA_D3D12_DEFAULT_ADAPTER_NAME: null
+      MESA_LOADER_DRIVER_OVERRIDE: "${MESA_LOADER_DRIVER_OVERRIDE:-llvmpipe}"
+      GALLIUM_DRIVER: "${GALLIUM_DRIVER:-llvmpipe}"
+      LIBGL_ALWAYS_SOFTWARE: "${LIBGL_ALWAYS_SOFTWARE:-1}"
+
+  gazebo-rec:
+    devices: !reset []
+    volumes: !override
+      - .:/workspace
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    environment:
+      DISPLAY: "${DISPLAY:-:0}"
+      WAYLAND_DISPLAY: ""
+      XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR:-/tmp}"
+      PULSE_SERVER: ""
+      LD_LIBRARY_PATH: ""
+      MESA_D3D12_DEFAULT_ADAPTER_NAME: null
+      MESA_LOADER_DRIVER_OVERRIDE: "${MESA_LOADER_DRIVER_OVERRIDE:-llvmpipe}"
+      GALLIUM_DRIVER: "${GALLIUM_DRIVER:-llvmpipe}"
+      LIBGL_ALWAYS_SOFTWARE: "${LIBGL_ALWAYS_SOFTWARE:-1}"
+      GAZEBO_GPU: "false"

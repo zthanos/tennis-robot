@@ -1,0 +1,28 @@
+# Optional native Linux DRI acceleration. Layer this after
+# docker-compose.ubuntu.yml only when /dev/dri exists.
+services:
+  gazebo:
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      MESA_LOADER_DRIVER_OVERRIDE: ""
+      GALLIUM_DRIVER: ""
+      LIBGL_ALWAYS_SOFTWARE: "0"
+      GAZEBO_GPU: "true"
+
+  rviz:
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      MESA_LOADER_DRIVER_OVERRIDE: ""
+      GALLIUM_DRIVER: ""
+      LIBGL_ALWAYS_SOFTWARE: "0"
+
+  gazebo-rec:
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      MESA_LOADER_DRIVER_OVERRIDE: ""
+      GALLIUM_DRIVER: ""
+      LIBGL_ALWAYS_SOFTWARE: "0"
+      GAZEBO_GPU: "true"

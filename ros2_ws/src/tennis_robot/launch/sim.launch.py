@@ -19,6 +19,7 @@ WORKSPACE = os.environ.get(
     str(Path(__file__).resolve().parents[2]),  # gazebo/launch/../.. = project root
 )
 GZ_MODELS = f"{WORKSPACE}/gazebo/models"
+ROS_SOURCE_MODELS = f"{WORKSPACE}/ros2_ws/src"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
@@ -79,8 +80,14 @@ def generate_launch_description():
     _gz_plugin_path = f"{ROS2_INSTALL}/gz_ros2_control/lib:" + os.environ.get(
         "GZ_SIM_SYSTEM_PLUGIN_PATH", ""
     )
+    _gz_resource_path = ":".join(
+        filter(
+            None,
+            [GZ_MODELS, ROS_SOURCE_MODELS, os.environ.get("GZ_SIM_RESOURCE_PATH", "")],
+        )
+    )
     _gz_env = {
-        "GZ_SIM_RESOURCE_PATH": GZ_MODELS,
+        "GZ_SIM_RESOURCE_PATH": _gz_resource_path,
         "GZ_SIM_SYSTEM_PLUGIN_PATH": _gz_plugin_path,
     }
 
