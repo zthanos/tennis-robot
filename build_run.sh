@@ -31,6 +31,9 @@ export SLAM_MODE="${SLAM_MODE:-localization}"
 export NAV2_START_DELAY_S="${NAV2_START_DELAY_S:-25}"
 # export NAV2_START_DELAY_S="${NAV2_START_DELAY_S:-10}"
 
+# Extra services alongside the sim, e.g.:
+#   ./build_run.sh rviz foxglove
+#   GAZEBO_HEADLESS=true ./build_run.sh rviz foxglove
 docker compose --profile gazebo down
 docker compose --profile gazebo build gazebo
-docker compose --profile gazebo up gazebo
+docker compose --profile gazebo up gazebo "$@"

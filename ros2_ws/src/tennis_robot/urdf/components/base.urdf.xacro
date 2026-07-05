@@ -41,13 +41,36 @@
 
     <link name="base_link">
       <xacro:box_inertial mass="${chassis_mass}" x="${chassis_x}" y="${chassis_y}" z="${chassis_z}"/>
-      <collision name="chassis_col">
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} ${chassis_y} ${chassis_z}"/></geometry>
+      <!-- Front-centre cutout (0.20 wide x 0.04 deep): the roller-first
+           intake channel wraps the ball around behind the roller close to
+           the chassis front edge (x=0.46); without the notch the plate
+           corner clips the rising ball by ~1 mm. Plate = two full-length
+           side strips + one centre strip ending at x=0.42. -->
+      <collision name="chassis_left_col">
+        <origin xyz="0 ${0.10 + (chassis_y / 2.0 - 0.10) / 2.0} 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>
       </collision>
-      <visual name="chassis_vis">
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} ${chassis_y} ${chassis_z}"/></geometry>
+      <collision name="chassis_right_col">
+        <origin xyz="0 ${-(0.10 + (chassis_y / 2.0 - 0.10) / 2.0)} 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>
+      </collision>
+      <collision name="chassis_centre_col">
+        <origin xyz="-0.02 0 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x - 0.04} 0.20 ${chassis_z}"/></geometry>
+      </collision>
+      <visual name="chassis_left_vis">
+        <origin xyz="0 ${0.10 + (chassis_y / 2.0 - 0.10) / 2.0} 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>
+        <material name="plywood"/>
+      </visual>
+      <visual name="chassis_right_vis">
+        <origin xyz="0 ${-(0.10 + (chassis_y / 2.0 - 0.10) / 2.0)} 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>
+        <material name="plywood"/>
+      </visual>
+      <visual name="chassis_centre_vis">
+        <origin xyz="-0.02 0 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x - 0.04} 0.20 ${chassis_z}"/></geometry>
         <material name="plywood"/>
       </visual>
 
@@ -101,8 +124,10 @@
         <geometry><box size="0.34 0.26 0.12"/></geometry>
         <material name="anthracite"/>
       </visual>
+      <!-- Throat beam-line visual: matches ir_x/ir_z in tennis_robot.urdf.xacro
+           (nip jam detection, 40 mm above ground just behind the lip). -->
       <visual name="ir_beam_line_vis">
-        <origin xyz="0.54 0 0.053" rpy="1.5708 0 0"/>
+        <origin xyz="0.575 0 -0.005" rpy="1.5708 0 0"/>
         <geometry><cylinder radius="0.003" length="0.21"/></geometry>
         <material name="ir_beam_red"/>
       </visual>

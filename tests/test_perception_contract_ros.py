@@ -118,12 +118,11 @@ def test_controller_consumes_canonical_detection_array_end_to_end():
         assert controller._latest_obs.source == "no_detection"
         assert controller._latest_camera_balls == []
 
-        controller._latest_obs_received_at = (
-            time.monotonic() - PERCEPTION_OBSERVATION_TIMEOUT_S - 0.1
+        stale_at = (
+            controller._runtime_seconds() - PERCEPTION_OBSERVATION_TIMEOUT_S - 0.1
         )
-        controller._latest_camera_balls_received_at = (
-            time.monotonic() - PERCEPTION_OBSERVATION_TIMEOUT_S - 0.1
-        )
+        controller._latest_obs_received_at = stale_at
+        controller._latest_camera_balls_received_at = stale_at
         controller._latest_camera_balls = [{"stale": True}]
         expired = controller._fresh_perception_observation()
         assert expired.visible is False

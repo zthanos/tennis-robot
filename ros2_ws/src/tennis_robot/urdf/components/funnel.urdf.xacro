@@ -13,32 +13,65 @@
       </inertial>
 
       <visual name="funnel_left_cheek_vis">
-        <origin xyz="0.54 0.14 0.052" rpy="0 ${pitch} 0.25"/>
+        <origin xyz="0.60 0.145 0.052" rpy="0 ${pitch} 0.25"/>
         <geometry><box size="0.24 0.01 0.10"/></geometry>
         <material name="intake_orange"/>
       </visual>
+      <!-- Cheek collisions so the funnel physically guides off-centre balls
+           into the (narrower, scoop-width) intake instead of only looking
+           like it does. Mouth is ~0.35 m wide at the front tips, converging
+           to the 0.18 m roller/channel width at the intake mouth. -->
+      <collision name="funnel_left_cheek_col">
+        <origin xyz="0.60 0.145 0.052" rpy="0 ${pitch} 0.25"/>
+        <geometry><box size="0.24 0.01 0.10"/></geometry>
+      </collision>
 
       <visual name="funnel_right_cheek_vis">
-        <origin xyz="0.54 -0.14 0.052" rpy="0 ${pitch} -0.25"/>
+        <origin xyz="0.60 -0.145 0.052" rpy="0 ${pitch} -0.25"/>
         <geometry><box size="0.24 0.01 0.10"/></geometry>
         <material name="intake_orange"/>
       </visual>
-
-      <collision name="roller_exit_floor_col">
-        <!-- Closed 2 mm wedge: its front underside is exactly at the ground
-             plane and its 0.32 rad top surface rises toward the roller. -->
-        <origin xyz="0.54 0 0" rpy="0 0 0"/>
-        <geometry><mesh filename="package://tennis_robot/meshes/scooper_wedge.stl"/></geometry>
+      <collision name="funnel_right_cheek_col">
+        <origin xyz="0.60 -0.145 0.052" rpy="0 ${pitch} -0.25"/>
+        <geometry><box size="0.24 0.01 0.10"/></geometry>
       </collision>
-      <visual name="roller_exit_floor_vis">
-        <origin xyz="0.54 0 0" rpy="0 0 0"/>
-        <geometry><mesh filename="package://tennis_robot/meshes/scooper_wedge.stl"/></geometry>
+
+      <collision name="intake_channel_col">
+        <!-- Roller-first intake channel, entirely BEHIND the roller's
+             leading edge (envelope reaches x=0.595, effective channel tip at
+             x=0.540 after the rearward tuning offset):
+             2 mm tip on the ground plane, then a circular arc of radius
+             105 mm around the roller centre (0.55, 0.105 above ground) up to
+             a near-vertical rear wall ending at z=0.155. The paddled roller
+             (tennis_robot.urdf.xacro intake_*) is the first hard contact and
+             drives the ball around the channel. Mesh is generated in
+             funnel-frame coords by scripts/generate_curved_scoop_mesh.py —
+             keep the two in sync. -->
+        <!-- Shifted 15 mm rearward after the first mechanical-capture test:
+             this gives the paddle envelope more room to engage the ball
+             before the rigid channel can support / block it. -->
+        <origin xyz="-0.015 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
+      </collision>
+      <visual name="intake_channel_vis">
+        <origin xyz="-0.015 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
         <material name="intake_orange"/>
       </visual>
 
-      <visual name="internal_slide_vis">
-        <origin xyz="0.40 0 0.03" rpy="0 -0.12 0"/>
-        <geometry><box size="0.14 0.24 0.005"/></geometry>
+      <!-- Deflector plate above/behind the roller: catches the ball flung up
+           the rear wall (rising at x~0.48) and deflects it backward onto the
+           basket floor (top at 0.128 above ground, extended to x=0.42 —
+           basket.urdf.xacro). Ground-frame edges: front-high (0.49, 0.266),
+           rear-low (0.36, 0.204) — 76 mm above the basket floor so a 66 mm
+           ball can't jam under it; clears the roller envelope top (0.15). -->
+      <collision name="intake_deflector_col">
+        <origin xyz="0.425 0 0.197" rpy="0 -0.43 0"/>
+        <geometry><box size="0.15 0.20 0.006"/></geometry>
+      </collision>
+      <visual name="intake_deflector_vis">
+        <origin xyz="0.425 0 0.197" rpy="0 -0.43 0"/>
+        <geometry><box size="0.15 0.20 0.006"/></geometry>
         <material name="intake_orange"/>
       </visual>
     </link>

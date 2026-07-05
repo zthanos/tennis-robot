@@ -99,36 +99,69 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         for collision in link.findall("collision"):
             _patch_collision_surface(collision, *surfaces[name])
 
-    # URDF has no triangular-prism primitive, and DART does not handle a thin
-    # STL collision reliably here. Replace only the generated SDF collision
-    # with a native extruded polyline. The 2-D x/z profile is extruded 240 mm
-    # across the intake after rotating the polyline's extrusion axis onto Y.
+    # URDF has no curved-prism primitive, and DART does not handle STL
+    # collisions reliably here. Replace only the generated SDF collision with
+    # a native extruded polyline of the roller-first intake channel — keep in
+    # sync with scripts/generate_curved_scoop_mesh.py: mesh-local channel tip
+    # at x=0.555, placed at effective x=0.540 by the -15 mm SDF pose
+    # (fully BEHIND the roller's leading edge at 0.595, so the paddles are
+    # the first contact), arc of radius 0.105 around the roller centre
+    # (0.55, 0.105 above ground) back to x=0.445, near-vertical rear wall up
+    # to 0.155. The 2-D x/z profile is extruded 180 mm across the intake
+    # after rotating the extrusion axis onto Y.
     for collision in root.findall(".//collision"):
-        if "roller_exit_floor_col" not in collision.attrib.get("name", ""):
+        if "intake_channel_col" not in collision.attrib.get("name", ""):
             continue
         pose = collision.find("pose")
         if pose is None:
             pose = ET.SubElement(collision, "pose")
-        # The collision profile represents the bevel, not the full visible
-        # 2 mm sheet. Both front vertices meet at a zero-height tip exactly on
-        # the court so the blade gets underneath the rigid sphere.
-        pose.text = "0.54 0.12 0.038 1.57079632679 0 0"
+        # rot X +90deg maps the +Z extrusion onto -Y: spans y=+0.09..-0.09.
+        # Point y-coords below are funnel-frame z (ground at -0.038), so no
+        # extra z offset is needed.
+        # Match the -15 mm channel origin in funnel.urdf.xacro.
+        pose.text = "-0.015 0.09 0 1.57079632679 0 0"
         geometry = collision.find("geometry")
         if geometry is None:
             geometry = ET.SubElement(collision, "geometry")
         geometry.clear()
         polyline = ET.SubElement(geometry, "polyline")
-        ET.SubElement(polyline, "height").text = "0.24"
-        for point in (
-            "0.120 -0.038",
-            "0.120 -0.038",
-            "-0.120 0.0043",
-            "-0.120 0.0038",
-        ):
-            ET.SubElement(polyline, "point").text = point
-        # Smooth plastic / sheet-metal ramp. The roller supplies traction; the
-        # ramp must not pin the ball against the court through default friction.
+        ET.SubElement(polyline, "height").text = "0.18"
+        ground = -0.038
+        roller_x, roller_z, channel_r = 0.55, 0.105, 0.105
+        # Thin 2 mm curved sheet. The previous polygon closed from the front
+        # tip to a rear point on the court, creating a broad flat underside
+        # that dragged under the robot. Build top and underside profiles so
+        # only the front lip reaches the ground.
+        top_points = [(0.4435, ground + 0.155), (0.445, ground + roller_z)]
+        arc_steps = 24
+        for i in range(1, arc_steps + 1):
+            x = 0.445 + (roller_x - 0.445) * i / arc_steps
+            dx = roller_x - x
+            z = roller_z - (channel_r * channel_r - dx * dx) ** 0.5
+            # A 3 mm floor leaves the 2 mm sheet underside 1 mm clear.
+            top_points.append((round(x, 5), round(ground + max(z, 0.003), 5)))
+        # Short tip behind the roller front; at ZERO height exactly on the
+        # court so the blade gets underneath the rigid sphere (same trick as
+        # the old wedge collision). The 2 mm tip stays in the visual mesh.
+        top_points.append((0.555, ground + 0.002))
+        sheet_thickness = 0.002
+        collision_clearance = 0.001
+        underside = [
+            (x, max(ground + collision_clearance, z - sheet_thickness))
+            for x, z in reversed(top_points)
+        ]
+        points = top_points + underside
+        for px, pz in points:
+            ET.SubElement(polyline, "point").text = f"{px} {pz}"
+        # Smooth plastic channel. The paddled roller supplies traction; the
+        # channel must not pin the ball against the court through friction.
         _patch_collision_surface(collision, "0.15", "0.15", "0.0", "0.0")
+
+    # Funnel cheeks: smooth guides — low friction so an off-centre ball slides
+    # toward the scoop instead of being grabbed and pushed.
+    for collision in root.findall(".//collision"):
+        if "cheek_col" in collision.attrib.get("name", ""):
+            _patch_collision_surface(collision, "0.1", "0.1", "0.0", "0.0")
 
     ET.indent(root, space="  ")
     return ET.tostring(root, encoding="unicode")

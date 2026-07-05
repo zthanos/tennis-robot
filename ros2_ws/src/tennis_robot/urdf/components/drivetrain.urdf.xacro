@@ -78,7 +78,9 @@
   <xacro:macro name="intake_roller" params="x z radius width mass">
     <link name="lift_wheel_link">
       <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="y"/>
-      <!-- Small rigid hub; the paddles define the 100 mm swept envelope. -->
+      <!-- Small rigid hub; the paddles sweep the full `radius` envelope
+           (Ø90 mm with the current intake_radius=0.045). Roller-first design:
+           this envelope is the first hard contact with the ball. -->
       <collision name="core_col">
         <origin xyz="0 0 0" rpy="1.5708 0 0"/>
         <geometry><cylinder radius="${radius * 0.44}" length="${width}"/></geometry>
@@ -106,6 +108,49 @@
     <gazebo reference="lift_wheel_link">
       <mu1>1.5</mu1>
       <mu2>1.5</mu2>
+      <!-- One contact sensor per paddle. Gazebo publishes the real physics
+           contact positions; gazebo_extras_node turns them into short-lived
+           red RViz markers and a /sim/roller_contact heartbeat. -->
+      <sensor name="roller_contact_0" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_0</topic>
+        <contact><collision>flap_0_col</collision></contact>
+      </sensor>
+      <sensor name="roller_contact_1" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_1</topic>
+        <contact><collision>flap_1_col</collision></contact>
+      </sensor>
+      <sensor name="roller_contact_2" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_2</topic>
+        <contact><collision>flap_2_col</collision></contact>
+      </sensor>
+      <sensor name="roller_contact_3" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_3</topic>
+        <contact><collision>flap_3_col</collision></contact>
+      </sensor>
+      <sensor name="roller_contact_4" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_4</topic>
+        <contact><collision>flap_4_col</collision></contact>
+      </sensor>
+      <sensor name="roller_contact_5" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_5</topic>
+        <contact><collision>flap_5_col</collision></contact>
+      </sensor>
+      <sensor name="roller_contact_6" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_6</topic>
+        <contact><collision>flap_6_col</collision></contact>
+      </sensor>
+      <sensor name="roller_contact_7" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_7</topic>
+        <contact><collision>flap_7_col</collision></contact>
+      </sensor>
     </gazebo>
   </xacro:macro>
 

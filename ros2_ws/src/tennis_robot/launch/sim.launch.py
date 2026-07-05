@@ -100,10 +100,19 @@ def generate_launch_description():
         output="screen",
     )
 
+    # --headless-rendering forces EGL offscreen rendering. Without it, ogre2
+    # sees DISPLAY=:0 and creates a GLX context via X — which crashes under
+    # GALLIUM_DRIVER=d3d12 (glx drisw screen / GLXBadFBConfig, the server dies
+    # and controller_manager never comes up). d3d12 GPU accel works ONLY on
+    # the EGL path, so headless must never touch GLX. DISPLAY is cleared for
+    # the same reason.
     gz_headless = ExecuteProcess(
-        cmd=["gz", "sim", "-r", "-s", "--render-engine", "ogre2", GZ_WORLD],
+        cmd=[
+            "gz", "sim", "-r", "-s", "--headless-rendering",
+            "--render-engine", "ogre2", GZ_WORLD,
+        ],
         condition=IfCondition(headless),
-        additional_env=_gz_env,
+        additional_env={**_gz_env, "DISPLAY": ""},
         output="screen",
     )
 
@@ -228,6 +237,9 @@ def generate_launch_description():
         executable="controller_node",
         name="controller_node",
         output="screen",
+        # Advance collection/search timers with Gazebo physics. At a low
+        # real-time factor, wall-time capture deadlines expire far too early.
+        parameters=[{"use_sim_time": True}],
         remappings=[_odom_remap],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,

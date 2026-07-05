@@ -14,6 +14,24 @@ Visualization Manager:
       Enabled: true
       Plane Cell Count: 30
       Cell Size: 1
+    - Class: rviz_default_plugins/MarkerArray
+      Name: SimBalls
+      Enabled: true
+      Topic:
+        Value: /sim/ball_markers
+        Depth: 1
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+    - Class: rviz_default_plugins/MarkerArray
+      Name: RollerContacts
+      Enabled: true
+      Topic:
+        Value: /sim/roller_contact_markers
+        Depth: 10
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
     - Class: rviz_default_plugins/Map
       Name: Map
       Enabled: true
@@ -84,6 +102,30 @@ Visualization Manager:
       X: 0
       Y: 0
       Angle: 0
+    Saved:
+      # Camera in front of the robot looking back at the scoop/roller; follows
+      # the robot because Target Frame is base_link. Switch in the Views panel.
+      - Class: rviz_default_plugins/Orbit
+        Name: FrontFollow
+        Target Frame: base_link
+        Distance: 2.5
+        Yaw: 0.0
+        Pitch: 0.2
+        Focal Point:
+          X: 0.4
+          Y: 0
+          Z: 0.1
+      # Behind-the-robot chase view (over-the-shoulder toward the intake).
+      - Class: rviz_default_plugins/Orbit
+        Name: ChaseFollow
+        Target Frame: base_link
+        Distance: 3.5
+        Yaw: 3.1416
+        Pitch: 0.45
+        Focal Point:
+          X: 0.5
+          Y: 0
+          Z: 0.1
 Window Geometry:
   Height: 900
   Width: 1400

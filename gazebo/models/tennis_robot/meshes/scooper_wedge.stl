@@ -1,0 +1,86 @@
+solid scooper_wedge
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 0.120 -0.036
+      vertex -0.120 -0.120 0.0063
+      vertex -0.120 0.120 0.0063
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 0.120 -0.036
+      vertex 0.120 -0.120 -0.036
+      vertex -0.120 -0.120 0.0063
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 0.120 -0.038
+      vertex -0.120 0.120 0.0043
+      vertex -0.120 -0.120 0.0043
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 0.120 -0.038
+      vertex -0.120 -0.120 0.0043
+      vertex 0.120 -0.120 -0.038
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 0.120 -0.038
+      vertex 0.120 -0.120 -0.036
+      vertex 0.120 0.120 -0.036
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 0.120 -0.038
+      vertex 0.120 -0.120 -0.038
+      vertex 0.120 -0.120 -0.036
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex -0.120 0.120 0.0043
+      vertex -0.120 0.120 0.0063
+      vertex -0.120 -0.120 0.0063
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex -0.120 0.120 0.0043
+      vertex -0.120 -0.120 0.0063
+      vertex -0.120 -0.120 0.0043
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 0.120 -0.038
+      vertex 0.120 0.120 -0.036
+      vertex -0.120 0.120 0.0063
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 0.120 -0.038
+      vertex -0.120 0.120 0.0063
+      vertex -0.120 0.120 0.0043
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 -0.120 -0.038
+      vertex -0.120 -0.120 0.0063
+      vertex 0.120 -0.120 -0.036
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0.120 -0.120 -0.038
+      vertex -0.120 -0.120 0.0043
+      vertex -0.120 -0.120 0.0063
+    endloop
+  endfacet
+endsolid scooper_wedge

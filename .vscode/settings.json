@@ -1,3 +1,6 @@
 {
-    "github.copilot.chat.codeGeneration.useInstructionFiles": true
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "urdf-visualizer.packages": {
+        "tennis_robot": "${workspaceFolder}/ros2_ws/src/tennis_robot"
+    }
 }

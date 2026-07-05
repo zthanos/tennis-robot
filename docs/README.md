@@ -19,6 +19,8 @@ Use these files for purchasing, cutting, CAD alignment, and software assumptions
 - `court-survey-v2-spec-el.md` - **active, as-built** court survey spec (LiDAR occupancy -> Court Knowledge Model). Replaces the old perimeter / Nav2-explore / FSM-fix survey docs.
 - `project-board-plan-el.md` - proposed GitHub Project board workstreams, labels, and initial cards.
 - `validation-plan-el.md` - baseline validation and implementation plan from simulation to real court tests.
+- `ubuntu-dual-boot-handoff.md` - current simulation/collector checkpoint and
+  first-run checklist for moving development from WSL 2 to native Ubuntu.
 - `images/` - diagrams referenced by the active build plan.
 - `../arduino/collector/` - Arduino Nano bring-up sketches for collector motor, encoder, and IR break beam tests.
 

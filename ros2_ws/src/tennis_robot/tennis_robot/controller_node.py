@@ -29,6 +29,7 @@ import os
 import time
 from collections import deque
 from dataclasses import asdict
+from pathlib import Path
 
 import rclpy
 from geometry_msgs.msg import Twist
@@ -87,9 +88,18 @@ NET_SIDE_CLEARANCE_M = 0.25
 COURT_MAX_X_M = 11.885
 COURT_MAX_Y_M = 5.485
 COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
-INTAKE_ZONE_X_M = (0.50, 0.72)
-INTAKE_HALF_WIDTH_M = 0.16
-INTAKE_MAX_HEIGHT_M = -0.08
+# Roller-first intake: the sim now attempts REAL mechanical capture (paddled
+# roller is the first contact; channel wraps the ball up into the basket), so
+# ground truth counts a ball as collected only once it is physically inside
+# the basket volume — local x in [0.0, 0.42], |y| <= 0.16, ball-centre z
+# above the basket floor (top 0.128 m; ball centre on floor ~0.16 m). The old
+# lip-contact zone (0.48–0.72 at ground level) is gone: it faked collection
+# the moment the ball touched the lip and would delete the ball before the
+# mechanism was ever exercised. Hardware/sim IR confirmation comes from the
+# basket beam pair (see gazebo_extras_node.py).
+BASKET_ZONE_X_M = (0.0, 0.42)
+BASKET_HALF_WIDTH_M = 0.16
+BASKET_MIN_BALL_Z_M = 0.12
 IR_INTAKE_TRIGGER_THRESHOLD = 500.0
 SCAN_SIDE_DURATION_S = 12.0
 COLLECT_PATTERN_COLLECTION_TIMEOUT_S = _env_float("COLLECT_PATTERN_COLLECTION_TIMEOUT_S", 35.0)
@@ -182,6 +192,14 @@ class ControllerNode(Node):
         self._last_survey_log_key: tuple[str, str] | None = None
         self._last_status_file_write_s: float = 0.0
         self._collection_events: deque[dict] = deque(maxlen=60)
+        self._collection_event_started_at: float | None = None
+        self._collection_event_log = Path(
+            os.getenv(
+                "COLLECTION_EVENT_LOG_FILE",
+                "/workspace/runtime/collection_events.jsonl",
+            )
+        )
+        self._run_id = f"{int(self.started_at)}-{os.getpid()}"
         self._last_collection_event_key: tuple | None = None
         self._last_collection_scan_key: tuple | None = None
 
@@ -233,6 +251,9 @@ class ControllerNode(Node):
         self._pub_motion_cmd = self.create_publisher(Twist, MOTION_COMMAND_TOPIC, 1)
         self._pub_collector = self.create_publisher(CollectorCmd, "/collector/cmd", 1)
         self._pub_status = self.create_publisher(String, "/robot/status", 10)
+        self._pub_collection_event = self.create_publisher(
+            String, "/telemetry/collection_events", 10
+        )
         self._pub_ball_collected = self.create_publisher(String, "/ball/collected", 10)
         self._pub_command = self.create_publisher(RobotCommand, "/robot/command", 10)
 
@@ -259,7 +280,7 @@ class ControllerNode(Node):
             self._latest_camera_balls = []
             return
 
-        received_at = time.monotonic()
+        received_at = self._runtime_seconds()
         observations: list[BallObservationInput] = []
         camera_balls: list[dict] = []
         for detection in msg.detections:
@@ -351,11 +372,15 @@ class ControllerNode(Node):
 
     # ── main step (runs at TIME_STEP_S Hz) ─────────────────────────────────────
 
+    def _runtime_seconds(self) -> float:
+        """Mission time: Gazebo /clock in sim, system time on the real robot."""
+        return self.get_clock().now().nanoseconds * 1e-9
+
     def _fresh_perception_observation(
-        self, monotonic_now: float | None = None
+        self, runtime_now: float | None = None
     ) -> BallObservationInput:
         """Return the current observation or an explicit timeout sentinel."""
-        now = time.monotonic() if monotonic_now is None else monotonic_now
+        now = self._runtime_seconds() if runtime_now is None else runtime_now
         if (
             self._latest_camera_balls_received_at <= 0.0
             or now - self._latest_camera_balls_received_at
@@ -373,7 +398,7 @@ class ControllerNode(Node):
     def _step(self) -> None:
         self._update_pose_from_tf()
         observation = self._fresh_perception_observation()
-        now = time.time()
+        now = self._runtime_seconds()
         mapping_observation = (
             observation
             if self._latest_obs_seq != self._mapped_obs_seq
@@ -461,6 +486,7 @@ class ControllerNode(Node):
         self.get_logger().info(f"mode → {new_mode}")
         if new_mode == "collect":
             self._collection_events.clear()
+            self._collection_event_started_at = self._runtime_seconds()
             if self._nav2_lane is not None:
                 self._nav2_lane.reset()
             self._last_collection_event_key = None
@@ -491,11 +517,11 @@ class ControllerNode(Node):
             if mode == "collect":
                 self.ball_map.reset()
                 self._collection_scan.reset()
-                self._collect_start_time = time.time()
+                self._collect_start_time = self._runtime_seconds()
             elif mode == "collect_one":
                 self.ball_map.reset()
                 self.collect_one_mission.start(self._robot_pose_2d())
-                self._collect_start_time = time.time()
+                self._collect_start_time = self._runtime_seconds()
 
         if mode == "collect":
             return self._collection_distribution_scan_command_for_mode(mode, observation)
@@ -587,9 +613,9 @@ class ControllerNode(Node):
             seeded = self._seed_mapped_balls_from_map_mission()
             if seeded > 0:
                 self.active_mapped_target_id = self.ball_map.nearest_target_id(
-                    self._robot_x, self._robot_y, time.time()
+                    self._robot_x, self._robot_y, self._runtime_seconds()
                 )
-            self._collect_start_time = time.time()
+            self._collect_start_time = self._runtime_seconds()
             self._collection_complete_reported = False
             self.collect_pattern_phase = "search"
             self.collect_pattern_collect_elapsed_s = 0.0
@@ -598,7 +624,7 @@ class ControllerNode(Node):
         if self.collect_pattern_phase == "collect":
             return self._collect_pattern_collect_command(observation, mapped_ball_id)
 
-        now = time.time()
+        now = self._runtime_seconds()
         mapped_search_id = mapped_ball_id or self.ball_map.nearest_target_id(
             self._robot_x, self._robot_y, now
         )
@@ -693,7 +719,7 @@ class ControllerNode(Node):
     def _collect_pattern_target_observation(
         self, observation: BallObservationInput, mapped_ball_id: int | None
     ) -> BallObservationInput:
-        now = time.time()
+        now = self._runtime_seconds()
         if self.active_mapped_target_id is None:
             self.active_mapped_target_id = mapped_ball_id or self.ball_map.nearest_target_id(
                 self._robot_x, self._robot_y, now
@@ -780,7 +806,7 @@ class ControllerNode(Node):
             seeded = self._seed_mapped_balls_from_map_mission()
             if seeded > 0:
                 self.active_mapped_target_id = self.ball_map.nearest_target_id(
-                    self._robot_x, self._robot_y, time.time()
+                    self._robot_x, self._robot_y, self._runtime_seconds()
                 )
             self.get_logger().info(
                 f"map_left_side complete; candidates={len(self._map_mission.candidates)} seeded={seeded}"
@@ -894,7 +920,9 @@ class ControllerNode(Node):
             )
         self._record_collection_scan_snapshot()
         if self._collection_scan.complete and not self._collection_scan_completion_reported:
-            seeded = self.ball_map.seed_from_candidates(self._collection_scan.local_candidates, time.time())
+            seeded = self.ball_map.seed_from_candidates(
+                self._collection_scan.local_candidates, self._runtime_seconds()
+            )
             self.get_logger().info(
                 "collect distribution scan complete; "
                 f"side={self._collection_scan.side_id} "
@@ -1042,11 +1070,16 @@ class ControllerNode(Node):
         return None
 
     def _record_collection_event(self, event_type: str, **fields: object) -> None:
-        now = time.time()
+        now = self._runtime_seconds()
+        if self._collection_event_started_at is None:
+            self._collection_event_started_at = now
         truth = self._collection_truth()
         event = {
             "schema_version": COLLECTION_EVENT_SCHEMA_VERSION,
-            "t_s": round(now - self.started_at, 1),
+            "run_id": self._run_id,
+            "t_s": round(max(0.0, now - self._collection_event_started_at), 3),
+            "sim_time_s": round(now, 3),
+            "recorded_at_s": round(time.time(), 3),
             "type": event_type,
             "mode": self.control_mode,
             "lane": self._collection_scan.telemetry().get("phase_label"),
@@ -1064,11 +1097,33 @@ class ControllerNode(Node):
                 event[key] = round(value, 3)
             else:
                 event[key] = value
-        key = tuple(sorted((k, json.dumps(v, sort_keys=True) if isinstance(v, (dict, list)) else v) for k, v in event.items() if k != "t_s"))
+        temporal_fields = {"t_s", "sim_time_s", "recorded_at_s", "run_id"}
+        key = tuple(
+            sorted(
+                (
+                    k,
+                    json.dumps(v, sort_keys=True)
+                    if isinstance(v, (dict, list))
+                    else v,
+                )
+                for k, v in event.items()
+                if k not in temporal_fields
+            )
+        )
         if key == self._last_collection_event_key:
             return
         self._last_collection_event_key = key
         self._collection_events.append(event)
+        payload = json.dumps(event, separators=(",", ":"), sort_keys=True)
+        self._pub_collection_event.publish(String(data=payload))
+        try:
+            self._collection_event_log.parent.mkdir(parents=True, exist_ok=True)
+            with self._collection_event_log.open("a", encoding="utf-8") as handle:
+                handle.write(payload + "\n")
+        except OSError as exc:
+            self.get_logger().warning(
+                f"failed to append collection event log: {exc}"
+            )
 
     def _collection_truth(self, command: ConceptACommand | None = None) -> dict[str, object]:
         scan = self._collection_scan.telemetry()
@@ -1188,7 +1243,7 @@ class ControllerNode(Node):
         )
 
     def _scan_side_command(self) -> ConceptACommand:
-        now = time.time()
+        now = self._runtime_seconds()
         if self.scan_side_started_at is None:
             self.scan_side_started_at = now
         if now - self.scan_side_started_at >= SCAN_SIDE_DURATION_S:
@@ -1263,7 +1318,7 @@ class ControllerNode(Node):
                 if lidar_obs is not None:
                     return lidar_obs
             return observation
-        now = time.time()
+        now = self._runtime_seconds()
         if self.active_mapped_target_id is None:
             self.active_mapped_target_id = mapped_ball_id or self.ball_map.nearest_target_id(
                 self._robot_x, self._robot_y, now
@@ -1299,12 +1354,15 @@ class ControllerNode(Node):
         for ball in self._sim_balls:
             dx = ball["x"] - self._robot_x
             dy = ball["y"] - self._robot_y
-            # Approximate rotation matrix for 2D (Webots uses 3D but robot is flat)
+            # Approximate rotation matrix for 2D (robot is flat on the court)
             lx = ori_cos * dx + ori_sin * dy
             ly = -ori_sin * dx + ori_cos * dy
+            # Ball world z ~= height above court (flat ground, robot z ~ 0).
+            bz = float(ball.get("z", 0.0))
             if (
-                INTAKE_ZONE_X_M[0] <= lx <= INTAKE_ZONE_X_M[1]
-                and abs(ly) <= INTAKE_HALF_WIDTH_M
+                BASKET_ZONE_X_M[0] <= lx <= BASKET_ZONE_X_M[1]
+                and abs(ly) <= BASKET_HALF_WIDTH_M
+                and bz >= BASKET_MIN_BALL_Z_M
             ):
                 collected_msg = String()
                 collected_msg.data = ball["def"]
@@ -1327,7 +1385,7 @@ class ControllerNode(Node):
         return result
 
     def _collection_scan_balls(self) -> list[tuple[float, float]]:
-        now = time.time()
+        now = self._runtime_seconds()
         result: list[tuple[float, float]] = []
         for ball in self.ball_map.balls.values():
             if ball.state in {"collected", "collection_failed"}:
@@ -1342,7 +1400,9 @@ class ControllerNode(Node):
     def _seed_mapped_balls_from_map_mission(self) -> int:
         if not self._map_mission.complete or not self._map_mission.candidates:
             return 0
-        return self.ball_map.seed_from_candidates(self._map_mission.candidates, time.time())
+        return self.ball_map.seed_from_candidates(
+            self._map_mission.candidates, self._runtime_seconds()
+        )
 
     def _reset_collect_pattern(self) -> None:
         self.collect_pattern_phase = "idle"
@@ -1380,7 +1440,7 @@ class ControllerNode(Node):
         plus the active target, robot pose and camera cone for the renderer."""
         cfg = self.ball_map.config
         balls = self.ball_map.to_console_balls(
-            self._robot_x, self.active_mapped_target_id, now=time.time()
+            self._robot_x, self.active_mapped_target_id, now=self._runtime_seconds()
         )
         confirmed = [b for b in balls if b["confirmed"] and b["side"] != "across_net"]
         return {
