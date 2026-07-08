@@ -11,6 +11,7 @@ Subscribes:
   /scan              (sensor_msgs/LaserScan)
   /odom              (nav_msgs/Odometry)
   /ir/readings       (tennis_robot_msgs/IrReadings)
+  /collector/intake_beam_broken (std_msgs/Bool)
   /robot/command     (tennis_robot_msgs/RobotCommand)
   /sim/balls         (std_msgs/String, JSON) — sim-only ground truth
 
@@ -37,7 +38,7 @@ from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.time import Time as RclpyTime
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 from tf2_ros import Buffer as TfBuffer, TransformListener as TfListener
 
 from tennis_robot import yaw_from_quaternion
@@ -220,6 +221,8 @@ class ControllerNode(Node):
         self._robot_yaw = 0.0
         self._ir_left = 0.0
         self._ir_right = 0.0
+        self._intake_beam_broken = False
+        self._intake_roller_latched = False
         self._control_command_mode = "idle"
         self._control_command_source = "startup"
         self._sim_balls: list[dict] = []
@@ -244,6 +247,12 @@ class ControllerNode(Node):
         self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
         self.create_subscription(Odometry, "/odom", self._on_odom, 10)
         self.create_subscription(IrReadings, "/ir/readings", self._on_ir, 10)
+        self.create_subscription(
+            Bool,
+            "/collector/intake_beam_broken",
+            self._on_intake_beam,
+            10,
+        )
         self.create_subscription(RobotCommand, "/robot/command", self._on_command, 10)
         self.create_subscription(String, "/sim/balls", self._on_sim_balls, 1)
 
@@ -359,6 +368,9 @@ class ControllerNode(Node):
     def _on_ir(self, msg: IrReadings) -> None:
         self._ir_left = msg.left
         self._ir_right = msg.right
+
+    def _on_intake_beam(self, msg: Bool) -> None:
+        self._intake_beam_broken = msg.data
 
     def _on_command(self, msg: RobotCommand) -> None:
         self._control_command_mode = msg.mode
@@ -1418,9 +1430,21 @@ class ControllerNode(Node):
         twist.angular.z = command.base.angular_speed_rad_s
         self._pub_motion_cmd.publish(twist)
 
+        requested = command.collector
+        if command.state in {CollectorState.APPROACH, CollectorState.CAPTURE}:
+            self._intake_roller_latched |= self._intake_beam_broken
+            collector_enabled = requested.intake_enabled and self._intake_roller_latched
+        else:
+            # Reverse-clear is intentionally not gated by the intake beam.
+            collector_enabled = requested.intake_enabled
+            if command.state != CollectorState.REVERSE_CLEAR:
+                self._intake_roller_latched = False
+
         col = CollectorCmd()
-        col.lift_wheel_speed = float(command.collector.lift_wheel_speed)
-        col.intake_enabled = command.collector.intake_enabled
+        col.lift_wheel_speed = (
+            float(requested.lift_wheel_speed) if collector_enabled else 0.0
+        )
+        col.intake_enabled = collector_enabled
         self._pub_collector.publish(col)
 
     def _publish_command(self, mode: str, source: str) -> None:

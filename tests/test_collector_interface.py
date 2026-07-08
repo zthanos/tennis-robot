@@ -1,4 +1,8 @@
-from tennis_robot.collector_driver import CollectorDriver, SerialProtocol
+from tennis_robot.collector_driver import (
+    CollectorDriver,
+    GazeboCollectorDriver,
+    SerialProtocol,
+)
 from tennis_robot.collector_interface import CollectorInterface
 
 
@@ -34,6 +38,17 @@ def test_validated_serial_protocol_bytes():
     assert SerialProtocol.direction(0) == b"s"
     assert SerialProtocol.speed_step(True) == b"+"
     assert SerialProtocol.speed_step(False) == b"-"
+
+
+def test_gazebo_driver_adapts_intake_direction_to_joint_axis():
+    values = []
+    driver = GazeboCollectorDriver(values.append)
+
+    driver.set_speed(30.0)
+    driver.set_speed(-30.0)
+    driver.stop()
+
+    assert values == [30.0, -30.0, 0.0]
 
 
 def test_parse_ir_status():

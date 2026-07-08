@@ -24,6 +24,12 @@ GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
 ROBOT_SDF = f"{WORKSPACE}/runtime/tennis_robot.sdf"
+GZ_GUI_CONFIG = f"{WORKSPACE}/runtime/gazebo_gui.config"
+GZ_DEFAULT_GUI_CONFIG = "/usr/share/gz/gz-sim8/gui/gui.config"
+GZ_INITIAL_CAMERA_POSE = os.environ.get(
+    "GZ_INITIAL_CAMERA_POSE",
+    "-6.45 -0.85 0.55 0 0.25 2.55",
+)
 # ros2_control controllers config baked into the gz_ros2_control plugin.
 # /workspace is mounted into the Gazebo container, so this path resolves there.
 CONTROLLERS_CONFIG = f"{WORKSPACE}/ros2_ws/src/tennis_robot/config/controllers.yaml"
@@ -64,8 +70,25 @@ def generate_robot_urdf():
     )
 
 
+def generate_gazebo_gui_config():
+    default_config = Path(GZ_DEFAULT_GUI_CONFIG)
+    if not default_config.exists():
+        raise RuntimeError(f"Gazebo GUI config not found: {default_config}")
+
+    config = default_config.read_text(encoding="utf-8")
+    config = config.replace(
+        "<camera_pose>-6 0 6 0 0.5 0</camera_pose>",
+        f"<camera_pose>{GZ_INITIAL_CAMERA_POSE}</camera_pose>",
+        1,
+    )
+    output = Path(GZ_GUI_CONFIG)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(config, encoding="utf-8")
+
+
 def generate_launch_description():
     generate_robot_urdf()
+    generate_gazebo_gui_config()
 
     headless_arg = DeclareLaunchArgument(
         "headless", default_value="false",
@@ -100,6 +123,7 @@ def generate_launch_description():
             "gz", "sim", "-r",
             "--render-engine-server", "ogre2",
             "--render-engine-gui", "ogre",
+            "--gui-config", GZ_GUI_CONFIG,
             GZ_WORLD,
         ],
         condition=UnlessCondition(headless),

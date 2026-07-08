@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
 """Generate the roller-first intake-channel mesh for the sim URDF.
 
-Roller-first geometry (replaces the old push-ramp scoop): the paddled intake
+Roller-first geometry (replaces the old push-ramp scoop): the continuous intake
 roller is the FIRST hard contact with the ball — the whole channel sits
-BEHIND the roller's leading edge. The paddle envelope (Ø90, centre x=0.55)
-reaches forward to x=0.595. The mesh-local tip is x=0.555; URDF/SDF applies
-a -15 mm tuning offset, so the effective channel tip is x=0.540.
-An approaching 66 mm ball meets the paddle envelope at centre x=0.580
-(contact point 63 mm up the ball, above its centre, pulling it in and down)
-well BEFORE it could touch the rear-shifted channel tip. The channel
-floor then wraps in a circular arc around the roller centre — constant 60 mm
-surface-to-envelope gap, i.e. ~6 mm paddle overlap on the ball — so the
-paddles keep driving the ball around and up to the rear wall, where it is
-flung up toward the deflector plate and basket (see funnel.urdf.xacro).
+BEHIND the roller's leading edge. The roller (Ø90, centre x=0.600) reaches
+forward to x=0.645. The mesh-local channel centre is x=0.615 because the
+URDF/SDF applies a -15 mm channel offset, giving an effective centre x=0.600.
+The effective roller / channel centre is 112 mm above ground. The entry lip is
+15 mm behind the roller axis so the ball meets the roller before it can meet
+the channel. The channel radius is 108 mm: 63 mm clearance from the 45 mm roller radius,
+i.e. 3 mm nominal interference for a rigid 66 mm simulation ball.
 
 Profile, ground frame (m), x forward:
-  tip           x = 0.555, z = 0.002 (behind the roller's leading edge)
+  tip / arc     x = 0.600, z ~= 0.005 (effective x=0.585)
   arc           z = ROLLER_Z - sqrt(CHANNEL_R^2 - (ROLLER_X - x)^2)
-                from x = 0.550 (floor) back to x = 0.445 (z = 0.105)
-  rear wall     near-vertical up to z = 0.155 at x = 0.4435
+                from x = 0.600 back to x = 0.507 (z = 0.112)
+  rear wall     near-vertical up to z = 0.155 at x = 0.5055
 
-Roller (see tennis_robot.urdf.xacro): centre (0.550, 0.105), paddle envelope
-radius 0.045; channel radius 0.105 about the same centre.
+Roller (see tennis_robot.urdf.xacro): effective centre (0.600, 0.112), radius
+0.045; channel radius 0.109 about the same effective centre.
 
 The mesh is emitted in the funnel_link frame (origin = base_link x/y, shifted
 down by chassis_z/2 = 7 mm; base_link is 45 mm above ground, so the ground
@@ -33,26 +30,38 @@ Keep in sync with tennis_robot.urdf.xacro intake_* properties.
 from __future__ import annotations
 
 import math
+import os
 import struct
 import sys
 from pathlib import Path
 
 # Geometry (m, ground frame).
-LIP_X = 0.555
-LIP_Z = 0.002
+# ROLLER_X/ROLLER_Z must track tennis_robot.urdf.xacro's intake_x/intake_z
+# (same INTAKE_ROLLER_*_OFFSET_M envs) so the channel arc stays concentric
+# with the ACTUAL roller position instead of the old fixed baseline — the
+# offsets were previously only applied to the roller itself, silently
+# desyncing the channel whenever intake tuning moved the roller.
+_ROLLER_X_OFFSET_M = float(os.getenv("INTAKE_ROLLER_X_OFFSET_M", "0.0"))
+_ROLLER_Z_OFFSET_M = float(os.getenv("INTAKE_ROLLER_Z_OFFSET_M", "0.0"))
+LIP_X = 0.600 + _ROLLER_X_OFFSET_M
 FLOOR_Z = 0.003          # keeps the sheet underside clear of the court
-ROLLER_X = 0.550
-ROLLER_Z = 0.105
-CHANNEL_R = 0.105        # channel surface radius about the roller centre
-WALL_END_X = 0.4435      # rear wall top x
+LIP_RAISE_M = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
+LIP_RAISE_TAPER_M = 0.020
+ROLLER_X = 0.615 + _ROLLER_X_OFFSET_M
+ROLLER_Z = 0.112 + _ROLLER_Z_OFFSET_M
+# 64 mm roller-to-arc passage: 2 mm nominal squeeze on a 66 mm ball, absorbed
+# by the sprung roller carriage (grip force, not a rigid jam). 113 mm opened a
+# dead pocket behind the axis where the ball lost roller contact
+# (intake-debug-log #9). Keep in sync with generate_robot_urdf.py.
+CHANNEL_R = 0.109
+# WALL_TOP_Z now sets the concentric guide's release height (see profile()).
 WALL_TOP_Z = 0.155       # rear wall top height
 SCOOP_WIDTH = 0.180
 SHEET_THICKNESS = 0.002
 COLLISION_CLEARANCE = 0.001
 
-LEAD_STEPS = 6
 ARC_STEPS = 40
-WALL_STEPS = 4
+GUIDE_STEPS = 10
 
 # URDF frame constant (m).
 GROUND_Z = -0.038        # ground plane in funnel_link frame
@@ -60,31 +69,38 @@ HALF_WIDTH = SCOOP_WIDTH / 2.0
 
 
 def channel_z(x: float) -> float:
-    """Channel-surface height (ground frame) for arc x in [0.445, 0.550]."""
+    """Channel-surface height for the arc ending at the mesh-local roller centre."""
     dx = ROLLER_X - x
-    return max(FLOOR_Z, ROLLER_Z - math.sqrt(max(CHANNEL_R * CHANNEL_R - dx * dx, 0.0)))
+    z = max(FLOOR_Z, ROLLER_Z - math.sqrt(max(CHANNEL_R * CHANNEL_R - dx * dx, 0.0)))
+    if LIP_RAISE_M <= 0.0:
+        return z
+    lip_t = max(0.0, min(1.0, 1.0 - abs(LIP_X - x) / LIP_RAISE_TAPER_M))
+    return z + LIP_RAISE_M * lip_t
 
 
 def profile() -> list[tuple[float, float, float]]:
-    """(x, z_bottom, z_top) in funnel frame, x strictly decreasing."""
+    """(x, z_bottom, z_top) in funnel frame, ordered lip -> back -> guide top."""
     pts: list[tuple[float, float]] = []
-    # Lip / flat throat lead-in.
-    for i in range(LEAD_STEPS):
-        t = i / LEAD_STEPS
-        x = LIP_X + (ROLLER_X - LIP_X) * t
-        pts.append((x, LIP_Z + (FLOOR_Z - LIP_Z) * t))
-    # Arc around the roller centre, floor -> rear.
+    # Arc around the roller centre. It begins behind the roller axis so there
+    # is no hard channel edge in front of the roller's first ball contact.
     arc_back_x = ROLLER_X - CHANNEL_R
     for i in range(ARC_STEPS + 1):
         t = i / ARC_STEPS
-        x = ROLLER_X + (arc_back_x - ROLLER_X) * t
+        x = LIP_X + (arc_back_x - LIP_X) * t
         pts.append((x, channel_z(x)))
-    # Near-vertical rear wall.
-    wall_base_z = ROLLER_Z
-    for i in range(1, WALL_STEPS + 1):
-        t = i / WALL_STEPS
-        x = arc_back_x + (WALL_END_X - arc_back_x) * t
-        pts.append((x, wall_base_z + (WALL_TOP_Z - wall_base_z) * t))
+    # Concentric guide continuing up the BACK of the roller (replaces the old
+    # near-vertical wall): the roller drives the ball TANGENTIALLY along the
+    # whole guide, so there is no unpowered climb — the vertical wall left a
+    # ~58 mm dead gap between roller reach (z~130) and the wall top that no
+    # amount of friction could cross (intake-debug-log #12).
+    sin_max = max(0.0, min(1.0, (WALL_TOP_Z - ROLLER_Z) / CHANNEL_R))
+    phi_max = math.asin(sin_max)
+    for i in range(1, GUIDE_STEPS + 1):
+        phi = phi_max * i / GUIDE_STEPS
+        pts.append((
+            ROLLER_X - CHANNEL_R * math.cos(phi),
+            ROLLER_Z + CHANNEL_R * math.sin(phi),
+        ))
     # Thin curved sheet, not a solid wedge down to the court. The old flat
     # underside put the whole 180 mm-wide scoop in ground contact and acted as
     # a brake. Only the 2 mm front lip reaches the ground; everywhere else the

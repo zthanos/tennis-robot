@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Sim-only debug camera: mounted low on the chassis underside, angled up
+       and forward at the roller/lip so intake-tuning sessions can watch the
+       actual ball/roller contact instead of guessing from telemetry alone.
+       No real-hardware equivalent — only instantiated when sim_mode=true
+       (see tennis_robot.urdf.xacro). -->
+  <xacro:macro name="intake_debug_camera" params="parent link_name xyz rpy update_rate">
+    <link name="${link_name}">
+      <inertial>
+        <mass value="0.01"/>
+        <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+      </inertial>
+      <visual name="${link_name}_vis">
+        <geometry><box size="0.02 0.02 0.02"/></geometry>
+        <material name="sensor_black"/>
+      </visual>
+    </link>
+    <joint name="${link_name}_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${link_name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+    <!-- REP-103 optical frame: +X right, +Y down, +Z forward. -->
+    <link name="${link_name}_optical_frame"/>
+    <joint name="${link_name}_optical_joint" type="fixed">
+      <parent link="${link_name}"/>
+      <child link="${link_name}_optical_frame"/>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
+
+    <gazebo reference="${link_name}">
+      <!-- The scoop/roller is on the shaded underside of the chassis, out of
+           the sun — without its own light the view is just black. A POINT
+           light (omnidirectional) co-located with the camera avoids the
+           gz-sim spot-light <direction> world-frame quirk entirely: it lights
+           whatever the camera is pointed at regardless of orientation. -->
+      <light name="${link_name}_lamp" type="point">
+        <pose>0 0 0 0 0 0</pose>
+        <diffuse>1 1 1 1</diffuse>
+        <specular>0.2 0.2 0.2 1</specular>
+        <attenuation>
+          <range>1.0</range>
+          <constant>0.2</constant>
+          <linear>1.0</linear>
+          <quadratic>0.0</quadratic>
+        </attenuation>
+        <cast_shadows>false</cast_shadows>
+      </light>
+      <sensor name="intake_debug_camera" type="camera">
+        <pose>0 0 0 0 0 0</pose>
+        <update_rate>${update_rate}</update_rate>
+        <always_on>true</always_on>
+        <visualize>true</visualize>
+        <topic>/gz/intake_debug_camera</topic>
+        <gz_frame_id>${link_name}</gz_frame_id>
+        <camera>
+          <horizontal_fov>1.5</horizontal_fov>
+          <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+          <clip><near>0.02</near><far>2.0</far></clip>
+        </camera>
+      </sensor>
+      <!-- Diagnostic only: depth doesn't depend on lighting, so it tells us
+           whether the RGB camera is aimed at real geometry (valid ranges) or
+           the black frame is a lighting problem vs. nothing-in-frustum. -->
+      <sensor name="intake_debug_depth" type="depth_camera">
+        <pose>0 0 0 0 0 0</pose>
+        <update_rate>${update_rate}</update_rate>
+        <always_on>true</always_on>
+        <topic>/gz/intake_debug_depth</topic>
+        <gz_frame_id>${link_name}</gz_frame_id>
+        <camera>
+          <horizontal_fov>1.5</horizontal_fov>
+          <image><width>640</width><height>480</height><format>R_FLOAT32</format></image>
+          <clip><near>0.02</near><far>2.0</far></clip>
+        </camera>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

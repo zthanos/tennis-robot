@@ -82,13 +82,25 @@ def _patch_collision_surface(collision: ET.Element, mu: str, mu2: str, slip1: st
 def _patch_sdf_contacts(sdf_text: str) -> str:
     """Patch contact tuning and Gazebo-native intake collision geometry."""
     root = ET.fromstring(sdf_text)
+    lip_raise_m = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
+    lip_raise_taper_m = 0.020
+    # Must track tennis_robot.urdf.xacro's intake_x/intake_z (same envs) so
+    # this hand-carved channel collision stays concentric with the ACTUAL
+    # roller instead of the old fixed baseline. Keep in sync with
+    # scripts/generate_curved_scoop_mesh.py, which applies the same offsets
+    # to the visual mesh.
+    roller_x_offset_m = float(os.getenv("INTAKE_ROLLER_X_OFFSET_M", "0.0"))
+    roller_z_offset_m = float(os.getenv("INTAKE_ROLLER_Z_OFFSET_M", "0.0"))
     surfaces = {
         "rear_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "rear_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "front_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "front_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
-        "lift_wheel_link": ("1.5", "1.5", "0.0", "0.0"),
+        # Hub: rarely ball-facing; the grip comes from the rubber paddles.
+        "lift_wheel_link": ("0.8", "0.8", "0.0", "0.0"),
     }
+    for index in range(8):
+        surfaces[f"paddle_{index}_link"] = ("2.5", "2.5", "0.0", "0.0")
     for link in root.findall(".//link"):
         name = link.attrib.get("name")
         if name not in surfaces:
@@ -99,15 +111,63 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         for collision in link.findall("collision"):
             _patch_collision_surface(collision, *surfaces[name])
 
+    # sdformat may rename collisions while converting the URDF (fixed-joint
+    # lumping etc.), so locate each paddle's ACTUAL collision name and point
+    # its contact sensor at it. A hardcoded name here would silently produce
+    # dead sensors (0 contacts forever) whenever the link structure changes.
+    paddle_col_names: dict[str, str] = {}
+    for link in root.findall(".//link"):
+        lname = link.attrib.get("name", "")
+        if not (lname.startswith("paddle_") and lname.endswith("_link")):
+            continue
+        collision = link.find("collision")
+        if collision is not None:
+            paddle_col_names[lname[len("paddle_"):-len("_link")]] = (
+                collision.attrib.get("name", "")
+            )
+    if len(paddle_col_names) != 8:
+        raise RuntimeError(
+            f"expected 8 paddle collisions, found {len(paddle_col_names)} — "
+            "contact sensors would be dead; refusing to generate a broken SDF."
+        )
+    for sensor in root.findall(".//sensor"):
+        sname = sensor.attrib.get("name", "")
+        if not sname.startswith("roller_contact_"):
+            continue
+        index = sname[len("roller_contact_"):]
+        collision = sensor.find("./contact/collision")
+        if collision is not None and index in paddle_col_names:
+            collision.text = paddle_col_names[index]
+
+    # Paddle springs (foam-compliance emulation): URDF cannot express joint
+    # springs, so inject the SDF spring params here. k=0.25 N*m/rad at the
+    # 25 mm paddle lever gives a few newtons of grip at the ~40 deg bend the
+    # 59 mm guide passage forces on a 66 mm ball — soft enough to wrap around
+    # the ball, stiff enough to drive it (intake-debug-log #14).
+    for joint in root.findall(".//joint"):
+        name = joint.attrib.get("name", "")
+        if not (name.startswith("paddle_") and name.endswith("_joint")):
+            continue
+        axis = joint.find("axis")
+        if axis is None:
+            continue
+        dynamics = axis.find("dynamics")
+        if dynamics is None:
+            dynamics = ET.SubElement(axis, "dynamics")
+        _set_text(dynamics, "spring_reference", "0.0")
+        _set_text(dynamics, "spring_stiffness", "0.25")
+        _set_text(dynamics, "damping", "0.02")
+
     # URDF has no curved-prism primitive, and DART does not handle STL
     # collisions reliably here. Replace only the generated SDF collision with
     # a native extruded polyline of the roller-first intake channel — keep in
     # sync with scripts/generate_curved_scoop_mesh.py: mesh-local channel tip
-    # at x=0.555, placed at effective x=0.540 by the -15 mm SDF pose
-    # (fully BEHIND the roller's leading edge at 0.595, so the paddles are
-    # the first contact), arc of radius 0.105 around the roller centre
-    # (0.55, 0.105 above ground) back to x=0.445, near-vertical rear wall up
-    # to 0.155. The 2-D x/z profile is extruded 180 mm across the intake
+    # at x=0.600, placed at effective x=0.585 by the -15 mm SDF pose. This is
+    # behind the roller axis, ensuring that the roller is the first hard
+    # contact. The 108 mm arc
+    # is concentric with the effective roller centre (0.600, 0.112), giving
+    # 63 mm clearance / 3 mm nominal interference for a 66 mm rigid ball.
+    # The 2-D x/z profile is extruded 180 mm across the intake
     # after rotating the extrusion axis onto Y.
     for collision in root.findall(".//collision"):
         if "intake_channel_col" not in collision.attrib.get("name", ""):
@@ -116,10 +176,11 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         if pose is None:
             pose = ET.SubElement(collision, "pose")
         # rot X +90deg maps the +Z extrusion onto -Y: spans y=+0.09..-0.09.
-        # Point y-coords below are funnel-frame z (ground at -0.038), so no
-        # extra z offset is needed.
+        # Point y-coords below are funnel-frame z (ground at -0.038). Gazebo
+        # lumps the fixed funnel_link into base_footprint, so preserve the
+        # funnel frame's +38 mm height when replacing the original collision.
         # Match the -15 mm channel origin in funnel.urdf.xacro.
-        pose.text = "-0.015 0.09 0 1.57079632679 0 0"
+        pose.text = "-0.015 0.09 0.038 1.57079632679 0 0"
         geometry = collision.find("geometry")
         if geometry is None:
             geometry = ET.SubElement(collision, "geometry")
@@ -127,35 +188,77 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         polyline = ET.SubElement(geometry, "polyline")
         ET.SubElement(polyline, "height").text = "0.18"
         ground = -0.038
-        roller_x, roller_z, channel_r = 0.55, 0.105, 0.105
+        roller_x = 0.615 + roller_x_offset_m
+        roller_z = 0.112 + roller_z_offset_m
+        # 64 mm roller-to-arc passage: 2 mm nominal squeeze on a 66 mm ball,
+        # absorbed by the sprung roller carriage (grip force, not a rigid
+        # jam). 113 mm opened a dead pocket behind the axis where the ball
+        # lost roller contact (intake-debug-log #9). Keep in sync with
+        # generate_curved_scoop_mesh.py.
+        channel_r = 0.109
+        lip_x = 0.600 + roller_x_offset_m
         # Thin 2 mm curved sheet. The previous polygon closed from the front
         # tip to a rear point on the court, creating a broad flat underside
         # that dragged under the robot. Build top and underside profiles so
         # only the front lip reaches the ground.
-        top_points = [(0.4435, ground + 0.155), (0.445, ground + roller_z)]
+        arc_back_x = roller_x - channel_r
+        # Concentric guide up the BACK of the roller (top edge first, then
+        # down to the arc base): the roller drives the ball tangentially the
+        # whole way to the release edge — the old near-vertical wall left a
+        # ~58 mm unpowered gap above the roller's reach that stalled every
+        # capture (intake-debug-log #12). Keep in sync with
+        # scripts/generate_curved_scoop_mesh.py.
+        import math as _math
+        guide_top_z = 0.155
+        sin_max = max(0.0, min(1.0, (guide_top_z - roller_z) / channel_r))
+        phi_max = _math.asin(sin_max)
+        guide_steps = 10
+        top_points = []
+        for i in range(guide_steps, 0, -1):
+            phi = phi_max * i / guide_steps
+            top_points.append((
+                round(roller_x - channel_r * _math.cos(phi), 5),
+                round(ground + roller_z + channel_r * _math.sin(phi), 5),
+            ))
+        top_points.append((arc_back_x, ground + roller_z))
         arc_steps = 24
         for i in range(1, arc_steps + 1):
-            x = 0.445 + (roller_x - 0.445) * i / arc_steps
+            x = arc_back_x + (lip_x - arc_back_x) * i / arc_steps
             dx = roller_x - x
             z = roller_z - (channel_r * channel_r - dx * dx) ** 0.5
+            if lip_raise_m > 0.0:
+                lip_t = max(0.0, min(1.0, 1.0 - abs(lip_x - x) / lip_raise_taper_m))
+                z += lip_raise_m * lip_t
             # A 3 mm floor leaves the 2 mm sheet underside 1 mm clear.
             top_points.append((round(x, 5), round(ground + max(z, 0.003), 5)))
-        # Short tip behind the roller front; at ZERO height exactly on the
-        # court so the blade gets underneath the rigid sphere (same trick as
-        # the old wedge collision). The 2 mm tip stays in the visual mesh.
-        top_points.append((0.555, ground + 0.002))
+        # No forward lead-in: the arc ends 15 mm behind the roller axis, so
+        # the channel cannot push the ball before roller contact.
         sheet_thickness = 0.002
         collision_clearance = 0.001
+        # Underside: vertical offset for the floor/arc part, but RADIAL
+        # (away from the roller) for the guide part — a vertical offset there
+        # would poke 2 mm into the ball passage.
         underside = [
             (x, max(ground + collision_clearance, z - sheet_thickness))
-            for x, z in reversed(top_points)
+            for x, z in reversed(top_points[guide_steps:])
         ]
+        for i in range(1, guide_steps + 1):
+            phi = phi_max * i / guide_steps
+            underside.append((
+                round(roller_x - (channel_r + sheet_thickness) * _math.cos(phi), 5),
+                round(ground + roller_z + (channel_r + sheet_thickness) * _math.sin(phi), 5),
+            ))
         points = top_points + underside
         for px, pz in points:
             ET.SubElement(polyline, "point").text = f"{px} {pz}"
-        # Smooth plastic channel. The paddled roller supplies traction; the
-        # channel must not pin the ball against the court through friction.
-        _patch_collision_surface(collision, "0.15", "0.15", "0.0", "0.0")
+        # Grippy channel: the ball climbs the rear wall by converting its
+        # roller-driven spin into translation through WALL friction — with a
+        # slick wall it spins in place like a bearing, pinned at the top of
+        # the arc. Measured force balance at the collect_test4/5 stall point
+        # (intake-debug-log #10-#11): needs mu_wall*N > 0.65 N with N≈0.8-1.3 N
+        # from the roller spring — mu 0.8 gave 0.62 N (borderline stuck),
+        # 1.4 gives ~2.7x margin. Real collectors line this wall with rubber.
+        _patch_collision_surface(collision, "1.4", "1.4", "0.0", "0.0")
 
     # Funnel cheeks: smooth guides — low friction so an off-centre ball slides
     # toward the scoop instead of being grabbed and pushed.
@@ -194,6 +297,8 @@ def main() -> int:
             str(source),
             f"sim_mode:={args.sim_mode}",
             f"controllers_config:={controllers_config}",
+            f"intake_roller_x_offset:={os.getenv('INTAKE_ROLLER_X_OFFSET_M', '0.0')}",
+            f"intake_roller_z_offset:={os.getenv('INTAKE_ROLLER_Z_OFFSET_M', '0.0')}",
         ],
         check=False,
         env=env,

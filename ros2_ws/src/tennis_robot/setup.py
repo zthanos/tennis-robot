@@ -30,6 +30,7 @@ setup(
             "navigation_node = tennis_robot.navigation_node:main",
             "command_bridge_node = tennis_robot.command_bridge_node:main",
             "gazebo_extras_node = tennis_robot.gazebo_extras_node:main",
+            "sim_physics_probe = tennis_robot.sim_physics_probe:main",
             "sensor_snapshot_node = tennis_robot.sensor_snapshot_node:main",
             "drive_actuator_node = tennis_robot.drive_actuator_node:main",
             "collector_logic_node = tennis_robot.collector_logic_node:main",

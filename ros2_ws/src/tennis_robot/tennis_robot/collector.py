@@ -67,7 +67,10 @@ class ConceptAConfig:
     capture_speed_m_s: float = 0.14
     capture_angular_gain: float = 1.2
     reverse_speed_m_s: float = -0.10
-    lift_wheel_speed: float = 1.0
+    # 45 mm roller radius: 30 rad/s gives 1.35 m/s paddle-tip speed. At 20
+    # rad/s the ball did not reach the top of the channel; at 40 rad/s the
+    # impact ejected it instead of guiding it up the ramp.
+    lift_wheel_speed: float = 30.0
     max_capture_retries: int = 3
 
     @classmethod

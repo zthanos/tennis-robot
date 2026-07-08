@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Launch Gazebo Harmonic + ROS 2 simulation (native Linux, no Docker).
 # Ubuntu 24.04 defaults to ROS 2 Jazzy; override ROS_DISTRO_TARGET if needed.
+# Launch Gazebo Harmonic + ROS 2 simulation (native Linux, no Docker).
 #
 # Robot control now runs through ros2_control: the gz_ros2_control plugin hosts
 # the controller_manager inside Gazebo and sim.launch.py spawns

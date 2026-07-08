@@ -7,6 +7,7 @@ Subscribes:
 
 Publishes:
   /ir/readings       (tennis_robot_msgs/IrReadings)
+  /collector/intake_beam_broken (std_msgs/Bool)
   /sim/balls         (std_msgs/String, JSON list of {name, x, y})
   /sim/ball_markers  (visualization_msgs/MarkerArray, base_link frame —
                       ground-truth balls for RViz, incl. z so a ball riding
@@ -25,6 +26,7 @@ import subprocess
 
 import rclpy
 from rclpy.node import Node
+from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool, String
 from tf2_msgs.msg import TFMessage
@@ -53,6 +55,8 @@ class GazeboExtrasNode(Node):
 
         self._ir_left = 0.0
         self._ir_right = 0.0
+        self._intake_ir_left = 0.0
+        self._intake_ir_right = 0.0
         # name -> {def,x,y,z}. /gz/pose_info messages often carry only the
         # entities that MOVED this cycle, so ball poses are merged into this
         # dict instead of rebuilding a list per message (a rebuild made
@@ -67,10 +71,25 @@ class GazeboExtrasNode(Node):
         # collection signal — a ball at the lip is not a collected ball.
         self.create_subscription(LaserScan, "/gz/basket_ir_left/scan", self._on_ir_left, 10)
         self.create_subscription(LaserScan, "/gz/basket_ir_right/scan", self._on_ir_right, 10)
+        self.create_subscription(
+            LaserScan, "/gz/ir_left/scan", self._on_intake_ir_left, 10
+        )
+        self.create_subscription(
+            LaserScan, "/gz/ir_right/scan", self._on_intake_ir_right, 10
+        )
         self.create_subscription(TFMessage, "/gz/pose_info", self._on_pose_info, 10)
+        # Robot pose comes from /odom, not /gz/pose_info: the ros_gz bridge
+        # leaves child_frame_id empty on every transform in this Gazebo
+        # version, so name-matching "tennis_robot" there never fires and
+        # self._robot_pose stayed None forever — which silently starved both
+        # marker publishers below (they no-op without a robot pose).
+        self.create_subscription(Odometry, "/odom", self._on_odom, 10)
         self.create_subscription(String, "/ball/collected", self._on_ball_collected, 10)
 
         self._pub_ir = self.create_publisher(IrReadings, "/ir/readings", 10)
+        self._pub_intake_beam = self.create_publisher(
+            Bool, "/collector/intake_beam_broken", 10
+        )
         self._pub_balls = self.create_publisher(String, "/sim/balls", 1)
         self._pub_markers = self.create_publisher(MarkerArray, "/sim/ball_markers", 1)
         self._pub_contact_markers = self.create_publisher(
@@ -99,15 +118,18 @@ class GazeboExtrasNode(Node):
         r = msg.ranges[0] if msg.ranges else float("inf")
         self._ir_right = _range_to_ir_value(r)
 
+    def _on_intake_ir_left(self, msg: LaserScan) -> None:
+        r = msg.ranges[0] if msg.ranges else float("inf")
+        self._intake_ir_left = _range_to_ir_value(r)
+
+    def _on_intake_ir_right(self, msg: LaserScan) -> None:
+        r = msg.ranges[0] if msg.ranges else float("inf")
+        self._intake_ir_right = _range_to_ir_value(r)
+
     def _on_pose_info(self, msg: TFMessage) -> None:
         for transform in msg.transforms:
             name = transform.child_frame_id
             t = transform.transform.translation
-            if name.split("::")[-1] == "tennis_robot":
-                q = transform.transform.rotation
-                yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
-                self._robot_pose = (t.x, t.y, t.z, yaw)
-                continue
             # Accept both plain ("ball_02") and scoped ("tennis_court::ball_02")
             # entity names — pose_info naming differs between gz versions.
             leaf = name.split("::")[-1]
@@ -116,6 +138,12 @@ class GazeboExtrasNode(Node):
             self._balls[leaf] = {
                 "def": leaf, "x": round(t.x, 4), "y": round(t.y, 4), "z": round(t.z, 4)
             }
+
+    def _on_odom(self, msg: Odometry) -> None:
+        p = msg.pose.pose.position
+        q = msg.pose.pose.orientation
+        yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        self._robot_pose = (p.x, p.y, p.z, yaw)
 
     def _on_ball_collected(self, msg: String) -> None:
         """Remove a collected ball: drop it from /sim/balls and delete the
@@ -146,6 +174,14 @@ class GazeboExtrasNode(Node):
         ir_msg.left = self._ir_left
         ir_msg.right = self._ir_right
         self._pub_ir.publish(ir_msg)
+        self._pub_intake_beam.publish(
+            Bool(
+                data=(
+                    self._intake_ir_left > 500.0
+                    or self._intake_ir_right > 500.0
+                )
+            )
+        )
 
         balls_msg = String()
         balls_msg.data = json.dumps(list(self._balls.values()))

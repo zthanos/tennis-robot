@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
 # Native Ubuntu Docker bring-up. The existing run.sh remains the WSL 2 path.
 #
-# Gazebo GUI + RViz with software rendering (safe default):
+# Gazebo GUI + RViz with native Intel/AMD DRI acceleration:
 #   ./run_ubuntu.sh
 #
-# Native Intel/AMD DRI acceleration:
-#   UBUNTU_GPU=true ./run_ubuntu.sh foxglove
+# Software rendering fallback:
+#   UBUNTU_GPU=false ./run_ubuntu.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-false}"
+export UBUNTU_GPU="${UBUNTU_GPU:-true}"
 export SLAM_MODE="${SLAM_MODE:-localization}"
 export NAV2_START_DELAY_S="${NAV2_START_DELAY_S:-25}"
+export INTAKE_LIP_RAISE_M="${INTAKE_LIP_RAISE_M:-0.002}"
+export INTAKE_ROLLER_X_OFFSET_M="${INTAKE_ROLLER_X_OFFSET_M:-0.015}"
+export INTAKE_ROLLER_Z_OFFSET_M="${INTAKE_ROLLER_Z_OFFSET_M:--0.005}"
 
 if [ "$GAZEBO_HEADLESS" != "true" ]; then
     if [ -z "${DISPLAY:-}" ]; then
@@ -51,7 +55,7 @@ COMPOSE=(
     -f docker-compose.ubuntu.yml
 )
 
-if [ "${UBUNTU_GPU:-false}" = "true" ]; then
+if [ "$UBUNTU_GPU" = "true" ]; then
     if [ ! -d /dev/dri ]; then
         echo "ERROR: UBUNTU_GPU=true requires /dev/dri on the host."
         exit 1

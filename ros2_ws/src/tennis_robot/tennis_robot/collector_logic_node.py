@@ -7,7 +7,7 @@ import os
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float64, Float64MultiArray, String
+from std_msgs.msg import Bool, Float64, Float64MultiArray, String
 
 from tennis_robot.collector_driver import GazeboCollectorDriver, SerialCollectorDriver
 from tennis_robot.collector_interface import CollectorInterface
@@ -33,6 +33,9 @@ class CollectorLogicNode(Node):
             )
             self._collector = CollectorInterface(driver)
         self._status_pub = self.create_publisher(String, "/collector/status", 10)
+        self._intake_beam_pub = self.create_publisher(
+            Bool, "/collector/intake_beam_broken", 10
+        )
         self.create_subscription(Float64, "/tennis_robot/cmd_collector", self._automatic, 10)
         self.create_subscription(CollectorCmd, "/collector/cmd", self._collector_command, 10)
         self.create_subscription(String, "/collector/manual_control", self._manual, 10)
@@ -65,6 +68,8 @@ class CollectorLogicNode(Node):
     def _publish_status(self) -> None:
         status = self._collector.status
         self._status_pub.publish(String(data=json.dumps(status.__dict__, separators=(",", ":"))))
+        if status.entry_beam_broken is not None:
+            self._intake_beam_pub.publish(Bool(data=status.entry_beam_broken))
 
 
 def main(args=None) -> None:
