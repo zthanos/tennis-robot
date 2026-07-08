@@ -349,7 +349,31 @@
     πίσω από το guide sheet να προσγειώνεται σε πάτωμα και όχι στο κενό
     (x 0.42-0.50 σήμερα δεν έχει τίποτα από κάτω), (γ) πιθανό μέτριο speed
     bump για ενέργεια. Θέλει σχεδιασμό με τα juggle kinematics από το bag.
-- **Status**: paddle roller ✅ λειτουργεί· handoff ⏳ επόμενη συνεδρία tuning.
+- **Status**: paddle roller ✅ λειτουργεί· handoff → #15.
+- Commit checkpoint: 4cc7886 (paddle roller + εργαλεία + log).
+
+### 15. Handoff πακέτο (test9): spin-walk ceiling + επέκταση basket floor
+- **Physics insight**: στο juggle η μπάλα έχει BACKSPIN (τα πτερύγια οδηγούν
+  το κάτω μέρος της μπροστά → το πάνω γυρνά πίσω). Οροφή σε επαφή από πάνω
+  → η τριβή τη «περπατάει» ΠΙΣΩ κατά μήκος της οροφής (όπως μπαλάκι με
+  φάλτσο κάτω από τραπέζι). Δεν χρειάζεται βαλλιστική.
+- **Αλλαγή Α (deflector → spin-walk ceiling)**: από front-high (0.425,0,
+  funnel 0.197, rpy -0.43) σε **front-LOW/rear-HIGH** (0.52,0,funnel 0.167,
+  rpy +0.43, box 0.16×0.20×0.006). Underside στο juggle x=0.549: ground
+  z≈0.192 = μέσα στη ζώνη ball-top (0.195-0.204) → συνεχής επαφή. Front
+  edge (0.593, 0.172): κενό από paddle tips 15.8mm < μπάλα → μπλοκάρει
+  εμπρός διαφυγή. Τριβή deflector μ=1.2 (νέο patch match στο SDF script).
+- **Αλλαγή Β (basket floor forward)**: floor top 0.128 επεκτείνεται από
+  x=0.42 σε **x=0.50** (box 0.54→0.62, centre 0.15→0.19) — κλείνει το κενό
+  x 0.42-0.5045 όπου η μπάλα έπεφτε στο court. Έλεγχοι: 4.5mm από το guide
+  sheet (μπάλα δεν χωράει να πέσει)· floor corner 116mm από άξονα > 50
+  paddle sweep ✓· μπάλα πάνω στο floor εκτός εμβέλειας πτερυγίων ✓.
+- **Ταχύτητα roller αμετάβλητη** (30 rad/s) — μία μεταβλητή τη φορά· το
+  spin-walk δεν θέλει ενέργεια.
+- **Αναμενόμενη ροή**: juggle → επαφή οροφής → spin-walk πίσω → κύλισμα
+  πάνω από το guide edge (fulcrum) → πτώση στο extended floor →
+  basket beams → collected=1.
+- **Status**: ⏳ υλοποίηση/test9.
 
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults

@@ -266,6 +266,13 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         if "cheek_col" in collision.attrib.get("name", ""):
             _patch_collision_surface(collision, "0.1", "0.1", "0.0", "0.0")
 
+    # Spin-walk ceiling (intake_deflector): needs grip so the backspinning
+    # ball pressed against its underside is friction-walked backward into
+    # the basket (intake-debug-log #15).
+    for collision in root.findall(".//collision"):
+        if "intake_deflector_col" in collision.attrib.get("name", ""):
+            _patch_collision_surface(collision, "1.2", "1.2", "0.0", "0.0")
+
     ET.indent(root, space="  ")
     return ET.tostring(root, encoding="unicode")
 

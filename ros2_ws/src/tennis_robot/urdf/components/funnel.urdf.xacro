@@ -59,19 +59,23 @@
         <material name="intake_orange"/>
       </visual>
 
-      <!-- Deflector plate above/behind the roller: catches the ball flung up
-           the rear wall (rising at x~0.48) and deflects it backward onto the
-           basket floor (top at 0.128 above ground, extended to x=0.42 —
-           basket.urdf.xacro). Ground-frame edges: front-high (0.49, 0.266),
-           rear-low (0.36, 0.204) — 76 mm above the basket floor so a 66 mm
-           ball can't jam under it; clears the roller envelope top (0.15). -->
+      <!-- Spin-walk ceiling over the paddle-wheel top: the paddles carry the
+           ball around the guide and juggle it at the wheel top (ground z
+           ~162-171 centre) with BACKSPIN. This front-LOW / rear-HIGH plate
+           sits just inside the juggle band so the spinning ball presses its
+           top against the underside and friction walks it BACKWARD over the
+           guide edge onto the (forward-extended) basket floor. Ground-frame
+           edges: front-low (0.593, 0.172) — 15.8 mm from the paddle tips so
+           the ball cannot escape forward — rear-high (0.447, 0.238). The old
+           front-high plate assumed a ballistic fling to z 204+ that the
+           paddle transport never reaches (intake-debug-log #15). -->
       <collision name="intake_deflector_col">
-        <origin xyz="0.425 0 0.197" rpy="0 -0.43 0"/>
-        <geometry><box size="0.15 0.20 0.006"/></geometry>
+        <origin xyz="0.52 0 0.167" rpy="0 0.43 0"/>
+        <geometry><box size="0.16 0.20 0.006"/></geometry>
       </collision>
       <visual name="intake_deflector_vis">
-        <origin xyz="0.425 0 0.197" rpy="0 -0.43 0"/>
-        <geometry><box size="0.15 0.20 0.006"/></geometry>
+        <origin xyz="0.52 0 0.167" rpy="0 0.43 0"/>
+        <geometry><box size="0.16 0.20 0.006"/></geometry>
         <material name="intake_orange"/>
       </visual>
     </link>
