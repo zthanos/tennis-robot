@@ -209,16 +209,19 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         # capture (intake-debug-log #12). Keep in sync with
         # scripts/generate_curved_scoop_mesh.py.
         import math as _math
-        guide_top_z = 0.155
-        sin_max = max(0.0, min(1.0, (guide_top_z - roller_z) / channel_r))
-        phi_max = _math.asin(sin_max)
+        # Spiral guide: keep in sync with GUIDE_PHI_MAX / GUIDE_TAPER_M in
+        # generate_curved_scoop_mesh.py. The taper puts the release edge
+        # inside the paddle drive circle (intake-debug-log #17).
+        phi_max = 0.873
+        guide_taper_m = 0.008
         guide_steps = 10
         top_points = []
         for i in range(guide_steps, 0, -1):
             phi = phi_max * i / guide_steps
+            r = channel_r - guide_taper_m * (phi / phi_max)
             top_points.append((
-                round(roller_x - channel_r * _math.cos(phi), 5),
-                round(ground + roller_z + channel_r * _math.sin(phi), 5),
+                round(roller_x - r * _math.cos(phi), 5),
+                round(ground + roller_z + r * _math.sin(phi), 5),
             ))
         top_points.append((arc_back_x, ground + roller_z))
         arc_steps = 24
@@ -244,9 +247,10 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         ]
         for i in range(1, guide_steps + 1):
             phi = phi_max * i / guide_steps
+            r = channel_r - guide_taper_m * (phi / phi_max) + sheet_thickness
             underside.append((
-                round(roller_x - (channel_r + sheet_thickness) * _math.cos(phi), 5),
-                round(ground + roller_z + (channel_r + sheet_thickness) * _math.sin(phi), 5),
+                round(roller_x - r * _math.cos(phi), 5),
+                round(ground + roller_z + r * _math.sin(phi), 5),
             ))
         points = top_points + underside
         for px, pz in points:

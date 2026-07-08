@@ -55,7 +55,13 @@ ROLLER_Z = 0.112 + _ROLLER_Z_OFFSET_M
 # (intake-debug-log #9). Keep in sync with generate_robot_urdf.py.
 CHANNEL_R = 0.109
 # WALL_TOP_Z now sets the concentric guide's release height (see profile()).
-WALL_TOP_Z = 0.155       # rear wall top height
+# Spiral guide exit (intake-debug-log #17): a concentric guide can never end
+# inside the paddles' 83 mm drive circle, so the ball always parked just out
+# of reach. The guide radius tapers 109->95 mm over the wrap so the release
+# edge (0.554, 0.183) sits deep inside the drive zone and the paddles push
+# the ball positively over it.
+GUIDE_PHI_MAX = 0.873    # 50 deg wrap above the back-horizontal
+GUIDE_TAPER_M = 0.008    # CHANNEL_R -> CHANNEL_R-8mm at the exit (14 was too aggressive: ball slipped between fully-bent paddles, log #17)
 SCOOP_WIDTH = 0.180
 SHEET_THICKNESS = 0.002
 COLLISION_CLEARANCE = 0.001
@@ -88,18 +94,16 @@ def profile() -> list[tuple[float, float, float]]:
         t = i / ARC_STEPS
         x = LIP_X + (arc_back_x - LIP_X) * t
         pts.append((x, channel_z(x)))
-    # Concentric guide continuing up the BACK of the roller (replaces the old
-    # near-vertical wall): the roller drives the ball TANGENTIALLY along the
-    # whole guide, so there is no unpowered climb — the vertical wall left a
-    # ~58 mm dead gap between roller reach (z~130) and the wall top that no
-    # amount of friction could cross (intake-debug-log #12).
-    sin_max = max(0.0, min(1.0, (WALL_TOP_Z - ROLLER_Z) / CHANNEL_R))
-    phi_max = math.asin(sin_max)
+    # Spiral guide continuing up the BACK of the roller: tangentially driven
+    # the whole way (no unpowered climb — intake-debug-log #12) AND tapering
+    # inward so the exit edge lands inside the paddle drive circle
+    # (intake-debug-log #17).
     for i in range(1, GUIDE_STEPS + 1):
-        phi = phi_max * i / GUIDE_STEPS
+        phi = GUIDE_PHI_MAX * i / GUIDE_STEPS
+        r = CHANNEL_R - GUIDE_TAPER_M * (phi / GUIDE_PHI_MAX)
         pts.append((
-            ROLLER_X - CHANNEL_R * math.cos(phi),
-            ROLLER_Z + CHANNEL_R * math.sin(phi),
+            ROLLER_X - r * math.cos(phi),
+            ROLLER_Z + r * math.sin(phi),
         ))
     # Thin curved sheet, not a solid wedge down to the court. The old flat
     # underside put the whole 180 mm-wide scoop in ground contact and acted as

@@ -69,12 +69,16 @@
            the ball cannot escape forward — rear-high (0.447, 0.238). The old
            front-high plate assumed a ballistic fling to z 204+ that the
            paddle transport never reaches (intake-debug-log #15). -->
+      <!-- Raised +40 mm after the spiral-guide exit (intake-debug-log #17):
+           the paddles now push the ball positively over the spiral edge at
+           (0.554, 0.183), so this plate is only a safety net for wild
+           bounces, out of the exit trajectory. -->
       <collision name="intake_deflector_col">
-        <origin xyz="0.52 0 0.167" rpy="0 0.43 0"/>
+        <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
         <geometry><box size="0.16 0.20 0.006"/></geometry>
       </collision>
       <visual name="intake_deflector_vis">
-        <origin xyz="0.52 0 0.167" rpy="0 0.43 0"/>
+        <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
         <geometry><box size="0.16 0.20 0.006"/></geometry>
         <material name="intake_orange"/>
       </visual>
