@@ -60,7 +60,8 @@ motor leads `AO1`/`AO2`. Μην αλλάξεις τα καλώδια του enco
 
 5. `05_wiring_diagnostic`
    - Δείχνει στο Serial Monitor αν φαίνονται σωστά IR, encoder και TB6612 pin map.
-   - Έχει εντολή `p` για πολύ σύντομο χαμηλό-PWM motor pulse, ώστε να ελέγξεις `VM`, κοινό `GND`, `AO1`/`AO2`, `PWMA`, `AIN1`, `AIN2` και `STBY`.
+   - Έχει εντολή `p` για σύντομο pulse 300 ms στο τρέχον PWM, ώστε να ελέγξεις `VM`, κοινό `GND`, `AO1`/`AO2`, `PWMA`, `AIN1`, `AIN2` και `STBY`.
+   - Η hardware δοκιμή που πέρασε στις 28/06/2026 χρησιμοποίησε Serial `9600 baud`, `START_PWM=255` και `MAX_SAFE_PWM=255`.
    - Ξεκίνα με `i`, μετά σπάσε κάθε IR beam, γύρισε τον άξονα με το χέρι, και τέλος δοκίμασε `p`.
 
 6. `06_motor_driver_wiring_check`
@@ -83,10 +84,17 @@ motor leads `AO1`/`AO2`. Μην αλλάξεις τα καλώδια του enco
 
 ## Serial Monitor
 
-Για όλα τα sketches:
+Για τα sketches `01` έως `05`:
 
 ```text
 Baud rate: 115200
+Line ending: No line ending
+```
+
+Για το hardware-validated `06_motor_driver_wiring_check`:
+
+```text
+Baud rate: 9600
 Line ending: No line ending
 ```
 
@@ -105,6 +113,27 @@ pinMode(pin, INPUT_PULLUP);
 LOW  = beam broken / blocked
 HIGH = beam unbroken / receiver sees emitter
 ```
+
+Το runtime sketch `collector_driver` διαβάζει και τα δύο IR beams με debounce
+`25 ms` και στέλνει status σε αλλαγή ή heartbeat κάθε `500 ms`:
+
+```text
+ir:<entry_broken>,<exit_broken>,<cycle_state>
+```
+
+Παράδειγμα `ir:1,0,moving_to_exit`: το entry beam είναι κομμένο, το exit beam
+είναι ελεύθερο και η μπάλα κινείται προς το exit.
+
+Η αυτόματη ακολουθία του runtime sketch είναι:
+
+1. `entry=BROKEN`: εκκίνηση του roller προς τα εμπρός.
+2. `exit=BROKEN`: η μπάλα έφτασε στο exit.
+3. `exit=CLEAR`: η μπάλα πέρασε, ο roller σταματά.
+4. Νέος κύκλος οπλίζει μόνο αφού το `entry` γίνει ξανά `CLEAR`.
+
+Αν το `exit` δεν ολοκληρώσει τη μετάβαση μέσα σε `5 s`, το sketch σταματά τον
+roller, αναφέρει `timed_out` και οπλίζει ξανά μόνο όταν καθαρίσουν και τα δύο
+IR beams.
 
 ## Motor Driver Προσοχή
 

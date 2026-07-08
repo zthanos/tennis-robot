@@ -1,4 +1,8 @@
-"""Tennis ball perception helpers shared by controllers and smoke tests."""
+"""Tennis ball perception helpers shared by controllers and smoke tests.
+
+Includes neural-detector depth-fusion helpers (camera_frame_position,
+pixel_elevation_rad) used by the simulated OAK-D perception pipeline.
+"""
 
 from __future__ import annotations
 
@@ -12,21 +16,6 @@ from tennis_robot.survey import SurveyVision
 
 
 TENNIS_BALL_DIAMETER_M = 0.067
-MIN_BALL_AREA_PX = 6
-# Upper bound keeps all balls down to 0.34 m (~75 k px) while rejecting bushes/vegetation
-# which subtend hundreds of thousands of pixels even at 8 m.
-MAX_BALL_AREA_PX = 90_000
-MIN_BALL_ASPECT_RATIO = 0.55
-MAX_BALL_ASPECT_RATIO = 1.8
-
-# Tennis balls in Webots render as bright chartreuse (H≈35-60 in OpenCV 0-179).
-# Upper hue capped at 72 to exclude pure-green Webots vegetation (H≈65-90).
-# Second range covers shadowed/partially occluded balls; min saturation raised to
-# 55 to avoid matching dark-green foliage with low chroma.
-HSV_RANGES = (
-    (np.array([25, 80, 80], dtype=np.uint8), np.array([72, 255, 255], dtype=np.uint8)),
-    (np.array([25, 55, 50], dtype=np.uint8), np.array([72, 180, 175], dtype=np.uint8)),
-)
 
 
 @dataclass(frozen=True)
@@ -35,6 +24,9 @@ class BallDetection:
     y: int
     width: int
     height: int
+    # Neural-detector score (0..1).
+    confidence: float = 1.0
+    label: str = "tennis_ball"
 
     @property
     def area_px(self) -> int:
@@ -115,30 +107,6 @@ class ObstacleDetection:
     confidence: float
 
 
-def detect_largest_ball(frame: np.ndarray) -> BallDetection | None:
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
-    for lower, upper in HSV_RANGES:
-        mask = cv2.bitwise_or(mask, cv2.inRange(hsv, lower, upper))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
-
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    candidates: list[BallDetection] = []
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        if area <= MIN_BALL_AREA_PX or area > MAX_BALL_AREA_PX:
-            continue
-        x, y, width, height = cv2.boundingRect(contour)
-        aspect_ratio = width / max(1, height)
-        if not MIN_BALL_ASPECT_RATIO <= aspect_ratio <= MAX_BALL_ASPECT_RATIO:
-            continue
-        candidates.append(BallDetection(x, y, width, height))
-    if not candidates:
-        return None
-    return max(candidates, key=lambda detection: detection.area_px)
-
-
 def estimate_depth_ball_observation(
     detection: BallDetection,
     depth_frame_m: np.ndarray,
@@ -172,13 +140,46 @@ def estimate_depth_ball_observation(
     # near surface (ball face) rather than the background-contaminated median.
     distance_m = float(np.percentile(valid, 20) if valid.size >= 5 else np.min(valid))
     normalized_x = (detection.center_x - frame_width_px / 2) / (frame_width_px / 2)
-    bearing_rad = math.atan(normalized_x * math.tan(camera_fov_rad / 2))
+    # Robot/navigation convention is +left / counter-clockwise. Image columns
+    # grow to the right, so a detection right of centre has a negative bearing.
+    bearing_rad = -math.atan(normalized_x * math.tan(camera_fov_rad / 2))
     return BallObservation(
         detection=detection,
         bearing_rad=bearing_rad,
         distance_m=distance_m,
         distance_source="oak_depth",
     )
+
+
+def camera_frame_position(
+    bearing_rad: float,
+    distance_m: float,
+    elevation_rad: float = 0.0,
+) -> tuple[float, float, float]:
+    """Project an observation into REP-103 camera optical XYZ.
+
+    Returns (right, down, forward) in metres, matching DepthAI spatial output.
+    ``bearing_rad`` follows the robot convention (+left / CCW), while
+    ``elevation_rad`` is positive up.
+    """
+    horiz = distance_m * math.cos(elevation_rad)
+    right = -horiz * math.sin(bearing_rad)
+    down = -distance_m * math.sin(elevation_rad)
+    forward = horiz * math.cos(bearing_rad)
+    return right, down, forward
+
+
+def pixel_elevation_rad(
+    center_y_px: float,
+    frame_height_px: int,
+    vertical_fov_rad: float,
+) -> float:
+    """Best-effort vertical angle of a pixel row from the optical centre (+ = up)."""
+    if frame_height_px <= 0:
+        return 0.0
+    normalized_y = (center_y_px - frame_height_px / 2.0) / (frame_height_px / 2.0)
+    # Image row grows downward, so a row below centre is a negative elevation.
+    return -math.atan(normalized_y * math.tan(vertical_fov_rad / 2.0))
 
 
 def observation_to_robot_xy(

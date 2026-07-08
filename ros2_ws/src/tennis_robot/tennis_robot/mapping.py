@@ -17,8 +17,12 @@ from typing import Callable, Optional, Protocol, Tuple
 from tennis_robot.config_utils import _env_float
 from tennis_robot.collector import BaseCommand, CollectorCommand, CollectorState, ConceptACommand
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_BOUNDARY_FILE = PROJECT_ROOT / "runtime" / "court_boundary.json"
+_SOURCE_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = Path(os.getenv("TENNIS_ROBOT_ROOT", os.getenv("WORKSPACE", str(_SOURCE_ROOT))))
+RUNTIME_DIR = Path(
+    os.getenv("ROBOT_STATUS_FILE", str(PROJECT_ROOT / "runtime" / "robot_status.json"))
+).parent
+DEFAULT_BOUNDARY_FILE = RUNTIME_DIR / "court_boundary.json"
 
 
 # ── Config ─────────────────────────────────────────────────────────────────────
@@ -32,6 +36,13 @@ NAV_MAX_TURN_RAD_S = _env_float("MAP_NAV_MAX_TURN_RAD_S", 1.7)
 SCAN_OFFSET_M = _env_float("MAP_SCAN_OFFSET_M", 3.0)
 DETECTION_RANGE_M = _env_float("MAP_DETECTION_RANGE_M", 8.0)   # simulated OAK-D range per scan pose
 CLUSTER_RADIUS_M = _env_float("MAP_CLUSTER_RADIUS_M", 0.35)   # deduplicate detections within this radius
+COLLECTION_SCAN_CLUSTER_RADIUS_M = _env_float("COLLECTION_SCAN_CLUSTER_RADIUS_M", 0.75)
+COLLECTION_LANE_RELIABLE_RANGE_M = _env_float("COLLECTION_LANE_RELIABLE_RANGE_M", 2.5)
+COLLECTION_LANE_OVERLAP = max(0.0, min(0.8, _env_float("COLLECTION_LANE_OVERLAP", 0.30)))
+COLLECTION_CAMERA_FOV_RAD = _env_float("COLLECTION_CAMERA_FOV_RAD", math.radians(60.0))
+COLLECTION_NET_CLEARANCE_M = _env_float("COLLECTION_NET_CLEARANCE_M", 0.65)
+COLLECTION_FENCE_CLEARANCE_M = _env_float("COLLECTION_FENCE_CLEARANCE_M", 0.85)
+COLLECTION_LANE_LATERAL_MARGIN_M = _env_float("COLLECTION_LANE_LATERAL_MARGIN_M", 0.25)
 RETURN_TO_START = os.getenv("MAP_RETURN_TO_START", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 # Each entry: (pose_name, should_scan)
@@ -73,6 +84,30 @@ class HalfCourtBounds:
     @property
     def span_y(self) -> float:
         return self.y_max - self.y_min
+
+
+@dataclass(frozen=True)
+class CourtFrame:
+    center_x_m: float
+    center_y_m: float
+    axis_length_x: float
+    axis_length_y: float
+    axis_width_x: float
+    axis_width_y: float
+
+    def court_to_map(self, x_m: float, y_m: float) -> tuple[float, float]:
+        return (
+            self.center_x_m + x_m * self.axis_length_x + y_m * self.axis_width_x,
+            self.center_y_m + x_m * self.axis_length_y + y_m * self.axis_width_y,
+        )
+
+    def map_to_court(self, x_m: float, y_m: float) -> tuple[float, float]:
+        dx = x_m - self.center_x_m
+        dy = y_m - self.center_y_m
+        return (
+            dx * self.axis_length_x + dy * self.axis_length_y,
+            dx * self.axis_width_x + dy * self.axis_width_y,
+        )
 
 
 class BoundaryProvider(Protocol):
@@ -156,6 +191,40 @@ def _canonical_fence_bounds(data: dict) -> dict:
     }
 
 
+def _load_v2_court_frame(data: dict) -> CourtFrame:
+    frame = (data.get("map_artifact") or {}).get("court_frame") or {}
+    center = frame.get("center") or data.get("net", {}).get("center") or {}
+    axis_length = frame.get("axis_length") or data.get("net", {}).get("axis_length") or {}
+    axis_width = frame.get("axis_width") or data.get("net", {}).get("axis_width") or {}
+    try:
+        return CourtFrame(
+            center_x_m=float(center["x_m"]),
+            center_y_m=float(center["y_m"]),
+            axis_length_x=float(axis_length["x_m"]),
+            axis_length_y=float(axis_length["y_m"]),
+            axis_width_x=float(axis_width["x_m"]),
+            axis_width_y=float(axis_width["y_m"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError(f"Court survey v2 frame malformed: {exc}") from exc
+
+
+def _load_v2_lines(data: dict) -> dict:
+    try:
+        lines = data["court"]["lines_court_frame"]
+        return {
+            "baselines_x": [float(v) for v in lines["baselines_x"]],
+            "service_x": [float(v) for v in lines["service_x"]],
+            "sidelines_y": [float(v) for v in lines["sidelines_y"]],
+        }
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError(f"Court survey v2 lines malformed: {exc}") from exc
+
+
+def _angle_delta(a: float, b: float) -> float:
+    return (a - b + math.pi) % (2 * math.pi) - math.pi
+
+
 def _classify(x_m: float, y_m: float, b: HalfCourtBounds) -> Optional[Tuple[int, int]]:
     """Map world (x, y) → (row, col), or None if outside operational area.
 
@@ -171,7 +240,7 @@ def _classify(x_m: float, y_m: float, b: HalfCourtBounds) -> Optional[Tuple[int,
         return None
 
     # x_frac: 0 at fence → row 0, 1 at net → row 2
-    if b.side == "left":
+    if b.side in {"left", "side_neg_x"}:
         xf = (x_m - b.x_min) / b.span_x
     else:
         xf = (b.x_max - x_m) / b.span_x
@@ -190,10 +259,10 @@ class _Cand:
     y_m: float
 
 
-def _add_candidate(cands: list[_Cand], x_m: float, y_m: float) -> None:
+def _add_candidate(cands: list[_Cand], x_m: float, y_m: float, radius_m: float = CLUSTER_RADIUS_M) -> None:
     """Add (x, y) only if no existing candidate is within CLUSTER_RADIUS_M."""
     for c in cands:
-        if math.hypot(c.x_m - x_m, c.y_m - y_m) < CLUSTER_RADIUS_M:
+        if math.hypot(c.x_m - x_m, c.y_m - y_m) < radius_m:
             return
     cands.append(_Cand(x_m, y_m))
 
@@ -398,4 +467,347 @@ class MapLeftSideMission:
             return "Returning to start"
         if self._state == "complete":
             return "Complete"
+        return self._state
+
+
+class ServiceLineDistributionScanMission:
+    """Sweep the selected half-court with boustrophedon lanes.
+
+    The matrix is updated only from confirmed/local ball-map entries observed
+    during the sweep; coarse service-line estimates do not produce map dots.
+    """
+
+    def __init__(
+        self,
+        ball_source_fn: BallSourceFn,
+        boundary_path: Path | None = None,
+    ) -> None:
+        self._ball_source = ball_source_fn
+        self._path = boundary_path or DEFAULT_BOUNDARY_FILE
+
+        self.active: bool = False
+        self.complete: bool = False
+        self.side_id: str = "unknown"
+        self.side_sign: int = -1
+        self.candidates: list[_Cand] = []
+        self.local_candidates: list[_Cand] = []
+        self.grid: list[list[int]] = [[0] * 3 for _ in range(3)]
+        self.unassigned_candidates: int = 0
+        self.service_pose_map: tuple[float, float] | None = None
+        self.target_grid_cell: tuple[int, int] | None = None
+        self.target_pose_map: tuple[float, float] | None = None
+        self.lane_count: int = 0
+        self.lane_spacing_m: float = 0.0
+
+        self._state: str = "idle"
+        self._waypoints: list[tuple[float, float]] = []
+        self._waypoint_index: int = 0
+        self._elapsed_start: float | None = None
+        self._scan_started_at: float | None = None
+        self._last_scan_yaw: float | None = None
+        self._scan_accumulated_rad: float = 0.0
+        self._frame: CourtFrame | None = None
+        self._bounds: HalfCourtBounds | None = None
+
+    def start(self, rx: float, ry: float, _ryaw: float) -> None:
+        frame, lines = self._load_v2_model()
+        court_x, _court_y = frame.map_to_court(rx, ry)
+        sign = -1 if court_x < 0.0 else 1
+        baseline_candidates = sorted(float(v) for v in lines["baselines_x"])
+        sidelines = sorted(float(v) for v in lines["sidelines_y"])
+
+        baseline_x = baseline_candidates[0] if sign < 0 else baseline_candidates[-1]
+
+        self.active = True
+        self.complete = False
+        self.side_sign = sign
+        self.side_id = "side_neg_x" if sign < 0 else "side_pos_x"
+        self.candidates = []
+        self.local_candidates = []
+        self.grid = [[0] * 3 for _ in range(3)]
+        self.unassigned_candidates = 0
+        self.service_pose_map = None
+        self.target_grid_cell = None
+        self.target_pose_map = None
+        self.lane_count = 0
+        self.lane_spacing_m = 0.0
+        self._state = "sweeping"
+        self._waypoint_index = 0
+        self._elapsed_start = time.time()
+        self._scan_started_at = None
+        self._last_scan_yaw = None
+        self._scan_accumulated_rad = 0.0
+        self._frame = frame
+        self._bounds = HalfCourtBounds(
+            self.side_id,
+            min(0.0, baseline_x),
+            max(0.0, baseline_x),
+            sidelines[0],
+            sidelines[-1],
+        )
+        _lane_count, _lane_spacing, self._waypoints = self._build_lawnmower_waypoints(
+            rx, ry, frame, self._bounds
+        )
+        self.lane_count = _lane_count
+        self.lane_spacing_m = _lane_spacing
+        if self._waypoints:
+            self.target_pose_map = self._waypoints[0]
+
+    def reset(self) -> None:
+        self.active = False
+        self.complete = False
+        self._state = "idle"
+        self._waypoints = []
+        self._waypoint_index = 0
+        self._scan_started_at = None
+        self._last_scan_yaw = None
+        self._scan_accumulated_rad = 0.0
+        self.target_grid_cell = None
+        self.target_pose_map = None
+        self.local_candidates = []
+        self.lane_count = 0
+        self.lane_spacing_m = 0.0
+
+    def update(self, rx: float, ry: float, ryaw: float, _dt_s: float) -> ConceptACommand:
+        if self._state == "sweeping":
+            return self._step_sweep(rx, ry, ryaw)
+        return _idle_cmd()
+
+    @property
+    def lane_started(self) -> bool:
+        return self._waypoint_index > 0
+
+    def observation_in_active_lane(self, map_x: float | None, map_y: float | None) -> bool:
+        if (
+            map_x is None
+            or map_y is None
+            or self._frame is None
+            or self._bounds is None
+            or not self._waypoints
+            or self._waypoint_index >= len(self._waypoints)
+        ):
+            return False
+        court_x, court_y = self._frame.map_to_court(map_x, map_y)
+        if _classify(court_x, court_y, self._bounds) is None:
+            return False
+        target_court_x, target_court_y = self._frame.map_to_court(*self._waypoints[self._waypoint_index])
+        lane_half_width_m = (
+            COLLECTION_LANE_RELIABLE_RANGE_M * math.tan(COLLECTION_CAMERA_FOV_RAD / 2.0)
+            + COLLECTION_LANE_LATERAL_MARGIN_M
+        )
+        if abs(court_y - target_court_y) > lane_half_width_m:
+            return False
+
+        if self._bounds.side in {"left", "side_neg_x"}:
+            min_x = self._bounds.x_min + COLLECTION_FENCE_CLEARANCE_M
+            max_x = self._bounds.x_max - COLLECTION_NET_CLEARANCE_M
+        else:
+            min_x = self._bounds.x_min + COLLECTION_NET_CLEARANCE_M
+            max_x = self._bounds.x_max - COLLECTION_FENCE_CLEARANCE_M
+        return min(min_x, max_x) <= court_x <= max(min_x, max_x)
+
+    def observation_in_half_court(self, map_x: "float | None", map_y: "float | None") -> bool:
+        """True if the map-frame point lies inside the mapped collect half-court
+        (between the fence and net clearances, within the sidelines, on the side
+        being swept). Unlike ``observation_in_active_lane`` this ignores the lane
+        band, so it is the hard court boundary: detections across the net, past
+        the fence, or in the other half return False and must be ignored.
+
+        Returns True when the court frame/bounds are not yet known (permissive),
+        so it never blocks before the survey model is loaded."""
+        if map_x is None or map_y is None or self._frame is None or self._bounds is None:
+            return True
+        court_x, court_y = self._frame.map_to_court(map_x, map_y)
+        if _classify(court_x, court_y, self._bounds) is None:
+            return False
+        if self._bounds.side in {"left", "side_neg_x"}:
+            min_x = self._bounds.x_min + COLLECTION_FENCE_CLEARANCE_M
+            max_x = self._bounds.x_max - COLLECTION_NET_CLEARANCE_M
+        else:
+            min_x = self._bounds.x_min + COLLECTION_NET_CLEARANCE_M
+            max_x = self._bounds.x_max - COLLECTION_FENCE_CLEARANCE_M
+        return min(min_x, max_x) <= court_x <= max(min_x, max_x)
+
+    def telemetry(self) -> dict:
+        elapsed = 0.0 if self._elapsed_start is None else time.time() - self._elapsed_start
+        scan_elapsed = 0.0 if self._scan_started_at is None else time.time() - self._scan_started_at
+        progress = min(1.0, self._scan_accumulated_rad / (2 * math.pi))
+        return {
+            "active": self.active and not self.complete,
+            "complete": self.complete,
+            "phase": self._state,
+            "phase_label": self._phase_label(),
+            "side": self.side_id,
+            "service_pose_map": (
+                {"x_m": round(self.service_pose_map[0], 3), "y_m": round(self.service_pose_map[1], 3)}
+                if self.service_pose_map is not None
+                else None
+            ),
+            "target_grid_cell": (
+                {"row": self.target_grid_cell[0], "col": self.target_grid_cell[1]}
+                if self.target_grid_cell is not None
+                else None
+            ),
+            "target_pose_map": (
+                {"x_m": round(self.target_pose_map[0], 3), "y_m": round(self.target_pose_map[1], 3)}
+                if self.target_pose_map is not None
+                else None
+            ),
+            "scan_progress_pct": round(progress * 100.0, 1),
+            "scan_accumulated_rad": round(self._scan_accumulated_rad, 3),
+            "scan_elapsed_s": round(scan_elapsed, 1),
+            "lane_count": self.lane_count,
+            "lane_spacing_m": round(self.lane_spacing_m, 3),
+            "waypoint_index": self._waypoint_index,
+            "waypoint_count": len(self._waypoints),
+            "waypoints": [
+                {"x_m": round(wx, 3), "y_m": round(wy, 3)}
+                for wx, wy in self._waypoints
+            ],
+            "lane_started": self._waypoint_index > 0,
+            "total_candidates": len(self.local_candidates),
+            "estimate_candidates": len(self.candidates),
+            "assigned_candidates": sum(sum(row) for row in self.grid),
+            "unassigned_candidates": self.unassigned_candidates,
+            "candidates": self._candidate_telemetry(),
+            "local_candidates": self._candidate_telemetry(self.local_candidates, "local_scan"),
+            "grid": [row[:] for row in self.grid],
+            "elapsed_s": round(elapsed, 1),
+        }
+
+    def _candidate_telemetry(
+        self,
+        candidates: list[_Cand] | None = None,
+        source: str = "collection_scan",
+    ) -> list[dict]:
+        cands = self.candidates if candidates is None else candidates
+        rows: list[dict] = []
+        for idx, c in enumerate(cands, start=1):
+            item: dict = {
+                "id": idx,
+                "x_m": round(c.x_m, 3),
+                "y_m": round(c.y_m, 3),
+                "source": source,
+            }
+            if self._frame is not None and self._bounds is not None:
+                cx, cy = self._frame.map_to_court(c.x_m, c.y_m)
+                cell = _classify(cx, cy, self._bounds)
+                if cell is not None:
+                    item["grid_cell"] = {"row": cell[0], "col": cell[1]}
+            rows.append(item)
+        return rows
+
+    def _load_v2_model(self) -> tuple[CourtFrame, dict]:
+        try:
+            with self._path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                f"Court survey file not found: {self._path} - run Map Court first."
+            ) from exc
+        except OSError as exc:
+            raise RuntimeError(f"Cannot read court survey file: {exc}") from exc
+
+        if data.get("schema") != "court_knowledge_model/v2" or data.get("status") != "OK":
+            reason = data.get("failure_reason") or data.get("status") or data.get("schema")
+            raise RuntimeError(f"Court survey v2 not ready - run Map Court first. Reason: {reason}")
+        return _load_v2_court_frame(data), _load_v2_lines(data)
+
+    def _step_sweep(self, rx: float, ry: float, ryaw: float) -> ConceptACommand:
+        self._sample_balls(rx, ry)
+        while self._waypoint_index < len(self._waypoints):
+            tx, ty = self._waypoints[self._waypoint_index]
+            if math.hypot(tx - rx, ty - ry) > NAV_POSITION_TOL_M:
+                break
+            self._waypoint_index += 1
+        if self._waypoint_index >= len(self._waypoints):
+            self._finish()
+            return _idle_cmd()
+        self.target_pose_map = self._waypoints[self._waypoint_index]
+        tx, ty = self.target_pose_map
+        cmd = _nav_to(rx, ry, ryaw, tx, ty)
+        return cmd if cmd is not None else _scan_cmd()
+
+    def nav2_target(self, rx: float, ry: float) -> "tuple[float, float] | None":
+        """Nav2 driving mode: sample balls + advance lane waypoints by proximity
+        and return the current waypoint in the map frame (or None when the sweep
+        is complete). Mirrors ``_step_sweep`` but emits no velocity command —
+        Nav2 owns the wheels for the lane leg."""
+        if self._state != "sweeping":
+            return None
+        self._sample_balls(rx, ry)
+        while self._waypoint_index < len(self._waypoints):
+            tx, ty = self._waypoints[self._waypoint_index]
+            if math.hypot(tx - rx, ty - ry) > NAV_POSITION_TOL_M:
+                break
+            self._waypoint_index += 1
+        if self._waypoint_index >= len(self._waypoints):
+            self._finish()
+            return None
+        self.target_pose_map = self._waypoints[self._waypoint_index]
+        return self.target_pose_map
+
+    def _sample_balls(self, rx: float, ry: float) -> None:
+        for bx, by in self._ball_source():
+            if math.hypot(bx - rx, by - ry) <= COLLECTION_LANE_RELIABLE_RANGE_M:
+                _add_candidate(self.local_candidates, bx, by, COLLECTION_SCAN_CLUSTER_RADIUS_M)
+        self._rebuild_grid()
+
+    def _rebuild_grid(self) -> None:
+        if self._frame is None or self._bounds is None:
+            return
+        g: list[list[int]] = [[0] * 3 for _ in range(3)]
+        for c in self.local_candidates:
+            cx, cy = self._frame.map_to_court(c.x_m, c.y_m)
+            cell = _classify(cx, cy, self._bounds)
+            if cell is not None:
+                g[cell[0]][cell[1]] += 1
+        self.grid = g
+        self.unassigned_candidates = len(self.local_candidates) - sum(sum(row) for row in g)
+
+    def _build_lawnmower_waypoints(
+        self,
+        rx: float,
+        ry: float,
+        frame: CourtFrame,
+        bounds: HalfCourtBounds,
+    ) -> tuple[int, float, list[tuple[float, float]]]:
+        swath_m = 2.0 * COLLECTION_LANE_RELIABLE_RANGE_M * math.tan(COLLECTION_CAMERA_FOV_RAD / 2.0)
+        lane_spacing_m = max(0.4, swath_m * (1.0 - COLLECTION_LANE_OVERLAP))
+        lane_count = max(1, math.ceil(bounds.span_y / lane_spacing_m))
+        lane_step_m = bounds.span_y / lane_count
+
+        court_x, court_y = frame.map_to_court(rx, ry)
+        if bounds.side in {"left", "side_neg_x"}:
+            fence_x = bounds.x_min + COLLECTION_FENCE_CLEARANCE_M
+            net_x = bounds.x_max - COLLECTION_NET_CLEARANCE_M
+        else:
+            fence_x = bounds.x_max - COLLECTION_FENCE_CLEARANCE_M
+            net_x = bounds.x_min + COLLECTION_NET_CLEARANCE_M
+
+        from_north = abs(court_y - bounds.y_max) <= abs(court_y - bounds.y_min)
+        lane_ys = [
+            bounds.y_max - (idx + 0.5) * lane_step_m
+            for idx in range(lane_count)
+        ]
+        if not from_north:
+            lane_ys.reverse()
+
+        waypoints: list[tuple[float, float]] = []
+        for idx, lane_y in enumerate(lane_ys):
+            start_x, end_x = (fence_x, net_x) if idx % 2 == 0 else (net_x, fence_x)
+            waypoints.append(frame.court_to_map(start_x, lane_y))
+            waypoints.append(frame.court_to_map(end_x, lane_y))
+        return lane_count, lane_step_m, waypoints
+
+    def _finish(self) -> None:
+        self._state = "complete"
+        self.active = False
+        self.complete = True
+
+    def _phase_label(self) -> str:
+        if self._state == "sweeping":
+            return f"Lawnmower lane {min(self._waypoint_index + 1, len(self._waypoints))}/{len(self._waypoints)}"
+        if self._state == "complete":
+            return "Lawnmower sweep complete"
         return self._state

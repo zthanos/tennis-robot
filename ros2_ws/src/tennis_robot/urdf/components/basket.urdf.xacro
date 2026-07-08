@@ -13,33 +13,39 @@
         <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
       </inertial>
 
+      <!-- Floor extended forward to x=0.50 (base_link frame), 4.5 mm behind
+           the intake guide sheet, so the ball spin-walked backward off the
+           wheel top (intake-debug-log #15) lands on floor instead of falling
+           through the old x 0.42-0.50 gap to the court. Floor top is 0.128
+           above ground; the front corner stays 116 mm from the paddle axis
+           (sweep 50 mm). -->
       <collision name="basket_floor_col">
-        <origin xyz="0.10 0 0.073" rpy="0 0 0"/>
-        <geometry><box size="0.44 0.34 0.020"/></geometry>
+        <origin xyz="0.19 0 0.073" rpy="0 0 0"/>
+        <geometry><box size="0.62 0.34 0.020"/></geometry>
       </collision>
       <visual name="basket_floor_vis">
-        <origin xyz="0.10 0 0.073" rpy="0 0 0"/>
-        <geometry><box size="0.44 0.34 0.020"/></geometry>
+        <origin xyz="0.19 0 0.073" rpy="0 0 0"/>
+        <geometry><box size="0.62 0.34 0.020"/></geometry>
         <material name="basket_gray"/>
       </visual>
 
       <collision name="basket_left_wall_col">
-        <origin xyz="0.10 0.17 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.44 0.020 0.28"/></geometry>
+        <origin xyz="0.15 0.17 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.54 0.020 0.28"/></geometry>
       </collision>
       <visual name="basket_left_wall_vis">
-        <origin xyz="0.10 0.17 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.44 0.020 0.28"/></geometry>
+        <origin xyz="0.15 0.17 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.54 0.020 0.28"/></geometry>
         <material name="basket_gray"/>
       </visual>
 
       <collision name="basket_right_wall_col">
-        <origin xyz="0.10 -0.17 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.44 0.020 0.28"/></geometry>
+        <origin xyz="0.15 -0.17 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.54 0.020 0.28"/></geometry>
       </collision>
       <visual name="basket_right_wall_vis">
-        <origin xyz="0.10 -0.17 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.44 0.020 0.28"/></geometry>
+        <origin xyz="0.15 -0.17 0.213" rpy="0 0 0"/>
+        <geometry><box size="0.54 0.020 0.28"/></geometry>
         <material name="basket_gray"/>
       </visual>
 

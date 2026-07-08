@@ -37,6 +37,10 @@
   <!-- Ã¢â€â‚¬Ã¢â€â‚¬ COURT SURFACE Ã¢â‚¬â€ DAE mat_1 main flat surface tone Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
   <link name="ground">
     <collision name="col">
+      <!-- Match the visual's -0.01 offset: without it the physics surface
+           sat 10 mm ABOVE the visible court, so balls/robot appeared to
+           float (balls rested at z=0.043 instead of 0.033). -->
+      <pose>0 0 -0.01 0 0 0</pose>
       <geometry><box><size>33.0 17.0 0.02</size></box></geometry>
       <!-- Clay court surface friction for wheel contact. -->
       <surface>

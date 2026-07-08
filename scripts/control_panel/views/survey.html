@@ -1,0 +1,34 @@
+        <div class="workspace survey-workspace">
+          <div class="workspace-main panel">
+            <div class="workspace-title">
+              <h3>Native Live Survey Map <span id="surveyDiscoveryStatus">waiting for points</span></h3>
+              <button type="button" onclick="clearSurveyPath()" class="secondary-action">Clear path</button>
+            </div>
+            <div id="surveyLifecycle" class="survey-lifecycle">
+              <div class="survey-step" data-step="started"><span></span><strong>Started</strong></div>
+              <div class="survey-step" data-step="running"><span></span><strong>Running</strong></div>
+              <div class="survey-step" data-step="saving"><span></span><strong>Saving</strong></div>
+              <div class="survey-step" data-step="completed"><span></span><strong>Completed</strong></div>
+            </div>
+            <div id="surveyLifecycleProgress" class="survey-progress" aria-hidden="true"><span></span></div>
+            <canvas id="surveyDiscoveryMap" width="1200" height="650" class="survey-map"></canvas>
+            <div id="surveyDiscoveryMeta" class="kv workspace-meta"></div>
+          </div>
+          <div class="workspace-side">
+            <div class="panel">
+              <h3>Live Feed</h3>
+              <div id="sensorsCameraView" class="sensor-empty">waiting for image</div>
+            </div>
+            <div id="surveyBoundaryPanel" class="panel">
+              <h3>Court Map Boundary <span id="surveyBoundaryStatus">no court map data</span></h3>
+              <div id="surveyBoundaryKv" class="kv"></div>
+            </div>
+            <div class="panel">
+              <h3>Controls</h3>
+              <div class="mission-actions">
+                <button class="command" type="button" data-command-mode="map_court">Run Survey</button>
+                <button class="command" type="button" data-command-mode="idle" value="idle">Stop Survey</button>
+              </div>
+            </div>
+          </div>
+        </div>

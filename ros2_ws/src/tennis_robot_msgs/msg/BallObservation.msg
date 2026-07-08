@@ -1,9 +1,0 @@
-bool visible
-float32 bearing_rad
-float32 distance_m
-float32 confidence
-string source
-float32 world_x_m
-float32 world_y_m
-float32 robot_x_m
-float32 robot_y_m

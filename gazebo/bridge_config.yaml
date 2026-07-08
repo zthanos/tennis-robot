@@ -46,6 +46,20 @@
   ros_type_name: sensor_msgs/msg/Image
   direction: GZ_TO_ROS
 
+# Sim-only debug camera watching the roller/lip contact zone (intake tuning
+# aid) — see intake_debug_camera.urdf.xacro.
+- gz_topic_name: /gz/intake_debug_camera
+  ros_topic_name: /camera/intake_debug/image_raw
+  gz_type_name: gz.msgs.Image
+  ros_type_name: sensor_msgs/msg/Image
+  direction: GZ_TO_ROS
+
+- gz_topic_name: /gz/intake_debug_depth
+  ros_topic_name: /camera/intake_debug/depth
+  gz_type_name: gz.msgs.Image
+  ros_type_name: sensor_msgs/msg/Image
+  direction: GZ_TO_ROS
+
 - gz_topic_name: /gz/depth
   ros_topic_name: /camera/depth
   gz_type_name: gz.msgs.Image
@@ -81,4 +95,48 @@
   ros_topic_name: /gz/pose_info
   gz_type_name: gz.msgs.Pose_V
   ros_type_name: tf2_msgs/msg/TFMessage
+  direction: GZ_TO_ROS
+
+# Real physics contacts from each intake paddle. Kept separate because a
+# Gazebo contact sensor is bound to one collision; gazebo_extras_node merges
+# them into /sim/roller_contact_markers and /sim/roller_contact.
+- gz_topic_name: /world/tennis_court/model/tennis_robot/link/lift_wheel_link/sensor/roller_contact_0/contact
+  ros_topic_name: /gz/roller_contact_0
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+- gz_topic_name: /gz/roller_contact_1
+  ros_topic_name: /gz/roller_contact_1
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+- gz_topic_name: /gz/roller_contact_2
+  ros_topic_name: /gz/roller_contact_2
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+- gz_topic_name: /gz/roller_contact_3
+  ros_topic_name: /gz/roller_contact_3
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+- gz_topic_name: /gz/roller_contact_4
+  ros_topic_name: /gz/roller_contact_4
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+- gz_topic_name: /gz/roller_contact_5
+  ros_topic_name: /gz/roller_contact_5
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+- gz_topic_name: /gz/roller_contact_6
+  ros_topic_name: /gz/roller_contact_6
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+- gz_topic_name: /gz/roller_contact_7
+  ros_topic_name: /gz/roller_contact_7
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
   direction: GZ_TO_ROS

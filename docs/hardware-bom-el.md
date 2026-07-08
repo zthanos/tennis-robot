@@ -54,16 +54,16 @@ costmap με ελαφρύ controller — μέσα στο budget του Pi 5.
 
 | # | Είδος | Σημειώσεις | Ενδεικτικό κόστος |
 |---|---|---|---|
-| 1 | **Raspberry Pi 5 16GB kit** (db-tronic ή ισοδύναμο) | Περιλαμβάνει: Pi 5 16GB, **M.2 NVMe HAT** + ribbon/mounting, active cooler, 27W (5V/5A) PSU, metal case, 64GB microSD + reader, HDMI | ~€255 |
-| 2 | **Επίσημος Raspberry Pi SSD 256GB** (NVMe, Key-M) | Boot drive. Εγγυημένα Pi-5-compatible — βγάζει το ρίσκο συμβατότητας | ~€30 |
+| 1 | **db-tronic Raspberry Pi 5 16GB PCIe M.2 NVMe Set — 64GB Edition** | Επιλεγμένο στο Amazon basket. Περιλαμβάνει Pi 5 16GB, PCIe M.2 NVMe board, active cooler, metal housing και 27W PSU. Η «64GB Edition» αφορά το αποθηκευτικό μέσο του kit· να επιβεβαιωθεί το ακριβές περιεχόμενο κατά την παραλαβή. | **€385,54** |
+| 2 | **Silicon Power P34A60 256GB NVMe M.2 PCIe Gen3x4 2280 SSD** (`SP256GBP34A60M28AY`) | Επιλεγμένο ξεχωριστά ως NVMe boot drive. Δεν είναι ο επίσημος Raspberry Pi SSD· απαιτείται recognition/boot/stress test με το M.2 board πριν θεωρηθεί validated για το robot. | **€50,99** |
 | 3 | 12V→5V buck converter 5A+ | On-robot τροφοδοσία Pi από LiFePO4 (ήδη στη βασική λίστα) | ~€8-12 |
 | — | (microSD του kit) | Μόνο για flashing/εφεδρεία — **όχι** ως boot drive | περιλαμβάνεται |
 | — | (27W PSU του kit) | Μόνο για bench/development — όχι on-robot | περιλαμβάνεται |
-| **Σύνολο compute** | | | **~€290-300** |
+| **Σύνολο επιλεγμένου Amazon basket** | | | **€436,53** |
+| **Σύνολο compute με on-robot buck** | | | **~€444,53-448,53** |
 
-> Τιμές Ιουνίου 2026, διογκωμένες λόγω κρίσης μνήμης (LPDDR ζήτηση από AI). Board-only
-> Pi 5 16GB ~$305, οπότε το kit στα ~€255 (με HAT/cooler/PSU/case) είναι καλό deal.
-> Αν δεν υπάρχει βιασύνη, οι τιμές ιστορικά υποχωρούν όταν εκτονωθεί η αγορά RAM.
+> Τιμές από το Amazon shopping basket της 28/06/2026. Τα είδη είναι
+> **επιλεγμένα αλλά όχι ακόμη καταγεγραμμένα ως παραγγελμένα**.
 
 ---
 
@@ -72,7 +72,17 @@ costmap με ελαφρύ controller — μέσα στο budget του Pi 5.
 Το Pi 5 έχει γνωστά θέματα recognition με κάποιους NVMe controllers. **Μη πάρεις
 τυχαίο δίσκο.**
 
-**Top (μηδέν ρίσκο):** Επίσημος Raspberry Pi SSD (256/512GB) — φτιαγμένος για το M.2 HAT+.
+**Top (χαμηλότερο ρίσκο):** Επίσημος Raspberry Pi SSD (256/512GB) — φτιαγμένος για το M.2 HAT+.
+
+**Τρέχουσα επιλογή καλαθιού:** Silicon Power P34A60 256GB
+(`SP256GBP34A60M28AY`). Δεν υπάρχει ακόμη project-specific validation. Πριν
+χρησιμοποιηθεί ως κύριο boot drive:
+
+1. επιβεβαίωση ότι εμφανίζεται στα `lspci` / `lsblk`,
+2. cold-boot και reboot δοκιμές,
+3. έλεγχος SMART,
+4. συνεχόμενο read/write stress test,
+5. επανάληψη με το 27W PSU και αργότερα με το on-robot 5V/5A buck.
 
 **Γενικά ασφαλείς:** Samsung 980 / 990 EVO, Crucial P3.
 

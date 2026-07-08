@@ -173,6 +173,53 @@ class BallMap:
         nearest.last_seen_s = now
         return nearest.id
 
+    # ── Query / export ───────────────────────────────────────────────────────────
+
+    def to_console_balls(
+        self,
+        robot_x_m: float,
+        active_target_id: int | None = None,
+        now: float | None = None,
+        include_collected: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Export recognized balls in the shape the Collection Map renderer expects.
+
+        Each entry is positioned at the ball's *recognized world coordinate*
+        (the merged x_m/y_m the perception pipeline localised), so the map can
+        draw every ball at the point where it was actually detected.
+
+        Fields consumed by scripts/control_panel/collection_map.js:
+          id, x_m, y_m, side, confirmed, visible_candidate, planned, order, source
+        plus confidence/seen_count/state for tooltips and summaries.
+        """
+        cfg = self.config
+        out: list[dict[str, Any]] = []
+        for ball in self.balls.values():
+            if ball.state == "collected" and not include_collected:
+                continue
+            confirmed = ball.seen_count >= cfg.min_seen_count
+            fresh = now is None or (now - ball.last_seen_s) <= cfg.stale_after_s
+            side = (
+                "across_net"
+                if across_net(robot_x_m, ball.x_m, cfg.net_x_m, cfg.net_side_clearance_m)
+                else "same_side"
+            )
+            out.append({
+                "id": ball.id,
+                "x_m": round(ball.x_m, 3),
+                "y_m": round(ball.y_m, 3),
+                "confidence": round(ball.confidence, 3),
+                "seen_count": ball.seen_count,
+                "source": ball.source,
+                "state": ball.state,
+                "side": side,
+                "confirmed": confirmed,
+                "visible_candidate": confirmed and fresh,
+                "planned": ball.id == active_target_id,
+                "order": None,
+            })
+        return out
+
     def seed_from_candidates(self, candidates: list[Any], now: float) -> int:
         """Populate map from mission candidate list. Idempotent; returns count seeded."""
         if not candidates:

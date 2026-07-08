@@ -19,10 +19,17 @@ WORKSPACE = os.environ.get(
     str(Path(__file__).resolve().parents[2]),  # gazebo/launch/../.. = project root
 )
 GZ_MODELS = f"{WORKSPACE}/gazebo/models"
+ROS_SOURCE_MODELS = f"{WORKSPACE}/ros2_ws/src"
 GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
 ROBOT_SDF = f"{WORKSPACE}/runtime/tennis_robot.sdf"
+GZ_GUI_CONFIG = f"{WORKSPACE}/runtime/gazebo_gui.config"
+GZ_DEFAULT_GUI_CONFIG = "/usr/share/gz/gz-sim8/gui/gui.config"
+GZ_INITIAL_CAMERA_POSE = os.environ.get(
+    "GZ_INITIAL_CAMERA_POSE",
+    "-6.45 -0.85 0.55 0 0.25 2.55",
+)
 # ros2_control controllers config baked into the gz_ros2_control plugin.
 # /workspace is mounted into the Gazebo container, so this path resolves there.
 CONTROLLERS_CONFIG = f"{WORKSPACE}/ros2_ws/src/tennis_robot/config/controllers.yaml"
@@ -40,9 +47,10 @@ def _site_packages(install_dir: str, pkg: str) -> list:
 
 _robot_paths = _site_packages(ROS2_INSTALL, "tennis_robot")
 _msgs_paths = _site_packages(ROS2_INSTALL, "tennis_robot_msgs")
-ROS_PYTHONPATH = ":".join(_robot_paths + _msgs_paths + [os.environ.get("PYTHONPATH", "")])
+_source_robot_path = f"{WORKSPACE}/ros2_ws/src/tennis_robot"
+ROS_PYTHONPATH = ":".join([_source_robot_path] + _robot_paths + _msgs_paths + [os.environ.get("PYTHONPATH", "")])
 CONTROL_PANEL_PYTHONPATH = ":".join(
-    _robot_paths + [f"{WORKSPACE}/scripts"] + [os.environ.get("PYTHONPATH", "")]
+    [_source_robot_path] + _robot_paths + [f"{WORKSPACE}/scripts"] + [os.environ.get("PYTHONPATH", "")]
 )
 
 
@@ -62,8 +70,25 @@ def generate_robot_urdf():
     )
 
 
+def generate_gazebo_gui_config():
+    default_config = Path(GZ_DEFAULT_GUI_CONFIG)
+    if not default_config.exists():
+        raise RuntimeError(f"Gazebo GUI config not found: {default_config}")
+
+    config = default_config.read_text(encoding="utf-8")
+    config = config.replace(
+        "<camera_pose>-6 0 6 0 0.5 0</camera_pose>",
+        f"<camera_pose>{GZ_INITIAL_CAMERA_POSE}</camera_pose>",
+        1,
+    )
+    output = Path(GZ_GUI_CONFIG)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(config, encoding="utf-8")
+
+
 def generate_launch_description():
     generate_robot_urdf()
+    generate_gazebo_gui_config()
 
     headless_arg = DeclareLaunchArgument(
         "headless", default_value="false",
@@ -78,8 +103,14 @@ def generate_launch_description():
     _gz_plugin_path = f"{ROS2_INSTALL}/gz_ros2_control/lib:" + os.environ.get(
         "GZ_SIM_SYSTEM_PLUGIN_PATH", ""
     )
+    _gz_resource_path = ":".join(
+        filter(
+            None,
+            [GZ_MODELS, ROS_SOURCE_MODELS, os.environ.get("GZ_SIM_RESOURCE_PATH", "")],
+        )
+    )
     _gz_env = {
-        "GZ_SIM_RESOURCE_PATH": GZ_MODELS,
+        "GZ_SIM_RESOURCE_PATH": _gz_resource_path,
         "GZ_SIM_SYSTEM_PLUGIN_PATH": _gz_plugin_path,
     }
 
@@ -92,6 +123,7 @@ def generate_launch_description():
             "gz", "sim", "-r",
             "--render-engine-server", "ogre2",
             "--render-engine-gui", "ogre",
+            "--gui-config", GZ_GUI_CONFIG,
             GZ_WORLD,
         ],
         condition=UnlessCondition(headless),
@@ -99,10 +131,19 @@ def generate_launch_description():
         output="screen",
     )
 
+    # --headless-rendering forces EGL offscreen rendering. Without it, ogre2
+    # sees DISPLAY=:0 and creates a GLX context via X — which crashes under
+    # GALLIUM_DRIVER=d3d12 (glx drisw screen / GLXBadFBConfig, the server dies
+    # and controller_manager never comes up). d3d12 GPU accel works ONLY on
+    # the EGL path, so headless must never touch GLX. DISPLAY is cleared for
+    # the same reason.
     gz_headless = ExecuteProcess(
-        cmd=["gz", "sim", "-r", "-s", "--render-engine", "ogre2", GZ_WORLD],
+        cmd=[
+            "gz", "sim", "-r", "-s", "--headless-rendering",
+            "--render-engine", "ogre2", GZ_WORLD,
+        ],
         condition=IfCondition(headless),
-        additional_env=_gz_env,
+        additional_env={**_gz_env, "DISPLAY": ""},
         output="screen",
     )
 
@@ -161,6 +202,13 @@ def generate_launch_description():
         output="screen",
         additional_env={"PYTHONPATH": ROS_PYTHONPATH},
     )
+    collector_logic = Node(
+        package="tennis_robot",
+        executable="collector_logic_node",
+        name="collector_logic_node",
+        output="screen",
+        additional_env={"PYTHONPATH": ROS_PYTHONPATH, "COLLECTOR_BACKEND": "gazebo"},
+    )
 
     # cmd_vel arbiter — part of the base robot bring-up so the web D-pad / teleop
     # can drive without needing the SLAM launch running. Output goes to the
@@ -204,6 +252,14 @@ def generate_launch_description():
             # Match the RGB camera horizontal_fov in oak_d.urdf.xacro (1.204 rad ≈ 69°).
             # The perception default of 60° skews bearings ~15% toward frame edges.
             "CAMERA_FOV_RAD": "1.204",
+            # Simulated OAK-D AI: run the YOLO ONNX detector on Gazebo RGB frames.
+            # The model is mandatory; node startup fails if it is absent or invalid.
+            # Produce it with scripts/export_yolo_onnx.py.
+            "BALL_DETECTOR_BACKEND": os.getenv("BALL_DETECTOR_BACKEND", "yolo_onnx"),
+            "BALL_MODEL_PATH": os.getenv("BALL_MODEL_PATH", f"{WORKSPACE}/models/yolov8n.onnx"),
+            "BALL_CONF_THRESHOLD": os.getenv("BALL_CONF_THRESHOLD", "0.35"),
+            "BALL_CLASS_IDS": os.getenv("BALL_CLASS_IDS", "32"),
+            "CAMERA_FRAME_ID": "camera_link_optical_frame",
         },
     )
 
@@ -212,6 +268,9 @@ def generate_launch_description():
         executable="controller_node",
         name="controller_node",
         output="screen",
+        # Advance collection/search timers with Gazebo physics. At a low
+        # real-time factor, wall-time capture deadlines expire far too early.
+        parameters=[{"use_sim_time": True}],
         remappings=[_odom_remap],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
@@ -259,6 +318,9 @@ def generate_launch_description():
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
             "ROBOT_SENSOR_FILE": f"{WORKSPACE}/runtime/robot_sensors.json",
+            "COLLECTOR_SERIAL_BRIDGE": os.getenv(
+                "COLLECTOR_SERIAL_BRIDGE", "host.docker.internal:8091"
+            ),
         },
     )
 
@@ -297,7 +359,7 @@ def generate_launch_description():
         period=4.0,
         actions=[
             bridge, perception, controller, navigation,
-            command_bridge, gz_extras, sensor_snapshots, drive_actuator, twist_mux,
+            command_bridge, gz_extras, sensor_snapshots, drive_actuator, collector_logic, twist_mux,
             ekf,
         ],
     )

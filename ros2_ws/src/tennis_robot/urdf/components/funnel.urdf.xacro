@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="intake_funnel" params="parent chassis_z">
+  <xacro:macro name="intake_funnel" params="parent chassis_z pitch">
     <joint name="funnel_joint" type="fixed">
       <parent link="${parent}"/>
       <child link="funnel_link"/>
@@ -13,30 +13,73 @@
       </inertial>
 
       <visual name="funnel_left_cheek_vis">
-        <origin xyz="0.54 0.14 0.08" rpy="0 0 0.25"/>
-        <geometry><box size="0.18 0.01 0.14"/></geometry>
+        <origin xyz="0.60 0.145 0.052" rpy="0 ${pitch} 0.25"/>
+        <geometry><box size="0.24 0.01 0.10"/></geometry>
         <material name="intake_orange"/>
       </visual>
+      <!-- Cheek collisions so the funnel physically guides off-centre balls
+           into the (narrower, scoop-width) intake instead of only looking
+           like it does. Mouth is ~0.35 m wide at the front tips, converging
+           to the 0.18 m roller/channel width at the intake mouth. -->
+      <collision name="funnel_left_cheek_col">
+        <origin xyz="0.60 0.145 0.052" rpy="0 ${pitch} 0.25"/>
+        <geometry><box size="0.24 0.01 0.10"/></geometry>
+      </collision>
 
       <visual name="funnel_right_cheek_vis">
-        <origin xyz="0.54 -0.14 0.08" rpy="0 0 -0.25"/>
-        <geometry><box size="0.18 0.01 0.14"/></geometry>
+        <origin xyz="0.60 -0.145 0.052" rpy="0 ${pitch} -0.25"/>
+        <geometry><box size="0.24 0.01 0.10"/></geometry>
         <material name="intake_orange"/>
       </visual>
-
-      <collision name="roller_exit_floor_col">
-        <origin xyz="0.54 0 0.01" rpy="0 0 0"/>
-        <geometry><box size="0.16 0.24 0.005"/></geometry>
+      <collision name="funnel_right_cheek_col">
+        <origin xyz="0.60 -0.145 0.052" rpy="0 ${pitch} -0.25"/>
+        <geometry><box size="0.24 0.01 0.10"/></geometry>
       </collision>
-      <visual name="roller_exit_floor_vis">
-        <origin xyz="0.54 0 0.01" rpy="0 0 0"/>
-        <geometry><box size="0.16 0.24 0.005"/></geometry>
+
+      <collision name="intake_channel_col">
+        <!-- Roller-first intake channel, entirely BEHIND the roller's
+             leading edge (envelope reaches x=0.595, effective channel tip at
+             x=0.540 after the rearward tuning offset):
+             2 mm tip on the ground plane, then a circular arc of radius
+             105 mm around the roller centre (0.55, 0.105 above ground) up to
+             a near-vertical rear wall ending at z=0.155. The paddled roller
+             (tennis_robot.urdf.xacro intake_*) is the first hard contact and
+             drives the ball around the channel. Mesh is generated in
+             funnel-frame coords by scripts/generate_curved_scoop_mesh.py —
+             keep the two in sync. -->
+        <!-- Shifted 15 mm rearward after the first mechanical-capture test:
+             this gives the paddle envelope more room to engage the ball
+             before the rigid channel can support / block it. -->
+        <origin xyz="-0.015 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
+      </collision>
+      <visual name="intake_channel_vis">
+        <origin xyz="-0.015 0 0" rpy="0 0 0"/>
+        <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
         <material name="intake_orange"/>
       </visual>
 
-      <visual name="internal_slide_vis">
-        <origin xyz="0.40 0 0.03" rpy="0 -0.12 0"/>
-        <geometry><box size="0.14 0.24 0.005"/></geometry>
+      <!-- Spin-walk ceiling over the paddle-wheel top: the paddles carry the
+           ball around the guide and juggle it at the wheel top (ground z
+           ~162-171 centre) with BACKSPIN. This front-LOW / rear-HIGH plate
+           sits just inside the juggle band so the spinning ball presses its
+           top against the underside and friction walks it BACKWARD over the
+           guide edge onto the (forward-extended) basket floor. Ground-frame
+           edges: front-low (0.593, 0.172) — 15.8 mm from the paddle tips so
+           the ball cannot escape forward — rear-high (0.447, 0.238). The old
+           front-high plate assumed a ballistic fling to z 204+ that the
+           paddle transport never reaches (intake-debug-log #15). -->
+      <!-- Raised +40 mm after the spiral-guide exit (intake-debug-log #17):
+           the paddles now push the ball positively over the spiral edge at
+           (0.554, 0.183), so this plate is only a safety net for wild
+           bounces, out of the exit trajectory. -->
+      <collision name="intake_deflector_col">
+        <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
+        <geometry><box size="0.16 0.20 0.006"/></geometry>
+      </collision>
+      <visual name="intake_deflector_vis">
+        <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
+        <geometry><box size="0.16 0.20 0.006"/></geometry>
         <material name="intake_orange"/>
       </visual>
     </link>

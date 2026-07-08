@@ -1,16 +1,24 @@
     const titles = {
       dashboard: ["Dashboard", "Observe the robot mode, collector state, current target, and command stream while the simulation runs."],
-      control: ["Control", "Send high-level commands to the running controller."],
-      sensors: ["Sensor Views", "Live RPLIDAR C1 360° ground scan, front camera, OAK-D depth image, court boundary from last Map Court run, and half-court mapping grid. Run Map Court first to measure boundaries; then Collect Left Side uses them automatically."],
+      control: ["Command Center", "Send high-level commands and inspect the selected robot mode."],
+      survey: ["Survey Workspace", "Run Map Court with the native live survey map, camera feed, survey metrics, and boundary status in one operational view."],
+      collection: ["Collection Workspace", "Run collection with the court map and half-court mapping grid visible together."],
+      sensors: ["Diagnostics", "Inspect raw sensor feeds and lower-level debug data without mixing them into the mission workspaces."],
       telemetry: ["Telemetry", "Inspect live robot pose, detection, command output, survey data, and raw status."],
       stats: ["Command Stats", "Review per-mode command counts and recent command usage."],
       history: ["History", "Audit the local command stream written by this console and controller startup."],
       webcam: ["Webcam", "Live webcam feed with HSV tennis ball detection and monocular distance estimation."],
       vendors: ["Vendors", "Manage vendors, venues and courts. Set the active session so survey results are tagged with the correct location."],
-      surveys: ["Court Map History", "Ιστορικό χαρτογράφησης γηπέδου αποθηκευμένο στη DuckDB — ένα row ανά Map Court run."]
+      surveys: ["Court Map History", "Saved Map Court runs from DuckDB, grouped by active vendor and court."]
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
+    let _lastCollectionEvents = [];
+    let _collectionLogClearedAtS = null;
+    // Client-side Nav Test entries, merged into the Collection Log so manual
+    // nav goals/cancels/errors appear alongside the robot's collection events.
+    let _navTestLog = [];
+    let _lastServerCollectionEvents = [];
     let lastSurveyDiscovery = null;
     let robotPath = [];
     let discoveryCleared = false;
@@ -29,60 +37,9 @@
       } catch (e) { /* ignore */ }
     }
 
-    function fmt(value, suffix = "") {
-      if (value === null || value === undefined || Number.isNaN(value)) return "none";
-      if (typeof value === "number") return `${value.toFixed(Math.abs(value) >= 10 ? 1 : 2)}${suffix}`;
-      return String(value);
-    }
-    function canonicalFenceBounds(bounds) {
-      const corners = (bounds?.canonical_fence_model || {}).corners || {};
-      const pts = Object.values(corners).filter(p =>
-        Number.isFinite(p?.x_m) && Number.isFinite(p?.y_m)
-      );
-      if (!pts.length) return {};
-      const xs = pts.map(p => p.x_m);
-      const ys = pts.map(p => p.y_m);
-      return {
-        west_x: Math.min(...xs),
-        east_x: Math.max(...xs),
-        south_y: Math.min(...ys),
-        north_y: Math.max(...ys),
-      };
-    }
-    function timeText(seconds) {
-      if (!seconds) return "0.0s";
-      if (seconds < 90) return `${seconds.toFixed(1)}s`;
-      return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
-    }
-    function dateText(ts) {
-      if (!ts) return "none";
-      return new Date(ts * 1000).toLocaleTimeString();
-    }
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-    // --- DOM-write helpers (null-safe so render() tolerates lazy-loaded views) ---
-    function setText(id, value) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value;
-    }
-    function safe(fn) {
-      // Run a per-view render function; swallow errors from views not yet
-      // injected into the DOM (lazy loading). Keeps render() from aborting.
-      try { return fn(); } catch (e) { /* view not loaded yet */ }
-    }
-    function setKv(id, rows) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.innerHTML = rows.map(([label, value]) => (
-        `<div><span>${label}</span><strong>${value}</strong></div>`
-      )).join("");
-    }
+    // Shared helpers now live in console_utils.js (window.ConsoleUtils); pull
+    // them into local scope so the rest of this file is unchanged.
+    const { fmt, canonicalFenceBounds, courtFrameModel, timeText, dateText, escapeHtml, setText, safe, setKv } = window.ConsoleUtils;
     function renderTelemetryEvents(events) {
       const target = document.getElementById("telemetryEvents");
       if (!target) return;
@@ -104,6 +61,103 @@
           <div><strong>${escapeHtml(event.type || "event")}</strong><br><span>${escapeHtml(details || "no details")}</span></div>
         </div>`;
       }).join("");
+    }
+    function renderCollectionTerminal(events) {
+      const target = document.getElementById("collectionTerminalLog");
+      const status = document.getElementById("collectionLogStatus");
+      if (!target) return;
+      _lastServerCollectionEvents = Array.isArray(events) ? events : [];
+      // Merge server collection events with local Nav Test entries, ordered by time.
+      const sourceEvents = [..._lastServerCollectionEvents, ..._navTestLog]
+        .sort((a, b) => (Number(a.t_s) || 0) - (Number(b.t_s) || 0));
+      const newestTime = sourceEvents.reduce((max, event) => Math.max(max, Number(event.t_s) || 0), 0);
+      if (_collectionLogClearedAtS !== null && newestTime > 0 && newestTime < _collectionLogClearedAtS) {
+        _collectionLogClearedAtS = null;
+      }
+      const visibleEvents = _collectionLogClearedAtS === null
+        ? sourceEvents
+        : sourceEvents.filter(event => (Number(event.t_s) || 0) > _collectionLogClearedAtS);
+      _lastCollectionEvents = visibleEvents;
+      const rows = visibleEvents.slice(-32).reverse();
+      if (status) status.textContent = rows.length ? `${rows.length} events` : (_collectionLogClearedAtS === null ? "waiting" : "cleared");
+      if (!rows.length) {
+        target.innerHTML = `<div class="terminal-empty">${_collectionLogClearedAtS === null ? "No collection decisions yet." : "Log cleared. Waiting for new collection decisions."}</div>`;
+        return;
+      }
+      const hidden = new Set(["t_s", "type", "mode", "clock"]);
+      const labelFor = {
+        mode_enter: "mode",
+        scan_start: "scan start",
+        scan_blocked: "blocked",
+        lane_target: "lane target",
+        lane_collect_start: "collect start",
+        opportunistic_collect_start: "local collect",
+        lane_collect_abort: "abort",
+        lane_collect_timeout: "timeout",
+        lane_collect_gave_up: "gave up",
+        lane_collect_confirmed: "confirmed",
+        scan_complete: "complete",
+        nav2_unavailable: "nav2 down",
+        nav2_goal_cancel: "nav2 cancel",
+        nav_test_dispatch: "nav sent",
+        nav_test_sent: "nav goal",
+        nav_test_succeeded: "nav ok",
+        nav_test_cancel: "nav cancel",
+        nav_test_timeout: "nav running",
+        nav_test_out_of_bounds: "out of bounds",
+        nav_test_error: "nav2 down",
+      };
+      const severityFor = type => (
+        type === "scan_blocked" || type === "lane_collect_timeout" || type === "lane_collect_gave_up"
+          || type === "nav2_unavailable" || type === "nav_test_out_of_bounds" || type === "nav_test_error"
+          ? "error"
+          : type === "lane_collect_abort" || type === "nav_test_timeout"
+            ? "warn"
+            : "info"
+      );
+      const detailText = event => Object.entries(event)
+        .filter(([key, value]) => !hidden.has(key) && value !== null && value !== undefined && value !== "")
+        .map(([key, value]) => {
+          const rendered = Array.isArray(value) || typeof value === "object" ? JSON.stringify(value) : value;
+          return `${key}=${rendered}`;
+        })
+        .join("  ");
+      target.innerHTML = rows.map(event => {
+        const type = event.type || "event";
+        const severity = severityFor(type);
+        return `<div class="terminal-row">
+          <span class="terminal-time">${escapeHtml(event.clock || fmt(event.t_s, "s"))}</span>
+          <span class="terminal-type ${severity === "info" ? "" : severity}">${escapeHtml(labelFor[type] || type)}</span>
+          <span class="terminal-detail">${escapeHtml(detailText(event) || "ok")}</span>
+        </div>`;
+      }).join("");
+    }
+    function addNavTestLog(type, detail = {}) {
+      _navTestLog.push({ t_s: Date.now() / 1000, clock: new Date().toLocaleTimeString(), type, ...detail });
+      if (_navTestLog.length > 50) _navTestLog = _navTestLog.slice(-50);
+      // Re-render immediately, merging with the last server events.
+      renderCollectionTerminal(_lastServerCollectionEvents);
+    }
+    function renderCollectionTruth(truth) {
+      const status = document.getElementById("collectionTruthStatus");
+      const kv = document.getElementById("collectionTruthKv");
+      if (!kv) return;
+      const t = truth || {};
+      if (status) {
+        status.textContent = t.current_blocker && t.current_blocker !== "none"
+          ? t.current_blocker
+          : (t.motion_owner || "idle");
+        status.style.color = t.current_blocker && t.current_blocker !== "none" ? "var(--warn)" : "var(--accent)";
+      }
+      setKv("collectionTruthKv", [
+        ["Phase", t.phase || "-"],
+        ["Motion owner", t.motion_owner || "-"],
+        ["Motion path", t.motion_path || "-"],
+        ["Fallback", t.fallback_mode || "none"],
+        ["Blocker", t.current_blocker || "none"],
+        ["Nav2", `${t.nav2_enabled ? "enabled" : "disabled"} / ${t.nav2_state || "-"}`],
+        ["Lane", `${t.lane_started ? "started" : "not started"} | ${t.waypoint_index ?? "-"} / ${t.waypoint_count ?? "-"}`],
+      ]);
     }
     // --- Lazy view loading ----------------------------------------------------
     // Each <section class="view" data-partial="X"> starts empty; its markup lives
@@ -141,8 +195,8 @@
       await loadView(name);
       document.querySelectorAll("section.view").forEach(view => view.classList.toggle("active", view.id === name));
       if (name === "webcam") startWebcam(); else stopWebcam();
-      if (name === "vendors") loadVendors();
-      if (name === "surveys") loadSurveys();
+      if (name === "vendors") window.ControlPanelVendors.load();
+      if (name === "surveys") window.ControlPanelSurveyHistory.load();
     }
     document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 
@@ -195,15 +249,17 @@
     const AUTONOMOUS_MODES = new Set(["map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"]);
 
     function updateCommandButtons() {
-      const active = vendorData.active || {};
+      const active = window.ControlPanelVendors?.getActive() || {};
       const hasSession = !!(active.vendor_id && active.court_id);
       const cb = diagnostics.court_boundary;
-      const hasSurvey = hasSession && !!(cb && cb.survey_complete && cb.court_id === active.court_id);
+      const surveyReady = !!(cb && (cb.survey_complete || cb.completed || cb.status === "OK"));
+      const surveyCourtMatches = !cb?.court_id || cb.court_id === active.court_id;
+      const hasSurvey = hasSession && surveyReady && surveyCourtMatches;
       const actualMode = (diagnostics.robot || {}).actual_mode || "idle";
       const isAutonomous = AUTONOMOUS_MODES.has(actualMode);
 
       const btnMapCourt = document.querySelector('#commandForm [value="map_court"]');
-      const btnCollect  = document.querySelector('#commandForm [value="collect_pattern"]');
+      const btnCollect  = document.querySelector('#commandForm [value="collect"]');
       const hintEl      = document.getElementById("commandHint");
 
       if (btnMapCourt) btnMapCourt.disabled = !hasSession || isAutonomous;
@@ -229,6 +285,27 @@
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ mode })
+      });
+    }
+
+    function routeForMode(mode) {
+      if (mode === "map_court") return "survey";
+      if (["collect", "collect_one", "collect_pattern", "search", "scan_side", "map_left_side"].includes(mode)) return "collection";
+      return null;
+    }
+
+    function wireMissionCommands(rootId) {
+      const root = document.getElementById(rootId);
+      if (!root) return;
+      root.querySelectorAll("[data-command-mode]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const mode = btn.dataset.commandMode;
+          if (!mode) return;
+          await _sendRawCommand(mode);
+          const nextView = routeForMode(mode);
+          if (nextView) setView(nextView);
+          await refresh();
+        });
       });
     }
 
@@ -262,12 +339,77 @@
         const mode = event.submitter?.value;
         if (!mode || DPAD_MODES.has(mode)) return;
         await _sendRawCommand(mode);
-        const switchModes = new Set(["collect", "collect_one", "collect_pattern", "search", "scan_side", "map_court", "map_left_side"]);
-        if (switchModes.has(mode)) setView("sensors");
+        const nextView = routeForMode(mode);
+        if (nextView) setView(nextView);
         await refresh();
       });
       updateCommandButtons();
     };
+    VIEW_INIT.survey = function () { wireMissionCommands("survey"); };
+    VIEW_INIT.collection = function () {
+      wireMissionCommands("collection");
+      const copyBtn = document.getElementById("collectionLogCopy");
+      if (copyBtn) copyBtn.addEventListener("click", copyCollectionLog);
+      const clearBtn = document.getElementById("collectionLogClear");
+      if (clearBtn) clearBtn.addEventListener("click", clearCollectionLog);
+      // Nav Test lives in its own module (nav_test.js); wire its controls here.
+      window.ControlPanelNavTest.wire();
+      const collectorAction = async action => {
+        const response = await fetch("/api/collector", {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({action})
+        });
+        const state = await response.json();
+        const target = document.getElementById("collectorManualStatus");
+        const pwm = Number(state.speed);
+        if (target) {
+          target.textContent = state.ok
+            ? `${state.running ? "running" : "stopped"} · commanded PWM ${Number.isFinite(pwm) ? pwm : "—"}/255 · ${state.port || "simulation"}`
+            : `collector error · ${state.message || "command failed"}`;
+        }
+        const bar = document.getElementById("collectorSpeedBar");
+        if (bar) bar.style.width = `${Number.isFinite(pwm) ? Math.max(0, Math.min(100, pwm / 255 * 100)) : 0}%`;
+      };
+      document.getElementById("collectorStart")?.addEventListener("click", () => collectorAction("start"));
+      document.getElementById("collectorStop")?.addEventListener("click", () => collectorAction("stop"));
+      document.getElementById("collectorSpeedDown")?.addEventListener("click", () => collectorAction("speed_down"));
+      document.getElementById("collectorSpeedUp")?.addEventListener("click", () => collectorAction("speed_up"));
+    };
+    async function copyCollectionLog() {
+      const btn = document.getElementById("collectionLogCopy");
+      const events = _lastCollectionEvents;
+      if (!events.length) { if (btn) { btn.textContent = "No events"; setTimeout(() => (btn.textContent = "Copy"), 1200); } return; }
+      const lines = events.map(ev => {
+        const head = `[${ev.clock || fmt(ev.t_s, "s")}] ${ev.type || "event"}`;
+        const detail = Object.entries(ev)
+          .filter(([k, v]) => !["t_s", "type", "clock"].includes(k) && v !== null && v !== undefined && v !== "")
+          .map(([k, v]) => `${k}=${(Array.isArray(v) || typeof v === "object") ? JSON.stringify(v) : v}`)
+          .join("  ");
+        return detail ? `${head}  ${detail}` : head;
+      });
+      const text = lines.join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (e) {
+        const ta = document.createElement("textarea");
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+      if (btn) { btn.textContent = `Copied ${events.length}`; setTimeout(() => (btn.textContent = "Copy"), 1400); }
+    }
+    function clearCollectionLog() {
+      const btn = document.getElementById("collectionLogClear");
+      _collectionLogClearedAtS = _lastCollectionEvents.reduce(
+        (max, event) => Math.max(max, Number(event.t_s) || 0),
+        _collectionLogClearedAtS || 0
+      );
+      renderCollectionTerminal([]);
+      if (btn) {
+        btn.textContent = "Cleared";
+        setTimeout(() => (btn.textContent = "Clear"), 1200);
+      }
+    }
 
     async function refresh() {
       const response = await fetch("/api/diagnostics", { cache: "no-store" });
@@ -393,14 +535,28 @@
       });
       safe(() => renderObstacleSurveyDebug((robot.survey || {}).navigation || {}));
       safe(() => renderObstacleRunsHistory(diagnostics.obstacle_runs || []));
-      safe(() => renderMapMission(robot.map_mission || {}));
+      const collectionScan = robot.collection_scan || {};
+      const mapMissionForGrid = (
+        collectionScan.active || collectionScan.complete
+          ? { ...collectionScan, source_label: "Collection scan" }
+          : { ...(robot.map_mission || {}), source_label: "Mapping mission" }
+      );
+      safe(() => renderMapMission(mapMissionForGrid));
+      safe(() => renderCollectionTruth(robot.collection_truth || {}));
+      safe(() => renderCollectionTerminal(robot.collection_events || []));
+      safe(() => renderCollectionIr(sensors.ir_intake));
       safe(updateCommandButtons);
 
-      // Auto-navigate to sensors when mapping mission or survey is active
+      // Auto-navigate to the mission workspace while survey/collection is active.
       const mapMission = robot.map_mission || {};
-      if (mapMission.active && !mapMission.complete) {
+      const liveSurvey = diagnostics.court_survey_live || {};
+      const surveyActive = liveSurvey.running || (survey.state && !["idle", "done", "complete", "completed"].includes(String(survey.state)));
+      const collectionActive = (mapMission.active && !mapMission.complete) || (collectionScan.active && !collectionScan.complete);
+      if (collectionActive || surveyActive) {
         const activeView = document.querySelector("section.view.active");
-        if (activeView && activeView.id !== "sensors") setView("sensors");
+        const targetView = collectionActive ? "collection" : "survey";
+        const autoRouteFrom = new Set(["dashboard", "control"]);
+        if (activeView && activeView.id !== targetView && autoRouteFrom.has(activeView.id)) setView(targetView);
       }
     }
     function renderSurveyBoundary(survey) {
@@ -1386,12 +1542,14 @@
           progressEl.style.display = "block";
           const done = m.scan_poses_done ?? 0;
           const total = m.scan_poses_total ?? 5;
-          const pct = total > 0 ? Math.round(done / total * 100) : 0;
+          const pct = m.scan_progress_pct != null
+            ? Math.round(m.scan_progress_pct)
+            : (total > 0 ? Math.round(done / total * 100) : 0);
           const phaseEl = document.getElementById("mapMissionPhaseLabel");
           const posesEl = document.getElementById("mapMissionPosesLabel");
           const barEl   = document.getElementById("mapMissionBar");
           if (phaseEl) phaseEl.textContent = m.phase_label || m.phase || "";
-          if (posesEl) posesEl.textContent = `${done} / ${total} poses`;
+          if (posesEl) posesEl.textContent = m.scan_progress_pct != null ? `${pct}%` : `${done} / ${total} poses`;
           if (barEl)   barEl.style.width   = `${pct}%`;
         } else {
           progressEl.style.display = "none";
@@ -1618,242 +1776,43 @@
       ].map(([label, val]) => `<div style="border-top:1px solid var(--line);padding-top:8px;">${label}${val}</div>`).join("");
       drawLidarScan(document.getElementById(canvasId), ranges, minRange, maxRange, candList, sensor);
     }
+    function renderCollectionIr(ir) {
+      const threshold = ir?.threshold ?? 500;
+      const available = ir?.left_available || ir?.right_available;
+      const statusEl = document.getElementById("collIrStatus");
+      if (statusEl) statusEl.textContent = available ? "live" : "no signal";
+      function renderOne(valueId, barId, panelId, value, avail) {
+        const valEl = document.getElementById(valueId);
+        const barEl = document.getElementById(barId);
+        const panelEl = document.getElementById(panelId);
+        if (!valEl || !barEl || !panelEl) return;
+        if (!avail || value === null || value === undefined) {
+          valEl.textContent = "N/A";
+          barEl.style.width = "0%";
+          barEl.style.background = "rgba(255,255,255,0.15)";
+          panelEl.style.borderColor = "var(--line)";
+          return;
+        }
+        const pct = Math.min(100, Math.round((value / 1000) * 100));
+        const triggered = value > threshold;
+        valEl.textContent = Math.round(value);
+        barEl.style.width = `${pct}%`;
+        barEl.style.background = triggered ? "#2fd08f" : "rgba(145,162,178,0.45)";
+        panelEl.style.borderColor = triggered ? "rgba(47,208,143,0.55)" : "var(--line)";
+      }
+      renderOne("collIrLeftValue", "collIrLeftBar", "collIrLeftPanel", ir?.left, ir?.left_available ?? (ir !== undefined));
+      renderOne("collIrRightValue", "collIrRightBar", "collIrRightPanel", ir?.right, ir?.right_available ?? (ir !== undefined));
+      const badge = document.getElementById("collIrBadge");
+      if (badge) {
+        const triggered = !!ir?.triggered;
+        badge.textContent = available ? (triggered ? "TRIGGERED: YES — collection gate open" : "TRIGGERED: NO — ball not in intake zone") : "TRIGGERED: sensors not available";
+        badge.style.background = triggered ? "rgba(47,208,143,0.15)" : (available ? "rgba(255,255,255,0.04)" : "rgba(255,80,80,0.10)");
+        badge.style.color = triggered ? "#2fd08f" : (available ? "var(--muted)" : "#ff6060");
+      }
+    }
     function renderCourtMap() {
-      const canvas = document.getElementById("courtMap");
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      const map = (diagnostics.robot || {}).map || {};
-      const court = map.court || { min_x: -11.885, max_x: 11.885, min_y: -5.485, max_y: 5.485, net_x: 0 };
-      const width = canvas.width;
-      const height = canvas.height;
-      const pad = 42;
-      const sx = x => pad + (x - court.min_x) / (court.max_x - court.min_x) * (width - pad * 2);
-      const sy = y => height - pad - (y - court.min_y) / (court.max_y - court.min_y) * (height - pad * 2);
-      const scaleM = (width - pad * 2) / (court.max_x - court.min_x);
-
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = "#7a3329";
-      ctx.fillRect(0, 0, width, height);
-      ctx.fillStyle = "#8f3f32";
-      ctx.fillRect(pad, pad, width - pad * 2, height - pad * 2);
-
-      ctx.strokeStyle = "rgba(255,255,255,0.78)";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
-      ctx.beginPath();
-      ctx.moveTo(sx(court.net_x || 0), pad);
-      ctx.lineTo(sx(court.net_x || 0), height - pad);
-      ctx.strokeStyle = "rgba(18,24,30,0.95)";
-      ctx.lineWidth = 5;
-      ctx.stroke();
-
-      ctx.strokeStyle = "rgba(255,255,255,0.55)";
-      ctx.lineWidth = 2;
-      [-6.4, 6.4].forEach(x => {
-        ctx.beginPath();
-        ctx.moveTo(sx(x), pad);
-        ctx.lineTo(sx(x), height - pad);
-        ctx.stroke();
-      });
-      [-4.115, 4.115, 0].forEach(y => {
-        ctx.beginPath();
-        ctx.moveTo(pad, sy(y));
-        ctx.lineTo(width - pad, sy(y));
-        ctx.stroke();
-      });
-
-      const bounds = map.active_bounds;
-      if (bounds) {
-        ctx.fillStyle = "rgba(87,166,255,0.06)";
-        ctx.fillRect(sx(bounds.min_x), sy(bounds.max_y), sx(bounds.max_x) - sx(bounds.min_x), sy(bounds.min_y) - sy(bounds.max_y));
-      }
-
-      // Survey fence measurements overlay — prefer persistent court_boundary.json over in-memory survey state
-      const survBounds = diagnostics.court_boundary || ((diagnostics.robot || {}).survey || {}).bounds;
-      if (survBounds && survBounds.survey_complete) {
-        const fg = canonicalFenceBounds(survBounds);
-        ctx.save();
-        ctx.setLineDash([7, 4]);
-        ctx.lineWidth = 1.8;
-        ctx.strokeStyle = "rgba(255,189,90,0.75)";
-        ctx.fillStyle = "rgba(255,189,90,0.92)";
-        ctx.font = "bold 11px system-ui";
-
-        if (fg.west_x != null) {
-          const fx = sx(fg.west_x);
-          ctx.beginPath(); ctx.moveTo(fx, pad); ctx.lineTo(fx, height - pad); ctx.stroke();
-          ctx.textAlign = "right";
-          ctx.fillText(`W ${fg.west_x.toFixed(1)}m`, fx - 3, pad + 20);
-        }
-        if (fg.east_x != null) {
-          const fx = sx(fg.east_x);
-          ctx.beginPath(); ctx.moveTo(fx, pad); ctx.lineTo(fx, height - pad); ctx.stroke();
-          ctx.textAlign = "left";
-          ctx.fillText(`E ${fg.east_x.toFixed(1)}m`, fx + 3, pad + 20);
-        }
-        if (fg.south_y != null) {
-          const fy = sy(fg.south_y);
-          ctx.beginPath(); ctx.moveTo(pad, fy); ctx.lineTo(width - pad, fy); ctx.stroke();
-          ctx.textAlign = "left";
-          ctx.fillText(`S ${fg.south_y.toFixed(1)}m`, pad + 6, fy - 4);
-        }
-        if (fg.north_y != null) {
-          const fy = sy(fg.north_y);
-          ctx.beginPath(); ctx.moveTo(pad, fy); ctx.lineTo(width - pad, fy); ctx.stroke();
-          ctx.textAlign = "left";
-          ctx.fillText(`N ${fg.north_y.toFixed(1)}m`, pad + 6, fy + 13);
-        }
-
-        // Width × depth badge bottom-right
-        if (fg.east_x != null && fg.west_x != null && fg.north_y != null && fg.south_y != null) {
-          const w = (fg.east_x - fg.west_x).toFixed(1);
-          const d = (fg.north_y - fg.south_y).toFixed(1);
-          const label = `map court: ${w} × ${d} m`;
-          ctx.setLineDash([]);
-          ctx.textAlign = "right";
-          const lw = ctx.measureText(label).width;
-          ctx.fillStyle = "rgba(12,17,22,0.72)";
-          ctx.fillRect(width - pad - lw - 16, height - pad - 26, lw + 14, 20);
-          ctx.fillStyle = "rgba(255,189,90,0.92)";
-          ctx.fillText(label, width - pad - 4, height - pad - 11);
-        }
-
-        ctx.setLineDash([]);
-        ctx.restore();
-      }
-
-      // camera FOV cone
-      const robot = map.robot || {};
-      if (robot.x_m !== undefined && robot.y_m !== undefined) {
-        const rx = sx(robot.x_m);
-        const ry = sy(robot.y_m);
-        const yaw = robot.yaw_rad || 0;
-        const fov = map.camera_fov_rad || 1.05;
-        const fovRange = (map.camera_max_range_m || 4.5) * scaleM;
-        ctx.save();
-        ctx.translate(rx, ry);
-        ctx.rotate(-yaw);
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, fovRange, -fov / 2, fov / 2);
-        ctx.closePath();
-        ctx.fillStyle = "rgba(87,166,255,0.07)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(87,166,255,0.22)";
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([6, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-      }
-
-      const route = map.route || [];
-      if (route.length > 1) {
-        ctx.beginPath();
-        route.forEach((point, index) => {
-          const x = sx(point.x_m);
-          const y = sy(point.y_m);
-          if (index === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.strokeStyle = "#57a6ff";
-        ctx.lineWidth = 5;
-        ctx.lineJoin = "round";
-        ctx.lineCap = "round";
-        ctx.stroke();
-      }
-
-      const activeTargetId = map.active_target_id;
-      const allBalls = map.balls || [];
-
-      // pending balls (below seen_count threshold) — drawn first so confirmed render on top
-      allBalls.filter(b => !b.confirmed).forEach(ball => {
-        const x = sx(ball.x_m);
-        const y = sy(ball.y_m);
-        ctx.globalAlpha = 0.35;
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
-        ctx.fillStyle = ball.side === "across_net" ? "#8793a0" : "#d7e85f";
-        ctx.fill();
-        ctx.setLineDash([3, 3]);
-        ctx.strokeStyle = "rgba(255,255,255,0.4)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 1.0;
-      });
-
-      // confirmed balls
-      allBalls.filter(b => b.confirmed).forEach(ball => {
-        const x = sx(ball.x_m);
-        const y = sy(ball.y_m);
-        const isActive = ball.id === activeTargetId;
-        const radius = ball.planned ? 9 : 7;
-
-        // active target ring
-        if (isActive) {
-          ctx.beginPath();
-          ctx.arc(x, y, radius + 6, 0, Math.PI * 2);
-          ctx.strokeStyle = "#2fd08f";
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
-        }
-
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = ball.side === "across_net" ? "#8793a0" : (ball.visible_candidate ? "#2fd08f" : "#d7e85f");
-        ctx.fill();
-        ctx.strokeStyle = ball.source === "oak_depth" ? "#57a6ff" : (ball.planned ? "#ffffff" : "rgba(0,0,0,0.45)");
-        ctx.lineWidth = ball.source === "oak_depth" ? 3 : (ball.planned ? 3 : 1);
-        ctx.stroke();
-
-        if (ball.order) {
-          ctx.fillStyle = "#07110d";
-          ctx.font = "bold 12px system-ui";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(String(ball.order), x, y);
-        }
-      });
-
-      // robot arrow
-      if (robot.x_m !== undefined && robot.y_m !== undefined) {
-        const x = sx(robot.x_m);
-        const y = sy(robot.y_m);
-        const yaw = robot.yaw_rad || 0;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(-yaw);
-        ctx.fillStyle = "#ffbd5a";
-        ctx.beginPath();
-        ctx.moveTo(16, 0);
-        ctx.lineTo(-10, -9);
-        ctx.lineTo(-10, 9);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // summary box
-      const metrics = map.metrics || {};
-      const confirmedCount = allBalls.filter(b => b.confirmed && b.side !== "across_net").length;
-      const depthCount = allBalls.filter(b => b.confirmed && b.source === "oak_depth" && b.side !== "across_net").length;
-      const pendingCount = allBalls.filter(b => !b.confirmed && b.side !== "across_net").length;
-      const plannedCount = metrics.balls_collectable ?? 0;
-      const summaryLine1 = `confirmed ${confirmedCount} · depth ${depthCount} · planned ${plannedCount}${pendingCount > 0 ? ` · pending ${pendingCount}` : ""}`;
-      const summaryLine2 = metrics.total_distance_m != null
-        ? `distance ${fmt(metrics.total_distance_m, "m")} · replans ${metrics.planned_replans ?? 0}`
-        : "no route planned";
-      const boxW = Math.max(280, ctx.measureText(summaryLine1).width + 28);
-      ctx.fillStyle = "rgba(12,17,22,0.76)";
-      ctx.fillRect(pad + 10, pad + 10, boxW, 64);
-      ctx.fillStyle = "#eef4f8";
-      ctx.font = "16px system-ui";
-      ctx.textAlign = "left";
-      ctx.fillText(summaryLine1, pad + 24, pad + 36);
-      ctx.fillStyle = "#91a2b2";
-      ctx.font = "13px system-ui";
-      ctx.fillText(summaryLine2, pad + 24, pad + 58);
+      // Renderer extracted to collection_map.js (window.ControlPanelCollectionMap).
+      window.ControlPanelCollectionMap.render(diagnostics);
     }
     function renderHistory() {
       const history = diagnostics.history || [];
@@ -1885,246 +1844,10 @@
       refresh();
       setInterval(refresh, 1000);
     });
-    // Load vendor data at startup so the sidebar session indicator and command
-    // gating (updateCommandButtons) work before the Vendors view is opened.
-    // renderVendors() is null-safe for the not-yet-loaded Vendors view elements.
-    loadVendors();
-
-    // ── Vendors ───────────────────────────────────────────────────────────────
-    let vendorData = { vendors: [], courts: [], active: {} };
-
-    function escHtml(s) {
-      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    }
-
-    async function loadVendors() {
-      try {
-        const res = await fetch("/api/vendors", { cache: "no-store" });
-        vendorData = await res.json();
-      } catch (_) {}
-      renderVendors();
-    }
-
-    async function saveVendors(data) {
-      try {
-        await fetch("/api/vendors", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
-        vendorData = data;
-      } catch (_) {}
-      renderVendors();
-    }
-
-    function renderVendors() {
-      const { vendors, courts, active } = vendorData;
-
-      // Sidebar session indicator
-      const sidebarEl = document.getElementById("activeSessionSidebar");
-      if (sidebarEl) {
-        if (active && active.vendor_id) {
-          const v = vendors.find(x => x.id === active.vendor_id);
-          const c = courts.find(x => x.id === active.court_id);
-          sidebarEl.textContent = `Session: ${v ? v.name : "?"} · ${c ? c.name : "?"}`;
-          sidebarEl.style.color = "var(--accent)";
-        } else {
-          sidebarEl.textContent = "Session: none";
-          sidebarEl.style.color = "var(--muted)";
-        }
-      }
-
-      // Active session display banner
-      const displayEl = document.getElementById("activeSessionDisplay");
-      if (displayEl) {
-        if (active && active.vendor_id) {
-          const v = vendors.find(x => x.id === active.vendor_id);
-          const c = courts.find(x => x.id === active.court_id);
-          displayEl.innerHTML = `
-            <strong style="color:var(--accent);font-size:15px;">${escHtml(v ? v.name : "Unknown vendor")}</strong>
-            <span style="color:var(--muted);margin:0 8px;">/</span>
-            <span style="color:var(--ink);">${escHtml(c ? c.name : "Unknown court")}</span>
-            ${c && c.surface ? `<span style="color:var(--muted);font-size:12px;margin-left:10px;">${escHtml(c.surface)}</span>` : ""}
-            ${v && v.address ? `<div style="color:var(--muted);font-size:12px;margin-top:4px;">${escHtml(v.address)}</div>` : ""}
-          `;
-        } else {
-          displayEl.innerHTML = `<span style="color:var(--muted);font-size:13px;">No active session — select a vendor and court below.</span>`;
-        }
-      }
-
-      // Vendor dropdowns (activeVendorSelect + courtVendorSelect)
-      ["activeVendorSelect", "courtVendorSelect"].forEach(id => {
-        const sel = document.getElementById(id);
-        if (!sel) return;
-        const prevVal = sel.value;
-        sel.innerHTML = `<option value="">— select vendor —</option>` +
-          vendors.map(v => `<option value="${escHtml(v.id)}"${v.id === prevVal ? " selected" : ""}>${escHtml(v.name)}</option>`).join("");
-      });
-
-      // Pre-select active vendor and refresh court dropdown
-      const avSel = document.getElementById("activeVendorSelect");
-      if (avSel && !avSel.value && active && active.vendor_id) avSel.value = active.vendor_id;
-      updateCourtSelect("activeCourtSelect", avSel ? avSel.value : "");
-
-      // Vendor list
-      const vendorList = document.getElementById("vendorList");
-      if (vendorList) {
-        if (!vendors.length) {
-          vendorList.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;">Δεν υπάρχουν vendors ακόμα.</div>`;
-        } else {
-          vendorList.innerHTML = vendors.map(v => `
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);">
-              <div>
-                <strong>${escHtml(v.name)}</strong>
-                ${v.address ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;">${escHtml(v.address)}</div>` : ""}
-              </div>
-              <button onclick="deleteVendor('${escHtml(v.id)}')" style="background:rgba(255,107,95,0.12);border:1px solid rgba(255,107,95,0.28);color:var(--danger);border-radius:5px;padding:5px 10px;cursor:pointer;font:inherit;font-size:12px;flex-shrink:0;margin-left:12px;">Διαγραφή</button>
-            </div>
-          `).join("");
-        }
-      }
-
-      // Court list
-      const courtList = document.getElementById("courtList");
-      if (courtList) {
-        if (!courts.length) {
-          courtList.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;">Δεν υπάρχουν γήπεδα ακόμα.</div>`;
-        } else {
-          courtList.innerHTML = courts.map(c => {
-            const v = vendors.find(x => x.id === c.vendor_id);
-            const isActive = active && active.court_id === c.id;
-            return `
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px ${isActive ? "8px" : "0"};border-bottom:1px solid var(--line);${isActive ? "background:rgba(47,208,143,0.05);border-radius:6px;" : ""}">
-                <div>
-                  <strong>${escHtml(c.name)}</strong>${isActive ? ` <span style="font-size:11px;color:var(--accent);">● active</span>` : ""}
-                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">${escHtml(v ? v.name : "—")} · ${escHtml(c.surface || "—")}</div>
-                  ${c.notes ? `<div style="font-size:12px;color:var(--muted);">${escHtml(c.notes)}</div>` : ""}
-                </div>
-                <button onclick="deleteCourt('${escHtml(c.id)}')" style="background:rgba(255,107,95,0.12);border:1px solid rgba(255,107,95,0.28);color:var(--danger);border-radius:5px;padding:5px 10px;cursor:pointer;font:inherit;font-size:12px;flex-shrink:0;margin-left:12px;">Διαγραφή</button>
-              </div>
-            `;
-          }).join("");
-        }
-      }
-      updateCommandButtons();
-    }
-
-    function updateCourtSelect(selectId, vendorId) {
-      const sel = document.getElementById(selectId);
-      if (!sel) return;
-      const { courts, active } = vendorData;
-      const list = vendorId ? courts.filter(c => c.vendor_id === vendorId) : courts;
-      sel.innerHTML = `<option value="">— select court —</option>` +
-        list.map(c => `<option value="${escHtml(c.id)}"${c.id === (active && active.court_id) ? " selected" : ""}>${escHtml(c.name)}</option>`).join("");
-    }
-
-    function deleteVendor(id) {
-      const d = JSON.parse(JSON.stringify(vendorData));
-      d.vendors = d.vendors.filter(v => v.id !== id);
-      d.courts = d.courts.filter(c => c.vendor_id !== id);
-      if (d.active && d.active.vendor_id === id) d.active = {};
-      saveVendors(d);
-    }
-
-    function deleteCourt(id) {
-      const d = JSON.parse(JSON.stringify(vendorData));
-      d.courts = d.courts.filter(c => c.id !== id);
-      if (d.active && d.active.court_id === id) d.active = Object.assign({}, d.active, { court_id: null });
-      saveVendors(d);
-    }
-
-    // Wired after the Vendors view partial is injected (see loadView). The
-    // setView() handler calls loadVendors() on every open to refresh the data.
-    VIEW_INIT.vendors = function () {
-      const activeVendorSelect = document.getElementById("activeVendorSelect");
-      if (activeVendorSelect) activeVendorSelect.addEventListener("change", function () {
-        updateCourtSelect("activeCourtSelect", this.value);
-      });
-
-      const activeSessionForm = document.getElementById("activeSessionForm");
-      if (activeSessionForm) activeSessionForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const vendorId = document.getElementById("activeVendorSelect").value;
-        const courtId = document.getElementById("activeCourtSelect").value;
-        if (!vendorId || !courtId) return;
-        const d = JSON.parse(JSON.stringify(vendorData));
-        d.active = { vendor_id: vendorId, court_id: courtId };
-        saveVendors(d);
-      });
-
-      const addVendorForm = document.getElementById("addVendorForm");
-      if (addVendorForm) addVendorForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const name = document.getElementById("vendorName").value.trim();
-        const address = document.getElementById("vendorAddress").value.trim();
-        if (!name) return;
-        const d = JSON.parse(JSON.stringify(vendorData));
-        d.vendors.push({ id: "v" + Date.now(), name, address });
-        saveVendors(d);
-        this.reset();
-      });
-
-      const addCourtForm = document.getElementById("addCourtForm");
-      if (addCourtForm) addCourtForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const vendor_id = document.getElementById("courtVendorSelect").value;
-        const name = document.getElementById("courtName").value.trim();
-        const surface = document.getElementById("courtSurface").value;
-        const notes = document.getElementById("courtNotes").value.trim();
-        if (!vendor_id || !name) return;
-        d.courts.push({ id: "c" + Date.now(), vendor_id, name, surface, notes });
-        saveVendors(d);
-        this.reset();
-      });
-    };
-
-    // ── Survey history ────────────────────────────────────────────────────────
-    async function loadSurveys() {
-      try {
-        const res = await fetch("/api/surveys", { cache: "no-store" });
-        const data = await res.json();
-        renderSurveys(data.surveys || []);
-      } catch (_) {}
-    }
-
-    function renderSurveys(surveys) {
-      const tbody = document.getElementById("surveyRows");
-      const empty = document.getElementById("surveyEmpty");
-      const table = document.getElementById("surveyTable");
-      if (!surveys.length) {
-        table.style.display = "none";
-        empty.style.display = "block";
-        return;
-      }
-      table.style.display = "";
-      empty.style.display = "none";
-      tbody.innerHTML = surveys.map(s => {
-        const dt = s.surveyed_at ? new Date(s.surveyed_at * 1000).toLocaleString() : "—";
-        const status = s.status || "SUCCESS";
-        const reasonTip = s.failure_reason ? ` title="${escHtml(s.failure_reason)}"` : "";
-        const statusEl = status === "SUCCESS"
-          ? `<span style="color:var(--accent);font-size:11px;font-weight:600;">SUCCESS</span>`
-          : `<span style="color:var(--danger);font-size:11px;font-weight:600;cursor:help;"${reasonTip}>FAILED</span>`;
-        const lengthM = s.court_length_m != null ? s.court_length_m.toFixed(2) : (
-          s.east_x != null && s.west_x != null ? (s.east_x - s.west_x).toFixed(2) : "—");
-        const widthM = s.court_width_m != null ? s.court_width_m.toFixed(2) : (
-          s.north_y != null && s.south_y != null ? (s.north_y - s.south_y).toFixed(2) : "—");
-        const ro = (v) => (v != null && Number.isFinite(v) ? v.toFixed(2) : "—");
-        return `<tr>
-          <td style="color:var(--muted);">${s.id}</td>
-          <td>${dt}</td>
-          <td>${escHtml(s.vendor_name || "—")}</td>
-          <td>${escHtml(s.court_name || "—")}</td>
-          <td>${statusEl}</td>
-          <td style="color:var(--muted);font-size:11px;">${escHtml(s.survey_type || "—")}</td>
-          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${lengthM}</td>
-          <td style="color:var(--accent-2);font-weight:600;font-variant-numeric:tabular-nums;">${widthM}</td>
-          <td style="font-variant-numeric:tabular-nums;">${ro(s.near_baseline_to_fence_m)}</td>
-          <td style="font-variant-numeric:tabular-nums;">${ro(s.far_baseline_to_fence_m)}</td>
-          <td style="font-variant-numeric:tabular-nums;">${ro(s.left_sideline_to_fence_m)}</td>
-          <td style="font-variant-numeric:tabular-nums;">${ro(s.right_sideline_to_fence_m)}</td>
-          <td style="color:var(--muted);">${s.obstacle_count ?? "—"}</td>
-          <td style="color:var(--muted);">${s.point_count ?? "—"}</td>
-        </tr>`;
-      }).join("");
-    }
+    // Load vendor/session data at startup so sidebar status and command gating
+    // work before the Vendors view is opened.
+    window.ControlPanelVendors.setOnChange(updateCommandButtons);
+    window.ControlPanelVendors.load();
+    VIEW_INIT.vendors = function () { window.ControlPanelVendors.initView(); };
+    // Give the Nav Test module access to live diagnostics and the refresh loop.
+    window.ControlPanelNavTest.init({ getDiagnostics: () => diagnostics, refresh, log: addNavTestLog, onGoal: window.ControlPanelCollectionMap.setGoal });

@@ -60,6 +60,8 @@ docker compose --profile cad up openscad-gui # OpenSCAD GUI on port 6081
 | File | Role |
 | --- | --- |
 | `controller_node.py` | Main ROS 2 node; integrates survey + motion; publishes cmd_vel and status |
+| `perception_node.py` | Simulated OAK-D AI pipeline: runs the NN detector on synchronized Gazebo RGB/depth and publishes the canonical `BallDetectionArray` contract consumed by the controller. See `docs/perception-oakd-sim-el.md` |
+| `ball_detector.py` | Required neural ball detector: `YoloOnnxBallDetector` (YOLOv8/v11n via ONNX Runtime). Missing/invalid models fail startup; there is no HSV fallback. |
 | `court_survey_v2_node.py` | **Active** survey coverage controller (`INIT→FIND_NET→COVERAGE→SAVING_MAP→DONE/FAILED`); writes `runtime/court_boundary.json` (schema `court_knowledge_model/v2`) |
 | `court_extraction.py` | Pure extraction functions (net/posts, fence rectangle, court lines, obstacles, run-off distances, fail-loud checks) — offline-testable |
 | `court_coverage.py` | Vantage points (8 + return pass) and recoverable-failure classifier |
@@ -80,6 +82,20 @@ docker compose --profile cad up openscad-gui # OpenSCAD GUI on port 6081
 | `replay_ros2_lidar_survey.py` | Deterministic replay of recorded survey ticks |
 | `replay_survey_cmd_vel.py` | Replay recorded cmd_vel commands |
 | `replay_navigation_fixtures.py` | Replay navigation fixtures |
+
+### Web console architecture (`scripts/control_panel.py` + `tennis_robot/console/`)
+
+**Rule — keep the console layered; do not put business logic back in the HTTP handler.** The browser console follows a Controller → Application → Services structure with constructor dependency injection and no global/class-level mutable state:
+
+| Layer | Where | Responsibility |
+| --- | --- | --- |
+| Entrypoint | `scripts/control_panel.py` | Parse args, build `ConsoleConfig` + stores + services + `ConsoleApp` + `ConsoleServer`, serve. The only wiring point. |
+| Controller | `console/server.py` (`ControlPanelHandler`) | HTTP only: parse, validate, route via the `GET_JSON_ROUTES` table, format JSON. Reads the app from `self.server.app`. No business logic. |
+| Application | `console/app.py` (`ConsoleApp`) | Use-case orchestration across services (e.g. `nav_test`, `build_diagnostics`, `set_command`). Returns transport-agnostic results (e.g. `NavTestOutcome.kind`); the controller maps kind→HTTP status. |
+| Services | `console/*_service.py` | One capability each, owning their own I/O, unaware of each other: `RosService` (all ros2 CLI: survey launch + nav goal/cancel), `SurveyService` (`court_boundary.json`/`court_survey_live.json` + fence bounds), `PathService` (`robot_path.json`), `CameraService` (webcam + CV), `DatabaseService` (DuckDB façade). |
+| Config | `console/config.py` (`ConsoleConfig`) | Injected paths + ROS prelude; no service derives paths from `__file__` or globals. |
+
+When adding an endpoint: add a use-case method on `ConsoleApp`, add the route to the controller (a `GET_JSON_ROUTES` entry for simple reads), and keep any cross-service logic in the app, not the handler. The public HTTP API and JSON shapes are a contract consumed by `scripts/control_panel/*.js`, replay scripts and the controller node — keep them stable. Tests: `tests/test_console_app.py` (run without ROS/webcam/DuckDB via fakes). Note: ROS-dependent runs happen in WSL 2.
 
 ### IPC: web UI ↔ robot
 

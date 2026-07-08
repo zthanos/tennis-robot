@@ -16,7 +16,9 @@
       <nav aria-label="Console sections">
         <button class="active" data-view="dashboard">Dashboard</button>
         <button data-view="control">Control</button>
-        <button data-view="sensors">Sensor Views</button>
+        <button data-view="survey">Survey Workspace</button>
+        <button data-view="collection">Collection Workspace</button>
+        <button data-view="sensors">Diagnostics</button>
         <button data-view="telemetry">Telemetry</button>
         <button data-view="stats">Command Stats</button>
         <button data-view="history">History</button>
@@ -42,6 +44,8 @@
       <!-- View partials are lazy-loaded into these containers from /static/views/<id>.html -->
       <section id="dashboard" class="view active" data-partial="dashboard"></section>
       <section id="control" class="view" data-partial="control"></section>
+      <section id="survey" class="view" data-partial="survey"></section>
+      <section id="collection" class="view" data-partial="collection"></section>
       <section id="sensors" class="view" data-partial="sensors"></section>
       <section id="telemetry" class="view" data-partial="telemetry"></section>
       <section id="stats" class="view" data-partial="stats"></section>
@@ -52,7 +56,12 @@
     </main>
   </div>
 
+  <script src="/static/console_utils.js"></script>
   <script src="/static/survey_map_v2.js"></script>
+  <script src="/static/vendors.js"></script>
+  <script src="/static/survey_history.js"></script>
+  <script src="/static/nav_test.js"></script>
+  <script src="/static/collection_map.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

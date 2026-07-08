@@ -40,11 +40,17 @@ services:
     # (rviz service below: docker compose --profile gazebo up gazebo rviz).
     # Set GAZEBO_HEADLESS=false to try the GUI.
     # One command brings up everything: sim + controllers + twist_mux + control
-    # panel (sim.launch.py, backgrounded) and then SLAM mapping (foreground).
+    # panel (sim.launch.py) and SLAM mapping (backgrounded), then the Nav2 core
+    # (navigation.launch.py, foreground) so the navigate_to_pose action server is
+    # up for collection lane navigation.
+    # docker_dev_entry.sh first colcon-builds the mounted /workspace/ros2_ws as
+    # an overlay (incremental, persisted in ros2_ws/{build,install}_docker) so
+    # Python/launch edits only need `up`, not an image rebuild. Set
+    # DEV_OVERLAY=false to run the image-baked install only.
     command:
       - bash
       - -lc
-      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; ros2 launch tennis_robot sim.launch.py headless:=${GAZEBO_HEADLESS:-true} & sleep 12; ros2 launch tennis_robot slam_mapping.launch.py"
+      - "bash /workspace/scripts/docker_dev_entry.sh"
     ports:
       - "8081:8081"   # web control panel
     devices:
@@ -64,6 +70,11 @@ services:
       - PULSE_SERVER=/mnt/wslg/PulseServer
       - LD_LIBRARY_PATH=/usr/lib/wsl/lib
       - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      # GPU (D3D12) only works for OFFSCREEN/EGL (headless sensors). Forcing
+      # GALLIUM_DRIVER=d3d12 here breaks the GLX path used by the Gazebo/RViz GUI
+      # on WSLg (drisw/GLXCreateNewContext fails). So it is set per-run only in
+      # headless mode via GALLIUM_DRIVER below, not globally.
+      - "GALLIUM_DRIVER=${GALLIUM_DRIVER:-}"
       # The discrete RX 7900 XTX is not enumerated inside the container; only the
       # integrated 890M is reachable via WSL. 890M is plenty for the sim.
       - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
@@ -77,15 +88,31 @@ services:
       # callback never fired) -> robot accepted Twist but never moved.
       # Verified 2026-06-12 via ~/cmd_vel_out A/B test; Fast DDS delivers fine.
       - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+      # UDP-only Fast DDS: SHM leaves stale /dev/shm locks after node crashes
+      # ("Failed init_port ... open_and_lock_file failed" spam on restart).
+      - FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/docker/ros2/fastdds-no-shm.xml
       - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
+      - NAV2_START_DELAY_S=${NAV2_START_DELAY_S:-25}
+      - GAZEBO_HEADLESS=${GAZEBO_HEADLESS:-true}
+      - SLAM_MODE=${SLAM_MODE:-mapping}
+      - DEV_OVERLAY=${DEV_OVERLAY:-true}
+      - GAZEBO_GPU=${GAZEBO_GPU:-false}
       - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
+      - COLLECTION_EVENT_LOG_FILE=/workspace/runtime/collection_events.jsonl
+      - INTAKE_LIP_RAISE_M=${INTAKE_LIP_RAISE_M:-0.0}
+      - INTAKE_ROLLER_X_OFFSET_M=${INTAKE_ROLLER_X_OFFSET_M:-0.0}
+      - INTAKE_ROLLER_Z_OFFSET_M=${INTAKE_ROLLER_Z_OFFSET_M:-0.0}
       - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
       - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
       - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
       - COLLECTOR_ALIGN_ANGULAR_GAIN=1.4
-      - COLLECTOR_APPROACH_SPEED_M_S=0.12
-      - COLLECTOR_CAPTURE_SPEED_M_S=0.05
+      # Slightly faster bench/sim collection pass; still slow enough to see
+      # the roller engagement in the RViz FrontFollow view.
+      - COLLECTOR_APPROACH_SPEED_M_S=0.16
+      - COLLECTOR_CAPTURE_SPEED_M_S=0.07
       - COLLECTOR_REVERSE_SPEED_M_S=0.08
+      # Windows host bridge for the hardware-validated Arduino collector on COM8.
+      - COLLECTOR_SERIAL_BRIDGE=${COLLECTOR_SERIAL_BRIDGE:-host.docker.internal:8091}
       - SURVEY_DRIVE_SPEED_M_S=0.24
       - SURVEY_TURN_SPEED_RAD_S=0.75
     profiles: ["gazebo"]
@@ -103,7 +130,10 @@ services:
     command:
       - bash
       - -lc
-      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; rviz2 -d /workspace/docker/ros2/tennis_robot.rviz"
+      # Source the dev overlay built by the gazebo container (shared /workspace
+      # mount) so package://tennis_robot meshes added after the image build
+      # still resolve in RViz.
+      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; [ -f /workspace/ros2_ws/install_docker/local_setup.sh ] && . /workspace/ros2_ws/install_docker/local_setup.sh; rviz2 -d /workspace/docker/ros2/tennis_robot.rviz"
     devices:
       - /dev/dxg
     volumes:
@@ -120,11 +150,15 @@ services:
       - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
       - PULSE_SERVER=/mnt/wslg/PulseServer
       - LD_LIBRARY_PATH=/usr/lib/wsl/lib
-      - MESA_LOADER_DRIVER_OVERRIDE=d3d12
-      - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
-      - LIBGL_ALWAYS_SOFTWARE=0
+      # RViz is a GLX GUI: the d3d12 Mesa driver crashes on the GLX path
+      # (segfault/exit 139), so NEVER inherit GALLIUM_DRIVER here — even when
+      # the sim runs headless with GPU. RViz always renders in software.
+      - MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+      - GALLIUM_DRIVER=
+      - LIBGL_ALWAYS_SOFTWARE=1
       - ROS_DOMAIN_ID=42
       - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+      - FASTRTPS_DEFAULT_PROFILES_FILE=/workspace/docker/ros2/fastdds-no-shm.xml
       - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
     profiles: ["gazebo", "gazebo-rec"]
 
@@ -159,6 +193,11 @@ services:
       - PULSE_SERVER=/mnt/wslg/PulseServer
       - LD_LIBRARY_PATH=/usr/lib/wsl/lib
       - MESA_LOADER_DRIVER_OVERRIDE=d3d12
+      # GPU (D3D12) only works for OFFSCREEN/EGL (headless sensors). Forcing
+      # GALLIUM_DRIVER=d3d12 here breaks the GLX path used by the Gazebo/RViz GUI
+      # on WSLg (drisw/GLXCreateNewContext fails). So it is set per-run only in
+      # headless mode via GALLIUM_DRIVER below, not globally.
+      - "GALLIUM_DRIVER=${GALLIUM_DRIVER:-}"
       # The discrete RX 7900 XTX is not enumerated inside the container; only the
       # integrated 890M is reachable via WSL. 890M is plenty for the sim.
       - "MESA_D3D12_DEFAULT_ADAPTER_NAME=${MESA_D3D12_DEFAULT_ADAPTER_NAME:-890M}"
@@ -169,6 +208,9 @@ services:
       - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
       - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
       - ROBOT_COMMAND_FILE=/workspace/runtime/robot_command.json
+      - INTAKE_LIP_RAISE_M=${INTAKE_LIP_RAISE_M:-0.0}
+      - INTAKE_ROLLER_X_OFFSET_M=${INTAKE_ROLLER_X_OFFSET_M:-0.0}
+      - INTAKE_ROLLER_Z_OFFSET_M=${INTAKE_ROLLER_Z_OFFSET_M:-0.0}
       - ROBOT_MAX_WHEEL_SPEED_RAD_S=3.5
       - COLLECTOR_SCAN_ANGULAR_SPEED_RAD_S=0.35
       - COLLECTOR_MAX_ALIGN_ANGULAR_SPEED_RAD_S=0.45
@@ -185,6 +227,27 @@ services:
       - GAZEBO_HEADLESS=${GAZEBO_HEADLESS:-false}
     command: ["bash", "-c", ". /opt/ros/humble/setup.sh && . /ros2_ws/install/setup.sh && mkdir -p /workspace/runtime && (python3 /workspace/scripts/survey_replay_record.py --out $${SURVEY_REPLAY_FILE} --duration-s $${SURVEY_REPLAY_DURATION_S} > /workspace/runtime/survey_replay_record.out.log 2> /workspace/runtime/survey_replay_record.err.log &) && ros2 launch tennis_robot sim.launch.py headless:=$${GAZEBO_HEADLESS:-false}"]
     profiles: ["gazebo-rec"]
+
+  foxglove:
+    image: tennis-robot-gazebo
+    build:
+      context: .
+      dockerfile: Dockerfile.gazebo
+    command:
+      - bash
+      - -lc
+      - ". /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh; ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765"
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./docker/ros2/cyclonedds-gazebo.xml:/cyclonedds-gazebo.xml:ro
+    networks:
+      - ros2-net
+    environment:
+      - ROS_DOMAIN_ID=42
+      - "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+      - CYCLONEDDS_URI=/cyclonedds-gazebo.xml
+    profiles: ["gazebo", "gazebo-rec"]
 
   openscad:
     image: openscad/openscad:bookworm

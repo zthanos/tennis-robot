@@ -7,11 +7,8 @@ back-end are in use. To move from Gazebo to the real robot, nothing here changes
 
 Neutral command contract (subscribed):
     /tennis_robot/cmd_drive      geometry_msgs/Twist     base velocity command
-    /tennis_robot/cmd_collector  std_msgs/Float64        intake roller velocity (rad/s)
-
 ros2_control contract (published):
     /diff_drive_controller/cmd_vel_unstamped       geometry_msgs/Twist
-    /lift_wheel_velocity_controller/commands       std_msgs/Float64MultiArray
 
 A watchdog stops the robot if no drive command arrives within
 DRIVE_TIMEOUT_S, so a stalled upstream node can never leave the base driving.
@@ -27,7 +24,6 @@ import os
 import rclpy
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
-from std_msgs.msg import Float64, Float64MultiArray
 
 
 def _env(name: str, default: str) -> str:
@@ -47,25 +43,17 @@ class DriveActuatorNode(Node):
 
         # Neutral (upstream) command topics
         cmd_drive_topic = _env("ACTUATOR_CMD_DRIVE_TOPIC", "/tennis_robot/cmd_drive")
-        cmd_collector_topic = _env("ACTUATOR_CMD_COLLECTOR_TOPIC", "/tennis_robot/cmd_collector")
-
         # ros2_control command topics
         diff_drive_topic = _env(
             "ACTUATOR_DIFF_DRIVE_TOPIC", "/diff_drive_controller/cmd_vel_unstamped"
         )
-        lift_wheel_topic = _env(
-            "ACTUATOR_LIFT_WHEEL_TOPIC", "/lift_wheel_velocity_controller/commands"
-        )
-
         self._drive_timeout_s = _env_float("ACTUATOR_DRIVE_TIMEOUT_S", 0.5)
 
         # Publishers to ros2_control
         self._drive_pub = self.create_publisher(Twist, diff_drive_topic, 10)
-        self._lift_pub = self.create_publisher(Float64MultiArray, lift_wheel_topic, 10)
 
         # Subscriptions from the behavior stack
         self.create_subscription(Twist, cmd_drive_topic, self._on_drive_cmd, 10)
-        self.create_subscription(Float64, cmd_collector_topic, self._on_collector_cmd, 10)
 
         # Watchdog: stop the base if upstream goes silent
         self._last_drive_stamp = self.get_clock().now()
@@ -75,7 +63,6 @@ class DriveActuatorNode(Node):
         self.get_logger().info(
             "drive_actuator_node up: "
             f"{cmd_drive_topic} -> {diff_drive_topic}, "
-            f"{cmd_collector_topic} -> {lift_wheel_topic}, "
             f"watchdog={self._drive_timeout_s}s"
         )
 
@@ -83,9 +70,6 @@ class DriveActuatorNode(Node):
         self._last_drive_stamp = self.get_clock().now()
         self._drive_active = True
         self._drive_pub.publish(msg)
-
-    def _on_collector_cmd(self, msg: Float64) -> None:
-        self._lift_pub.publish(Float64MultiArray(data=[float(msg.data)]))
 
     def _watchdog_tick(self) -> None:
         if not self._drive_active:

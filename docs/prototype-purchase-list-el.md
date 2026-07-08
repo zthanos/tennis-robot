@@ -98,7 +98,7 @@ Link: https://grobotronics.com/metal-dc-geared-motor-w-encoder-12v-122rpm-38kg.c
 | No-load speed | 122 RPM |
 | Rated torque | 38 kg.cm |
 | Encoder | Ναι |
-| Wheel target | 180 mm driven wheels |
+| Wheel target | 170 mm driven wheels (HPI Dirt Buster Block, αγοράστηκαν) |
 
 Αυτό το setup αλλάζει τη βάση σε 4WD differential/skid-steer, χωρίς μπροστινούς
 casters. Με τροχό 180 mm και 122 RPM η θεωρητική ταχύτητα είναι περίπου
@@ -112,37 +112,28 @@ casters. Με τροχό 180 mm και 122 RPM η θεωρητική ταχύτ�
 σε κάθε drive motor ή τουλάχιστον αξιόπιστο encoder ανά πλευρά.
 ```
 
-Να ρωτήσουμε στο μαγαζί:
+Specs επιβεβαιωμένα (DFRobot FIT0403):
 
-- Έχει encoder; πόσα pulses per revolution;
-- Ποια είναι η διάμετρος και το σχήμα του shaft;
-- Ποιο είναι το rated current και stall current;
-- Υπάρχει matching wheel hub/coupler για τον άξονα;
+- Encoder: ναι, quadrature· gearbox 90:1.
+- **Shaft: 6 mm D-shaft** (επιβεβαιωμένο από datasheet + μέτρηση).
+- Rated/stall current: ~7 A stall @ 12 V.
+- Hub: **απαιτείται adapter 6 mm D-shaft → 24 mm hex** (βλ. ordered-parts.md → Parts To Order).
 
 ### Driven Wheels
 
-Ζητάμε:
+**ΑΓΟΡΑΣΤΗΚΑΝ:** 4 × HPI Racing Dirt Buster Block Tire S Compound on Black Wheel
+(Baja 5B Rear, 170x80 mm, μονταρισμένα με foam inserts). 2 ζευγάρια, μεταχειρισμένα
+από RC offroad (8 kg, 90+ χλμ/ώ τελική) — άφθονη αντοχή για συλλέκτη μπαλών.
 
-```text
-4 τεμάχια driven wheels 180 mm διάμετρο
-```
-
-Προτίμηση:
-
-| Χαρακτηριστικό | Στόχος |
+| Χαρακτηριστικό | Πραγματικό |
 |---|---|
-| Διάμετρος | 180 mm |
-| Πλάτος | 35-55 mm |
-| Πάτημα | rubber / PU / TPU, όχι σκληρό πλαστικό |
-| Hub | να ταιριάζει με 6 mm ή 8 mm D-shaft |
-| Στήριξη | set screw, clamp hub, ή adapter hub |
+| Διάμετρος | 170 mm (radius 0.085 → ενημερώθηκε στο URDF + controllers.yaml) |
+| Πλάτος | 80 mm |
+| Πάτημα | rubber, S (soft) compound — καλό grip σε clay |
+| Hub | **24 mm hex** (πρότυπο Baja 5B) |
+| Στήριξη | **24 mm hex adapter, 6 mm bore (D-shaft)** προς τον FIT0403 (βλ. ordered-parts.md → Parts To Order) |
 
-Αν δεν βρεθεί έτοιμη ρόδα:
-
-```text
-Παίρνουμε hubs/couplers για τον άξονα και κρατάμε το CAD για printed wheel core
-με rubber/TPU sleeve.
-```
+> Επόμενο βήμα: παραγγελία 4× hub adapters **6 mm D-shaft → 24 mm hex**.
 
 ### Front Casters
 
@@ -448,7 +439,8 @@ candidate Lenovo i5 mini-PC. Πλήρες σκεπτικό και κόστος �
 ```text
 Raspberry Pi 5, 16GB LPDDR4X
 Broadcom BCM2712, quad-core Cortex-A76 @ 2.4 GHz
-M.2 NVMe HAT + επίσημος Raspberry Pi SSD 256GB (boot από NVMe, ΟΧΙ microSD)
+PCIe M.2 NVMe board + Silicon Power P34A60 256GB 2280
+(`SP256GBP34A60M28AY`) ως υποψήφιο boot drive
 Active cooler (υποχρεωτικός σε αυτό το φορτίο)
 Τροφοδοσία: 5V/5A — από την μπαταρία μέσω 12V->5V buck converter 5A+
 ```
@@ -484,7 +476,8 @@ Active cooler (υποχρεωτικός σε αυτό το φορτίο)
 - ότι το metal case του kit αφήνει πρόσβαση στις **4 θύρες USB** (OAK-D, LiDAR,
   Mega, Nano), αλλιώς βγάζουμε τη board από το case για το on-robot mount,
   (ο IMU MPU6050 είναι στο I2C του Mega, όχι στα GPIO του Pi — δες hardware-bom-el.md §5),
-- ότι ο NVMe SSD είναι Pi-5-compatible (δες incompatibility list στο BOM),
+- ότι ο Silicon Power P34A60 αναγνωρίζεται και περνά boot/reboot/SMART/stress
+  test με το συγκεκριμένο PCIe M.2 board (δες validation steps στο BOM),
 - αν αντέχει κραδασμούς ή χρειάζεται rubber isolation/standoffs,
 - επαρκές Wi-Fi για το telemetry link (αλλιώς external antenna/USB).
 
@@ -539,8 +532,10 @@ production-like εναλλακτική: 2 dual-channel quality drivers ή 4 sing
 1 LiFePO4 charger 14.6V 5A
 1 12V DC-DC buck-boost regulator για σταθερό accessory 12V rail, αν χρειαστεί
 1 12V -> 5V buck converter 5A+ για SBC/camera/sensors
-1 Raspberry Pi 5 16GB kit (M.2 NVMe HAT + active cooler + 27W PSU + metal case) ως on-board compute
-1 επίσημος Raspberry Pi SSD 256GB (NVMe, Pi-5-compatible) — boot drive, ΟΧΙ microSD
+1 db-tronic Raspberry Pi 5 16GB PCIe M.2 NVMe Set, 64GB Edition
+  (M.2 board + active cooler + 27W PSU + metal case), Amazon basket €385,54
+1 Silicon Power P34A60 256GB NVMe M.2 PCIe Gen3x4 2280
+  (SP256GBP34A60M28AY), Amazon basket €50,99 — boot candidate, ΟΧΙ ακόμη validated
 1 emergency stop switch
 1 fuse holder + ασφάλειες
 κόκκινο/μαύρο καλώδιο 2.5mm² για μπαταρία/motors

@@ -1,5 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="drive_motor" params="side y motor_x shaft_z radius length mass">
+    <link name="${side}_motor_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${length}" axis="y"/>
+      <collision name="motor_col">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+      </collision>
+      <visual name="motor_vis">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+    </link>
+    <joint name="${side}_motor_mount_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${side}_motor_link"/>
+      <origin xyz="${motor_x} ${y} ${shaft_z}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
   <xacro:macro name="drive_wheel" params="side y wheel_x wheel_z radius width mass">
     <link name="${side}_wheel_link">
       <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="y"/>
@@ -37,16 +57,64 @@
        the drive_wheel macro above). The old swivel-caster macro and its scrub
        resistance are gone. -->
 
-  <xacro:macro name="intake_roller" params="x z radius width mass">
-    <link name="lift_wheel_link">
-      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="y"/>
-      <collision name="col">
-        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+  <!-- One rubber intake paddle: a thin box on its own sprung revolute joint
+       so it bends RADIALLY when squeezing the ball. Spring params are
+       injected into the generated SDF by generate_robot_urdf.py (URDF cannot
+       express joint springs). One contact sensor per paddle, matching the
+       pre-existing /gz/roller_contact_0..7 bridges. -->
+  <xacro:macro name="intake_paddle" params="index angle hub_r paddle_len width thickness">
+    <link name="paddle_${index}_link">
+      <xacro:box_inertial mass="0.012" x="${paddle_len}" y="${width}" z="${thickness}"/>
+      <collision name="paddle_${index}_col">
+        <origin xyz="${paddle_len / 2} 0 0" rpy="0 0 0"/>
+        <geometry><box size="${paddle_len} ${width} ${thickness}"/></geometry>
       </collision>
-      <visual name="vis">
+      <visual name="paddle_${index}_vis">
+        <origin xyz="${paddle_len / 2} 0 0" rpy="0 0 0"/>
+        <geometry><box size="${paddle_len} ${width} ${thickness}"/></geometry>
+        <material name="intake_orange"/>
+      </visual>
+    </link>
+    <joint name="paddle_${index}_joint" type="revolute">
+      <parent link="lift_wheel_link"/>
+      <child link="paddle_${index}_link"/>
+      <!-- Root on the hub surface, +x pointing radially outward. -->
+      <origin xyz="${hub_r * cos(angle)} 0 ${hub_r * sin(angle)}" rpy="0 ${-angle} 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-1.2" upper="1.2" effort="10" velocity="60"/>
+      <dynamics damping="0.02"/>
+    </joint>
+    <gazebo reference="paddle_${index}_link">
+      <sensor name="roller_contact_${index}" type="contact">
+        <always_on>true</always_on><update_rate>100</update_rate>
+        <topic>/gz/roller_contact_${index}</topic>
+        <contact><collision>paddle_${index}_col</collision></contact>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="intake_roller" params="x z radius width mass">
+    <!-- Paddle roller: hub + 8 sprung rubber paddles. A rigid fixed-axis
+         cylinder cannot friction-capture a rigid ball, and a 1-DOF sprung
+         carriage only yields VERTICALLY while the ball's orbit around the
+         roller needs ~2 mm of RADIAL compliance at every angle (the vertical
+         travel required blows up to 21+ mm behind the axis — every capture
+         stalled at exactly fwd=-75 mm; intake-debug-log #13). Per-paddle
+         springs give true radial compliance like the real foam surface:
+         paddle tips sweep radius+5 mm and bend back locally around the ball.
+         This restores the project's ORIGINAL paddle-wheel design — the
+         roller_contact_0..7 bridges are its infrastructure. -->
+    <xacro:property name="hub_radius" value="0.025"/>
+    <xacro:property name="paddle_length" value="${radius + 0.005 - hub_radius}"/>
+    <link name="lift_wheel_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${hub_radius}" length="${width}" axis="y"/>
+      <collision name="roller_col">
         <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+        <geometry><cylinder radius="${hub_radius}" length="${width}"/></geometry>
+      </collision>
+      <visual name="roller_vis">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${hub_radius}" length="${width}"/></geometry>
         <material name="rubber_black"/>
       </visual>
     </link>
@@ -57,9 +125,25 @@
       <axis xyz="0 1 0"/>
     </joint>
     <gazebo reference="lift_wheel_link">
-      <mu1>1.5</mu1>
-      <mu2>1.5</mu2>
+      <mu1>0.8</mu1>
+      <mu2>0.8</mu2>
     </gazebo>
+    <xacro:intake_paddle index="0" angle="${0 * pi / 4}" hub_r="${hub_radius}"
+        paddle_len="${paddle_length}" width="${width}" thickness="0.004"/>
+    <xacro:intake_paddle index="1" angle="${1 * pi / 4}" hub_r="${hub_radius}"
+        paddle_len="${paddle_length}" width="${width}" thickness="0.004"/>
+    <xacro:intake_paddle index="2" angle="${2 * pi / 4}" hub_r="${hub_radius}"
+        paddle_len="${paddle_length}" width="${width}" thickness="0.004"/>
+    <xacro:intake_paddle index="3" angle="${3 * pi / 4}" hub_r="${hub_radius}"
+        paddle_len="${paddle_length}" width="${width}" thickness="0.004"/>
+    <xacro:intake_paddle index="4" angle="${4 * pi / 4}" hub_r="${hub_radius}"
+        paddle_len="${paddle_length}" width="${width}" thickness="0.004"/>
+    <xacro:intake_paddle index="5" angle="${5 * pi / 4}" hub_r="${hub_radius}"
+        paddle_len="${paddle_length}" width="${width}" thickness="0.004"/>
+    <xacro:intake_paddle index="6" angle="${6 * pi / 4}" hub_r="${hub_radius}"
+        paddle_len="${paddle_length}" width="${width}" thickness="0.004"/>
+    <xacro:intake_paddle index="7" angle="${7 * pi / 4}" hub_r="${hub_radius}"
+        paddle_len="${paddle_length}" width="${width}" thickness="0.004"/>
   </xacro:macro>
 
   <!--

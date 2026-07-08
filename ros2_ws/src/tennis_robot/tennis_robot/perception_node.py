@@ -1,13 +1,32 @@
-"""ROS 2 perception node: camera images → BallObservation + survey vision JSON.
+"""ROS 2 perception node: simulated OAK-D AI pipeline.
+
+This node emulates the OAK-D's on-device AI. It treats Gazebo purely as the
+image source and runs the *full* pipeline a real OAK-D would run internally:
+
+    RGB frame ──▶ neural detector (YOLOv8/v11n, ONNX Runtime) ──▶ 2D boxes
+                                                                    │
+    depth frame ───────────────────────────────────────────▶ depth fusion
+                                                                    │
+                                                  bearing + distance + confidence
+                                                                    │
+                                                                    │
+                                                                    ▼
+                                      /perception/ball_detections
+                                      (BallDetectionArray, canonical contract)
+
+The neural detector is mandatory. A missing or invalid model fails node startup;
+there is no classical detector fallback.
+
+Because the published message interface is identical to what the real OAK-D
+DepthAI pipeline will expose, the Collector / Nav2 / Behaviour Tree consume
+these topics without knowing whether detections came from Gazebo or hardware.
 
 Subscribes:
   /camera/image_raw  (sensor_msgs/Image)
   /camera/depth      (sensor_msgs/Image, 32FC1)
-  /odom              (nav_msgs/Odometry)  — for world coordinate transform
-
 Publishes:
-  /ball/observation  (tennis_robot_msgs/BallObservation)
-  /survey/vision     (std_msgs/String, JSON-serialised SurveyVision fields)
+  /perception/ball_detections(tennis_robot_msgs/BallDetectionArray) — DepthAI-equiv
+  /survey/vision             (std_msgs/String, JSON-serialised SurveyVision fields)
 """
 
 from __future__ import annotations
@@ -15,97 +34,86 @@ from __future__ import annotations
 import json
 import math
 import os
-import struct
 
 import cv2
+import message_filters
 import numpy as np
 import rclpy
-from nav_msgs.msg import Odometry
 from rclpy.node import Node
-from rclpy.time import Time as RclpyTime
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
-from tf2_ros import Buffer as TfBuffer, TransformListener as TfListener
 
-from tennis_robot import yaw_from_quaternion
-
+from tennis_robot.ball_detector import load_ball_detector
 from tennis_robot.perception import (
-    CameraMount,
-    RobotPose2D,
     build_survey_vision,
-    detect_largest_ball,
+    camera_frame_position,
     estimate_depth_ball_observation,
-    observation_to_world,
+    pixel_elevation_rad,
 )
 
-FRONT_CAMERA_MOUNT = CameraMount(x_m=0.535, y_m=0.0, yaw_rad=0.0)
 DEPTH_MIN_RANGE = float(os.getenv("DEPTH_MIN_RANGE_M", "0.1"))
 DEPTH_MAX_RANGE = float(os.getenv("DEPTH_MAX_RANGE_M", "10.0"))
 CAMERA_FOV_RAD = float(os.getenv("CAMERA_FOV_RAD", str(math.radians(60))))
+CAMERA_FRAME_ID = os.getenv("CAMERA_FRAME_ID", "camera_link_optical_frame")
+MAX_PUBLISHED_BALLS = int(os.getenv("PERCEPTION_MAX_BALLS", "8"))
+RGB_DEPTH_SYNC_SLOP_S = float(os.getenv("RGB_DEPTH_SYNC_SLOP_S", "0.05"))
+RGB_DEPTH_SYNC_QUEUE_SIZE = int(os.getenv("RGB_DEPTH_SYNC_QUEUE_SIZE", "10"))
 
 
 class PerceptionNode(Node):
     def __init__(self) -> None:
         super().__init__("perception_node")
 
-        self._depth: np.ndarray | None = None
-        self._depth_w = 640
-        self._depth_h = 480
-        self._robot_x = 0.0
-        self._robot_y = 0.0
-        self._robot_yaw = 0.0
+        # Primary perception: neural detector emulating the OAK-D on-device AI.
+        self._detector = load_ball_detector(logger=self.get_logger())
 
-        # SLAM-corrected pose (map->base_footprint) preferred over raw /odom:
-        # wheel odometry drifts badly during in-place turns (wheel slip).
-        self._tf_buffer = TfBuffer()
-        self._tf_listener = TfListener(self._tf_buffer, self)
-        self._pose_source = "odom"
-
-        self.create_subscription(Image, "/camera/image_raw", self._on_image, 1)
-        self.create_subscription(Image, "/camera/depth", self._on_depth, 1)
-        self.create_subscription(Odometry, "/odom", self._on_odom, 10)
-
-        self._pub_obs = self.create_publisher(
-            __import__("tennis_robot_msgs.msg", fromlist=["BallObservation"]).BallObservation,
-            "/ball/observation",
-            10,
+        self._rgb_sub = message_filters.Subscriber(
+            self, Image, "/camera/image_raw", qos_profile=1
         )
+        self._depth_sub = message_filters.Subscriber(
+            self, Image, "/camera/depth", qos_profile=1
+        )
+        self._rgb_depth_sync = message_filters.ApproximateTimeSynchronizer(
+            [self._rgb_sub, self._depth_sub],
+            queue_size=RGB_DEPTH_SYNC_QUEUE_SIZE,
+            slop=RGB_DEPTH_SYNC_SLOP_S,
+        )
+        self._rgb_depth_sync.registerCallback(self._on_rgb_depth)
+
+        msgs = __import__("tennis_robot_msgs.msg", fromlist=["BallDetectionArray"])
         self._pub_survey = self.create_publisher(String, "/survey/vision", 1)
+        self._pub_detections = self.create_publisher(
+            msgs.BallDetectionArray, "/perception/ball_detections", 10
+        )
 
-        self.get_logger().info("perception_node started")
+        self.get_logger().info(
+            f"perception_node started (detector={self._detector.name}, "
+            f"fov={CAMERA_FOV_RAD:.3f} rad, "
+            f"rgb_depth_slop={RGB_DEPTH_SYNC_SLOP_S:.3f}s)"
+        )
 
-    def _on_odom(self, msg: Odometry) -> None:
-        if self._pose_source == "slam_tf":
-            return  # SLAM TF is authoritative once available
-        self._robot_x = msg.pose.pose.position.x
-        self._robot_y = msg.pose.pose.position.y
-        self._robot_yaw = yaw_from_quaternion(msg.pose.pose.orientation)
-
-    def _update_pose_from_tf(self) -> None:
-        try:
-            t = self._tf_buffer.lookup_transform("map", "base_footprint", RclpyTime())
-        except Exception:
-            return  # SLAM not up (yet) — keep odom pose
-        self._robot_x = t.transform.translation.x
-        self._robot_y = t.transform.translation.y
-        self._robot_yaw = yaw_from_quaternion(t.transform.rotation)
-        self._pose_source = "slam_tf"
-
-    def _on_depth(self, msg: Image) -> None:
-        raw = bytes(msg.data)
-        arr = np.array(struct.unpack(f"{msg.width * msg.height}f", raw), dtype=np.float32)
-        self._depth = arr.reshape((msg.height, msg.width))
-        self._depth_w = msg.width
-        self._depth_h = msg.height
-
-    def _on_image(self, msg: Image) -> None:
-        self._update_pose_from_tf()
-        frame = self._decode_image(msg)
+    # -- subscriptions ------------------------------------------------------
+    def _on_rgb_depth(self, image_msg: Image, depth_msg: Image) -> None:
+        """Process one timestamp-matched RGB/depth acquisition pair."""
+        frame = self._decode_image(image_msg)
         if frame is None:
             return
-        self._publish_ball_observation(frame, msg.width, msg.height)
-        self._publish_survey_vision(frame)
+        depth = self._decode_depth(depth_msg)
+        if depth is None:
+            return
 
+        # Single neural inference per synchronized acquisition, shared by all
+        # publishers. Identical pixels are still processed so consumers receive
+        # a fresh heartbeat and explicit empty detections.
+        detections = self._detector.detect(frame)
+        fused = self._fuse_detections(
+            detections, depth, image_msg.width, image_msg.height
+        )
+
+        self._publish_detection_array(fused, image_msg.header.stamp)
+        self._publish_survey_vision(frame, depth)
+
+    # -- decoding -----------------------------------------------------------
     def _decode_image(self, msg: Image) -> np.ndarray | None:
         arr = np.frombuffer(bytes(msg.data), dtype=np.uint8)
         if msg.encoding == "bgra8":
@@ -119,45 +127,82 @@ class PerceptionNode(Node):
         self.get_logger().warn(f"unsupported image encoding: {msg.encoding}")
         return None
 
-    def _publish_ball_observation(self, frame: np.ndarray, w: int, h: int) -> None:
-        from tennis_robot_msgs.msg import BallObservation
+    def _decode_depth(self, msg: Image) -> np.ndarray | None:
+        if msg.encoding not in {"32FC1", "32FC"}:
+            self.get_logger().warn(f"unsupported depth encoding: {msg.encoding}")
+            return None
+        expected = msg.width * msg.height
+        arr = np.frombuffer(bytes(msg.data), dtype=np.float32)
+        if arr.size != expected:
+            self.get_logger().warn(
+                f"invalid depth image size: got {arr.size}, expected {expected}"
+            )
+            return None
+        return arr.reshape((msg.height, msg.width))
 
-        obs = BallObservation()
-        detection = detect_largest_ball(frame)
+    # -- fusion -------------------------------------------------------------
+    def _fuse_detections(
+        self, detections: list, depth: np.ndarray, w: int, h: int
+    ) -> list[dict]:
+        """Fuse each 2D detection with the depth frame into a spatial record.
 
-        if detection is None or self._depth is None:
-            obs.visible = False
-            obs.source = "no_detection" if detection is None else "depth_unavailable"
-            self._pub_obs.publish(obs)
-            return
+        Returns dicts sorted nearest-first. Detections with no valid depth are
+        kept (has_spatial=False) so the detector's 2D confidence is still
+        surfaced — depth fusion failing is not the same as no detection.
+        """
+        vertical_fov = CAMERA_FOV_RAD * (h / max(1, w))
+        records: list[dict] = []
+        for det in detections[:MAX_PUBLISHED_BALLS]:
+            rec: dict = {
+                "detection": det,
+                "confidence": float(getattr(det, "confidence", 1.0)),
+                "has_spatial": False,
+                "bearing_rad": 0.0,
+                "distance_m": float("inf"),
+                "pos": (0.0, 0.0, 0.0),
+            }
+            ball_obs = estimate_depth_ball_observation(
+                det, depth, w, h, CAMERA_FOV_RAD
+            )
+            if ball_obs is not None:
+                elevation = pixel_elevation_rad(det.center_y, h, vertical_fov)
+                rec.update(
+                    has_spatial=True,
+                    bearing_rad=float(ball_obs.bearing_rad),
+                    distance_m=float(ball_obs.distance_m),
+                    pos=camera_frame_position(
+                        ball_obs.bearing_rad, ball_obs.distance_m, elevation
+                    ),
+                )
+            records.append(rec)
+        records.sort(key=lambda r: (not r["has_spatial"], r["distance_m"]))
+        return records
 
-        ball_obs = estimate_depth_ball_observation(
-            detection, self._depth, w, h, CAMERA_FOV_RAD
-        )
-        if ball_obs is None:
-            obs.visible = False
-            obs.source = "depth_estimation_failed"
-            self._pub_obs.publish(obs)
-            return
+    # -- publishers ---------------------------------------------------------
+    def _publish_detection_array(self, fused: list[dict], stamp) -> None:
+        from tennis_robot_msgs.msg import BallDetection, BallDetectionArray
 
-        world = observation_to_world(
-            ball_obs,
-            RobotPose2D(self._robot_x, self._robot_y, self._robot_yaw),
-            FRONT_CAMERA_MOUNT,
-        )
-        obs.visible = True
-        obs.bearing_rad = float(ball_obs.bearing_rad)
-        obs.distance_m = float(ball_obs.distance_m)
-        obs.confidence = float(min(1.0, detection.area_px / 6000))
-        obs.source = ball_obs.distance_source
-        obs.world_x_m = float(world.world_x_m or 0.0)
-        obs.world_y_m = float(world.world_y_m or 0.0)
-        obs.robot_x_m = float(world.robot_x_m or 0.0)
-        obs.robot_y_m = float(world.robot_y_m or 0.0)
-        self._pub_obs.publish(obs)
+        arr = BallDetectionArray()
+        arr.header.stamp = stamp
+        arr.header.frame_id = CAMERA_FRAME_ID
+        for r in fused:
+            det = r["detection"]
+            m = BallDetection()
+            m.confidence = float(r["confidence"])
+            m.bbox_center_x = float(det.center_x)
+            m.bbox_center_y = float(det.center_y)
+            m.bbox_width = float(det.width)
+            m.bbox_height = float(det.height)
+            m.has_spatial = bool(r["has_spatial"])
+            if r["has_spatial"]:
+                m.bearing_rad = float(r["bearing_rad"])
+                m.distance_m = float(r["distance_m"])
+                m.position_x, m.position_y, m.position_z = (float(v) for v in r["pos"])
+            arr.detections.append(m)
+        self._pub_detections.publish(arr)
 
-    def _publish_survey_vision(self, frame: np.ndarray) -> None:
-        sv = build_survey_vision(frame, self._depth, DEPTH_MIN_RANGE, DEPTH_MAX_RANGE)
+    def _publish_survey_vision(self, frame: np.ndarray, depth: np.ndarray) -> None:
+        sv = build_survey_vision(frame, depth, DEPTH_MIN_RANGE, DEPTH_MAX_RANGE)
         payload = {
             "line_detected": sv.line_detected,
             "line_offset_m": sv.line_offset_m,

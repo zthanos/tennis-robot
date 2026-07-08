@@ -40,6 +40,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-rmw-cyclonedds-cpp \
   && rm -rf /var/lib/apt/lists/*
 
+
+# ── humble-foxglove-bridge bridge (Humble ↔ Harmonic) ────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-foxglove-bridge \
+  && rm -rf /var/lib/apt/lists/*
+
 # ── Mesa / AMD GPU (WSLg DRI) ─────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-dri \
@@ -88,6 +94,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir duckdb
+
+# Simulated OAK-D AI: ONNX Runtime executes the YOLO ball detector on CPU.
+# ROS Humble's apt OpenCV bindings are compiled against NumPy 1.x.
+RUN pip install --no-cache-dir "numpy<2" "onnxruntime>=1.16,<2"
 
 # ── workspace ─────────────────────────────────────────────────────────────────
 WORKDIR /ros2_ws

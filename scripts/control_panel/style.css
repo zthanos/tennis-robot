@@ -172,6 +172,12 @@
     .two {
       grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
     }
+    .command-center {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+      gap: 14px;
+      align-items: start;
+    }
     .panel {
       padding: 18px;
       overflow: hidden;
@@ -391,6 +397,144 @@
     .map-panel {
       margin-top: 14px;
     }
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+      gap: 14px;
+      align-items: start;
+    }
+    .workspace-main {
+      min-width: 0;
+    }
+    .workspace-side {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+    .workspace-title {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .workspace-title h3 {
+      margin: 0;
+    }
+    .workspace-title h3 span,
+    #surveyBoundaryStatus,
+    #mapMissionStatus {
+      margin-left: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 400;
+    }
+    .secondary-action {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-2);
+      color: var(--muted);
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+    .survey-map {
+      display: block;
+      width: 100%;
+      max-height: 650px;
+      background: #090d12;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .workspace-meta {
+      margin-top: 10px;
+    }
+    .mission-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .nav-test-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .nav-test-grid label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .nav-test-grid input {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0f161d;
+      color: var(--ink);
+      font: inherit;
+      font-size: 13px;
+      padding: 8px;
+    }
+    .nav-test-actions .command {
+      padding: 7px 12px;
+      font-size: 12px;
+    }
+    .nav-test-output {
+      min-height: 16px;
+      word-break: break-word;
+    }
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 70px repeat(3, minmax(62px, 1fr));
+      gap: 6px;
+      margin-top: 14px;
+      text-align: center;
+      align-items: center;
+    }
+    .matrix-label,
+    .matrix-row-label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .matrix-row-label {
+      text-align: right;
+      padding-right: 6px;
+    }
+    .progress-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .progress-track {
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-track div {
+      height: 100%;
+      width: 0%;
+      background: #a855f7;
+      border-radius: 2px;
+      transition: width 0.5s;
+    }
+    .workspace-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .workspace .map-panel {
+      margin-top: 0;
+    }
     .court-map {
       width: 100%;
       aspect-ratio: 2 / 1;
@@ -422,6 +566,60 @@
     .legend .route::before { border-radius: 2px; background: var(--accent-2); }
     .legend .robot::before { background: var(--warn); }
     .legend .fov::before { background: rgba(87,166,255,0.15); border: 1px solid rgba(87,166,255,0.4); border-radius: 2px; }
+    .legend .lane::before { border-radius: 2px; background: #a855f7; }
+    .legend .goal::before { background: #57a6ff; box-shadow: 0 0 0 2px rgba(87,166,255,0.35); }
+    .legend .camball::before { background: #ffd24a; box-shadow: 0 0 0 2px rgba(255,210,74,0.3); }
+    .collection-log-full {
+      margin-top: 14px;
+    }
+    .collection-log-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .collection-log-head h3 { margin: 0; }
+    .collection-terminal-panel h3 span {
+      margin-left: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .terminal-log {
+      min-height: 220px;
+      max-height: 360px;
+      overflow: auto;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #070b10;
+      color: #b7c6d5;
+      font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .terminal-row {
+      display: grid;
+      grid-template-columns: 58px 142px minmax(0, 1fr);
+      gap: 9px;
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .terminal-row:last-child { border-bottom: 0; }
+    .terminal-time { color: var(--muted); }
+    .terminal-type { color: var(--accent-2); font-weight: 700; }
+    .terminal-type.warn { color: var(--warn); }
+    .terminal-type.error { color: var(--danger); }
+    .terminal-detail {
+      min-width: 0;
+      color: #d9e5ef;
+      overflow-wrap: anywhere;
+    }
+    .terminal-empty {
+      color: var(--muted);
+      padding: 4px 0;
+    }
     .sensor-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -503,6 +701,10 @@
     }
     @media (max-width: 1100px) {
       .sensors-top { grid-template-columns: 1fr; }
+      .workspace,
+      .command-center {
+        grid-template-columns: 1fr;
+      }
     }
     @media (max-width: 900px) {
       .shell { grid-template-columns: 1fr; }
@@ -511,6 +713,4 @@
       main { padding: 20px; }
       header { display: block; }
       .timestamp { margin-top: 12px; }
-      .kpis, .two, .sensor-grid { grid-template-columns: 1fr; }
-      .event { grid-template-columns: 1fr; }
-    }
+      .kpis, .two, .sensor-grid { grid-template-c
