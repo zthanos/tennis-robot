@@ -89,15 +89,10 @@ NET_SIDE_CLEARANCE_M = 0.25
 COURT_MAX_X_M = 11.885
 COURT_MAX_Y_M = 5.485
 COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
-# Roller-first intake: the sim now attempts REAL mechanical capture (paddled
-# roller is the first contact; channel wraps the ball up into the basket), so
-# ground truth counts a ball as collected only once it is physically inside
-# the basket volume — local x in [0.0, 0.42], |y| <= 0.16, ball-centre z
-# above the basket floor (top 0.128 m; ball centre on floor ~0.16 m). The old
-# lip-contact zone (0.48–0.72 at ground level) is gone: it faked collection
-# the moment the ball touched the lip and would delete the ball before the
-# mechanism was ever exercised. Hardware/sim IR confirmation comes from the
-# basket beam pair (see gazebo_extras_node.py).
+# Top-roller launcher intake: collection is credited only when the ball is
+# physically inside the basket volume, not when it touches the entry lip. The
+# lip/roller contact is just the launch impulse; hardware/sim confirmation
+# comes from the basket beam pair (see gazebo_extras_node.py).
 BASKET_ZONE_X_M = (0.0, 0.42)
 BASKET_HALF_WIDTH_M = 0.16
 BASKET_MIN_BALL_Z_M = 0.12

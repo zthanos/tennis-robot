@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+k#!/usr/bin/env bash
 # Ubuntu 24.04 defaults to ROS 2 Jazzy; override ROS_DISTRO_TARGET if needed.
 # Launch Gazebo Harmonic + ROS 2 simulation (native Linux, no Docker).
 #

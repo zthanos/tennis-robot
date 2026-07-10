@@ -17,7 +17,10 @@ export SLAM_MODE="${SLAM_MODE:-localization}"
 export NAV2_START_DELAY_S="${NAV2_START_DELAY_S:-25}"
 export INTAKE_LIP_RAISE_M="${INTAKE_LIP_RAISE_M:-0.002}"
 export INTAKE_ROLLER_X_OFFSET_M="${INTAKE_ROLLER_X_OFFSET_M:-0.015}"
-export INTAKE_ROLLER_Z_OFFSET_M="${INTAKE_ROLLER_Z_OFFSET_M:--0.005}"
+export INTAKE_LIP_X_OFFSET_M="${INTAKE_LIP_X_OFFSET_M:--0.006}"
+export INTAKE_ROLLER_Z_OFFSET_M="${INTAKE_ROLLER_Z_OFFSET_M:--0.003}"
+
+python3 "$SCRIPT_DIR/scripts/generate_curved_scoop_mesh.py"
 
 if [ "$GAZEBO_HEADLESS" != "true" ]; then
     if [ -z "${DISPLAY:-}" ]; then

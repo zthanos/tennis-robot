@@ -1,114 +1,79 @@
 #!/usr/bin/env python3
-"""Generate the roller-first intake-channel mesh for the sim URDF.
+"""Generate the top-roller launcher scoop mesh for the sim URDF.
 
-Roller-first geometry (replaces the old push-ramp scoop): the continuous intake
-roller is the FIRST hard contact with the ball — the whole channel sits
-BEHIND the roller's leading edge. The roller (Ø90, centre x=0.600) reaches
-forward to x=0.645. The mesh-local channel centre is x=0.615 because the
-URDF/SDF applies a -15 mm channel offset, giving an effective centre x=0.600.
-The effective roller / channel centre is 112 mm above ground. The entry lip is
-15 mm behind the roller axis so the ball meets the roller before it can meet
-the channel. The channel radius is 108 mm: 63 mm clearance from the 45 mm roller radius,
-i.e. 3 mm nominal interference for a rigid 66 mm simulation ball.
-
-Profile, ground frame (m), x forward:
-  tip / arc     x = 0.600, z ~= 0.005 (effective x=0.585)
-  arc           z = ROLLER_Z - sqrt(CHANNEL_R^2 - (ROLLER_X - x)^2)
-                from x = 0.600 back to x = 0.507 (z = 0.112)
-  rear wall     near-vertical up to z = 0.155 at x = 0.5055
-
-Roller (see tennis_robot.urdf.xacro): effective centre (0.600, 0.112), radius
-0.045; channel radius 0.109 about the same effective centre.
+This scoop is a ramp, not a conveyor channel. The front lip is about 2 mm above
+the court so a tennis ball briefly resists the top roller and receives a launch
+impulse. Immediately behind that bite zone the ramp opens away from the roller,
+then climbs toward the basket; the ball should travel up it by momentum rather
+than staying pinched between the roller and the scoop.
 
 The mesh is emitted in the funnel_link frame (origin = base_link x/y, shifted
 down by chassis_z/2 = 7 mm; base_link is 45 mm above ground, so the ground
-plane is z = -0.038 here) as one closed solid: flat underside on the ground
-plane, channel surface on top. Placed in funnel.urdf.xacro with origin 0 0 0.
-Keep in sync with tennis_robot.urdf.xacro intake_* properties.
+plane is z = -0.038 here). Keep in sync with tennis_robot.urdf.xacro intake_*
+properties and scripts/generate_robot_urdf.py's Gazebo polyline collision.
 """
 
 from __future__ import annotations
 
-import math
 import os
 import struct
 import sys
 from pathlib import Path
 
 # Geometry (m, ground frame).
-# ROLLER_X/ROLLER_Z must track tennis_robot.urdf.xacro's intake_x/intake_z
-# (same INTAKE_ROLLER_*_OFFSET_M envs) so the channel arc stays concentric
-# with the ACTUAL roller position instead of the old fixed baseline — the
-# offsets were previously only applied to the roller itself, silently
-# desyncing the channel whenever intake tuning moved the roller.
+# ROLLER_X/ROLLER_Z are kept for documentation and future clearance checks:
+# they track tennis_robot.urdf.xacro's intake_x/intake_z via the same envs.
 _ROLLER_X_OFFSET_M = float(os.getenv("INTAKE_ROLLER_X_OFFSET_M", "0.0"))
 _ROLLER_Z_OFFSET_M = float(os.getenv("INTAKE_ROLLER_Z_OFFSET_M", "0.0"))
-LIP_X = 0.600 + _ROLLER_X_OFFSET_M
-FLOOR_Z = 0.003          # keeps the sheet underside clear of the court
-LIP_RAISE_M = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
-LIP_RAISE_TAPER_M = 0.020
-ROLLER_X = 0.615 + _ROLLER_X_OFFSET_M
+_LIP_X_OFFSET_M = float(os.getenv("INTAKE_LIP_X_OFFSET_M", "0.0"))
+ROLLER_X = 0.600 + _ROLLER_X_OFFSET_M
+LIP_X = ROLLER_X + _LIP_X_OFFSET_M
+LIP_HEIGHT_M = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.002")))
 ROLLER_Z = 0.112 + _ROLLER_Z_OFFSET_M
-# 64 mm roller-to-arc passage: 2 mm nominal squeeze on a 66 mm ball, absorbed
-# by the sprung roller carriage (grip force, not a rigid jam). 113 mm opened a
-# dead pocket behind the axis where the ball lost roller contact
-# (intake-debug-log #9). Keep in sync with generate_robot_urdf.py.
-CHANNEL_R = 0.109
-# WALL_TOP_Z now sets the concentric guide's release height (see profile()).
-# Spiral guide exit (intake-debug-log #17): a concentric guide can never end
-# inside the paddles' 83 mm drive circle, so the ball always parked just out
-# of reach. The guide radius tapers 109->95 mm over the wrap so the release
-# edge (0.554, 0.183) sits deep inside the drive zone and the paddles push
-# the ball positively over it.
-GUIDE_PHI_MAX = 0.873    # 50 deg wrap above the back-horizontal
-GUIDE_TAPER_M = 0.008    # CHANNEL_R -> CHANNEL_R-8mm at the exit (14 was too aggressive: ball slipped between fully-bent paddles, log #17)
+RAMP_CLEAR_RUN_M = max(0.004, float(os.getenv("INTAKE_RAMP_CLEAR_RUN_M", "0.030")))
+RAMP_CLEAR_X = LIP_X - RAMP_CLEAR_RUN_M
+RAMP_KNEE_X = 0.520
+RAMP_END_X = 0.400
+RAMP_CLEAR_Z = max(LIP_HEIGHT_M, float(os.getenv("INTAKE_RAMP_CLEAR_Z_M", "0.004")))
+RAMP_KNEE_Z = 0.024
+RAMP_END_Z = 0.128
 SCOOP_WIDTH = 0.180
 SHEET_THICKNESS = 0.002
 COLLISION_CLEARANCE = 0.001
 
-ARC_STEPS = 40
-GUIDE_STEPS = 10
+RAMP_STEPS = 28
 
 # URDF frame constant (m).
 GROUND_Z = -0.038        # ground plane in funnel_link frame
 HALF_WIDTH = SCOOP_WIDTH / 2.0
 
 
-def channel_z(x: float) -> float:
-    """Channel-surface height for the arc ending at the mesh-local roller centre."""
-    dx = ROLLER_X - x
-    z = max(FLOOR_Z, ROLLER_Z - math.sqrt(max(CHANNEL_R * CHANNEL_R - dx * dx, 0.0)))
-    if LIP_RAISE_M <= 0.0:
-        return z
-    lip_t = max(0.0, min(1.0, 1.0 - abs(LIP_X - x) / LIP_RAISE_TAPER_M))
-    return z + LIP_RAISE_M * lip_t
+def _smoothstep(t: float) -> float:
+    t = max(0.0, min(1.0, t))
+    return t * t * (3.0 - 2.0 * t)
+
+
+def ramp_z(x: float) -> float:
+    """Ramp top height in ground frame."""
+    if x >= RAMP_CLEAR_X:
+        t = (LIP_X - x) / max(LIP_X - RAMP_CLEAR_X, 1e-6)
+        return LIP_HEIGHT_M + (RAMP_CLEAR_Z - LIP_HEIGHT_M) * _smoothstep(t)
+    if x >= RAMP_KNEE_X:
+        t = (RAMP_CLEAR_X - x) / max(RAMP_CLEAR_X - RAMP_KNEE_X, 1e-6)
+        return RAMP_CLEAR_Z + (RAMP_KNEE_Z - RAMP_CLEAR_Z) * _smoothstep(t)
+    t = (RAMP_KNEE_X - x) / max(RAMP_KNEE_X - RAMP_END_X, 1e-6)
+    return RAMP_KNEE_Z + (RAMP_END_Z - RAMP_KNEE_Z) * _smoothstep(t)
 
 
 def profile() -> list[tuple[float, float, float]]:
-    """(x, z_bottom, z_top) in funnel frame, ordered lip -> back -> guide top."""
+    """(x, z_bottom, z_top) in funnel frame, ordered lip -> basket."""
     pts: list[tuple[float, float]] = []
-    # Arc around the roller centre. It begins behind the roller axis so there
-    # is no hard channel edge in front of the roller's first ball contact.
-    arc_back_x = ROLLER_X - CHANNEL_R
-    for i in range(ARC_STEPS + 1):
-        t = i / ARC_STEPS
-        x = LIP_X + (arc_back_x - LIP_X) * t
-        pts.append((x, channel_z(x)))
-    # Spiral guide continuing up the BACK of the roller: tangentially driven
-    # the whole way (no unpowered climb — intake-debug-log #12) AND tapering
-    # inward so the exit edge lands inside the paddle drive circle
-    # (intake-debug-log #17).
-    for i in range(1, GUIDE_STEPS + 1):
-        phi = GUIDE_PHI_MAX * i / GUIDE_STEPS
-        r = CHANNEL_R - GUIDE_TAPER_M * (phi / GUIDE_PHI_MAX)
-        pts.append((
-            ROLLER_X - r * math.cos(phi),
-            ROLLER_Z + r * math.sin(phi),
-        ))
-    # Thin curved sheet, not a solid wedge down to the court. The old flat
-    # underside put the whole 180 mm-wide scoop in ground contact and acted as
-    # a brake. Only the 2 mm front lip reaches the ground; everywhere else the
-    # underside follows the channel surface.
+    for i in range(RAMP_STEPS + 1):
+        t = i / RAMP_STEPS
+        x = LIP_X + (RAMP_END_X - LIP_X) * t
+        pts.append((x, ramp_z(x)))
+    # Thin ramp sheet. The first lip reaches the court-height bite point; the
+    # underside follows the ramp so the scoop does not drag as a wide skid.
     return [
         (
             x,
@@ -128,7 +93,7 @@ def build_triangles() -> list[tuple]:
         tris.append((a, c, d))
 
     yl, yr = -HALF_WIDTH, HALF_WIDTH
-    # top (channel) + bottom surfaces
+    # top (ramp) + bottom surfaces
     for (x0, zb0, zt0), (x1, zb1, zt1) in zip(prof, prof[1:]):
         quad((x0, yl, zt0), (x0, yr, zt0), (x1, yr, zt1), (x1, yl, zt1))  # top
         quad((x0, yr, zb0), (x0, yl, zb0), (x1, yl, zb1), (x1, yr, zb1))  # bottom
@@ -147,7 +112,7 @@ def build_triangles() -> list[tuple]:
 
 def write_binary_stl(path: Path, tris: list[tuple]) -> None:
     with open(path, "wb") as f:
-        f.write(b"roller-first intake channel (generate_curved_scoop_mesh.py)".ljust(80, b"\0"))
+        f.write(b"top-roller launcher scoop (generate_curved_scoop_mesh.py)".ljust(80, b"\0"))
         f.write(struct.pack("<I", len(tris)))
         for a, b, c in tris:
             ux = (b[0]-a[0], b[1]-a[1], b[2]-a[2])

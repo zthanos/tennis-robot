@@ -37,19 +37,12 @@
       </collision>
 
       <collision name="intake_channel_col">
-        <!-- Roller-first intake channel, entirely BEHIND the roller's
-             leading edge (envelope reaches x=0.595, effective channel tip at
-             x=0.540 after the rearward tuning offset):
-             2 mm tip on the ground plane, then a circular arc of radius
-             105 mm around the roller centre (0.55, 0.105 above ground) up to
-             a near-vertical rear wall ending at z=0.155. The paddled roller
-             (tennis_robot.urdf.xacro intake_*) is the first hard contact and
-             drives the ball around the channel. Mesh is generated in
+        <!-- Launcher scoop: a 2 mm entry lip creates the initial resistance
+             needed for roller bite, then the ramp quickly opens away from
+             the roller and rises toward the basket. This is a guide/launch
+             ramp, not a curved conveyor channel. Mesh is generated in
              funnel-frame coords by scripts/generate_curved_scoop_mesh.py —
              keep the two in sync. -->
-        <!-- Shifted 15 mm rearward after the first mechanical-capture test:
-             this gives the paddle envelope more room to engage the ball
-             before the rigid channel can support / block it. -->
         <origin xyz="-0.015 0 0" rpy="0 0 0"/>
         <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
       </collision>
@@ -59,20 +52,9 @@
         <material name="intake_orange"/>
       </visual>
 
-      <!-- Spin-walk ceiling over the paddle-wheel top: the paddles carry the
-           ball around the guide and juggle it at the wheel top (ground z
-           ~162-171 centre) with BACKSPIN. This front-LOW / rear-HIGH plate
-           sits just inside the juggle band so the spinning ball presses its
-           top against the underside and friction walks it BACKWARD over the
-           guide edge onto the (forward-extended) basket floor. Ground-frame
-           edges: front-low (0.593, 0.172) — 15.8 mm from the paddle tips so
-           the ball cannot escape forward — rear-high (0.447, 0.238). The old
-           front-high plate assumed a ballistic fling to z 204+ that the
-           paddle transport never reaches (intake-debug-log #15). -->
-      <!-- Raised +40 mm after the spiral-guide exit (intake-debug-log #17):
-           the paddles now push the ball positively over the spiral edge at
-           (0.554, 0.183), so this plate is only a safety net for wild
-           bounces, out of the exit trajectory. -->
+      <!-- High safety deflector only. The launcher path should not depend on
+           this ceiling for transport; it is kept above the expected ramp
+           trajectory to catch wild rebounds. -->
       <collision name="intake_deflector_col">
         <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
         <geometry><box size="0.16 0.20 0.006"/></geometry>
