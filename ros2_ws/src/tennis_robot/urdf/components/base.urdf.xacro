@@ -41,11 +41,9 @@
 
     <link name="base_link">
       <xacro:box_inertial mass="${chassis_mass}" x="${chassis_x}" y="${chassis_y}" z="${chassis_z}"/>
-      <!-- Front-centre cutout (0.20 wide x 0.04 deep): the roller-first
-           intake channel wraps the ball around behind the roller close to
-           the chassis front edge (x=0.46); without the notch the plate
-           corner clips the rising ball by ~1 mm. Plate = two full-length
-           side strips + one centre strip ending at x=0.42. -->
+      <!-- Front-centre cutout (0.20 wide x 0.04 deep): leaves clearance for
+           the launcher scoop/ramp path into the basket. Plate = two
+           full-length side strips + one centre strip ending at x=0.42. -->
       <collision name="chassis_left_col">
         <origin xyz="0 ${0.10 + (chassis_y / 2.0 - 0.10) / 2.0} 0" rpy="0 0 0"/>
         <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>

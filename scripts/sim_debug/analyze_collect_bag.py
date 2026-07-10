@@ -24,11 +24,16 @@ from rosidl_runtime_py.utilities import get_message
 ROLLER_BASE_X = 0.600
 ROLLER_BASE_Z = 0.112  # ground frame, before offsets
 X_OFF = float(os.getenv("INTAKE_ROLLER_X_OFFSET_M", "0.015"))
-Z_OFF = float(os.getenv("INTAKE_ROLLER_Z_OFFSET_M", "-0.005"))
+LIP_X_OFF = float(os.getenv("INTAKE_LIP_X_OFFSET_M", "-0.006"))
+Z_OFF = float(os.getenv("INTAKE_ROLLER_Z_OFFSET_M", "-0.003"))
 ROLLER_X = ROLLER_BASE_X + X_OFF
+LIP_X = ROLLER_X + LIP_X_OFF
 ROLLER_Z = ROLLER_BASE_Z + Z_OFF
 ROLLER_R = 0.045
 BALL_R = 0.033
+NOMINAL_BITE_DX = math.sqrt(
+    max(0.0, (ROLLER_R + BALL_R) ** 2 - (ROLLER_Z - BALL_R) ** 2)
+)
 
 
 def yaw_of(q):
@@ -89,6 +94,10 @@ def main():
     t_close, ball, dmin, dxf, dyl, bz = closest
     surface_gap = dmin - ROLLER_R - BALL_R
     print(f"CLOSEST APPROACH: ball={ball} t_wall={t_close:.2f}")
+    print(
+        f"  geometry: roller_x={ROLLER_X*1000:.0f}mm lip_x={LIP_X*1000:.0f}mm "
+        f"nominal bite dx={NOMINAL_BITE_DX*1000:.0f}mm"
+    )
     print(f"  centre-to-centre={dmin*1000:.0f}mm  surface gap={surface_gap*1000:.0f}mm")
     print(f"  fwd offset from roller axis={dxf*1000:+.0f}mm lateral={dyl*1000:+.0f}mm ball_z={bz*1000:.0f}mm")
 

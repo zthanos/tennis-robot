@@ -71,16 +71,40 @@ second Windows control path during the migration.
 
 ## Collector changes in this checkpoint
 
-- The intake is roller-first. The old push-ramp collision is replaced by a
-  curved channel and deflector.
-- The scoop is shifted 15 mm rearward.
-- The scoop physics collision is a 2 mm curved sheet with 1 mm court
-  clearance; the visual lip can still appear at court level.
+- The intake is now a top-roller launcher: a ~2 mm entry lip gives the ball
+  enough resistance for a short roller impulse, then the scoop opens into a
+  free ramp toward the basket.
+- The scoop is not intended to carry the ball in a continuous roller/channel
+  pinch. If the ball stays trapped between roller and ramp, treat that as a
+  geometry bug.
+- `run_ubuntu.sh` sets the current tuning defaults:
+  `INTAKE_LIP_RAISE_M=0.002`, `INTAKE_ROLLER_X_OFFSET_M=0.015`,
+  `INTAKE_LIP_X_OFFSET_M=-0.006`, `INTAKE_ROLLER_Z_OFFSET_M=-0.003`.
+  This puts the lip about 6 mm inward from the roller axis so the ball stops
+  at the lower-front bite point instead of being held away from the roller.
 - Approach speed is `0.16 m/s`; capture speed is `0.07 m/s`.
-- Each roller paddle has a Gazebo contact sensor.
+- The continuous foam roller has one Gazebo contact sensor on
+  `/gz/roller_contact_0`.
 - RViz receives red roller-contact markers on
   `/sim/roller_contact_markers`.
 - `/sim/roller_contact` is the short-held boolean contact heartbeat.
+
+### Native intake sweep
+
+Use the native sweep runner instead of hand-tuning one run at a time:
+
+```bash
+INTAKE_SWEEP_LIP_X_OFFSETS="-0.003 -0.006 -0.009" \
+INTAKE_SWEEP_LIP_HEIGHTS="0.001 0.002 0.003" \
+INTAKE_SWEEP_ROLLER_Z_OFFSETS="-0.003" \
+INTAKE_SWEEP_PROBE_DURATION=25 \
+./scripts/sim_debug/run_native_intake_sweep.sh
+```
+
+The runner starts a fresh headless Gazebo instance per configuration, sends
+`collect_one`, starts `sim_physics_probe` when the target ball is close, and
+writes per-case logs plus a combined `summary.csv` under
+`runtime/intake_sweeps/<timestamp>/`.
 
 The mechanism has not yet completed an end-to-end simulated ball capture.
 Validate roller contact, channel travel, basket entry and collection
@@ -218,22 +242,26 @@ docker compose -f docker-compose.yml -f docker-compose.ubuntu.yml \
   grep -E "loaded YOLO|perception_node|controller_manager|ERROR|FATAL"
 docker compose -f docker-compose.yml -f docker-compose.ubuntu.yml \
   --profile gazebo exec gazebo bash -lc \
-  '. /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh;
+  'if [ -f /opt/ros/jazzy/setup.sh ]; then . /opt/ros/jazzy/setup.sh; else . /opt/ros/humble/setup.sh; fi;
+   . /ros2_ws/install/setup.sh;
    . /workspace/ros2_ws/install_docker/local_setup.sh; ros2 node list'
 docker compose -f docker-compose.yml -f docker-compose.ubuntu.yml \
   --profile gazebo exec gazebo bash -lc \
-  '. /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh;
+  'if [ -f /opt/ros/jazzy/setup.sh ]; then . /opt/ros/jazzy/setup.sh; else . /opt/ros/humble/setup.sh; fi;
+   . /ros2_ws/install/setup.sh;
    . /workspace/ros2_ws/install_docker/local_setup.sh;
    ros2 control list_controllers'
 docker compose -f docker-compose.yml -f docker-compose.ubuntu.yml \
   --profile gazebo exec gazebo bash -lc \
-  '. /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh;
+  'if [ -f /opt/ros/jazzy/setup.sh ]; then . /opt/ros/jazzy/setup.sh; else . /opt/ros/humble/setup.sh; fi;
+   . /ros2_ws/install/setup.sh;
    . /workspace/ros2_ws/install_docker/local_setup.sh;
    timeout 10 ros2 topic hz /clock --window 20;
    code=$?; [ $code -eq 124 ]'
 docker compose -f docker-compose.yml -f docker-compose.ubuntu.yml \
   --profile gazebo exec gazebo bash -lc \
-  '. /opt/ros/humble/setup.sh; . /ros2_ws/install/setup.sh;
+  'if [ -f /opt/ros/jazzy/setup.sh ]; then . /opt/ros/jazzy/setup.sh; else . /opt/ros/humble/setup.sh; fi;
+   . /ros2_ws/install/setup.sh;
    . /workspace/ros2_ws/install_docker/local_setup.sh;
    timeout 10 ros2 topic echo /perception/ball_detections --once'
 ```

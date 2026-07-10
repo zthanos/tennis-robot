@@ -97,46 +97,16 @@
   ros_type_name: tf2_msgs/msg/TFMessage
   direction: GZ_TO_ROS
 
-# Real physics contacts from each intake paddle. Kept separate because a
-# Gazebo contact sensor is bound to one collision; gazebo_extras_node merges
-# them into /sim/roller_contact_markers and /sim/roller_contact.
+# Real physics contact from the continuous foam intake roller.
 - gz_topic_name: /world/tennis_court/model/tennis_robot/link/lift_wheel_link/sensor/roller_contact_0/contact
   ros_topic_name: /gz/roller_contact_0
   gz_type_name: gz.msgs.Contacts
   ros_type_name: ros_gz_interfaces/msg/Contacts
   direction: GZ_TO_ROS
-- gz_topic_name: /gz/roller_contact_1
-  ros_topic_name: /gz/roller_contact_1
-  gz_type_name: gz.msgs.Contacts
-  ros_type_name: ros_gz_interfaces/msg/Contacts
-  direction: GZ_TO_ROS
-- gz_topic_name: /gz/roller_contact_2
-  ros_topic_name: /gz/roller_contact_2
-  gz_type_name: gz.msgs.Contacts
-  ros_type_name: ros_gz_interfaces/msg/Contacts
-  direction: GZ_TO_ROS
-- gz_topic_name: /gz/roller_contact_3
-  ros_topic_name: /gz/roller_contact_3
-  gz_type_name: gz.msgs.Contacts
-  ros_type_name: ros_gz_interfaces/msg/Contacts
-  direction: GZ_TO_ROS
-- gz_topic_name: /gz/roller_contact_4
-  ros_topic_name: /gz/roller_contact_4
-  gz_type_name: gz.msgs.Contacts
-  ros_type_name: ros_gz_interfaces/msg/Contacts
-  direction: GZ_TO_ROS
-- gz_topic_name: /gz/roller_contact_5
-  ros_topic_name: /gz/roller_contact_5
-  gz_type_name: gz.msgs.Contacts
-  ros_type_name: ros_gz_interfaces/msg/Contacts
-  direction: GZ_TO_ROS
-- gz_topic_name: /gz/roller_contact_6
-  ros_topic_name: /gz/roller_contact_6
-  gz_type_name: gz.msgs.Contacts
-  ros_type_name: ros_gz_interfaces/msg/Contacts
-  direction: GZ_TO_ROS
-- gz_topic_name: /gz/roller_contact_7
-  ros_topic_name: /gz/roller_contact_7
+
+# Real physics contact from the launcher scoop / raised lip.
+- gz_topic_name: /world/tennis_court/model/tennis_robot/link/base_footprint/sensor/lip_contact_0/contact
+  ros_topic_name: /gz/lip_contact_0
   gz_type_name: gz.msgs.Contacts
   ros_type_name: ros_gz_interfaces/msg/Contacts
   direction: GZ_TO_ROS

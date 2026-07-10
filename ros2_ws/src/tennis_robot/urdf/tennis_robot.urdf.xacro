@@ -45,21 +45,15 @@
   <xacro:property name="motor_radius" value="0.03"/>
   <xacro:property name="motor_length" value="0.10"/>
 
-  <!-- Roller-first intake (scripts/generate_curved_scoop_mesh.py): the solid
-       roller is the FIRST hard contact with the ball — the entire channel
-       sits BEHIND the roller's leading edge. Envelope Ø90 x 180 mm, centre
-       112 mm above ground at x=0.60; the envelope reaches forward to
-       x=0.645 while the effective channel tip is at x=0.585. A 66 mm ball
-       therefore meets the roller before the rigid central scoop geometry.
-       The roller then drives it around the concentric channel arc
-       (nominal radius 108 mm),
-       up the rear wall and over the deflector into the basket
-       (funnel.urdf.xacro). The chassis plate has a matching front cutout
-       (base.urdf.xacro). The old push-ramp design (lip at 0.66, roller
-       centre 143.7 mm) never captured: the ball had to climb a passive
-       37-degree ramp before the roller could even touch it. -->
-  <!-- 50 mm forward of the original x=0.55 position so the roller, rather
-       than the scoop / funnel cheeks, is the first central hard contact. -->
+  <!-- Top-roller launcher intake (scripts/generate_curved_scoop_mesh.py):
+       the scoop is NOT a transport channel. Its front lip sits about 2 mm
+       above the court to give the ball a short, controlled resistance point
+       against the top roller. The roller should impart a brief launch impulse;
+       after that bite zone the ramp opens away from the roller so the ball
+       rides up by momentum and drops into the basket. Avoid tuning this back
+       into a continuous pinch path between roller and scoop. -->
+  <!-- Kept forward so the roller/lip bite happens before the funnel cheeks or
+       the main ramp can shove the ball sideways. -->
   <xacro:property name="intake_x" value="${0.60 + float($(arg intake_roller_x_offset))}"/>
   <!-- base_link origin is 45 mm above ground: 0.112 - 0.045. With a 45 mm
        roller radius this leaves 67 mm below the roller, so the rigid 66 mm
@@ -79,7 +73,7 @@
        to the LEFT of the intake mouth (base_link 0.5 0.13 -0.02, i.e. 25 mm
        above ground, just inside the funnel cheek at y=0.145), aimed
        diagonally inward-up-forward at the roller/lip nip. A head-on underside
-       mount is blocked by the scoop channel itself (verified: its depth
+       mount is blocked by the scoop/ramp itself (verified: its depth
        camera read a solid surface ~8 cm away filling the whole frame), so the
        line of sight comes in from the side of the channel where nothing
        obstructs it. yaw/pitch computed for the roller centre at effective
@@ -91,12 +85,12 @@
   <xacro:property name="intake_debug_camera_rpy" value="0 -0.289 -0.882"/>
 
   <!-- Throat beam crosses the intake mouth at ball-centre height (40 mm
-       above ground = -0.005 in base_link), right where the paddles first
-       grab the ball (centre x~0.58): detects a ball at the nip (jam /
+       above ground = -0.005 in base_link), right where the foam roller first
+       bites the ball (centre x~0.58): detects a ball at the nip (jam /
        partial-capture detection). Collection confirmation is the BASKET
        beam pair below — see gazebo_extras_node.py. -->
   <!-- Trigger just before the ball reaches the roller envelope. The first
-       paddle contact is at ball-centre x≈0.597 m, so a beam behind that point
+       roller contact is at ball-centre x≈0.597 m, so a beam behind that point
        cannot start a stationary roller in time. -->
   <xacro:property name="ir_x" value="0.620"/>
   <xacro:property name="ir_y" value="0.105"/>

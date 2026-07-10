@@ -41,7 +41,7 @@ try:
         }
         for p in msg.get("pose", []):
             n = p.get("name", "")
-            if not (n.startswith("ball_") or n == "tennis_robot"):
+            if not (n.startswith("ball_") or n == "tennis_robot" or n.startswith("tennis_robot::")):
                 continue
             pos = p.get("position", {})
             entry = {

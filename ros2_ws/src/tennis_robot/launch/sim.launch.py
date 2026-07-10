@@ -89,6 +89,14 @@ def generate_gazebo_gui_config():
 def generate_launch_description():
     generate_robot_urdf()
     generate_gazebo_gui_config()
+    bench_minimal = os.getenv("SIM_BENCH_MINIMAL", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    skip_control_panel = bench_minimal or os.getenv(
+        "SIM_SKIP_CONTROL_PANEL", "false"
+    ).lower() in {"1", "true", "yes"}
 
     headless_arg = DeclareLaunchArgument(
         "headless", default_value="false",
@@ -154,9 +162,10 @@ def generate_launch_description():
         arguments=[
             "-file", ROBOT_SDF,
             "-name", "tennis_robot",
-            "-x", "-8",
-            "-y", "0",
-            "-z", "0.09",
+            "-x", os.getenv("SIM_ROBOT_SPAWN_X", "-8"),
+            "-y", os.getenv("SIM_ROBOT_SPAWN_Y", "0"),
+            "-z", os.getenv("SIM_ROBOT_SPAWN_Z", "0.09"),
+            "-Y", os.getenv("SIM_ROBOT_SPAWN_YAW", "0"),
         ],
         output="screen",
     )
@@ -355,14 +364,16 @@ def generate_launch_description():
     )
 
     # Delay ROS nodes until Gazebo + bridge are up
-    delayed_nodes = TimerAction(
-        period=4.0,
-        actions=[
+    if bench_minimal:
+        delayed_node_actions = [bridge, gz_extras]
+    else:
+        delayed_node_actions = [
             bridge, perception, controller, navigation,
             command_bridge, gz_extras, sensor_snapshots, drive_actuator, collector_logic, twist_mux,
             ekf,
-        ],
-    )
+        ]
+
+    delayed_nodes = TimerAction(period=4.0, actions=delayed_node_actions)
 
     delayed_spawn = TimerAction(
         period=1.0,
@@ -376,13 +387,15 @@ def generate_launch_description():
         actions=[jsb_spawner, diff_drive_spawner, lift_wheel_spawner],
     )
 
-    return LaunchDescription([
+    actions = [
         headless_arg,
         gz_full,
         gz_headless,
         robot_state_publisher,
         delayed_spawn,
-        control_panel,
         delayed_nodes,
         delayed_controllers,
-    ])
+    ]
+    if not skip_control_panel:
+        actions.insert(5, control_panel)
+    return LaunchDescription(actions)

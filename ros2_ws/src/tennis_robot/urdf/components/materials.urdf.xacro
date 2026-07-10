@@ -9,6 +9,9 @@
   <material name="intake_orange">
     <color rgba="0.96 0.52 0.10 1"/>
   </material>
+  <material name="safety_orange">
+    <color rgba="1.0 0.24 0.02 1"/>
+  </material>
   <material name="mount_gray">
     <color rgba="0.30 0.32 0.36 1"/>
   </material>

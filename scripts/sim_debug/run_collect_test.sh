@@ -6,7 +6,7 @@ cd /home/thanosz/projects/diy/tennis-robot
 
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.ubuntu.yml -f docker-compose.ubuntu-gpu.yml --profile gazebo)
 TEST="${TEST_NAME:-collect_test1}"
-Z_OFF="${TEST_Z_OFF:--0.005}"
+Z_OFF="${TEST_Z_OFF:--0.003}"
 SEQ="${TEST_SEQ:-62}"
 BAGDIR=/workspace/runtime/bags/$TEST
 
@@ -29,9 +29,9 @@ fi
 
 # 1. recorders (self-terminate at 240s as safety)
 "${COMPOSE[@]}" exec -T gazebo bash -lc '
-. /opt/ros/humble/setup.sh
+. /opt/ros/${ROS_DISTRO_TARGET:-jazzy}/setup.sh
 timeout 240 ros2 bag record -o '"$BAGDIR"' \
-  /gz/roller_contact_0 /gz/roller_contact_1 /gz/roller_contact_2 /gz/roller_contact_3 /gz/roller_contact_4 /gz/roller_contact_5 /gz/roller_contact_6 /gz/roller_contact_7 /joint_states /collector/intake_beam_broken \
+  /gz/roller_contact_0 /joint_states /collector/intake_beam_broken \
   /odom /cmd_vel /sim/roller_contact > /tmp/bagrec.log 2>&1 &
 timeout 240 python3 /workspace/scripts/sim_debug/log_gz_poses.py '"${BAGDIR}_poses.jsonl"' > /tmp/poselog.log 2>&1 &
 timeout 240 python3 /workspace/scripts/sim_debug/dump_intake_frames.py '"${BAGDIR}_frames"' > /tmp/framedump.log 2>&1 &
@@ -90,8 +90,8 @@ EOF
 
 # 5. analyze
 "${COMPOSE[@]}" exec -T gazebo bash -lc '
-. /opt/ros/humble/setup.sh
-export INTAKE_ROLLER_X_OFFSET_M=0.015 INTAKE_ROLLER_Z_OFFSET_M='"$Z_OFF"'
+. /opt/ros/${ROS_DISTRO_TARGET:-jazzy}/setup.sh
+export INTAKE_ROLLER_X_OFFSET_M=0.015 INTAKE_LIP_X_OFFSET_M=-0.006 INTAKE_ROLLER_Z_OFFSET_M='"$Z_OFF"'
 python3 /workspace/scripts/sim_debug/analyze_collect_bag.py '"$BAGDIR $BAGDIR"'_poses.jsonl '"$BAGDIR"'_frames '"$BAGDIR"'_analysis
 '
 echo "=== TEST DONE ==="

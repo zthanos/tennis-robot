@@ -1,6 +1,6 @@
 # Collector And Launcher Concepts
 
-Last checked: 2026-05-16
+Last checked: 2026-07-10
 
 This document compares early mechanical concepts for collecting tennis balls and, later, launching them for practice. Costs are rough prototype estimates and exclude shipping, VAT/import duties, machining, 3D printing, and failed experiments.
 
@@ -33,12 +33,42 @@ Sources: ITF ball specification references and current retail pipe examples show
 
 | Concept | Collection | Launch | Prototype cost | Complexity | Best use | Verdict |
 |---|---|---|---:|---|---|---|
-| A. Funnel + lift wheel + flywheel barrel | Mechanical funnel guides ball into a lift wheel/roller | Hopper feeds a rear/top dual-flywheel launch barrel | US $330-$780 | Medium-high | First full architecture | Best direction, build collector first |
+| A. Funnel + lift wheel + flywheel barrel | Mechanical funnel guides ball into a lift wheel/roller | Hopper feeds a rear/top dual-flywheel launch barrel | US $330-$780 | Medium-high | First full architecture | Good baseline, but single top-roller scoop variant rejected as too fragile |
 | B. Brush roller intake + flywheel barrel | Front brush/roller sweeps balls into a bin | Hopper feeds a rear/top dual-flywheel launch barrel | US $310-$750 | Medium | Simple pickup tests plus normal launcher | Good quick prototype |
 | C. Pan-tilt pneumatic turret | Same steerable tube tilts down to vacuum-pick balls | Same tube tilts up and fires as a barrel/cannon | US $350-$900+ | High | Simulation concept and bench prototype | Third main option; very interesting, mechanically risky |
 | D. Scoop + conveyor + flywheel barrel | Low scoop feeds belt/elevator into hopper | Conveyor/hopper feeds a rear/top dual-flywheel launch barrel | US $370-$900 | High | Higher capacity collection | Strong later option |
 | E. Fixed pneumatic collection + pneumatic launch | Vacuum/airflow pulls balls through fixed tube | Diverter sends balls to launch chamber | US $250-$700+ | High | Bench experiment, not first robot | Interesting but less elegant than turret |
 | F. Mechanical collector + flywheel launcher | Any collector above | Dual counter-rotating flywheels | US $250-$600+ launcher only | Medium-high | Reliable training shots | Best long-term launcher |
+
+## 2026-07-10 Intake Decision
+
+The Gazebo deterministic intake bench rejected the current single top-roller +
+raised scoop/lip variant as the primary path. The mechanism could be tuned to
+show partial release behavior, but the useful region was too narrow and the
+release impulse remained weak or misdirected. That is a strong signal that the
+real mechanism would be fragile on court surfaces.
+
+Decision record:
+
+```text
+docs/intake-concept-decision-el.md
+```
+
+Measurement report:
+
+```text
+docs/intake-bench-sweep-report-el.md
+```
+
+Next concept direction:
+
+```text
+feat/dual-wheel-intake-concept
+```
+
+The next intake concept should favor a dual-wheel / dual-roller controlled
+pinch with a clearly defined launch direction, instead of relying on a passive
+scoop lip to create just enough resistance for a single top roller.
 
 ## Full Robot Architecture Note
 

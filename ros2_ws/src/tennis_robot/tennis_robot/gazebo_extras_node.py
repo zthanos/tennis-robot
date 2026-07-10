@@ -99,13 +99,12 @@ class GazeboExtrasNode(Node):
         self._robot_pose: tuple[float, float, float, float] | None = None  # x, y, z, yaw
         self._contact_points: list[tuple[float, float, float]] = []
         self._last_contact_ns = 0
-        for index in range(8):
-            self.create_subscription(
-                Contacts,
-                f"/gz/roller_contact_{index}",
-                self._on_roller_contacts,
-                10,
-            )
+        self.create_subscription(
+            Contacts,
+            "/gz/roller_contact_0",
+            self._on_roller_contacts,
+            10,
+        )
 
         self.create_timer(0.05, self._publish)
         self.get_logger().info("gazebo_extras_node started")
