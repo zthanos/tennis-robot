@@ -1193,6 +1193,48 @@
   basket floor top 0.052 (chassis-flush), front edge 0.42· crest
   criterion 0.080.
 
+## 2026-07-11
+
+### 42. Phase 4: full intake (funnel+ramp) + lateral envelope
+- Commit checkpoint πριν τη φάση: **79b7020** (όλη η dual-wheel υλοποίηση
+  Phase 0-3 + Phase 3 pass, εγγραφές #24-#41).
+- **Setup**: winning γεωμετρία του #41 (nip 0.540, gap 56, Rw 60, tilt 35°,
+  25 rad/s, jump 0.500→(0.465,0.020)→(0.425,0.055), floor 0.052/0.42,
+  crest 0.080), `INTAKE_SWEEP_PHASE=full` (funnel+ramp ΜΑΖΙ πρώτη φορά),
+  lateral offsets -80/-40/0/+40/+80mm.
+- **Γνωστό ρίσκο προς μέτρηση**: τα funnel cheeks μπήκαν στο #24 για
+  nip 0.590 (rear tip x=0.647)· με nip 0.540 υπάρχει ~35mm αφύλαχτο κενό
+  cheek-tip→τροχούς. Αν off-centre μπάλες χάνονται εκεί, τα cheeks θα
+  μετατοπιστούν πίσω αναλογικά (0.647-0.050).
+- **Αποτελέσματα envelope (phase4_full_envelope)**: **PASS 5/5 — required
+  6/6 σε ΟΛΑ τα offsets**, stall 0.00s παντού:
+  | offset | inward m/s | τελική θέση |
+  |---|---|---|
+  | -80mm | 0.96 | (-0.065, 0.000, 0.085) |
+  | -40mm | 0.72 | (-0.069, 0.000, 0.085) |
+  | 0 | 0.80 | (-0.065, 0.000, 0.085) |
+  | +40mm | 1.01 | (-0.065, 0.000, 0.085) |
+  | +80mm | 1.15 | (-0.068, 0.000, 0.085) |
+  Το ρίσκο του cheek-gap ΔΕΝ υλοποιήθηκε: το funnel κεντράρει (τελικό
+  y=0.000 σε όλα), κάθε μπάλα καταλήγει στο ίδιο σημείο μέσα στο καλάθι.
+  Πρώτο πλήρες funnel+wheels+jump+hopper πέρασμα του project.
+- **Boundary repeatability (phase4_boundary_x5): PASS 10/10** — required
+  6/6 σε κάθε repeat και στα δύο όρια (±80mm), stall 0.00s παντού,
+  inward 0.60-1.11 m/s, τελική θέση (-0.063..-0.068, z 0.085) σε όλα.
+  **Το Phase 4 bench gate κλείνει — το dual-wheel concept πέρασε και τις
+  4 φάσεις του Concept Validation Plan στο bench.**
+- **Εκκρεμότητες για live/full integration (επόμενη δουλειά)**:
+  1. **Basket IR beams**: στο `tennis_robot.urdf.xacro` το ζεύγος είναι στο
+     `basket_ir_z=0.113` base_link = **0.158 ground** — σχεδιασμένο για το
+     scoop-era πάτωμα 0.128. Με το νέο hopper (floor 0.052, μπάλα που
+     μπαίνει/κάθεται σε κέντρο 0.085-0.094) η μπάλα ΔΕΝ κόβει ποτέ τη
+     δέσμη → το collection count δεν θα μετρήσει. Θέλει χαμήλωμα στο
+     ~0.085-0.090 ground (base_link z≈0.040) μαζί με το πάτωμα.
+  2. `analyze_collect_bag.py` + `run_collect_test.sh` είναι roller-era
+     (συνειδητή εκκρεμότητα #25) — προσαρμογή για το collect_one live test.
+  3. Τα νέα ramp/basket bench values να γίνουν defaults του
+     sim/run_ubuntu.sh flow όταν επιβεβαιωθεί το live collect_one.
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):
