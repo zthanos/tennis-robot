@@ -54,10 +54,13 @@ def summarize(path: Path, status_path: Path | None = None) -> dict[str, Any]:
             joint_vels.append(float(summary_joint_velocity))
         except (TypeError, ValueError):
             pass
+    left_samples = sum(1 for r in rows if r.get("wheel") == "left")
+    right_samples = sum(1 for r in rows if r.get("wheel") == "right")
     geometries = [r.get("geometry", {}) for r in rows if isinstance(r.get("geometry"), dict)]
     geometry = geometries[-1] if geometries else {
-        "roller_x_m": summary.get("roller_x_m"),
-        "lip_x_m": summary.get("lip_x_m"),
+        "nip_x_m": summary.get("nip_x_m"),
+        "wheel_gap_m": summary.get("wheel_gap_m"),
+        "wheel_radius_m": summary.get("wheel_radius_m"),
         "nominal_bite_dx_m": summary.get("nominal_bite_dx_m"),
     }
 
@@ -79,8 +82,11 @@ def summarize(path: Path, status_path: Path | None = None) -> dict[str, Any]:
         "contact_duration_s": round(contact_duration_s, 4),
         "first_contact_t_s": round(min(times), 4) if times else None,
         "last_contact_t_s": round(max(times), 4) if times else None,
-        "roller_x_m": geometry.get("roller_x_m"),
-        "lip_x_m": geometry.get("lip_x_m"),
+        "wheel_left_samples": left_samples,
+        "wheel_right_samples": right_samples,
+        "nip_x_m": geometry.get("nip_x_m"),
+        "wheel_gap_m": geometry.get("wheel_gap_m"),
+        "wheel_radius_m": geometry.get("wheel_radius_m"),
         "nominal_bite_dx_m": geometry.get("nominal_bite_dx_m"),
         "depth_min_mm": depth_stats["min"],
         "depth_max_mm": depth_stats["max"],

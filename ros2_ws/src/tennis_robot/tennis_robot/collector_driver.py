@@ -30,8 +30,9 @@ class GazeboCollectorDriver(CollectorDriver):
         self._publish = publish
 
     def set_speed(self, speed_rad_s: float) -> None:
-        # Gazebo's lift_wheel_joint positive velocity now matches the
-        # collector's positive "intake" convention.
+        # Signed magnitude in the collector's "positive = intake" convention.
+        # The publish callback (collector_logic_node) fans it out to the two
+        # counter-rotating intake wheel joints as [-v, +v].
         self._publish(float(speed_rad_s))
 
 

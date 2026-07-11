@@ -94,6 +94,11 @@ def generate_launch_description():
         "true",
         "yes",
     }
+    enable_assist = os.getenv("INTAKE_ENABLE_ASSIST", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
     skip_control_panel = bench_minimal or os.getenv(
         "SIM_SKIP_CONTROL_PANEL", "false"
     ).lower() in {"1", "true", "yes"}
@@ -201,7 +206,8 @@ def generate_launch_description():
 
     jsb_spawner = _spawner("joint_state_broadcaster")
     diff_drive_spawner = _spawner("diff_drive_controller")
-    lift_wheel_spawner = _spawner("lift_wheel_velocity_controller")
+    intake_wheel_spawner = _spawner("intake_wheel_velocity_controller")
+    assist_wheel_spawner = _spawner("assist_wheel_velocity_controller")
 
     # Actuation layer: the only node that talks to the controller command topics.
     drive_actuator = Node(
@@ -384,7 +390,12 @@ def generate_launch_description():
     # controller_manager inside Gazebo (spawners wait up to 60s regardless).
     delayed_controllers = TimerAction(
         period=6.0,
-        actions=[jsb_spawner, diff_drive_spawner, lift_wheel_spawner],
+        actions=[
+            jsb_spawner,
+            diff_drive_spawner,
+            intake_wheel_spawner,
+            *([assist_wheel_spawner] if enable_assist else []),
+        ],
     )
 
     actions = [

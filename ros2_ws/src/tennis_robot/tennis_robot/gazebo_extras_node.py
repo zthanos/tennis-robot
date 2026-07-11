@@ -105,6 +105,12 @@ class GazeboExtrasNode(Node):
             self._on_roller_contacts,
             10,
         )
+        self.create_subscription(
+            Contacts,
+            "/gz/roller_contact_1",
+            self._on_roller_contacts,
+            10,
+        )
 
         self.create_timer(0.05, self._publish)
         self.get_logger().info("gazebo_extras_node started")

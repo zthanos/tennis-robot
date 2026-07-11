@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Generate the top-roller launcher scoop mesh for the sim URDF.
+"""Generate the intake elevation-ramp mesh for the sim URDF.
 
-This scoop is a ramp, not a conveyor channel. The front lip is about 2 mm above
-the court so a tennis ball briefly resists the top roller and receives a launch
-impulse. Immediately behind that bite zone the ramp opens away from the roller,
-then climbs toward the basket; the ball should travel up it by momentum rather
-than staying pinched between the roller and the scoop.
+Dual-wheel intake (docs/dual-wheel-intake-design-el.md): the side wheels
+capture and transport the ball rearward through the nip; this ramp receives
+it just behind the throat and elevates it toward the basket. The entry sits
+slightly ahead of the wheel nip so the ball is fed onto a rising surface
+while still driven by the wheels.
 
 The mesh is emitted in the funnel_link frame (origin = base_link x/y, shifted
 down by chassis_z/2 = 7 mm; base_link is 45 mm above ground, so the ground
@@ -20,23 +20,17 @@ import struct
 import sys
 from pathlib import Path
 
-# Geometry (m, ground frame).
-# ROLLER_X/ROLLER_Z are kept for documentation and future clearance checks:
-# they track tennis_robot.urdf.xacro's intake_x/intake_z via the same envs.
-_ROLLER_X_OFFSET_M = float(os.getenv("INTAKE_ROLLER_X_OFFSET_M", "0.0"))
-_ROLLER_Z_OFFSET_M = float(os.getenv("INTAKE_ROLLER_Z_OFFSET_M", "0.0"))
-_LIP_X_OFFSET_M = float(os.getenv("INTAKE_LIP_X_OFFSET_M", "0.0"))
-ROLLER_X = 0.600 + _ROLLER_X_OFFSET_M
-LIP_X = ROLLER_X + _LIP_X_OFFSET_M
-LIP_HEIGHT_M = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.002")))
-ROLLER_Z = 0.112 + _ROLLER_Z_OFFSET_M
+# Geometry (m, ground frame). Entry defaults to nip_x + 20 mm.
+_NIP_X_M = float(os.getenv("INTAKE_NIP_X_M", "0.590"))
+LIP_X = float(os.getenv("INTAKE_RAMP_ENTRY_X_M", str(_NIP_X_M + 0.020)))
+LIP_HEIGHT_M = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
 RAMP_CLEAR_RUN_M = max(0.004, float(os.getenv("INTAKE_RAMP_CLEAR_RUN_M", "0.030")))
 RAMP_CLEAR_X = LIP_X - RAMP_CLEAR_RUN_M
-RAMP_KNEE_X = 0.520
-RAMP_END_X = 0.400
+RAMP_KNEE_X = float(os.getenv("INTAKE_RAMP_KNEE_X_M", "0.520"))
+RAMP_END_X = float(os.getenv("INTAKE_RAMP_END_X_M", "0.400"))
 RAMP_CLEAR_Z = max(LIP_HEIGHT_M, float(os.getenv("INTAKE_RAMP_CLEAR_Z_M", "0.004")))
-RAMP_KNEE_Z = 0.024
-RAMP_END_Z = 0.128
+RAMP_KNEE_Z = float(os.getenv("INTAKE_RAMP_KNEE_Z_M", "0.024"))
+RAMP_END_Z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.128"))
 SCOOP_WIDTH = 0.180
 SHEET_THICKNESS = 0.002
 COLLISION_CLEARANCE = 0.001

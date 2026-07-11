@@ -57,43 +57,157 @@
        the drive_wheel macro above). The old swivel-caster macro and its scrub
        resistance are gone. -->
 
-  <xacro:macro name="intake_roller" params="x z radius width mass">
-    <!-- Top intake roller: one continuous foam/rubber cylinder. The simulated
-         collision is rigid, but its outer radius and high friction represent
-         a lightly compressible foam sleeve that gives a short launch impulse
-         at the 2 mm scoop lip. It should not transport the ball along the
-         whole ramp. -->
-    <link name="lift_wheel_link">
-      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="y"/>
-      <collision name="roller_col">
-        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+  <!-- Dual-wheel side-pinch intake (docs/dual-wheel-intake-design-el.md):
+       two side wheels, one each side of a centre corridor, both inner faces
+       driving rearward (-x). The wheel axis can be pitched slightly toward
+       +x for Phase 3 experiments, adding an upward component as the ball
+       enters the ramp. Each wheel hangs on a passive
+       prismatic y-carriage whose spring is patched into the generated SDF
+       (scripts/generate_robot_urdf.py) — this is the lateral compliance a
+       rigid ball needs to pass a rigid nip (lesson of collect_test1/2, and
+       unlike the old roller orbit the required yield direction here is a
+       constant ±y, which one prismatic DOF covers exactly). -->
+  <xacro:macro name="intake_side_wheel"
+               params="side y nip_x wheel_z tilt_rad radius height carriage_travel max_vel effort mass sensor_index">
+    <link name="intake_wheel_${side}_carriage_link">
+      <inertial>
+        <mass value="0.05"/>
+        <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/>
+      </inertial>
+      <visual name="carriage_vis">
+        <origin xyz="0 0 ${height / 2 + 0.008}" rpy="0 0 0"/>
+        <geometry><box size="0.03 0.03 0.012"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+    </link>
+    <!-- Axis points OUTWARD (away from the corridor): rest position 0 is the
+         inner stop (nominal 3 mm interference per side on a 66 mm ball); a
+         passing ball compresses the "foam" by pushing the carriage outward
+         against the SDF-patched spring. -->
+    <joint name="intake_wheel_${side}_carriage_joint" type="prismatic">
+      <parent link="base_link"/>
+      <child link="intake_wheel_${side}_carriage_link"/>
+      <origin xyz="${nip_x} ${y} ${wheel_z}" rpy="0 0 0"/>
+      <axis xyz="0 ${1 if y >= 0 else -1} 0"/>
+      <limit lower="0" upper="${carriage_travel}" effort="200" velocity="1.0"/>
+      <dynamics damping="8.0"/>
+    </joint>
+    <link name="intake_wheel_${side}_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${height}" axis="z"/>
+      <collision name="wheel_col">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${height}"/></geometry>
       </collision>
-      <visual name="roller_vis">
-        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+      <visual name="wheel_vis">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${height}"/></geometry>
         <material name="rubber_black"/>
       </visual>
-      <visual name="roller_spin_marker_vis">
-        <origin xyz="${radius} 0 0" rpy="0 0 0"/>
-        <geometry><box size="0.004 ${width + 0.004} 0.018"/></geometry>
+      <visual name="wheel_spin_marker_vis">
+        <origin xyz="${radius - 0.004} 0 ${height / 2 - 0.008}" rpy="0 0 0"/>
+        <geometry><box size="0.006 0.02 0.012"/></geometry>
         <material name="safety_orange"/>
       </visual>
     </link>
-    <joint name="lift_wheel_joint" type="continuous">
-      <parent link="base_link"/>
-      <child link="lift_wheel_link"/>
+    <!-- GB37Y3530-12V-251R per wheel: no-load 26.3 rad/s, stall 1.77 N.m.
+         NOTE: gz_ros2_control velocity commands act as an ideal velocity
+         source (the effort limit is not a physical stall model) — jam is
+         detected from ball motion + contact, not wheel droop. -->
+    <joint name="intake_wheel_${side}_joint" type="continuous">
+      <parent link="intake_wheel_${side}_carriage_link"/>
+      <child link="intake_wheel_${side}_link"/>
+      <origin xyz="0 0 0" rpy="0 ${tilt_rad} 0"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="${effort}" velocity="${max_vel}"/>
+      <dynamics damping="0.005"/>
+    </joint>
+    <gazebo reference="intake_wheel_${side}_link">
+      <mu1>2.5</mu1>
+      <mu2>2.5</mu2>
+      <!-- 500 Hz: throat transit is impulsive (~tens of ms; the first live
+           run at 100 Hz sampled ZERO messages while the ball measurably
+           passed through at 0.77 m/s) — sample near the physics rate so
+           both-wheel contact confirmation cannot be missed. -->
+      <sensor name="roller_contact_${sensor_index}" type="contact">
+        <always_on>true</always_on><update_rate>500</update_rate>
+        <topic>/gz/roller_contact_${sensor_index}</topic>
+        <contact><collision>wheel_col</collision></contact>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Phase 3B conveyor approximation: several small powered rollers along
+       the ramp create active contact over length, without modelling a
+       deformable belt in Gazebo. Axis is y; positive joint velocity makes the
+       lower surface move rearward (-x). -->
+  <xacro:macro name="intake_ramp_conveyor_roller"
+               params="name parent x z radius length mass">
+    <link name="${name}_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${length}" axis="y"/>
+      <collision name="${name}_col">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+      </collision>
+      <visual name="${name}_vis">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+        <material name="rubber_black"/>
+      </visual>
+      <visual name="${name}_marker_vis">
+        <origin xyz="0 ${length / 2 - 0.012} ${-radius + 0.004}" rpy="0 0 0"/>
+        <geometry><box size="0.018 0.006 0.006"/></geometry>
+        <material name="safety_orange"/>
+      </visual>
+    </link>
+    <joint name="${name}_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child link="${name}_link"/>
       <origin xyz="${x} 0 ${z}" rpy="0 0 0"/>
       <axis xyz="0 1 0"/>
+      <limit effort="1.77" velocity="26.3"/>
+      <dynamics damping="0.005"/>
     </joint>
-    <gazebo reference="lift_wheel_link">
-      <mu1>0.8</mu1>
-      <mu2>0.8</mu2>
-      <sensor name="roller_contact_0" type="contact">
-        <always_on>true</always_on><update_rate>100</update_rate>
-        <topic>/gz/roller_contact_0</topic>
-        <contact><collision>roller_col</collision></contact>
-      </sensor>
+    <gazebo reference="${name}_link">
+      <mu1>2.5</mu1>
+      <mu2>2.5</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Active second-stage assist roller for Phase 3 experiments. Axis is y;
+       positive joint velocity makes the bottom surface move rearward (-x),
+       helping the ball continue from the dual-wheel throat onto the ramp.
+       This is opt-in via enable_assist so Phases 1-2 and passive ramp tests
+       stay comparable. -->
+  <xacro:macro name="intake_assist_roller"
+               params="parent x z radius length mass">
+    <link name="intake_assist_wheel_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${length}" axis="y"/>
+      <collision name="assist_wheel_col">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+      </collision>
+      <visual name="assist_wheel_vis">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+        <material name="rubber_black"/>
+      </visual>
+      <visual name="assist_spin_marker_vis">
+        <origin xyz="0 ${length / 2 - 0.012} ${-radius + 0.004}" rpy="0 0 0"/>
+        <geometry><box size="0.018 0.006 0.006"/></geometry>
+        <material name="safety_orange"/>
+      </visual>
+    </link>
+    <joint name="intake_assist_wheel_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child link="intake_assist_wheel_link"/>
+      <origin xyz="${x} 0 ${z}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit effort="1.77" velocity="26.3"/>
+      <dynamics damping="0.005"/>
+    </joint>
+    <gazebo reference="intake_assist_wheel_link">
+      <mu1>2.5</mu1>
+      <mu2>2.5</mu2>
     </gazebo>
   </xacro:macro>
 

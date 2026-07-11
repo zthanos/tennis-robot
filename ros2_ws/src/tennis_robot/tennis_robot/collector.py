@@ -67,10 +67,11 @@ class ConceptAConfig:
     capture_speed_m_s: float = 0.14
     capture_angular_gain: float = 1.2
     reverse_speed_m_s: float = -0.10
-    # 45 mm roller radius: 30 rad/s gives 1.35 m/s paddle-tip speed. At 20
-    # rad/s the ball did not reach the top of the channel; at 40 rad/s the
-    # impact ejected it instead of guiding it up the ramp.
-    lift_wheel_speed: float = 30.0
+    # Dual-wheel intake, GB37Y3530-12V-251R per wheel (no-load 26.3 rad/s).
+    # 25 rad/s setpoint x 60 mm wheel radius = 1.5 m/s surface speed. The
+    # signed magnitude is fanned out to [-v, +v] (left/right) by
+    # collector_logic_node so both inner faces drive rearward.
+    lift_wheel_speed: float = 25.0
     max_capture_retries: int = 3
 
     @classmethod
@@ -93,7 +94,10 @@ class ConceptAConfig:
             capture_speed_m_s=_env_float("COLLECTOR_CAPTURE_SPEED_M_S", defaults.capture_speed_m_s),
             capture_angular_gain=_env_float("COLLECTOR_CAPTURE_ANGULAR_GAIN", defaults.capture_angular_gain),
             reverse_speed_m_s=-abs(_env_float("COLLECTOR_REVERSE_SPEED_M_S", abs(defaults.reverse_speed_m_s))),
-            lift_wheel_speed=_env_float("COLLECTOR_LIFT_WHEEL_SPEED", defaults.lift_wheel_speed),
+            lift_wheel_speed=_env_float(
+                "COLLECTOR_INTAKE_WHEEL_SPEED",
+                _env_float("COLLECTOR_LIFT_WHEEL_SPEED", defaults.lift_wheel_speed),
+            ),
             max_capture_retries=int(round(_env_float("COLLECTOR_MAX_CAPTURE_RETRIES", defaults.max_capture_retries))),
         )
 

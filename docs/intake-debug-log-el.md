@@ -460,6 +460,739 @@
   σωστά χωρίς νοητό +10).
 - **Status**: ✅ εφαρμόστηκε (θα φανεί στο restart μετά το test11).
 
+## 2026-07-10
+
+### 20. Concept pivot: dual-wheel side pinch (design phase)
+- **Context**: το deterministic bench εξάντλησε το single top-roller concept
+  (stop/continue gate: "No, reconsider concept" — βλ.
+  `intake-concept-decision-el.md`, `intake-bench-sweep-report-el.md`).
+- **Αποφάσεις χρήστη (Q&A αυτής της session, ΠΡΙΝ από κάθε αλλαγή
+  γεωμετρίας)**: (α) οριζόντιο pinch — δύο τροχοί σε κατακόρυφους άξονες
+  αριστερά/δεξιά διαδρόμου· (β) funnel=centering, wheels=capture+transport,
+  ramp=elevation προς basket· (γ) actuation με ΔΥΟ πανομοιότυπα μοτέρ (ίδιο
+  μοντέλο με του top roller), ένα ανά τροχό, αντίθετης φοράς —
+  αντικαθιστά το αρχικό "ένα μοτέρ + γρανάζια" (+1 μοτέρ στο BOM).
+- **Spec**: γράφτηκε `docs/dual-wheel-intake-design-el.md` — nominal
+  Rw=45mm, gap=60mm (3mm interference/πλευρά), nip x≈0.59, τροχοί
+  z 0.005-0.085 (καλύπτουν ισημερινό μπάλας z=33), ω=±45 rad/s.
+- **Κρίσιμος υπολογισμός**: ramp end z=0.128 ⇒ v_release ≥1.59 m/s (ιδανικά
+  ~2.0 με απώλειες). Το παλιό ζεύγος (30 rad/s × r30) δίνει 0.9 m/s =
+  ανεπαρκές· nominal 45 rad/s × Rw45 = 2.03 m/s. Rw και ω = πρώτοι sweep
+  axes.
+- **Απόδειξη αντικατάστασης**: ίδιο bench, required criteria του decision
+  doc με both-wheel contact, 4/5 repeatability, head-to-head vs το
+  καλύτερο top-roller case (release 0.133 m/s, no crest).
+- **Status**: ✅ spec γραμμένο· εκκρεμεί έγκριση χρήστη πριν την υλοποίηση
+  γεωμετρίας (Φάση 1).
+
+### 21. Design review χρήστη: launch → transport φιλοσοφία
+- **Αλλαγή πλαισίου (από χρήστη)**: το νέο concept περιγράφεται ως
+  `capture → transport → guide → hopper` — ΟΧΙ ως launcher. Συνέπειες:
+  - Το required "positive vertical velocity at release" ΚΑΤΑΡΓΗΘΗΚΕ
+    (ήταν απαίτηση του launch model)· η ανύψωση είναι ευθύνη του
+    guide/ramp σταδίου.
+  - Νέα required: both-roller contact, capture through throat, positive
+    inward transport, no stall/jam, ramp-entry, hopper-entry ή ramp-crest,
+    4/5 repeatability (πλέον required, όχι preferred).
+  - Νέα preferred: transport speed >= target, contact duration in range,
+    force_p95, lateral offsets, drive-speed variations.
+- **Νέες ενότητες στο decision doc**: Initial Dual-Wheel Architecture
+  (2 μοτέρ, όχι γρανάζια αρχικά — απλοποίηση drivetrain εξετάζεται ΜΕΤΑ
+  την απόδειξη της αρχής), Concept Validation Plan (4 phases: throat only →
+  +funnel → +ramp → full intake), Operating Envelope Validation
+  (5 representative variations × 4/5 — ρητό αντίδοτο στο narrow-sweet-spot
+  failure του top roller).
+- **Συνέπεια υλοποίησης**: η γεωμετρία θα μπει με xacro args
+  (enable_funnel/enable_ramp) ώστε η Phase 1 να τρέχει ΜΟΝΟ το throat.
+  Το transport-speed target (υπολογισμός ~2.0 m/s για ramp z=0.128) γίνεται
+  preferred και θα οριστικοποιηθεί με μέτρηση στη Phase 3.
+- **Status**: ✅ decision doc + design spec ευθυγραμμισμένα.
+
+### 22. Pre-implementation review: 2 κενά κλείνουν στο spec
+- **Λατερική ενδοτικότητα (ΚΡΙΣΙΜΟ)**: το spec έλεγε rigid τροχούς με 3mm
+  interference/πλευρά — αλλά rigid+rigid = σφήνωμα (δίδαγμα test1/test2).
+  Fix στο spec: κάθε τροχός σε prismatic y-carriage με ελατήριο (SDF patch
+  του #9), travel 0..8mm, k~1000 N/m (sweep). Γιατί εδώ δουλεύει ενώ στο
+  #13 απέτυχε: η απαιτούμενη υποχώρηση είναι ΣΤΑΘΕΡΑ ±y σε όλη την ευθεία
+  διαδρομή (όχι περιστρεφόμενη ακτινική όπως στην τροχιά του roller).
+- **Ρεαλιστικό μοτέρ**: πραγματικό hardware = GB37Y3530 12V με encoder
+  (collector-wiring-reference). Στο spec μπήκε: effort limit = rated
+  torque, ω cap = no-load RPM, jam metric = κατάρρευση joint velocity με
+  ενεργό contact (καθρέφτης του encoder jam detection). ⏳ Εκκρεμεί από
+  χρήστη το RPM variant του GB37 (το ω=45 rad/s = 430 RPM ίσως υπερβαίνει
+  το no-load RPM· τότε Rw → ~0.060).
+- Λοιπά: wheels στο base_link (funnel off στη Phase 1)· Phase 1 success =
+  διέλευση nip plane με inward velocity· IR beam μετατόπιση στο throat στη
+  Phase 4· BOM +1 μοτέρ.
+- **Status**: spec πλήρες για υλοποίηση· μόνη ανοιχτή είσοδος το GB37
+  variant (δεν μπλοκάρει τη Φάση 0 — μπαίνει placeholder 45 rad/s cap).
+
+### 23. Motor specs επιβεβαιωμένα (GB37Y3530-12V-251R) — recalc ισοζυγίου
+- **Specs (χρήστης)**: gear 43.8:1, no-load 251 RPM = 26.3 rad/s, stall
+  18 kg·cm = 1.77 N·m, stall 7 A, encoder 16/700 CPR.
+- **Συνέπεια**: το placeholder ω=45 rad/s ήταν αδύνατο. Free-run surface
+  speed max = 26.3×0.060 = 1.58 m/s ≈ οριακά το v_min (1.59) για momentum
+  climb στο z=0.128· υπό φορτίο λαβής droop σε ~1.2 m/s. Μεγαλύτερο Rw
+  δεν βοηθά (+torque demand ⇒ +droop, ⌀>120 χτυπά cheeks στο y=±0.145).
+- **Απόφαση**: momentum-climb ΔΕΝ είναι ο μηχανισμός ανύψωσης (συνεπές με
+  την transport φιλοσοφία #21). Phase 3 μετρά το έλλειμμα· mitigations με
+  σειρά: (1) feed-onto-ramp (συνεχής επαφή τροχών πάνω από την αρχή της
+  ράμπας), (2) χαμήλωμα hopper entry, (3) Rw 0.070 + μετατόπιση cheeks.
+- **Νέα nominal**: Rw=0.060 (⌀120), κέντρα y=±0.090, ω setpoint 25 rad/s,
+  effort limit 1.77 N·m, velocity limit 26.3 rad/s,
+  COLLECTOR_INTAKE_WHEEL_SPEED default 25. Cheek clearance: wheel outer
+  edge y=±0.150 vs cheeks ±0.145 = ΟΡΙΑΚΟ → έλεγχος/προσαρμογή στη Φάση 0.
+- **Status**: ✅ spec ενημερωμένο· όλα τα inputs πλήρη — ξεκινά η Φάση 0.
+
+### 24. Υλοποίηση Φάσης 0: dual-wheel γεωμετρία + actuation (offline verified)
+- **Γεωμετρία (drivetrain/tennis_robot xacro)**: το `intake_roller`
+  αντικαταστάθηκε από `intake_side_wheel` ×2 — carriage (prismatic ±y,
+  travel 0..8mm, outward) + κατακόρυφος τροχός (r=0.060, h=0.080) +
+  contact sensor ανά τροχό. Nominal: nip (0.590, ±0.090), τροχός σε ground
+  z 0.030-0.110 — **ανέβηκε από 0.005** γιατί το κάτω άκρο θα έτεμνε τη
+  ράμπα στο πίσω τμήμα των τροχών (ramp z≈0.021 στο x=0.53)· η ζώνη
+  εξακολουθεί να καλύπτει τον ισημερινό της μπάλας (0.033).
+- **Funnel**: cheeks μετατοπίστηκαν (0.60→0.76, y ±0.145→±0.175) — τα παλιά
+  έτεμναν τους τροχούς (51mm < 65mm)· νέο rear-tip handoff (0.647, ±0.146),
+  απόσταση 77mm > 68mm (r+travel) ✓. Gating `enable_cheeks`/`enable_ramp`
+  στο macro (Validation Phases μέσω INTAKE_ENABLE_FUNNEL/_RAMP envs).
+- **Ramp**: entry δένεται στο nip (INTAKE_RAMP_ENTRY_X_M default nip+20mm
+  = 0.610) αντί των παλιών roller offsets· lip default 0. Mesh script +
+  SDF polyline συγχρονισμένα.
+- **Actuation**: `intake_wheel_left/right_joint` (axis z, effort 1.77,
+  vel 26.3), controller rename `lift_wheel_velocity_controller` →
+  `intake_wheel_velocity_controller` (2 joints)· collector_logic στέλνει
+  [-v,+v] (left CW / right CCW top-view → εσωτερικές όψεις προς -x)·
+  collector default speed 30→25 rad/s, env COLLECTOR_INTAKE_WHEEL_SPEED
+  (fallback στο παλιό όνομα). Launches/bridges/start_sim ενημερώθηκαν·
+  bridge roller_contact_0 (left) + **νέο** roller_contact_1 (right).
+- **SDF patch (generator)**: fail-loud rebind ΚΑΙ των δύο sensors στα
+  lumped collision names ✓, spring patch ΚΑΙ στα δύο carriage joints
+  (k=1000 env INTAKE_WHEEL_SPRING_K, ref=0) ✓, μ=2.5 + soft contact στους
+  τροχούς ✓.
+- **IR throat beam**: x 0.620→0.670 — μέσα στο wheel span (0.53-0.65) θα
+  διάβαζε μόνιμα broken. Debug camera: μπροστά-κέντρο (0.78, 0, ground
+  0.105) κοιτά πίσω στο throat (η παλιά πλαϊνή θέση πέφτει στον όγκο του
+  αριστερού τροχού).
+- **Offline verification (γεννημένο SDF, αριθμητικά)**: θέσεις τροχών
+  ακριβώς nominal· carriage prismatic axis +y/−y, 0..8mm, k=1000·
+  wheel joints effort 1.77 / vel 26.3· sensors→σωστά collisions· καμία
+  αναφορά lift_wheel· clearances: ramp-τροχός 7.5mm, cheek-τροχός 9mm,
+  basket-τροχός 30mm. **Phase-1 gates δουλεύουν**: generation με
+  ENABLE_FUNNEL/RAMP=false δίνει SDF χωρίς cheeks/channel/deflector, με
+  τροχούς+sensors παρόντες. Tests: 16/16 περνούν (console/db tests
+  σπασμένα προϋπάρχοντα σε αυτό το branch — λείπει το module/deps).
+- **Παράπλευρο fix**: start_sim.sh είχε σπασμένο shebang (`k#!`).
+- **Εκκρεμεί (live sim)**: επιβεβαίωση counter-rotation σε /joint_states,
+  οπτικός έλεγχος, και μετά bench adaptation (probe/analyzer/sweep axes
+  είναι ακόμα roller-centric).
+- **Status**: ✅ Φάση 0 offline πλήρης → επόμενο: bench adaptation (Task 4)
+  και Phase 1 throat-only run.
+
+### 25. Bench adaptation για dual-wheel (transport criteria)
+- **sim_physics_probe.py**: dual-wheel geometry (nip/gap/radius/squeeze/bite
+  dx από INTAKE_WHEEL_* envs), contact subs ΚΑΙ στα δύο /gz/roller_contact_0
+  (left) + _1 (right) — generic `roller_contact_sample` type με νέο πεδίο
+  `wheel: left|right` (συμβατό με summarizer), per-wheel sample counters +
+  per-wheel joint velocities στο log/summary. Ball tracking πλέον προς το
+  nip plane (dx_to_nip, lateral_y).
+- **analyze_intake_release_criteria.py (ξαναγράφτηκε)**: transport criteria
+  του decision doc με `--phase throat|funnel|ramp|full` gating:
+  - Required (πάντα): both-roller contact, capture through throat (κέντρο
+    μπάλας περνά το exit plane nip−bite_dx μετά την πρώτη επαφή), positive
+    inward transport (ταχύτητα στο capture crossing), no stall/jam (μέγιστο
+    συνεχές dwell <0.02 m/s μέσα στη ζώνη intake ≤ 2.0s).
+  - Required (ramp/full): ramp climb started (z≥0.05) + crest crossing.
+  - Preferred: transport peak ≥ target (0.40 default), contact duration,
+    force_p95. Το launch-era "vertical velocity at release" ΔΕΝ υπάρχει
+    πια (ρητό note στο output). Repeatability 4/5 = cross-run (sweep level).
+- **analyze_intake_bench_poses.py**: nip-centric — απόσταση κέντρου μπάλας
+  από τον πλησιέστερο κατακόρυφο άξονα τροχού (xy), radial_gap vs
+  Rw+Rball, dx_to_nip.
+- **run_native_intake_sweep.sh**: νέοι sweep axes INTAKE_SWEEP_WHEEL_GAPS /
+  _WHEEL_RADII / _NIP_XS / _SPRING_KS / _WHEEL_SPEEDS / _DRIVE_SPEEDS /
+  _BALL_LATERAL_OFFSETS (envelope), INTAKE_SWEEP_PHASE=throat|funnel|ramp|
+  full → θέτει ENABLE_FUNNEL/RAMP. Wheel command `[-v,+v]`. Το
+  wait_for_wheel_speed απαιτεί ΚΑΙ τους δύο τροχούς σε ταχύτητα ΚΑΙ
+  αντίθετα πρόσημα (left<0<right) — δομικό live check του two-motor wiring
+  σε κάθε run (exit 2 σε λάθος φορά).
+- **summarize_contact_physics.py**: wheel_left/right_samples + νέα geometry
+  πεδία.
+- **Offline verification**: synthetic fixtures — pass case δίνει 4/4
+  (transport peak 0.50 m/s, stall 0), stall case δίνει 0/4 (stall 5.7s,
+  μόνο left contact). Bash syntax OK, όλα τα py compile, κανένα
+  lift_wheel/roller-offset υπόλειμμα στο bench path.
+- **Εκκρεμότητα (συνειδητή)**: `analyze_collect_bag.py` +
+  `run_collect_test.sh` (collect_one flow) μένουν roller-era — αφορούν τη
+  Phase 4/full integration, θα προσαρμοστούν τότε.
+- **Status**: ✅ bench έτοιμο. Επόμενο: colcon build + Phase 1 throat-only
+  live run (INTAKE_SWEEP_PHASE=throat).
+
+### 26. Phase 1 πρώτο live run + διάγνωση contact instrumentation
+- **Προεργασία**: σκοτώθηκαν 4 ΟΡΦΑΝΑ headless `gz sim` από παλιά bench
+  runs (θα μόλυναν το gz transport — κοινό default partition). Μάθημα:
+  πριν από bench run, `pgrep -f "gz sim"`.
+- **Run 1 (nominal, gap 60/Rw 60/nip 0.590/k 1000/drive 0.12/ω 25)**:
+  - ✅ **Counter-rotation live verified**: wheels_ready left=-25.000
+    right=+25.000 — το two-motor wiring σωστό (Task 3 κλείνει).
+  - ✅ **Η φυσική της σύλληψης ΔΟΥΛΕΨΕ με την πρώτη**: capture through
+    throat = true, inward velocity στο exit plane **0.77 m/s** (6× το
+    drive 0.12 — μόνο οι τροχοί μπορούν να την επιτάχυναν· funnel/ramp
+    off, τίποτα άλλο μπροστά), κανένα stall. Required 3/4.
+  - ❌ 0 contact samples ΚΑΙ στους δύο sensors — αδύνατο φυσικά (gap 60 <
+    66) → instrumentation.
+- **Διάγνωση (ζωντανό sim + teleport μπάλας στο nip)**:
+  - Το gz εκπέμπει τα contact topics στο **world path** (όπου ακούν τα
+    bridges) — το explicit `<topic>` του sensor ΔΕΝ είναι το ενεργό.
+  - Με μπάλα στατικά στο nip: contact messages ρέουν ΚΑΙ στους δύο
+    τροχούς, και το ROS άκρο (`ros2 topic echo /gz/roller_contact_0`)
+    λαμβάνει — **bridge chain σωστό end-to-end**.
+  - Άρα root cause του 0: η διέλευση είναι **impulsive** — το 3mm/side
+    interference + kp 8000 εκτόξευσε τη μπάλα διαμέσου του throat σε
+    χρόνο μικρότερο από την περίοδο του sensor (100Hz = 10ms) →
+    μηδέν δείγματα παρότι υπήρξε επαφή.
+- **Fixes**: sensor update_rate 100→**500Hz** (κοντά στο physics rate) και
+  στους δύο τροχούς· `INTAKE_SWEEP_REPEATS` env στο bench (per-case
+  επαναλήψεις με suffix _rN) για το required 4/5.
+- **Παρατήρηση φυσικής (για τα sweeps)**: η μεταφορά είναι προς το παρόν
+  kick, όχι ελεγχόμενο grip — αποδεκτό ως capture+transport, αλλά το
+  contact duration/βαθμός ελέγχου είναι ζητούμενο των gap/spring_k sweeps.
+- **Επόμενο**: Phase 1 ×5 nominal (τρέχει) → αν both-wheel contact
+  επιβεβαιωθεί σε ≥4/5, η Phase 1 περνά.
+
+### 27. Harness fixes + Phase 1 throat-only repeatability PASS
+- **Review fixes πριν το τελικό run**:
+  - `run_native_intake_sweep.sh`: το bench drive επέστρεψε στο πραγματικό
+    live input του `diff_drive_controller`, `/diff_drive_controller/cmd_vel`
+    (`TwistStamped`), αλλά πλέον με `header: auto`. Χωρίς live stamp, ο
+    controller δεν κινούσε τη βάση. Το intermediate unstamped attempt
+    αποδείχθηκε λάθος για το live runtime: το topic info έδειξε subscriber
+    στο stamped `/diff_drive_controller/cmd_vel`.
+  - Το probe ξεκινάει **πριν** από το drive publisher. Πριν ξεκινούσε μετά
+    το `drive_response` και έχανε όλο το impulsive throat event, άρα έβλεπε
+    capture από poses αλλά 0 contact samples.
+  - `gazebo_extras_node.py`: `/sim/roller_contact` / RViz markers ακούν και
+    τα δύο contact topics (`/gz/roller_contact_0`, `/gz/roller_contact_1`).
+  - `diagnose_motion.sh`: updated στο νέο
+    `/intake_wheel_velocity_controller/commands` με `[-10,+10]`.
+  - `docs/dual-wheel-intake-design-el.md`: env typo
+    `INTAKE_WHEEL_NIP_X_M` → `INTAKE_NIP_X_M`.
+- **Sanity run μετά τα fixes**:
+  - Path: `runtime/intake_sweeps/20260710_154459`.
+  - Result: required **4/4** σε 1/1. Both-wheel contacts 38/38, contact
+    duration 0.096s, capture inward velocity 0.80 m/s, no stall.
+- **Phase 1 nominal ×5**:
+  - Path: `runtime/intake_sweeps/20260710_154614`.
+  - Config: throat-only, gap 60mm, wheel radius 60mm, nip x=0.590,
+    spring k=1000 N/m, drive 0.12 m/s, wheel speed 25 rad/s.
+  - Result: **PASS 5/5**. Κάθε repeat είχε required **4/4**:
+    both-wheel contact, capture through throat, positive inward transport,
+    no stall/jam.
+  - Contact samples: r1-r4 = 38 left / 38 right, r5 = 35 / 35.
+  - Contact duration: 0.080-0.094s. Force max 5.32N, p95 ~4.01-4.08N.
+  - Capture inward velocity: 0.76-0.81 m/s, πάνω από το preferred transport
+    target 0.40 m/s.
+  - Base drive verified live: odom vx ~0.12 m/s και drive wheel velocity
+    ~1.41 rad/s σε όλα τα repeats.
+- **Συμπέρασμα**: Phase 1 throat-only έχει πλέον αποδειχθεί repeatable για
+  centered ball. Το dual-wheel concept περνά το πρώτο gate. Επόμενο λογικό
+  βήμα: Phase 2 funnel-only και lateral-offset envelope, όχι ramp/hopper ακόμα.
+
+### 28. Phase 2 funnel-only envelope + boundary repeatability PASS
+- **Motor option review**: εξετάστηκε JGB37-3530-1000 12V / 10:1 / 1000 RPM.
+  Συμπέρασμα: όχι default για το intake. Με Rw=60mm δίνει ~5.0 m/s rated
+  surface speed αλλά μόνο ~0.62N tangential force ανά τροχό στο rated torque
+  και ~2.5N στο stall, ενώ το 251RPM μοτέρ έχει πολύ μεγαλύτερο torque
+  reserve. Για `capture -> transport -> guide -> hopper` κρατάμε το
+  GB37Y3530-12V-251R.
+- **Bug στο Phase 2 sweep harness**:
+  - Το πρώτο funnel envelope run (`runtime/intake_sweeps/20260710_155624`)
+    αποκάλυψε ότι τα lateral offsets ήταν cumulative: κάθε case υπολόγιζε
+    `BENCH_BALL_Y` από το ήδη-exported `INTAKE_BENCH_BALL_Y`.
+  - Fix: προστέθηκε σταθερό `BENCH_BALL_Y_BASE` και κάθε case κάνει
+    `BENCH_BALL_Y = base + lateral_offset`.
+- **Καθαρό Phase 2 envelope probe**:
+  - Path: `runtime/intake_sweeps/20260710_160008`.
+  - Config: funnel-only, ramp off, nominal throat, offsets
+    -80/-40/0/+40/+80mm, 1 repeat ανά offset.
+  - Result: **PASS 5/5**, required **4/4** σε όλα.
+  - Actual `bench_config.txt` επιβεβαίωσε σωστά `ball_y` = -0.08, -0.04,
+    0.0, +0.04, +0.08.
+  - Κάθε case είχε both-wheel contact 38/38, no stall, capture inward
+    velocity 0.54-0.81 m/s.
+- **Phase 2 boundary repeatability**:
+  - Path: `runtime/intake_sweeps/20260710_160331`.
+  - Config: ±80mm offsets, 5 repeats ανά όριο.
+  - Result: **-80mm PASS 5/5**, **+80mm PASS 5/5**, required **4/4** σε όλα.
+  - +80mm: contact samples 36-38/side, capture velocity 0.74-0.80 m/s,
+    no stall.
+  - -80mm: 4/5 repeats ισχυρά (38/38 samples, capture velocity 0.72-0.80
+    m/s), 1/5 ασθενέστερο αλλά pass (11/10 samples, capture velocity
+    0.21 m/s, no stall). Watch item για μελλοντικό wider-offset/approach
+    variation, όχι blocker.
+- **Συμπέρασμα**: Phase 2 funnel-only περνά για centered και ±80mm lateral
+  offsets. Το επόμενο gate είναι Phase 3 ramp-only / feed-onto-ramp, όχι
+  αλλαγή μοτέρ.
+
+### 29. Phase 3 ramp-only: collision fixed, handoff still fails; not a motor-first problem
+- **Initial ramp run**:
+  - Path: `runtime/intake_sweeps/20260710_161533`.
+  - Result: required **4/6**. The dual wheels captured and transported the
+    ball (`capture_inward_velocity` ~0.69 m/s, both-wheel contact 38/38),
+    but the ball stayed at ground height (`z` ~0.033m) and never contacted /
+    climbed the ramp.
+  - Diagnosis: the SDF `polyline` collision for `intake_channel_col` was
+    present but did not behave as a reliable DART collision surface here.
+- **Collision fix**:
+  - `scripts/generate_robot_urdf.py` now replaces the ramp mesh collision with
+    multiple thin, sloped box collision segments instead of one polyline.
+  - A temporary axis-aligned box approximation made the ramp "exist" but
+    created staircase edges and jams; the current sloped segments follow the
+    ramp pitch.
+- **Best Phase 3 result so far**:
+  - Path: `runtime/intake_sweeps/20260710_162813`.
+  - Config: ramp-only, `INTAKE_RAMP_ENTRY_X_M=0.580`, sloped box collision,
+    wheel speed 25 rad/s.
+  - Result: required **4/6**. The ball now climbs the ramp (`z` crossed
+    0.05m at `base_x` ~0.5225), but it does not reach the ramp crest and then
+    stalls near the throat / ramp handoff for ~9s.
+- **Motor/speed check**:
+  - Path: `runtime/intake_sweeps/20260710_162949`.
+  - Config: same ramp setup, wheel speeds 35 and 45 rad/s.
+  - Results: 35 rad/s stayed **4/6** with ~9.37s stall; 45 rad/s degraded to
+    **3/6**. No crest crossing in either case.
+  - Conclusion: this is **not** primarily solved by a larger/faster motor.
+    The wheels already produce inward transport; the failure is the
+    wheel-to-ramp handoff geometry / passive ramp interaction. Next phase-3
+    work should examine a smoother/longer handoff, different ramp entry angle,
+    or an active second-stage conveyor/roller before changing motor class.
+
+### 30. Phase 3 follow-up: larger wheels and lower ramp target still do not pass
+- **Wheel diameter check**:
+  - Path: `runtime/intake_sweeps/20260710_164654`.
+  - Config: `INTAKE_RAMP_ENTRY_X_M=0.580`, `Rw=70mm`, `nip_x=0.590/0.600`,
+    ramp-only, wheel speed 25 rad/s.
+  - Results:
+    - `Rw=70mm`, `nip_x=0.590`: required **4/6**, climb reached
+      `z=0.0543m`, no crest, longest stall ~7.86s.
+    - `Rw=70mm`, `nip_x=0.600`: required **4/6**, climb reached
+      `z=0.0510m`, no crest, longest stall ~9.32s.
+  - Conclusion: larger wheels buy a little better handoff in the best case,
+    but do not solve Phase 3. Diameter is not enough by itself.
+- **Lower ramp / hopper target check**:
+  - Code change: `scripts/generate_curved_scoop_mesh.py` and
+    `scripts/generate_robot_urdf.py` now accept
+    `INTAKE_RAMP_KNEE_Z_M` and `INTAKE_RAMP_END_Z_M`, so lower handoff
+    heights can be tested without hardcoding a new design.
+  - Path: `runtime/intake_sweeps/20260710_165010`.
+  - Config: `INTAKE_RAMP_ENTRY_X_M=0.580`,
+    `INTAKE_RAMP_KNEE_Z_M=0.020`, `INTAKE_RAMP_END_Z_M=0.075`,
+    `INTAKE_BENCH_RAMP_CREST_Z_M=0.085`, `Rw=60mm`, ramp-only.
+  - Result: required **4/6**. Ball climbed to `z=0.0513m` but still did not
+    reach even the lowered crest criterion; longest stall ~8.24s.
+  - Conclusion: simply lowering the ramp endpoint is also not enough. The
+    failure is the passive handoff after the wheels, before sustained climb.
+    Next design branch should add active support after the throat: either
+    extend powered contact along the ramp, or add a small conveyor / roller /
+    flywheel second stage.
+
+### 31. Phase 3 active assist roller probe: point assist is not enough
+- **Code change for fast iteration**:
+  - Added optional `enable_assist` second-stage roller with its own
+    `assist_wheel_velocity_controller`.
+  - Added env-tunable geometry:
+    `INTAKE_ASSIST_X_M`, `INTAKE_ASSIST_Z_M`,
+    `INTAKE_ASSIST_RADIUS_M`, `INTAKE_ASSIST_LENGTH_M`.
+  - The sweep harness records assist geometry in `bench_config.txt` and case
+    names, and explicitly spawns/publishes the assist controller in bench
+    runs.
+- **First hardcoded placement check**:
+  - Path: `runtime/intake_sweeps/20260710_170143`.
+  - Config: assist true, speed 25 rad/s, old placement
+    `x=0.545`, `z=0.050` in `base_link` frame.
+  - Result: required **1/6**. The assist roller blocked the capture/ramp
+    handoff instead of helping it; capture crossing and ramp climb were both
+    false.
+  - Diagnosis: too low/too far forward; it becomes an obstacle near the
+    throat instead of a second-stage support.
+- **Retuned placement sweep**:
+  - `runtime/intake_sweeps/20260710_203638`: `x=0.510`, `z=0.075`,
+    assist speed +25 rad/s. Result **4/6**: capture true, ramp climb true
+    (`z=0.0526m`), no crest, longest stall ~9.21s.
+  - `runtime/intake_sweeps/20260710_203812`: `x=0.505`, `z=0.065`,
+    assist speed +25 rad/s. Result **4/6**: capture true, ramp climb true
+    (`z=0.0508m`), no crest, longest stall ~9.32s.
+  - `runtime/intake_sweeps/20260710_203925`: same geometry as above,
+    assist speed **-25 rad/s**. Result **4/6**, essentially unchanged
+    (`z=0.0508m`, stall ~9.36s). So the main issue is not assist direction.
+  - `runtime/intake_sweeps/20260710_204104`: `x=0.505`, `z=0.055`,
+    assist speed +25 rad/s. Result **3/6**: ramp climb false, stall ~8.99s.
+- **Conclusion**: a single point assist roller has a narrow/no useful window
+  in this geometry. Too high barely engages; mid height does not sustain the
+  climb; too low becomes another jam/drag point. Phase 3 should pivot from
+  "one extra roller" to **active support over length**: short belt/conveyor
+  over the ramp, paired roller + compliant lower guide, or a mechanically
+  smoother ramp throat that keeps the ball supported after the side wheels.
+
+### 32. Phase 3B conveyor approximation: top rollers alone still do not pass
+- **Code change**:
+  - Added optional `INTAKE_ENABLE_CONVEYOR=true` prototype: three small
+    powered rollers along the ramp (`intake_conveyor_front/mid/rear_joint`)
+    controlled by `conveyor_velocity_controller`.
+  - Added env knobs:
+    `INTAKE_CONVEYOR_SPEED`, `INTAKE_CONVEYOR_X_BIAS_M`,
+    `INTAKE_CONVEYOR_Z_BIAS_M`.
+  - The model is a Gazebo-friendly approximation of a short belt: not a
+    deformable belt, but a quick proof for "active support over length".
+- **Offline verification**:
+  - `INTAKE_ENABLE_CONVEYOR=true` render creates the 3 conveyor joints in
+    URDF/SDF.
+  - Flag-off render has no `intake_conveyor_*` links/joints, so Phase 1/2 and
+    passive Phase 3 baselines remain comparable.
+- **Live runs**:
+  - `runtime/intake_sweeps/20260710_204701`: conveyor on, speed +25 rad/s,
+    no x/z bias. Result **3/6**: capture true, ramp climb false, stall
+    ~7.11s. Front roller was too low/early (bottom around 71mm ground).
+  - `runtime/intake_sweeps/20260710_210524`: z-bias +15mm. Result **4/6**:
+    capture true, ramp climb true (`z=0.0501m`), no crest, stall ~8.71s.
+  - `runtime/intake_sweeps/20260710_210748`: same +15mm but speed **-25**
+    rad/s. Result **4/6**, still no crest, stall ~9.12s. Direction is not
+    the main blocker.
+  - `runtime/intake_sweeps/20260710_210957`: x-bias +30mm and z-bias +15mm
+    so the first powered roller starts closer to throat exit. Result **4/6**:
+    ramp climb true (`z=0.0527m`), no crest, stall ~9.18s.
+- **Conclusion**: top active rollers over the ramp improve/shape the handoff
+  but still do not sustain climb. The ball reaches early climb and then falls
+  back / stalls around `base_x≈0.566`, which suggests it is not being held in
+  the active contact patch. Next mechanical branch should add a **compliant
+  lower guide / paired pinch path** over the ramp, or replace the ramp with a
+  true belt/conveyor surface that supports the ball from below while driving
+  it rearward/upward.
+
+### 33. Phase 3C tilted side wheels: lift appears, but not enough alone
+- **User observation**: the side wheels were not tilted upward; they were
+  vertical-axis wheels. That meant the dual-wheel stage produced mostly
+  rearward transport, not a deliberate upward component toward the ramp.
+- **Code change**:
+  - Added `INTAKE_WHEEL_TILT_DEG` / `INTAKE_SWEEP_WHEEL_TILTS_DEG`.
+  - The side-wheel joint frame is pitched around `y`, so the cylinder axis and
+    spin axis tilt together toward `+x`.
+  - With the existing command signs (`left=-v`, `right=+v`), positive tilt
+    adds upward `z` velocity at the inner contact faces while keeping rearward
+    transport.
+- **Offline verification**:
+  - `INTAKE_WHEEL_TILT_DEG=15` render produced SDF wheel joint poses with
+    pitch `0.261799 rad`, confirming the wheels really tilt.
+- **Ramp-only sweep**:
+  - Path: `runtime/intake_sweeps/20260710_211656`.
+  - Config: assist false, conveyor false, `Rw=60mm`, `nip_x=0.590`,
+    `INTAKE_RAMP_ENTRY_X_M=0.580`, tilts `0/10/15` deg.
+  - `0°`: required **4/6**, ramp climb true (`z=0.0530m`), no crest,
+    stall ~9.07s.
+  - `10°`: required **3/6**, ramp climb false, no crest, stall ~9.05s.
+  - `15°`: required **4/6**, ramp climb true at capture (`z=0.0511m`),
+    upward velocity `vz≈0.281m/s`, no crest, stall ~8.67s.
+- **Upper bracket**:
+  - Path: `runtime/intake_sweeps/20260710_211937`.
+  - Config: `tilt=20°`, same ramp-only setup.
+  - Result: required **4/6**, ramp climb true (`z=0.0549m`), upward velocity
+    `vz≈0.287m/s`, no crest, stall ~8.06s.
+- **Conclusion**: tilted side wheels are a better physical mechanism than the
+  added top assist/conveyor rollers: they create real upward velocity and
+  reduce stall somewhat. But even 20° does not reach the crest. The direction
+  is promising, but it still needs either a gentler/lower/longer ramp or a
+  short guided support section after the tilted wheels so the ball cannot fall
+  out of the active path.
+
+### 34. Tilt 20° + 430RPM motor hypothesis: speed alone still does not pass
+- **Question**: maybe the right answer is tilted wheels plus a stronger /
+  faster motor?
+- **Important harness fix**:
+  - The first `tilt=20`, `wheel_speed=45rad/s` run
+    (`runtime/intake_sweeps/20260710_212321`) was **not a real 430RPM test**:
+    the generated joint/controller velocity limit was still `26.3rad/s`
+    (GB37Y3530-12V-251R no-load), and the summary confirmed
+    `joint_vel_abs_max_rad_s=26.3`.
+  - Added `INTAKE_WHEEL_MAX_VEL_RAD_S` so hypothetical faster motor variants
+    can be tested explicitly without changing the default real-motor limit.
+- **Actual 430RPM-style run**:
+  - Path: `runtime/intake_sweeps/20260710_212523`.
+  - Config: `tilt=20°`, `wheel_speed=45rad/s`, `INTAKE_WHEEL_MAX_VEL_RAD_S=45`,
+    ramp-only, assist/conveyor off.
+  - Verification: summary confirmed `joint_vel_abs_max_rad_s=45.0`.
+  - Result: required **4/6**. Ramp climb true (`z=0.0500m`), upward velocity
+    `vz≈0.309m/s`, but no crest; longest stall ~8.92s.
+- **Conclusion**: 430RPM with 20° tilt increases the upward component, but it
+  still does not solve Phase 3. The remaining blocker is not simply motor
+  speed; the ball still falls out of the supported/active path before crest.
+  A faster motor might be useful later, but the next design change should
+  still target ramp/support geometry.
+
+### 35. Tilt 20° + more squeeze at real motor speed
+- **Question**: after the 430RPM check, try the real ~251RPM setup with more
+  pressure on the ball.
+- **Run**:
+  - Path: `runtime/intake_sweeps/20260710_212704`.
+  - Config: `tilt=20°`, wheel speed `25rad/s`, max velocity `26.3rad/s`,
+    assist/conveyor off, gaps `58/56/54mm`, `Rw=60mm`, spring `k=1000`.
+- **Results**:
+  - `gap=58mm`: required **4/6**, ramp climb true (`z=0.0519m`), no crest,
+    stall ~8.82s, capture inward velocity ~1.05m/s.
+  - `gap=56mm`: required **4/6**, ramp climb true (`z=0.0618m`), no crest,
+    stall ~7.50s, capture inward velocity ~0.91m/s. This is the best
+    real-speed squeeze case so far: more lift and shorter stall, but still no
+    crest.
+  - `gap=54mm`: required **2/6**. Too tight: capture through throat false,
+    positive inward transport false, ramp climb false.
+- **Conclusion**: more squeeze helps up to a point. `56mm` looks like the
+  useful pressure bracket for tilted wheels at real motor speed; `54mm` is too
+  much and starts rejecting/jamming before transport. Pressure improves the
+  handoff, but still does not replace the need for an easier ramp/support path.
+
+### 36. Drive-motor specs as intake motor: high torque, too slow
+- **Question**: try the specs of the existing drive motors as the intake wheel
+  motor.
+- **Specs used**:
+  - DFRobot FIT0403 / drive motor: 12V, **122RPM**, **38kg·cm**.
+  - Converted for sim: `INTAKE_WHEEL_MAX_VEL_RAD_S=12.78`,
+    `INTAKE_WHEEL_EFFORT_NM=3.73`.
+- **Code change**:
+  - Added `INTAKE_WHEEL_EFFORT_NM` so motor torque variants can be represented
+    explicitly instead of changing only velocity.
+- **Run**:
+  - Path: `runtime/intake_sweeps/20260710_213247`.
+  - Config: `tilt=20°`, `gap=56mm`, `Rw=60mm`, wheel speed/max vel
+    `12.78rad/s`, effort `3.73N·m`, ramp-only.
+  - Verification: summary confirmed `joint_vel_abs_max_rad_s=12.78`;
+    `bench_config.txt` confirmed `wheel_effort=3.73`.
+  - Result: required **4/6**. Ramp climb true (`z=0.0530m`), no crest,
+    stall ~7.81s, capture inward velocity ~0.68m/s, upward velocity
+    `vz≈0.241m/s`.
+- **Comparison**:
+  - Best GB37 real-speed squeeze case (`25rad/s`, 56mm gap) reached
+    `z=0.0618m`, inward ~0.91m/s, `vz≈0.379m/s`, stall ~7.50s.
+  - The drive motor's torque is higher, but its 122RPM speed is much lower,
+    and in this handoff the extra torque does not compensate for the lost
+    surface speed.
+- **Conclusion**: existing drive motor specs are not better for the intake
+  lift/handoff. They are strong, but too slow for this tilted-wheel transport
+  role. Keep the intake closer to the GB37 251RPM class, and solve the
+  remaining failure with ramp/support geometry rather than swapping to the
+  drive motors.
+
+### 37. Tilt 20° + 251RPM + longer/gentler ramp
+- **Question**: αν κρατήσουμε το καλύτερο έως τώρα intake set
+  (`251RPM`, `tilt=20°`, `gap=56mm`, `Rw=60mm`) και αυξήσουμε την απόσταση
+  της ράμπας ώστε να μικρύνει η κλίση, βοηθάει;
+- **Implementation knob**:
+  - `scripts/generate_robot_urdf.py` and `scripts/generate_curved_scoop_mesh.py`
+    now read `INTAKE_RAMP_KNEE_X_M` and `INTAKE_RAMP_END_X_M`.
+  - Defaults remain unchanged (`knee_x=0.520`, `end_x=0.400`), so old runs
+    are unaffected unless those env vars are set.
+- **Test**:
+  - Path: `runtime/intake_sweeps/20260710_213846`.
+  - Config: `INTAKE_RAMP_KNEE_X_M=0.470`,
+    `INTAKE_RAMP_END_X_M=0.320`, `tilt=20°`, `gap=56mm`,
+    wheel speed/max vel `25/26.3rad/s`, assist/conveyor off, ramp-only.
+- **Result**: required **4/6**. Capture, both-wheel contact, inward transport,
+  and ramp climb are true, but there is still no crest crossing and there is
+  still a stall.
+- **Useful comparison vs baseline gap=56mm run
+  (`runtime/intake_sweeps/20260710_212704`)**:
+  - inward transport: `0.91 -> 0.97m/s` (slightly better)
+  - ramp climb z at crossing: `0.0618 -> 0.0639m` (about the same / slightly
+    better)
+  - upward velocity at crossing: `0.379 -> 0.270m/s` (worse)
+  - longest stall: `7.50s -> 5.26s` (meaningfully better, but still fails the
+    2s criterion)
+- **Conclusion**: making the ramp longer/gentler helps, especially by reducing
+  the stall, but it is not sufficient alone. It supports the current diagnosis:
+  the remaining problem is the unsupported handoff after the tilted wheels. The
+  next geometry step should combine the gentler ramp with a short lower/side
+  guide or a longer active contact zone, not a motor-only change.
+
+### 38. Short/steep ramp + higher wheel tilt concept
+- **Question**: what if we do the opposite of the gentler ramp: shorten the
+  ramp so it is closer to ~40°, increase wheel tilt, and accept that the ball
+  may be thrown/lobbed instead of softly transported?
+- **Test geometry**:
+  - Short/steep ramp via `INTAKE_RAMP_KNEE_X_M=0.535`,
+    `INTAKE_RAMP_END_X_M=0.450`, with `INTAKE_RAMP_ENTRY_X_M=0.580`.
+  - Same motor class: wheel speed/max vel `25/26.3rad/s`, `Rw=60mm`.
+- **Runs**:
+  - `runtime/intake_sweeps/20260710_214321`: `tilt=40°`, `gap=56mm`.
+  - `runtime/intake_sweeps/20260710_214455`: `tilt=40°`, `gap=60mm`.
+  - `runtime/intake_sweeps/20260710_214607`: `tilt=25/30/35°`,
+    `gap=60mm`.
+- **Results**:
+  - `40°/56mm`: required **4/6**, inward `1.02m/s`, `vz≈0.425m/s`,
+    no crest, contact `8.94s`, stall `8.87s`.
+  - `40°/60mm`: required **4/6**, inward `0.77m/s`, `vz≈0.333m/s`,
+    no crest, contact `6.74s`, stall `6.64s`.
+  - `25°/60mm`: required **4/6**, inward `0.83m/s`, `vz≈0.269m/s`,
+    no crest, contact `9.21s`, stall `9.12s`.
+  - `30°/60mm`: required **4/6**, inward `0.68m/s`, `vz≈0.260m/s`,
+    no crest, contact `9.14s`, stall `9.12s`.
+  - `35°/60mm`: required **4/6**, inward `0.73m/s`, `vz≈0.305m/s`,
+    no crest, contact `8.70s`, stall `8.63s`.
+- **Conclusion**: if throwing/lobbing is acceptable, this concept still needs
+  a release mechanism/exit clearance. In sim, the steep-ramp/high-tilt setup
+  does not cleanly throw the ball; it keeps it in prolonged wheel contact and
+  stalls near the handoff. Opening the gap reduces stall at 40° but also
+  reduces inward speed, and lower tilts do not find a better sweet spot. Next
+  useful pivot is not more tilt alone, but shaping a short release throat:
+  wheels should end before the steep ramp traps the ball, with a small
+  backstop/guide or basket lip positioned to catch the lob.
+
+### 39. Wheels closer to base + short handoff bar to basket entry
+- **Question**: the wheels should be closer to the base; the old long ramp/bar
+  is not the right abstraction. The entry bar should start just before handoff
+  and run only to the basket entry.
+- **Geometry tested**:
+  - `INTAKE_NIP_X_M=0.540`: wheel centre moved closer to the chassis/base
+    front edge. With `Rw=60mm`, the wheel rear edge is near `x=0.480`.
+  - `INTAKE_RAMP_ENTRY_X_M=0.500`: short bar starts just before the rear
+    wheel handoff.
+  - `INTAKE_RAMP_END_X_M=0.455`: bar ends near the chassis/basket entry edge.
+  - `INTAKE_RAMP_END_Z_M=0.052`: bar surface ends around the chassis top
+    height, targeting ball-centre height around `0.085m`.
+  - Analyzer target adjusted to `INTAKE_BENCH_RAMP_CREST_Z_M=0.085`.
+- **Run**:
+  - Path: `runtime/intake_sweeps/20260710_215854`.
+  - Config: `tilt=30°`, `gap=60mm`, `Rw=60mm`, wheel speed/max vel
+    `25/26.3rad/s`, assist/conveyor off.
+- **Result**: required **4/6**.
+  - Both-wheel contact true, but now wheel contact is short: `0.34s`
+    instead of the multi-second trapped contact seen with the steep long case.
+  - Ramp/guide contact is real (`1908` guide samples).
+  - Ramp climb starts (`z=0.0548m`) but does not reach the lower basket-entry
+    target (`0.085m`).
+  - Release velocity points back/down (`vx≈+0.253m/s`, `vz≈-0.343m/s`), so
+    the ball is being rejected/falling rather than caught by the bar.
+  - Stall still fails (`8.24s`), but the failure mode changed from
+    wheel-trap to guide/handoff rejection.
+- **Conclusion**: this is a better abstraction than the old long ramp. The
+  wheels should indeed sit closer to the base, and the "bar" should be a short
+  basket-entry guide, not a long passive climb. However, the first short-bar
+  geometry is too abrupt/low or has the wrong catch shape. Next refinement:
+  keep this shorter handoff architecture, but shape the guide as a catching lip
+  / curved pocket at ~8.5-10cm ball-centre target rather than a simple ramp
+  segment.
+
+### 40. Short handoff architecture: pressure, tilt, and wheel diameter sweeps
+- **Question**: play with wheel tilt, pressure, and wheel diameter while
+  keeping the newer architecture from #39: wheels closer to the base and a
+  short handoff bar to basket entry.
+- **Base geometry**:
+  - `nip_x=0.540`, short bar `x=0.500 -> 0.455`.
+  - bar end `z=0.052`, lower basket-entry target `0.085m`.
+  - wheel speed/max vel `25/26.3rad/s`, assist/conveyor off.
+- **Pressure + tilt sweep**:
+  - Path: `runtime/intake_sweeps/20260710_220153`.
+  - Grid: gaps `56/58/60mm`, tilts `25/30/35°`, `Rw=60mm`.
+  - All cases remained **4/6**: capture + ramp climb true, no basket-entry
+    crossing and stall still fails.
+  - Notable patterns:
+    - tighter gaps (`56/58mm`) produce more lift (`vz≈0.35-0.52m/s`,
+      z up to `0.0666m`) but long contact/stall (`~6.5-8.8s`).
+    - `gap=60mm` releases quickly at `30/35°` (`~0.34-0.38s` wheel contact)
+      but loses lift (`vz≈0.16-0.20m/s`, z around `0.053-0.054m`) and then
+      guide rejection/fall remains.
+    - `gap=56mm, tilt=35°` had the strongest upward component
+      (`vz≈0.523m/s`, z `0.0622m`) but still stalled and did not reach target.
+- **Diameter sweep**:
+  - Paths: `runtime/intake_sweeps/20260710_220856` and
+    `runtime/intake_sweeps/20260710_221125`.
+  - Tested `Rw=55/60mm` (diameter `110/120mm`) at `tilt=35°` for
+    `gap=58/60mm`. `Rw=65mm` (diameter `130mm`) did not produce a valid
+    physics result: the pre-drive wheel readiness check failed twice with
+    joint speeds near zero and RTPS SHM port errors in `wheels_ready.log`.
+  - `gap=58, Rw=55`: **4/6**, z `0.0516m`, `vz≈0.342m/s`, stall `8.78s`.
+  - `gap=58, Rw=60`: **4/6**, z `0.0666m`, `vz≈0.375m/s`, stall `8.65s`.
+  - `gap=60, Rw=55`: **4/6**, z `0.0537m`, `vz≈0.187m/s`, contact `0.31s`,
+    release velocity down/back (`vz≈-0.237m/s`).
+  - `gap=60, Rw=60`: **4/6**, z `0.0552m`, `vz≈0.111m/s`, contact `0.34s`,
+    release velocity down/back (`vz≈-0.191m/s`).
+- **Conclusion**: diameter is not the missing lever by itself. `120mm`
+  diameter is still better than `110mm` for lift in the `58mm` gap case, but
+  it does not solve basket-entry. `60mm` gap gives desirable short wheel
+  contact, but then the guide must catch/support the ball; otherwise the ball
+  is rejected downward. Next mechanical change should be guide shape/catch
+  pocket, not more pure parameter sweep.
+
+### 41. ΡΙΖΑ του Phase 3 plateau: το scoop-era basket floor κρεμόταν πάνω από το handoff
+- **Ερώτημα**: ποιο είναι το πιο κοντινό σενάριο σε επιτυχία; → Ανάλυση του
+  gz_poses του καλύτερου case (#40, gap=56/tilt=35): peak μπάλας
+  **z=0.0749 στο dx=0.465** — ΑΚΡΙΒΩΣ το γεωμετρικό όριο κάτω από το
+  basket floor: κάτω επιφάνεια slab 0.108 − ακτίνα 0.033 = **0.075**.
+- **Διάγνωση**: το basket floor (top 0.128, μπροστινή ακμή x=0.50 — η
+  scoop-era «επέκταση» του #15) καλύπτει από ΠΑΝΩ όλη τη ζώνη handoff του
+  short bar (0.455-0.50). Η μπάλα χτυπούσε την ΚΑΤΩ πλευρά του πατώματος
+  ενώ ανέβαινε (~0.25 m/s) και εκτοξευόταν πίσω-κάτω. Το "guide rejection"
+  των #39/#40 ήταν αυτό — όχι κακό σχήμα του bar.
+- **Αλλαγή (παραμετροποίηση, defaults ΑΘΙΚΤΑ)**: `basket.urdf.xacro` πήρε
+  macro params `floor_front_x` / `floor_top_z_ground` (τοίχοι δένουν πλέον
+  στο πάτωμα ώστε να μη ανοίγει πλαϊνό κενό)· xacro args
+  `basket_floor_front_x`/`basket_floor_top_z` στο `tennis_robot.urdf.xacro`·
+  envs `INTAKE_BASKET_FLOOR_FRONT_X_M` / `INTAKE_BASKET_FLOOR_TOP_Z_M` στον
+  generator. Το bench_config.txt γράφει πλέον ΚΑΙ τα ramp/basket geometry
+  (έλειπαν — τα #39/#40 δεν είχαν καταγράψει τα ramp env).
+  Offline verified: default SDF πανομοιότυπο (front 0.500/top 0.128),
+  lowered δίνει front 0.450/top 0.058.
+- **Run A (lowered_basket_A)**: floor front 0.45 / top 0.058, bar
+  0.500→(0.455, 0.058) flush, best config #40 (nip 0.540, gap 56, tilt 35,
+  Rw 60, 25 rad/s), crest target 0.085.
+  - Path: `runtime/intake_sweeps/lowered_basket_A`.
+  - Αποτέλεσμα: required 3/6 — capture + both-wheel + inward transport ✓,
+    ΟΧΙ crest, stall 22s (νέο failure mode: wedge στο (0.494, 0.035) μέσα
+    στο πίσω άκρο των τροχών, συνεχής επαφή 21.4s).
+  - **Μέτρηση-κλειδί**: ελεύθερο βαλλιστικό apex κέντρου **0.0755**
+    (vz 0.51 m/s στο z 0.062)· η μπάλα άγγιξε τη γωνία του πατώματος
+    (0.45, 0.058) ακριβώς στο apex (dist=0.033) και αναπήδησε μπροστά.
+- **Ενεργειακό ισοζύγιο (από τα δεδομένα)**: ελάχιστο δυνατό hopper floor
+  = 0.052 (chassis top) → απαιτεί κέντρο 0.085· το kick δίνει 0.0755 ⇒
+  έλλειμμα ~10mm ΣΤΟ apex. Αλλά στο apex η μπάλα κρατά vx=0.93 m/s
+  (οριζόντια KE ≈ 44mm ύψους). Η ενέργεια επαρκεί — είναι λάθος
+  κατεύθυνσης. Κανένα flat πάτωμα δεν τη σώζει· χρειάζεται καμπύλη
+  ανακατεύθυνση (το «catch pocket» του σχεδιασμού).
+- **Run B (lowered_basket_B)**: ski-jump μέσω υπάρχοντος ramp profile
+  (κανένας νέος κώδικας): entry 0.500, knee (0.455, 0.045), end
+  (0.420, 0.085)· floor 0.052/front 0.42· crest 0.080 (πάνω από το
+  ελεύθερο apex 0.0755 ⇒ περνά μόνο με πραγματική ανακατεύθυνση)·
+  tilts 30/35/40.
+  - **tilt 30: required 5/6 — ΠΡΩΤΟ crest crossing σε όλο το Phase 3**
+    (peak 0.0823). tilt 35: 5/6, peak **0.0941**. tilt 40: 4/6 (0.0773 —
+    πιο απότομο kick, χειρότερη πρόσβαση στο jump).
+  - Το redirect δουλεύει: +19mm ύψος πάνω από το βαλλιστικό ταβάνι στο
+    tilt 35. Μόνο failure: stall — η μπάλα καρφώνεται στο ΧΕΙΛΟΣ του jump
+    (0.42, 0.085): πέρασμα πάνω από lip κοστίζει κέντρο 0.085+0.033=0.118,
+    έφτασε 0.094 με ~0 ταχύτητα → γύρισε πίσω στη σφήνα (0.494, 0.035).
+  - **Μετρημένο ενεργειακό ταβάνι**: capture E ≈ 0.140-0.146m ισοδύναμο
+    ύψος, απώλειες redirect ≈ 0.05m ⇒ κέντρο-ceiling ≈ 0.093-0.094 ⇒
+    το lip πρέπει ≤ 0.060 για να περνά το κέντρο (lip+0.033).
+- **Run C (lowered_basket_C)**: ίδια αρχιτεκτονική, χαμηλότερο/ηπιότερο
+  jump: knee (0.465, 0.020), exit lip (0.425, **0.055**) — μόλις 3mm πάνω
+  από το πάτωμα 0.052 (πέρασμα κοστίζει 0.088 < ceiling 0.093, με 5mm
+  περιθώριο)· tilts 30/35.
+  - **Αποτέλεσμα: required 6/6 ΚΑΙ στα δύο tilts — ΠΡΩΤΟ ΠΛΗΡΕΣ PASS του
+    Phase 3 σε όλη την ιστορία του project. Stall 0.00s.**
+  - Τροχιά: peak 0.088 πάνω στο χείλος (dx≈0.411) → πέρασμα → προσγείωση
+    στο hopper floor → κύλισμα ως το βάθος του καλαθιού, τελική ανάπαυση
+    (dx≈-0.06, z=0.085 = κέντρο μπάλας πάνω στο πάτωμα 0.052). Καμία
+    επιστροφή πάνω από το 3mm lip, καμία σφήνα στους τροχούς.
+  - Inward velocity 1.10 (tilt 30) / 0.76 (tilt 35) m/s.
+- **Run C ×5 (lowered_basket_C_x5): PASS 5/5 — το Phase 3 gate ΚΛΕΙΝΕΙ.**
+  Κάθε repeat: required 6/6, crest crossing ✓, stall 0.00s, capture inward
+  velocity 0.65-0.89 m/s, τελική ανάπαυση εξαιρετικά συνεπής
+  (dx=-0.065±0.001, z=0.085 = κέντρο μπάλας πάνω στο hopper floor, βαθιά
+  μέσα στο καλάθι). Πρώτο repeatable full-path αποτέλεσμα
+  capture→transport→jump→hopper του project (2026-07-10/11).
+- **Working γεωμετρία (bench, όλα σε ground frame)**: nip 0.540, gap 56mm,
+  Rw 60mm, tilt 35°, GB37 251RPM (25/26.3 rad/s, 1.77 N·m), spring k=1000·
+  bar/jump: entry 0.500 → knee (0.465, 0.020) → lip (0.425, 0.055)·
+  basket floor top 0.052 (chassis-flush), front edge 0.42· crest
+  criterion 0.080.
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):

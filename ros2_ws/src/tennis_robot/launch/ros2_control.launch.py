@@ -21,6 +21,11 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    enable_assist = os.getenv("INTAKE_ENABLE_ASSIST", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
     pkg_share = get_package_share_directory("tennis_robot")
     default_xacro = os.path.join(pkg_share, "urdf", "tennis_robot.urdf.xacro")
     default_controllers = os.path.join(pkg_share, "config", "controllers.yaml")
@@ -67,14 +72,21 @@ def generate_launch_description():
         output="screen",
     )
 
-    lift_wheel_spawner = Node(
+    intake_wheel_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["lift_wheel_velocity_controller", "--controller-manager", "/controller_manager"],
+        arguments=["intake_wheel_velocity_controller", "--controller-manager", "/controller_manager"],
         output="screen",
     )
 
-    # Chain: jsb -> diff_drive -> lift_wheel (avoids racing the controller_manager).
+    assist_wheel_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["assist_wheel_velocity_controller", "--controller-manager", "/controller_manager"],
+        output="screen",
+    )
+
+    # Chain: jsb -> diff_drive -> intake wheels (avoids racing the controller_manager).
     chain = [
         robot_state_publisher,
         jsb_spawner,
@@ -82,8 +94,14 @@ def generate_launch_description():
             OnProcessExit(target_action=jsb_spawner, on_exit=[diff_drive_spawner])
         ),
         RegisterEventHandler(
-            OnProcessExit(target_action=diff_drive_spawner, on_exit=[lift_wheel_spawner])
+            OnProcessExit(target_action=diff_drive_spawner, on_exit=[intake_wheel_spawner])
         ),
     ]
+    if enable_assist:
+        chain.append(
+            RegisterEventHandler(
+                OnProcessExit(target_action=intake_wheel_spawner, on_exit=[assist_wheel_spawner])
+            )
+        )
 
     return LaunchDescription(args + chain)

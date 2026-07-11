@@ -10,10 +10,7 @@ from pathlib import Path
 from typing import Any
 
 
-ROLLER_BASE_X_M = 0.60
-ROLLER_BASE_Z_M = 0.067
 BASE_LINK_HEIGHT_M = 0.045
-ROLLER_RADIUS_M = 0.045
 BALL_RADIUS_M = 0.033
 
 
@@ -51,7 +48,7 @@ def _robot_priority(name: str) -> int:
         return 0
     if name.endswith("::base_link"):
         return 1
-    if name.endswith("::lift_wheel_link"):
+    if name.endswith("::intake_wheel_left_link"):
         return 2
     if name == "tennis_robot":
         return 10
@@ -64,17 +61,18 @@ def summarize(
     pose_path: Path,
     *,
     ball_name: str,
-    roller_x_offset_m: float,
-    roller_z_offset_m: float,
+    nip_x_m: float,
+    wheel_radius_m: float,
+    wheel_gap_m: float,
     base_link_height_m: float,
 ) -> dict[str, Any]:
     records = _load_jsonl(pose_path)
     latest_robots: dict[str, dict[str, Any]] = {}
     latest_ball: dict[str, Any] | None = None
 
-    roller_x_m = ROLLER_BASE_X_M + roller_x_offset_m
-    roller_z_m = base_link_height_m + ROLLER_BASE_Z_M + roller_z_offset_m
-    expected_contact_radius_m = ROLLER_RADIUS_M + BALL_RADIUS_M
+    # Dual-wheel throat: wheel axes at (nip_x, +/-wheel_y), vertical.
+    wheel_y_m = wheel_gap_m / 2.0 + wheel_radius_m
+    expected_contact_radius_m = wheel_radius_m + BALL_RADIUS_M
 
     evaluated = 0
     closest_x: dict[str, Any] | None = None
@@ -135,10 +133,13 @@ def summarize(
         ball_base_y = -sin_yaw * world_dx + cos_yaw * world_dy
         ball_base_z = latest_ball["z"] - latest_robot["z"]
 
-        dx_to_roller = ball_base_x - roller_x_m
+        dx_to_nip = ball_base_x - nip_x_m
         dy_to_centerline = ball_base_y
-        dz_to_roller = ball_base_z - roller_z_m
-        radial_distance = math.sqrt(dx_to_roller**2 + dz_to_roller**2)
+        # Horizontal distance from ball centre to the nearer wheel axis
+        # (both wheels are vertical cylinders, so only x/y matter).
+        gap_left = math.hypot(dx_to_nip, ball_base_y - wheel_y_m)
+        gap_right = math.hypot(dx_to_nip, ball_base_y + wheel_y_m)
+        radial_distance = min(gap_left, gap_right)
         radial_gap = radial_distance - expected_contact_radius_m
         sample = {
             "t_sim": record.get("t_sim"),
@@ -147,25 +148,24 @@ def summarize(
             "ball_xyz_m": [latest_ball["x"], latest_ball["y"], latest_ball["z"]],
             "ball_base_xyz_m": [ball_base_x, ball_base_y, ball_base_z],
             "robot_yaw_rad": yaw,
-            "roller_x_m": roller_x_m,
-            "roller_z_m": roller_z_m,
-            "dx_to_roller_m": dx_to_roller,
+            "nip_x_m": nip_x_m,
+            "wheel_y_m": wheel_y_m,
+            "dx_to_nip_m": dx_to_nip,
             "dy_to_centerline_m": dy_to_centerline,
-            "dz_to_roller_m": dz_to_roller,
-            "radial_distance_xz_m": radial_distance,
+            "wheel_distance_left_m": gap_left,
+            "wheel_distance_right_m": gap_right,
+            "radial_distance_xy_m": radial_distance,
             "expected_contact_radius_m": expected_contact_radius_m,
             "radial_gap_m": radial_gap,
         }
         evaluated += 1
-        if closest_x is None or abs(dx_to_roller) < abs(closest_x["dx_to_roller_m"]):
+        if closest_x is None or abs(dx_to_nip) < abs(closest_x["dx_to_nip_m"]):
             closest_x = sample
         if closest_radial is None or radial_gap < closest_radial["radial_gap_m"]:
             closest_radial = sample
 
     contact_expected = (
-        closest_radial is not None
-        and closest_radial["radial_gap_m"] <= 0.0
-        and abs(closest_radial["dy_to_centerline_m"]) <= BALL_RADIUS_M
+        closest_radial is not None and closest_radial["radial_gap_m"] <= 0.0
     )
     ball_delta = None
     if first_ball_pose is not None and last_ball_pose is not None:
@@ -181,8 +181,8 @@ def summarize(
         "ball_name": ball_name,
         "records": len(records),
         "evaluated_samples": evaluated,
-        "roller_x_m": roller_x_m,
-        "roller_z_m": roller_z_m,
+        "nip_x_m": nip_x_m,
+        "wheel_y_m": wheel_y_m,
         "expected_contact_radius_m": expected_contact_radius_m,
         "robot_pose_names": sorted(latest_robots),
         "first_ball_pose": first_ball_pose,
@@ -199,8 +199,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("pose_jsonl", type=Path)
     parser.add_argument("--ball-name", default="ball_02")
-    parser.add_argument("--roller-x-offset-m", type=float, default=0.015)
-    parser.add_argument("--roller-z-offset-m", type=float, default=0.0)
+    parser.add_argument("--nip-x-m", type=float, default=0.590)
+    parser.add_argument("--wheel-radius-m", type=float, default=0.060)
+    parser.add_argument("--wheel-gap-m", type=float, default=0.060)
     parser.add_argument("--base-link-height-m", type=float, default=BASE_LINK_HEIGHT_M)
     parser.add_argument("--json-out", type=Path)
     args = parser.parse_args()
@@ -208,8 +209,9 @@ def main() -> int:
     summary = summarize(
         args.pose_jsonl,
         ball_name=args.ball_name,
-        roller_x_offset_m=args.roller_x_offset_m,
-        roller_z_offset_m=args.roller_z_offset_m,
+        nip_x_m=args.nip_x_m,
+        wheel_radius_m=args.wheel_radius_m,
+        wheel_gap_m=args.wheel_gap_m,
         base_link_height_m=args.base_link_height_m,
     )
     text = json.dumps(summary, indent=2, sort_keys=True)

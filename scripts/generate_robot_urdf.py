@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import shutil
 import subprocess
@@ -112,31 +113,38 @@ def _patch_collision_surface(
 def _patch_sdf_contacts(sdf_text: str) -> str:
     """Patch contact tuning and Gazebo-native intake collision geometry."""
     root = ET.fromstring(sdf_text)
-    lip_height_m = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.002")))
+    lip_height_m = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
     # Keep the hand-carved Gazebo collision in sync with the generated visual
-    # mesh. The front lip follows the roller X tuning; the rear ramp endpoint
-    # stays fixed at the basket floor.
-    roller_x_offset_m = float(os.getenv("INTAKE_ROLLER_X_OFFSET_M", "0.0"))
-    lip_x_offset_m = float(os.getenv("INTAKE_LIP_X_OFFSET_M", "0.0"))
+    # mesh. The ramp entry sits just ahead of the wheel nip so the wheels feed
+    # the ball onto a rising surface; the rear endpoint stays at the basket
+    # floor.
+    nip_x_m = float(os.getenv("INTAKE_NIP_X_M", "0.590"))
+    ramp_entry_x_m = float(os.getenv("INTAKE_RAMP_ENTRY_X_M", str(nip_x_m + 0.020)))
     ramp_clear_run_m = max(0.004, float(os.getenv("INTAKE_RAMP_CLEAR_RUN_M", "0.030")))
     ramp_clear_z_m = max(lip_height_m, float(os.getenv("INTAKE_RAMP_CLEAR_Z_M", "0.004")))
+    ramp_knee_x_m = float(os.getenv("INTAKE_RAMP_KNEE_X_M", "0.520"))
+    ramp_end_x_m = float(os.getenv("INTAKE_RAMP_END_X_M", "0.400"))
     surfaces = {
         "rear_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "rear_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "front_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "front_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
-        # Continuous foam/rubber intake roller. High friction gives bite; the
-        # soft contact terms keep the small geometry overlap from behaving
-        # like a rigid metal cylinder.
-        "lift_wheel_link": ("2.0", "2.0", "0.0", "0.0"),
+        # Dual intake wheels: rubber/foam sleeves. High friction gives grip;
+        # the soft contact terms keep the nominal 3 mm/side interference from
+        # behaving like rigid metal (the carriage springs below provide the
+        # actual compliance).
+        "intake_wheel_left_link": ("2.5", "2.5", "0.0", "0.0"),
+        "intake_wheel_right_link": ("2.5", "2.5", "0.0", "0.0"),
+    }
+    wheel_soft_contact = {
+        "kp": os.getenv("INTAKE_WHEEL_CONTACT_KP", "8000"),
+        "kd": os.getenv("INTAKE_WHEEL_CONTACT_KD", "35"),
+        "max_vel": os.getenv("INTAKE_WHEEL_CONTACT_MAX_VEL", "0.6"),
+        "min_depth": os.getenv("INTAKE_WHEEL_CONTACT_MIN_DEPTH", "0.001"),
     }
     soft_contacts = {
-        "lift_wheel_link": {
-            "kp": os.getenv("INTAKE_ROLLER_CONTACT_KP", "8000"),
-            "kd": os.getenv("INTAKE_ROLLER_CONTACT_KD", "35"),
-            "max_vel": os.getenv("INTAKE_ROLLER_CONTACT_MAX_VEL", "0.6"),
-            "min_depth": os.getenv("INTAKE_ROLLER_CONTACT_MIN_DEPTH", "0.001"),
-        },
+        "intake_wheel_left_link": wheel_soft_contact,
+        "intake_wheel_right_link": wheel_soft_contact,
     }
     for link in root.findall(".//link"):
         name = link.attrib.get("name")
@@ -148,33 +156,75 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         for collision in link.findall("collision"):
             _patch_collision_surface(collision, *surfaces[name], soft_contacts.get(name))
 
-    # sdformat may rename collisions while converting the URDF, so locate the
-    # roller's actual collision name and point the contact sensor at it.
-    roller_col_name = ""
+    # sdformat may rename collisions while converting the URDF, so locate each
+    # intake wheel's actual collision name and point its contact sensor at it.
+    # Fail loud on both wheels: a silent mismatch means the bench counts zero
+    # contacts forever.
+    wheel_sensors = {
+        "roller_contact_0": "intake_wheel_left_link",
+        "roller_contact_1": "intake_wheel_right_link",
+    }
+    wheel_col_names: dict[str, str] = {}
     for link in root.findall(".//link"):
         lname = link.attrib.get("name", "")
-        if lname != "lift_wheel_link":
+        if lname not in wheel_sensors.values():
             continue
         collision = link.find("collision")
         if collision is not None:
-            roller_col_name = collision.attrib.get("name", "")
-            break
-    if not roller_col_name:
-        raise RuntimeError("expected lift_wheel_link collision for roller contact sensor")
+            wheel_col_names[lname] = collision.attrib.get("name", "")
+    missing = [l for l in wheel_sensors.values() if not wheel_col_names.get(l)]
+    if missing:
+        raise RuntimeError(f"expected intake wheel collisions for contact sensors: {missing}")
+    patched_sensors: set[str] = set()
     for sensor in root.findall(".//sensor"):
         sname = sensor.attrib.get("name", "")
-        if sname != "roller_contact_0":
+        if sname not in wheel_sensors:
             continue
         collision = sensor.find("./contact/collision")
         if collision is not None:
-            collision.text = roller_col_name
+            collision.text = wheel_col_names[wheel_sensors[sname]]
+            patched_sensors.add(sname)
+    if patched_sensors != set(wheel_sensors):
+        raise RuntimeError(
+            f"expected both intake wheel contact sensors, patched only {sorted(patched_sensors)}"
+        )
+
+    # Lateral compliance for the rigid nip (docs/dual-wheel-intake-design-el.md):
+    # each wheel's passive prismatic y-carriage gets a spring so the nominal
+    # 3 mm/side interference becomes grip force instead of a rigid jam
+    # (lesson of collect_test1/2; same SDF spring technique as debug-log #9).
+    # URDF cannot express joint springs, hence the SDF patch. Fail loud if the
+    # carriage joints are missing.
+    spring_k = os.getenv("INTAKE_WHEEL_SPRING_K", "1000")
+    carriage_joints = {
+        "intake_wheel_left_carriage_joint",
+        "intake_wheel_right_carriage_joint",
+    }
+    patched_joints: set[str] = set()
+    for joint in root.findall(".//joint"):
+        jname = joint.attrib.get("name", "")
+        if jname not in carriage_joints:
+            continue
+        axis = joint.find("axis")
+        if axis is None:
+            raise RuntimeError(f"carriage joint {jname} has no <axis> to patch")
+        dynamics = axis.find("dynamics")
+        if dynamics is None:
+            dynamics = ET.SubElement(axis, "dynamics")
+        _set_text(dynamics, "spring_reference", "0")
+        _set_text(dynamics, "spring_stiffness", spring_k)
+        patched_joints.add(jname)
+    if patched_joints != carriage_joints:
+        raise RuntimeError(
+            f"expected carriage joints {sorted(carriage_joints)}, patched {sorted(patched_joints)}"
+        )
 
     # URDF has no ramp-prism primitive, and DART does not handle STL
     # collisions reliably here. Replace only the generated SDF collision with
-    # a native extruded polyline of the launcher scoop. Keep this shape in
-    # sync with scripts/generate_curved_scoop_mesh.py: short 2 mm lip for
-    # initial roller bite, quick clearance opening, then a free ramp into the
-    # basket instead of a continuous roller/scoop pinch.
+    # short box segments that approximate the elevation ramp. Keep this shape
+    # in sync with scripts/generate_curved_scoop_mesh.py. When the ramp is
+    # disabled (enable_ramp:=false, validation Phases 1-2) there is no
+    # intake_channel_col in the SDF and this whole block is a no-op.
     intake_channel_link: ET.Element | None = None
     intake_channel_collision_name = ""
     for link in root.findall(".//link"):
@@ -186,29 +236,22 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
             pose = collision.find("pose")
             if pose is None:
                 pose = ET.SubElement(collision, "pose")
-            # rot X +90deg maps the +Z extrusion onto -Y: spans y=+0.09..-0.09.
-            # Point y-coords below are funnel-frame z (ground at -0.038). Gazebo
-            # lumps the fixed funnel_link into base_footprint, so preserve the
-            # funnel frame's +38 mm height when replacing the original collision.
-            # Match the -15 mm channel origin in funnel.urdf.xacro.
-            pose.text = "-0.015 0.09 0.038 1.57079632679 0 0"
             geometry = collision.find("geometry")
             if geometry is None:
                 geometry = ET.SubElement(collision, "geometry")
             geometry.clear()
-            polyline = ET.SubElement(geometry, "polyline")
-            ET.SubElement(polyline, "height").text = "0.18"
-            ground = -0.038
-            lip_x = 0.600 + roller_x_offset_m + lip_x_offset_m
+            lip_x = ramp_entry_x_m
             ramp_clear_x = lip_x - ramp_clear_run_m
-            ramp_knee_x = 0.520
-            ramp_end_x = 0.400
+            ramp_knee_x = ramp_knee_x_m
+            ramp_end_x = ramp_end_x_m
             ramp_clear_z = ramp_clear_z_m
-            ramp_knee_z = 0.024
-            ramp_end_z = 0.128
+            ramp_knee_z = float(os.getenv("INTAKE_RAMP_KNEE_Z_M", "0.024"))
+            ramp_end_z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.128"))
             ramp_steps = 28
             sheet_thickness = 0.002
             collision_clearance = 0.001
+            channel_origin_x = -0.015
+            channel_width = 0.18
 
             def smoothstep(t: float) -> float:
                 t = max(0.0, min(1.0, t))
@@ -228,17 +271,52 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
             for i in range(ramp_steps + 1):
                 t = i / ramp_steps
                 x = lip_x + (ramp_end_x - lip_x) * t
-                top_points.append((round(x, 5), round(ground + ramp_z(x), 5)))
-            underside = [
-                (x, max(ground + collision_clearance, z - sheet_thickness))
-                for x, z in reversed(top_points)
-            ]
-            points = top_points + underside
-            for px, pz in points:
-                ET.SubElement(polyline, "point").text = f"{px} {pz}"
-            # Low/medium ramp friction: enough to guide the launched ball, not so
-            # much that the scoop becomes a brake or a conveyor wall.
-            _patch_collision_surface(collision, "0.35", "0.35", "0.0", "0.0")
+                top_points.append((x, ramp_z(x)))
+
+            ramp_collisions = [collision]
+            base_name = intake_channel_collision_name or "intake_channel_col"
+            for i in range(1, ramp_steps):
+                ramp_collisions.append(
+                    ET.SubElement(
+                        intake_channel_link,
+                        "collision",
+                        {"name": f"{base_name}_seg_{i:02d}"},
+                    )
+                )
+
+            for i, segment_collision in enumerate(ramp_collisions):
+                (x0, z0), (x1, z1) = top_points[i], top_points[i + 1]
+                dx = x0 - x1
+                dz = z1 - z0
+                length = max(0.001, (dx * dx + dz * dz) ** 0.5)
+                pitch = math.atan2(dz, dx)
+                thickness = max(0.003, sheet_thickness + collision_clearance)
+                normal_x = math.sin(pitch)
+                normal_z = math.cos(pitch)
+                center_x = (x0 + x1) / 2.0 - normal_x * thickness / 2.0
+                center_z = (z0 + z1) / 2.0 - normal_z * thickness / 2.0
+
+                segment_pose = segment_collision.find("pose")
+                if segment_pose is None:
+                    segment_pose = ET.SubElement(segment_collision, "pose")
+                segment_pose.text = (
+                    f"{channel_origin_x + center_x:.6f} "
+                    f"0 "
+                    f"{max(collision_clearance + thickness / 2.0, center_z):.6f} "
+                    f"0 {pitch:.6f} 0"
+                )
+
+                segment_geometry = segment_collision.find("geometry")
+                if segment_geometry is None:
+                    segment_geometry = ET.SubElement(segment_collision, "geometry")
+                segment_geometry.clear()
+                box = ET.SubElement(segment_geometry, "box")
+                ET.SubElement(box, "size").text = (
+                    f"{length:.6f} {channel_width:.6f} {thickness:.6f}"
+                )
+                # Low/medium ramp friction: enough to guide the ball, not so
+                # much that the scoop becomes a brake or a conveyor wall.
+                _patch_collision_surface(segment_collision, "0.35", "0.35", "0.0", "0.0")
     if intake_channel_link is not None and intake_channel_collision_name:
         for old_sensor in list(intake_channel_link.findall("sensor")):
             if old_sensor.attrib.get("name") == "lip_contact_0":
@@ -297,8 +375,26 @@ def main() -> int:
             str(source),
             f"sim_mode:={args.sim_mode}",
             f"controllers_config:={controllers_config}",
-            f"intake_roller_x_offset:={os.getenv('INTAKE_ROLLER_X_OFFSET_M', '0.0')}",
-            f"intake_roller_z_offset:={os.getenv('INTAKE_ROLLER_Z_OFFSET_M', '0.0')}",
+            # Dual-wheel intake tuning + Concept Validation Plan gates
+            # (docs/dual-wheel-intake-design-el.md).
+            f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', '0.060')}",
+            f"intake_wheel_gap:={os.getenv('INTAKE_WHEEL_GAP_M', '0.060')}",
+            f"intake_nip_x:={os.getenv('INTAKE_NIP_X_M', '0.590')}",
+            f"intake_wheel_tilt_deg:={os.getenv('INTAKE_WHEEL_TILT_DEG', '0.0')}",
+            f"intake_wheel_max_vel:={os.getenv('INTAKE_WHEEL_MAX_VEL_RAD_S', '26.3')}",
+            f"intake_wheel_effort:={os.getenv('INTAKE_WHEEL_EFFORT_NM', '1.77')}",
+            f"enable_funnel:={os.getenv('INTAKE_ENABLE_FUNNEL', 'true')}",
+            f"enable_ramp:={os.getenv('INTAKE_ENABLE_RAMP', 'true')}",
+            f"enable_assist:={os.getenv('INTAKE_ENABLE_ASSIST', 'false')}",
+            f"enable_conveyor:={os.getenv('INTAKE_ENABLE_CONVEYOR', 'false')}",
+            f"intake_assist_x:={os.getenv('INTAKE_ASSIST_X_M', '0.545')}",
+            f"intake_assist_z:={os.getenv('INTAKE_ASSIST_Z_M', '0.050')}",
+            f"intake_assist_radius:={os.getenv('INTAKE_ASSIST_RADIUS_M', '0.030')}",
+            f"intake_assist_length:={os.getenv('INTAKE_ASSIST_LENGTH_M', '0.200')}",
+            f"intake_conveyor_x_bias:={os.getenv('INTAKE_CONVEYOR_X_BIAS_M', '0.000')}",
+            f"intake_conveyor_z_bias:={os.getenv('INTAKE_CONVEYOR_Z_BIAS_M', '0.000')}",
+            f"basket_floor_front_x:={os.getenv('INTAKE_BASKET_FLOOR_FRONT_X_M', '0.50')}",
+            f"basket_floor_top_z:={os.getenv('INTAKE_BASKET_FLOOR_TOP_Z_M', '0.128')}",
         ],
         check=False,
         env=env,

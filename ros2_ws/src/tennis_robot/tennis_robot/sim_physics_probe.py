@@ -21,12 +21,10 @@ from tf2_msgs.msg import TFMessage
 
 
 BALL_PREFIX = "ball_"
-ROLLER_BASE_X_M = 0.60
-ROLLER_BASE_Z_M = 0.067
 BASE_LINK_HEIGHT_M = 0.045
-ROLLER_RADIUS_M = 0.045
 BALL_RADIUS_M = 0.033
 BALL_MASS_KG = 0.058
+INTAKE_WHEEL_JOINTS = ("intake_wheel_left_joint", "intake_wheel_right_joint")
 
 
 def _vec_mag(vec) -> float:
@@ -72,6 +70,7 @@ class SimPhysicsProbe(Node):
         self._print_period_s = print_period_s
         self._started_ns = self.get_clock().now().nanoseconds
         self._stats = ContactStats()
+        self._wheel_contact_samples: dict[str, int] = {"left": 0, "right": 0}
         self.done = False
         self._static_balls: dict[str, tuple[float, float, float]] = {}
         self._balls: dict[str, tuple[float, float, float]] = {}
@@ -90,6 +89,7 @@ class SimPhysicsProbe(Node):
         self._intake_beam = False
         self._joint_velocity: float | None = None
         self._joint_effort: float | None = None
+        self._wheel_velocities: dict[str, float] = {}
         self._ball_history: dict[str, tuple[float, tuple[float, float, float], tuple[float, float, float] | None]] = {}
         self._jsonl: TextIO | None = None
         bench_ball_x = os.getenv("INTAKE_BENCH_BALL_X")
@@ -106,23 +106,23 @@ class SimPhysicsProbe(Node):
             path.parent.mkdir(parents=True, exist_ok=True)
             self._jsonl = path.open("w", encoding="utf-8")
 
-        self._roller_x = ROLLER_BASE_X_M + float(
-            os.getenv("INTAKE_ROLLER_X_OFFSET_M", "0.0")
+        # Dual-wheel side-pinch geometry (docs/dual-wheel-intake-design-el.md).
+        self._nip_x = float(os.getenv("INTAKE_NIP_X_M", "0.590"))
+        self._wheel_radius = float(os.getenv("INTAKE_WHEEL_RADIUS_M", "0.060"))
+        self._wheel_gap = float(os.getenv("INTAKE_WHEEL_GAP_M", "0.060"))
+        self._wheel_y = self._wheel_gap / 2.0 + self._wheel_radius
+        # Interference per side on a centred 66 mm ball (positive = squeeze).
+        self._squeeze_m = (2.0 * BALL_RADIUS_M - self._wheel_gap) / 2.0
+        # Horizontal dx (ahead of the nip plane) where a centred ball first
+        # touches the wheels: |ball - wheel_centre| = Rw + Rball.
+        reach = self._wheel_radius + BALL_RADIUS_M
+        self._nominal_bite_dx_m = math.sqrt(max(0.0, reach**2 - self._wheel_y**2))
+        self._lip_x = float(
+            os.getenv("INTAKE_RAMP_ENTRY_X_M", str(self._nip_x + 0.020))
         )
-        self._lip_x = self._roller_x + float(os.getenv("INTAKE_LIP_X_OFFSET_M", "0.0"))
         self._ramp_clear_run_m = float(os.getenv("INTAKE_RAMP_CLEAR_RUN_M", "0.030"))
         self._front_lip_zone_m = float(os.getenv("INTAKE_FRONT_LIP_ZONE_M", "0.008"))
         self._front_lip_min_x = self._lip_x - min(self._front_lip_zone_m, self._ramp_clear_run_m)
-        self._roller_z = ROLLER_BASE_Z_M + float(
-            os.getenv("INTAKE_ROLLER_Z_OFFSET_M", "0.0")
-        )
-        self._roller_center_ground_z = BASE_LINK_HEIGHT_M + self._roller_z
-        self._roller_bottom_ground_z = self._roller_center_ground_z - ROLLER_RADIUS_M
-        self._ball_clearance_m = self._roller_bottom_ground_z - (2.0 * BALL_RADIUS_M)
-        vertical_delta = self._roller_center_ground_z - BALL_RADIUS_M
-        self._nominal_bite_dx_m = math.sqrt(
-            max(0.0, (ROLLER_RADIUS_M + BALL_RADIUS_M) ** 2 - vertical_delta**2)
-        )
 
         self.create_subscription(String, "/sim/balls", self._on_balls, 10)
         self.create_subscription(TFMessage, "/gz/pose_info", self._on_pose_info, 10)
@@ -133,7 +133,14 @@ class SimPhysicsProbe(Node):
             Bool, "/collector/intake_beam_broken", self._on_intake_beam, 10
         )
         self.create_subscription(JointState, "/joint_states", self._on_joint_states, 10)
-        self.create_subscription(Contacts, "/gz/roller_contact_0", self._on_contacts, 10)
+        self.create_subscription(
+            Contacts, "/gz/roller_contact_0",
+            lambda msg: self._on_contacts(msg, "left"), 10,
+        )
+        self.create_subscription(
+            Contacts, "/gz/roller_contact_1",
+            lambda msg: self._on_contacts(msg, "right"), 10,
+        )
         self.create_subscription(Contacts, "/gz/lip_contact_0", self._on_lip_contacts, 10)
 
         self.create_timer(print_period_s, self._print_summary)
@@ -141,12 +148,14 @@ class SimPhysicsProbe(Node):
             self.create_timer(duration_s, self._finish)
 
         self.get_logger().info(
-            "probe started: roller center z=%.1f mm, bottom clearance=%.1f mm, "
-            "ball fit margin=%.1f mm, lip_x=%.1f mm, nominal bite dx=%.1f mm"
+            "probe started (dual-wheel): nip_x=%.0f mm, wheel r=%.0f mm, "
+            "gap=%.0f mm (squeeze %.1f mm/side), ramp entry=%.0f mm, "
+            "nominal bite dx=%.1f mm"
             % (
-                self._roller_center_ground_z * 1000.0,
-                self._roller_bottom_ground_z * 1000.0,
-                self._ball_clearance_m * 1000.0,
+                self._nip_x * 1000.0,
+                self._wheel_radius * 1000.0,
+                self._wheel_gap * 1000.0,
+                self._squeeze_m * 1000.0,
                 self._lip_x * 1000.0,
                 self._nominal_bite_dx_m * 1000.0,
             )
@@ -198,14 +207,22 @@ class SimPhysicsProbe(Node):
         self._intake_beam = msg.data
 
     def _on_joint_states(self, msg: JointState) -> None:
-        try:
-            index = list(msg.name).index("lift_wheel_joint")
-        except ValueError:
-            return
-        if index < len(msg.velocity):
-            self._joint_velocity = msg.velocity[index]
-        if index < len(msg.effort):
-            self._joint_effort = msg.effort[index]
+        names = list(msg.name)
+        for joint in INTAKE_WHEEL_JOINTS:
+            try:
+                index = names.index(joint)
+            except ValueError:
+                continue
+            if index < len(msg.velocity):
+                self._wheel_velocities[joint] = float(msg.velocity[index])
+            if index < len(msg.effort):
+                self._joint_effort = msg.effort[index]
+        if self._wheel_velocities:
+            # Representative magnitude for surface-speed math (the two wheels
+            # counter-rotate; their magnitudes should match).
+            self._joint_velocity = max(
+                (abs(v) for v in self._wheel_velocities.values()), default=None
+            )
 
     def _update_ball_velocity(self, name: str, point: tuple[float, float, float]) -> None:
         now = self.get_clock().now().nanoseconds / 1e9
@@ -257,13 +274,14 @@ class SimPhysicsProbe(Node):
         points_base: list[tuple[float, float, float]] | None,
         max_depth: float,
         max_force: float,
+        wheel: str | None = None,
     ) -> None:
         if self._jsonl is None:
             return
         vel = self._ball_velocity(ball_name)
         speed = _tuple_mag(vel) if vel else None
         roller_surface_speed = (
-            abs(self._joint_velocity) * ROLLER_RADIUS_M
+            abs(self._joint_velocity) * self._wheel_radius
             if self._joint_velocity is not None
             else None
         )
@@ -275,6 +293,7 @@ class SimPhysicsProbe(Node):
         kinetic_j = 0.5 * BALL_MASS_KG * speed * speed if speed is not None else None
         rec = {
             "type": sample_type,
+            "wheel": wheel,
             "t_wall": round(time.time(), 6),
             "t_s": round((self.get_clock().now().nanoseconds - self._started_ns) / 1e9, 4),
             "ball": ball_name,
@@ -295,11 +314,16 @@ class SimPhysicsProbe(Node):
             "ball_speed_m_s": round(speed, 4) if speed is not None else None,
             "ball_kinetic_j": round(kinetic_j, 5) if kinetic_j is not None else None,
             "surface_to_ball_speed_loss_m_s": round(loss_mps, 4) if loss_mps is not None else None,
+            "wheel_joint_velocities_rad_s": {
+                j: round(v, 4) for j, v in self._wheel_velocities.items()
+            } or None,
             "geometry": {
-                "roller_x_m": round(self._roller_x, 5),
-                "roller_center_ground_z_m": round(self._roller_center_ground_z, 5),
-                "roller_radius_m": ROLLER_RADIUS_M,
-                "lip_x_m": round(self._lip_x, 5),
+                "nip_x_m": round(self._nip_x, 5),
+                "wheel_radius_m": round(self._wheel_radius, 5),
+                "wheel_gap_m": round(self._wheel_gap, 5),
+                "wheel_y_m": round(self._wheel_y, 5),
+                "squeeze_per_side_m": round(self._squeeze_m, 5),
+                "ramp_entry_x_m": round(self._lip_x, 5),
                 "front_lip_min_x_m": round(self._front_lip_min_x, 5),
                 "ramp_clear_run_m": round(self._ramp_clear_run_m, 5),
                 "nominal_bite_dx_m": round(self._nominal_bite_dx_m, 5),
@@ -333,7 +357,7 @@ class SimPhysicsProbe(Node):
                 )
         return ball_name, contact_names, points_world, max_depth, max_force
 
-    def _on_contacts(self, msg: Contacts) -> None:
+    def _on_contacts(self, msg: Contacts, wheel: str = "left") -> None:
         self._stats.samples += 1
         ball_name, contact_names, points_world, max_depth, max_force = (
             self._extract_ball_contacts(msg)
@@ -343,6 +367,7 @@ class SimPhysicsProbe(Node):
             return
 
         self._stats.active_samples += 1
+        self._wheel_contact_samples[wheel] = self._wheel_contact_samples.get(wheel, 0) + 1
         self._stats.max_points = max(self._stats.max_points, len(points_world))
         self._stats.max_depth_m = max(self._stats.max_depth_m, max_depth)
         self._stats.max_force_n = max(self._stats.max_force_n, max_force)
@@ -361,6 +386,7 @@ class SimPhysicsProbe(Node):
             points_base,
             max_depth,
             max_force,
+            wheel=wheel,
         )
 
     def _on_lip_contacts(self, msg: Contacts) -> None:
@@ -425,7 +451,7 @@ class SimPhysicsProbe(Node):
         best: tuple[str, tuple[float, float, float], float] | None = None
         for name, point in self._balls.items():
             base = _world_to_base(point, robot_pose)
-            score = abs(base[0] - self._roller_x) + abs(base[1]) + abs(base[2] - self._roller_z)
+            score = abs(base[0] - self._nip_x) + abs(base[1])
             if best is None or score < best[2]:
                 best = (name, base, score)
         if best is None:
@@ -438,22 +464,21 @@ class SimPhysicsProbe(Node):
         ball_text = "ball=n/a"
         if nearest is not None:
             name, (x, y, z) = nearest
-            dx = x - self._roller_x
-            dz = z - self._roller_z
+            dx = x - self._nip_x
             candidate = {
                 "name": name,
                 "t_s": round(elapsed, 4),
                 "base_xyz_m": [round(x, 5), round(y, 5), round(z, 5)],
-                "dx_to_roller_m": round(dx, 5),
-                "dz_to_roller_m": round(dz, 5),
+                "dx_to_nip_m": round(dx, 5),
+                "lateral_y_m": round(y, 5),
             }
             if self._closest_ball is None or abs(dx) < abs(
-                float(self._closest_ball["dx_to_roller_m"])
+                float(self._closest_ball["dx_to_nip_m"])
             ):
                 self._closest_ball = candidate
             ball_text = (
                 f"ball={name} base=({x:+.3f},{y:+.3f},{z:+.3f}) "
-                f"to_roller dx={dx * 1000:+.0f}mm dz={dz * 1000:+.0f}mm"
+                f"to_nip dx={dx * 1000:+.0f}mm lat={y * 1000:+.0f}mm"
             )
 
         contact_text = "last_contact_base=n/a"
@@ -468,17 +493,23 @@ class SimPhysicsProbe(Node):
                 f"z[{min(zs):+.3f},{max(zs):+.3f}]"
             )
 
-        joint = "joint=n/a"
-        if self._joint_velocity is not None:
-            joint = f"joint_vel={self._joint_velocity:+.2f}rad/s"
-            if self._joint_effort is not None:
-                joint += f" effort={self._joint_effort:+.3f}"
+        joint = "wheels=n/a"
+        if self._wheel_velocities:
+            left = self._wheel_velocities.get(INTAKE_WHEEL_JOINTS[0])
+            right = self._wheel_velocities.get(INTAKE_WHEEL_JOINTS[1])
+            joint = (
+                f"wheels L={left:+.2f} R={right:+.2f} rad/s"
+                if left is not None and right is not None
+                else f"wheels partial={self._wheel_velocities}"
+            )
 
         self.get_logger().info(
             f"t={elapsed:5.1f}s contact={int(self._roller_contact)} "
             f"beam={int(self._intake_beam)} max_depth={self._stats.max_depth_m * 1000:.2f}mm "
             f"max_force={self._stats.max_force_n:.2f}N points_max={self._stats.max_points} "
-            f"{joint} lip_x={self._lip_x:+.3f} bite_dx={self._nominal_bite_dx_m * 1000:.0f}mm "
+            f"{joint} contacts L={self._wheel_contact_samples.get('left', 0)} "
+            f"R={self._wheel_contact_samples.get('right', 0)} "
+            f"bite_dx={self._nominal_bite_dx_m * 1000:.0f}mm "
             f"{ball_text} {contact_text}"
         )
 
@@ -501,8 +532,8 @@ class SimPhysicsProbe(Node):
                 nearest_ball = {
                     "name": name,
                     "base_xyz_m": [round(x, 5), round(y, 5), round(z, 5)],
-                    "dx_to_roller_m": round(x - self._roller_x, 5),
-                    "dz_to_roller_m": round(z - self._roller_z, 5),
+                    "dx_to_nip_m": round(x - self._nip_x, 5),
+                    "lateral_y_m": round(y, 5),
                 }
             self._jsonl.write(json.dumps({
                 "type": "summary",
@@ -515,8 +546,14 @@ class SimPhysicsProbe(Node):
                 if self._joint_velocity is not None else None,
                 "joint_effort": round(self._joint_effort, 4)
                 if self._joint_effort is not None and math.isfinite(self._joint_effort) else None,
-                "roller_x_m": round(self._roller_x, 5),
-                "lip_x_m": round(self._lip_x, 5),
+                "wheel_contact_samples": dict(self._wheel_contact_samples),
+                "wheel_joint_velocities_rad_s": {
+                    j: round(v, 4) for j, v in self._wheel_velocities.items()
+                } or None,
+                "nip_x_m": round(self._nip_x, 5),
+                "wheel_gap_m": round(self._wheel_gap, 5),
+                "wheel_radius_m": round(self._wheel_radius, 5),
+                "ramp_entry_x_m": round(self._lip_x, 5),
                 "nominal_bite_dx_m": round(self._nominal_bite_dx_m, 5),
                 "nearest_ball": nearest_ball,
                 "closest_ball": self._closest_ball,

@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <!-- Ball collection basket (floor + three walls), fixed to parent link. -->
-  <xacro:macro name="ball_basket" params="parent">
+  <!-- Ball collection basket (floor + three walls), fixed to parent link.
+       floor_front_x: forward edge of the floor (base_link x). Must stay clear
+         of the intake wheel span (nip_x - wheel radius) or it overhangs the
+         wheel-to-hopper handoff and caps the ball's climb (debug-log #41).
+       floor_top_z_ground: floor top height in the GROUND frame. The scoop-era
+         launch design used 0.128; the dual-wheel transport concept wants a low
+         hopper entry just above the chassis plate (~0.058). -->
+  <xacro:macro name="ball_basket" params="parent floor_front_x floor_top_z_ground">
+    <!-- basket_link shares base_link's origin (45 mm above ground). -->
+    <xacro:property name="floor_top" value="${floor_top_z_ground - base_link_height}"/>
+    <xacro:property name="floor_thickness" value="0.020"/>
+    <xacro:property name="floor_rear_x" value="-0.12"/>
+    <xacro:property name="wall_top" value="0.353"/>
     <joint name="basket_joint" type="fixed">
       <parent link="${parent}"/>
       <child link="basket_link"/>
@@ -13,46 +24,45 @@
         <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
       </inertial>
 
-      <!-- Floor extended forward to x=0.50 (base_link frame) so a ball
-           launched up the scoop has a continuous landing surface into the
-           basket. Floor top is 0.128 m above ground. -->
       <collision name="basket_floor_col">
-        <origin xyz="0.19 0 0.073" rpy="0 0 0"/>
-        <geometry><box size="0.62 0.34 0.020"/></geometry>
+        <origin xyz="${(floor_front_x + floor_rear_x) / 2.0} 0 ${floor_top - floor_thickness / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="${floor_front_x - floor_rear_x} 0.34 ${floor_thickness}"/></geometry>
       </collision>
       <visual name="basket_floor_vis">
-        <origin xyz="0.19 0 0.073" rpy="0 0 0"/>
-        <geometry><box size="0.62 0.34 0.020"/></geometry>
+        <origin xyz="${(floor_front_x + floor_rear_x) / 2.0} 0 ${floor_top - floor_thickness / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="${floor_front_x - floor_rear_x} 0.34 ${floor_thickness}"/></geometry>
         <material name="basket_gray"/>
       </visual>
 
+      <!-- Walls run from the floor top up to a fixed rim so lowering the
+           floor cannot open a gap balls could escape through. -->
       <collision name="basket_left_wall_col">
-        <origin xyz="0.15 0.17 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.54 0.020 0.28"/></geometry>
+        <origin xyz="0.15 0.17 ${(wall_top + floor_top - floor_thickness) / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="0.54 0.020 ${wall_top - floor_top + floor_thickness}"/></geometry>
       </collision>
       <visual name="basket_left_wall_vis">
-        <origin xyz="0.15 0.17 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.54 0.020 0.28"/></geometry>
+        <origin xyz="0.15 0.17 ${(wall_top + floor_top - floor_thickness) / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="0.54 0.020 ${wall_top - floor_top + floor_thickness}"/></geometry>
         <material name="basket_gray"/>
       </visual>
 
       <collision name="basket_right_wall_col">
-        <origin xyz="0.15 -0.17 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.54 0.020 0.28"/></geometry>
+        <origin xyz="0.15 -0.17 ${(wall_top + floor_top - floor_thickness) / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="0.54 0.020 ${wall_top - floor_top + floor_thickness}"/></geometry>
       </collision>
       <visual name="basket_right_wall_vis">
-        <origin xyz="0.15 -0.17 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.54 0.020 0.28"/></geometry>
+        <origin xyz="0.15 -0.17 ${(wall_top + floor_top - floor_thickness) / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="0.54 0.020 ${wall_top - floor_top + floor_thickness}"/></geometry>
         <material name="basket_gray"/>
       </visual>
 
       <collision name="basket_rear_wall_col">
-        <origin xyz="-0.12 0 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.020 0.34 0.28"/></geometry>
+        <origin xyz="-0.12 0 ${(wall_top + floor_top - floor_thickness) / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="0.020 0.34 ${wall_top - floor_top + floor_thickness}"/></geometry>
       </collision>
       <visual name="basket_rear_wall_vis">
-        <origin xyz="-0.12 0 0.213" rpy="0 0 0"/>
-        <geometry><box size="0.020 0.34 0.28"/></geometry>
+        <origin xyz="-0.12 0 ${(wall_top + floor_top - floor_thickness) / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="0.020 0.34 ${wall_top - floor_top + floor_thickness}"/></geometry>
         <material name="basket_gray"/>
       </visual>
 
