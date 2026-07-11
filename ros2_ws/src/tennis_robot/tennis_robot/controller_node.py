@@ -1430,7 +1430,15 @@ class ControllerNode(Node):
         self._pub_motion_cmd.publish(twist)
 
         requested = command.collector
-        if command.state in {CollectorState.APPROACH, CollectorState.CAPTURE}:
+        if command.state == CollectorState.CAPTURE:
+            # Committed ingest: the wheels MUST already spin when the ball
+            # meets them. Gating capture on the throat beam deadlocked live
+            # (debug-log #44): with the dual-wheel geometry a plowed ball
+            # reaches at most x=0.678 and only grazes the 0.670 beam, so the
+            # latch never set and the ball was bulldozed by dead wheels.
+            collector_enabled = requested.intake_enabled
+            self._intake_roller_latched = True
+        elif command.state == CollectorState.APPROACH:
             self._intake_roller_latched |= self._intake_beam_broken
             collector_enabled = requested.intake_enabled and self._intake_roller_latched
         else:

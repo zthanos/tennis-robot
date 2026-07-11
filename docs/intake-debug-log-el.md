@@ -1282,6 +1282,49 @@
   (το πρώτο detection είχε αναντιστοιχία με το ground truth ball_02)·
   (γ) collect_one live rerun με τηλεμετρία gz-vs-perception ανά frame.
 
+### 44. Live approach εκστρατεία: 4 στρώματα διορθώθηκαν, μένει το nip-entry με κυλιόμενη μπάλα
+- **Επιβεβαίωση perception**: το πρώτο live detection ταίριαξε με την ball_09
+  του κόσμου με σφάλμα **7.5cm στο 1.1m** — το YOLO+depth→world είναι
+  βαθμονομημένο σωστά. Το AI pipeline (προσομοίωση OAK-D) λειτουργεί.
+- **Στρώμα 1 — παγωμένο lock**: το collect_one κλείδωνε τη θέση-στόχο ΜΙΑ
+  φορά στην πρώτη θέαση από το scan (3-5m, μέγιστο σφάλμα) και οδηγούσε
+  τυφλά εκεί. Fix: **lock refresh** σε κάθε νεότερη θέαση (gate 0.6m κατά
+  του target-stealing) — το σφάλμα πέφτει στο ~7cm της τελευταίας θέασης.
+- **Στρώμα 2 — capture profile**: capture από 0.34m με budget 2.8s (0.39m
+  τυφλής διαδρομής — δεν έφτανε καν τους τροχούς). Fix: capture_distance
+  1.0m (πριν την επαφή με funnel, μέσα στην ορατότητα), timeout 10s,
+  commit-ευθεία <0.45m, clamp στο capture steering. Compose capture
+  speeds 0.07/0.05 → 0.14 (bench-proven).
+- **Στρώμα 3 — τροχοί νεκροί στο capture**: το gate
+  `intake_roller_latched |= intake_beam_broken` δεν άνοιγε ΠΟΤΕ live:
+  μετρήθηκαν **0/2336 beam fires σε 60s** ενώ ο robot bulldoze-άρει μπάλες
+  9.5m! Αιτία: το beam στο x=0.670 (#24 υπολόγισε επαφή στο 0.613) αλλά η
+  πραγματική πρώτη επαφή με tilt 35° είναι ball-centre **0.645** → η
+  σπρωγμένη μπάλα φτάνει max 0.678 και μόλις γλείφει το beam. Fix διπλό:
+  CAPTURE πλέον ΑΓΕΤΑΙ χωρίς gate (committed ingest· το gate μένει στο
+  APPROACH για το real-hw σκεπτικό) ΚΑΙ ir_x 0.670→**0.720**.
+  Επιβεβαίωση: 2240 samples με τροχούς σε πλήρη περιστροφή στο capture.
+- **Στρώμα 4 — odom yaw**: τα nodes κατανάλωναν το ΩΜΟ
+  `/diff_drive_controller/odom` (yaw παραμορφωμένο από το wheel_separation
+  fudge 1.0 vs 0.70) ενώ το EKF που φτιάχτηκε γι' αυτό τάιζε μόνο TF.
+  Fix: `_odom_remap` → `/odometry/filtered`. Παράπλευρο: το EKF απέκλινε
+  25m εκτός γηπέδου επειδή fuse-άρει accelerometer ax (double-integration
+  runaway) → imu0 πλέον ΜΟΝΟ gyro yaw-rate. Αποτέλεσμα: **lateral aim
+  0.00-0.08m** στα capture creeps (μέσα στο ±8cm funnel envelope).
+- **Εναπομένον (νέο, καθαρά οριοθετημένο)**: η μπάλα πλέον ΜΠΑΙΝΕΙ στον
+  διάδρομο με σωστή στόχευση, αλλά **wedge στη βάση του jump (0.478,
+  z=0.037) επί 10s** — το γνωστό wedge pocket του Run A — με kick που
+  φτάνει z=0.074 (οριακά κάτω από το χείλος 0.088). Κρίσιμη διαφορά από
+  το bench: εκεί η μπάλα ήταν ΣΤΑΤΙΚΗ (σχετική ταχύτητα 0.12 στην επαφή)·
+  live η μπάλα ΚΥΛΑΕΙ μπροστά από το robot από την επαφή με το funnel →
+  σχεδόν μηδενική σχετική ταχύτητα στο nip → ασθενέστερη αρπαγή.
+- **Επόμενη εκστρατεία (bench, deterministic — όχι live whack-a-mole)**:
+  αναπαραγωγή του live σεναρίου στο bench (μπάλα που κυλά μπροστά από το
+  robot / έλεγχος πραγματικής σχετικής ταχύτητας στην πρώτη επαφή), jam
+  instrumentation στο wedge (κατάρρευση joint velocity υπό φορτίο vs
+  effort 1.77), και sweep των υποψήφιων μοχλών: wheel speed στο capture,
+  commit distance, micro-stop πριν το nip, γεωμετρία εισόδου jump.
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):

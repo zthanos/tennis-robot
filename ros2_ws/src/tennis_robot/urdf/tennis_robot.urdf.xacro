@@ -125,7 +125,7 @@
        At x=0.670 it fires when the ball centre is ~57 mm before first wheel
        contact (ball-centre x≈0.613). Collection confirmation is the BASKET
        beam pair below — see gazebo_extras_node.py. -->
-  <xacro:property name="ir_x" value="0.670"/>
+  <xacro:property name="ir_x" value="0.720"/>
   <xacro:property name="ir_y" value="0.105"/>
   <xacro:property name="ir_z" value="-0.005"/>
   <xacro:property name="basket_ir_x" value="0.28"/> 

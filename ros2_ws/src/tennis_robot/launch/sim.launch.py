@@ -313,7 +313,13 @@ def generate_launch_description():
     # /diff_drive_controller/odom; the old gz DiffDrive plugin that fed /odom is
     # gone. Without this remap the nodes' pose/yaw silently freeze at 0 (e.g.
     # survey turn_180_timeout: the turn never completes because yaw never moves).
-    _odom_remap = ("/odom", "/diff_drive_controller/odom")
+    # Consumers get the EKF-fused pose, NOT raw wheel odometry: skid-steer
+    # wheel yaw is scaled by the wheel_separation SLAM fudge (1.0 vs the real
+    # 0.70), so every in-place scan turn corrupted dead-reckoned target
+    # bearings by ~40% and blind capture legs missed by 0.2-0.9 m
+    # (debug-log #44). The EKF exists precisely to fix yaw with the IMU —
+    # but only its TF was consumed before this remap.
+    _odom_remap = ("/odom", "/odometry/filtered")
 
     perception = Node(
         package="tennis_robot",

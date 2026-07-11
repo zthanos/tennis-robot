@@ -27,6 +27,9 @@ if TYPE_CHECKING:
 # ── Constants (no env-var overrides needed) ────────────────────────────────────
 
 _RETURN_POSITION_TOLERANCE_M = 0.12
+# Max distance between a fresh sighting and the current lock for the lock to
+# be refreshed (same physical ball) instead of ignored (different ball).
+_RELOCK_GATE_M = 0.6
 _RETURN_YAW_TOLERANCE_RAD = math.radians(6.0)
 _RETURN_LINEAR_GAIN = 0.55
 _RETURN_ANGULAR_GAIN = 1.8
@@ -165,6 +168,27 @@ class CollectOneMission:
         if behavior.state == CollectorState.SCAN and not observation.visible:
             self._locked_world = None
             return self._scan_step(robot_yaw)
+
+        # Keep the lock FRESH while the ball is still visible. The first lock
+        # is taken from the scan sighting (possibly 3-5 m out, right after a
+        # rotation) where perception + odom-yaw error is largest; live ground
+        # truth showed blind legs missing by 0.7 m on that stale lock
+        # (debug-log #44). Re-locking on each nearer sighting shrinks the
+        # frozen error to the last-visible accuracy (~7 cm at ~1 m) before the
+        # camera's near-field blind zone takes over. The gate keeps a stray
+        # detection of a DIFFERENT ball from stealing the lock mid-approach.
+        if (
+            observation.visible
+            and observation.world_x_m is not None
+            and observation.world_y_m is not None
+            and self._locked_world is not None
+            and math.hypot(
+                observation.world_x_m - self._locked_world[0],
+                observation.world_y_m - self._locked_world[1],
+            )
+            <= _RELOCK_GATE_M
+        ):
+            self._locked_world = (observation.world_x_m, observation.world_y_m)
 
         locked_obs = (
             _world_to_robot_obs(*self._locked_world, robot_x, robot_y, robot_yaw)

@@ -55,10 +55,18 @@ class ConceptACommand:
 @dataclass(frozen=True)
 class ConceptAConfig:
     align_tolerance_rad: float = math.radians(4.0)
-    capture_distance_m: float = 0.34
+    # Switch to the capture creep BEFORE the funnel cheeks (rear tips at
+    # x=0.76) touch the ball: the bench proved the intake at ~0.12 m/s inbound
+    # (debug-log #41-#42), so the whole contact phase must happen at capture
+    # speed, not approach speed. 1.0 m also keeps the switch inside camera
+    # visibility (the near-field blind zone starts ~0.9 m from base).
+    capture_distance_m: float = 1.00
     collected_hold_s: float = 0.7
     lost_target_timeout_s: float = 0.5
-    capture_timeout_s: float = 2.8
+    # Budget for the mostly-blind final leg: 1.0 m at 0.14 m/s ~= 7 s plus the
+    # push through nip/jump/hopper. The old 2.8 s covered only 0.39 m and
+    # timed out before the ball could even reach the wheels (debug-log #44).
+    capture_timeout_s: float = 10.0
     scan_angular_speed_rad_s: float = 1.1
     scan_full_turn_s: float = 8.4
     align_angular_gain: float = 2.7
@@ -66,6 +74,10 @@ class ConceptAConfig:
     approach_speed_m_s: float = 0.40
     capture_speed_m_s: float = 0.14
     capture_angular_gain: float = 1.2
+    # Inside this range the ball is at/inside the funnel mouth: steering on a
+    # dead-reckoned bearing only wiggles the base while the funnel+wheels do
+    # the centering (proven for +-80 mm lateral error), so drive dead straight.
+    capture_commit_distance_m: float = 0.45
     reverse_speed_m_s: float = -0.10
     # Dual-wheel intake, GB37Y3530-12V-251R per wheel (no-load 26.3 rad/s).
     # 25 rad/s setpoint x 60 mm wheel radius = 1.5 m/s surface speed. The
@@ -93,6 +105,9 @@ class ConceptAConfig:
             approach_speed_m_s=_env_float("COLLECTOR_APPROACH_SPEED_M_S", defaults.approach_speed_m_s),
             capture_speed_m_s=_env_float("COLLECTOR_CAPTURE_SPEED_M_S", defaults.capture_speed_m_s),
             capture_angular_gain=_env_float("COLLECTOR_CAPTURE_ANGULAR_GAIN", defaults.capture_angular_gain),
+            capture_commit_distance_m=_env_float(
+                "COLLECTOR_CAPTURE_COMMIT_DISTANCE_M", defaults.capture_commit_distance_m
+            ),
             reverse_speed_m_s=-abs(_env_float("COLLECTOR_REVERSE_SPEED_M_S", abs(defaults.reverse_speed_m_s))),
             lift_wheel_speed=_env_float(
                 "COLLECTOR_INTAKE_WHEEL_SPEED",
@@ -247,7 +262,20 @@ class ConceptACollectorBehavior:
             base = BaseCommand(cfg.approach_speed_m_s, self._clamped_turn(observation.bearing_rad))
             collector = CollectorCommand(cfg.lift_wheel_speed, True)
         elif self.state == CollectorState.CAPTURE:
-            base = BaseCommand(cfg.capture_speed_m_s, observation.bearing_rad * cfg.capture_angular_gain)
+            # Committed straight push once the ball is at the funnel mouth;
+            # before that, clamp the correction like ALIGN does (a raw
+            # bearing*gain explodes as the dead-reckoned distance -> 0).
+            if observation.distance_m <= cfg.capture_commit_distance_m:
+                capture_turn = 0.0
+            else:
+                capture_turn = max(
+                    -cfg.max_align_angular_speed_rad_s,
+                    min(
+                        cfg.max_align_angular_speed_rad_s,
+                        observation.bearing_rad * cfg.capture_angular_gain,
+                    ),
+                )
+            base = BaseCommand(cfg.capture_speed_m_s, capture_turn)
             collector = CollectorCommand(cfg.lift_wheel_speed, True)
         elif self.state == CollectorState.REVERSE_CLEAR:
             base = BaseCommand(cfg.reverse_speed_m_s, 0.0)
