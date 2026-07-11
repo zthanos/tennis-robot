@@ -217,6 +217,44 @@ def generate_launch_description():
         output="screen",
         additional_env={"PYTHONPATH": ROS_PYTHONPATH},
     )
+    # Distro fork (debug-log #43): on Humble, twist_mux and the
+    # diff_drive_controller both speak plain Twist (`use_stamped_vel: false`,
+    # ~/cmd_vel_unstamped). On Jazzy both are TwistStamped-only, so the
+    # Twist-speaking producers (motor adapter on /cmd_vel_collection, survey/
+    # teleop on /cmd_vel_teleop) must be restamped BEFORE the mux, and the mux
+    # output goes straight to ~/cmd_vel. Producers stay distro-agnostic.
+    _stamped_cmd_stack = os.environ.get("ROS_DISTRO", "") not in {"humble", "iron"}
+
+    def _stamp_relay(name: str, in_topic: str, out_topic: str) -> Node:
+        return Node(
+            package="tennis_robot",
+            executable="cmd_vel_stamp_relay",
+            name=name,
+            output="screen",
+            parameters=[{"use_sim_time": True}],
+            additional_env={
+                "PYTHONPATH": ROS_PYTHONPATH,
+                "CMD_VEL_RELAY_IN": in_topic,
+                "CMD_VEL_RELAY_OUT": out_topic,
+            },
+        )
+
+    cmd_vel_relays = (
+        [
+            _stamp_relay(
+                "cmd_vel_stamp_relay_collection",
+                "/cmd_vel_collection",
+                "/cmd_vel_collection_stamped",
+            ),
+            _stamp_relay(
+                "cmd_vel_stamp_relay_teleop",
+                "/cmd_vel_teleop",
+                "/cmd_vel_teleop_stamped",
+            ),
+        ]
+        if _stamped_cmd_stack
+        else []
+    )
     collector_logic = Node(
         package="tennis_robot",
         executable="collector_logic_node",
@@ -236,8 +274,29 @@ def generate_launch_description():
         parameters=[
             f"{WORKSPACE}/ros2_ws/src/tennis_robot/config/twist_mux.yaml",
             {"use_sim_time": True},
+            # Jazzy: mux inputs are TwistStamped, so point them at the
+            # restamped variants; the raw Twist topics keep their names for
+            # the producers. Nav2 already publishes TwistStamped on
+            # /cmd_vel_nav, so that input needs no relay.
+            *(
+                [
+                    {
+                        "topics.collection.topic": "/cmd_vel_collection_stamped",
+                        "topics.teleop.topic": "/cmd_vel_teleop_stamped",
+                    }
+                ]
+                if _stamped_cmd_stack
+                else []
+            ),
         ],
-        remappings=[("cmd_vel_out", "/diff_drive_controller/cmd_vel_unstamped")],
+        remappings=[
+            (
+                "cmd_vel_out",
+                "/diff_drive_controller/cmd_vel"
+                if _stamped_cmd_stack
+                else "/diff_drive_controller/cmd_vel_unstamped",
+            )
+        ],
     )
 
     # ── ros_gz bridge ────────────────────────────────────────────────────────
@@ -289,11 +348,16 @@ def generate_launch_description():
         remappings=[_odom_remap],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
-            "ROBOT_COMMAND_FILE": f"{WORKSPACE}/runtime/robot_command.json",
-            # Without this, RobotStatusStore.from_env() resolves a default path
-            # inside the colcon install tree (container-internal) and the status
-            # file never lands in the mounted runtime/ dir.
-            "ROBOT_STATUS_FILE": f"{WORKSPACE}/runtime/robot_status.json",
+            # Respect caller overrides (bench/e2e harnesses point these at
+            # per-run files); default into the mounted runtime/ dir, because
+            # RobotStatusStore.from_env() would otherwise resolve a path
+            # inside the colcon install tree.
+            "ROBOT_COMMAND_FILE": os.getenv(
+                "ROBOT_COMMAND_FILE", f"{WORKSPACE}/runtime/robot_command.json"
+            ),
+            "ROBOT_STATUS_FILE": os.getenv(
+                "ROBOT_STATUS_FILE", f"{WORKSPACE}/runtime/robot_status.json"
+            ),
         },
     )
 
@@ -313,7 +377,9 @@ def generate_launch_description():
         name="command_bridge_node",
         output="screen",
         additional_env={
-            "ROBOT_COMMAND_FILE": f"{WORKSPACE}/runtime/robot_command.json",
+            "ROBOT_COMMAND_FILE": os.getenv(
+                "ROBOT_COMMAND_FILE", f"{WORKSPACE}/runtime/robot_command.json"
+            ),
         },
     )
 
@@ -332,7 +398,9 @@ def generate_launch_description():
         output="screen",
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
-            "ROBOT_SENSOR_FILE": f"{WORKSPACE}/runtime/robot_sensors.json",
+            "ROBOT_SENSOR_FILE": os.getenv(
+                "ROBOT_SENSOR_FILE", f"{WORKSPACE}/runtime/robot_sensors.json"
+            ),
             "COLLECTOR_SERIAL_BRIDGE": os.getenv(
                 "COLLECTOR_SERIAL_BRIDGE", "host.docker.internal:8091"
             ),
@@ -351,9 +419,15 @@ def generate_launch_description():
         ],
         additional_env={
             "PYTHONPATH": CONTROL_PANEL_PYTHONPATH,
-            "ROBOT_COMMAND_FILE": f"{WORKSPACE}/runtime/robot_command.json",
-            "ROBOT_STATUS_FILE": f"{WORKSPACE}/runtime/robot_status.json",
-            "ROBOT_SENSOR_FILE": f"{WORKSPACE}/runtime/robot_sensors.json",
+            "ROBOT_COMMAND_FILE": os.getenv(
+                "ROBOT_COMMAND_FILE", f"{WORKSPACE}/runtime/robot_command.json"
+            ),
+            "ROBOT_STATUS_FILE": os.getenv(
+                "ROBOT_STATUS_FILE", f"{WORKSPACE}/runtime/robot_status.json"
+            ),
+            "ROBOT_SENSOR_FILE": os.getenv(
+                "ROBOT_SENSOR_FILE", f"{WORKSPACE}/runtime/robot_sensors.json"
+            ),
         },
         output="screen",
     )
@@ -375,7 +449,8 @@ def generate_launch_description():
     else:
         delayed_node_actions = [
             bridge, perception, controller, navigation,
-            command_bridge, gz_extras, sensor_snapshots, drive_actuator, collector_logic, twist_mux,
+            command_bridge, gz_extras, sensor_snapshots, drive_actuator,
+            *cmd_vel_relays, collector_logic, twist_mux,
             ekf,
         ]
 

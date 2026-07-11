@@ -1235,6 +1235,53 @@
   3. Τα νέα ramp/basket bench values να γίνουν defaults του
      sim/run_ubuntu.sh flow όταν επιβεβαιωθεί το live collect_one.
 
+### 43. Live integration: defaults + beams + Jazzy motion chain· approach = νέο μπλόκο
+- **Defaults flip (winning γεωμετρία #41-#42 παντού)**: generator + mesh
+  script + xacro args + sweep harness + analyzer defaults έγιναν τα
+  bench-proven (nip 0.540, gap 56, tilt 35, jump 0.500→(0.465,0.020)→
+  (0.425,0.055), basket 0.42/0.052, crest 0.080). Offline verified στο
+  env-free SDF. run_ubuntu.sh fallbacks διορθώθηκαν (ήταν 0.590/0.060) και
+  το docker-compose πλέον περνά ΟΛΑ τα dual-wheel envs (πριν ΔΕΝ περνούσε
+  κανένα — μόνο τα roller-era).
+- **Basket IR beams**: 0.158 → **0.085 ground** (ισημερινός μπάλας στο
+  hopper). Controller collection zone: BASKET_MIN_BALL_Z 0.12→0.075,
+  zone x (0.0,0.42)→(-0.12,0.42).
+- **sim.launch.py σέβεται πλέον τα ROBOT_*_FILE env overrides** (ήταν
+  hardcoded στα root-owned runtime/ αρχεία — τα stale αρχεία διαγράφηκαν·
+  το πρώτο live test διάβασε mode=collect από το παλιό αρχείο).
+- **ΡΙΖΑ: η αλυσίδα κίνησης του live ήταν διπλά νεκρή στο native Jazzy**
+  (το docker/Humble του run_ubuntu.sh δεν επηρεάζεται):
+  1. Ο Ros2MotorAdapter δημοσίευε στο σκέτο `/cmd_vel` → gz bridge → το
+     ΑΦΑΙΡΕΜΕΝΟ gz diff-drive plugin. Fix: `/cmd_vel_collection` (twist_mux
+     input, priority 70).
+  2. Jazzy twist_mux + diff_drive_controller είναι TwistStamped-only
+     (κανένα use_stamped param)· όλοι οι producers μιλούν Twist. Fix:
+     distro-aware wiring στο sim.launch.py — νέο node
+     `cmd_vel_stamp_relay` (Twist→TwistStamped restamp) μπροστά από τα mux
+     inputs (collection+teleop) και mux output κατευθείαν στο stamped
+     `~/cmd_vel`. Στο Humble μένει η παλιά αλυσίδα αναλλοίωτη.
+- **Live collect_one (full stack: Gazebo+YOLO perception+controller)**:
+  ο robot πλέον ΚΙΝΕΙΤΑΙ και τρέχει τον πλήρη FSM κύκλο
+  (scan→align→approach→capture→reverse_clear) με ζωντανό ball tracking.
+  0 collected όμως — **ground truth (48s trace): ελάχιστη απόσταση από
+  οποιαδήποτε μπάλα 0.73m**. Τα capture γίνονται στα τυφλά μακριά από
+  πραγματικές μπάλες.
+- **Νέο μπλόκο (εκτός intake): perception-guided approach.**
+  - Η κάμερα (0.443m, 15.6° κάτω) χάνει τη μπάλα στο near field
+    (~<0.9m από τη βάση) → το τελευταίο σκέλος είναι dead-reckoning σε
+    remembered target με συσσωρευμένο σφάλμα → αστοχία >0.7m.
+  - Τα status δείχνουν άλματα distance/target switching (πολλές μπάλες,
+    ball_map memory), bearing που δεν συγκλίνει ποτέ <0.07 rad.
+  - Το intake ΔΕΝ δοκιμάστηκε live — καμία μπάλα δεν έφτασε στο funnel.
+    Το bench-proven capture μένει έγκυρο· το κενό είναι στο να ΦΤΑΣΕΙ
+    η μπάλα στο στόμιο.
+- **Επόμενα (νέα εκστρατεία, όχι intake)**: (α) near-field στρατηγική —
+  χαμηλότερη/δεύτερη κάμερα ή IR-assisted τελική ευθυγράμμιση ή
+  approach profile που κλειδώνει heading πριν το blind zone·
+  (β) έλεγχος βαθμονόμησης perception bearing/distance→world
+  (το πρώτο detection είχε αναντιστοιχία με το ground truth ball_02)·
+  (γ) collect_one live rerun με τηλεμετρία gz-vs-perception ανά frame.
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):

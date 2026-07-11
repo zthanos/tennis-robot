@@ -93,9 +93,13 @@ COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
 # physically inside the basket volume, not when it touches the entry lip. The
 # lip/roller contact is just the launch impulse; hardware/sim confirmation
 # comes from the basket beam pair (see gazebo_extras_node.py).
-BASKET_ZONE_X_M = (0.0, 0.42)
+# Low-hopper basket (debug-log #41-#42): floor top 0.052, front edge x=0.42,
+# rear wall x=-0.12. A ball entering over the jump lip or rolling on the floor
+# has centre z 0.085-0.094; the free ballistic apex outside the hopper is
+# 0.0755, so 0.075 separates "in the hopper" from "still being kicked".
+BASKET_ZONE_X_M = (-0.12, 0.42)
 BASKET_HALF_WIDTH_M = 0.16
-BASKET_MIN_BALL_Z_M = 0.12
+BASKET_MIN_BALL_Z_M = 0.075
 IR_INTAKE_TRIGGER_THRESHOLD = 500.0
 SCAN_SIDE_DURATION_S = 12.0
 COLLECT_PATTERN_COLLECTION_TIMEOUT_S = _env_float("COLLECT_PATTERN_COLLECTION_TIMEOUT_S", 35.0)

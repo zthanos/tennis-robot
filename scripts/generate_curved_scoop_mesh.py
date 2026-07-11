@@ -21,16 +21,16 @@ import sys
 from pathlib import Path
 
 # Geometry (m, ground frame). Entry defaults to nip_x + 20 mm.
-_NIP_X_M = float(os.getenv("INTAKE_NIP_X_M", "0.590"))
-LIP_X = float(os.getenv("INTAKE_RAMP_ENTRY_X_M", str(_NIP_X_M + 0.020)))
+_NIP_X_M = float(os.getenv("INTAKE_NIP_X_M", "0.540"))
+LIP_X = float(os.getenv("INTAKE_RAMP_ENTRY_X_M", str(_NIP_X_M - 0.040)))
 LIP_HEIGHT_M = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
 RAMP_CLEAR_RUN_M = max(0.004, float(os.getenv("INTAKE_RAMP_CLEAR_RUN_M", "0.030")))
 RAMP_CLEAR_X = LIP_X - RAMP_CLEAR_RUN_M
-RAMP_KNEE_X = float(os.getenv("INTAKE_RAMP_KNEE_X_M", "0.520"))
-RAMP_END_X = float(os.getenv("INTAKE_RAMP_END_X_M", "0.400"))
+RAMP_KNEE_X = float(os.getenv("INTAKE_RAMP_KNEE_X_M", "0.465"))
+RAMP_END_X = float(os.getenv("INTAKE_RAMP_END_X_M", "0.425"))
 RAMP_CLEAR_Z = max(LIP_HEIGHT_M, float(os.getenv("INTAKE_RAMP_CLEAR_Z_M", "0.004")))
-RAMP_KNEE_Z = float(os.getenv("INTAKE_RAMP_KNEE_Z_M", "0.024"))
-RAMP_END_Z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.128"))
+RAMP_KNEE_Z = float(os.getenv("INTAKE_RAMP_KNEE_Z_M", "0.020"))
+RAMP_END_Z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.055"))
 SCOOP_WIDTH = 0.180
 SHEET_THICKNESS = 0.002
 COLLISION_CLEARANCE = 0.001

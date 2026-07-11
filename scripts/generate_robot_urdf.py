@@ -118,12 +118,16 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
     # mesh. The ramp entry sits just ahead of the wheel nip so the wheels feed
     # the ball onto a rising surface; the rear endpoint stays at the basket
     # floor.
-    nip_x_m = float(os.getenv("INTAKE_NIP_X_M", "0.590"))
-    ramp_entry_x_m = float(os.getenv("INTAKE_RAMP_ENTRY_X_M", str(nip_x_m + 0.020)))
+    # Defaults are the Phase 1-4 bench-proven geometry (debug-log #41-#42):
+    # the wheels kick the ball up-back, the short bar becomes a ski-jump that
+    # converts the kick's horizontal KE into climb over a 3 mm retention lip
+    # into the chassis-flush hopper.
+    nip_x_m = float(os.getenv("INTAKE_NIP_X_M", "0.540"))
+    ramp_entry_x_m = float(os.getenv("INTAKE_RAMP_ENTRY_X_M", str(nip_x_m - 0.040)))
     ramp_clear_run_m = max(0.004, float(os.getenv("INTAKE_RAMP_CLEAR_RUN_M", "0.030")))
     ramp_clear_z_m = max(lip_height_m, float(os.getenv("INTAKE_RAMP_CLEAR_Z_M", "0.004")))
-    ramp_knee_x_m = float(os.getenv("INTAKE_RAMP_KNEE_X_M", "0.520"))
-    ramp_end_x_m = float(os.getenv("INTAKE_RAMP_END_X_M", "0.400"))
+    ramp_knee_x_m = float(os.getenv("INTAKE_RAMP_KNEE_X_M", "0.465"))
+    ramp_end_x_m = float(os.getenv("INTAKE_RAMP_END_X_M", "0.425"))
     surfaces = {
         "rear_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "rear_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
@@ -245,8 +249,8 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
             ramp_knee_x = ramp_knee_x_m
             ramp_end_x = ramp_end_x_m
             ramp_clear_z = ramp_clear_z_m
-            ramp_knee_z = float(os.getenv("INTAKE_RAMP_KNEE_Z_M", "0.024"))
-            ramp_end_z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.128"))
+            ramp_knee_z = float(os.getenv("INTAKE_RAMP_KNEE_Z_M", "0.020"))
+            ramp_end_z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.055"))
             ramp_steps = 28
             sheet_thickness = 0.002
             collision_clearance = 0.001
@@ -378,9 +382,9 @@ def main() -> int:
             # Dual-wheel intake tuning + Concept Validation Plan gates
             # (docs/dual-wheel-intake-design-el.md).
             f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', '0.060')}",
-            f"intake_wheel_gap:={os.getenv('INTAKE_WHEEL_GAP_M', '0.060')}",
-            f"intake_nip_x:={os.getenv('INTAKE_NIP_X_M', '0.590')}",
-            f"intake_wheel_tilt_deg:={os.getenv('INTAKE_WHEEL_TILT_DEG', '0.0')}",
+            f"intake_wheel_gap:={os.getenv('INTAKE_WHEEL_GAP_M', '0.056')}",
+            f"intake_nip_x:={os.getenv('INTAKE_NIP_X_M', '0.540')}",
+            f"intake_wheel_tilt_deg:={os.getenv('INTAKE_WHEEL_TILT_DEG', '35.0')}",
             f"intake_wheel_max_vel:={os.getenv('INTAKE_WHEEL_MAX_VEL_RAD_S', '26.3')}",
             f"intake_wheel_effort:={os.getenv('INTAKE_WHEEL_EFFORT_NM', '1.77')}",
             f"enable_funnel:={os.getenv('INTAKE_ENABLE_FUNNEL', 'true')}",
@@ -393,8 +397,8 @@ def main() -> int:
             f"intake_assist_length:={os.getenv('INTAKE_ASSIST_LENGTH_M', '0.200')}",
             f"intake_conveyor_x_bias:={os.getenv('INTAKE_CONVEYOR_X_BIAS_M', '0.000')}",
             f"intake_conveyor_z_bias:={os.getenv('INTAKE_CONVEYOR_Z_BIAS_M', '0.000')}",
-            f"basket_floor_front_x:={os.getenv('INTAKE_BASKET_FLOOR_FRONT_X_M', '0.50')}",
-            f"basket_floor_top_z:={os.getenv('INTAKE_BASKET_FLOOR_TOP_Z_M', '0.128')}",
+            f"basket_floor_front_x:={os.getenv('INTAKE_BASKET_FLOOR_FRONT_X_M', '0.42')}",
+            f"basket_floor_top_z:={os.getenv('INTAKE_BASKET_FLOOR_TOP_Z_M', '0.052')}",
         ],
         check=False,
         env=env,

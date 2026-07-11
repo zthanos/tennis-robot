@@ -15,11 +15,14 @@ export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-false}"
 export UBUNTU_GPU="${UBUNTU_GPU:-true}"
 export SLAM_MODE="${SLAM_MODE:-localization}"
 export NAV2_START_DELAY_S="${NAV2_START_DELAY_S:-25}"
-# Dual-wheel intake (docs/dual-wheel-intake-design-el.md). Nominal geometry;
-# all sweep-able. Validation-phase gates: INTAKE_ENABLE_FUNNEL / _RAMP.
+# Dual-wheel intake (docs/dual-wheel-intake-design-el.md). Fallbacks are the
+# Phase 1-4 bench-proven geometry (debug-log #41-#42) and must match the
+# defaults in scripts/generate_robot_urdf.py / generate_curved_scoop_mesh.py.
+# All sweep-able. Validation-phase gates: INTAKE_ENABLE_FUNNEL / _RAMP.
 export INTAKE_WHEEL_RADIUS_M="${INTAKE_WHEEL_RADIUS_M:-0.060}"
-export INTAKE_WHEEL_GAP_M="${INTAKE_WHEEL_GAP_M:-0.060}"
-export INTAKE_NIP_X_M="${INTAKE_NIP_X_M:-0.590}"
+export INTAKE_WHEEL_GAP_M="${INTAKE_WHEEL_GAP_M:-0.056}"
+export INTAKE_NIP_X_M="${INTAKE_NIP_X_M:-0.540}"
+export INTAKE_WHEEL_TILT_DEG="${INTAKE_WHEEL_TILT_DEG:-35.0}"
 export INTAKE_WHEEL_SPRING_K="${INTAKE_WHEEL_SPRING_K:-1000}"
 export INTAKE_LIP_RAISE_M="${INTAKE_LIP_RAISE_M:-0.0}"
 export INTAKE_ENABLE_FUNNEL="${INTAKE_ENABLE_FUNNEL:-true}"

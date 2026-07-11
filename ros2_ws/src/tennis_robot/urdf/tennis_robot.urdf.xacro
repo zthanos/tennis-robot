@@ -21,9 +21,9 @@
   <!-- Dual-wheel intake tuning (docs/dual-wheel-intake-design-el.md).
        Injected from INTAKE_WHEEL_* envs by scripts/generate_robot_urdf.py. -->
   <xacro:arg name="intake_wheel_radius" default="0.060"/>
-  <xacro:arg name="intake_wheel_gap" default="0.060"/>
-  <xacro:arg name="intake_nip_x" default="0.590"/>
-  <xacro:arg name="intake_wheel_tilt_deg" default="0.0"/>
+  <xacro:arg name="intake_wheel_gap" default="0.056"/>
+  <xacro:arg name="intake_nip_x" default="0.540"/>
+  <xacro:arg name="intake_wheel_tilt_deg" default="35.0"/>
   <xacro:arg name="intake_wheel_max_vel" default="26.3"/>
   <xacro:arg name="intake_wheel_effort" default="1.77"/>
   <!-- Concept Validation Plan gates: Phase 1 = throat only (both false),
@@ -41,8 +41,8 @@
   <!-- Basket handoff geometry (ground frame for the floor top). Defaults are
        the scoop-era launch design; the dual-wheel bench lowers these to make
        the basket a low hopper behind the intake wheels (debug-log #41). -->
-  <xacro:arg name="basket_floor_front_x" default="0.50"/>
-  <xacro:arg name="basket_floor_top_z" default="0.128"/>
+  <xacro:arg name="basket_floor_front_x" default="0.42"/>
+  <xacro:arg name="basket_floor_top_z" default="0.052"/>
 
   <xacro:property name="chassis_x" value="0.92"/>
   <xacro:property name="chassis_y" value="0.58"/> 
@@ -130,7 +130,7 @@
   <xacro:property name="ir_z" value="-0.005"/>
   <xacro:property name="basket_ir_x" value="0.28"/> 
   <xacro:property name="basket_ir_y" value="0.105"/> 
-  <xacro:property name="basket_ir_z" value="0.113"/> 
+  <xacro:property name="basket_ir_z" value="0.040"/> 
 
   <xacro:property name="max_linear_acceleration" value="2.0"/> 
   <xacro:property name="max_angular_acceleration" value="4.0"/>

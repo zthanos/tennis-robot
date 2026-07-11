@@ -56,9 +56,9 @@ export ROS_HOME="${ROS_HOME:-$SCRIPT_DIR/runtime/ros_home}"
 mkdir -p "$HOME" "$ROS_HOME" "$ROS_HOME/locks"
 
 # Dual-wheel intake sweep axes (docs/dual-wheel-intake-design-el.md).
-IFS=' ' read -r -a WHEEL_GAPS <<< "${INTAKE_SWEEP_WHEEL_GAPS:-0.060}"
+IFS=' ' read -r -a WHEEL_GAPS <<< "${INTAKE_SWEEP_WHEEL_GAPS:-0.056}"
 IFS=' ' read -r -a WHEEL_RADII <<< "${INTAKE_SWEEP_WHEEL_RADII:-0.060}"
-IFS=' ' read -r -a NIP_XS <<< "${INTAKE_SWEEP_NIP_XS:-0.590}"
+IFS=' ' read -r -a NIP_XS <<< "${INTAKE_SWEEP_NIP_XS:-0.540}"
 IFS=' ' read -r -a WHEEL_TILTS_DEG <<< "${INTAKE_SWEEP_WHEEL_TILTS_DEG:-${INTAKE_WHEEL_TILT_DEG:-0.0}}"
 WHEEL_MAX_VEL="${INTAKE_WHEEL_MAX_VEL_RAD_S:-26.3}"
 WHEEL_EFFORT="${INTAKE_WHEEL_EFFORT_NM:-1.77}"
@@ -542,7 +542,7 @@ summarize_probe() {
             --nip-x-m "$INTAKE_NIP_X_M" \
             --wheel-radius-m "$INTAKE_WHEEL_RADIUS_M" \
             --wheel-gap-m "$INTAKE_WHEEL_GAP_M" \
-            --ramp-crest-z-m "${INTAKE_BENCH_RAMP_CREST_Z_M:-0.138}" \
+            --ramp-crest-z-m "${INTAKE_BENCH_RAMP_CREST_Z_M:-0.080}" \
             --preferred-contact-duration-s "${INTAKE_BENCH_PREFERRED_CONTACT_DURATION_S:-0.50}" \
             --transport-target-m-s "${INTAKE_BENCH_TRANSPORT_TARGET_M_S:-0.40}" \
             "${force_threshold_args[@]}" \

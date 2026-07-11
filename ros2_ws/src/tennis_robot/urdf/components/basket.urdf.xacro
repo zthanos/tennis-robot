@@ -66,8 +66,10 @@
         <material name="basket_gray"/>
       </visual>
 
+      <!-- Matches basket_ir_z in tennis_robot.urdf.xacro: beam at rolling
+           ball equator height in the low hopper (0.085 ground). -->
       <visual name="basket_ir_beam_line_vis">
-        <origin xyz="0.28 0 0.113" rpy="1.5708 0 0"/>
+        <origin xyz="0.28 0 0.040" rpy="1.5708 0 0"/>
         <geometry><cylinder radius="0.003" length="0.21"/></geometry>
         <material name="ir_beam_red"/>
       </visual>
