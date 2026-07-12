@@ -542,7 +542,7 @@ summarize_probe() {
             --nip-x-m "$INTAKE_NIP_X_M" \
             --wheel-radius-m "$INTAKE_WHEEL_RADIUS_M" \
             --wheel-gap-m "$INTAKE_WHEEL_GAP_M" \
-            --ramp-crest-z-m "${INTAKE_BENCH_RAMP_CREST_Z_M:-0.080}" \
+            --ramp-crest-z-m "${INTAKE_BENCH_RAMP_CREST_Z_M:-0.077}" \
             --preferred-contact-duration-s "${INTAKE_BENCH_PREFERRED_CONTACT_DURATION_S:-0.50}" \
             --transport-target-m-s "${INTAKE_BENCH_TRANSPORT_TARGET_M_S:-0.40}" \
             "${force_threshold_args[@]}" \

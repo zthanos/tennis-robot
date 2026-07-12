@@ -42,7 +42,7 @@
   <!-- Bin v2 (docs/basket-bin-redesign-spec-el.md): sunken removable bin.
        Ground-frame heights; front edge is pinned to the jump lip (0.425). -->
   <xacro:arg name="basket_floor_front_x" default="0.42"/>
-  <xacro:arg name="basket_floor_top_z" default="0.030"/>
+  <xacro:arg name="basket_floor_top_z" default="0.025"/>
   <xacro:arg name="basket_rear_x" default="0.02"/>
   <xacro:arg name="basket_half_width" default="0.14"/>
   <xacro:arg name="basket_wall_top_z" default="0.25"/>

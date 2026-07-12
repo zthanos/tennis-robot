@@ -250,7 +250,7 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
             ramp_end_x = ramp_end_x_m
             ramp_clear_z = ramp_clear_z_m
             ramp_knee_z = float(os.getenv("INTAKE_RAMP_KNEE_Z_M", "0.020"))
-            ramp_end_z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.055"))
+            ramp_end_z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.045"))
             ramp_steps = 28
             sheet_thickness = 0.002
             collision_clearance = 0.001
@@ -398,7 +398,7 @@ def main() -> int:
             f"intake_conveyor_x_bias:={os.getenv('INTAKE_CONVEYOR_X_BIAS_M', '0.000')}",
             f"intake_conveyor_z_bias:={os.getenv('INTAKE_CONVEYOR_Z_BIAS_M', '0.000')}",
             f"basket_floor_front_x:={os.getenv('INTAKE_BASKET_FLOOR_FRONT_X_M', '0.42')}",
-            f"basket_floor_top_z:={os.getenv('INTAKE_BASKET_FLOOR_TOP_Z_M', '0.030')}",
+            f"basket_floor_top_z:={os.getenv('INTAKE_BASKET_FLOOR_TOP_Z_M', '0.025')}",
             f"basket_rear_x:={os.getenv('BASKET_REAR_X_M', '0.02')}",
             f"basket_half_width:={os.getenv('BASKET_HALF_WIDTH_M', '0.14')}",
             f"basket_wall_top_z:={os.getenv('BASKET_WALL_TOP_Z_M', '0.25')}",

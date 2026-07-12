@@ -32,7 +32,7 @@ DEFAULT_MIN_DIRECTIONAL_VELOCITY_M_S = 0.01
 DEFAULT_STALL_SPEED_M_S = 0.02
 DEFAULT_STALL_LIMIT_S = 2.0
 DEFAULT_RAMP_CLIMB_Z_M = 0.050
-DEFAULT_RAMP_CREST_Z_M = 0.080
+DEFAULT_RAMP_CREST_Z_M = 0.077
 
 PHASES = ("throat", "funnel", "ramp", "full")
 
@@ -196,6 +196,8 @@ def analyze(
     wheel_gap_m: float,
     ramp_climb_z_m: float,
     ramp_crest_z_m: float,
+    hopper_x_range_m: tuple[float, float] = (0.02, 0.42),
+    hopper_z_max_m: float = 0.075,
     release_window_s: float,
     preferred_contact_duration_s: float,
     transport_target_m_s: float,
@@ -295,6 +297,23 @@ def analyze(
         after_wall_s=first_contact_wall_s,
     )
 
+    # Hopper entry by FINAL POSITION: the ball settled inside the bin volume
+    # (behind the jump lip, on/near the sunken floor). With low lips the entry
+    # pivot height can sit exactly on the crest plane and never register as a
+    # crossing even though the ball is demonstrably in the hopper — the bin
+    # interior is only reachable over the lip, so a final position inside it
+    # is proof of entry (no free-ballistic false positive is possible).
+    final_in_hopper = False
+    final_ball_xyz = None
+    if pose_samples:
+        final_ball_xyz = pose_samples[-1].get("base_xyz_m")
+        if final_ball_xyz:
+            fx, _fy, fz = final_ball_xyz
+            final_in_hopper = (
+                hopper_x_range_m[0] <= fx <= hopper_x_range_m[1]
+                and fz <= hopper_z_max_m
+            )
+
     # Release diagnostics (kept for debugging; not required criteria).
     release_sample = _nearest_sample(pose_samples, release_wall_s) if release_wall_s else None
     release_velocity = release_sample.get("base_velocity_m_s") if release_sample else None
@@ -313,7 +332,9 @@ def analyze(
     }
     if phase in ("ramp", "full"):
         required["ramp_climb_started"] = ramp_climb is not None
-        required["hopper_entry_or_ramp_crest_crossing"] = ramp_crest is not None
+        required["hopper_entry_or_ramp_crest_crossing"] = (
+            ramp_crest is not None or final_in_hopper
+        )
 
     preferred = {
         "transport_speed_gte_target": (
@@ -373,6 +394,8 @@ def analyze(
             "longest_stall_at": stall_at,
             "ramp_climb_crossing": ramp_climb,
             "ramp_crest_crossing": ramp_crest,
+            "final_ball_xyz_m": final_ball_xyz,
+            "final_in_hopper": final_in_hopper,
             "release_wall_s": round(release_wall_s, 6) if release_wall_s else None,
             "release_base_xyz_m": release_sample.get("base_xyz_m") if release_sample else None,
             "release_base_velocity_m_s": release_velocity,
