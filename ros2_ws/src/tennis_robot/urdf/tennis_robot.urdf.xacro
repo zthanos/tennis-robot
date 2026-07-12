@@ -4,6 +4,7 @@
   <xacro:include filename="components/base.urdf.xacro"/>
   <xacro:include filename="components/funnel.urdf.xacro"/>
   <xacro:include filename="components/basket.urdf.xacro"/>
+  <xacro:include filename="components/battery.urdf.xacro"/>
   <xacro:include filename="components/drivetrain.urdf.xacro"/>
   <xacro:include filename="components/ros2_control.urdf.xacro"/>
   <xacro:include filename="components/lidar.urdf.xacro"/>
@@ -38,11 +39,13 @@
   <xacro:arg name="intake_assist_length" default="0.200"/>
   <xacro:arg name="intake_conveyor_x_bias" default="0.000"/>
   <xacro:arg name="intake_conveyor_z_bias" default="0.000"/>
-  <!-- Basket handoff geometry (ground frame for the floor top). Defaults are
-       the scoop-era launch design; the dual-wheel bench lowers these to make
-       the basket a low hopper behind the intake wheels (debug-log #41). -->
+  <!-- Bin v2 (docs/basket-bin-redesign-spec-el.md): sunken removable bin.
+       Ground-frame heights; front edge is pinned to the jump lip (0.425). -->
   <xacro:arg name="basket_floor_front_x" default="0.42"/>
-  <xacro:arg name="basket_floor_top_z" default="0.052"/>
+  <xacro:arg name="basket_floor_top_z" default="0.030"/>
+  <xacro:arg name="basket_rear_x" default="0.02"/>
+  <xacro:arg name="basket_half_width" default="0.14"/>
+  <xacro:arg name="basket_wall_top_z" default="0.25"/>
 
   <xacro:property name="chassis_x" value="0.92"/>
   <xacro:property name="chassis_y" value="0.58"/> 
@@ -102,7 +105,7 @@
   <xacro:property name="intake_conveyor_length" value="0.200"/>
   <xacro:property name="scooper_pitch" value="0.1745"/>  <!-- 10 degrees; funnel-cheek tilt -->
 
-  <xacro:property name="lidar_xyz" value="-0.08 0 0.498"/>
+  <xacro:property name="lidar_xyz" value="-0.42 0 0.498"/>
   <xacro:property name="lidar_rpy" value="0 0 0"/>  <!-- level chassis: horizontal scan plane -->
   <xacro:property name="camera_xyz" value="0.535 0 0.443"/>
   <xacro:property name="camera_rpy" value="0 0.273 0"/>  <!-- forward-down tilt ~15.6deg; preserves the old world aim (0.22 cam + 0.053 chassis pitch) now that the chassis is level -->
@@ -128,7 +131,7 @@
   <xacro:property name="ir_x" value="0.720"/>
   <xacro:property name="ir_y" value="0.105"/>
   <xacro:property name="ir_z" value="-0.005"/>
-  <xacro:property name="basket_ir_x" value="0.28"/> 
+  <xacro:property name="basket_ir_x" value="0.40"/> 
   <xacro:property name="basket_ir_y" value="0.105"/> 
   <xacro:property name="basket_ir_z" value="0.040"/> 
 
@@ -258,7 +261,11 @@
   <xacro:ball_basket
       parent="base_link"
       floor_front_x="${float($(arg basket_floor_front_x))}"
-      floor_top_z_ground="${float($(arg basket_floor_top_z))}"/>
+      floor_top_z_ground="${float($(arg basket_floor_top_z))}"
+      rear_x="${float($(arg basket_rear_x))}"
+      half_width="${float($(arg basket_half_width))}"
+      wall_top_z_ground="${float($(arg basket_wall_top_z))}"/>
+  <xacro:battery_pack parent="base_link"/>
 
   <xacro:rplidar_c1_mount
       parent="base_link"

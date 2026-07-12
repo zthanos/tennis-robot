@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Battery pack on the rear deck (docs/basket-bin-redesign-spec-el.md §4).
+       User's pack: 19.8 x 16.6 x 17.0 cm, 6.26 kg — 16.6 cm along x so it
+       clears the bin rear wall (x=0.02) and leaves the aft deck free for
+       electronics. Modeled with real mass so the sim sees the true CoG: the
+       rear placement counterweights the front intake overhang. -->
+  <xacro:macro name="battery_pack" params="parent">
+    <xacro:property name="bat_x" value="0.166"/>
+    <xacro:property name="bat_y" value="0.198"/>
+    <xacro:property name="bat_z" value="0.170"/>
+    <xacro:property name="bat_mass" value="6.26"/>
+    <!-- Span x -0.226..-0.06 (centre -0.143); bottom on the plate top
+         (ground 0.052 = base_link 0.007), centre base_link 0.092. -->
+    <xacro:property name="bat_cx" value="-0.143"/>
+    <xacro:property name="bat_cz" value="${0.052 - base_link_height + bat_z / 2.0}"/>
+    <joint name="battery_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="battery_link"/>
+      <origin xyz="${bat_cx} 0 ${bat_cz}" rpy="0 0 0"/>
+    </joint>
+    <link name="battery_link">
+      <inertial>
+        <mass value="${bat_mass}"/>
+        <inertia
+            ixx="${bat_mass / 12.0 * (bat_y * bat_y + bat_z * bat_z)}"
+            ixy="0" ixz="0"
+            iyy="${bat_mass / 12.0 * (bat_x * bat_x + bat_z * bat_z)}"
+            iyz="0"
+            izz="${bat_mass / 12.0 * (bat_x * bat_x + bat_y * bat_y)}"/>
+      </inertial>
+      <collision name="battery_col">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><box size="${bat_x} ${bat_y} ${bat_z}"/></geometry>
+      </collision>
+      <visual name="battery_vis">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><box size="${bat_x} ${bat_y} ${bat_z}"/></geometry>
+        <material name="basket_gray"/>
+      </visual>
+    </link>
+  </xacro:macro>
+</robot>

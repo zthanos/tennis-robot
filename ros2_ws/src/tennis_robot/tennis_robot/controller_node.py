@@ -97,8 +97,12 @@ COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
 # rear wall x=-0.12. A ball entering over the jump lip or rolling on the floor
 # has centre z 0.085-0.094; the free ballistic apex outside the hopper is
 # 0.0755, so 0.075 separates "in the hopper" from "still being kicked".
-BASKET_ZONE_X_M = (-0.12, 0.42)
-BASKET_HALF_WIDTH_M = 0.16
+# Bin v2 (docs/basket-bin-redesign-spec-el.md): interior x 0.02..0.42,
+# half width 0.14, floor 0.030. A resting ball sits at z=0.063 < 0.075, so
+# already-collected balls do not retrigger; the count fires on the entry
+# pass over the lip (centre 0.085-0.094).
+BASKET_ZONE_X_M = (0.02, 0.42)
+BASKET_HALF_WIDTH_M = 0.14
 BASKET_MIN_BALL_Z_M = 0.075
 IR_INTAKE_TRIGGER_THRESHOLD = 500.0
 SCAN_SIDE_DURATION_S = 12.0

@@ -41,34 +41,36 @@
 
     <link name="base_link">
       <xacro:box_inertial mass="${chassis_mass}" x="${chassis_x}" y="${chassis_y}" z="${chassis_z}"/>
-      <!-- Front-centre cutout (0.20 wide x 0.04 deep): leaves clearance for
-           the launcher scoop/ramp path into the basket. Plate = two
-           full-length side strips + one centre strip ending at x=0.42. -->
+      <!-- Bin v2 opening (docs/basket-bin-redesign-spec-el.md §3): the plate
+           is REALLY open at x 0.01..0.46, y ±0.15 so the sunken bin floor
+           (0.030 ground) is the surface balls actually rest on — a solid
+           plate here would bury the bin's 25 mm retention depth. Plate =
+           two full-length side strips (|y| 0.15..0.29) + rear block. -->
       <collision name="chassis_left_col">
-        <origin xyz="0 ${0.10 + (chassis_y / 2.0 - 0.10) / 2.0} 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>
+        <origin xyz="0 0.22 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} 0.14 ${chassis_z}"/></geometry>
       </collision>
       <collision name="chassis_right_col">
-        <origin xyz="0 ${-(0.10 + (chassis_y / 2.0 - 0.10) / 2.0)} 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>
+        <origin xyz="0 -0.22 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} 0.14 ${chassis_z}"/></geometry>
       </collision>
-      <collision name="chassis_centre_col">
-        <origin xyz="-0.02 0 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x - 0.04} 0.20 ${chassis_z}"/></geometry>
+      <collision name="chassis_rear_col">
+        <origin xyz="-0.225 0 0" rpy="0 0 0"/>
+        <geometry><box size="0.47 0.30 ${chassis_z}"/></geometry>
       </collision>
       <visual name="chassis_left_vis">
-        <origin xyz="0 ${0.10 + (chassis_y / 2.0 - 0.10) / 2.0} 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>
+        <origin xyz="0 0.22 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} 0.14 ${chassis_z}"/></geometry>
         <material name="plywood"/>
       </visual>
       <visual name="chassis_right_vis">
-        <origin xyz="0 ${-(0.10 + (chassis_y / 2.0 - 0.10) / 2.0)} 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} ${chassis_y / 2.0 - 0.10} ${chassis_z}"/></geometry>
+        <origin xyz="0 -0.22 0" rpy="0 0 0"/>
+        <geometry><box size="${chassis_x} 0.14 ${chassis_z}"/></geometry>
         <material name="plywood"/>
       </visual>
-      <visual name="chassis_centre_vis">
-        <origin xyz="-0.02 0 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x - 0.04} 0.20 ${chassis_z}"/></geometry>
+      <visual name="chassis_rear_vis">
+        <origin xyz="-0.225 0 0" rpy="0 0 0"/>
+        <geometry><box size="0.47 0.30 ${chassis_z}"/></geometry>
         <material name="plywood"/>
       </visual>
 
@@ -118,8 +120,8 @@
         <material name="mount_gray"/>
       </visual>
       <visual name="elec_vis">
-        <origin xyz="-0.13 0 0.067" rpy="0 0 0"/>
-        <geometry><box size="0.34 0.26 0.12"/></geometry>
+        <origin xyz="-0.36 0 0.067" rpy="0 0 0"/>
+        <geometry><box size="0.18 0.26 0.12"/></geometry>
         <material name="anthracite"/>
       </visual>
       <!-- Throat beam-line visual: matches ir_x/ir_z in tennis_robot.urdf.xacro

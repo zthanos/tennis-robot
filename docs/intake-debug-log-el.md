@@ -1325,6 +1325,42 @@
   effort 1.77), και sweep των υποψήφιων μοχλών: wheel speed στο capture,
   commit distance, micro-stop πριν το nip, γεωμετρία εισόδου jump.
 
+## 2026-07-12
+
+### 45. Καλάθι v2: βυθισμένο πλεγματένιο αφαιρούμενο μπιν — PASS envelope + retention
+- **Design spec**: `docs/basket-bin-redesign-spec-el.md` (αποφάσεις χρήστη:
+  ~50 μπάλες, αφαιρούμενο, πλέγμα· βυθισμένο πάτωμα αντί flap/ψηλού lip).
+- **Υλοποίηση**: μπιν x 0.02-0.42 / ±0.14 / πάτωμα **0.030** (25mm
+  συγκράτηση κάτω από το lip 0.055, 25mm διάκενο εδάφους) / τοίχοι 0.25·
+  ΠΡΑΓΜΑΤΙΚΟ άνοιγμα πλάκας (2 πλαϊνές λωρίδες |y| 0.15-0.29 + πίσω μπλοκ
+  x −0.46…0.01)· μπαταρία 6.26kg (19.8×16.6×17) στο πίσω deck
+  x −0.226…−0.06 με πραγματική μάζα/αδράνεια (λαμπωμένη βάση 18.9kg)·
+  lidar mast (−0.08 → −0.42, εκτός εσωτερικού)· basket IR ζεύγος στο
+  **entry plane x=0.40** (στο 0.28 η κυλιόμενη μπάλα με κέντρο 0.063 θα
+  περνούσε ΚΑΤΩ από τη δέσμη 0.085)· BASKET_ZONE (0.02, 0.42), half width
+  0.14· electronics visual στο aft deck.
+- **Παγίδες που πιάστηκαν στην πορεία**:
+  1. Πρώτο envelope run απέτυχε 0/5 με τη μπάλα να ΡΟΛΑΡΕΙ (peak 0.061 =
+     0.84²/2g·1.4 ακριβώς) αντί να εκτοξεύεται: το harness default για το
+     tilt ήταν ακόμα 0.0 — είχα ενημερώσει gaps/nip/crest αλλά ΟΧΙ το tilt
+     (fix: 35.0). Δίδαγμα: όταν γυρνάς winning τιμές σε defaults, έλεγξε
+     ΚΑΘΕ fallback αλυσίδα (env → harness → generator → xacro).
+  2. Το «άνοιγμα σασί = σημείωση κατασκευής» ήταν λάθος: χωρίς πραγματικό
+     άνοιγμα στο collision, η μπάλα πατούσε στην ΠΛΑΚΑ (0.052) και το
+     retention βάθος δεν υπήρχε στη φυσική. Τα fixed links δεν συγκρούονται
+     ΜΕΤΑΞΥ ΤΟΥΣ, αλλά η ΜΠΑΛΑ βλέπει τα πάντα.
+  3. Rebuild ΕΝΩ τρέχει sweep = σπασμένο case (controllers inactive).
+- **Αποτελέσματα (πλήρες build)**:
+  - Envelope (binv2_final_envelope): **PASS 5/5, 6/6 required, stall 0.00**
+    σε όλα τα offsets ±80mm. Τελική ανάπαυση (0.073, **z=0.063**) = πάνω
+    στο βυθισμένο πάτωμα ✓ (όχι στην πλάκα).
+  - **Retention test (πρώτο του project): PASS 15/15** — 15 μπάλες στο
+    μπιν, sprint 0.5 m/s + hard stop + spins ±2 rad/s + arcing + απότομη
+    όπισθεν: **0 διαφυγές**.
+- Εκκρεμή για το concept: rolling-ball nip entry (bench campaign #44) και
+  camera blind zone — ανεξάρτητα από το καλάθι. OpenSCAD χτίζεται πάνω στο
+  spec.
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):
