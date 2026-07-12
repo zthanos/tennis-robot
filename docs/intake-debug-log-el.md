@@ -1391,6 +1391,36 @@
   Εκκρεμεί live collect_one rerun για το end-to-end (μαζί με τα camera
   blind zone / approach: η μπάλα πρέπει πρώτα να φτάνει στο funnel).
 
+### 47. Live collect_one end-to-end: PASS controller count, με frame-fix στο /sim/balls
+- **Harness fix**: το collect_one driver στο `run_native_intake_sweep.sh`
+  είχε παλιό call σε ανύπαρκτο `run_probe_and_summarize`; αντικαταστάθηκε με
+  `start_probe` → `wait_for_probe` → `summarize_probe` και ξεκινά πλέον
+  `log_gz_poses.py` ώστε το live run να έχει release criteria.
+- **Controller/sim fix**:
+  - Το Gazebo basket beam μπορεί να ανάψει πριν η μπάλα μπει πραγματικά στο
+    hopper, άρα στο sim το collection confirmation πρέπει να έρχεται από
+    `/sim/balls` + basket volume και όχι από IR fallback.
+  - Το ROS bridge για `/gz/pose_info` δεν είναι αξιόπιστη πηγή entity names.
+    Το `gazebo_extras_node` διαβάζει πλέον direct `gz topic /world/.../pose/info`
+    και δημοσιεύει `/sim/balls`.
+  - Τα Gazebo world coords μετατρέπονται σε odom frame με βάση τη σχέση
+    Gazebo robot pose ↔ `/odometry/filtered`; το `gazebo_extras_node` πήρε το
+    ίδιο `/odom:=/odometry/filtered` remap με controller/perception.
+  - Χαμηλό hopper v2.1: `BASKET_MIN_BALL_Z=0.055` και one-shot guard ανά sim
+    ball def για να μη διπλομετράει μέχρι να γίνει remove.
+- **Verification**: καθαρό run μετά από rebuild
+  `runtime/intake_sweeps/20260712_195801`:
+  - `release_criteria`: **required 6/6** (capture, both rollers, ramp climb,
+    crest/hopper entry, no stall, positive inward transport).
+  - `robot_status/summary`: **balls_collected=1**, `collector_state=survey`,
+    mode `collect_one`.
+  - `launch.log`: `ball collected -> removing ball_02 from world`.
+- **Σημείωση για analyzer**: μετά το successful controller confirmation το sim
+  αφαιρεί τη `ball_02` και το probe συνεχίζει να τρέχει όσο το robot επιστρέφει,
+  οπότε το `final_in_hopper=false` στο τελικό pose snapshot δεν ακυρώνει το
+  end-to-end pass. Για collect_one το authoritative κλείσιμο είναι
+  `balls_collected=1` + remove event.
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):

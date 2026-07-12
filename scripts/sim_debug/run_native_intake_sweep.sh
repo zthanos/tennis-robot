@@ -710,6 +710,10 @@ run_collect_one_driver() {
         return 1
     fi
 
+    setsid python3 "$SCRIPT_DIR/scripts/sim_debug/log_gz_poses.py" "$case_dir/gz_poses.jsonl" \
+        > "$case_dir/gz_poses.log" 2>&1 &
+    pose_logger_pid="$!"
+
     write_command idle > "$case_dir/idle_command.txt"
     sleep 1
     if ! wait_until_ball_visible "$BALL_VISIBLE_TIMEOUT_S" > "$case_dir/ball_visible.log"; then
@@ -725,7 +729,9 @@ run_collect_one_driver() {
         return 1
     fi
 
-    run_probe_and_summarize "$case_dir"
+    start_probe "$case_dir"
+    wait_for_probe
+    summarize_probe "$case_dir"
     write_command idle > "$case_dir/final_idle_command.txt" || true
     cleanup_launch
 }

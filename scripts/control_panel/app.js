@@ -259,10 +259,14 @@
       const isAutonomous = AUTONOMOUS_MODES.has(actualMode);
 
       const btnMapCourt = document.querySelector('#commandForm [value="map_court"]');
+      const btnCollectOne = document.querySelectorAll(
+        '[data-command-mode="collect_one"], #commandForm [value="collect_one"]'
+      );
       const btnCollect  = document.querySelector('#commandForm [value="collect"]');
       const hintEl      = document.getElementById("commandHint");
 
       if (btnMapCourt) btnMapCourt.disabled = !hasSession || isAutonomous;
+      btnCollectOne.forEach(btn => { btn.disabled = isAutonomous; });
       if (btnCollect)  btnCollect.disabled  = !hasSurvey || isAutonomous;
 
       const MANUAL_MODES = new Set([...DPAD_MODES, "turn_180"]);

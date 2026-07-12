@@ -395,6 +395,7 @@ def generate_launch_description():
         executable="gazebo_extras_node",
         name="gazebo_extras_node",
         output="screen",
+        remappings=[_odom_remap],
     )
 
     sensor_snapshots = Node(

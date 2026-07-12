@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- Bin v2 (docs/basket-bin-redesign-spec-el.md): sunken removable
        wire-mesh bin. The floor drops through a chassis-plate opening so the
-       ball is retained by real depth below the jump lip (25 mm) instead of
+       ball is retained by real depth below the jump lip (20 mm) instead of
        the old 3 mm step. Collisions are solid boxes: a 66 mm ball cannot
        pass the <=40 mm mesh openings, so mesh vs solid is visual only.
        All *_ground params are in the GROUND frame; basket_link shares
@@ -71,7 +71,7 @@
       </visual>
 
       <!-- No front wall: the jump sheet's back face closes the front; the
-           entry lip at (0.425, 0.055) is the only way in or out. -->
+           entry lip at (0.425, 0.045) is the only way in or out. -->
 
       <!-- IR beam pair line (sensors mount on the chassis and shine through
            the mesh — see spec §2). Height = rolling-ball equator. -->
