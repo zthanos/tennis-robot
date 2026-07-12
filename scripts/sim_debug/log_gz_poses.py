@@ -1,4 +1,4 @@
-"""Ground-truth pose logger: gz pose/info -> JSONL (robot + balls).
+"""Ground-truth pose logger: gz pose/info -> JSONL (robot + test/load balls).
 
 The ros_gz Pose_V->TFMessage bridge drops entity names (child_frame_id=''),
 so ball ground truth is unavailable on the ROS side. This taps the gz topic
@@ -41,7 +41,11 @@ try:
         }
         for p in msg.get("pose", []):
             n = p.get("name", "")
-            if not (n.startswith("ball_") or n == "tennis_robot" or n.startswith("tennis_robot::")):
+            is_ball_model = (
+                "::" not in n
+                and (n.startswith("ball_") or n.startswith("stored_ball_"))
+            )
+            if not (is_ball_model or n == "tennis_robot" or n.startswith("tennis_robot::")):
                 continue
             pos = p.get("position", {})
             entry = {

@@ -548,6 +548,15 @@ summarize_probe() {
             "${force_threshold_args[@]}" \
             --json-out "$case_dir/release_criteria.json" \
             > "$case_dir/release_criteria.pretty.json"
+        # This evidence gate is intentionally non-fatal here: current runs that
+        # remove the target at the entry checkpoint should produce an honest
+        # basket_evidence FAIL while preserving the transport diagnostics.
+        python3 "$SCRIPT_DIR/scripts/sim_debug/analyze_basket_evidence.py" \
+            "$case_dir/gz_poses.jsonl" \
+            --target-name "${INTAKE_BENCH_BALL_NAME:-ball_02}" \
+            --expected-stored-count "${INTAKE_BASKET_LOAD_COUNT:-0}" \
+            --json-out "$case_dir/basket_evidence.json" \
+            > "$case_dir/basket_evidence.pretty.json" || true
     fi
 }
 

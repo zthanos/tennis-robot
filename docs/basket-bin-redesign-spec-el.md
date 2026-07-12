@@ -124,3 +124,27 @@
   interface (lip/jump) δεν αλλάζει.
 - OpenSCAD μοντέλο — χτίζεται πάνω σε αυτό το spec μόλις επαληθευτεί στο sim.
 - Camera blind zone (ξεχωριστό task).
+
+## 8. Evidence logs για smooth entry και loaded basket
+
+Κάθε intake sweep με διαθέσιμο Gazebo pose log παράγει πλέον:
+
+- `gz_poses.jsonl`: ground-truth timeline για robot, target `ball_*` και
+  προφορτωμένες `stored_ball_*`.
+- `basket_evidence.json`: machine-readable αποτέλεσμα.
+- `basket_evidence.pretty.json`: ίδιο αποτέλεσμα για ανθρώπινο review.
+
+Το authoritative basket PASS δεν είναι το `/ball/collected` event. Απαιτεί
+όλα τα παρακάτω από το `analyze_basket_evidence.py`:
+
+1. Η target μπάλα μπήκε στο robot-relative bin volume.
+2. Παρέμεινε συνεχόμενα τουλάχιστον 0.75s.
+3. Είχε σχετική ταχύτητα <=0.08m/s για τουλάχιστον 0.50s.
+4. Υπήρχε ακόμη μέσα στο bin στο τελευταίο pose sample.
+5. Παρατηρήθηκε ακριβώς το αναμενόμενο πλήθος `stored_ball_*`.
+6. Καμία stored μπάλα δεν έφυγε από το bin.
+7. Robot pitch και roll έμειναν εντός ±8deg.
+
+Άμεσο checkpoint/remove της target αποτυγχάνει ρητά στο
+`target_retained_at_end`, ακόμη και αν το transport release criteria είναι
+6/6. Για τα load runs χρησιμοποιείται `INTAKE_BASKET_LOAD_COUNT=0|15|25|45`.
