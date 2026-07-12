@@ -1,5 +1,9 @@
 # Concept A: Funnel + Wide Intake Roller Plan
 
+> **Historical / superseded:** Concept A and its OpenSCAD models were replaced
+> by the dual-wheel intake and basket v2.1. This file remains as project history,
+> not as an active manufacturing plan. See `cad/README.md` for current sources.
+
 Last checked: 2026-05-16
 
 This document turns Concept A into a two-phase build plan:
@@ -39,11 +43,8 @@ The important decision is to keep collection and throwing modular. The first mac
 
 ![Base layout plan](images/base-layout-plan.svg)
 
-CAD source for the first chassis drill template:
-
-```text
-cad/3d-printable-base/base_mounting_plate.scad
-```
+Historical CAD source: commit `de75682`, path
+`cad/3d-printable-base/base_mounting_plate.scad`.
 
 Plywood cutting instructions:
 
@@ -98,14 +99,16 @@ The preferred first build is not a sealed beautiful mechanism. It is a tunable r
 
 ### Updated Chassis Geometry
 
-The current CAD direction uses a level (un-pitched) 4WD chassis:
+This superseded CAD direction used a level (un-pitched) 4WD chassis:
 
 - four identical driven 180 mm wheels, two per side, placed symmetrically about the chassis center (no casters), so the body stays flat;
 - the two motors on each side are wired in parallel to one BTS7960 driver (4WD skid-steer), giving more traction and eliminating the caster scrub that previously stalled in-place turns;
 - the bin has two modeled positions: a lower collect-mode reference and a raised/tilted throw-mode position;
 - throw mode uses a gravity feed chute from the raised bin into the flywheel throat.
 
-This keeps the pickup path low and the launcher feed predictable on a level body. Before cutting final holes, verify the actual motor pod footprint, 180 mm wheel diameter, and front clearance against `cad/3d-printable-base/full_robot_concept.scad` and `cad/3d-printable-base/base_mounting_plate.scad`.
+These dimensions are historical and must not be used for cutting or drilling.
+The removed models remain available at commit `de75682`; current mechanical
+sources are listed in `cad/README.md`.
 
 ### Scope
 

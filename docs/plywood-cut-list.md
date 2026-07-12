@@ -1,16 +1,17 @@
 # Plywood Cut List For First Chassis
 
+> **Historical / superseded:** this cut list describes the removed 760 x 430 mm
+> first-chassis CAD. The active Gazebo robot is 920 x 580 mm and uses the
+> dual-wheel intake plus basket v2.1. Do not manufacture from this document;
+> use it only as project history until a new SCAD and cut list are produced.
+
 Material:
 
 ```text
 Birch marine plywood sheet: 1000 x 700 x 21 mm
 ```
 
-This cut list matches the first CAD chassis reference:
-
-```text
-cad/3d-printable-base/base_mounting_plate.scad
-```
+The removed CAD reference remains available in Git history at commit `de75682`.
 
 For the full physical-store shopping checklist, including motors, wheels,
 collector parts, fasteners, and safety electronics, see:
@@ -26,11 +27,8 @@ about 3-5 mm per cut. Dimensions below are finished part dimensions.
 
 ![Base layout plan](images/base-layout-plan.svg)
 
-CAD reference:
-
-```text
-cad/3d-printable-base/base_mounting_plate.scad
-```
+Historical CAD reference: commit `de75682`, path
+`cad/3d-printable-base/base_mounting_plate.scad`.
 
 ## Required Cuts
 

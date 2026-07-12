@@ -299,27 +299,25 @@ Open:
 http://localhost:6081/vnc.html
 ```
 
-By default it loads `cad/3d-printable-base/full_robot_concept.scad`. Override with:
+It currently starts without a preloaded model because the old collector and
+chassis SCAD files no longer match the active robot. Once a new active model is
+added, open it from the mounted `cad/` directory or set `OPENSCAD_FILE`:
 
 ```powershell
-$env:OPENSCAD_FILE="/workspace/cad/3d-printable-base/base_tile.scad"
+$env:OPENSCAD_FILE="/workspace/cad/active_robot.scad"
 docker compose --profile cad up openscad-gui
 ```
 
+See `cad/README.md` for the current CAD status and mechanical sources of truth.
 Files under `cad/` are the mounted repo workspace, so saves in the GUI write back to your project folder.
 
 ### Headless STL export
 
-The `openscad` compose service uses the official `openscad/openscad:bookworm` image to export printable CAD files without a GUI.
+The `openscad` compose service uses the official `openscad/openscad:bookworm`
+image to export future printable CAD files without a GUI:
 
 ```powershell
-.\scripts\export_stl.ps1
-```
-
-To export a single model manually:
-
-```powershell
-docker compose --profile cad run --rm openscad openscad -o cad/3d-printable-base/stl/base_tile.stl cad/3d-printable-base/base_tile.scad
+docker compose --profile cad run --rm openscad openscad -o cad/stl/active_robot.stl cad/active_robot.scad
 ```
 
 ## Telemetry
