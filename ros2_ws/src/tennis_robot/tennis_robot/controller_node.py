@@ -45,6 +45,8 @@ from tennis_robot import yaw_from_quaternion
 
 from tennis_robot.ball_map import BallMap, BallMapConfig, across_net
 from tennis_robot.collect_one_mission import CollectOneMission
+from tennis_robot.collect_route_mission import CollectRouteMission
+from tennis_robot.collection_route_planner import CourtModel, remaining_route_length_m
 from tennis_robot.collector import (
     BallObservationInput,
     BaseCommand,
@@ -57,6 +59,7 @@ from tennis_robot.collector import (
 from tennis_robot.config_utils import _env_float
 from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
 from tennis_robot.mapping import (
+    DEFAULT_BOUNDARY_FILE,
     LidarSurveyBoundaryProvider,
     MapLeftSideMission,
     ServiceLineDistributionScanMission,
@@ -154,6 +157,8 @@ class ControllerNode(Node):
         self.survey_behavior = Ros2LidarCourtSurvey.from_env()
         self.ball_map = BallMap(BallMapConfig(court_ball_margin_m=COURT_BALL_MARGIN_M))
         self.collect_one_mission = CollectOneMission()
+        self.collect_route_mission = CollectRouteMission()
+        self._court_model: CourtModel | None = None
         self._map_mission = MapLeftSideMission(
             LidarSurveyBoundaryProvider(), self._map_supervisor_balls
         )
@@ -168,7 +173,10 @@ class ControllerNode(Node):
                 "Source the Nav2 install or set COLLECTION_USE_NAV2=false to use the P-controller deliberately."
             )
         self._use_nav2_lanes = self._nav2_requested and _NAV2_AVAILABLE
-        self._nav2_lane = Nav2LaneNavigator(self) if self._use_nav2_lanes else None
+        # The navigator is constructed whenever Nav2 deps are importable:
+        # collect_route always drives its legs via Nav2, while the lawnmower
+        # sweep keeps honoring COLLECTION_USE_NAV2 via _use_nav2_lanes.
+        self._nav2_lane = Nav2LaneNavigator(self) if _NAV2_AVAILABLE else None
 
         # ── state ──────────────────────────────────────────────────────────────
         self.control_mode = "idle"
@@ -206,6 +214,7 @@ class ControllerNode(Node):
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
+        self._latest_observations: list[BallObservationInput] = []
         self._latest_obs_received_at = 0.0
         self._latest_obs_seq = 0
         self._mapped_obs_seq = 0
@@ -289,6 +298,7 @@ class ControllerNode(Node):
             self._latest_obs = BallObservationInput(
                 visible=False, source="invalid_perception_frame"
             )
+            self._latest_observations = []
             self._latest_camera_balls = []
             return
 
@@ -340,6 +350,7 @@ class ControllerNode(Node):
             if observations
             else BallObservationInput(visible=False, source="no_detection")
         )
+        self._latest_observations = observations
         self._latest_camera_balls = camera_balls
         self._latest_obs_received_at = received_at
         self._latest_camera_balls_received_at = received_at
@@ -421,15 +432,24 @@ class ControllerNode(Node):
         self._update_pose_from_tf()
         observation = self._fresh_perception_observation()
         now = self._runtime_seconds()
+        new_detection_frame = self._latest_obs_seq != self._mapped_obs_seq
         mapping_observation = (
             observation
-            if self._latest_obs_seq != self._mapped_obs_seq
+            if new_detection_frame
             else BallObservationInput(visible=False, source="observation_already_mapped")
         )
         mapped_observation = self._mapping_observation(mapping_observation)
         self._mapped_obs_seq = self._latest_obs_seq
         mapped_ball_id, is_new_ball = self.ball_map.update(mapped_observation, now)
         control_mapping_observation = self._mapping_observation(observation)
+
+        # collect_route maps EVERY detection of the frame, not only the
+        # nearest: the 360° scan must register balls behind/beside the closest
+        # one. Scoped to this mode to keep the other flows unchanged.
+        if new_detection_frame and self.control_mode == "collect_route":
+            for extra in self._latest_observations:
+                if extra is not self._latest_obs:
+                    self.ball_map.update(self._mapping_observation(extra), now)
 
         if self.loop_count % 90 == 0:
             self.ball_map.prune_phantoms(now)
@@ -450,6 +470,11 @@ class ControllerNode(Node):
                 effective_mode,
                 self._same_side_search_observation(control_mapping_observation),
                 mapped_ball_id,
+            )
+        elif effective_mode == "collect_route":
+            command = self._collect_route_command_for_mode(
+                effective_mode,
+                self._same_side_search_observation(control_mapping_observation),
             )
         elif effective_mode == "map_left_side":
             command = self._map_mission_command_for_mode(effective_mode)
@@ -487,7 +512,11 @@ class ControllerNode(Node):
         if new_mode == self.control_mode:
             return False
         previous_mode = self.control_mode
-        if previous_mode == "collect" and new_mode != "collect" and self._nav2_lane is not None:
+        if (
+            previous_mode in {"collect", "collect_route"}
+            and new_mode != previous_mode
+            and self._nav2_lane is not None
+        ):
             self._record_collection_event("nav2_goal_cancel", reason=f"mode_exit:{new_mode}")
             self._nav2_lane.reset()
         self.behavior.reset()
@@ -500,13 +529,15 @@ class ControllerNode(Node):
             self._collection_scan.reset()
         self.control_mode = new_mode
         self.collect_one_mission.reset()
+        self.collect_route_mission.reset()
+        self.ball_map.max_create_distance_override_m = None
         self._reset_collect_pattern()
         self.scan_side_started_at = None
         self._collect_start_time = None
         self.active_mapped_target_id = None
         self._collection_scan_completion_reported = False
         self.get_logger().info(f"mode → {new_mode}")
-        if new_mode == "collect":
+        if new_mode in {"collect", "collect_route"}:
             self._collection_events.clear()
             self._collection_event_started_at = self._runtime_seconds()
             if self._nav2_lane is not None:
@@ -521,7 +552,7 @@ class ControllerNode(Node):
         "move_forward_left", "move_forward_right",
         "move_backward_left", "move_backward_right",
     })
-    _AUTONOMOUS_MODES = frozenset({"map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"})
+    _AUTONOMOUS_MODES = frozenset({"map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "collect_route", "search", "scan_side"})
 
     def _effective_control_mode(self, requested_mode: str) -> str:
         if requested_mode in self._MANUAL_MODES and self.control_mode in self._AUTONOMOUS_MODES:
@@ -1091,6 +1122,80 @@ class ControllerNode(Node):
             return "outside_active_lane"
         return None
 
+    def _collect_route_command_for_mode(
+        self, mode: str, observation: BallObservationInput
+    ) -> ConceptACommand:
+        mission = self.collect_route_mission
+        now = self._runtime_seconds()
+        if self._on_mode_changed(mode):
+            self.ball_map.reset()
+            self._collect_start_time = now
+            self._court_model = CourtModel.from_boundary_file(DEFAULT_BOUNDARY_FILE)
+            if self._court_model is None:
+                self.get_logger().warning(
+                    f"collect_route: no usable court model at {DEFAULT_BOUNDARY_FILE}; "
+                    "approach poses degrade to direct (no lateral fence/net handling)"
+                )
+            # Register balls out to camera range during the 360° scan.
+            self.ball_map.max_create_distance_override_m = mission.planner_cfg.scan_range_m
+            mission.start(self._robot_pose_2d())
+
+        if self._nav2_lane is None:
+            # collect_route drives its legs via Nav2 exclusively — fail loud,
+            # never silently substitute the P-controller for the legs.
+            self._record_collection_event(
+                "nav2_unavailable",
+                detail="nav2_msgs/rclpy.action not importable; collect_route stopped (no fallback)",
+            )
+            return ConceptACommand(
+                state=CollectorState.IDLE,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        command = mission.update(
+            observation,
+            self.collection_confirmed,
+            TIME_STEP_S,
+            self._robot_pose_2d(),
+            self.behavior,
+            self.ball_map,
+            now,
+            self._nav2_lane.state.value,
+            self._court_model,
+        )
+
+        # Scan-range override only lives while the mission scans.
+        if not mission.scanning:
+            self.ball_map.max_create_distance_override_m = None
+
+        # Nav2 wiring: the mission exposes the goal, the controller owns the
+        # navigator (same split as the lawnmower sweep).
+        goal = mission.nav_goal
+        if goal is not None:
+            self._nav2_lane.request(*goal)
+            if self._nav2_lane.state == LaneNavState.UNAVAILABLE:
+                self._record_collection_event(
+                    "nav2_unavailable",
+                    detail="navigate_to_pose action server not up; collect_route stopped (no fallback)",
+                    target_x_m=goal[0],
+                    target_y_m=goal[1],
+                )
+        elif self._nav2_lane.busy:
+            self._nav2_lane.cancel()
+
+        self.active_mapped_target_id = mission.current_ball_id
+        for event_type, fields in mission.drain_events():
+            self._record_collection_event(event_type, **fields)
+
+        if mission.is_done and not mission._complete_reported:
+            mission._complete_reported = True
+            self.get_logger().info(
+                f"collect_route complete; total={self.collection_count}"
+            )
+            self._publish_command("idle", "controller-collect-route-complete")
+        return command
+
     def _record_collection_event(self, event_type: str, **fields: object) -> None:
         now = self._runtime_seconds()
         if self._collection_event_started_at is None:
@@ -1503,13 +1608,35 @@ class ControllerNode(Node):
         """Collection Map payload: recognized balls at their detected world points,
         plus the active target, robot pose and camera cone for the renderer."""
         cfg = self.ball_map.config
+        route: list[dict] = []
+        planned_order: dict[int, int] | None = None
+        insertions = 0
+        if self.control_mode == "collect_route":
+            route, planned_order = self.collect_route_mission.route_export(
+                (self._robot_x, self._robot_y)
+            )
+            insertions = self.collect_route_mission.insertion_count
         balls = self.ball_map.to_console_balls(
-            self._robot_x, self.active_mapped_target_id, now=self._runtime_seconds()
+            self._robot_x,
+            self.active_mapped_target_id,
+            now=self._runtime_seconds(),
+            planned_order=planned_order,
         )
         confirmed = [b for b in balls if b["confirmed"] and b["side"] != "across_net"]
+        metrics: dict[str, object] = {
+            "balls_mapped": len(balls),
+            "balls_confirmed": len(confirmed),
+            "balls_collectable": len(confirmed),
+        }
+        if len(route) > 1:
+            metrics["total_distance_m"] = remaining_route_length_m(
+                (self._robot_x, self._robot_y), self.collect_route_mission.stops
+            )
+            metrics["planned_replans"] = insertions
         return {
             "balls": balls,
             "active_target_id": self.active_mapped_target_id,
+            "route": route,
             "robot": {
                 "x_m": round(self._robot_x, 3),
                 "y_m": round(self._robot_y, 3),
@@ -1517,11 +1644,7 @@ class ControllerNode(Node):
             },
             "camera_fov_rad": round(cfg.supervised_fov_rad, 4),
             "camera_max_range_m": round(cfg.supervised_max_range_m, 2),
-            "metrics": {
-                "balls_mapped": len(balls),
-                "balls_confirmed": len(confirmed),
-                "balls_collectable": len(confirmed),
-            },
+            "metrics": metrics,
         }
 
     def _publish_status(self, command: ConceptACommand, observation: BallObservationInput) -> None:
@@ -1557,6 +1680,7 @@ class ControllerNode(Node):
             "collection_lane_collecting": self._collection_lane_collecting,
             "collection_opportunistic_collecting": self._collection_opportunistic_collecting,
             "collection_scan": self._collection_scan.telemetry(),
+            "collect_route": self.collect_route_mission.telemetry(),
             "collection_truth": self._collection_truth(command),
             "collection_events": list(self._collection_events),
             "collection_nav2": {

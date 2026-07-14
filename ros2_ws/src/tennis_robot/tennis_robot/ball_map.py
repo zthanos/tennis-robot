@@ -82,6 +82,10 @@ class BallMap:
         self.balls: dict[int, MappedBall] = {}
         self._next_id = 1
         self._seeded_signature: tuple[tuple[float, float], ...] = ()
+        # Temporary widening of the create gate (e.g. the collect_route 360°
+        # scan registers balls out to camera range instead of 3 m). None uses
+        # config.max_create_distance_m.
+        self.max_create_distance_override_m: float | None = None
 
     def __len__(self) -> int:
         return len(self.balls)
@@ -123,7 +127,8 @@ class BallMap:
                 best_dist = dist
 
         if best_id is None:
-            if observation.distance_m > cfg.max_create_distance_m:
+            max_create_m = self.max_create_distance_override_m or cfg.max_create_distance_m
+            if observation.distance_m > max_create_m:
                 return None, False
             ball_id = self._next_id
             self._next_id += 1
@@ -181,6 +186,7 @@ class BallMap:
         active_target_id: int | None = None,
         now: float | None = None,
         include_collected: bool = False,
+        planned_order: dict[int, int] | None = None,
     ) -> list[dict[str, Any]]:
         """Export recognized balls in the shape the Collection Map renderer expects.
 
@@ -215,8 +221,9 @@ class BallMap:
                 "side": side,
                 "confirmed": confirmed,
                 "visible_candidate": confirmed and fresh,
-                "planned": ball.id == active_target_id,
-                "order": None,
+                "planned": ball.id == active_target_id
+                or ball.id in (planned_order or {}),
+                "order": (planned_order or {}).get(ball.id),
             })
         return out
 

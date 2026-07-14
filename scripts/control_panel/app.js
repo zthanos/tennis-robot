@@ -246,7 +246,7 @@
 
     const DPAD_MODES = new Set(["move_forward", "move_backward", "move_left", "move_right",
       "move_forward_left", "move_forward_right", "move_backward_left", "move_backward_right"]);
-    const AUTONOMOUS_MODES = new Set(["map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"]);
+    const AUTONOMOUS_MODES = new Set(["map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "collect_route", "search", "scan_side"]);
 
     function updateCommandButtons() {
       const active = window.ControlPanelVendors?.getActive() || {};
@@ -294,7 +294,7 @@
 
     function routeForMode(mode) {
       if (mode === "map_court") return "survey";
-      if (["collect", "collect_one", "collect_pattern", "search", "scan_side", "map_left_side"].includes(mode)) return "collection";
+      if (["collect", "collect_one", "collect_pattern", "collect_route", "search", "scan_side", "map_left_side"].includes(mode)) return "collection";
       return null;
     }
 
