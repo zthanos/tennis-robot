@@ -174,8 +174,11 @@ Unit tests (χωρίς ROS): `tests/test_collection_route_planner.py`,
 
 ## 9. Εκκρεμότητες / επόμενα
 
-- Sim επαλήθευση end-to-end (βήματα §8) και καταγραφή στο
-  [intake-debug-log-el.md](intake-debug-log-el.md).
+Κάθε αλλαγή/run του collect_route καταγράφεται στο
+[collection-route-debug-log-el.md](collection-route-debug-log-el.md)
+(υπόθεση/αποτέλεσμα/status, ίδια πειθαρχία με το intake log).
+
+- Sim επαλήθευση end-to-end (βήματα §8) και καταγραφή στο παραπάνω log.
 - Deferred gaps του issue #10 σε loaded runs: live loaded collect, loaded
   lateral envelope, σταδιακό γέμισμα (beam counting σε διαδοχικά μαζέματα).
 - Keepout layer στο Nav2 costmap από τα obstacles του survey (σημειωμένο ως

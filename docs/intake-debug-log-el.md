@@ -1771,6 +1771,10 @@
 - **Status**: κώδικας ΟΚ offline· **εκκρεμεί sim επαλήθευση** κατά τα
   βήματα του §8 στο collection-route-plan-el.md (Nav2 stack up, lateral
   κοντά σε φράχτη/φιλέ, insertion mid-route, route overlay στο console).
+- **➡️ Συνέχεια ΕΚΤΟΣ αυτού του log**: ο αλγόριθμος μαζέματος έχει πλέον
+  δικό του τεκμηριωμένο log — `docs/collection-route-debug-log-el.md`
+  (εγγραφή #1 = αυτή η υλοποίηση, με τα ευρήματα αναλυτικά). Το παρόν log
+  μένει για ό,τι αφορά τον ΜΗΧΑΝΙΣΜΟ intake (γεωμετρία, roller, basket).
 
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
