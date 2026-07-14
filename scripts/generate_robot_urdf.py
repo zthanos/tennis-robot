@@ -110,10 +110,30 @@ def _patch_collision_surface(
             _set_text(contact_ode_node, tag, value)
 
 
+def _patch_collision_bounce(
+    collision: ET.Element,
+    restitution: str,
+    threshold: str,
+) -> None:
+    surface = collision.find("surface")
+    if surface is None:
+        surface = ET.SubElement(collision, "surface")
+    bounce = surface.find("bounce")
+    if bounce is None:
+        bounce = ET.SubElement(surface, "bounce")
+    _set_text(bounce, "restitution_coefficient", restitution)
+    _set_text(bounce, "threshold", threshold)
+
+
 def _patch_sdf_contacts(sdf_text: str) -> str:
     """Patch contact tuning and Gazebo-native intake collision geometry."""
     root = ET.fromstring(sdf_text)
     lip_height_m = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
+    ramp_profile = os.getenv("INTAKE_RAMP_PROFILE", "launch").strip().lower()
+    if ramp_profile not in {"rolling", "launch"}:
+        raise ValueError(
+            f"unsupported INTAKE_RAMP_PROFILE={ramp_profile!r}; use rolling or launch"
+        )
     # Keep the hand-carved Gazebo collision in sync with the generated visual
     # mesh. The ramp entry sits just ahead of the wheel nip so the wheels feed
     # the ball onto a rising surface; the rear endpoint stays at the basket
@@ -123,11 +143,17 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
     # converts the kick's horizontal KE into climb over a 3 mm retention lip
     # into the chassis-flush hopper.
     nip_x_m = float(os.getenv("INTAKE_NIP_X_M", "0.540"))
-    ramp_entry_x_m = float(os.getenv("INTAKE_RAMP_ENTRY_X_M", str(nip_x_m - 0.040)))
+    ramp_entry_default_m = nip_x_m if ramp_profile == "launch" else nip_x_m - 0.040
+    ramp_entry_x_m = float(
+        os.getenv("INTAKE_RAMP_ENTRY_X_M", str(ramp_entry_default_m))
+    )
     ramp_clear_run_m = max(0.004, float(os.getenv("INTAKE_RAMP_CLEAR_RUN_M", "0.030")))
     ramp_clear_z_m = max(lip_height_m, float(os.getenv("INTAKE_RAMP_CLEAR_Z_M", "0.004")))
     ramp_knee_x_m = float(os.getenv("INTAKE_RAMP_KNEE_X_M", "0.465"))
     ramp_end_x_m = float(os.getenv("INTAKE_RAMP_END_X_M", "0.425"))
+    launch_exit_x_m = float(os.getenv("INTAKE_LAUNCH_EXIT_X_M", "0.465"))
+    launch_exit_z_m = float(os.getenv("INTAKE_LAUNCH_EXIT_Z_M", "0.032"))
+    launch_exit_angle_deg = float(os.getenv("INTAKE_LAUNCH_EXIT_ANGLE_DEG", "35.0"))
     surfaces = {
         "rear_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "rear_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
@@ -247,7 +273,9 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
             lip_x = ramp_entry_x_m
             ramp_clear_x = lip_x - ramp_clear_run_m
             ramp_knee_x = ramp_knee_x_m
-            ramp_end_x = ramp_end_x_m
+            ramp_end_x = (
+                launch_exit_x_m if ramp_profile == "launch" else ramp_end_x_m
+            )
             ramp_clear_z = ramp_clear_z_m
             ramp_knee_z = float(os.getenv("INTAKE_RAMP_KNEE_Z_M", "0.020"))
             ramp_end_z = float(os.getenv("INTAKE_RAMP_END_Z_M", "0.045"))
@@ -262,6 +290,23 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
                 return t * t * (3.0 - 2.0 * t)
 
             def ramp_z(x: float) -> float:
+                if ramp_profile == "launch":
+                    run = lip_x - ramp_end_x
+                    if run <= 0.0:
+                        raise ValueError(
+                            "launch exit x must be behind the ramp entry x "
+                            f"({ramp_end_x} >= {lip_x})"
+                        )
+                    t = max(0.0, min(1.0, (lip_x - x) / run))
+                    z0 = lip_height_m
+                    z1 = launch_exit_z_m
+                    m0 = 0.0
+                    m1 = math.tan(math.radians(launch_exit_angle_deg)) * run
+                    h00 = 2.0 * t**3 - 3.0 * t**2 + 1.0
+                    h10 = t**3 - 2.0 * t**2 + t
+                    h01 = -2.0 * t**3 + 3.0 * t**2
+                    h11 = t**3 - t**2
+                    return h00 * z0 + h10 * m0 + h01 * z1 + h11 * m1
                 if x >= ramp_clear_x:
                     t = (lip_x - x) / max(lip_x - ramp_clear_x, 1e-6)
                     return lip_height_m + (ramp_clear_z - lip_height_m) * smoothstep(t)
@@ -348,6 +393,65 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
         if "intake_deflector_col" in collision.attrib.get("name", ""):
             _patch_collision_surface(collision, "0.2", "0.2", "0.0", "0.0")
 
+    # The physical hopper is expected to use a grippy floor and compliant
+    # mesh / rubber lining. Model that explicitly so a captured ball loses
+    # energy instead of rebounding from rigid walls and rolling back out.
+    basket_floor_contact = {
+        "kp": os.getenv("BASKET_FLOOR_CONTACT_KP", "12000"),
+        "kd": os.getenv("BASKET_FLOOR_CONTACT_KD", "80"),
+        "max_vel": os.getenv("BASKET_CONTACT_MAX_VEL", "0.25"),
+        "min_depth": os.getenv("BASKET_CONTACT_MIN_DEPTH", "0.001"),
+    }
+    basket_lining_contact = {
+        "kp": os.getenv("BASKET_LINING_CONTACT_KP", "4000"),
+        "kd": os.getenv("BASKET_LINING_CONTACT_KD", "120"),
+        "max_vel": os.getenv("BASKET_CONTACT_MAX_VEL", "0.25"),
+        "min_depth": os.getenv("BASKET_CONTACT_MIN_DEPTH", "0.001"),
+    }
+    for collision in root.findall(".//collision"):
+        name = collision.attrib.get("name", "")
+        if any(
+            floor_name in name
+            for floor_name in (
+                "basket_floor_col",
+                "basket_management_tray_col",
+                "basket_receiving_chute_col",
+                "basket_entry_hood_roof_col",
+            )
+        ):
+            floor_mu = os.getenv("BASKET_FLOOR_MU", "1.0")
+            _patch_collision_surface(
+                collision, floor_mu, floor_mu, "0.0", "0.0", basket_floor_contact
+            )
+            _patch_collision_bounce(collision, "0.0", "0.0")
+        elif any(
+            wall_name in name
+            for wall_name in (
+                "basket_left_wall_col",
+                "basket_right_wall_col",
+                "basket_rear_wall_col",
+                "basket_front_left_guard_col",
+                "basket_front_right_guard_col",
+                "basket_center_retention_lip_col",
+                "basket_entry_hood_left_cheek_col",
+                "basket_entry_hood_right_cheek_col",
+            )
+        ):
+            lining_mu = os.getenv("BASKET_LINING_MU", "0.8")
+            _patch_collision_surface(
+                collision,
+                lining_mu,
+                lining_mu,
+                "0.0",
+                "0.0",
+                basket_lining_contact,
+            )
+            _patch_collision_bounce(
+                collision,
+                os.getenv("BASKET_LINING_RESTITUTION", "0.05"),
+                os.getenv("BASKET_LINING_BOUNCE_THRESHOLD", "0.05"),
+            )
+
     ET.indent(root, space="  ")
     return ET.tostring(root, encoding="unicode")
 
@@ -379,6 +483,7 @@ def main() -> int:
             str(source),
             f"sim_mode:={args.sim_mode}",
             f"controllers_config:={controllers_config}",
+            f"expose_intake_carriage_state:={os.getenv('INTAKE_EXPOSE_CARRIAGE_STATE', 'false')}",
             # Dual-wheel intake tuning + Concept Validation Plan gates
             # (docs/dual-wheel-intake-design-el.md).
             f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', '0.060')}",
@@ -402,6 +507,14 @@ def main() -> int:
             f"basket_rear_x:={os.getenv('BASKET_REAR_X_M', '0.02')}",
             f"basket_half_width:={os.getenv('BASKET_HALF_WIDTH_M', '0.14')}",
             f"basket_wall_top_z:={os.getenv('BASKET_WALL_TOP_Z_M', '0.25')}",
+            f"basket_center_lip_height:={os.getenv('BASKET_CENTER_LIP_HEIGHT_M', '0.010')}",
+            f"basket_management_run:={os.getenv('BASKET_MANAGEMENT_RUN_M', '0.14')}",
+            f"basket_management_rise:={os.getenv('BASKET_MANAGEMENT_RISE_M', '0.010')}",
+            f"basket_receiver_run:={os.getenv('BASKET_RECEIVER_RUN_M', '0.050')}",
+            f"basket_receiver_rise:={os.getenv('BASKET_RECEIVER_RISE_M', '0.005')}",
+            f"basket_hood_rear_overhang:={os.getenv('BASKET_HOOD_REAR_OVERHANG_M', '0.040')}",
+            f"basket_hood_rear_clearance_z:={os.getenv('BASKET_HOOD_REAR_CLEARANCE_Z_M', '0.120')}",
+            f"basket_hood_front_clearance_z:={os.getenv('BASKET_HOOD_FRONT_CLEARANCE_Z_M', '0.135')}",
         ],
         check=False,
         env=env,

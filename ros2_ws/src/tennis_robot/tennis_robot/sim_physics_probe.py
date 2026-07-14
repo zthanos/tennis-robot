@@ -16,7 +16,7 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from ros_gz_interfaces.msg import Contacts
 from sensor_msgs.msg import JointState
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool, Float64MultiArray, String
 from tf2_msgs.msg import TFMessage
 
 
@@ -25,6 +25,10 @@ BASE_LINK_HEIGHT_M = 0.045
 BALL_RADIUS_M = 0.033
 BALL_MASS_KG = 0.058
 INTAKE_WHEEL_JOINTS = ("intake_wheel_left_joint", "intake_wheel_right_joint")
+INTAKE_CARRIAGE_JOINTS = (
+    "intake_wheel_left_carriage_joint",
+    "intake_wheel_right_carriage_joint",
+)
 
 
 def _vec_mag(vec) -> float:
@@ -90,6 +94,11 @@ class SimPhysicsProbe(Node):
         self._joint_velocity: float | None = None
         self._joint_effort: float | None = None
         self._wheel_velocities: dict[str, float] = {}
+        self._wheel_commands: dict[str, float] = {}
+        self._joint_positions: dict[str, float] = {}
+        self._joint_velocities: dict[str, float] = {}
+        self._joint_efforts: dict[str, float] = {}
+        self._robot_twist: tuple[float, float] | None = None
         self._ball_history: dict[str, tuple[float, tuple[float, float, float], tuple[float, float, float] | None]] = {}
         self._jsonl: TextIO | None = None
         bench_ball_x = os.getenv("INTAKE_BENCH_BALL_X")
@@ -133,6 +142,12 @@ class SimPhysicsProbe(Node):
             Bool, "/collector/intake_beam_broken", self._on_intake_beam, 10
         )
         self.create_subscription(JointState, "/joint_states", self._on_joint_states, 10)
+        self.create_subscription(
+            Float64MultiArray,
+            "/intake_wheel_velocity_controller/commands",
+            self._on_wheel_commands,
+            10,
+        )
         self.create_subscription(
             Contacts, "/gz/roller_contact_0",
             lambda msg: self._on_contacts(msg, "left"), 10,
@@ -199,6 +214,10 @@ class SimPhysicsProbe(Node):
         p = msg.pose.pose.position
         q = msg.pose.pose.orientation
         self._robot_pose = (p.x, p.y, p.z, _yaw_from_quat(q))
+        self._robot_twist = (
+            float(msg.twist.twist.linear.x),
+            float(msg.twist.twist.angular.z),
+        )
 
     def _on_roller_contact(self, msg: Bool) -> None:
         self._roller_contact = msg.data
@@ -208,21 +227,35 @@ class SimPhysicsProbe(Node):
 
     def _on_joint_states(self, msg: JointState) -> None:
         names = list(msg.name)
-        for joint in INTAKE_WHEEL_JOINTS:
+        for joint in (*INTAKE_WHEEL_JOINTS, *INTAKE_CARRIAGE_JOINTS):
             try:
                 index = names.index(joint)
             except ValueError:
                 continue
+            if index < len(msg.position):
+                self._joint_positions[joint] = float(msg.position[index])
             if index < len(msg.velocity):
-                self._wheel_velocities[joint] = float(msg.velocity[index])
+                velocity = float(msg.velocity[index])
+                self._joint_velocities[joint] = velocity
+                if joint in INTAKE_WHEEL_JOINTS:
+                    self._wheel_velocities[joint] = velocity
             if index < len(msg.effort):
-                self._joint_effort = msg.effort[index]
+                effort = float(msg.effort[index])
+                self._joint_efforts[joint] = effort
+                if joint in INTAKE_WHEEL_JOINTS:
+                    self._joint_effort = effort
         if self._wheel_velocities:
             # Representative magnitude for surface-speed math (the two wheels
             # counter-rotate; their magnitudes should match).
             self._joint_velocity = max(
                 (abs(v) for v in self._wheel_velocities.values()), default=None
             )
+
+    def _on_wheel_commands(self, msg: Float64MultiArray) -> None:
+        self._wheel_commands = {
+            joint: float(value)
+            for joint, value in zip(INTAKE_WHEEL_JOINTS, msg.data)
+        }
 
     def _update_ball_velocity(self, name: str, point: tuple[float, float, float]) -> None:
         now = self.get_clock().now().nanoseconds / 1e9
@@ -317,6 +350,28 @@ class SimPhysicsProbe(Node):
             "wheel_joint_velocities_rad_s": {
                 j: round(v, 4) for j, v in self._wheel_velocities.items()
             } or None,
+            "wheel_commands_rad_s": {
+                j: round(v, 4) for j, v in self._wheel_commands.items()
+            } or None,
+            "carriage_positions_m": {
+                j: round(self._joint_positions[j], 6)
+                for j in INTAKE_CARRIAGE_JOINTS
+                if j in self._joint_positions
+            } or None,
+            "carriage_velocities_m_s": {
+                j: round(self._joint_velocities[j], 6)
+                for j in INTAKE_CARRIAGE_JOINTS
+                if j in self._joint_velocities
+            } or None,
+            "wheel_joint_efforts": {
+                j: round(self._joint_efforts[j], 4)
+                for j in INTAKE_WHEEL_JOINTS
+                if j in self._joint_efforts and math.isfinite(self._joint_efforts[j])
+            } or None,
+            "robot_twist": {
+                "linear_x_m_s": round(self._robot_twist[0], 4),
+                "angular_z_rad_s": round(self._robot_twist[1], 4),
+            } if self._robot_twist is not None else None,
             "geometry": {
                 "nip_x_m": round(self._nip_x, 5),
                 "wheel_radius_m": round(self._wheel_radius, 5),

@@ -19,7 +19,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- intake_max_vel = GB37Y3530-12V-251R no-load speed (251 RPM = 26.3 rad/s). -->
   <xacro:macro name="tennis_robot_ros2_control"
-               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 intake_max_vel:=26.3 enable_assist:=false enable_conveyor:=false">
+               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 intake_max_vel:=26.3 expose_intake_carriage_state:=false enable_assist:=false enable_conveyor:=false">
 
     <ros2_control name="TennisRobotSystem" type="system">
 
@@ -107,6 +107,22 @@
         <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
+
+      <!-- Gazebo-only observability for the passive spring carriages. The
+           physical prototype has no carriage encoder, so these state-only
+           interfaces must not become part of the real hardware contract. -->
+      <xacro:if value="${sim_mode}">
+        <xacro:if value="${expose_intake_carriage_state}">
+          <joint name="intake_wheel_left_carriage_joint">
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+          </joint>
+          <joint name="intake_wheel_right_carriage_joint">
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+          </joint>
+        </xacro:if>
+      </xacro:if>
 
       <!-- Optional Phase 3 second-stage assist roller. -->
       <xacro:if value="${enable_assist}">

@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="basket_wire" params="name xyz size">
+    <visual name="${name}">
+      <origin xyz="${xyz}" rpy="0 0 0"/>
+      <geometry><box size="${size}"/></geometry>
+      <material name="basket_gray"/>
+    </visual>
+  </xacro:macro>
+
+  <xacro:macro name="basket_wire_rotated" params="name xyz rpy size">
+    <visual name="${name}">
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <geometry><box size="${size}"/></geometry>
+      <material name="basket_gray"/>
+    </visual>
+  </xacro:macro>
+
   <!-- Bin v2 (docs/basket-bin-redesign-spec-el.md): sunken removable
        wire-mesh bin. The floor drops through a chassis-plate opening so the
        ball is retained by real depth below the jump lip (20 mm) instead of
@@ -8,7 +24,7 @@
        All *_ground params are in the GROUND frame; basket_link shares
        base_link's origin (base_link_height above ground). -->
   <xacro:macro name="ball_basket"
-      params="parent floor_front_x floor_top_z_ground rear_x half_width wall_top_z_ground">
+      params="parent floor_front_x floor_top_z_ground rear_x half_width wall_top_z_ground center_lip_height management_run management_rise receiver_run receiver_rise hood_rear_overhang hood_rear_clearance_z_ground hood_front_clearance_z_ground">
     <xacro:property name="floor_top" value="${floor_top_z_ground - base_link_height}"/>
     <xacro:property name="wall_top" value="${wall_top_z_ground - base_link_height}"/>
     <!-- Thin skinned bin: 5 mm floor (exterior bottom = floor_top - 0.005,
@@ -18,6 +34,52 @@
     <xacro:property name="bin_length" value="${floor_front_x - rear_x}"/>
     <xacro:property name="wall_height" value="${wall_top - floor_top}"/>
     <xacro:property name="wall_centre_z" value="${(wall_top + floor_top) / 2.0}"/>
+    <!-- The 180 mm centre opening matches the intake channel. Short corner
+         retainers close the two 50 mm gaps that otherwise let a settled ball
+         roll around the launch lip while the robot accelerates or turns. -->
+    <xacro:property name="entry_half_width" value="0.090"/>
+    <xacro:property name="front_guard_width" value="${half_width - entry_half_width}"/>
+    <xacro:property name="front_guard_height" value="0.020"/>
+    <xacro:property name="front_guard_centre_z" value="${floor_top + front_guard_height / 2.0}"/>
+    <!-- An internal landing tray starts at the retention lip and slopes down
+         toward the rear storage floor. It does not touch the ball before the
+         wheel-only launch; after entry it keeps stored balls away from the
+         opening. A zero rise disables it for A/B tests. -->
+    <xacro:property name="management_rear_x" value="${floor_front_x - management_run}"/>
+    <xacro:property name="management_pitch" value="${-atan2(management_rise, management_run)}"/>
+    <xacro:property name="management_length" value="${sqrt(management_run * management_run + management_rise * management_rise)}"/>
+    <xacro:property name="management_top_mid_x" value="${(floor_front_x + management_rear_x) / 2.0}"/>
+    <xacro:property name="management_top_mid_z" value="${floor_top + management_rise / 2.0}"/>
+    <xacro:property name="management_centre_x" value="${management_top_mid_x - sin(management_pitch) * floor_thickness / 2.0}"/>
+    <xacro:property name="management_centre_z" value="${management_top_mid_z - cos(management_pitch) * floor_thickness / 2.0}"/>
+    <!-- A narrow front receiver continues the management tray toward the
+         wheel pair. The ball crosses a short free-flight gap, lands on this
+         surface, then rolls rearward into the main bin. -->
+    <xacro:property name="receiver_rear_top_z" value="${floor_top + management_rise}"/>
+    <xacro:property name="receiver_front_x" value="${floor_front_x + receiver_run}"/>
+    <xacro:property name="receiver_pitch" value="${-atan2(receiver_rise, receiver_run)}"/>
+    <xacro:property name="receiver_length" value="${sqrt(receiver_run * receiver_run + receiver_rise * receiver_rise)}"/>
+    <xacro:property name="receiver_top_mid_x" value="${floor_front_x + receiver_run / 2.0}"/>
+    <xacro:property name="receiver_top_mid_z" value="${receiver_rear_top_z + receiver_rise / 2.0}"/>
+    <xacro:property name="receiver_centre_x" value="${receiver_top_mid_x - sin(receiver_pitch) * floor_thickness / 2.0}"/>
+    <xacro:property name="receiver_centre_z" value="${receiver_top_mid_z - cos(receiver_pitch) * floor_thickness / 2.0}"/>
+    <xacro:property name="receiver_half_width" value="${entry_half_width}"/>
+    <xacro:property name="confirmation_beam_z" value="${receiver_top_mid_z + 0.033}"/>
+    <!-- Optional mesh entry tunnel. Its roof rises toward the wheels, so balls
+         from upper basket layers roll rearward instead of spilling into the
+         intake. The clear corridor below remains larger than one ball. -->
+    <xacro:property name="hood_rear_x" value="${floor_front_x - hood_rear_overhang}"/>
+    <xacro:property name="hood_run" value="${receiver_front_x - hood_rear_x}"/>
+    <xacro:property name="hood_rise" value="${hood_front_clearance_z_ground - hood_rear_clearance_z_ground}"/>
+    <xacro:property name="hood_pitch" value="${-atan2(hood_rise, hood_run)}"/>
+    <xacro:property name="hood_length" value="${sqrt(hood_run * hood_run + hood_rise * hood_rise)}"/>
+    <xacro:property name="hood_under_mid_x" value="${(hood_rear_x + receiver_front_x) / 2.0}"/>
+    <xacro:property name="hood_under_mid_z" value="${(hood_rear_clearance_z_ground + hood_front_clearance_z_ground) / 2.0 - base_link_height}"/>
+    <xacro:property name="hood_centre_x" value="${hood_under_mid_x + sin(hood_pitch) * floor_thickness / 2.0}"/>
+    <xacro:property name="hood_centre_z" value="${hood_under_mid_z + cos(hood_pitch) * floor_thickness / 2.0}"/>
+    <xacro:property name="hood_side_top_z" value="${hood_rear_clearance_z_ground - base_link_height + hood_rise * (receiver_top_mid_x - hood_rear_x) / hood_run}"/>
+    <xacro:property name="hood_side_mid_z" value="${(receiver_top_mid_z + hood_side_top_z) / 2.0}"/>
+    <xacro:property name="hood_side_height" value="${hood_side_top_z - receiver_top_mid_z}"/>
     <joint name="basket_joint" type="fixed">
       <parent link="${parent}"/>
       <child link="basket_link"/>
@@ -33,53 +95,181 @@
         <origin xyz="${(floor_front_x + rear_x) / 2.0} 0 ${floor_top - floor_thickness / 2.0}" rpy="0 0 0"/>
         <geometry><box size="${bin_length} ${2.0 * half_width} ${floor_thickness}"/></geometry>
       </collision>
-      <visual name="basket_floor_vis">
-        <origin xyz="${(floor_front_x + rear_x) / 2.0} 0 ${floor_top - floor_thickness / 2.0}" rpy="0 0 0"/>
-        <geometry><box size="${bin_length} ${2.0 * half_width} ${floor_thickness}"/></geometry>
-        <material name="basket_gray"/>
-      </visual>
+      <!-- Visuals are an open 40 mm wire grid like a tennis training hopper.
+           Physics keeps a continuous collision envelope because the 66 mm
+           ball cannot pass through the grid openings. -->
+      <xacro:basket_wire name="basket_floor_long_m12" xyz="${(floor_front_x + rear_x) / 2.0} -0.12 ${floor_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_floor_long_m08" xyz="${(floor_front_x + rear_x) / 2.0} -0.08 ${floor_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_floor_long_m04" xyz="${(floor_front_x + rear_x) / 2.0} -0.04 ${floor_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_floor_long_000" xyz="${(floor_front_x + rear_x) / 2.0} 0 ${floor_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_floor_long_p04" xyz="${(floor_front_x + rear_x) / 2.0} 0.04 ${floor_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_floor_long_p08" xyz="${(floor_front_x + rear_x) / 2.0} 0.08 ${floor_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_floor_long_p12" xyz="${(floor_front_x + rear_x) / 2.0} 0.12 ${floor_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_02" xyz="0.02 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_06" xyz="0.06 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_10" xyz="0.10 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_14" xyz="0.14 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_18" xyz="0.18 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_22" xyz="0.22 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_26" xyz="0.26 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_30" xyz="0.30 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_34" xyz="0.34 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_38" xyz="0.38 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_floor_cross_42" xyz="0.42 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+
+      <xacro:if value="${management_rise > 0.0}">
+        <collision name="basket_management_tray_col">
+          <origin xyz="${management_centre_x} 0 ${management_centre_z}" rpy="0 ${management_pitch} 0"/>
+          <geometry><box size="${management_length} ${2.0 * half_width} ${floor_thickness}"/></geometry>
+        </collision>
+        <xacro:basket_wire_rotated name="basket_management_long_m12" xyz="${management_top_mid_x} -0.12 ${management_top_mid_z}" rpy="0 ${management_pitch} 0" size="${management_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_management_long_m08" xyz="${management_top_mid_x} -0.08 ${management_top_mid_z}" rpy="0 ${management_pitch} 0" size="${management_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_management_long_m04" xyz="${management_top_mid_x} -0.04 ${management_top_mid_z}" rpy="0 ${management_pitch} 0" size="${management_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_management_long_000" xyz="${management_top_mid_x} 0 ${management_top_mid_z}" rpy="0 ${management_pitch} 0" size="${management_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_management_long_p04" xyz="${management_top_mid_x} 0.04 ${management_top_mid_z}" rpy="0 ${management_pitch} 0" size="${management_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_management_long_p08" xyz="${management_top_mid_x} 0.08 ${management_top_mid_z}" rpy="0 ${management_pitch} 0" size="${management_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_management_long_p12" xyz="${management_top_mid_x} 0.12 ${management_top_mid_z}" rpy="0 ${management_pitch} 0" size="${management_length} 0.004 0.004"/>
+        <xacro:basket_wire name="basket_management_cross_28" xyz="${management_rear_x} 0 ${floor_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+        <xacro:basket_wire name="basket_management_cross_32" xyz="${management_rear_x + management_run * 2.0 / 7.0} 0 ${floor_top + management_rise * 2.0 / 7.0}" size="0.004 ${2.0 * half_width} 0.004"/>
+        <xacro:basket_wire name="basket_management_cross_36" xyz="${management_rear_x + management_run * 4.0 / 7.0} 0 ${floor_top + management_rise * 4.0 / 7.0}" size="0.004 ${2.0 * half_width} 0.004"/>
+        <xacro:basket_wire name="basket_management_cross_40" xyz="${management_rear_x + management_run * 6.0 / 7.0} 0 ${floor_top + management_rise * 6.0 / 7.0}" size="0.004 ${2.0 * half_width} 0.004"/>
+        <xacro:basket_wire name="basket_management_cross_42" xyz="${floor_front_x} 0 ${floor_top + management_rise}" size="0.004 ${2.0 * half_width} 0.004"/>
+      </xacro:if>
+
+      <xacro:if value="${receiver_run > 0.0}">
+        <collision name="basket_receiving_chute_col">
+          <origin xyz="${receiver_centre_x} 0 ${receiver_centre_z}" rpy="0 ${receiver_pitch} 0"/>
+          <geometry><box size="${receiver_length} ${2.0 * receiver_half_width} ${floor_thickness}"/></geometry>
+        </collision>
+        <xacro:basket_wire_rotated name="basket_receiver_long_m08" xyz="${receiver_top_mid_x} -0.08 ${receiver_top_mid_z}" rpy="0 ${receiver_pitch} 0" size="${receiver_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_receiver_long_m04" xyz="${receiver_top_mid_x} -0.04 ${receiver_top_mid_z}" rpy="0 ${receiver_pitch} 0" size="${receiver_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_receiver_long_000" xyz="${receiver_top_mid_x} 0 ${receiver_top_mid_z}" rpy="0 ${receiver_pitch} 0" size="${receiver_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_receiver_long_p04" xyz="${receiver_top_mid_x} 0.04 ${receiver_top_mid_z}" rpy="0 ${receiver_pitch} 0" size="${receiver_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_receiver_long_p08" xyz="${receiver_top_mid_x} 0.08 ${receiver_top_mid_z}" rpy="0 ${receiver_pitch} 0" size="${receiver_length} 0.004 0.004"/>
+        <xacro:basket_wire name="basket_receiver_cross_rear" xyz="${floor_front_x} 0 ${receiver_rear_top_z}" size="0.004 ${2.0 * receiver_half_width} 0.004"/>
+        <xacro:basket_wire name="basket_receiver_cross_mid" xyz="${receiver_top_mid_x} 0 ${receiver_top_mid_z}" size="0.004 ${2.0 * receiver_half_width} 0.004"/>
+        <xacro:basket_wire name="basket_receiver_cross_front" xyz="${receiver_front_x} 0 ${receiver_rear_top_z + receiver_rise}" size="0.004 ${2.0 * receiver_half_width} 0.004"/>
+      </xacro:if>
+
+      <xacro:if value="${hood_rear_overhang > 0.0}">
+        <collision name="basket_entry_hood_roof_col">
+          <origin xyz="${hood_centre_x} 0 ${hood_centre_z}" rpy="0 ${hood_pitch} 0"/>
+          <geometry><box size="${hood_length} ${2.0 * receiver_half_width} ${floor_thickness}"/></geometry>
+        </collision>
+        <collision name="basket_entry_hood_left_cheek_col">
+          <origin xyz="${receiver_top_mid_x} ${receiver_half_width + floor_thickness / 2.0} ${hood_side_mid_z}" rpy="0 0 0"/>
+          <geometry><box size="${receiver_run} ${floor_thickness} ${hood_side_height}"/></geometry>
+        </collision>
+        <collision name="basket_entry_hood_right_cheek_col">
+          <origin xyz="${receiver_top_mid_x} ${-(receiver_half_width + floor_thickness / 2.0)} ${hood_side_mid_z}" rpy="0 0 0"/>
+          <geometry><box size="${receiver_run} ${floor_thickness} ${hood_side_height}"/></geometry>
+        </collision>
+        <xacro:basket_wire_rotated name="basket_hood_roof_long_m08" xyz="${hood_under_mid_x} -0.08 ${hood_under_mid_z}" rpy="0 ${hood_pitch} 0" size="${hood_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_hood_roof_long_m04" xyz="${hood_under_mid_x} -0.04 ${hood_under_mid_z}" rpy="0 ${hood_pitch} 0" size="${hood_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_hood_roof_long_000" xyz="${hood_under_mid_x} 0 ${hood_under_mid_z}" rpy="0 ${hood_pitch} 0" size="${hood_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_hood_roof_long_p04" xyz="${hood_under_mid_x} 0.04 ${hood_under_mid_z}" rpy="0 ${hood_pitch} 0" size="${hood_length} 0.004 0.004"/>
+        <xacro:basket_wire_rotated name="basket_hood_roof_long_p08" xyz="${hood_under_mid_x} 0.08 ${hood_under_mid_z}" rpy="0 ${hood_pitch} 0" size="${hood_length} 0.004 0.004"/>
+        <xacro:basket_wire name="basket_hood_roof_cross_rear" xyz="${hood_rear_x} 0 ${hood_rear_clearance_z_ground - base_link_height}" size="0.004 ${2.0 * receiver_half_width} 0.004"/>
+        <xacro:basket_wire name="basket_hood_roof_cross_mid" xyz="${hood_under_mid_x} 0 ${hood_under_mid_z}" size="0.004 ${2.0 * receiver_half_width} 0.004"/>
+        <xacro:basket_wire name="basket_hood_roof_cross_front" xyz="${receiver_front_x} 0 ${hood_front_clearance_z_ground - base_link_height}" size="0.004 ${2.0 * receiver_half_width} 0.004"/>
+        <xacro:basket_wire name="basket_hood_left_cheek_top" xyz="${receiver_top_mid_x} ${receiver_half_width} ${hood_side_top_z}" size="${receiver_run} 0.004 0.004"/>
+        <xacro:basket_wire name="basket_hood_right_cheek_top" xyz="${receiver_top_mid_x} ${-receiver_half_width} ${hood_side_top_z}" size="${receiver_run} 0.004 0.004"/>
+      </xacro:if>
 
       <!-- Side walls run the full bin length from floor to rim. -->
       <collision name="basket_left_wall_col">
         <origin xyz="${(floor_front_x + rear_x) / 2.0} ${half_width + wall_thickness / 2.0} ${wall_centre_z}" rpy="0 0 0"/>
         <geometry><box size="${bin_length} ${wall_thickness} ${wall_height}"/></geometry>
       </collision>
-      <visual name="basket_left_wall_vis">
-        <origin xyz="${(floor_front_x + rear_x) / 2.0} ${half_width + wall_thickness / 2.0} ${wall_centre_z}" rpy="0 0 0"/>
-        <geometry><box size="${bin_length} ${wall_thickness} ${wall_height}"/></geometry>
-        <material name="basket_gray"/>
-      </visual>
 
       <collision name="basket_right_wall_col">
         <origin xyz="${(floor_front_x + rear_x) / 2.0} ${-(half_width + wall_thickness / 2.0)} ${wall_centre_z}" rpy="0 0 0"/>
         <geometry><box size="${bin_length} ${wall_thickness} ${wall_height}"/></geometry>
       </collision>
-      <visual name="basket_right_wall_vis">
-        <origin xyz="${(floor_front_x + rear_x) / 2.0} ${-(half_width + wall_thickness / 2.0)} ${wall_centre_z}" rpy="0 0 0"/>
-        <geometry><box size="${bin_length} ${wall_thickness} ${wall_height}"/></geometry>
-        <material name="basket_gray"/>
-      </visual>
+      <!-- Side-wall grid: horizontal wires plus vertical uprights. -->
+      <xacro:basket_wire name="basket_side_l_h1" xyz="${(floor_front_x + rear_x) / 2.0} ${half_width} ${floor_top + 0.04}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_l_h2" xyz="${(floor_front_x + rear_x) / 2.0} ${half_width} ${floor_top + 0.08}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_l_h3" xyz="${(floor_front_x + rear_x) / 2.0} ${half_width} ${floor_top + 0.12}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_l_h4" xyz="${(floor_front_x + rear_x) / 2.0} ${half_width} ${floor_top + 0.16}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_l_h5" xyz="${(floor_front_x + rear_x) / 2.0} ${half_width} ${wall_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_r_h1" xyz="${(floor_front_x + rear_x) / 2.0} ${-half_width} ${floor_top + 0.04}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_r_h2" xyz="${(floor_front_x + rear_x) / 2.0} ${-half_width} ${floor_top + 0.08}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_r_h3" xyz="${(floor_front_x + rear_x) / 2.0} ${-half_width} ${floor_top + 0.12}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_r_h4" xyz="${(floor_front_x + rear_x) / 2.0} ${-half_width} ${floor_top + 0.16}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_r_h5" xyz="${(floor_front_x + rear_x) / 2.0} ${-half_width} ${wall_top}" size="${bin_length} 0.004 0.004"/>
+      <xacro:basket_wire name="basket_side_l_v1" xyz="0.02 ${half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_l_v2" xyz="0.10 ${half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_l_v3" xyz="0.18 ${half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_l_v4" xyz="0.26 ${half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_l_v5" xyz="0.34 ${half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_l_v6" xyz="0.42 ${half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_r_v1" xyz="0.02 ${-half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_r_v2" xyz="0.10 ${-half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_r_v3" xyz="0.18 ${-half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_r_v4" xyz="0.26 ${-half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_r_v5" xyz="0.34 ${-half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_side_r_v6" xyz="0.42 ${-half_width} ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
 
       <collision name="basket_rear_wall_col">
         <origin xyz="${rear_x - wall_thickness / 2.0} 0 ${wall_centre_z}" rpy="0 0 0"/>
         <geometry><box size="${wall_thickness} ${2.0 * (half_width + wall_thickness)} ${wall_height}"/></geometry>
       </collision>
-      <visual name="basket_rear_wall_vis">
-        <origin xyz="${rear_x - wall_thickness / 2.0} 0 ${wall_centre_z}" rpy="0 0 0"/>
-        <geometry><box size="${wall_thickness} ${2.0 * (half_width + wall_thickness)} ${wall_height}"/></geometry>
-        <material name="basket_gray"/>
-      </visual>
+      <xacro:basket_wire name="basket_rear_h1" xyz="${rear_x} 0 ${floor_top + 0.04}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_rear_h2" xyz="${rear_x} 0 ${floor_top + 0.08}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_rear_h3" xyz="${rear_x} 0 ${floor_top + 0.12}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_rear_h4" xyz="${rear_x} 0 ${floor_top + 0.16}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_rear_h5" xyz="${rear_x} 0 ${wall_top}" size="0.004 ${2.0 * half_width} 0.004"/>
+      <xacro:basket_wire name="basket_rear_vm12" xyz="${rear_x} -0.12 ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_rear_vm08" xyz="${rear_x} -0.08 ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_rear_vm04" xyz="${rear_x} -0.04 ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_rear_v000" xyz="${rear_x} 0 ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_rear_vp04" xyz="${rear_x} 0.04 ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_rear_vp08" xyz="${rear_x} 0.08 ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
+      <xacro:basket_wire name="basket_rear_vp12" xyz="${rear_x} 0.12 ${wall_centre_z}" size="0.004 0.004 ${wall_height}"/>
 
-      <!-- No front wall: the jump sheet's back face closes the front; the
-           entry lip at (0.425, 0.045) is the only way in or out. -->
+      <!-- The centre remains open for the 180 mm launch channel. Full-height
+           corner retainers close the side gaps; a future compliant centre
+           flap can be added if repeatability shows central rollback. -->
+      <collision name="basket_front_left_guard_col">
+        <origin xyz="${floor_front_x + wall_thickness / 2.0} ${(entry_half_width + half_width) / 2.0} ${front_guard_centre_z}" rpy="0 0 0"/>
+        <geometry><box size="${wall_thickness} ${front_guard_width} ${front_guard_height}"/></geometry>
+      </collision>
+      <collision name="basket_front_right_guard_col">
+        <origin xyz="${floor_front_x + wall_thickness / 2.0} ${-(entry_half_width + half_width) / 2.0} ${front_guard_centre_z}" rpy="0 0 0"/>
+        <geometry><box size="${wall_thickness} ${front_guard_width} ${front_guard_height}"/></geometry>
+      </collision>
+      <xacro:basket_wire name="basket_front_left_guard_top" xyz="${floor_front_x} ${(entry_half_width + half_width) / 2.0} ${floor_top + front_guard_height}" size="0.004 ${front_guard_width} 0.004"/>
+      <xacro:basket_wire name="basket_front_left_guard_inner" xyz="${floor_front_x} ${entry_half_width} ${front_guard_centre_z}" size="0.004 0.004 ${front_guard_height}"/>
+      <xacro:basket_wire name="basket_front_left_guard_outer" xyz="${floor_front_x} ${half_width} ${front_guard_centre_z}" size="0.004 0.004 ${front_guard_height}"/>
+      <xacro:basket_wire name="basket_front_right_guard_top" xyz="${floor_front_x} ${-(entry_half_width + half_width) / 2.0} ${floor_top + front_guard_height}" size="0.004 ${front_guard_width} 0.004"/>
+      <xacro:basket_wire name="basket_front_right_guard_inner" xyz="${floor_front_x} ${-entry_half_width} ${front_guard_centre_z}" size="0.004 0.004 ${front_guard_height}"/>
+      <xacro:basket_wire name="basket_front_right_guard_outer" xyz="${floor_front_x} ${-half_width} ${front_guard_centre_z}" size="0.004 0.004 ${front_guard_height}"/>
 
-      <!-- IR beam pair line (sensors mount on the chassis and shine through
-           the mesh — see spec §2). Height = rolling-ball equator. -->
-      <visual name="basket_ir_beam_line_vis">
-        <origin xyz="0.40 0 0.040" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="0.003" length="0.21"/></geometry>
-        <material name="ir_beam_red"/>
-      </visual>
+      <!-- A low fixed lip closes the centre rollback path while preserving
+           the airborne launch opening. Its outer face is the basket boundary;
+           a rolling stored ball must climb it, while the launched ball clears
+           it from above. Set height to zero to remove it for A/B tests. -->
+      <xacro:if value="${center_lip_height > 0.0}">
+        <collision name="basket_center_retention_lip_col">
+          <origin xyz="${floor_front_x + wall_thickness / 2.0} 0 ${floor_top + center_lip_height / 2.0}" rpy="0 0 0"/>
+          <geometry><box size="${wall_thickness} ${2.0 * entry_half_width} ${center_lip_height}"/></geometry>
+        </collision>
+        <visual name="basket_center_retention_lip_vis">
+          <origin xyz="${floor_front_x + wall_thickness / 2.0} 0 ${floor_top + center_lip_height / 2.0}" rpy="0 0 0"/>
+          <geometry><box size="${wall_thickness} ${2.0 * entry_half_width} ${center_lip_height}"/></geometry>
+          <material name="basket_gray"/>
+        </visual>
+      </xacro:if>
+
+      <xacro:if value="${receiver_run > 0.0}">
+        <!-- Sensor bodies remain on the chassis. This line only visualises the
+             transverse confirmation beam through the removable mesh. -->
+        <visual name="basket_ir_beam_line_vis">
+          <origin xyz="${receiver_top_mid_x} 0 ${confirmation_beam_z}" rpy="1.5708 0 0"/>
+          <geometry><cylinder radius="0.003" length="${2.0 * receiver_half_width + 0.03}"/></geometry>
+          <material name="ir_beam_red"/>
+        </visual>
+      </xacro:if>
     </link>
   </xacro:macro>
 </robot>

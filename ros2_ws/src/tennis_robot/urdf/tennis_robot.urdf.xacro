@@ -19,6 +19,7 @@
        scripts/generate_robot_urdf.py / the launch file. -->
   <xacro:arg name="sim_mode" default="true"/>
   <xacro:arg name="controllers_config" default="config/controllers.yaml"/>
+  <xacro:arg name="expose_intake_carriage_state" default="false"/>
   <!-- Dual-wheel intake tuning (docs/dual-wheel-intake-design-el.md).
        Injected from INTAKE_WHEEL_* envs by scripts/generate_robot_urdf.py. -->
   <xacro:arg name="intake_wheel_radius" default="0.060"/>
@@ -46,6 +47,14 @@
   <xacro:arg name="basket_rear_x" default="0.02"/>
   <xacro:arg name="basket_half_width" default="0.14"/>
   <xacro:arg name="basket_wall_top_z" default="0.25"/>
+  <xacro:arg name="basket_center_lip_height" default="0.010"/>
+  <xacro:arg name="basket_management_run" default="0.14"/>
+  <xacro:arg name="basket_management_rise" default="0.010"/>
+  <xacro:arg name="basket_receiver_run" default="0.050"/>
+  <xacro:arg name="basket_receiver_rise" default="0.005"/>
+  <xacro:arg name="basket_hood_rear_overhang" default="0.040"/>
+  <xacro:arg name="basket_hood_rear_clearance_z" default="0.120"/>
+  <xacro:arg name="basket_hood_front_clearance_z" default="0.135"/>
 
   <xacro:property name="chassis_x" value="0.92"/>
   <xacro:property name="chassis_y" value="0.58"/> 
@@ -131,9 +140,11 @@
   <xacro:property name="ir_x" value="0.720"/>
   <xacro:property name="ir_y" value="0.105"/>
   <xacro:property name="ir_z" value="-0.005"/>
-  <xacro:property name="basket_ir_x" value="0.40"/> 
+  <!-- Basket confirmation beam crosses the midpoint of the inclined receiver
+       at the rolling ball's equator. Sensor coordinates are base_link-frame. -->
+  <xacro:property name="basket_ir_x" value="${float($(arg basket_floor_front_x)) + float($(arg basket_receiver_run)) / 2.0}"/>
   <xacro:property name="basket_ir_y" value="0.105"/> 
-  <xacro:property name="basket_ir_z" value="0.040"/> 
+  <xacro:property name="basket_ir_z" value="${float($(arg basket_floor_top_z)) + float($(arg basket_management_rise)) + float($(arg basket_receiver_rise)) / 2.0 + 0.033 - base_link_height}"/>
 
   <xacro:property name="max_linear_acceleration" value="2.0"/> 
   <xacro:property name="max_angular_acceleration" value="4.0"/>
@@ -264,7 +275,15 @@
       floor_top_z_ground="${float($(arg basket_floor_top_z))}"
       rear_x="${float($(arg basket_rear_x))}"
       half_width="${float($(arg basket_half_width))}"
-      wall_top_z_ground="${float($(arg basket_wall_top_z))}"/>
+      wall_top_z_ground="${float($(arg basket_wall_top_z))}"
+      center_lip_height="${float($(arg basket_center_lip_height))}"
+      management_run="${float($(arg basket_management_run))}"
+      management_rise="${float($(arg basket_management_rise))}"
+      receiver_run="${float($(arg basket_receiver_run))}"
+      receiver_rise="${float($(arg basket_receiver_rise))}"
+      hood_rear_overhang="${float($(arg basket_hood_rear_overhang))}"
+      hood_rear_clearance_z_ground="${float($(arg basket_hood_rear_clearance_z))}"
+      hood_front_clearance_z_ground="${float($(arg basket_hood_front_clearance_z))}"/>
   <xacro:battery_pack parent="base_link"/>
 
   <xacro:rplidar_c1_mount
@@ -337,6 +356,7 @@
   <xacro:tennis_robot_ros2_control
       sim_mode="$(arg sim_mode)"
       controllers_config="$(arg controllers_config)"
+      expose_intake_carriage_state="$(arg expose_intake_carriage_state)"
       intake_max_vel="${intake_wheel_max_vel}"
       enable_assist="$(arg enable_assist)"
       enable_conveyor="$(arg enable_conveyor)"/>

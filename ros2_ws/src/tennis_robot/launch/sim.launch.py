@@ -7,8 +7,9 @@ import sys
 from pathlib import Path
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, RegisterEventHandler, TimerAction
 from launch.conditions import IfCondition, UnlessCondition
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -468,17 +469,27 @@ def generate_launch_description():
         actions=[spawn_robot],
     )
 
-    # Spawn controllers once the gz_ros2_control plugin has brought up the
-    # controller_manager inside Gazebo (spawners wait up to 60s regardless).
+    # Spawn controllers sequentially. Jazzy's spawner serializes operations
+    # with a shared lock; launching all spawners at once makes repeated fresh
+    # simulations intermittently exhaust the lock timeout.
     delayed_controllers = TimerAction(
         period=6.0,
-        actions=[
-            jsb_spawner,
-            diff_drive_spawner,
-            intake_wheel_spawner,
-            *([assist_wheel_spawner] if enable_assist else []),
-        ],
+        actions=[jsb_spawner],
     )
+    controller_chain = [
+        RegisterEventHandler(
+            OnProcessExit(target_action=jsb_spawner, on_exit=[diff_drive_spawner])
+        ),
+        RegisterEventHandler(
+            OnProcessExit(target_action=diff_drive_spawner, on_exit=[intake_wheel_spawner])
+        ),
+    ]
+    if enable_assist:
+        controller_chain.append(
+            RegisterEventHandler(
+                OnProcessExit(target_action=intake_wheel_spawner, on_exit=[assist_wheel_spawner])
+            )
+        )
 
     actions = [
         headless_arg,
@@ -488,6 +499,7 @@ def generate_launch_description():
         delayed_spawn,
         delayed_nodes,
         delayed_controllers,
+        *controller_chain,
     ]
     if not skip_control_panel:
         actions.insert(5, control_panel)

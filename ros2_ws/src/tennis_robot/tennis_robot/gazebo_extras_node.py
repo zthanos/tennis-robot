@@ -41,6 +41,9 @@ _WORLD_NAME = os.getenv("GZ_WORLD_NAME", "tennis_court")
 # IR beam-break: range <= threshold means a ball is present → value 1000
 _IR_MAX_RANGE_M = 0.22
 _BALL_PREFIX = "ball_"
+_REMOVE_COLLECTED_BALL = os.getenv("SIM_REMOVE_COLLECTED_BALL", "false").lower() in {
+    "1", "true", "yes", "on"
+}
 
 
 def _yaw_from_xyzw(x: float, y: float, z: float, w: float) -> float:
@@ -270,14 +273,17 @@ class GazeboExtrasNode(Node):
         self._robot_pose = (p.x, p.y, p.z, yaw)
 
     def _on_ball_collected(self, msg: String) -> None:
-        """Remove a collected ball: drop it from /sim/balls and delete the
-        model from the Gazebo world (nothing else consumed /ball/collected in
-        the Gazebo port — it was a Webots-era animation hook)."""
+        """Stop targeting a collected ball while retaining its physical model."""
         name = msg.data.strip()
         if not name or name in self._collected:
             return
         self._collected.add(name)
         self._balls.pop(name, None)
+        if not _REMOVE_COLLECTED_BALL:
+            self.get_logger().info(
+                f"ball collected -> retaining {name} in world for basket physics"
+            )
+            return
         req = f'name: "{name}" type: MODEL'
         try:
             subprocess.Popen(
@@ -289,7 +295,7 @@ class GazeboExtrasNode(Node):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            self.get_logger().info(f"ball collected -> removing {name} from world")
+            self.get_logger().info(f"ball collected -> removing {name} from world (legacy mode)")
         except OSError as exc:
             self.get_logger().warning(f"gz remove failed for {name}: {exc}")
 

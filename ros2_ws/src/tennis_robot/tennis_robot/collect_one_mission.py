@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 # ── Constants (no env-var overrides needed) ────────────────────────────────────
 
 _RETURN_POSITION_TOLERANCE_M = 0.12
+_BASKET_SETTLE_HOLD_S = 2.0
+_BASKET_SETTLE_INTAKE_S = 0.25
 # Max distance between a fresh sighting and the current lock for the lock to
 # be refreshed (same physical ball) instead of ignored (different ball).
 _RELOCK_GATE_M = 0.6
@@ -92,12 +94,13 @@ class CollectOneMission:
     """
 
     def __init__(self) -> None:
-        self.phase: str = "idle"          # idle | collect | return | done
+        self.phase: str = "idle"          # idle | collect | settle | return | done
         self._start_pose: tuple[float, float, float] | None = None
         self._locked_world: tuple[float, float] | None = None
         self._scan_target_yaw: float | None = None
         self._scan_settle_until_s: float = 0.0
         self._scan_steps_taken: int = 0
+        self._settle_remaining_s: float = 0.0
         self._complete_reported: bool = False
 
     def start(self, robot_pose: tuple[float, float, float]) -> None:
@@ -108,6 +111,7 @@ class CollectOneMission:
         self._scan_target_yaw = None
         self._scan_settle_until_s = 0.0
         self._scan_steps_taken = 0
+        self._settle_remaining_s = 0.0
         self._complete_reported = False
 
     def reset(self) -> None:
@@ -132,6 +136,22 @@ class CollectOneMission:
         if self.phase == "collect":
             return self._collect_phase(observation, collection_confirmed, dt_s, robot_pose, behavior)
 
+        if self.phase == "settle":
+            self._settle_remaining_s = max(0.0, self._settle_remaining_s - dt_s)
+            if self._settle_remaining_s > 0.0:
+                intake_enabled = self._settle_remaining_s > (
+                    _BASKET_SETTLE_HOLD_S - _BASKET_SETTLE_INTAKE_S
+                )
+                return ConceptACommand(
+                    state=CollectorState.COLLECTED,
+                    base=BaseCommand(0.0, 0.0),
+                    collector=CollectorCommand(
+                        behavior.config.lift_wheel_speed if intake_enabled else 0.0,
+                        intake_enabled,
+                    ),
+                )
+            self.phase = "return"
+
         if self.phase == "return":
             cmd = self._return_phase(robot_pose)
             if cmd is not None:
@@ -152,8 +172,13 @@ class CollectOneMission:
     ) -> ConceptACommand:
         if collection_confirmed:
             behavior.reset()
-            self.phase = "return"
-            return _IDLE_CMD
+            self.phase = "settle"
+            self._settle_remaining_s = _BASKET_SETTLE_HOLD_S
+            return ConceptACommand(
+                state=CollectorState.COLLECTED,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(behavior.config.lift_wheel_speed, True),
+            )
 
         robot_x, robot_y, robot_yaw = robot_pose
 

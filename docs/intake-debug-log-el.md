@@ -1421,6 +1421,305 @@
   end-to-end pass. Για collect_one το authoritative κλείσιμο είναι
   `balls_collected=1` + remove event.
 
+### 48. Physical retention gate: checkpoint PASS, smooth-entry repeatability FAIL
+
+- Προστέθηκε `analyze_basket_evidence.py`: απαιτεί target dwell >=0.75s,
+  settled speed <=0.08m/s για >=0.50s, target παρούσα στο τέλος, retention
+  όλων των `stored_ball_*` και pitch/roll εντός 8deg. Η άμεση διαγραφή δεν
+  μπορεί πλέον να περάσει ως φυσική επιτυχία.
+- Το Gazebo κρατά πλέον τη collected μπάλα ως physics entity (legacy remove
+  μόνο με `SIM_REMOVE_COLLECTED_BALL=true`). Το `collect_one` έχει stationary
+  settle phase με 0.25s intake follow-through πριν από την επιστροφή.
+- Το collect-one harness έγινε deterministic: prelaunch `idle`, σειριακοί
+  controller spawners, explicit `set_pose` της `ball_02` και απομόνωση των
+  υπόλοιπων court balls.
+- **Unloaded centre baseline**, `runtime/intake_sweeps/20260712_220758`:
+  transport **6/6**, basket evidence **8/8**, dwell 5.268s, settled 0.574s.
+- **Controlled y=-0.08**, `runtime/intake_sweeps/20260712_221919`:
+  transport **6/6**, target retained, dwell 3.088s, αλλά settled μόνο 0.050s
+  → basket evidence **7/8 FAIL**. Η μπάλα κύλησε προς τον πίσω τοίχο και η
+  έναρξη επιστροφής την ξανακίνησε πλευρικά.
+- **Controlled y=-0.08 με 2s hold**,
+  `runtime/intake_sweeps/20260712_222213`: στιγμιαίο collection event αλλά
+  τελική target θέση `(x=0.498, y≈0, z=0.034)` έξω μπροστά από το bin,
+  transport **5/6**, basket evidence **5/8 FAIL**.
+- **Stop gate**: δεν ξεκινά loaded campaign 15/25/45. Το άδειο basket δεν
+  έχει ακόμη repeatable smooth settling/retention. Επόμενο πείραμα πρέπει να
+  αλλάξει μηχανική απόσβεση/συγκράτηση (rear/side lining, floor friction ή
+  entry geometry), όχι να χαλαρώσει τα evidence thresholds.
+
+## 49. Wire-mesh contact model: edge gates 4/5
+
+- Το basket παραμένει κατασκευαστικά **συρμάτινο πλέγμα**, όχι συμπαγές
+  κουτί. Τα xacro visuals αποδίδουν ανοιχτό grid 40mm, ενώ τα solid collision
+  envelopes παραμένουν μόνο ως ισοδύναμη προσέγγιση για μπάλα 66mm.
+- Το generated SDF μοντελοποιεί effective mesh rolling/contact losses:
+  `floor mu=1.0`, `wall mu=0.8`, restitution `0.05`, floor `kp/kd=12000/80`
+  και wall `kp/kd=4000/120`. Οι τιμές είναι environment-parameterized.
+- Single smoke `y=-0.08`, `runtime/intake_sweeps/20260713_082238`: basket
+  evidence **8/8**, dwell 7.332s, settled 1.282s, τελική θέση
+  `(0.053, -0.107, 0.058)` μέσα στο bin.
+- Repeatability `y=-0.08`, `runtime/intake_sweeps/20260713_082401`:
+  **4/5 PASS**. Το ένα FAIL κατέληξε έξω μπροστά (`x=0.498`), άρα η
+  συγκράτηση βελτιώθηκε αλλά παραμένει οριακή.
+- Συμμετρικό edge `y=+0.08`, `runtime/intake_sweeps/20260713_082906`:
+  **4/5 PASS**. Το μοναδικό FAIL δεν μπήκε ποτέ στο hopper (`dwell=0`,
+  τελική `x=1.075`), επομένως είναι capture/transport failure. Στα τέσσερα
+  collected runs η φυσική retention ήταν **4/4**.
+- **Gate**: δεν ξεκινά load 15/25/45 πριν περάσουν με 4/5 και οι ενδιάμεσες
+  unloaded συνθήκες `y=-0.04,0,+0.04`.
+
+## 50. Passive-carriage instrumentation A/B: το validation μένει OFF
+
+- Το `sim_physics_probe.py` καταγράφει wheel command/actual, robot twist και,
+  όταν είναι διαθέσιμα, θέση/ταχύτητα των spring carriages. Για να εκτεθούν
+  όμως τα passive carriage joints στο `/joint_states`, πρέπει να δηλωθούν ως
+  state-only joints στο `gz_ros2_control`, κάτι που μπορεί να επηρεάσει τον
+  τρόπο με τον οποίο το Gazebo χειρίζεται τα joints.
+- Προστέθηκε το diagnostic flag `INTAKE_EXPOSE_CARRIAGE_STATE`, με default
+  **`false`**. Με `false` τα carriage joints παραμένουν κανονικά στο μηχανικό
+  URDF αλλά δεν αποτελούν μέρος του `ros2_control` system. Με `true` εκτίθενται
+  μόνο `position`/`velocity`, χωρίς command interface.
+- **A/B, unloaded centre, ίδιο collect_one setup, 5 runs ανά condition**:
+  - `OFF`, `runtime/intake_sweeps/20260713_111939`: basket evidence **5/5
+    PASS**, contact duration `0.336-0.476s`, χωρίς stall και χωρίς carriage
+    samples, όπως αναμενόταν.
+  - `ON`, `runtime/intake_sweeps/20260713_112506`: basket evidence **4/5
+    PASS**. Το FAIL r3 είχε contact duration `17.574s`, wheel median actual
+    speed `0rad/s` και τελική target θέση `x=0.497m` μπροστά από το bin. Τα
+    carriages έφτασαν περίπου `4.85-4.99mm` στα πέντε runs.
+- **Συμπέρασμα**: η καθαρή επιτυχία προηγούμενων instrumentation-ON runs δεν
+  αποδεικνύει μηχανική βελτίωση. Το authoritative validation εκτελείται με
+  carriage exposure **OFF**. Το ON χρησιμοποιείται μόνο για διάγνωση και τα
+  αποτελέσματά του δεν αναμειγνύονται με release-gate datasets.
+- **Gate**: το centre case είναι πλέον 5/5 με το authoritative OFF setup, αλλά
+  δεν ξεκινά ακόμη load 15/25/45. Πρέπει πρώτα να επαναληφθούν OFF οι
+  ενδιάμεσες θέσεις `y=-0.04,+0.04` και να περάσουν τουλάχιστον 4/5.
+
+## 51. Controlled-launch profile: transport PASS, moving retention FAIL
+
+- Προστέθηκε opt-in `INTAKE_RAMP_PROFILE=launch` στον generated SDF. Το
+  rolling profile παραμένει default. Το launch kicker χρησιμοποιεί cubic
+  Hermite καμπύλη με χαμηλή/οριζόντια είσοδο και παραμετρικά
+  `INTAKE_LAUNCH_EXIT_X_M`, `INTAKE_LAUNCH_EXIT_Z_M` και
+  `INTAKE_LAUNCH_EXIT_ANGLE_DEG`.
+- Πρώτη γεωμετρία: local exit `x=0.465`, `z=0.032`, tangent `35deg`. Με το
+  funnel-frame offset, το generated collision τελειώνει περίπου σε
+  `x=0.450`, `z=0.030`, με μετρημένη τελευταία κλίση `34.8deg` και air gap
+  περίπου 25mm μέχρι το basket lip.
+- **Stationary centered bench**, `runtime/intake_sweeps/20260713_121229`:
+  **3/3 transport 6/6 και basket evidence 8/8**. Roller contact duration
+  `0.099-0.121s`, peak inward speed `1.06-1.08m/s` και μόνο 4 ramp-contact
+  samples ανά run. Στο r1 η airborne τροχιά είχε περίπου
+  `vx=-0.99m/s`, `vz=+0.52m/s` (`27.5deg`) πριν την είσοδο στο bin.
+- **Centered collect_one**, `runtime/intake_sweeps/20260713_121607`:
+  controller count **3/3**, αλλά physical basket evidence **0/3 (7/8)**.
+  Και οι τρεις μπάλες μπήκαν, έμειναν `4.11-4.21s` και settled για
+  `1.57-1.62s`, αλλά μετά την κίνηση του robot κατέληξαν στις μπροστινές
+  γωνίες σε `x≈0.444`, έξω από το bin boundary `x<=0.420`.
+- **Συμπέρασμα**: ο controlled launch λύνει το rolling-ramp stall και αξίζει
+  να συνεχιστεί. Η αρχική αποτυχία δεν ήταν αναπήδηση πάνω από πλήρες lip:
+  το 180mm channel άφηνε δύο ακάλυπτες μπροστινές γωνίες 50mm μέσα στο
+  basket πλάτους 280mm. Η μπάλα έφτανε κοντά στον πίσω τοίχο, settled, και
+  κατά την κίνηση του robot κύλαγε γύρω από το κεντρικό lip.
+- Προστέθηκαν δύο mesh-equivalent corner retainers `10x50x20mm` στα
+  `x=0.425`, `y=+/-0.115`, αφήνοντας το κεντρικό 180mm launch opening
+  ανεπηρέαστο.
+- Το πρώτο corrected run στο `runtime/intake_sweeps/20260713_122832` πέρασε
+  transport **6/6** και retention **8/8**. Το επόμενο run συλλέχθηκε επίσης,
+  αλλά το harness έχασε το probe start window επειδή το launch ολοκληρώθηκε
+  πριν από το παλιό threshold 0.45m. Για launch profile το observation window
+  ξεκινά πλέον αυτόματα στα 0.70m.
+- **Clean corrected retest**, `runtime/intake_sweeps/20260713_123745`:
+  **3/3 transport 6/6 και retention 8/8**, stall 0. Τελικές θέσεις
+  `x=0.301-0.364`, αντί για `x≈0.444` έξω από τις ανοικτές γωνίες.
+- **Official corrected gate**, `runtime/intake_sweeps/20260713_124148`:
+  **5/5 transport 6/6 και retention 8/8**, stall 0, με carriage exposure OFF.
+  Τελικές θέσεις `x=0.266-0.389`.
+
+## 52. Loaded rollback και ballistic release contract
+
+- Το sweep harness δημιουργεί πλέον πραγματικό preload με ονόματα
+  `stored_ball_00...`, ίδιο mass/radius/friction με τις court balls και
+  readiness gate που απαιτεί να εμφανιστεί ακριβώς ο ζητούμενος αριθμός στο
+  ground-truth pose log πριν ξεκινήσει το `collect_one`.
+- Στο πρώτο έγκυρο load-15 run χωρίς κεντρικό χείλος,
+  `runtime/intake_sweeps/20260713_132448`, η `stored_ball_09` κύλησε από
+  `x=0.35` έξω από το bin στο `x=0.421` ενώ η target ήταν ακόμη στο
+  `x=0.859`. Έμεινε στο handoff (`x≈0.428`) και μπλόκαρε την target στα
+  `x≈0.491`. Η αστοχία ήταν rollback του φορτίου, όχι αδυναμία motors.
+- Προστέθηκε παραμετρικό fixed centre lip `10x180x20mm` στο `x=0.425`, μέσω
+  `BASKET_CENTER_LIP_HEIGHT_M` (default `0.020`, `0` για A/B). Το unloaded
+  gate `runtime/intake_sweeps/20260713_140430` πέρασε transport **6/6** και
+  basket **8/8**. Στα loaded runs συγκράτησε σταθερά **15/15**, άρα λύνει το
+  rollback, αλλά η εισερχόμενη μπάλα δεν καθαρίζει την πρώτη σειρά.
+- Οι μονοπαραμετρικές αλλαγές δεν έλυσαν το loaded handoff:
+  `40deg` (`20260713_141114`) basket **4/8**, `30rad/s`
+  (`20260713_144237`) **4/8**, spring `1500N/m`
+  (`20260713_144738`) **5/8**. Και στις τρεις περιπτώσεις το φορτίο έμεινε
+  15/15, αλλά η target επέστρεψε περίπου στο `x=0.493-0.494`.
+- Το νέο `analyze_launch_ballistics.py` κάνει fit με simulation time στα πρώτα
+  καθαρά airborne samples. Ξεκινά από το στενό window `x=0.52..0.45` και, όταν
+  η ταχύτητα/sampling δώσει λιγότερα από τρία samples, επεκτείνεται αυτόματα
+  μόνο μέχρι την πρώτη προσγείωση, αποκλείοντας τη μετέπειτα κύλιση. Γράφει
+  release vector, speed, angle, predicted apex/range/front-row
+  clearance/landing και target errors στο `launch_ballistics.json` κάθε run.
+- **Ballistic contract**: πραγματικό release περίπου `x=0.504,z=0.058`,
+  στόχος δεύτερης σειράς `x=0.28`, apex `z=0.135` και first-row clearance
+  `z>=0.124`. Η inverse-ballistic λύση από το μετρημένο release point είναι
+  περίπου inward `vx=0.893m/s`, `vz=1.231m/s`, speed `1.521m/s`, angle
+  `54.1deg`, range περίπου `0.224m`.
+- **Τρέχουσα ρύθμιση 35deg/25rad/s/k=1000**, από
+  `runtime/intake_sweeps/20260713_140430`: inward `vx=1.019m/s`,
+  `vz=0.588m/s`, speed `1.177m/s`, πραγματική γωνία `30.0deg`, predicted
+  apex `0.075m`, range `0.122m`, landing `x=0.382`. Υπάρχει ήδη περισσότερη
+  από την απαιτούμενη οριζόντια συνιστώσα (`+0.127m/s`), αλλά λείπουν
+  `0.644m/s` κατακόρυφης ταχύτητας. Επόμενες αλλαγές αξιολογούνται ως
+  calibration map `RPM/angle/gap/stiffness -> actual vx/vz`, όχι μόνο με
+  collection count ή ονομαστικές ρυθμίσεις.
+
+## 53. Carriage telemetry και stiffness 1200 N/m
+
+- Με launch geometry `exit x=0.500m`, `z=0.032m`, tangent `70deg`, gap `56mm`
+  και `k=1000N/m`, τα carriages άνοιξαν συμμετρικά περίπου `4.93-4.96mm`.
+  Δεν τερμάτισαν το διαθέσιμο travel των `8mm`, άρα το nominal squeeze των
+  `5mm/side` εφαρμόζεται μέσω των passive springs και δεν είναι rigid jam.
+- Το telemetry sweep `20/25/30rad/s` έδειξε ότι τα `20rad/s` αύξησαν την
+  επαφή σε `0.685s`, αλλά με χαμηλότερο release speed `1.011m/s`. Τα
+  `25rad/s` έδωσαν το καλύτερο `vz/vx=1.065`, ενώ τα `30rad/s` έστρεψαν την
+  ενέργεια οριζόντια (`vz/vx=0.778`). Η διάρκεια επαφής μόνη της δεν αρκεί.
+- Το πρώτο `k=1200` run στο
+  `runtime/intake_sweeps/carriage_telemetry_wspeed_25_k1200_valid` είχε μόνο
+  δύο samples στο παλιό στενό ballistic window. Η πραγματική τροχιά ήταν
+  διαθέσιμη, αλλά περνούσε περίπου `35mm` ανά sample. Προστέθηκε adaptive
+  fit-until-landing και regression test για sparse γρήγορη τροχιά.
+- Με τον διορθωμένο analyzer, το πρώτο `k=1200` run έδωσε `5` fit samples,
+  speed `1.329m/s`, inward `vx=1.090m/s`, `vz=0.761m/s`, angle `34.9deg`,
+  landing `x=0.326` και basket **8/8**. Το repeat
+  `carriage_telemetry_wspeed_25_k1200_rerun` έδωσε `6` samples, speed
+  `1.234m/s`, `vx=1.073m/s`, `vz=0.610m/s`, angle `29.6deg`, landing
+  `x=0.354` και basket **6/8**.
+- **Συμπέρασμα**: το `k=1200` αυξάνει κυρίως την οριζόντια μετάδοση και δεν
+  είναι repeatable αρκετά για default. Παραμένει experiment· το ballistic
+  contract είναι **1/4** και στα δύο runs.
+
+## 2026-07-14
+
+### 54. Loaded 45-ball campaign: entry hood + rear clearance 120mm — δύο 8/8 configs, n=1
+
+- **Provenance**: τα runs της 14/7 έγιναν χωρίς live log update· η ενότητα
+  αυτή ανασυγκροτήθηκε από `runtime/intake_sweeps/*` (`bench_config.txt`,
+  `basket_evidence.json`, `launch_ballistics.json`). Μελλοντικά: log στο
+  ίδιο turn, όπως ορίζει ο κανόνας.
+- **Load 15**: PASS 8/8 (`wheel_only_35_load_15_retry`). Το πρώτο attempt
+  μέτρησε `retained 0/15` με 0 διαφυγές και target μέσα — pose-log glitch,
+  όχι φυσική αστοχία.
+- **Load 25**: baseline (`wheel_only_35_load_25`) **3/8 FAIL** — target
+  εκτινάχθηκε μπροστά (`x=0.463`) και 1 stored διέφυγε. Receiver μόνο του
+  **4/8** (target κόλλησε στο handoff `x=0.501`)· receiver −5mm **3/8** με
+  διαφυγή. Το **low_transition** το έλυσε: **PASS 8/8**, target
+  `x=0.400, z=0.067`, dwell 2.856s.
+- **Load 45 (το πρόβλημα του γεμάτου καλαθιού) — δύο συνιστώσες**:
+  1. *Διαρροή φορτίου στην είσοδο*: με low_transition μόνο, **3 stored
+     διέφυγαν** και η target εκτινάχθηκε στο `x=0.666` → **3/8 FAIL**.
+  2. *Απόρριψη target πάνω στον σωρό*: το **entry hood** (roof + cheeks,
+     rear overhang 40mm, rear clearance 105mm) έλυσε τη διαρροή —
+     **45/45 retained σε ΟΛΑ τα επόμενα runs** — αλλά η target συνέχισε
+     να απορρίπτεται (`x=0.663`, 4/8).
+- **Rear clearance 105→120mm**: η target πλέον μένει ΜΕΣΑ
+  (`x≈0.40-0.42, z≈0.067` = πάνω στον σωρό). 7/8 με μόνο marginal
+  dwell 0.682 < 0.75. Με drive 0.14: 6/8 (dwell 0.404).
+- **Probe window ήταν μέρος των "FAIL"**: τα dwell/settled κόβονταν από το
+  probe duration 25s, όχι από τη φυσική. Με **probe 35s** δύο 8/8 PASS:
+  - `wheel_only_hood_rear120_drive014_load_45_longprobe` (rolling,
+    drive 0.14, phase funnel, wheel_max_vel 35): dwell 1.808s,
+    settled 1.524s, target `x=0.399`.
+  - `launch_hood_rear120_load_45_probe35` (launch profile, drive 0.12,
+    phase full, wheel_max_vel 26.3): dwell 1.98s, settled 1.566s,
+    target `x=0.388`. Ballistics: release 43.1°, 1.185m/s,
+    vz error **−0.47m/s** έναντι contract.
+- **Angle 55° attempt** (`launch_angle55_hood_rear120_load_45_probe35`):
+  η πραγματική γωνία ΕΠΕΣΕ στα 41.3° (από 43.1°) και το vz error έμεινε
+  −0.46m/s → το ονομαστικό exit angle ΔΕΝ μεταφράζεται σε release angle·
+  γεωμετρικό όριο μεταφοράς ενέργειας (συνεπές με #34/#46/#52). 7/8 FAIL
+  μόνο στο `target_settled` (0.4 < 0.5s). Σημείωση: με hood+rear120 το
+  ballistic contract (54.8°/1.57m/s) ΔΕΝ φαίνεται πλέον απαραίτητο — η
+  μπάλα προσγειώνεται στο `x≈0.36-0.38` πάνω στον σωρό και μένει.
+- **Display bug (μόνο εμφάνιση)**: τα echo fallbacks του
+  `bench_config.txt` για `basket_floor_front_x/top_z` (0.50/0.128) δεν
+  συμφωνούν με τα generator defaults (0.42/0.025). Τα runs έτρεξαν με τα
+  σωστά 0.42/0.025· να διορθωθεί το echo στο sweep script.
+- **Gate**: και τα δύο winning configs είναι **n=1**. Επόμενο βήμα:
+  5x repeatability και για τα δύο (out dirs
+  `wheel_only_hood_rear120_drive014_load_45_repeat5`,
+  `launch_hood_rear120_load_45_repeat5`), κριτήριο ≥4/5, carriage
+  exposure OFF. Μετά επιλογή default (rolling+drive014 vs launch).
+
+### 55. 5x repeatability gate load 45: launch profile 5/5, wheel-only 2/5
+
+- Σειριακό 5x run και για τα δύο configs του #54, ίδιο κοινό setup
+  (load 45, probe 35s, hood rear overhang 40mm / rear clearance 120mm,
+  carriage exposure OFF). Πριν την εκκίνηση σκοτώθηκε ορφανό headless
+  `gz sim` από το τελευταίο run της 14/7 — μοιραζόταν gz transport topics
+  με το ίδιο world name και θα μόλυνε το pose logging.
+- **Config A — wheel_only rolling, drive 0.14, phase funnel, wmax 35**
+  (`wheel_only_hood_rear120_drive014_load_45_repeat5`): **2/5 FAIL**.
+  - r1/r3: η target ΔΕΝ μπήκε ποτέ στο μπιν (dwell 0, τελικές
+    `x=0.496` / `x=0.423, y=-0.055` — η δεύτερη ακριβώς πάνω στο όριο
+    0.42). Το γνωστό μοτίβο «περνάει στην κόψη» του #46.
+  - r2: η target μπήκε και έκατσε (dwell 2.118s) αλλά **1 stored
+    διέφυγε** → 7/8.
+  - r4/r5: 8/8 PASS (dwell 2.112/1.560s).
+- **Config B — launch profile, drive 0.12, phase full, wmax 26.3**
+  (`launch_hood_rear120_load_45_repeat5`): **5/5 PASS 8/8**.
+  Dwell 0.988-1.832s, settled 0.908-1.436s, τελικές θέσεις
+  `x=0.384-0.412`, **45/45 retained και στα πέντε, 0 διαφυγές**.
+- **Συμπέρασμα**: με γεμάτο καλάθι το rolling/wheel-only entry είναι
+  δομικά οριακό (η μπάλα πρέπει να ανέβει πάνω στον σωρό με σχεδόν
+  μηδενικό κατακόρυφο περιθώριο), ενώ ο controlled launch περνάει το
+  gate καθαρά. **Προτεινόμενο default για loaded λειτουργία: launch
+  profile + hood rear120.** Δεν έχει αλλάξει ακόμη κανένα default στο
+  generator/harness — εκκρεμεί απόφαση χρήστη και unloaded regression
+  (τα #51/#53 unloaded launch runs ήταν ήδη πράσινα σε bench, αλλά το
+  τρέχον hood/rear120 combo δεν έχει τρέξει unloaded 5x).
+
+### 56. Unloaded regression 5/5 → launch profile + hood rear120 γίνονται defaults
+
+- **Unloaded 5x regression** του νικητή του #55
+  (`launch_hood_rear120_unloaded_repeat5`): **5/5 PASS 8/8, transport 6/6
+  σε όλα**. Τελική θέση `x≈0.08, z=0.058` (βαθιά στο μπιν), dwell 27-32s.
+  Με αυτό το launch+hood combo είναι πράσινο και unloaded και loaded 45.
+- **Default flip (πλήρης fallback αλυσίδα, δίδαγμα #45)**:
+  - `scripts/generate_robot_urdf.py`: `INTAKE_RAMP_PROFILE`
+    rolling→**launch**, `BASKET_HOOD_REAR_OVERHANG_M` 0.000→**0.040**,
+    `BASKET_HOOD_REAR_CLEARANCE_Z_M` 0.105→**0.120**.
+  - `scripts/generate_curved_scoop_mesh.py`: profile rolling→**launch**.
+  - `urdf/tennis_robot.urdf.xacro`: hood args 0.000→**0.040**,
+    0.105→**0.120**.
+  - `run_native_intake_sweep.sh`: `RAMP_PROFILE` default **launch**
+    (άρα και probe start 0.70 αυτόματα), `PROBE_DURATION` 25→**35**
+    (τα dwell «FAIL» του #54 ήταν εν μέρει artifact του 25s), echo
+    fallbacks συγχρονίστηκαν (hood 0.040/0.120, ramp launch) και
+    διορθώθηκε το display bug floor 0.50/0.128→0.42/0.025.
+  - `docker-compose.yml`: profile rolling→**launch**, ramp entry
+    0.500→**0.540** (σε launch mode entry = nip· το 0.500 ήταν
+    rolling-era) + passthrough για τα `INTAKE_LAUNCH_EXIT_*`.
+  - `run_ubuntu.sh`: `BASKET_CENTER_LIP_HEIGHT_M` 0.020→**0.010** — τα
+    validated runs έτρεξαν με το generator default 0.010· το 0.020 του
+    run_ubuntu ήταν αναντιστοιχία live vs bench (το #52 έγραφε
+    «default 0.020» αλλά ο generator είχε 0.010).
+  - Όποιος θέλει rolling A/B πλέον το ζητά ρητά με
+    `INTAKE_RAMP_PROFILE=rolling` (και δικό του entry_x).
+- **Verification gate — PASS**: run με ΚΑΘΑΡΟ env (μόνο load 45 + out
+  dir, κανένα intake/basket override) στο
+  `runtime/intake_sweeps/defaults_flipped_load_45_verify`. Το
+  bench_config έδειξε από τα defaults `ramp_profile=launch`,
+  `probe_start 0.70`, hood `0.040/0.120`, launch exit `0.465/0.032/35`.
+  Αποτέλεσμα: **transport 6/6, basket evidence 8/8**, dwell 2.18s,
+  settled 2.066s, target `x=0.394, z=0.066`, **45/45 retained**. Η
+  fallback αλυσίδα είναι πλήρης — το γεμάτο καλάθι (45) καλύπτεται πλέον
+  από τα defaults του repo.
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):
