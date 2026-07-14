@@ -211,6 +211,7 @@ class ControllerNode(Node):
         self._run_id = f"{int(self.started_at)}-{os.getpid()}"
         self._last_collection_event_key: tuple | None = None
         self._last_collection_scan_key: tuple | None = None
+        self._collect_route_last_probe_s: float = 0.0
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
@@ -1188,6 +1189,27 @@ class ControllerNode(Node):
         for event_type, fields in mission.drain_events():
             self._record_collection_event(event_type, **fields)
 
+        # Ground-truth capture probe (sim only): while the fine approach runs,
+        # record where the nearest physical ball actually is in the robot frame
+        # every ~2 s. This is the evidence trail for "caught the ball but never
+        # confirmed" stalls (collection-route-debug-log-el.md #2): it shows
+        # whether the ball sits in the basket volume, the intake throat, or was
+        # plowed aside — and whether the beam ever fired.
+        if mission.phase == "approach" and self._sim_balls_seen:
+            if now - self._collect_route_last_probe_s >= 2.0:
+                self._collect_route_last_probe_s = now
+                probe = self._nearest_sim_ball_local()
+                self._record_collection_event(
+                    "route_capture_probe",
+                    ball_id=mission.current_ball_id,
+                    behavior_state=self.behavior.state.value,
+                    approach_elapsed_s=mission._approach_elapsed_s,
+                    intake_beam_broken=self._intake_beam_broken,
+                    intake_roller_latched=self._intake_roller_latched,
+                    locked_world=list(mission._locked_world) if mission._locked_world else None,
+                    nearest_sim_ball=probe,
+                )
+
         if mission.is_done and not mission._complete_reported:
             mission._complete_reported = True
             self.get_logger().info(
@@ -1519,6 +1541,33 @@ class ControllerNode(Node):
                 self.collection_count += 1
                 return True
         return False
+
+    def _nearest_sim_ball_local(self) -> dict | None:
+        """Nearest ground-truth ball in the robot frame (sim only): the same
+        transform _check_sim_collection uses, so the numbers are directly
+        comparable to the basket volume gates."""
+        if not self._sim_balls:
+            return None
+        ori_cos = math.cos(self._robot_yaw)
+        ori_sin = math.sin(self._robot_yaw)
+        best: dict | None = None
+        best_dist = math.inf
+        for ball in self._sim_balls:
+            dx = ball["x"] - self._robot_x
+            dy = ball["y"] - self._robot_y
+            lx = ori_cos * dx + ori_sin * dy
+            ly = -ori_sin * dx + ori_cos * dy
+            dist = math.hypot(lx, ly)
+            if dist < best_dist:
+                best_dist = dist
+                best = {
+                    "def": str(ball.get("def", "")),
+                    "local_x_m": round(lx, 3),
+                    "local_y_m": round(ly, 3),
+                    "z_m": round(float(ball.get("z", 0.0)), 3),
+                    "already_counted": str(ball.get("def", "")) in self._counted_sim_ball_defs,
+                }
+        return best
 
     def _map_supervisor_balls(self) -> list[tuple[float, float]]:
         side = self._map_mission.bounds.side if self._map_mission.bounds else "left"

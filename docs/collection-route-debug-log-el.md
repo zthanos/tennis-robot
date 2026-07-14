@@ -76,3 +76,54 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
 - **Επόμενο βήμα**: sim run κατά τα παραπάνω· μετά τα deferred gaps του
   issue #10 (loaded collect, incremental fill/beam counting, camera blind
   zone σε loaded προσέγγιση).
+
+### 2. Πρώτο sim run: 4/11 ✅, stall στην 5η μπάλα — «έπιασε αλλά δεν το κατάλαβε»
+
+- **Run** (2026-07-14, `./run_ubuntu.sh`, χειροκίνητο stop από χρήστη):
+  - Scan + plan δούλεψαν: 360° σε ~21 s, `route_planned{stops=11,
+    route_length_m=30.78, lateral_stops=0}`, route overlay ΟΚ.
+  - Nav2 legs + handoff ΟΚ: `route_leg_start → nav2 pending → reached →
+    route_fine_approach` για κάθε μπάλα.
+  - Μπάλες 1, 2, 4, 3 μαζεύτηκαν και επιβεβαιώθηκαν (`route_ball_collected`,
+    collection_count=4). Η #4 χρειάστηκε 1 retry (`approach_timeout` στα
+    35 s) και πέτυχε στη 2η προσπάθεια.
+  - **Μπάλα #11 (5η στη σειρά): STALL.** Fine approach t=155 → 35 s χωρίς
+    confirm → `route_leg_retry(approach_timeout)` → Nav2 ξανά στο standoff →
+    2ο fine approach 26 s → ο χρήστης σταμάτησε (t=220). ΣΗΜΕΙΩΣΗ: το 2ο
+    timeout θα έριχνε skip στα ~229 s — η ασφάλεια δούλευε, απλώς αργά.
+  - **Παρατήρηση χρήστη**: το ρομπότ ΕΠΙΑΣΕ την μπάλα φυσικά, αλλά δεν το
+    κατάλαβε (κανένα confirm) και έκανε συνεχώς διορθώσεις για να «μαζέψει»
+    το φάντασμα του dead-reckoned lock.
+  - Ενδείξεις από τα δεδομένα: η mapped θέση της #11 μετατοπίστηκε ~0.4 m
+    κατά την προσέγγιση (plan-time ~(4.10,-3.60) → τέλος (3.71,-3.73)) με
+    seen_count 287 — η κάμερα έβλεπε μπάλα για πολλή ώρα ΚΑΤΑ τη διάρκεια
+    των «διορθώσεων», άρα η μπάλα (ή κάποια μπάλα) ήταν στο έδαφος μπροστά
+    του για μεγάλο μέρος του stall.
+- **Υποθέσεις (ανοιχτές, χρειάζονται ground truth)**:
+  - H1 — η μπάλα πιάστηκε από τους τροχούς αλλά ΔΕΝ εκτοξεύθηκε στο καλάθι
+    (κόλλησε σε λαιμό/ράμπα): το basket-volume κριτήριο σωστά δεν την
+    μετράει, αλλά το mission δεν έχει τρόπο να το μάθει και κυνηγάει το
+    lock.
+  - H2 — μπήκε στο καλάθι σε στιγμή που το intake ήταν off
+    (`_check_collection` επιστρέφει False όταν `intake_enabled=False`) και
+    κάτι εμπόδισε το count στα επόμενα CAPTURE (π.χ. z<0.055 ή εκτός x/y
+    ζώνης ακουμπώντας σε άλλες μπάλες — 4 ήδη μέσα = πρώτο άγγιγμα του
+    deferred «incremental fill» gap του #10).
+  - H3 — bulldoze/αναπήδηση: η μπάλα σπρώχτηκε και μετακινήθηκε (συμβατό με
+    το 0.4 m drift), το capture πέτυχε μόνο μερικώς. Το 2/5 approach
+    timeout rate (και η #4) δείχνει ότι το capture στο collect_route είναι
+    πιο εύθραυστο από το validated collect_one — πιθανή διαφορά: standoff
+    1.3 m σημαίνει ότι το ALIGN→CAPTURE ξεκινά πιο κοντά απ' ό,τι στο
+    collect_one (που σκανάρει από απόσταση), άλλο προφίλ πρόσκρουσης.
+- **Αλλαγή (instrumentation, όχι behavior)**: νέο event
+  `route_capture_probe` κάθε ~2 s όσο τρέχει fine approach (sim only):
+  nearest ground-truth μπάλα σε robot frame (`local_x/y`, `z`,
+  `already_counted` — ίδιος μετασχηματισμός με το `_check_sim_collection`,
+  άμεσα συγκρίσιμο με τις πύλες του καλαθιού x∈(0.02,0.42), |y|≤0.14,
+  z≥0.055), plus behavior state, approach elapsed, intake beam/latch,
+  locked_world. Στο επόμενο run το stall θα δείχνει ΜΟΝΟ ΤΟΥ πού είναι η
+  φυσική μπάλα (καλάθι/λαιμός/δίπλα) και αν έσπασε ποτέ το beam.
+- **Status**: ⏳ αναμονή rerun με το probe· scan/plan/Nav2/overlay/4
+  captures επιβεβαιωμένα ✅.
+- **Επόμενο βήμα**: rerun → ανάγνωση των `route_capture_probe` στο stall →
+  απόφαση fix βάσει H1/H2/H3.
