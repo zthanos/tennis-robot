@@ -64,8 +64,10 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
      στο tick του PLAN και μετρούσε τις αρχικές μπάλες ως insertions —
      περιορίστηκε στα nav/approach/settle phases.
 - **Status**: ✅ κώδικας + unit tests. ⚠️ ΕΚΚΡΕΜΕΙ sim επαλήθευση
-  end-to-end — βήματα στο §8 του design doc: (α) stack με
-  `COLLECTION_USE_NAV2=true` + φρέσκο Map Court, (β) route overlay +
+  end-to-end — βήματα στο §8 του design doc: (α) `./run_ubuntu.sh` (ο Nav2
+  σηκώνεται πάντα· ΔΕΝ χρειάζεται COLLECTION_USE_NAV2 — μόνο τα lawnmower
+  lanes του `collect` το τιμούν) + υπάρχον map/court_boundary.json ή Map
+  Court, (β) route overlay +
   numbered balls στο Collection Map μετά το scan, (γ) `motion_owner`
   εναλλαγή nav2 ⇄ collector_fsm ανά leg, (δ) fence/net case με
   `approach_mode=lateral` και heading ≈ παράλληλο στο όριο, (ε) insertion

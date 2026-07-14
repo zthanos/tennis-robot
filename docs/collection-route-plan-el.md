@@ -157,8 +157,13 @@ Capture timeout: `COLLECT_PATTERN_COLLECTION_TIMEOUT_S` (35 s).
 
 ## 8. Εκκίνηση & επαλήθευση
 
-1. Gazebo stack με `COLLECTION_USE_NAV2=true` ώστε να είναι up Nav2 +
-   twist_mux + SLAM· φρέσκο `runtime/court_boundary.json` (Map Court).
+1. Gazebo stack: `./run_ubuntu.sh` (native Ubuntu). Ο Nav2 σηκώνεται πάντα
+   από το `docker_dev_entry.sh` (navigation.launch.py) μετά από
+   `NAV2_START_DELAY_S` (25 s)· το SLAM τρέχει σε localization mode πάνω στο
+   νεότερο `runtime/maps/court_*.posegraph`. ΔΕΝ χρειάζεται
+   `COLLECTION_USE_NAV2` — αυτό αφορά μόνο τα lawnmower lanes του `collect`.
+   Προϋπόθεση: υπάρχει αποθηκευμένο map + `runtime/court_boundary.json`
+   (αλλιώς τρέξε πρώτα **Map Court**).
 2. Panel → Collection → **Collect Route**. Μετά την περιστροφή: μπλε route +
    αριθμημένες μπάλες στο Collection Map.
 3. `runtime/collection_events.jsonl`: `route_scan_start → route_planned →
