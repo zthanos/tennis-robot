@@ -1720,6 +1720,34 @@
   fallback αλυσίδα είναι πλήρης — το γεμάτο καλάθι (45) καλύπτεται πλέον
   από τα defaults του repo.
 
+### 57. OpenSCAD basket-bin-v2 + spec sync (μηχανισμός κηρύχθηκε working)
+
+- Απόφαση χρήστη: με τα #54-#56 ο μηχανισμός συλλογής θεωρείται
+  **working**· τα υπόλοιπα validation κενά (live loaded collect_one,
+  loaded lateral envelope, σταδιακό γέμισμα) θα απαντηθούν μαζί με τον
+  αλγόριθμο μαζέματος μισού γηπέδου.
+- **Spec sync**: το `basket-bin-redesign-spec-el.md` δεν είχε το hood —
+  προστέθηκε §2 entry hood (roof 0.38→0.47, clearances 0.120/0.135,
+  cheeks, sim params) και το «load 45 ανοικτό» του §8.4 έκλεισε με τα
+  αποτελέσματα των #54-#56.
+- **OpenSCAD** (`cad/basket-bin-v2/`): παραμετρικό μοντέλο από το spec —
+  `params.scad` (μοναδική πηγή διαστάσεων, mm/ground frame), αφαιρούμενο
+  mesh μπιν (πάτωμα/τοίχοι/tray/chute/guards/lip/flange/λαβές),
+  chassis-mounted hood, chassis context (πλάκα με ΠΡΑΓΜΑΤΙΚΟ άνοιγμα,
+  μπαταρία, IR ζεύγος, μπάλες κλίμακας), assembly με exploded view.
+  Renders + STL export επαληθεύτηκαν με το `openscad` docker service.
+- **Ευρήματα κατά τη μετάφραση sim→κατασκευή**:
+  1. Τα hood cheeks του sim (x 0.42-0.47) ΔΙΑΠΕΡΝΟΥΝ τα corner guards
+     του μπιν (x 0.42-0.43) — στο Gazebo αόρατο (fixed links δεν
+     συγκρούονται), στην κατασκευή αδύνατο: δύο ξεχωριστά parts. Στο CAD
+     τα cheeks κόπηκαν σε x 0.43-0.47 (το 10mm slot που μένει είναι
+     πολύ κάτω από τη διάμετρο μπάλας).
+  2. Το μπιν ΔΕΝ βγαίνει με σκέτο κατακόρυφο lift όσο το hood είναι
+     πάνω: η υποδοχή (μέρος του μπιν) βρίσκει το roof μετά από ~85mm.
+     Άρα το hood πρέπει να είναι βιδωτό/ανακλινόμενο, hood-off-first.
+- Εκκρεμότητες CAD: λεπτομέρεια στήριξης hood (transverse bar vs funnel
+  frame), IR beam vs mesh alignment, plywood-cut-list αναθεώρηση.
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):

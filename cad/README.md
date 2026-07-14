@@ -1,6 +1,11 @@
 # Active CAD status
 
-There is currently no active OpenSCAD manufacturing model in this directory.
+Active model: **`basket-bin-v2/`** — the sim-validated basket bin v2.1 +
+entry hood (debug log #45-#56), parametric OpenSCAD with all dimensions in
+`basket-bin-v2/params.scad`. Renders/exports run through the
+`docker compose --profile cad` services.
+
+Not yet modelled: chassis frame, dual-wheel intake, funnel — see below.
 
 The previous `3d-printable-base` and `cyber-shell` models described superseded
 single-roller, scoop, launcher, 760 x 430 mm chassis, and cosmetic-shell
