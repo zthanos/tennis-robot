@@ -1748,6 +1748,30 @@
 - Εκκρεμότητες CAD: λεπτομέρεια στήριξης hood (transverse bar vs funnel
   frame), IR beam vs mesh alignment, plywood-cut-list αναθεώρηση.
 
+### 58. collect_route: 360° scan → route plan → Nav2 legs (κώδικας, unit-tested)
+
+- **Στόχος** (issue #10): γρήγορο μάζεμα όλων των μπαλών του μισού γηπέδου
+  πάνω στον working μηχανισμό. Σχεδίαση στο νέο
+  `docs/collection-route-plan-el.md`.
+- **Υπόθεση**: 360° scan (create gate 3→9 m στο BallMap) + greedy NN/2-opt
+  ordering + Nav2 legs + ο υπάρχων P-controller για το τελικό capture
+  αρκούν· μπάλες κοντά σε φράχτη/φιλέ θέλουν πλάγιο approach heading ώστε
+  το funnel corridor (±0.17 m) να μένει καθαρό.
+- **Υλοποίηση**: `collection_route_planner.py` (planner library: CourtModel
+  από court_boundary.json v2, order_route, cheapest_insertion,
+  approach_pose_for_ball direct/lateral), `collect_route_mission.py` (FSM
+  scan→plan→nav→approach→settle, insertion, fail-loud στο Nav2),
+  controller wiring (mode `collect_route`, multi-ball frame feed στο scan,
+  route/order/metrics στο Collection Map payload), κουμπί «Collect Route».
+  Ο Nav2LaneNavigator κατασκευάζεται πλέον όποτε τα deps υπάρχουν (το
+  lawnmower path συνεχίζει να τιμά το COLLECTION_USE_NAV2).
+- **Αποτέλεσμα**: 35 νέα unit tests πράσινα (planner 16, mission 14,
+  ball_map export 5)· πλήρης σουίτα 84 passed (το test_console_app
+  collection error προϋπάρχει στο main, περνάει standalone).
+- **Status**: κώδικας ΟΚ offline· **εκκρεμεί sim επαλήθευση** κατά τα
+  βήματα του §8 στο collection-route-plan-el.md (Nav2 stack up, lateral
+  κοντά σε φράχτη/φιλέ, insertion mid-route, route overlay στο console).
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):
