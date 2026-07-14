@@ -97,14 +97,20 @@
   ros_type_name: tf2_msgs/msg/TFMessage
   direction: GZ_TO_ROS
 
-# Real physics contact from the continuous foam intake roller.
-- gz_topic_name: /world/tennis_court/model/tennis_robot/link/lift_wheel_link/sensor/roller_contact_0/contact
+# Real physics contact from each intake wheel (dual-wheel side pinch:
+# 0 = left, 1 = right).
+- gz_topic_name: /world/tennis_court/model/tennis_robot/link/intake_wheel_left_link/sensor/roller_contact_0/contact
   ros_topic_name: /gz/roller_contact_0
   gz_type_name: gz.msgs.Contacts
   ros_type_name: ros_gz_interfaces/msg/Contacts
   direction: GZ_TO_ROS
+- gz_topic_name: /world/tennis_court/model/tennis_robot/link/intake_wheel_right_link/sensor/roller_contact_1/contact
+  ros_topic_name: /gz/roller_contact_1
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
 
-# Real physics contact from the launcher scoop / raised lip.
+# Real physics contact from the elevation ramp (guide contact).
 - gz_topic_name: /world/tennis_court/model/tennis_robot/link/base_footprint/sensor/lip_contact_0/contact
   ros_topic_name: /gz/lip_contact_0
   gz_type_name: gz.msgs.Contacts

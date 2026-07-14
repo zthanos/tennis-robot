@@ -6,6 +6,78 @@
 Tennis Robot Build
 ```
 
+## Current Operating Model
+
+Το board πρέπει να είναι project-oriented και evidence-oriented, ώστε να
+λειτουργεί αργότερα ως καθαρό public proof-of-work για crowdfunding, όχι μόνο
+ως εσωτερική task list.
+
+Το κύριο grouping γίνεται με το custom field `Project Area`.
+
+Top-level project areas:
+
+| Project Area | Purpose |
+|---|---|
+| Robot Design / Features / Expectations | Τι robot χτίζουμε, ποια features περιμένουμε, ποιοι φυσικοί/λειτουργικοί περιορισμοί ισχύουν. |
+| Simulation Environment | Πώς αποδεικνύουμε συμπεριφορές σε Webots/Gazebo/ROS πριν πάμε σε hardware. |
+| Court Survey & Knowledge Model | Πώς το robot καταλαβαίνει το γήπεδο, αποθηκεύει survey identity και χτίζει court model. |
+| Intake Research | Πώς επιλέγουμε και επικυρώνουμε τον φυσικό μηχανισμό συλλογής μπάλας. |
+| Collection Research Patterns | Πώς αποφασίζει το robot τι να μαζέψει, με ποια σειρά, και πώς κάνει rescan/replan/recovery. |
+
+Τα παλιά workstreams μένουν χρήσιμα ως secondary classification, αλλά δεν
+πρέπει να οδηγούν την ιεραρχία του board. Για παράδειγμα, `Collector Intake
+Prototype` είναι feature/workstream κάτω από `Intake Research`, όχι ανεξάρτητο
+top-level epic.
+
+## Future Update Rules
+
+Κάθε νέα ενημέρωση στο GitHub Project πρέπει να ακολουθεί αυτούς τους κανόνες:
+
+1. Κάθε νέο item παίρνει πάντα `Project Area`.
+2. Τα top-level items χρησιμοποιούν prefix `Epic:` και πρέπει να αντιστοιχούν
+   σε ένα από τα 5 project areas.
+3. Κάτω από τα epics, χρησιμοποιούμε `Feature:`, `[Research]`, `[Validation]`
+   ή απλό task title. Δεν δημιουργούμε νέο top-level `Epic:` αν χωράει σε
+   υπάρχον project area.
+4. Research items κρατούν decision trail: branch, PR, docs, evidence, outcome
+   και stop/continue gate.
+5. Rejected concepts δεν διαγράφονται και δεν κρύβονται. Κλείνουν ως `Done`
+   με σαφές evidence, ώστε να φαίνεται ότι η απόφαση ήταν engineering result.
+6. Active build views πρέπει να φιλτράρουν με `-status:Done`, αλλά τα Done
+   evidence items μένουν διαθέσιμα σε research/history views.
+7. Για hardware-related work, δεν θεωρείται `Done` χωρίς τουλάχιστον ένα από:
+   bench result, simulation result, physical test result, wiring/CAD doc, ή PR.
+8. Για software-related work, δεν θεωρείται `Done` χωρίς PR, test/validation
+   note, ή runtime evidence.
+9. Αν ένα item αφορά και software και hardware, κρατάμε `Track=Mixed` και το
+   βάζουμε στο project area που απαντάει στο κύριο project question.
+10. Κάθε σημαντικό pivot πρέπει να έχει child research/validation item που
+    εξηγεί γιατί κλείνει η παλιά κατεύθυνση και ποια είναι η νέα.
+
+### Recommended Intake Views
+
+Για το collector intake work, το βασικό board view είναι:
+
+```text
+project area:"Intake Research"
+```
+
+Για active build-only view:
+
+```text
+project area:"Intake Research" -status:Done
+```
+
+Για prototype/workbench view:
+
+```text
+project area:"Intake Research" workstream:"Collector Intake Prototype"
+```
+
+Αυτό πρέπει να δείχνει μαζί research history, active concept validation,
+breadboard/perfboard tasks και physical tests, χωρίς να χάνεται το γιατί
+απορρίφθηκε ή προτιμήθηκε κάθε μηχανική λύση.
+
 Στόχος του board είναι να κρατάει καθαρά το hardware, software, simulation και
 validation work για το tennis robot, χωρίς να μπερδεύονται τα παλιά search docs
 με τη νέα survey/matrix collection διαδικασία.

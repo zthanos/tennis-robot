@@ -19,7 +19,7 @@ class CollectorLogicNode(Node):
         super().__init__("collector_logic")
         backend = os.getenv("COLLECTOR_BACKEND", "gazebo")
         self._gazebo_pub = self.create_publisher(
-            Float64MultiArray, "/lift_wheel_velocity_controller/commands", 10
+            Float64MultiArray, "/intake_wheel_velocity_controller/commands", 10
         )
         if backend == "serial":
             driver = SerialCollectorDriver(
@@ -28,8 +28,13 @@ class CollectorLogicNode(Node):
             )
             self._collector = CollectorInterface(driver, default_speed=75.0, max_speed=255.0)
         else:
+            # Dual-wheel intake: one motor per wheel, opposite spin so both
+            # inner faces drive rearward. Forward intake speed v maps to
+            # [left, right] = [-v, +v]; reverse (eject) flips both.
             driver = GazeboCollectorDriver(
-                lambda speed: self._gazebo_pub.publish(Float64MultiArray(data=[speed]))
+                lambda speed: self._gazebo_pub.publish(
+                    Float64MultiArray(data=[-speed, speed])
+                )
             )
             self._collector = CollectorInterface(driver)
         self._status_pub = self.create_publisher(String, "/collector/status", 10)

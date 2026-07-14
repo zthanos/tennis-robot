@@ -11,8 +11,12 @@
 χρήση.
 
 Η επόμενη κύρια κατεύθυνση είναι dual-wheel / dual-roller intake concept, με
-ελεγχόμενο pinch και πιο προβλέψιμη κατεύθυνση εκτόξευσης προς τη ράμπα ή το
+ελεγχόμενο pinch και προβλέψιμη μεταφορά της μπάλας προς τη ράμπα και το
 hopper.
+
+Σε αντίθεση με το single top-roller concept, η δημιουργία του pinch, η
+προώθηση της μπάλας και η καθοδήγησή της διαχωρίζονται σε ανεξάρτητες
+λειτουργίες.
 
 ## Evidence
 
@@ -61,31 +65,136 @@ Continue?
 είναι κόκκινη σημαία για πραγματικό μηχανισμό, όπου οι ανοχές και οι φθορές θα
 είναι χειρότερες από το deterministic bench.
 
+Το βασικό πρόβλημα δεν είναι ότι δεν βρέθηκε ακόμη το σωστό configuration,
+αλλά ότι δεν εμφανίστηκε αρκετά μεγάλο operating envelope ώστε η λύση να
+θεωρείται ανθεκτική σε πραγματικές αποκλίσεις.
+
+Engineering decision:
+
+```text
+A concept that only works inside a narrow simulation sweet spot is not
+considered an acceptable production direction for this project.
+```
+
+## Λειτουργική φιλοσοφία
+
+Το προηγούμενο concept είχε στόχο:
+
+```text
+bite -> impulse -> launch -> ramp
+```
+
+Το νέο concept περιγράφεται ως:
+
+```text
+capture -> transport -> guide -> hopper
+```
+
+Η μπάλα δεν εκτοξεύεται· συλλαμβάνεται, μεταφέρεται ενεργά μέσα από το wheel
+throat και καθοδηγείται προς το hopper. Κάθε στάδιο αξιολογείται χωριστά.
+
 ## Next Concept Direction
 
 Το dual-wheel / dual-roller concept πρέπει να δοκιμαστεί με στόχο:
 
 - controlled pinch ανάμεσα σε δύο ενεργές επιφάνειες,
-- καθαρά ορισμένη launch direction,
-- λιγότερη εξάρτηση από το scoop/lip ως αντίσταση,
-- δυνατότητα ρύθμισης gap/compression χωρίς να αλλάζει όλη η ράμπα,
+- προβλέψιμη μεταφορά της μπάλας μέσα από το wheel throat,
+- ανεξάρτητη λειτουργία funnel, rollers και ramp,
+- δυνατότητα ρύθμισης wheel gap/compression χωρίς αλλαγή της υπόλοιπης
+  γεωμετρίας,
 - repeatability σε 4/5 runs πριν θεωρηθεί candidate.
 
 Προτεινόμενα πρώτα simulation criteria:
 
 ```text
 Required:
-- confirmed dual-wheel / ball contact
-- positive inward velocity at release
-- positive vertical velocity at release
-- post-release speed >= 0.40 m/s
-- no front-lip jam
-- ramp or hopper entry crossing
+- confirmed contact with both rollers
+- successful capture through the wheel throat
+- positive inward transport through the intake
+- no stall or jam
+- ramp-entry crossing
+- hopper-entry or ramp-crest crossing
+- repeatable success in at least 4/5 runs
 
 Preferred:
-- contact duration < 0.50 s
-- force_p95 below selected safety threshold
-- repeatable success in at least 4/5 runs
+- transport speed >= selected target
+- contact duration within expected range
+- force_p95 below selected threshold
+- successful collection from lateral offsets
+- successful collection across drive-speed variations
+```
+
+Σημείωση: το παλιό required "positive vertical velocity at release" ήταν
+απαίτηση του launch concept και δεν μεταφέρεται στο transport concept. Η
+ανύψωση είναι πλέον ευθύνη του guide/ramp σταδίου, όχι του release.
+
+## Initial Dual-Wheel Architecture
+
+Το πρώτο prototype θα ακολουθήσει την απλούστερη δυνατή αρχιτεκτονική.
+
+Mechanism:
+
+- δύο side rollers
+- κατακόρυφοι άξονες περιστροφής
+- οριζόντιο pinch
+- συμμετρικό funnel για centering
+- guide ramp προς το hopper
+
+Drive train:
+
+- δύο ίδια μοτέρ
+- ένα μοτέρ ανά roller
+- ίδια ονομαστική ταχύτητα
+- αντίθετη φορά περιστροφής
+- ίδιο torque/current limit
+- κοινό emergency stop
+- coordinated jam handling
+
+Δεν χρησιμοποιείται αρχικά κοινό μοτέρ με γρανάζια.
+Ο στόχος είναι πρώτα να αποδειχθεί η μηχανική αρχή και μετά να εξεταστεί
+πιθανή απλοποίηση του drivetrain.
+
+## Concept Validation Plan
+
+Το νέο concept θα επικυρωθεί σταδιακά.
+
+```text
+Phase 1
+  Dual-wheel throat only
+  Goal: Validate capture and powered transport.
+
+Phase 2
+  Funnel + dual wheels
+  Goal: Validate ball centering and off-axis capture.
+
+Phase 3
+  Dual wheels + ramp
+  Goal: Validate transport onto the ramp.
+
+Phase 4
+  Full intake
+  Goal: Validate complete collection into the hopper.
+```
+
+## Operating Envelope Validation
+
+Η αποδοχή του νέου concept δεν θα βασιστεί σε μία επιτυχημένη δοκιμή.
+
+Το concept πρέπει να αποδείξει ότι λειτουργεί σε εύρος πραγματικών συνθηκών.
+
+Representative variations:
+
+- lateral ball offset
+- robot approach speed
+- wheel gap tolerance
+- ball compression variation
+- friction variation
+
+Success criterion:
+
+```text
+At least 4 successful collections out of 5 runs for each representative
+condition.
 ```
 
 ## Branch Plan

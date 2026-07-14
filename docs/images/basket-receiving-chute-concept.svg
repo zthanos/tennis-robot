@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#16835f"/>
+    </marker>
+    <style>
+      text { font-family: DejaVu Sans, Arial, sans-serif; fill: #172033; letter-spacing: 0; }
+      .title { font-size: 26px; font-weight: 700; }
+      .heading { font-size: 18px; font-weight: 700; }
+      .label { font-size: 14px; }
+      .small { font-size: 12px; }
+      .dim { font-size: 12px; fill: #475569; }
+      .frame { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; }
+      .mesh { fill: none; stroke: #596579; stroke-width: 4; }
+      .implemented { fill: none; stroke: #16835f; stroke-width: 8; }
+      .proposed { fill: none; stroke: #d97706; stroke-width: 8; }
+      .beam { stroke: #dc2626; stroke-width: 3; stroke-dasharray: 8 5; }
+      .dimension { stroke: #64748b; stroke-width: 1.5; marker-start: url(#arrow); marker-end: url(#arrow); }
+      .guide { stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 4; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" fill="#ffffff"/>
+  <text x="60" y="46" class="title">Basket receiving chute and load-management concept</text>
+  <text x="60" y="72" class="label">Robot front and intake wheels are to the right; balls move left into the basket.</text>
+
+  <rect x="50" y="95" width="1100" height="330" rx="6" class="frame"/>
+  <text x="75" y="128" class="heading">Side section (x-z)</text>
+
+  <!-- Main basket envelope: x=0.02..0.42, floor z=0.025, wall top z=0.25. -->
+  <path d="M128 352 L128 105 M128 352 L492 352" class="mesh"/>
+  <path d="M128 105 L688 105" stroke="#596579" stroke-width="3" stroke-dasharray="7 5" fill="none"/>
+  <text x="145" y="153" class="label">mesh basket, wall top z=0.25</text>
+
+  <!-- Validated internal tray: x=0.28,z=0.025 to x=0.42,z=0.035. -->
+  <path d="M492 352 L688 341" class="implemented"/>
+  <text x="400" y="278" class="label" fill="#16835f">internal management tray</text>
+  <text x="400" y="297" class="small" fill="#16835f">x 0.28 / z 0.025 to x 0.42 / z 0.035</text>
+  <path d="M570 301 L600 341" fill="none" stroke="#16835f" stroke-width="1.5"/>
+
+  <!-- Validated receiving extension: x=0.42,z=0.035 to x=0.47,z=0.040. -->
+  <path d="M688 341 L758 335" class="proposed"/>
+  <text x="770" y="353" class="label" fill="#d97706">validated receiving chute</text>
+  <text x="770" y="372" class="small" fill="#d97706">basket-mounted, 50 mm extension</text>
+  <path d="M766 347 L742 337" fill="none" stroke="#d97706" stroke-width="1.5"/>
+
+  <!-- Retention lip / joint. -->
+  <path d="M688 352 L688 341" stroke="#334155" stroke-width="5"/>
+  <text x="650" y="374" class="small">10 mm centre lip</text>
+
+  <!-- Intake wheels and nominal ball flight. -->
+  <ellipse cx="856" cy="302" rx="36" ry="55" fill="#dce4ee" stroke="#334155" stroke-width="3" transform="rotate(-35 856 302)"/>
+  <text x="895" y="230" class="label">dual wheel</text>
+  <text x="895" y="249" class="small">nip x=0.54</text>
+  <path d="M814 304 Q790 287 757 298" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow)"/>
+  <circle cx="774" cy="300" r="22" fill="#d9ef55" stroke="#66751f" stroke-width="2"/>
+  <text x="760" y="250" class="small" fill="#2563eb">short free flight</text>
+
+  <!-- Rolling direction. -->
+  <path d="M746 331 L610 341" fill="none" stroke="#16835f" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <text x="470" y="235" class="label" fill="#16835f">gravity rolls balls toward rear storage</text>
+
+  <!-- Beam station at x=0.445, rolling-centre z about 0.0705. -->
+  <line x1="723" y1="306" x2="723" y2="350" class="beam"/>
+  <circle cx="723" cy="302" r="5" fill="#dc2626"/>
+  <text x="575" y="175" class="label" fill="#dc2626">basket confirmation beam</text>
+  <text x="575" y="194" class="small" fill="#dc2626">x=0.445, ground z about 0.0705</text>
+  <path d="M705 200 L722 293" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Side-view dimensions. -->
+  <line x1="688" y1="398" x2="758" y2="398" class="dimension"/>
+  <line x1="688" y1="354" x2="688" y2="405" class="guide"/>
+  <line x1="758" y1="322" x2="758" y2="405" class="guide"/>
+  <text x="707" y="416" class="dim">50 mm</text>
+  <line x1="492" y1="386" x2="688" y2="386" class="dimension"/>
+  <text x="568" y="404" class="dim">140 mm</text>
+
+  <rect x="50" y="445" width="1100" height="270" rx="6" class="frame"/>
+  <text x="75" y="478" class="heading">Top view (x-y)</text>
+
+  <!-- Basket footprint x=0.02..0.42, y=+-0.14. -->
+  <rect x="128" y="515" width="560" height="140" fill="#ffffff" stroke="#596579" stroke-width="4"/>
+  <text x="145" y="540" class="label">main basket: 400 x 280 mm</text>
+  <line x1="492" y1="515" x2="492" y2="655" stroke="#16835f" stroke-width="3" stroke-dasharray="7 5"/>
+  <text x="390" y="682" class="small" fill="#16835f">internal tray starts at x=0.28</text>
+
+  <!-- Central 180 mm receiver extending to x=0.47. -->
+  <polygon points="688,540 758,540 758,630 688,630" fill="#fff2dc" stroke="#d97706" stroke-width="4"/>
+  <line x1="688" y1="540" x2="688" y2="630" stroke="#16835f" stroke-width="5"/>
+  <text x="705" y="568" class="label" fill="#d97706">receiver</text>
+  <text x="700" y="587" class="small" fill="#d97706">width 180 mm</text>
+
+  <!-- Sensor mounts outside removable mesh and transverse beam. -->
+  <rect x="716" y="503" width="14" height="20" fill="#dc2626"/>
+  <rect x="716" y="647" width="14" height="20" fill="#dc2626"/>
+  <line x1="723" y1="523" x2="723" y2="647" class="beam"/>
+  <text x="515" y="487" class="small" fill="#dc2626">IR devices fixed to chassis/frame</text>
+  <text x="515" y="505" class="small" fill="#dc2626">beam passes through removable mesh</text>
+  <path d="M700 502 L715 512" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+
+  <!-- Wheel pair in top view. -->
+  <circle cx="856" cy="540" r="35" fill="#dce4ee" stroke="#334155" stroke-width="3"/>
+  <circle cx="856" cy="630" r="35" fill="#dce4ee" stroke="#334155" stroke-width="3"/>
+  <path d="M816 585 L768 585" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="815" y="690" class="small">funnel centres ball before wheel pair</text>
+
+  <g transform="translate(915 570)">
+    <line x1="0" y1="0" x2="45" y2="0" class="implemented"/>
+    <text x="58" y="5" class="small">implemented internal tray</text>
+    <line x1="0" y1="30" x2="45" y2="30" class="proposed"/>
+    <text x="58" y="35" class="small">validated front receiver</text>
+    <line x1="0" y1="60" x2="45" y2="60" class="beam"/>
+    <text x="58" y="65" class="small">proposed IR station</text>
+  </g>
+</svg>

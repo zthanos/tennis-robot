@@ -23,6 +23,7 @@ import json
 import math
 import os
 import subprocess
+import threading
 
 import rclpy
 from rclpy.node import Node
@@ -40,6 +41,13 @@ _WORLD_NAME = os.getenv("GZ_WORLD_NAME", "tennis_court")
 # IR beam-break: range <= threshold means a ball is present → value 1000
 _IR_MAX_RANGE_M = 0.22
 _BALL_PREFIX = "ball_"
+_REMOVE_COLLECTED_BALL = os.getenv("SIM_REMOVE_COLLECTED_BALL", "false").lower() in {
+    "1", "true", "yes", "on"
+}
+
+
+def _yaw_from_xyzw(x: float, y: float, z: float, w: float) -> float:
+    return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
 
 
 def _range_to_ir_value(range_m: float) -> float:
@@ -97,6 +105,7 @@ class GazeboExtrasNode(Node):
         )
         self._pub_roller_contact = self.create_publisher(Bool, "/sim/roller_contact", 10)
         self._robot_pose: tuple[float, float, float, float] | None = None  # x, y, z, yaw
+        self._gz_robot_pose: tuple[float, float, float, float] | None = None
         self._contact_points: list[tuple[float, float, float]] = []
         self._last_contact_ns = 0
         self.create_subscription(
@@ -105,8 +114,17 @@ class GazeboExtrasNode(Node):
             self._on_roller_contacts,
             10,
         )
+        self.create_subscription(
+            Contacts,
+            "/gz/roller_contact_1",
+            self._on_roller_contacts,
+            10,
+        )
 
         self.create_timer(0.05, self._publish)
+        self._gz_pose_proc: subprocess.Popen | None = None
+        self._gz_pose_thread: threading.Thread | None = None
+        self._start_gz_pose_reader()
         self.get_logger().info("gazebo_extras_node started")
 
     def _on_ir_left(self, msg: LaserScan) -> None:
@@ -134,25 +152,138 @@ class GazeboExtrasNode(Node):
             leaf = name.split("::")[-1]
             if not leaf.startswith(_BALL_PREFIX) or leaf in self._collected:
                 continue
+            if self._robot_pose is None or self._gz_robot_pose is None:
+                continue
+            x, y, z = self._gz_point_to_odom((t.x, t.y, t.z))
             self._balls[leaf] = {
-                "def": leaf, "x": round(t.x, 4), "y": round(t.y, 4), "z": round(t.z, 4)
+                "def": leaf, "x": round(x, 4), "y": round(y, 4), "z": round(z, 4)
             }
+
+    def _start_gz_pose_reader(self) -> None:
+        """Read Gazebo pose/info directly because the ROS bridge drops names."""
+        try:
+            self._gz_pose_proc = subprocess.Popen(
+                [
+                    "gz",
+                    "topic",
+                    "-e",
+                    "-t",
+                    f"/world/{_WORLD_NAME}/pose/info",
+                    "--json-output",
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+        except OSError as exc:
+            self.get_logger().warning(f"gz pose reader unavailable: {exc}")
+            return
+        self._gz_pose_thread = threading.Thread(
+            target=self._read_gz_pose_info,
+            name="gz_pose_info_reader",
+            daemon=True,
+        )
+        self._gz_pose_thread.start()
+
+    def _read_gz_pose_info(self) -> None:
+        proc = self._gz_pose_proc
+        if proc is None or proc.stdout is None:
+            return
+        for line in proc.stdout:
+            line = line.strip()
+            if not line.startswith("{"):
+                continue
+            try:
+                msg = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            self._merge_gz_pose_json(msg)
+
+    def _merge_gz_pose_json(self, msg: dict) -> None:
+        ball_poses: list[tuple[str, dict]] = []
+        for pose in msg.get("pose", []):
+            name = str(pose.get("name", ""))
+            leaf = name.split("::")[-1]
+            position = pose.get("position", {})
+            if name == "tennis_robot" or leaf == "tennis_robot":
+                orientation = pose.get("orientation", {})
+                self._gz_robot_pose = (
+                    float(position.get("x", 0.0)),
+                    float(position.get("y", 0.0)),
+                    float(position.get("z", 0.0)),
+                    _yaw_from_xyzw(
+                        float(orientation.get("x", 0.0)),
+                        float(orientation.get("y", 0.0)),
+                        float(orientation.get("z", 0.0)),
+                        float(orientation.get("w", 1.0)),
+                    ),
+                )
+                continue
+            if not leaf.startswith(_BALL_PREFIX) or leaf in self._collected:
+                continue
+            ball_poses.append((leaf, position))
+
+        for leaf, position in ball_poses:
+            x = float(position.get("x", 0.0))
+            y = float(position.get("y", 0.0))
+            z = float(position.get("z", 0.0))
+            if self._robot_pose is not None and self._gz_robot_pose is not None:
+                x, y, z = self._gz_point_to_odom((x, y, z))
+            self._balls[leaf] = {
+                "def": leaf,
+                "x": round(x, 4),
+                "y": round(y, 4),
+                "z": round(z, 4),
+            }
+
+    def _gz_point_to_odom(
+        self, point: tuple[float, float, float]
+    ) -> tuple[float, float, float]:
+        assert self._robot_pose is not None
+        assert self._gz_robot_pose is not None
+        gx, gy, gz = point
+        grx, gry, grz, gryaw = self._gz_robot_pose
+        orx, ory, orz, oryaw = self._robot_pose
+
+        dgx = gx - grx
+        dgy = gy - gry
+        cos_g = math.cos(-gryaw)
+        sin_g = math.sin(-gryaw)
+        local_x = cos_g * dgx - sin_g * dgy
+        local_y = sin_g * dgx + cos_g * dgy
+
+        cos_o = math.cos(oryaw)
+        sin_o = math.sin(oryaw)
+        return (
+            orx + cos_o * local_x - sin_o * local_y,
+            ory + sin_o * local_x + cos_o * local_y,
+            orz + (gz - grz),
+        )
+
+    def destroy_node(self) -> bool:
+        if self._gz_pose_proc is not None:
+            self._gz_pose_proc.terminate()
+            self._gz_pose_proc = None
+        return super().destroy_node()
 
     def _on_odom(self, msg: Odometry) -> None:
         p = msg.pose.pose.position
         q = msg.pose.pose.orientation
-        yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        yaw = _yaw_from_xyzw(q.x, q.y, q.z, q.w)
         self._robot_pose = (p.x, p.y, p.z, yaw)
 
     def _on_ball_collected(self, msg: String) -> None:
-        """Remove a collected ball: drop it from /sim/balls and delete the
-        model from the Gazebo world (nothing else consumed /ball/collected in
-        the Gazebo port — it was a Webots-era animation hook)."""
+        """Stop targeting a collected ball while retaining its physical model."""
         name = msg.data.strip()
         if not name or name in self._collected:
             return
         self._collected.add(name)
         self._balls.pop(name, None)
+        if not _REMOVE_COLLECTED_BALL:
+            self.get_logger().info(
+                f"ball collected -> retaining {name} in world for basket physics"
+            )
+            return
         req = f'name: "{name}" type: MODEL'
         try:
             subprocess.Popen(
@@ -164,7 +295,7 @@ class GazeboExtrasNode(Node):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            self.get_logger().info(f"ball collected -> removing {name} from world")
+            self.get_logger().info(f"ball collected -> removing {name} from world (legacy mode)")
         except OSError as exc:
             self.get_logger().warning(f"gz remove failed for {name}: {exc}")
 

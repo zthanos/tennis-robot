@@ -9,6 +9,7 @@
 #   2. Records a rosbag of the whole cmd_vel chain into runtime/.
 #   3. TEST A: publishes Twist directly to the diff_drive input (bypasses twist_mux).
 #   4. TEST B: publishes Twist to /cmd_vel_teleop (through twist_mux).
+#   5. TEST C: publishes counter-rotating intake-wheel commands.
 #      After each test it samples wheel velocities from /joint_states.
 #
 # Interpretation:
@@ -79,6 +80,7 @@ run "topic info /cmd_vel_teleop"          ros2 topic info -v /cmd_vel_teleop
 log "starting rosbag record -> $OUT/bag"
 ros2 bag record -o "$OUT/bag" \
   /cmd_vel_teleop /cmd_vel_nav /cmd_vel_collection \
+  /intake_wheel_velocity_controller/commands \
   "$CMD_TOPIC" /joint_states /diff_drive_controller/odom /clock \
   >"$OUT/rosbag.log" 2>&1 &
 BAG_PID=$!
@@ -108,16 +110,16 @@ run "is twist_mux forwarding? (echo $CMD_TOPIC --once)" \
 sample_wheels "during TEST B — nonzero => full chain OK"
 wait "$PUB_PID" 2>/dev/null
 
-# ── 4b. TEST C: lift wheel via ForwardCommandController ─────────────────────
+# ── 4b. TEST C: intake wheels via ForwardCommandController ──────────────────
 # Exercises the same gz_ros2_control write path with a different controller.
 # If the diff_drive wheels move but this does not, the issue is isolated to the
-# lift controller rather than the shared gz_ros2_control write path.
-log "TEST C: lift wheel 10 rad/s via /lift_wheel_velocity_controller/commands (5 s)"
-timeout 5 ros2 topic pub -r 10 /lift_wheel_velocity_controller/commands \
-  std_msgs/msg/Float64MultiArray '{data: [10.0]}' >/dev/null 2>&1 &
+# intake controller rather than the shared gz_ros2_control write path.
+log "TEST C: intake wheels [-10,+10] rad/s via /intake_wheel_velocity_controller/commands (5 s)"
+timeout 5 ros2 topic pub -r 10 /intake_wheel_velocity_controller/commands \
+  std_msgs/msg/Float64MultiArray '{data: [-10.0, 10.0]}' >/dev/null 2>&1 &
 PUB_PID=$!
 sleep 3
-sample_wheels "during TEST C — lift nonzero => gz write path OK"
+sample_wheels "during TEST C — intake wheels counter-rotate => gz write path OK"
 wait "$PUB_PID" 2>/dev/null
 
 # ── 5. wrap up ───────────────────────────────────────────────────────────────

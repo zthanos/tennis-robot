@@ -16,7 +16,11 @@ from std_msgs.msg import String
 from tennis_robot import yaw_from_quaternion
 
 MOTION_COMMAND_TOPIC = "/navigation/cmd_vel"
-CMD_VEL_TOPIC = "/cmd_vel"
+# The FSM's motor path enters the twist_mux arbiter as the "collection" input
+# (priority 70: above Nav2, below teleop). The old bare /cmd_vel went over the
+# gz bridge to the REMOVED Gazebo diff-drive plugin, so with ros2_control the
+# base silently never moved (debug-log #43).
+CMD_VEL_TOPIC = "/cmd_vel_collection"
 NAV_STATUS_TOPIC = "/navigation/status"
 
 

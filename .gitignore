@@ -26,3 +26,7 @@ models/*.pt
 ros2_ws/build_docker/
 ros2_ws/install_docker/
 ros2_ws/log/
+
+# VS Code C++ IntelliSense caches
+.vscode/browse.vc.db*
+.vscode/c_cpp_properties.json

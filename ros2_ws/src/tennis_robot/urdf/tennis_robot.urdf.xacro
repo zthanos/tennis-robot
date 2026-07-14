@@ -4,6 +4,7 @@
   <xacro:include filename="components/base.urdf.xacro"/>
   <xacro:include filename="components/funnel.urdf.xacro"/>
   <xacro:include filename="components/basket.urdf.xacro"/>
+  <xacro:include filename="components/battery.urdf.xacro"/>
   <xacro:include filename="components/drivetrain.urdf.xacro"/>
   <xacro:include filename="components/ros2_control.urdf.xacro"/>
   <xacro:include filename="components/lidar.urdf.xacro"/>
@@ -18,8 +19,42 @@
        scripts/generate_robot_urdf.py / the launch file. -->
   <xacro:arg name="sim_mode" default="true"/>
   <xacro:arg name="controllers_config" default="config/controllers.yaml"/>
-  <xacro:arg name="intake_roller_x_offset" default="0.0"/>
-  <xacro:arg name="intake_roller_z_offset" default="0.0"/>
+  <xacro:arg name="expose_intake_carriage_state" default="false"/>
+  <!-- Dual-wheel intake tuning (docs/dual-wheel-intake-design-el.md).
+       Injected from INTAKE_WHEEL_* envs by scripts/generate_robot_urdf.py. -->
+  <xacro:arg name="intake_wheel_radius" default="0.060"/>
+  <xacro:arg name="intake_wheel_gap" default="0.056"/>
+  <xacro:arg name="intake_nip_x" default="0.540"/>
+  <xacro:arg name="intake_wheel_tilt_deg" default="35.0"/>
+  <xacro:arg name="intake_wheel_max_vel" default="26.3"/>
+  <xacro:arg name="intake_wheel_effort" default="1.77"/>
+  <!-- Concept Validation Plan gates: Phase 1 = throat only (both false),
+       Phase 2 = +funnel, Phase 3 = wheels+ramp, Phase 4 = full intake. -->
+  <xacro:arg name="enable_funnel" default="true"/>
+  <xacro:arg name="enable_ramp" default="true"/>
+  <xacro:arg name="enable_assist" default="false"/>
+  <xacro:arg name="enable_conveyor" default="false"/>
+  <xacro:arg name="intake_assist_x" default="0.545"/>
+  <xacro:arg name="intake_assist_z" default="0.050"/>
+  <xacro:arg name="intake_assist_radius" default="0.030"/>
+  <xacro:arg name="intake_assist_length" default="0.200"/>
+  <xacro:arg name="intake_conveyor_x_bias" default="0.000"/>
+  <xacro:arg name="intake_conveyor_z_bias" default="0.000"/>
+  <!-- Bin v2 (docs/basket-bin-redesign-spec-el.md): sunken removable bin.
+       Ground-frame heights; front edge is pinned to the jump lip (0.425). -->
+  <xacro:arg name="basket_floor_front_x" default="0.42"/>
+  <xacro:arg name="basket_floor_top_z" default="0.025"/>
+  <xacro:arg name="basket_rear_x" default="0.02"/>
+  <xacro:arg name="basket_half_width" default="0.14"/>
+  <xacro:arg name="basket_wall_top_z" default="0.25"/>
+  <xacro:arg name="basket_center_lip_height" default="0.010"/>
+  <xacro:arg name="basket_management_run" default="0.14"/>
+  <xacro:arg name="basket_management_rise" default="0.010"/>
+  <xacro:arg name="basket_receiver_run" default="0.050"/>
+  <xacro:arg name="basket_receiver_rise" default="0.005"/>
+  <xacro:arg name="basket_hood_rear_overhang" default="0.040"/>
+  <xacro:arg name="basket_hood_rear_clearance_z" default="0.120"/>
+  <xacro:arg name="basket_hood_front_clearance_z" default="0.135"/>
 
   <xacro:property name="chassis_x" value="0.92"/>
   <xacro:property name="chassis_y" value="0.58"/> 
@@ -45,59 +80,71 @@
   <xacro:property name="motor_radius" value="0.03"/>
   <xacro:property name="motor_length" value="0.10"/>
 
-  <!-- Top-roller launcher intake (scripts/generate_curved_scoop_mesh.py):
-       the scoop is NOT a transport channel. Its front lip sits about 2 mm
-       above the court to give the ball a short, controlled resistance point
-       against the top roller. The roller should impart a brief launch impulse;
-       after that bite zone the ramp opens away from the roller so the ball
-       rides up by momentum and drops into the basket. Avoid tuning this back
-       into a continuous pinch path between roller and scoop. -->
-  <!-- Kept forward so the roller/lip bite happens before the funnel cheeks or
-       the main ramp can shove the ball sideways. -->
-  <xacro:property name="intake_x" value="${0.60 + float($(arg intake_roller_x_offset))}"/>
-  <!-- base_link origin is 45 mm above ground: 0.112 - 0.045. With a 45 mm
-       roller radius this leaves 67 mm below the roller, so the rigid 66 mm
-       simulation ball can enter without initial interference. -->
-  <xacro:property name="intake_z" value="${0.067 + float($(arg intake_roller_z_offset))}"/>
-  <xacro:property name="intake_radius" value="0.045"/>
-  <xacro:property name="intake_width" value="0.18"/>
+  <!-- Dual-wheel side-pinch intake: capture -> transport -> guide -> hopper
+       (docs/dual-wheel-intake-design-el.md). Two vertical-axis wheels flank a
+       centre corridor at the nip plane; the funnel centres the ball, the
+       wheels capture and transport it rearward, the ramp elevates it toward
+       the basket. -->
+  <xacro:property name="intake_wheel_radius" value="${float($(arg intake_wheel_radius))}"/>
+  <xacro:property name="intake_wheel_gap" value="${float($(arg intake_wheel_gap))}"/>
+  <xacro:property name="intake_nip_x" value="${float($(arg intake_nip_x))}"/>
+  <xacro:property name="intake_wheel_tilt_rad" value="${float($(arg intake_wheel_tilt_deg)) * 0.017453292519943295}"/>
+  <xacro:property name="intake_wheel_max_vel" value="${float($(arg intake_wheel_max_vel))}"/>
+  <xacro:property name="intake_wheel_effort" value="${float($(arg intake_wheel_effort))}"/>
+  <!-- Wheel centre offset from the corridor centreline. -->
+  <xacro:property name="intake_wheel_y" value="${intake_wheel_gap / 2.0 + intake_wheel_radius}"/>
+  <!-- Wheel cylinder spans ground z 0.030..0.110 (centre 0.070): the band
+       still includes the 66 mm ball's equator (rest z=33, and it RISES as
+       the ball is fed onto the ramp), while the wheel undersides clear the
+       ramp sheet where it climbs through their rear span (ramp z≈0.021 at
+       x=0.53 — a 0.005 bottom would intersect it). base_link is 45 mm above
+       ground, hence wheel_z = 0.025. -->
+  <xacro:property name="intake_wheel_height" value="0.080"/>
+  <xacro:property name="intake_wheel_z" value="${0.070 - base_link_height}"/>
+  <!-- Outward carriage travel: 8 mm absorbs the 3 mm/side nominal
+       interference with margin. Spring k is SDF-patched by the generator. -->
+  <xacro:property name="intake_carriage_travel" value="0.008"/>
+  <xacro:property name="intake_assist_x" value="${float($(arg intake_assist_x))}"/>
+  <xacro:property name="intake_assist_z" value="${float($(arg intake_assist_z))}"/>
+  <xacro:property name="intake_assist_radius" value="${float($(arg intake_assist_radius))}"/>
+  <xacro:property name="intake_assist_length" value="${float($(arg intake_assist_length))}"/>
+  <xacro:property name="intake_conveyor_x_bias" value="${float($(arg intake_conveyor_x_bias))}"/>
+  <xacro:property name="intake_conveyor_z_bias" value="${float($(arg intake_conveyor_z_bias))}"/>
+  <xacro:property name="intake_conveyor_radius" value="0.025"/>
+  <xacro:property name="intake_conveyor_length" value="0.200"/>
   <xacro:property name="scooper_pitch" value="0.1745"/>  <!-- 10 degrees; funnel-cheek tilt -->
 
-  <xacro:property name="lidar_xyz" value="-0.08 0 0.498"/>
+  <xacro:property name="lidar_xyz" value="-0.42 0 0.498"/>
   <xacro:property name="lidar_rpy" value="0 0 0"/>  <!-- level chassis: horizontal scan plane -->
   <xacro:property name="camera_xyz" value="0.535 0 0.443"/>
   <xacro:property name="camera_rpy" value="0 0.273 0"/>  <!-- forward-down tilt ~15.6deg; preserves the old world aim (0.22 cam + 0.053 chassis pitch) now that the chassis is level -->
   <xacro:property name="sensor_update_rate" value="31.25"/>
 
-  <!-- Sim-only debug camera (intake_debug_camera.urdf.xacro): mounted low and
-       to the LEFT of the intake mouth (base_link 0.5 0.13 -0.02, i.e. 25 mm
-       above ground, just inside the funnel cheek at y=0.145), aimed
-       diagonally inward-up-forward at the roller/lip nip. A head-on underside
-       mount is blocked by the scoop/ramp itself (verified: its depth
-       camera read a solid surface ~8 cm away filling the whole frame), so the
-       line of sight comes in from the side of the channel where nothing
-       obstructs it. yaw/pitch computed for the roller centre at effective
-       (0.615, 0, 0.107 ground); keep in sync if intake_* offsets change
-       materially. -->
-  <xacro:property name="intake_debug_camera_xyz" value="0.5 0.13 -0.02"/>
-  <!-- Aimed at the nip midpoint (0.607, 0, 0.075 ground) rather than the
-       roller centre, so the ball/roller/lip contact zone is centred. -->
-  <xacro:property name="intake_debug_camera_rpy" value="0 -0.289 -0.882"/>
+  <!-- Sim-only debug camera (intake_debug_camera.urdf.xacro): mounted ahead
+       of the intake corridor on the centreline (base_link 0.78 0 0.06 =
+       105 mm above ground), looking straight BACK down the corridor with a
+       slight downward pitch at the throat centre (nip 0.590, ball centre
+       z=0.033 ground). This frames both intake wheels, the gap between
+       them, and the ball as it enters the nip. The old side mount
+       (0.5, 0.13) is now inside the left wheel's swept volume. -->
+  <xacro:property name="intake_debug_camera_xyz" value="0.78 0 0.06"/>
+  <xacro:property name="intake_debug_camera_rpy" value="0 0.339 3.14159"/>
 
-  <!-- Throat beam crosses the intake mouth at ball-centre height (40 mm
-       above ground = -0.005 in base_link), right where the foam roller first
-       bites the ball (centre x~0.58): detects a ball at the nip (jam /
-       partial-capture detection). Collection confirmation is the BASKET
+  <!-- Throat beam crosses the corridor at ball-centre height (40 mm above
+       ground = -0.005 in base_link) just AHEAD of the intake wheels: the
+       wheel cylinders span x = nip_x ± Rw = 0.53..0.65, so a beam inside
+       that band would stare at the wheels and read permanently broken.
+       At x=0.670 it fires when the ball centre is ~57 mm before first wheel
+       contact (ball-centre x≈0.613). Collection confirmation is the BASKET
        beam pair below — see gazebo_extras_node.py. -->
-  <!-- Trigger just before the ball reaches the roller envelope. The first
-       roller contact is at ball-centre x≈0.597 m, so a beam behind that point
-       cannot start a stationary roller in time. -->
-  <xacro:property name="ir_x" value="0.620"/>
+  <xacro:property name="ir_x" value="0.720"/>
   <xacro:property name="ir_y" value="0.105"/>
   <xacro:property name="ir_z" value="-0.005"/>
-  <xacro:property name="basket_ir_x" value="0.28"/> 
+  <!-- Basket confirmation beam crosses the midpoint of the inclined receiver
+       at the rolling ball's equator. Sensor coordinates are base_link-frame. -->
+  <xacro:property name="basket_ir_x" value="${float($(arg basket_floor_front_x)) + float($(arg basket_receiver_run)) / 2.0}"/>
   <xacro:property name="basket_ir_y" value="0.105"/> 
-  <xacro:property name="basket_ir_z" value="0.113"/> 
+  <xacro:property name="basket_ir_z" value="${float($(arg basket_floor_top_z)) + float($(arg basket_management_rise)) + float($(arg basket_receiver_rise)) / 2.0 + 0.033 - base_link_height}"/>
 
   <xacro:property name="max_linear_acceleration" value="2.0"/> 
   <xacro:property name="max_angular_acceleration" value="4.0"/>
@@ -156,15 +203,88 @@
       width="${wheel_width}"
       mass="${wheel_mass}"/>
 
-  <xacro:intake_roller
-      x="${intake_x}"
-      z="${intake_z}"
-      radius="${intake_radius}"
-      width="${intake_width}"
-      mass="0.20"/>
+  <!-- Left wheel drives ω<0 / right ω>0 (opposite signs, commanded by
+       intake_wheel_velocity_controller) so both inner faces move rearward. -->
+  <xacro:intake_side_wheel
+      side="left"
+      y="${intake_wheel_y}"
+      nip_x="${intake_nip_x}"
+      wheel_z="${intake_wheel_z}"
+      tilt_rad="${intake_wheel_tilt_rad}"
+      radius="${intake_wheel_radius}"
+      height="${intake_wheel_height}"
+      carriage_travel="${intake_carriage_travel}"
+      max_vel="${intake_wheel_max_vel}"
+      effort="${intake_wheel_effort}"
+      mass="0.20"
+      sensor_index="0"/>
+  <xacro:intake_side_wheel
+      side="right"
+      y="${-intake_wheel_y}"
+      nip_x="${intake_nip_x}"
+      wheel_z="${intake_wheel_z}"
+      tilt_rad="${intake_wheel_tilt_rad}"
+      radius="${intake_wheel_radius}"
+      height="${intake_wheel_height}"
+      carriage_travel="${intake_carriage_travel}"
+      max_vel="${intake_wheel_max_vel}"
+      effort="${intake_wheel_effort}"
+      mass="0.20"
+      sensor_index="1"/>
 
-  <xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}" pitch="${scooper_pitch}"/>
-  <xacro:ball_basket parent="base_link"/>
+  <xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}" pitch="${scooper_pitch}"
+      enable_cheeks="$(arg enable_funnel)" enable_ramp="$(arg enable_ramp)"/>
+  <xacro:if value="$(arg enable_assist)">
+    <xacro:intake_assist_roller
+        parent="base_link"
+        x="${intake_assist_x}"
+        z="${intake_assist_z}"
+        radius="${intake_assist_radius}"
+        length="${intake_assist_length}"
+        mass="0.20"/>
+  </xacro:if>
+  <xacro:if value="$(arg enable_conveyor)">
+    <xacro:intake_ramp_conveyor_roller
+        name="intake_conveyor_front"
+        parent="base_link"
+        x="${0.525 + intake_conveyor_x_bias}"
+        z="${0.051 + intake_conveyor_z_bias}"
+        radius="${intake_conveyor_radius}"
+        length="${intake_conveyor_length}"
+        mass="0.14"/>
+    <xacro:intake_ramp_conveyor_roller
+        name="intake_conveyor_mid"
+        parent="base_link"
+        x="${0.490 + intake_conveyor_x_bias}"
+        z="${0.067 + intake_conveyor_z_bias}"
+        radius="${intake_conveyor_radius}"
+        length="${intake_conveyor_length}"
+        mass="0.14"/>
+    <xacro:intake_ramp_conveyor_roller
+        name="intake_conveyor_rear"
+        parent="base_link"
+        x="${0.455 + intake_conveyor_x_bias}"
+        z="${0.101 + intake_conveyor_z_bias}"
+        radius="${intake_conveyor_radius}"
+        length="${intake_conveyor_length}"
+        mass="0.14"/>
+  </xacro:if>
+  <xacro:ball_basket
+      parent="base_link"
+      floor_front_x="${float($(arg basket_floor_front_x))}"
+      floor_top_z_ground="${float($(arg basket_floor_top_z))}"
+      rear_x="${float($(arg basket_rear_x))}"
+      half_width="${float($(arg basket_half_width))}"
+      wall_top_z_ground="${float($(arg basket_wall_top_z))}"
+      center_lip_height="${float($(arg basket_center_lip_height))}"
+      management_run="${float($(arg basket_management_run))}"
+      management_rise="${float($(arg basket_management_rise))}"
+      receiver_run="${float($(arg basket_receiver_run))}"
+      receiver_rise="${float($(arg basket_receiver_rise))}"
+      hood_rear_overhang="${float($(arg basket_hood_rear_overhang))}"
+      hood_rear_clearance_z_ground="${float($(arg basket_hood_rear_clearance_z))}"
+      hood_front_clearance_z_ground="${float($(arg basket_hood_front_clearance_z))}"/>
+  <xacro:battery_pack parent="base_link"/>
 
   <xacro:rplidar_c1_mount
       parent="base_link"
@@ -235,7 +355,11 @@
 
   <xacro:tennis_robot_ros2_control
       sim_mode="$(arg sim_mode)"
-      controllers_config="$(arg controllers_config)"/>
+      controllers_config="$(arg controllers_config)"
+      expose_intake_carriage_state="$(arg expose_intake_carriage_state)"
+      intake_max_vel="${intake_wheel_max_vel}"
+      enable_assist="$(arg enable_assist)"
+      enable_conveyor="$(arg enable_conveyor)"/>
 
   <xacro:robot_body_panels parent="base_link" chassis_z="${chassis_z}"/>
 </robot>

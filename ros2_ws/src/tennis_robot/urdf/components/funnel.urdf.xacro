@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="intake_funnel" params="parent chassis_z pitch">
+  <!-- Dual-wheel intake support structure. Roles per
+       docs/dual-wheel-intake-design-el.md:
+         cheeks -> centering (guide off-centre balls into the wheel throat)
+         ramp   -> elevation + guidance toward the basket
+       enable_cheeks / enable_ramp implement the Concept Validation Plan
+       gates (Phase 1 = throat only runs with both disabled). -->
+  <xacro:macro name="intake_funnel" params="parent chassis_z pitch enable_cheeks:=true enable_ramp:=true">
     <joint name="funnel_joint" type="fixed">
       <parent link="${parent}"/>
       <child link="funnel_link"/>
@@ -12,58 +18,63 @@
         <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
       </inertial>
 
-      <visual name="funnel_left_cheek_vis">
-        <origin xyz="0.60 0.145 0.052" rpy="0 ${pitch} 0.25"/>
-        <geometry><box size="0.24 0.01 0.10"/></geometry>
-        <material name="intake_orange"/>
-      </visual>
-      <!-- Cheek collisions so the funnel physically guides off-centre balls
-           into the (narrower, scoop-width) intake instead of only looking
-           like it does. Mouth is ~0.35 m wide at the front tips, converging
-           to the 0.18 m roller/channel width at the intake mouth. -->
-      <collision name="funnel_left_cheek_col">
-        <origin xyz="0.60 0.145 0.052" rpy="0 ${pitch} 0.25"/>
-        <geometry><box size="0.24 0.01 0.10"/></geometry>
-      </collision>
+      <xacro:if value="${enable_cheeks}">
+        <!-- Cheeks hand the ball off to the intake wheels' front quadrants:
+             rear tips at ~(0.647, ±0.146), a clear 81 mm from the wheel
+             centres (0.590, ±0.090, r=0.060+carriage travel). The spinning
+             wheel fronts continue the convergence (their front surfaces
+             sweep toward the centreline), so the cheeks only need to bring
+             the ball inside |y| < ~0.14. The old cheeks at x=0.60 would
+             intersect the wheel cylinders (51 mm < 65 mm clearance). -->
+        <visual name="funnel_left_cheek_vis">
+          <origin xyz="0.76 0.175 0.052" rpy="0 ${pitch} 0.25"/>
+          <geometry><box size="0.24 0.01 0.10"/></geometry>
+          <material name="intake_orange"/>
+        </visual>
+        <collision name="funnel_left_cheek_col">
+          <origin xyz="0.76 0.175 0.052" rpy="0 ${pitch} 0.25"/>
+          <geometry><box size="0.24 0.01 0.10"/></geometry>
+        </collision>
 
-      <visual name="funnel_right_cheek_vis">
-        <origin xyz="0.60 -0.145 0.052" rpy="0 ${pitch} -0.25"/>
-        <geometry><box size="0.24 0.01 0.10"/></geometry>
-        <material name="intake_orange"/>
-      </visual>
-      <collision name="funnel_right_cheek_col">
-        <origin xyz="0.60 -0.145 0.052" rpy="0 ${pitch} -0.25"/>
-        <geometry><box size="0.24 0.01 0.10"/></geometry>
-      </collision>
+        <visual name="funnel_right_cheek_vis">
+          <origin xyz="0.76 -0.175 0.052" rpy="0 ${pitch} -0.25"/>
+          <geometry><box size="0.24 0.01 0.10"/></geometry>
+          <material name="intake_orange"/>
+        </visual>
+        <collision name="funnel_right_cheek_col">
+          <origin xyz="0.76 -0.175 0.052" rpy="0 ${pitch} -0.25"/>
+          <geometry><box size="0.24 0.01 0.10"/></geometry>
+        </collision>
+      </xacro:if>
 
-      <collision name="intake_channel_col">
-        <!-- Launcher scoop: a 2 mm entry lip creates the initial resistance
-             needed for roller bite, then the ramp quickly opens away from
-             the roller and rises toward the basket. This is a guide/launch
-             ramp, not a curved conveyor channel. Mesh is generated in
-             funnel-frame coords by scripts/generate_curved_scoop_mesh.py —
-             keep the two in sync. -->
-        <origin xyz="-0.015 0 0" rpy="0 0 0"/>
-        <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
-      </collision>
-      <visual name="intake_channel_vis">
-        <origin xyz="-0.015 0 0" rpy="0 0 0"/>
-        <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
-        <material name="intake_orange"/>
-      </visual>
+      <xacro:if value="${enable_ramp}">
+        <collision name="intake_channel_col">
+          <!-- Elevation ramp behind the wheel throat: the wheels transport
+               the ball rearward through the nip and it continues up this
+               ramp toward the basket. Mesh is generated in funnel-frame
+               coords by scripts/generate_curved_scoop_mesh.py — keep the
+               two in sync. -->
+          <origin xyz="-0.015 0 0" rpy="0 0 0"/>
+          <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
+        </collision>
+        <visual name="intake_channel_vis">
+          <origin xyz="-0.015 0 0" rpy="0 0 0"/>
+          <geometry><mesh filename="package://tennis_robot/meshes/curved_scoop.stl"/></geometry>
+          <material name="intake_orange"/>
+        </visual>
 
-      <!-- High safety deflector only. The launcher path should not depend on
-           this ceiling for transport; it is kept above the expected ramp
-           trajectory to catch wild rebounds. -->
-      <collision name="intake_deflector_col">
-        <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
-        <geometry><box size="0.16 0.20 0.006"/></geometry>
-      </collision>
-      <visual name="intake_deflector_vis">
-        <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
-        <geometry><box size="0.16 0.20 0.006"/></geometry>
-        <material name="intake_orange"/>
-      </visual>
+        <!-- High safety deflector only: catches wild rebounds above the
+             expected transport trajectory. -->
+        <collision name="intake_deflector_col">
+          <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
+          <geometry><box size="0.16 0.20 0.006"/></geometry>
+        </collision>
+        <visual name="intake_deflector_vis">
+          <origin xyz="0.52 0 0.207" rpy="0 0.43 0"/>
+          <geometry><box size="0.16 0.20 0.006"/></geometry>
+          <material name="intake_orange"/>
+        </visual>
+      </xacro:if>
     </link>
   </xacro:macro>
 </robot>

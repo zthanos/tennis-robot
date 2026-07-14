@@ -15,10 +15,28 @@ export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-false}"
 export UBUNTU_GPU="${UBUNTU_GPU:-true}"
 export SLAM_MODE="${SLAM_MODE:-localization}"
 export NAV2_START_DELAY_S="${NAV2_START_DELAY_S:-25}"
-export INTAKE_LIP_RAISE_M="${INTAKE_LIP_RAISE_M:-0.002}"
-export INTAKE_ROLLER_X_OFFSET_M="${INTAKE_ROLLER_X_OFFSET_M:-0.015}"
-export INTAKE_LIP_X_OFFSET_M="${INTAKE_LIP_X_OFFSET_M:--0.006}"
-export INTAKE_ROLLER_Z_OFFSET_M="${INTAKE_ROLLER_Z_OFFSET_M:--0.003}"
+# Dual-wheel intake (docs/dual-wheel-intake-design-el.md). Fallbacks are the
+# Phase 1-4 bench-proven geometry (debug-log #41-#42) and must match the
+# defaults in scripts/generate_robot_urdf.py / generate_curved_scoop_mesh.py.
+# All sweep-able. Validation-phase gates: INTAKE_ENABLE_FUNNEL / _RAMP.
+export INTAKE_WHEEL_RADIUS_M="${INTAKE_WHEEL_RADIUS_M:-0.060}"
+export INTAKE_WHEEL_GAP_M="${INTAKE_WHEEL_GAP_M:-0.056}"
+export INTAKE_NIP_X_M="${INTAKE_NIP_X_M:-0.540}"
+export INTAKE_WHEEL_TILT_DEG="${INTAKE_WHEEL_TILT_DEG:-35.0}"
+export INTAKE_WHEEL_SPRING_K="${INTAKE_WHEEL_SPRING_K:-1000}"
+export INTAKE_LIP_RAISE_M="${INTAKE_LIP_RAISE_M:-0.0}"
+export INTAKE_ENABLE_FUNNEL="${INTAKE_ENABLE_FUNNEL:-true}"
+export INTAKE_ENABLE_RAMP="${INTAKE_ENABLE_RAMP:-true}"
+export INTAKE_RAMP_PROFILE="${INTAKE_RAMP_PROFILE:-launch}"
+if [ "$INTAKE_RAMP_PROFILE" = "launch" ]; then
+    export INTAKE_RAMP_ENTRY_X_M="${INTAKE_RAMP_ENTRY_X_M:-$INTAKE_NIP_X_M}"
+else
+    export INTAKE_RAMP_ENTRY_X_M="${INTAKE_RAMP_ENTRY_X_M:-0.500}"
+fi
+export INTAKE_LAUNCH_EXIT_X_M="${INTAKE_LAUNCH_EXIT_X_M:-0.465}"
+export INTAKE_LAUNCH_EXIT_Z_M="${INTAKE_LAUNCH_EXIT_Z_M:-0.032}"
+export INTAKE_LAUNCH_EXIT_ANGLE_DEG="${INTAKE_LAUNCH_EXIT_ANGLE_DEG:-35.0}"
+export BASKET_CENTER_LIP_HEIGHT_M="${BASKET_CENTER_LIP_HEIGHT_M:-0.010}"
 
 python3 "$SCRIPT_DIR/scripts/generate_curved_scoop_mesh.py"
 

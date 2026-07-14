@@ -93,9 +93,14 @@ COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
 # physically inside the basket volume, not when it touches the entry lip. The
 # lip/roller contact is just the launch impulse; hardware/sim confirmation
 # comes from the basket beam pair (see gazebo_extras_node.py).
-BASKET_ZONE_X_M = (0.0, 0.42)
-BASKET_HALF_WIDTH_M = 0.16
-BASKET_MIN_BALL_Z_M = 0.12
+# Low-hopper basket (debug-log #41-#46): collection is credited once the ball
+# is inside the basket x/y volume and above ground-ball height. Bin v2.1 lowered
+# the floor to 0.025, so a collected resting ball sits at centre z~=0.058; the
+# one-shot sim-ball def guard below prevents repeated counts while Gazebo removes
+# the collected ball.
+BASKET_ZONE_X_M = (0.02, 0.42)
+BASKET_HALF_WIDTH_M = 0.14
+BASKET_MIN_BALL_Z_M = 0.055
 IR_INTAKE_TRIGGER_THRESHOLD = 500.0
 SCAN_SIDE_DURATION_S = 12.0
 COLLECT_PATTERN_COLLECTION_TIMEOUT_S = _env_float("COLLECT_PATTERN_COLLECTION_TIMEOUT_S", 35.0)
@@ -221,6 +226,9 @@ class ControllerNode(Node):
         self._control_command_mode = "idle"
         self._control_command_source = "startup"
         self._sim_balls: list[dict] = []
+        self._sim_balls_seen = False
+        self._counted_sim_ball_defs: set[str] = set()
+        self._hardware_collection_latched = False
         self._turn_180_start_yaw: float = 0.0
 
         # ── pose source: SLAM-corrected TF with /odom fallback ─────────────────
@@ -372,10 +380,17 @@ class ControllerNode(Node):
         self._control_command_source = msg.source
 
     def _on_sim_balls(self, msg: String) -> None:
+        self._sim_balls_seen = True
         try:
             self._sim_balls = json.loads(msg.data)
         except (json.JSONDecodeError, TypeError):
             self._sim_balls = []
+        current_defs = {
+            str(ball.get("def"))
+            for ball in self._sim_balls
+            if ball.get("def") is not None
+        }
+        self._counted_sim_ball_defs.intersection_update(current_defs)
 
     # ── main step (runs at TIME_STEP_S Hz) ─────────────────────────────────────
 
@@ -1349,16 +1364,37 @@ class ControllerNode(Node):
 
     def _check_collection(self, command: ConceptACommand) -> bool:
         if not command.collector.intake_enabled:
+            self._hardware_collection_latched = False
             return False
-        # Hardware path: IR sensors
-        if self._ir_left > IR_INTAKE_TRIGGER_THRESHOLD or self._ir_right > IR_INTAKE_TRIGGER_THRESHOLD:
+        # Simulation path: use ground-truth basket volume when /sim/balls is
+        # present. Gazebo beam rays can see an approaching ball before it is
+        # actually inside the hopper, so they are not authoritative in sim.
+        if self._sim_balls_seen:
+            if not self._sim_balls:
+                return False
+            return self._check_sim_collection()
+
+        # Hardware fallback: basket IR sensors. Count once per beam break.
+        hardware_triggered = (
+            self._ir_left > IR_INTAKE_TRIGGER_THRESHOLD
+            or self._ir_right > IR_INTAKE_TRIGGER_THRESHOLD
+        )
+        if not hardware_triggered:
+            self._hardware_collection_latched = False
+            return False
+        if self._hardware_collection_latched:
             return True
-        # Simulation path: ground-truth ball positions from /sim/balls
-        if not self._sim_balls:
-            return False
+        self._hardware_collection_latched = True
+        self.collection_count += 1
+        return True
+
+    def _check_sim_collection(self) -> bool:
         ori_cos = math.cos(self._robot_yaw)
         ori_sin = math.sin(self._robot_yaw)
         for ball in self._sim_balls:
+            ball_def = str(ball.get("def", ""))
+            if ball_def in self._counted_sim_ball_defs:
+                continue
             dx = ball["x"] - self._robot_x
             dy = ball["y"] - self._robot_y
             # Approximate rotation matrix for 2D (robot is flat on the court)
@@ -1372,8 +1408,9 @@ class ControllerNode(Node):
                 and bz >= BASKET_MIN_BALL_Z_M
             ):
                 collected_msg = String()
-                collected_msg.data = ball["def"]
+                collected_msg.data = ball_def
                 self._pub_ball_collected.publish(collected_msg)
+                self._counted_sim_ball_defs.add(ball_def)
                 self.collection_count += 1
                 return True
         return False
@@ -1426,7 +1463,15 @@ class ControllerNode(Node):
         self._pub_motion_cmd.publish(twist)
 
         requested = command.collector
-        if command.state in {CollectorState.APPROACH, CollectorState.CAPTURE}:
+        if command.state == CollectorState.CAPTURE:
+            # Committed ingest: the wheels MUST already spin when the ball
+            # meets them. Gating capture on the throat beam deadlocked live
+            # (debug-log #44): with the dual-wheel geometry a plowed ball
+            # reaches at most x=0.678 and only grazes the 0.670 beam, so the
+            # latch never set and the ball was bulldozed by dead wheels.
+            collector_enabled = requested.intake_enabled
+            self._intake_roller_latched = True
+        elif command.state == CollectorState.APPROACH:
             self._intake_roller_latched |= self._intake_beam_broken
             collector_enabled = requested.intake_enabled and self._intake_roller_latched
         else:

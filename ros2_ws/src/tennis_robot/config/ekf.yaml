@@ -30,15 +30,16 @@ ekf_filter_node:
     odom0_relative: false
     odom0_queue_size: 10
 
-    # IMU (MPU6050): trust yaw-RATE (gyro z) and forward acceleration. The
-    # MPU6050 has no magnetometer, so there is no absolute heading — fuse the
-    # rate, not the angle.
+    # IMU (MPU6050): trust yaw-RATE (gyro z) ONLY. No magnetometer, so no
+    # absolute heading — fuse the rate, not the angle. Do NOT fuse linear
+    # acceleration: accelerometer bias double-integrates into runaway position
+    # (live 2026-07-11 the filtered pose drifted 25 m off-court, debug-log #44).
     imu0: /imu/data
     imu0_config: [false, false, false,
                   false, false, false,
                   false, false, false,
                   false, false, true,
-                  true,  false, false]
+                  false, false, false]
     imu0_differential: false
     imu0_relative: false
     imu0_queue_size: 10
