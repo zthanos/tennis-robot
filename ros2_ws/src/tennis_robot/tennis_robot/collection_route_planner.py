@@ -75,6 +75,15 @@ class RouteStop:
     order: int
     attempts: int = 0
     status: str = "pending"  # pending|active|collected|skipped|missing
+    # Plan-time position: goal refreshes follow map drift only up to a sanity
+    # cap around this point (chain-merged entries can wander metres away).
+    planned_x_m: float = 0.0
+    planned_y_m: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.planned_x_m == 0.0 and self.planned_y_m == 0.0:
+            self.planned_x_m = self.ball_x_m
+            self.planned_y_m = self.ball_y_m
 
 
 # ── Geometry helpers ───────────────────────────────────────────────────────────

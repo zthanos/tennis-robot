@@ -69,6 +69,10 @@ _INITIAL_ADOPT_GATE_M = 1.0
 # Refresh the nav goal when the mapped ball drifted this far from the stop's
 # planned position (nudged balls, refined estimates).
 _GOAL_REFRESH_DRIFT_M = 0.3
+# ...but an entry that wandered this far from the PLAN-time position is not
+# the same physical ball any more (run-4 stop 6: chain-merges dragged the
+# entry 4+ m across the court and the approach followed it) — drop the stop.
+_GOAL_DRIFT_ABANDON_M = 1.5
 
 _IDLE_CMD = ConceptACommand(
     state=CollectorState.IDLE,
@@ -416,8 +420,23 @@ class CollectRouteMission:
         # The mapped ball may have drifted since the plan (e.g. nudged by a
         # previous capture attempt — run-4 stops 12/6 retried into the STALE
         # standoff and found nothing). Follow the live map entry: refresh the
-        # ball position and approach pose when it moved meaningfully.
+        # ball position and approach pose when it moved meaningfully — but an
+        # entry far from the PLAN position has chain-merged onto other balls
+        # (run-4 stop 6 wandered 4+ m): drop it instead of chasing it.
         entry = ball_map.balls.get(stop.ball_id)
+        if entry is not None and math.hypot(
+            entry.x_m - stop.planned_x_m, entry.y_m - stop.planned_y_m
+        ) > _GOAL_DRIFT_ABANDON_M:
+            self._emit(
+                "route_ball_lost",
+                ball_id=stop.ball_id,
+                reason="map_entry_drifted",
+                drift_m=math.hypot(
+                    entry.x_m - stop.planned_x_m, entry.y_m - stop.planned_y_m
+                ),
+            )
+            self._skip_current(ball_map, "missing")
+            return _NAV_IDLE_CMD
         if entry is not None and math.hypot(
             entry.x_m - stop.ball_x_m, entry.y_m - stop.ball_y_m
         ) > _GOAL_REFRESH_DRIFT_M:

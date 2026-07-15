@@ -381,6 +381,17 @@ def test_nav_goal_follows_drifted_map_entry():
     assert "route_goal_updated" in events
 
 
+def test_wandering_map_entry_abandons_stop():
+    # Run-4 stop 6: chain-merges dragged the entry 4+ m; the mission must
+    # drop the stop instead of following the wandering entry across court.
+    mission, ball_map, now = _mission_in_nav(ball_positions=((3.0, 0.0),))
+    ball_map.balls[1].x_m, ball_map.balls[1].y_m = 3.5, 4.0  # 4 m from plan
+    _tick(mission, ball_map, nav_state="active", now=now)
+    assert mission.stops[0].status == "missing"
+    events = dict(mission.drain_events())
+    assert events.get("route_ball_lost", {}).get("reason") == "map_entry_drifted"
+
+
 def test_current_target_xy_reports_pursued_ball():
     mission, ball_map, now = _mission_in_nav(ball_positions=((3.0, 0.0),))
     assert mission.current_target_xy == (3.0, 0.0)
