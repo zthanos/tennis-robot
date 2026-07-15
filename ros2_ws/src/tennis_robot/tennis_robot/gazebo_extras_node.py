@@ -104,6 +104,9 @@ class GazeboExtrasNode(Node):
             MarkerArray, "/sim/roller_contact_markers", 10
         )
         self._pub_roller_contact = self.create_publisher(Bool, "/sim/roller_contact", 10)
+        # Ground-truth robot pose (world frame, straight from gz pose/info):
+        # lets consumers measure SLAM/odom divergence (collect_route log #10).
+        self._pub_true_pose = self.create_publisher(String, "/sim/robot_true_pose", 1)
         self._robot_pose: tuple[float, float, float, float] | None = None  # x, y, z, yaw
         self._gz_robot_pose: tuple[float, float, float, float] | None = None
         self._contact_points: list[tuple[float, float, float]] = []
@@ -304,6 +307,15 @@ class GazeboExtrasNode(Node):
         ir_msg.left = self._ir_left
         ir_msg.right = self._ir_right
         self._pub_ir.publish(ir_msg)
+        if self._gz_robot_pose is not None:
+            gx, gy, gzz, gyaw = self._gz_robot_pose
+            self._pub_true_pose.publish(
+                String(
+                    data=json.dumps(
+                        {"x": round(gx, 3), "y": round(gy, 3), "yaw": round(gyaw, 4)}
+                    )
+                )
+            )
         self._pub_intake_beam.publish(
             Bool(
                 data=(

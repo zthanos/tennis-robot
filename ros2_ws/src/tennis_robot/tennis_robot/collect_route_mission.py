@@ -79,6 +79,9 @@ _NAV_INSTANT_FAIL_S = 2.0
 _NAV_MAX_RECOVERIES = 2
 _NAV_RECOVER_REVERSE_S = 2.5
 _NAV_RECOVER_SPEED_M_S = -0.15
+# Consecutive stops skipped on nav failure before the route aborts loudly
+# instead of burning through every remaining stop (run-5/6 cascades).
+_MAX_CONSECUTIVE_NAV_SKIPS = 2
 
 _IDLE_CMD = ConceptACommand(
     state=CollectorState.IDLE,
@@ -151,6 +154,7 @@ class CollectRouteMission:
         self._nav_attempts: int = 0
         self._nav_recoveries: int = 0
         self._recover_until_s: float = 0.0
+        self._consecutive_nav_skips: int = 0
         self._approach_elapsed_s: float = 0.0
         self._missing_scan_elapsed_s: float = 0.0
         self._live_seen_in_approach: bool = False
@@ -507,6 +511,22 @@ class CollectRouteMission:
                 reason="nav_timeout" if timed_out else "nav_failed",
             )
             if self._nav_attempts > NAV_RETRIES:
+                self._consecutive_nav_skips += 1
+                if self._consecutive_nav_skips >= _MAX_CONSECUTIVE_NAV_SKIPS:
+                    # Everything is being rejected — burning through the rest
+                    # of the route is pointless (run-5/6 cascades) and blind
+                    # recovery reversing walked the robot into the fence.
+                    # Stop loudly; remaining stops stay pending for a rerun.
+                    stop.status = "skipped"
+                    ball_map.set_state(stop.ball_id, "collection_failed")
+                    self.current_blocker = "nav_rejected_cascade"
+                    self._emit(
+                        "route_aborted",
+                        reason="nav_rejected_cascade",
+                        consecutive_skips=self._consecutive_nav_skips,
+                    )
+                    self._finish()
+                    return _IDLE_CMD
                 self._skip_current(ball_map, "skipped")
                 return _NAV_IDLE_CMD
             # Drop the goal for one tick so the controller cancels the
@@ -515,6 +535,7 @@ class CollectRouteMission:
             return _NAV_IDLE_CMD
 
         if nav_state == "reached":
+            self._consecutive_nav_skips = 0
             self._enter_approach(robot_pose, behavior, ball_map, now)
         return _NAV_IDLE_CMD
 

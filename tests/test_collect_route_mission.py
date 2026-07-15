@@ -165,6 +165,27 @@ def test_instant_nav_failure_triggers_reverse_recovery():
     assert "route_leg_skip" not in events
 
 
+def test_consecutive_nav_skips_abort_route_loudly():
+    # Run-5/6 regression: when every goal is rejected, stop after 2
+    # consecutive nav skips instead of burning through the whole route.
+    mission, ball_map, now = _mission_in_nav(
+        ball_positions=((2.0, 0.0), (4.0, 0.0), (6.0, 0.0), (8.0, 0.5))
+    )
+    for _ in range(80):
+        if mission.is_done:
+            break
+        # Slow failures (elapsed > instant threshold) exhaust retries fast.
+        _tick(mission, ball_map, nav_state="active", now=now, dt=3.0)
+        _tick(mission, ball_map, nav_state="failed", now=now, dt=0.1)
+        _tick(mission, ball_map, nav_state="idle", now=now, dt=0.1)
+    assert mission.is_done
+    statuses = [s.status for s in mission.stops]
+    assert statuses.count("skipped") == 2      # aborted at the cascade cap
+    assert "pending" in statuses               # rest left for a rerun
+    events = dict(mission.drain_events())
+    assert events.get("route_aborted", {}).get("reason") == "nav_rejected_cascade"
+
+
 def test_nav_unavailable_blocks_loudly():
     mission, ball_map, now = _mission_in_nav()
     _tick(mission, ball_map, nav_state="unavailable", now=now)

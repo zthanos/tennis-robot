@@ -386,3 +386,35 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
   πίσω-τοποθετημένο αλλά δεν ελέγχεται εδώ)· 0.375 m σε χώρο που μόλις
   διέσχισε το ρομπότ — αποδεκτό στο sim, να επανεξεταστεί για hardware.
 - **Status**: ✅ κώδικας· ⏳ run 6.
+
+### 10. Run 6: ύποπτη ΑΠΟΚΛΙΣΗ LOCALIZATION — pose watchdog + cascade abort
+
+- **Run 6** (fixes #9): 4 πρώτες μπάλες άψογες — και το πρώτο
+  **`zone=bin` credit** (μπάλα #3, launch κατευθείαν στο καλάθι — το
+  funnel #59 + goal-following δούλεψαν). ΜΕΤΑ: το Nav2 leg προς το stop 12
+  απέτυχε μετά από 17 s («Failed to make progress» στα docker logs), και
+  ακολούθησε καταρράκτης ακαριαίων απορρίψεων. Το recovery του #9
+  ενεργοποιήθηκε (2 ανά stop) αλλά ΔΕΝ ξεμπλόκαρε — 8 τυφλές όπισθεν
+  συνολικά περπάτησαν το ρομπότ ~3 m ΒΑ, με το status να το δείχνει στο
+  (5.4, 7.8) = σχεδόν στον βόρειο φράχτη.
+- **Κρίσιμη μαρτυρία χρήστη**: το reverse ξεκίνησε ΧΩΡΙΣ το ρομπότ να
+  είναι κοντά σε φιλέ/φράχτη — δηλαδή η ΠΕΠΟΙΘΗΣΗ θέσης και η
+  πραγματικότητα πιθανόν αποκλίνουν (SLAM localization jump), Ή το ρομπότ
+  σκάλωσε φυσικά σε κάτι αόρατο για το LiDAR (το mesh του φιλέ;) και τα
+  «Failed to make progress» + οι όπισθεν το μετατόπισαν. ΔΕΝ κρίνεται από
+  τα υπάρχοντα δεδομένα — τα /sim/balls είναι re-projected στο believed
+  frame, οπότε το lock_error_m ΔΕΝ πιάνει pose drift (ακυρώνεται).
+- **Instrumentation (υλοποιήθηκε)**: το gazebo_extras δημοσιεύει
+  `/sim/robot_true_pose` (καθαρό world-frame ground truth από gz
+  pose/info)· ο controller υπολογίζει `pose_error_m` (believed vs truth,
+  έγκυρο γιατί map frame ≈ world frame από το survey start) σε κάθε
+  probe + στο status, και εκπέμπει **`pose_divergence`** event όταν
+  ξεπεράσει το 1.0 m (throttled 5 s).
+- **Cascade abort (υλοποιήθηκε)**: 2 συνεχόμενα stops που χάνονται από
+  nav failures → **`route_aborted{nav_rejected_cascade}`** και το mission
+  σταματά loud, αφήνοντας τα υπόλοιπα stops pending — όχι burning-through
+  (και όχι ατέρμονες τυφλές όπισθεν· το run-6 έδειξε ότι το reversing
+  ΧΩΡΙΣ αξιόπιστο pose κάνει ζημιά).
+- **Status**: ✅ κώδικας (101 tests)· ⏳ run 7 → το pose_error_m θα
+  ξεχωρίσει οριστικά localization drift vs φυσικό σκάλωμα, και ανάλογα
+  ανοίγει είτε SLAM/odom entry είτε net-visibility-στο-LiDAR entry.

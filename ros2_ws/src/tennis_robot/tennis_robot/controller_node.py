@@ -214,6 +214,8 @@ class ControllerNode(Node):
         self._last_collection_scan_key: tuple | None = None
         self._collect_route_last_probe_s: float = 0.0
         self._collect_route_last_block_event_s: float = 0.0
+        self._sim_true_pose: tuple[float, float, float] | None = None
+        self._last_pose_divergence_event_s: float = 0.0
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
@@ -270,6 +272,9 @@ class ControllerNode(Node):
         )
         self.create_subscription(RobotCommand, "/robot/command", self._on_command, 10)
         self.create_subscription(String, "/sim/balls", self._on_sim_balls, 1)
+        self.create_subscription(
+            String, "/sim/robot_true_pose", self._on_sim_true_pose, 1
+        )
 
         # ── publishers ─────────────────────────────────────────────────────────
         self._pub_motion_cmd = self.create_publisher(Twist, MOTION_COMMAND_TOPIC, 1)
@@ -392,6 +397,27 @@ class ControllerNode(Node):
     def _on_command(self, msg: RobotCommand) -> None:
         self._control_command_mode = msg.mode
         self._control_command_source = msg.source
+
+    def _on_sim_true_pose(self, msg: String) -> None:
+        """Sim-only ground truth from gz pose/info (world frame ≈ map frame:
+        the survey map is anchored at the world-origin start pose)."""
+        try:
+            d = json.loads(msg.data)
+            self._sim_true_pose = (float(d["x"]), float(d["y"]), float(d["yaw"]))
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            self._sim_true_pose = None
+
+    def _pose_error_m(self) -> float | None:
+        """Believed (SLAM/odom) pose vs sim ground truth, metres."""
+        if self._sim_true_pose is None:
+            return None
+        return round(
+            math.hypot(
+                self._robot_x - self._sim_true_pose[0],
+                self._robot_y - self._sim_true_pose[1],
+            ),
+            3,
+        )
 
     def _on_sim_balls(self, msg: String) -> None:
         self._sim_balls_seen = True
@@ -1301,7 +1327,24 @@ class ControllerNode(Node):
                     intake_roller_latched=self._intake_roller_latched,
                     locked_world=list(locked) if locked else None,
                     lock_error_m=lock_error_m,
+                    pose_error_m=self._pose_error_m(),
                     nearest_sim_ball=probe,
+                )
+
+        # Localization watchdog (sim only): a believed-vs-truth pose gap of
+        # metres invalidates every downstream decision (goals, side checks,
+        # ball projections) — run-6 rejected all goals with the robot
+        # believed at the fence. Loud event, throttled.
+        pose_error = self._pose_error_m()
+        if pose_error is not None and pose_error > 1.0:
+            if now - self._last_pose_divergence_event_s >= 5.0:
+                self._last_pose_divergence_event_s = now
+                self._record_collection_event(
+                    "pose_divergence",
+                    pose_error_m=pose_error,
+                    believed=[round(self._robot_x, 2), round(self._robot_y, 2)],
+                    true=[round(self._sim_true_pose[0], 2), round(self._sim_true_pose[1], 2)],
+                    pose_source=self._pose_source,
                 )
 
         if mission.is_done and not mission._complete_reported:
@@ -1833,6 +1876,7 @@ class ControllerNode(Node):
             "collection_opportunistic_collecting": self._collection_opportunistic_collecting,
             "collection_scan": self._collection_scan.telemetry(),
             "collect_route": self.collect_route_mission.telemetry(),
+            "pose_error_m": self._pose_error_m(),
             "collection_truth": self._collection_truth(command),
             "collection_events": list(self._collection_events),
             "collection_nav2": {
