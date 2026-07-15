@@ -1310,13 +1310,12 @@ class ControllerNode(Node):
         for event_type, fields in mission.drain_events():
             self._record_collection_event(event_type, **fields)
 
-        # Ground-truth capture probe (sim only): while the fine approach runs,
-        # record where the nearest physical ball actually is in the robot frame
-        # every ~2 s. This is the evidence trail for "caught the ball but never
-        # confirmed" stalls (collection-route-debug-log-el.md #2): it shows
-        # whether the ball sits in the basket volume, the intake throat, or was
-        # plowed aside — and whether the beam ever fired.
-        if mission.phase == "approach" and self._sim_balls_seen:
+        # Ground-truth capture probe (sim only): while a leg or fine approach
+        # runs, record where the nearest physical ball actually is in the
+        # robot frame every ~2 s. Evidence trail for capture stalls (#2) and
+        # for nav freezes (#11: suspected ball wedged under the chassis —
+        # Nav2 cannot see balls, so legs plow straight through them).
+        if mission.phase in ("approach", "nav") and self._sim_balls_seen:
             if now - self._collect_route_last_probe_s >= 2.0:
                 self._collect_route_last_probe_s = now
                 probe = self._nearest_sim_ball_local()
@@ -1336,6 +1335,7 @@ class ControllerNode(Node):
                 self._record_collection_event(
                     "route_capture_probe",
                     ball_id=mission.current_ball_id,
+                    mission_phase=mission.phase,
                     behavior_state=self.behavior.state.value,
                     approach_elapsed_s=mission._approach_elapsed_s,
                     intake_beam_broken=self._intake_beam_broken,

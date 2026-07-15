@@ -418,3 +418,40 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
 - **Status**: ✅ κώδικας (101 tests)· ⏳ run 7 → το pose_error_m θα
   ξεχωρίσει οριστικά localization drift vs φυσικό σκάλωμα, και ανάλογα
   ανοίγει είτε SLAM/odom entry είτε net-visibility-στο-LiDAR entry.
+
+### 11. Run 7: LOCALIZATION ΥΓΙΕΣ (pose_error σταθερό) — ο ένοχος είναι φυσικό μπλοκάρισμα στα Nav2 legs
+
+- **Run 7**: 4/4 πρώτες μπάλες (2 από αυτές **zone=bin** — το funnel
+  πετάει πλέον κατευθείαν στο καλάθι), και το **cascade abort δούλεψε**:
+  σταμάτησε καθαρά (`route_aborted` στα 2 συνεχόμενα nav skips) αντί να
+  κάψει το route.
+- **ΟΡΙΣΤΙΚΟ (pose watchdog)**: το believed↔truth offset έμεινε
+  **8.00 ± 0.12 σε όλο το run** (το 8.0 είναι το σταθερό map↔world frame
+  offset — το world είναι court-centred, το map ξεκινά στο spawn).
+  **ΚΑΝΕΝΑ SLAM drift** — η υπόθεση του pose jump (#10) καταρρίπτεται.
+  (Το calibration του offset μπήκε στον κώδικα ώστε το pose_error_m να
+  δείχνει καθαρό drift στα επόμενα runs.)
+- **Το πραγματικό μοτίβο του μπλοκαρίσματος** (leg προς stop 5/ball 11):
+  ο controller_server έστελνε paths επί 15 s με το ρομπότ ΑΚΙΝΗΤΟ και στο
+  ground truth (5.68,3.07 believed / −2.33,3.05 true, creeping ~0.2 m),
+  «Failed to make progress» → BT clear local costmap → retry → abort.
+  Adapter/twist_mux σωστά (zero-once → σιωπή → Nav2 ο νικητής — γι' αυτό
+  τα legs 1-4 δούλευαν).
+- **Κύρια υπόθεση πλέον: μπάλα σφηνωμένη κάτω από το σασί.** Ο Nav2 ΔΕΝ
+  βλέπει μπάλες (LiDAR plane z≈0.55, μπάλα 0.066) — τα legs περνούν ΜΕΣΑ
+  από θέσεις μπαλών· σε πυκνή περιοχή (εκεί που καταρρέουν όλα τα runs,
+  μετά την 4η-5η) κάποια μπάλα μαγκώνει κάτω από το πλαίσιο/τροχό.
+  Συμβατό και με το drift της εγγραφής 11 (goal_updated ×3 — η μπάλα
+  σπρώχνεται/μετακινείται από το ίδιο το ρομπότ).
+- **Instrumentation**: τα `route_capture_probe` τρέχουν πλέον ΚΑΙ στη
+  φάση nav (με `mission_phase` field) — στο επόμενο πάγωμα θα δείξουν την
+  πλησιέστερη φυσική μπάλα σε robot frame (αναμένεται lx≈0-0.3, z=0.033
+  αν σφηνώνει από κάτω).
+- **Πιθανό διαρθρωτικό fix (προς συζήτηση)**: opportunistic capture στα
+  legs — μπάλα ορατή μπροστά σε <1.2 m κατά το nav → cancel goal, capture
+  (γίνεται το τρέχον stop μέσω insertion), συνέχεια route. Μετατρέπει τις
+  συγκρούσεις σε συλλογές και είναι και ταχύτερο. Εναλλακτικά: κράτημα
+  απόστασης από χαρτογραφημένες μπάλες στα legs (χρειάζεται keepout/
+  costmap injection — βαρύτερο).
+- **Status**: ✅ instrumentation· ⏳ run 8 για την απόδειξη του «από
+  κάτω», και απόφαση χρήστη για το opportunistic capture.
