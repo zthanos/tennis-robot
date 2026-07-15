@@ -305,3 +305,38 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
   ηρεμίας· για την αξιολόγηση του funnel #59 θα κοιτάμε το τελικό
   /sim/balls state στο τέλος του run.
 - **Status**: ✅ κώδικας· ⏳ run 4.
+
+### 8. Run 4: ΠΡΩΤΟ route_complete (8/12) — τα 4 «missing» ήταν ΠΡΑΓΜΑΤΙΚΕΣ μπάλες: cluster confusion + stale standoff
+
+- **Run 4** (όλα τα fixes #3-#7 + νέο funnel #59): **route_complete στα
+  364 s** — 12 stops, 8 collected, 4 missing, 1 insertion, 0 skipped,
+  κανένα άγγιγμα στο φιλέ, κανένα stall >35 s, τα retries/misses έκλεισαν
+  γρήγορα (6 s phantom gate). Ο χρήστης ανέφερε «σφάλματα» = τα 4 missing.
+- **Εύρημα — τα missing (ids 5, 6, 9, 12) ΔΕΝ ήταν phantoms**: τελικό
+  map state με seen_count 174-757 και καταστάσεις collection_failed. Η
+  κάμερα τις έβλεπε συνέχεια. Δύο ρίζες:
+  1. **Cluster confusion**: το mission τρέφεται με το detection που είναι
+     κοντινότερο ΣΤΟ ΡΟΜΠΟΤ· όταν άλλη μπάλα είναι πιο κοντά από τον
+     στόχο, ο στόχος «δεν έχει live sighting» → ψευδο-missing στα 6 s
+     (π.χ. stop 9 στο (−0.49,−2.73) με άλλες μπάλες τριγύρω).
+  2. **Stale standoff στο retry**: μπάλα που σπρώχτηκε στο 1ο attempt
+     (π.χ. stop 12: 35 s juggling, το φυσικό ball_12 μαζεύτηκε τελικά ΚΑΤΩ
+     από το stop 10) — το retry πήγε στο standoff της ΑΡΧΙΚΗΣ θέσης, όπου
+     πλέον δεν υπήρχε τίποτα εντός adoption gate.
+- **Διορθώσεις (υλοποιήθηκαν, 98 tests)**:
+  - `_collect_route_target_observation` στον controller: επιλέγει από ΟΛΟ
+    το frame το detection που είναι κοντινότερο στο `current_target_xy`
+    του mission (lock ή μπάλα του stop, gate 1.5 m, με freshness check)·
+    fallback στο κοντινότερο-στο-ρομπότ.
+  - Goal refresh στο `_nav_phase`: αν η χαρτογραφημένη μπάλα έχει
+    μετατοπιστεί > `_GOAL_REFRESH_DRIFT_M` (0.3 m) από τη θέση του stop,
+    ενημερώνονται θέση + approach pose + nav goal (event
+    `route_goal_updated`)· το Nav2 replan-άρει (replan_tolerance 0.5).
+- **Παρατήρηση funnel (#59 live)**: τα 3-4 πρώτα καθαρά captures πέρασαν
+  τη ράμπα με |ly| ≤ 0.085 (υγιή)· τα credits σε περίεργα σημεία του deck
+  (π.χ. ball_12 πίσω γωνία, ball_00 ly −0.35) προέκυψαν από captures ΚΑΤΑ
+  τη διάρκεια juggling — αναμένεται να μειωθούν όσο πέφτουν τα juggling
+  με τα παραπάνω.
+- **Status**: ✅ κώδικας· ⏳ run 5 — κριτήριο επιτυχίας: missing ΜΟΝΟ αν η
+  μπάλα όντως δεν υπάρχει· διαφορετικά 100% των υπαρκτών same-side μπαλών
+  collected.

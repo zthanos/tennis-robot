@@ -477,7 +477,7 @@ class ControllerNode(Node):
         elif effective_mode == "collect_route":
             command = self._collect_route_command_for_mode(
                 effective_mode,
-                self._collect_route_observation(control_mapping_observation),
+                self._collect_route_target_observation(control_mapping_observation),
             )
         elif effective_mode == "map_left_side":
             command = self._map_mission_command_for_mode(effective_mode)
@@ -1149,6 +1149,38 @@ class ControllerNode(Node):
         if not self._court_model.contains(observation.world_x_m, observation.world_y_m):
             return BallObservationInput(visible=False, source="out_of_court_filtered")
         return observation
+
+    def _collect_route_target_observation(
+        self, nearest_observation: BallObservationInput
+    ) -> BallObservationInput:
+        """Prefer the detection nearest the CURRENT TARGET over the detection
+        nearest the robot.
+
+        Run-4 finding (collection-route-debug-log-el #8): with ball clusters,
+        the nearest-to-robot detection often refers to a DIFFERENT ball, so
+        the target 'never gets a live sighting' and real balls were declared
+        missing (seen_count 174-757). The controller has the whole frame —
+        pick the detection closest to the mission's pursued ball."""
+        target = self.collect_route_mission.current_target_xy
+        fresh = (
+            self._latest_obs_received_at > 0.0
+            and self._runtime_seconds() - self._latest_obs_received_at
+            <= PERCEPTION_OBSERVATION_TIMEOUT_S
+        )
+        if target is None or not fresh or not self._latest_observations:
+            return self._collect_route_observation(nearest_observation)
+        best = min(
+            self._latest_observations,
+            key=lambda obs: math.hypot(
+                (obs.world_x_m or 1e9) - target[0], (obs.world_y_m or 1e9) - target[1]
+            ),
+        )
+        if (
+            best.world_x_m is None
+            or math.hypot(best.world_x_m - target[0], best.world_y_m - target[1]) > 1.5
+        ):
+            return self._collect_route_observation(nearest_observation)
+        return self._collect_route_observation(best)
 
     def _collect_route_command_for_mode(
         self, mode: str, observation: BallObservationInput

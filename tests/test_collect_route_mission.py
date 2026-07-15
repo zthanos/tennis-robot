@@ -366,6 +366,30 @@ def test_far_detour_ball_appended_at_end():
     assert [s.ball_id for s in mission.stops] == [1, 2, 9]
 
 
+def test_nav_goal_follows_drifted_map_entry():
+    # A nudged ball moves in the map; the nav leg must follow the fresh
+    # position instead of driving to the stale plan-time standoff (run-4
+    # stops 12/6 retried into empty space and were declared missing).
+    mission, ball_map, now = _mission_in_nav(ball_positions=((3.0, 0.0),))
+    old_goal = mission.nav_goal
+    ball_map.balls[1].x_m, ball_map.balls[1].y_m = 3.9, 0.8  # drift 1.2 m
+    _tick(mission, ball_map, nav_state="active", now=now)
+    stop = mission.stops[0]
+    assert (stop.ball_x_m, stop.ball_y_m) == (3.9, 0.8)
+    assert mission.nav_goal != old_goal
+    events = dict(mission.drain_events())
+    assert "route_goal_updated" in events
+
+
+def test_current_target_xy_reports_pursued_ball():
+    mission, ball_map, now = _mission_in_nav(ball_positions=((3.0, 0.0),))
+    assert mission.current_target_xy == (3.0, 0.0)
+    _tick(mission, ball_map, nav_state="pending", now=now)
+    _tick(mission, ball_map, nav_state="reached", now=now)
+    assert mission.phase == "approach"
+    assert mission.current_target_xy == mission._locked_world
+
+
 def test_route_export_orders_and_polyline():
     mission, ball_map, now = _mission_in_nav(
         ball_positions=((2.0, 0.0), (4.0, 0.0))

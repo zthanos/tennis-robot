@@ -66,6 +66,9 @@ _RELOCK_GATE_M = 0.6
 # 9 m 360° scan carry up to ~0.5 m position error (run-3 lock_error_m data),
 # so from the standoff the nearest ball within 1 m of the plan is the target.
 _INITIAL_ADOPT_GATE_M = 1.0
+# Refresh the nav goal when the mapped ball drifted this far from the stop's
+# planned position (nudged balls, refined estimates).
+_GOAL_REFRESH_DRIFT_M = 0.3
 
 _IDLE_CMD = ConceptACommand(
     state=CollectorState.IDLE,
@@ -172,6 +175,16 @@ class CollectRouteMission:
             return self.stops[self.current_index].ball_id
         return None
 
+    @property
+    def current_target_xy(self) -> tuple[float, float] | None:
+        """World position of the ball being pursued (lock if approaching)."""
+        if self.phase == "approach" and self._locked_world is not None:
+            return self._locked_world
+        if self.phase in ("nav", "approach") and self.current_index < len(self.stops):
+            stop = self.stops[self.current_index]
+            return (stop.ball_x_m, stop.ball_y_m)
+        return None
+
     def drain_events(self) -> list[tuple[str, dict]]:
         events, self._events = self._events, []
         return events
@@ -241,7 +254,7 @@ class CollectRouteMission:
         if self.phase == "plan":
             return self._plan_phase(robot_pose, ball_map, court, now)
         if self.phase == "nav":
-            return self._nav_phase(dt_s, robot_pose, behavior, ball_map, nav_state, now)
+            return self._nav_phase(dt_s, robot_pose, behavior, ball_map, nav_state, now, court)
         if self.phase == "approach":
             return self._approach_phase(
                 observation, collection_confirmed, dt_s, robot_pose, behavior, ball_map, now
@@ -389,6 +402,7 @@ class CollectRouteMission:
         ball_map: BallMap,
         nav_state: str,
         now: float,
+        court: "CourtModel | None" = None,
     ) -> ConceptACommand:
         stop = self._current_stop()
         if stop is None:
@@ -398,6 +412,30 @@ class CollectRouteMission:
         if nav_state == "unavailable":
             self.current_blocker = "nav2_action_unavailable"
             return _NAV_IDLE_CMD
+
+        # The mapped ball may have drifted since the plan (e.g. nudged by a
+        # previous capture attempt — run-4 stops 12/6 retried into the STALE
+        # standoff and found nothing). Follow the live map entry: refresh the
+        # ball position and approach pose when it moved meaningfully.
+        entry = ball_map.balls.get(stop.ball_id)
+        if entry is not None and math.hypot(
+            entry.x_m - stop.ball_x_m, entry.y_m - stop.ball_y_m
+        ) > _GOAL_REFRESH_DRIFT_M:
+            stop.ball_x_m, stop.ball_y_m = entry.x_m, entry.y_m
+            stop.approach = approach_pose_for_ball(
+                (entry.x_m, entry.y_m),
+                (robot_pose[0], robot_pose[1]),
+                court,
+                self.planner_cfg,
+            )
+            self._nav_goal = (stop.approach.x_m, stop.approach.y_m, stop.approach.yaw_rad)
+            self._emit(
+                "route_goal_updated",
+                ball_id=stop.ball_id,
+                ball_x_m=entry.x_m,
+                ball_y_m=entry.y_m,
+                approach_mode=stop.approach.mode,
+            )
 
         if self._nav_goal is None:
             # Previous attempt was cancelled last tick; re-issue the goal so
