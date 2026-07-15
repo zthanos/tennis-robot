@@ -181,3 +181,28 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
   Route → αν τα deck credits είναι συχνά, ανοίγει mechanism entry για το
   πλευρικό σφάλμα (πιθανά: ψηλότερα guards/χαμηλότερο tray στο bin ή
   διόρθωση του lock πριν το capture commit).
+
+### 4. «Δεύτερο 360» μετά την πρώτη μπάλα: τυφλό scan-spin όταν το Nav2 reached αφήνει τη μπάλα πίσω
+
+- **Αναφορά χρήστη (run 2/3)**: μετά την πρώτη μπάλα το ρομπότ «ξαναέκανε
+  360». ΔΕΝ ήταν το mission scan (τρέχει μόνο μία φορά) — probes της
+  μπάλας 2 (run 2): στο fine-approach entry το behavior έμεινε σε `scan`
+  8+ s με την πλησιέστερη φυσική μπάλα σε local (−1.0, 1.4) = ΠΙΣΩ από το
+  ρομπότ. Ο Nav2 έδωσε «reached» με χαλαρό τελικό yaw (το goal ήταν ~0.35 m
+  από τη θέση μετά το προηγούμενο capture — έγινε δεκτό σχεδόν επιτόπου),
+  το `_world_to_robot_obs` επιστρέφει None για μπάλα πίσω (local_x ≤ −0.1),
+  και το behavior ξεκίνησε την τυφλή περιστροφή αναζήτησης (1.1 rad/s) —
+  αυτό φάνηκε ως δεύτερο 360.
+- **Δεύτερο bug στο ίδιο σημείο**: όσο η μπάλα-στόχος ήταν πίσω, το
+  tracking έπεφτε στο ωμό camera observation (`tracking_obs = locked_obs
+  or observation`) — δηλαδή μπορούσε να κλειδώσει σε ΑΛΛΗ ορατή μπάλα και
+  να «κλέψει» το approach (πιθανή συνεισφορά στο juggling του run 2).
+- **Fix (υλοποιήθηκε)**: στο `_approach_phase`, όταν το locked ball είναι
+  πίσω από το ρομπότ, το mission στρίβει ΚΑΤΕΥΘΕΙΑΝ προς το bearing του
+  (shortest turn, P-gain 1.8, cap 0.65 rad/s) αντί να αφήσει το behavior
+  να ψάχνει στα τυφλά· και το tracking τρέφεται ΜΟΝΟ από το locked obs —
+  το ωμό observation επηρεάζει μόνο το lock refresh (gated 0.6 m), ποτέ
+  την ταυτότητα του στόχου. Tests:
+  `test_ball_behind_turns_toward_it_instead_of_blind_scan`,
+  `test_other_visible_ball_does_not_steal_tracking`. Σουίτα 90 passed.
+- **Status**: ✅ offline· ⏳ επιβεβαίωση στο ίδιο rerun με το #3.

@@ -196,6 +196,34 @@ def test_approach_tracks_locked_ball():
     assert cmd.base.linear_speed_m_s >= 0.0
 
 
+def test_ball_behind_turns_toward_it_instead_of_blind_scan():
+    mission, ball_map, behavior, now = _mission_in_approach(ball_positions=((3.0, 0.0),))
+    # Robot at the standoff but facing AWAY from the ball (loose Nav2 yaw).
+    cmd = _tick(
+        mission, ball_map, pose=(1.7, 0.0, math.pi), now=now, behavior=behavior
+    )
+    assert cmd.base.linear_speed_m_s == 0.0
+    assert cmd.base.angular_speed_rad_s != 0.0  # direct turn, not behavior scan
+    assert behavior.state == CollectorState.SCAN  # behavior not engaged yet
+    # Once facing the ball, the behavior takes over.
+    _tick(mission, ball_map, pose=(1.7, 0.0, 0.0), now=now, behavior=behavior)
+    assert behavior.state in (CollectorState.ALIGN, CollectorState.APPROACH, CollectorState.CAPTURE)
+
+
+def test_other_visible_ball_does_not_steal_tracking():
+    mission, ball_map, behavior, now = _mission_in_approach(
+        ball_positions=((3.0, 0.0), (6.0, 0.0))
+    )
+    # A DIFFERENT ball (far from the locked target) is visible to the camera.
+    other = BallObservationInput(
+        visible=True, bearing_rad=0.5, distance_m=3.2, confidence=0.9,
+        source="oak_ai_depth", world_x_m=6.0, world_y_m=0.0,
+    )
+    _tick(mission, ball_map, pose=(1.7, 0.0, 0.0), now=now,
+          behavior=behavior, observation=other)
+    assert mission._locked_world == (3.0, 0.0)  # lock not hijacked
+
+
 def test_missing_ball_marks_missing_after_scan_budget():
     mission, ball_map, behavior, now = _mission_in_approach(ball_positions=((3.0, 0.0),))
     # The mapped entry vanishes (e.g. pruned) → lock cannot be built.

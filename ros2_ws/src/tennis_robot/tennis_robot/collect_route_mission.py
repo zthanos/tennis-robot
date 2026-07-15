@@ -508,7 +508,29 @@ class CollectRouteMission:
                 )
 
         locked_obs = _world_to_robot_obs(*self._locked_world, robot_x, robot_y, robot_yaw)
-        tracking_obs = locked_obs if locked_obs is not None else observation
+        if locked_obs is None:
+            # The locked ball is BEHIND the robot: Nav2 can report "reached"
+            # with a loose final yaw, and the behavior's blind scan-spin then
+            # looks like a second 360° (run-2/3 user report). We know exactly
+            # where the ball is — turn straight toward it, shortest way.
+            dx = self._locked_world[0] - robot_x
+            dy = self._locked_world[1] - robot_y
+            bearing = _angle_delta(math.atan2(dy, dx), robot_yaw)
+            angular = max(
+                -_SCAN_TURN_SPEED_RAD_S,
+                min(_SCAN_TURN_SPEED_RAD_S, bearing * _SCAN_ANGULAR_GAIN),
+            )
+            return ConceptACommand(
+                state=CollectorState.SCAN,
+                base=BaseCommand(0.0, angular),
+                collector=CollectorCommand(0.0, False),
+            )
+
+        # Track ONLY the locked target. Falling back to the raw camera
+        # observation here could silently steal the approach for a different
+        # visible ball; the lock refresh above (gated to 0.6 m) is the only
+        # place live sightings feed the target.
+        tracking_obs = locked_obs
         if behavior.state == CollectorState.SCAN and tracking_obs.visible:
             behavior.start_tracking(tracking_obs)
         cmd = behavior.update(tracking_obs, dt_s, collection_confirmed=False)
