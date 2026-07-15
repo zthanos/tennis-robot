@@ -134,6 +134,7 @@ class CollectRouteMission:
         self._nav_attempts: int = 0
         self._approach_elapsed_s: float = 0.0
         self._missing_scan_elapsed_s: float = 0.0
+        self._live_seen_in_approach: bool = False
         self._locked_world: tuple[float, float] | None = None
         self._settle_remaining_s: float = 0.0
         self._events: list[tuple[str, dict]] = []
@@ -285,16 +286,30 @@ class CollectRouteMission:
     # ── PLAN ───────────────────────────────────────────────────────────────────
 
     def _collectable_balls(
-        self, ball_map: BallMap, robot_x: float, now: float
+        self,
+        ball_map: BallMap,
+        robot_pose: tuple[float, float, float],
+        now: float,
+        court: "CourtModel | None",
     ) -> list[tuple[int, float, float]]:
         cfg = ball_map.config
+        robot_x, robot_y = robot_pose[0], robot_pose[1]
+
+        def _same_side(ball) -> bool:
+            # The surveyed net line is authoritative; the across_net(net_x=0)
+            # convention only holds in worlds whose frame is centred on the
+            # net (run-3 incident: real net at map x≈8, robot sent across it).
+            if court is not None:
+                return court.same_side(robot_x, robot_y, ball.x_m, ball.y_m)
+            return not across_net(robot_x, ball.x_m, cfg.net_x_m, cfg.net_side_clearance_m)
+
         return [
             (b.id, b.x_m, b.y_m)
             for b in ball_map.balls.values()
             if b.state not in {"collected", "collection_failed"}
             and b.seen_count >= cfg.min_seen_count
             and now - b.last_seen_s <= cfg.stale_after_s
-            and not across_net(robot_x, b.x_m, cfg.net_x_m, cfg.net_side_clearance_m)
+            and _same_side(b)
         ]
 
     def _plan_phase(
@@ -305,7 +320,7 @@ class CollectRouteMission:
         now: float,
     ) -> ConceptACommand:
         robot_x, robot_y, _ = robot_pose
-        balls = self._collectable_balls(ball_map, robot_x, now)
+        balls = self._collectable_balls(ball_map, robot_pose, now, court)
         if not balls:
             self._emit("route_planned", stops=0)
             self._finish()
@@ -427,6 +442,7 @@ class CollectRouteMission:
         self._nav_goal = None
         self._approach_elapsed_s = 0.0
         self._missing_scan_elapsed_s = 0.0
+        self._live_seen_in_approach = False
         behavior.reset()
         ball = ball_map.balls.get(stop.ball_id) if stop is not None else None
         self._locked_world = (ball.x_m, ball.y_m) if ball is not None else None
@@ -481,6 +497,35 @@ class CollectRouteMission:
             <= _RELOCK_GATE_M
         ):
             self._locked_world = (observation.world_x_m, observation.world_y_m)
+            self._live_seen_in_approach = True
+
+        # Hard budget FIRST — before any early-return branch below. Run-3
+        # incident (collection-route-debug-log-el #6): the turn-toward-target
+        # branch returned before this check ever ran, so a phantom chase
+        # pushed into the net for 78 s with the 35 s timeout never firing.
+        if behavior.gave_up or self._approach_elapsed_s > APPROACH_TIMEOUT_S:
+            return self._approach_failed(
+                stop, ball_map, behavior,
+                "gave_up" if behavior.gave_up else "approach_timeout",
+            )
+
+        # Phantom gate: from the 1.3 m standoff the camera MUST see a real
+        # ball within a few seconds (blind zone starts ~0.9 m). No live
+        # sighting near the lock by then means the map entry is a phantom —
+        # skip it instead of dead-reckoning a capture into whatever stands
+        # there (run 3 drove into the net this way, lock_error_m 3.3-4.0).
+        if (
+            not self._live_seen_in_approach
+            and self._approach_elapsed_s > MISSING_SCAN_S
+        ):
+            self._emit(
+                "route_ball_missing",
+                ball_id=stop.ball_id,
+                reason="no_live_sighting_at_standoff",
+            )
+            behavior.reset()
+            self._skip_current(ball_map, "missing")
+            return _IDLE_CMD
 
         if self._locked_world is None:
             # Mapped entry vanished (stale/pruned): give the camera a short
@@ -495,6 +540,7 @@ class CollectRouteMission:
                 <= _RELOCK_GATE_M
             ):
                 self._locked_world = (observation.world_x_m, observation.world_y_m)
+                self._live_seen_in_approach = True
             else:
                 self._missing_scan_elapsed_s += dt_s
                 if self._missing_scan_elapsed_s > MISSING_SCAN_S:
@@ -534,20 +580,27 @@ class CollectRouteMission:
         if behavior.state == CollectorState.SCAN and tracking_obs.visible:
             behavior.start_tracking(tracking_obs)
         cmd = behavior.update(tracking_obs, dt_s, collection_confirmed=False)
-
-        if behavior.gave_up or self._approach_elapsed_s > APPROACH_TIMEOUT_S:
-            reason = "gave_up" if behavior.gave_up else "approach_timeout"
-            behavior.reset()
-            stop.attempts += 1
-            if stop.attempts >= MAX_BALL_ATTEMPTS:
-                self._emit("route_leg_skip", ball_id=stop.ball_id, reason=reason)
-                self._skip_current(ball_map, "skipped")
-            else:
-                self._emit("route_leg_retry", ball_id=stop.ball_id, reason=reason)
-                self._nav_attempts = 0
-                self._enter_nav_retry(stop)
-            return _IDLE_CMD
+        if behavior.gave_up:
+            return self._approach_failed(stop, ball_map, behavior, "gave_up")
         return cmd
+
+    def _approach_failed(
+        self,
+        stop: RouteStop,
+        ball_map: BallMap,
+        behavior: ConceptACollectorBehavior,
+        reason: str,
+    ) -> ConceptACommand:
+        behavior.reset()
+        stop.attempts += 1
+        if stop.attempts >= MAX_BALL_ATTEMPTS:
+            self._emit("route_leg_skip", ball_id=stop.ball_id, reason=reason)
+            self._skip_current(ball_map, "skipped")
+        else:
+            self._emit("route_leg_retry", ball_id=stop.ball_id, reason=reason)
+            self._nav_attempts = 0
+            self._enter_nav_retry(stop)
+        return _IDLE_CMD
 
     def _enter_nav_retry(self, stop: RouteStop) -> None:
         self.phase = "nav"
@@ -624,7 +677,7 @@ class CollectRouteMission:
         now: float,
     ) -> None:
         robot_x, robot_y, _ = robot_pose
-        for ball_id, bx, by in self._collectable_balls(ball_map, robot_x, now):
+        for ball_id, bx, by in self._collectable_balls(ball_map, robot_pose, now, court):
             if ball_id in self._planned_ids:
                 continue
             self._planned_ids.add(ball_id)

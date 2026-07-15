@@ -228,3 +228,53 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
   δεν είναι ο πιθανός ένοχος. Αναμένουμε τα `lock_error_m` πριν
   οποιαδήποτε αλλαγή οπτικής.
 - **Status**: ❌ δεν εφαρμόστηκε αλλαγή (τεκμηριωμένη απόρριψη).
+
+### 6. Run 3: το ρομπότ έπεσε στο ΦΙΛΕ — phantom στόχος + 4 ρίζες, 4 διορθώσεις
+
+- **Run 3** (με τα fixes των #3/#4): ξεκίνησε καθαρά — 3 πρώτες μπάλες
+  χωρίς stalls και χωρίς «δεύτερα 360», 2 insertions. Μετά: το stop της
+  μπάλας #14 (net_wall/lateral) κατέληξε με το ρομπότ στο (7.42, 5.70) —
+  πάνω στο φιλέ (net x≈8.07, posts y≈±5.66) — να σπρώχνει σε capture creep
+  επί **78+ s**. Ο χρήστης το σταμάτησε.
+- **Τι έδειξαν τα probes** (τεκμήρια):
+  1. `lock_error_m` 3.3→4.0 (αυξανόμενο): ΚΑΜΙΑ φυσική μπάλα κοντά στο
+     lock — η εγγραφή #14 του χάρτη ήταν phantom· το approach
+     dead-reckon-άριζε προς το πουθενά, με το φιλέ στη διαδρομή.
+  2. Το approach timeout (35 s) ΔΕΝ πυροδότησε ποτέ: ο έλεγχος ήταν ΜΕΤΑ
+     τα early returns του `_approach_phase` — το turn-toward-target branch
+     του #4 επέστρεφε πριν φτάσει εκεί (regression δικό μας).
+  3. Στο fine approach οδηγεί ο P-controller (twist_mux priority 100) —
+     κανένα costmap/obstacle awareness· και το φιλέ ΔΕΝ υπάρχει στο Nav2
+     costmap ούτως ή άλλως (το keepout από το survey είναι ανυλοποίητο
+     «επόμενο βήμα» του court-survey-v2).
+  4. Η ταξινόμηση «ίδια πλευρά» (across_net) υποθέτει net_x=0 — στο map
+     frame αυτού του κόσμου το φιλέ είναι στο x≈8.08. Μπάλες πέρα από το
+     πραγματικό φιλέ περνιούνται για ίδια πλευρά (και μπάλες της αριστερής
+     near-half κόβονται ως «across» όταν το ρομπότ είναι σε x>0.25).
+- **Διορθώσεις (υλοποιήθηκαν, 95 tests πράσινα)**:
+  - Timeout ΠΡΩΤΑ: gave_up/timeout έλεγχος στην αρχή του `_approach_phase`,
+    πριν από κάθε early return (`_approach_failed` helper).
+  - Phantom gate: αν από την έναρξη του approach δεν υπάρξει ΚΑΝΕΝΑ live
+    sighting εντός του relock gate μέχρι `MISSING_SCAN_S` (6 s) → η μπάλα
+    κηρύσσεται `missing` με reason `no_live_sighting_at_standoff` (η κάμερα
+    ΠΡΕΠΕΙ να βλέπει πραγματική μπάλα από το 1.3 m standoff — το blind zone
+    αρχίζει στα ~0.9 m).
+  - LiDAR forward guard στο approach: εντολή με linear>0 μπλοκάρεται όταν
+    front range < `COLLECT_ROUTE_FRONT_BLOCK_M` (default 1.45 m ΑΠΟ ΤΟ
+    LIDAR στο x=−0.42 → στοπ ~15 cm πριν το funnel tip αγγίξει)· event
+    `route_approach_blocked`. Το LiDAR δεν βλέπει μπάλες — ό,τι στέκεται
+    μπροστά είναι φιλέ/φράχτης/έπιπλο.
+  - Πλευρά από το ΠΡΑΓΜΑΤΙΚΟ φιλέ: `CourtModel.same_side()` (signed
+    distance από τη surveyed net line) + `contains()` (fence polygon) —
+    χρησιμοποιούνται στο πλάνο/insertions ΚΑΙ στο observation filter του
+    collect_route (`_collect_route_observation`)· fallback στο legacy
+    across_net μόνο χωρίς court model.
+- **ΑΝΟΙΧΤΟ (D2)**: το φιλέ εξακολουθεί να ΜΗΝ υπάρχει στο Nav2 costmap —
+  τα legs του Nav2 κοντά στη ζώνη του φιλέ βασίζονται μόνο στο SLAM map +
+  live LiDAR. Σωστή λύση: keepout filter ή virtual obstacle από το court
+  knowledge model (το «επόμενο βήμα (4)» του court-survey-v2 spec).
+- **ΑΝΟΙΧΤΟ (γιατί phantom;)**: πώς γράφτηκε εγγραφή με seen_count ≥
+  threshold χωρίς φυσική μπάλα κοντά — ύποπτο το 360° scan με το 9 m
+  create gate (προβολικά σφάλματα σε μεγάλες αποστάσεις + merge). Τα
+  probes του επόμενου run (lock_error_m στο approach start) θα δείξουν.
+- **Status**: ✅ fixes offline· ⏳ rerun.

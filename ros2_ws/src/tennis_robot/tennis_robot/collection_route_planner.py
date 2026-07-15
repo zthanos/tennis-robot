@@ -230,6 +230,28 @@ class CourtModel:
             best_tangent = _segment_tangent(nax, nay, nbx, nby)
         return best_dist, best_tangent
 
+    def contains(self, x: float, y: float) -> bool:
+        return _point_in_polygon(x, y, self.fence_corners)
+
+    def same_side(
+        self, ax: float, ay: float, bx: float, by: float, clearance_m: float = 0.25
+    ) -> bool:
+        """True when both points sit on the same side of the REAL net line.
+
+        Replaces the legacy across_net(net_x=0) convention: in the SLAM map
+        frame the net is wherever the survey found it (e.g. x≈8.08), so side
+        classification must use the surveyed net segment, not world x=0.
+        Points within clearance of the line count as same-side (matching
+        across_net's behavior at the net).
+        """
+        (nax, nay), (nbx, nby) = self.net_segment
+        tx, ty = _segment_tangent(nax, nay, nbx, nby)
+        sa = tx * (ay - nay) - ty * (ax - nax)
+        sb = tx * (by - nay) - ty * (bx - nax)
+        if abs(sa) < clearance_m or abs(sb) < clearance_m:
+            return True
+        return sa * sb > 0
+
     def ball_risk(self, x: float, y: float, margin_m: float) -> str:
         if self.obstacle_clearance(x, y) <= ROBOT_RADIUS_M + margin_m:
             return "obstacle"

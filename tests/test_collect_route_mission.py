@@ -224,6 +224,80 @@ def test_other_visible_ball_does_not_steal_tracking():
     assert mission._locked_world == (3.0, 0.0)  # lock not hijacked
 
 
+def test_timeout_fires_even_while_target_is_behind():
+    # Run-3 regression: the turn-toward-target branch returned before the
+    # timeout check, so a blocked approach never expired. Live sightings are
+    # present (not a phantom) but the robot never gets to face the ball.
+    mission, ball_map, behavior, now = _mission_in_approach(ball_positions=((3.0, 0.0),))
+    live = BallObservationInput(
+        visible=True, bearing_rad=3.1, distance_m=1.3, confidence=0.9,
+        source="oak_ai_depth", world_x_m=3.0, world_y_m=0.05,
+    )
+    for _ in range(45):
+        if mission.phase != "approach":
+            break
+        _tick(mission, ball_map, pose=(1.7, 0.0, math.pi), now=now,
+              behavior=behavior, dt=1.0, observation=live)
+    assert mission.phase != "approach"  # retry (nav) or skip — not stuck
+    assert mission.stops[0].attempts >= 1
+    assert mission.stops[0].status != "missing"
+
+
+def test_phantom_without_live_sighting_goes_missing_fast():
+    # No live camera sighting from the 1.3 m standoff => map entry is a
+    # phantom; must be dropped in ~MISSING_SCAN_S, not dead-reckoned into
+    # whatever stands there (run 3 pushed the net for 78 s).
+    mission, ball_map, behavior, now = _mission_in_approach(ball_positions=((3.0, 0.0),))
+    for _ in range(20):
+        if mission.phase != "approach":
+            break
+        _tick(mission, ball_map, pose=(1.7, 0.0, 0.0), now=now,
+              behavior=behavior, dt=0.5)
+    assert mission.stops[0].status == "missing"
+    events = dict(mission.drain_events())
+    assert events.get("route_ball_missing", {}).get("reason") == "no_live_sighting_at_standoff"
+
+
+def test_live_sighting_keeps_approach_alive_past_missing_budget():
+    mission, ball_map, behavior, now = _mission_in_approach(ball_positions=((3.0, 0.0),))
+    live = BallObservationInput(
+        visible=True, bearing_rad=0.0, distance_m=1.3, confidence=0.9,
+        source="oak_ai_depth", world_x_m=3.0, world_y_m=0.05,
+    )
+    for _ in range(16):  # 8 s > MISSING_SCAN_S with sightings present
+        _tick(mission, ball_map, pose=(1.7, 0.0, 0.0), now=now,
+              behavior=behavior, dt=0.5, observation=live)
+    assert mission.phase == "approach"
+    assert mission.stops[0].status == "active"
+
+
+def test_plan_uses_real_net_line_for_side_filter():
+    from tennis_robot.collection_route_planner import CourtModel
+
+    court = CourtModel(
+        fence_corners=[(-9.0, -9.0), (25.0, -9.0), (25.0, 9.0), (-9.0, 9.0)],
+        net_segment=((8.0, -6.0), (8.0, 6.0)),
+    )
+    mission = _mission()
+    # Both balls have x>0: the legacy net_x=0 filter calls both same-side;
+    # the real net at x=8 excludes the far-court one.
+    ball_map = _ball_map((3.0, 0.0), (12.0, 0.0))
+    mission.start((0.0, 0.0, 0.0))
+    yaw, now = 0.0, NOW
+    behavior = ConceptACollectorBehavior(ConceptAConfig())
+    for _ in range(200):
+        if mission.phase != "scan":
+            break
+        cmd = mission.update(NO_BALL, False, 0.032, (0.0, 0.0, yaw),
+                             behavior, ball_map, now, "idle", court)
+        if abs(cmd.base.angular_speed_rad_s) > 0.0:
+            yaw = mission._scan_target_yaw
+        now += 0.3
+    mission.update(NO_BALL, False, 0.032, (0.0, 0.0, yaw),
+                   behavior, ball_map, now, "idle", court)
+    assert [s.ball_id for s in mission.stops] == [1]
+
+
 def test_missing_ball_marks_missing_after_scan_budget():
     mission, ball_map, behavior, now = _mission_in_approach(ball_positions=((3.0, 0.0),))
     # The mapped entry vanishes (e.g. pruned) → lock cannot be built.

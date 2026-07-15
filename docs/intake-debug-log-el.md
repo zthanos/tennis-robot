@@ -1776,6 +1776,30 @@
   (εγγραφή #1 = αυτή η υλοποίηση, με τα ευρήματα αναλυτικά). Το παρόν log
   μένει για ό,τι αφορά τον ΜΗΧΑΝΙΣΜΟ intake (γεωμετρία, roller, basket).
 
+### 59. Funnel cheeks: στένεμα εξόδου ώστε η παράδοση να μπαίνει στο validated envelope (⏳ bench)
+
+- **Πρόβλημα** (από τα collect_route runs 2-3, βλ.
+  collection-route-debug-log-el.md #3, παρατήρηση χρήστη): το funnel δεν
+  οδηγεί την μπάλα ΑΝΑΜΕΣΑ στους τροχούς — είναι πιο ανοιχτό. Τα παλιά
+  cheeks τελείωναν στο (0.647, ±0.146) → η μπάλα έβγαινε με κέντρο έως
+  |y|=0.108, ενώ το bench-validated capture envelope είναι ±0.08. Στο
+  0.10-0.15 offset η μπάλα συναντά το ΕΞΩΤΕΡΙΚΟ μπροστινό τεταρτημόριο
+  του τροχού (επιφάνεια που σαρώνει προς τα έξω) → εκτρέπεται πλάγια·
+  υπήρχε και διάδρομος διαφυγής y 0.15-0.20 ανάμεσα σε cheek tip και
+  εξωτερική παρειά τροχού. Αποτέλεσμα στα runs: λοξά launches που
+  παρκάρουν μπάλες στο deck δίπλα στο bin.
+- **Αλλαγή** (`funnel.urdf.xacro`, ίδιο μπροστινό άνοιγμα): cheek boxes
+  0.2205×0.01×0.10 στο (0.778, ±0.1545) yaw ±0.476 rad → front tips
+  αμετάβλητα (0.876, ±0.205), rear tips (0.680, ±0.104). Ball-centre exit
+  cap = 0.104−0.005−0.033 = **±0.066** ✓ εντός ±0.08. Rear tip σε 91 mm
+  από κέντρο τροχού (κανόνας ≥65 mm — τα παλιά x=0.60 cheeks ήταν 51 mm).
+  Επαληθεύτηκε αριθμητικά + offline URDF/SDF generation· το friction
+  patch του generator πιάνει με name substring "cheek_col" — αμετάβλητο.
+- **Status**: ⏳ ΕΚΚΡΕΜΕΙ bench validation (`run_native_intake_sweep.sh`
+  lateral envelope έως ±0.14, στόχος 5/5) — δεν τρέχει όσο είναι πάνω το
+  docker sim. Μετά το bench: live επιβεβαίωση μέσω collect_route run
+  (αναλογία bin/deck credits στα `sim_collection_credit` events).
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):

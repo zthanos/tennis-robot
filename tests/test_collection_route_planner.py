@@ -193,6 +193,22 @@ def test_court_model_from_v2_data():
     assert court.pose_is_free(5.0, 0.0, 0.36)
 
 
+def test_same_side_uses_real_net_line():
+    # Net at map x=8 (run-3 world): the legacy across_net(net_x=0) convention
+    # calls (0,0) and (12,0) "same side" (both x>0) — the real line says no.
+    court = CourtModel(
+        fence_corners=[(-9.0, -9.0), (25.0, -9.0), (25.0, 9.0), (-9.0, 9.0)],
+        net_segment=((8.0, -6.0), (8.0, 6.0)),
+    )
+    assert court.same_side(0.0, 0.0, 3.0, 2.0) is True
+    assert court.same_side(0.0, 0.0, 12.0, 0.0) is False
+    assert court.same_side(12.0, 1.0, 15.0, -2.0) is True
+    # Points hugging the net line count as same side (clearance band).
+    assert court.same_side(7.9, 0.0, 8.2, 0.0) is True
+    assert court.contains(3.0, 0.0) is True
+    assert court.contains(30.0, 0.0) is False
+
+
 def test_missing_boundary_file_returns_none():
     from pathlib import Path
 

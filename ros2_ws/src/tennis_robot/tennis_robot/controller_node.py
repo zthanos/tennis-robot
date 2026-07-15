@@ -105,6 +105,9 @@ COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
 IR_INTAKE_TRIGGER_THRESHOLD = 500.0
 SCAN_SIDE_DURATION_S = 12.0
 COLLECT_PATTERN_COLLECTION_TIMEOUT_S = _env_float("COLLECT_PATTERN_COLLECTION_TIMEOUT_S", 35.0)
+# Fine-approach forward guard, measured FROM THE LIDAR (mast at x=-0.42): the
+# funnel tip sits 1.30 m ahead of it, so 1.45 stops ~15 cm before contact.
+COLLECT_ROUTE_FRONT_BLOCK_M = _env_float("COLLECT_ROUTE_FRONT_BLOCK_M", 1.45)
 MAPPED_BALL_MERGE_DISTANCE_M = 0.65
 MAPPED_BALL_MAX_MERGE_DISTANCE_M = 1.6
 MAPPED_BALL_MIN_SEEN_COUNT = 5
@@ -210,6 +213,7 @@ class ControllerNode(Node):
         self._last_collection_event_key: tuple | None = None
         self._last_collection_scan_key: tuple | None = None
         self._collect_route_last_probe_s: float = 0.0
+        self._collect_route_last_block_event_s: float = 0.0
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
@@ -473,7 +477,7 @@ class ControllerNode(Node):
         elif effective_mode == "collect_route":
             command = self._collect_route_command_for_mode(
                 effective_mode,
-                self._same_side_search_observation(control_mapping_observation),
+                self._collect_route_observation(control_mapping_observation),
             )
         elif effective_mode == "map_left_side":
             command = self._map_mission_command_for_mode(effective_mode)
@@ -1121,6 +1125,31 @@ class ControllerNode(Node):
             return "outside_active_lane"
         return None
 
+    def _collect_route_observation(
+        self, observation: BallObservationInput
+    ) -> BallObservationInput:
+        """Same-side/in-court gate against the SURVEYED court geometry.
+
+        The legacy _same_side_search_observation assumes the net at world x=0;
+        in the SLAM map frame the net sits wherever the survey found it
+        (run-3 incident: x≈8.08), so with a court model loaded the real net
+        line and fence polygon are authoritative."""
+        if self._court_model is None:
+            return self._same_side_search_observation(observation)
+        if (
+            not observation.visible
+            or observation.world_x_m is None
+            or observation.world_y_m is None
+        ):
+            return observation
+        if not self._court_model.same_side(
+            self._robot_x, self._robot_y, observation.world_x_m, observation.world_y_m
+        ):
+            return BallObservationInput(visible=False, source="across_net_filtered")
+        if not self._court_model.contains(observation.world_x_m, observation.world_y_m):
+            return BallObservationInput(visible=False, source="out_of_court_filtered")
+        return observation
+
     def _collect_route_command_for_mode(
         self, mode: str, observation: BallObservationInput
     ) -> ConceptACommand:
@@ -1163,6 +1192,27 @@ class ControllerNode(Node):
             self._nav2_lane.state.value,
             self._court_model,
         )
+
+        # LiDAR forward guard for the fine approach: the capture stream owns
+        # the wheels here (priority 100, no costmap), and the lidar plane
+        # cannot see balls — anything solid dead ahead is net/fence/furniture.
+        # Run 3 pushed into the net this way; stop forward motion and let the
+        # approach timeout convert the blockage into a retry/skip.
+        if command.base.linear_speed_m_s > 0.0 and mission.phase == "approach":
+            front_m = self._front_range_m()
+            if front_m is not None and front_m < COLLECT_ROUTE_FRONT_BLOCK_M:
+                command = ConceptACommand(
+                    state=command.state,
+                    base=BaseCommand(0.0, command.base.angular_speed_rad_s),
+                    collector=command.collector,
+                )
+                if now - self._collect_route_last_block_event_s >= 2.0:
+                    self._collect_route_last_block_event_s = now
+                    self._record_collection_event(
+                        "route_approach_blocked",
+                        ball_id=mission.current_ball_id,
+                        front_range_m=front_m,
+                    )
 
         # Scan-range override only lives while the mission scans.
         if not mission.scanning:
