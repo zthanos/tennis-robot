@@ -42,6 +42,10 @@ class RoutePlannerConfig:
     standoff_m: float = 1.3
     boundary_margin_m: float = 0.9
     robot_radius_m: float = ROBOT_RADIUS_M
+    # Extra clearance for Nav2 GOAL poses beyond the physical radius: goals
+    # inside the costmap inflation band get rejected outright (run-5: the
+    # 0.36 m-from-net lateral standoff was permanently unreachable).
+    goal_clearance_margin_m: float = 0.15
     insertion_max_detour_m: float = 3.0
     two_opt: bool = True
     two_opt_max_passes: int = 4
@@ -52,6 +56,7 @@ class RoutePlannerConfig:
             scan_range_m=_env_float("COLLECT_ROUTE_SCAN_RANGE_M", 9.0),
             standoff_m=_env_float("COLLECT_ROUTE_STANDOFF_M", 1.3),
             boundary_margin_m=_env_float("COLLECT_ROUTE_BOUNDARY_MARGIN_M", 0.9),
+            goal_clearance_margin_m=_env_float("COLLECT_ROUTE_GOAL_CLEARANCE_M", 0.15),
             insertion_max_detour_m=_env_float("COLLECT_ROUTE_INSERTION_MAX_DETOUR_M", 3.0),
             two_opt=_env_bool("COLLECT_ROUTE_TWO_OPT", True),
         )
@@ -409,7 +414,9 @@ def approach_pose_for_ball(
             court.obstacle_clearance(sx, sy),
         )
         fallback.append((clearance, (hx, hy)))
-        if not court.pose_is_free(sx, sy, cfg.robot_radius_m):
+        if not court.pose_is_free(
+            sx, sy, cfg.robot_radius_m + cfg.goal_clearance_margin_m
+        ):
             continue
         if not _corridor_clear(
             court, (sx, sy), (hx, hy), corridor_len, FUNNEL_CORRIDOR_HALF_WIDTH_M

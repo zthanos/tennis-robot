@@ -73,6 +73,12 @@ _GOAL_REFRESH_DRIFT_M = 0.3
 # the same physical ball any more (run-4 stop 6: chain-merges dragged the
 # entry 4+ m across the court and the approach followed it) — drop the stop.
 _GOAL_DRIFT_ABANDON_M = 1.5
+# Nav failure faster than this = the planner rejected the request outright
+# (start pose inside costmap inflation), not a genuine navigation failure.
+_NAV_INSTANT_FAIL_S = 2.0
+_NAV_MAX_RECOVERIES = 2
+_NAV_RECOVER_REVERSE_S = 2.5
+_NAV_RECOVER_SPEED_M_S = -0.15
 
 _IDLE_CMD = ConceptACommand(
     state=CollectorState.IDLE,
@@ -143,6 +149,8 @@ class CollectRouteMission:
         self._nav_elapsed_s: float = 0.0
         self._nav_last_state: str = "idle"
         self._nav_attempts: int = 0
+        self._nav_recoveries: int = 0
+        self._recover_until_s: float = 0.0
         self._approach_elapsed_s: float = 0.0
         self._missing_scan_elapsed_s: float = 0.0
         self._live_seen_in_approach: bool = False
@@ -259,6 +267,8 @@ class CollectRouteMission:
             return self._plan_phase(robot_pose, ball_map, court, now)
         if self.phase == "nav":
             return self._nav_phase(dt_s, robot_pose, behavior, ball_map, nav_state, now, court)
+        if self.phase == "recover":
+            return self._recover_phase(now)
         if self.phase == "approach":
             return self._approach_phase(
                 observation, collection_confirmed, dt_s, robot_pose, behavior, ball_map, now
@@ -387,6 +397,7 @@ class CollectRouteMission:
         self._nav_goal = (stop.approach.x_m, stop.approach.y_m, stop.approach.yaw_rad)
         self._nav_elapsed_s = 0.0
         self._nav_last_state = "idle"
+        self._nav_recoveries = 0
         self._emit(
             "route_leg_start",
             ball_id=stop.ball_id,
@@ -468,6 +479,24 @@ class CollectRouteMission:
         failed = nav_state == "failed" and self._nav_last_state != "failed"
         timed_out = self._nav_elapsed_s > NAV_TIMEOUT_S
         self._nav_last_state = nav_state
+
+        # Instant rejection usually means the START pose is inside costmap
+        # inflation (run-5: every goal aborted in <0.1 s after the robot
+        # ended an approach near the net; the whole route burned through in
+        # 1.3 s). Back straight out of the inflated zone, then re-issue.
+        if failed and self._nav_elapsed_s < _NAV_INSTANT_FAIL_S:
+            if self._nav_recoveries < _NAV_MAX_RECOVERIES:
+                self._nav_recoveries += 1
+                self._emit(
+                    "route_nav_recovery",
+                    ball_id=stop.ball_id,
+                    recovery=self._nav_recoveries,
+                    nav_elapsed_s=self._nav_elapsed_s,
+                )
+                self.phase = "recover"
+                self._recover_until_s = now + _NAV_RECOVER_REVERSE_S
+                self._nav_goal = None
+                return _NAV_IDLE_CMD
 
         if failed or timed_out:
             self._nav_attempts += 1
@@ -674,6 +703,21 @@ class CollectRouteMission:
         self._nav_goal = (stop.approach.x_m, stop.approach.y_m, stop.approach.yaw_rad)
         self._nav_elapsed_s = 0.0
         self._nav_last_state = "idle"
+
+    def _recover_phase(self, now: float) -> ConceptACommand:
+        """Reverse straight back out of costmap inflation, then retry the leg."""
+        if now < self._recover_until_s:
+            return ConceptACommand(
+                state=CollectorState.SURVEY,
+                base=BaseCommand(_NAV_RECOVER_SPEED_M_S, 0.0),
+                collector=CollectorCommand(0.0, False),
+            )
+        stop = self._current_stop()
+        if stop is None:
+            self._finish()
+            return _IDLE_CMD
+        self._enter_nav_retry(stop)
+        return _NAV_IDLE_CMD
 
     # ── SETTLE ─────────────────────────────────────────────────────────────────
 

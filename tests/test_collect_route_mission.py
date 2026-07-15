@@ -132,16 +132,37 @@ def test_nav_reached_enters_fine_approach():
 
 def test_nav_failures_skip_after_retries():
     mission, ball_map, now = _mission_in_nav()
-    # Each failure needs a fresh transition (idle → failed).
+    # Genuine (slow) failures: the leg runs >2 s before failing, so the
+    # instant-fail recovery path stays out of the way.
     for _ in range(4):
         if mission.phase != "nav":
             break
-        _tick(mission, ball_map, nav_state="active", now=now)
-        _tick(mission, ball_map, nav_state="failed", now=now)
-        _tick(mission, ball_map, nav_state="idle", now=now)  # cancel + re-issue
+        _tick(mission, ball_map, nav_state="active", now=now, dt=3.0)
+        _tick(mission, ball_map, nav_state="failed", now=now, dt=0.1)
+        _tick(mission, ball_map, nav_state="idle", now=now, dt=0.1)  # cancel + re-issue
     assert mission.is_done
     assert mission.stops[0].status == "skipped"
     assert ball_map.balls[1].state == "collection_failed"
+
+
+def test_instant_nav_failure_triggers_reverse_recovery():
+    # Run-5 regression: goals rejected in <0.1 s (robot inside costmap
+    # inflation) burned through the whole route in 1.3 s. Instant failures
+    # must trigger a reverse recovery, not consume the retry budget.
+    mission, ball_map, now = _mission_in_nav()
+    _tick(mission, ball_map, nav_state="pending", now=now)
+    cmd = _tick(mission, ball_map, nav_state="failed", now=now)  # instant fail
+    assert mission.phase == "recover"
+    cmd = _tick(mission, ball_map, nav_state="idle", now=now + 0.1)
+    assert cmd.base.linear_speed_m_s < 0.0  # reversing out of inflation
+    # Recovery window over: leg re-issued, stop still active, no skip.
+    _tick(mission, ball_map, nav_state="idle", now=now + 5.0)
+    assert mission.phase == "nav"
+    assert mission.nav_goal is not None
+    assert mission.stops[0].status == "active"
+    events = [t for t, _ in mission.drain_events()]
+    assert "route_nav_recovery" in events
+    assert "route_leg_skip" not in events
 
 
 def test_nav_unavailable_blocks_loudly():

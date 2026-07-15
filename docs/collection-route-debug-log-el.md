@@ -354,3 +354,35 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
   map_entry_drifted`) αντί να κυνηγιέται. Το RouteStop απέκτησε
   planned_x/y. Tests 99 passed. Το target-aware observation του κυρίως #8
   αντιμετωπίζει και το lock-drift στο approach.
+
+### 9. Run 5: καταρράκτης ακαριαίων nav απορρίψεων — start pose μέσα στο inflation
+
+- **Run 5** (fixes #8 + abandon cap): 3 πρώτες μπάλες καθαρές (goal
+  refreshes δούλεψαν — 2×`route_goal_updated` στο stop 3 ακολούθησαν τη
+  μετατοπισμένη μπάλα), 1 lateral insertion. Το stop 3 έληξε missing μετά
+  από retry (drift <1.5 m, δεν κόπηκε από το cap). ΜΕΤΑ: **κάθε επόμενο
+  Nav2 goal απορρίφθηκε ακαριαία** (3 «αποτυχίες» σε ~0.1 s ανά stop) και
+  το mission διέτρεξε τα 8 υπόλοιπα stops σε 1.3 s → route_complete 3/12
+  με 8 skipped.
+- **Διάγνωση**: το ρομπότ κατέληξε (κυνηγώντας το stop 3 προς τη ζώνη του
+  φιλέ, τελευταία θέση ~(6.5, 3)) με το footprint **μέσα στο inflation
+  του costmap** — ο Smac planner απορρίπτει ακαριαία ΚΑΘΕ goal όταν το
+  start είναι σε lethal/inflated cost, ακόμα και προς ελεύθερο χώρο.
+  Επιπλέον το lateral goal του stop 14 (standoff 0.36 m από το φιλέ —
+  ακριβώς το robot_radius) πέφτει ΜΟΝΙΜΑ μέσα στο inflation band του Nav2
+  → εγγενώς άκυρο goal.
+- **Διορθώσεις (100 tests)**:
+  - **Recovery αντί για cascade**: nav αποτυχία με leg elapsed <
+    `_NAV_INSTANT_FAIL_S` (2 s) = απόρριψη planner, ΟΧΙ γνήσια αποτυχία
+    πλοήγησης → νέο phase `recover`: όπισθεν ευθεία 2.5 s @ 0.15 m/s
+    (έξοδος από το inflation) και επανέκδοση του goal· έως 2 recoveries
+    ανά stop (event `route_nav_recovery`), μετά ο κανονικός
+    retry/skip δρόμος. Το retry budget δεν καίγεται από απορρίψεις.
+  - **Goal clearance margin**: τα lateral standoffs απαιτούν πλέον
+    `robot_radius + COLLECT_ROUTE_GOAL_CLEARANCE_M` (0.15 → σύνολο 0.51 m)
+    από φιλέ/φράχτη/εμπόδια ώστε να μην γεννιούνται goals μέσα στο
+    inflation band.
+- **Σημείωση**: το reverse του recovery είναι «τυφλό» (το LiDAR είναι
+  πίσω-τοποθετημένο αλλά δεν ελέγχεται εδώ)· 0.375 m σε χώρο που μόλις
+  διέσχισε το ρομπότ — αποδεκτό στο sim, να επανεξεταστεί για hardware.
+- **Status**: ✅ κώδικας· ⏳ run 6.
