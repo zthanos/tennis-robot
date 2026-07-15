@@ -215,6 +215,7 @@ class ControllerNode(Node):
         self._collect_route_last_probe_s: float = 0.0
         self._collect_route_last_block_event_s: float = 0.0
         self._sim_true_pose: tuple[float, float, float] | None = None
+        self._pose_frame_offset: tuple[float, float] | None = None
         self._last_pose_divergence_event_s: float = 0.0
 
         # ── cached topic values ────────────────────────────────────────────────
@@ -408,14 +409,21 @@ class ControllerNode(Node):
             self._sim_true_pose = None
 
     def _pose_error_m(self) -> float | None:
-        """Believed (SLAM/odom) pose vs sim ground truth, metres."""
+        """Believed (SLAM/odom) pose vs sim ground truth, metres.
+
+        The map frame is anchored at the robot's start pose while the Gazebo
+        world frame is court-centred (~8.4 m apart), so the raw difference is
+        a constant offset. It is calibrated at collect_route start (when
+        localization is trustworthy); the reported error is the DEVIATION
+        from that initial offset — i.e. actual localization drift."""
         if self._sim_true_pose is None:
             return None
+        dx = self._sim_true_pose[0] - self._robot_x
+        dy = self._sim_true_pose[1] - self._robot_y
+        if self._pose_frame_offset is None:
+            return None
         return round(
-            math.hypot(
-                self._robot_x - self._sim_true_pose[0],
-                self._robot_y - self._sim_true_pose[1],
-            ),
+            math.hypot(dx - self._pose_frame_offset[0], dy - self._pose_frame_offset[1]),
             3,
         )
 
@@ -1224,6 +1232,13 @@ class ControllerNode(Node):
                 )
             # Register balls out to camera range during the 360° scan.
             self.ball_map.max_create_distance_override_m = mission.planner_cfg.scan_range_m
+            # Calibrate the map↔world frame offset while localization is
+            # still trustworthy; _pose_error_m measures drift from here.
+            if self._sim_true_pose is not None:
+                self._pose_frame_offset = (
+                    self._sim_true_pose[0] - self._robot_x,
+                    self._sim_true_pose[1] - self._robot_y,
+                )
             mission.start(self._robot_pose_2d())
 
         if self._nav2_lane is None:
