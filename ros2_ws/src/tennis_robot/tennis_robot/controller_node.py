@@ -47,6 +47,7 @@ from tennis_robot.ball_map import BallMap, BallMapConfig, across_net
 from tennis_robot.collect_one_mission import CollectOneMission
 from tennis_robot.collect_route_mission import CollectRouteMission
 from tennis_robot.collection_route_planner import CourtModel, remaining_route_length_m
+from tennis_robot.collection_scoring import onboard_ball_zone
 from tennis_robot.collector import (
     BallObservationInput,
     BaseCommand,
@@ -97,13 +98,10 @@ COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
 # lip/roller contact is just the launch impulse; hardware/sim confirmation
 # comes from the basket beam pair (see gazebo_extras_node.py).
 # Low-hopper basket (debug-log #41-#46): collection is credited once the ball
-# is inside the basket x/y volume and above ground-ball height. Bin v2.1 lowered
-# the floor to 0.025, so a collected resting ball sits at centre z~=0.058; the
-# one-shot sim-ball def guard below prevents repeated counts while Gazebo removes
-# the collected ball.
-BASKET_ZONE_X_M = (0.02, 0.42)
-BASKET_HALF_WIDTH_M = 0.14
-BASKET_MIN_BALL_Z_M = 0.055
+# rests onboard — the bin interior or the chassis deck (off-centre launches
+# park balls beside the bin, collection-route-debug-log-el.md #3). Zone gates
+# live in collection_scoring.onboard_ball_zone; the one-shot sim-ball def
+# guard below prevents repeated counts while Gazebo removes the collected ball.
 IR_INTAKE_TRIGGER_THRESHOLD = 500.0
 SCAN_SIDE_DURATION_S = 12.0
 COLLECT_PATTERN_COLLECTION_TIMEOUT_S = _env_float("COLLECT_PATTERN_COLLECTION_TIMEOUT_S", 35.0)
@@ -1199,6 +1197,19 @@ class ControllerNode(Node):
             if now - self._collect_route_last_probe_s >= 2.0:
                 self._collect_route_last_probe_s = now
                 probe = self._nearest_sim_ball_local()
+                # Lock-vs-truth: distance from the mission's locked world point
+                # to the nearest physical ball. Quantifies how far the approach
+                # is steering from reality (lateral-capture-error investigation).
+                lock_error_m = None
+                locked = mission._locked_world
+                if locked is not None and self._sim_balls:
+                    lock_error_m = round(
+                        min(
+                            math.hypot(b["x"] - locked[0], b["y"] - locked[1])
+                            for b in self._sim_balls
+                        ),
+                        3,
+                    )
                 self._record_collection_event(
                     "route_capture_probe",
                     ball_id=mission.current_ball_id,
@@ -1206,7 +1217,8 @@ class ControllerNode(Node):
                     approach_elapsed_s=mission._approach_elapsed_s,
                     intake_beam_broken=self._intake_beam_broken,
                     intake_roller_latched=self._intake_roller_latched,
-                    locked_world=list(mission._locked_world) if mission._locked_world else None,
+                    locked_world=list(locked) if locked else None,
+                    lock_error_m=lock_error_m,
                     nearest_sim_ball=probe,
                 )
 
@@ -1529,16 +1541,25 @@ class ControllerNode(Node):
             ly = -ori_sin * dx + ori_cos * dy
             # Ball world z ~= height above court (flat ground, robot z ~ 0).
             bz = float(ball.get("z", 0.0))
-            if (
-                BASKET_ZONE_X_M[0] <= lx <= BASKET_ZONE_X_M[1]
-                and abs(ly) <= BASKET_HALF_WIDTH_M
-                and bz >= BASKET_MIN_BALL_Z_M
-            ):
+            # Bin interior OR deck-parked: off-centre launches drop balls on
+            # the chassis beside the bin (collection-route-debug-log-el.md #3);
+            # the ball is off the court either way, so credit the capture
+            # instead of letting the mission chase a phantom for 20-30 s.
+            zone = onboard_ball_zone(lx, ly, bz)
+            if zone is not None:
                 collected_msg = String()
                 collected_msg.data = ball_def
                 self._pub_ball_collected.publish(collected_msg)
                 self._counted_sim_ball_defs.add(ball_def)
                 self.collection_count += 1
+                self._record_collection_event(
+                    "sim_collection_credit",
+                    ball_def=ball_def,
+                    zone=zone,
+                    local_x_m=round(lx, 3),
+                    local_y_m=round(ly, 3),
+                    ball_z_m=round(bz, 3),
+                )
                 return True
         return False
 

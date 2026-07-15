@@ -127,3 +127,57 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
   captures επιβεβαιωμένα ✅.
 - **Επόμενο βήμα**: rerun → ανάγνωση των `route_capture_probe` στο stall →
   απόφαση fix βάσει H1/H2/H3.
+
+## 2026-07-15
+
+### 3. Run 2 με probes: root cause ΒΡΕΘΗΚΕ — λοξά launches παρκάρουν μπάλες στο deck, εκτός scoring volume
+
+- **Run** (2026-07-15, χειροκίνητο stop από χρήστη στο 6ο/7ο stop λόγω
+  «πολλών failures»): 6 μπάλες μαζεύτηκαν φυσικά, 2 live insertions
+  (`route_insertion` #11 detour 0.17 m θέση 6, #15 detour 0.91 m θέση 8 —
+  το dynamic insertion δουλεύει live ✅).
+- **Το μοτίβο, με απόδειξη από τα `route_capture_probe`** (κάθε γραμμή
+  local x/y/z της πλησιέστερης φυσικής μπάλας):
+  - Κεντραρισμένες προσεγγίσεις = γρήγορα, καθαρά captures: μπάλες 1, 2, 4
+    μπήκαν με |ly| ≤ 0.11 και επιβεβαιώθηκαν σε ~4-18 s χωρίς κανένα retry.
+  - Μη κεντραρισμένες (ly 0.15-0.25 στο capture — 2-3× το validated
+    envelope ±0.08 του funnel): η μπάλα πιάνεται μεν, αλλά το launch βγαίνει
+    λοξό και η μπάλα προσγειώνεται **πάνω στο ρομπότ, ΕΞΩ από το bin**:
+    ball_06 → (0.06, **0.24**, z 0.058)· ball_00 → (−0.22, **0.32-0.47**,
+    z 0.058) στο ΠΙΣΩ deck· ball_05 → (0.0, **0.21-0.25**, z 0.058).
+    Το z=0.058 = μπάλα ακουμπισμένη σε επιφάνεια ~25 mm (deck), όχι έδαφος
+    (0.033).
+  - Το scoring μετρούσε ΜΟΝΟ το εσωτερικό του bin (x 0.02-0.42, |y|≤0.14,
+    z≥0.055 — σωστό ως προς το spec του bin v2), οπότε deck-parked μπάλα =
+    κανένα confirm → το mission κυνηγά το dead-reckoned φάντασμα 20-30 s,
+    μέχρι κάποιο τράνταγμα να κυλήσει μια μπάλα μέσα στο παράθυρο. Στο stop
+    της #10 το confirm ήρθε από ΛΑΘΟΣ μπάλα (η παρκαρισμένη ball_05 πέρασε
+    το gate, ενώ ο στόχος ball_12 ήταν ακόμα στο έδαφος).
+  - Beam: έσπασε μόνο 1 transient tick σε όλο το run — άχρηστο ως
+    confirmation signal με την τρέχουσα γεωμετρία του.
+- **Fix 1 (scoring — υλοποιήθηκε)**: νέο module
+  `tennis_robot/collection_scoring.py` με `onboard_ball_zone()`: κρατά το
+  bin gate ως «bin» και προσθέτει «deck» ζώνη (lx −0.30…0.45, |ly|≤0.35,
+  z≥0.050) = μπάλα πάνω στο σώμα του ρομπότ. Το
+  `_check_sim_collection` πιστώνει και τις δύο (η μπάλα έχει φύγει από το
+  γήπεδο) και γράφει νέο event `sim_collection_credit{ball_def, zone,
+  local_x/y, z}` ώστε να μετράμε πόσα launches καταλήγουν deck αντί bin.
+  Unit tests: `tests/test_collection_scoring.py` (gates πάνω στις
+  παρατηρημένες θέσεις του run 2). Πλήρης σουίτα 88 passed.
+- **Fix 2 (instrumentation)**: το probe απέκτησε `lock_error_m` = απόσταση
+  locked_world → πλησιέστερη φυσική μπάλα, για να ποσοτικοποιηθεί στο
+  επόμενο run η πηγή του πλευρικού σφάλματος (καμερική προβολή vs pose/SLAM
+  drift vs stale lock).
+- **ΑΝΟΙΧΤΟ (μηχανισμός/έλεγχος, ΔΕΝ λύθηκε)**: γιατί η fine approach
+  φτάνει στο nip με ly έως 0.25; Ύποπτοι: (α) σφάλμα προβολής κάμερας →
+  world στο lock, (β) yaw/pose σφάλμα SLAM μετά τα Nav2 legs, (γ) αδύναμη
+  γωνιακή διόρθωση στο CAPTURE (gain 1.2, commit-straight <0.45 m —
+  bench-validated τιμές, ΜΗΝ αλλαχθούν χωρίς δεδομένα). Θα κριθεί από τα
+  `lock_error_m` του επόμενου run. Σχετίζεται και με το «loaded lateral
+  envelope» deferred gap του issue #10.
+- **Status**: ✅ scoring fix + tests offline· ⏳ rerun για επιβεβαίωση ότι
+  τα stalls εξαφανίζονται και για μέτρηση lock_error_m.
+- **Επόμενο βήμα**: restart stack (DEV_OVERLAY rebuild) → rerun Collect
+  Route → αν τα deck credits είναι συχνά, ανοίγει mechanism entry για το
+  πλευρικό σφάλμα (πιθανά: ψηλότερα guards/χαμηλότερο tray στο bin ή
+  διόρθωση του lock πριν το capture commit).
