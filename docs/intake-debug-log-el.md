@@ -1795,10 +1795,19 @@
   από κέντρο τροχού (κανόνας ≥65 mm — τα παλιά x=0.60 cheeks ήταν 51 mm).
   Επαληθεύτηκε αριθμητικά + offline URDF/SDF generation· το friction
   patch του generator πιάνει με name substring "cheek_col" — αμετάβλητο.
-- **Status**: ⏳ ΕΚΚΡΕΜΕΙ bench validation (`run_native_intake_sweep.sh`
-  lateral envelope έως ±0.14, στόχος 5/5) — δεν τρέχει όσο είναι πάνω το
-  docker sim. Μετά το bench: live επιβεβαίωση μέσω collect_route run
-  (αναλογία bin/deck credits στα `sim_collection_credit` events).
+- **Bench validation (2026-07-15, runs σε
+  `runtime/intake_sweeps/cheek_v2_lateral_{1x,5x_gate*}`)**:
+  - 1x envelope sweep 0.0/0.08/0.10/0.12/0.14 → **όλα 6/6 required**.
+  - 5x repeatability gate: **0.12 → 5/5 με 6/6, 0.14 → 5/5 με 6/6** (ένα
+    run κατέρρευσε στο startup — «controllers did not become active»,
+    γνωστό bringup flake, ΟΧΙ αποτυχία capture· ξανατρέχτηκε καθαρά).
+  - Το validated lateral envelope διπλασιάστηκε: ±0.08 → **±0.14**, που
+    καλύπτει το χειρότερο μετρημένο σφάλμα προσέγγισης των collect_route
+    runs (~0.15 πριν το adoption-gate fix του collection log #7).
+- **Status**: ✅ VALIDATED στο bench· ⏳ live επιβεβαίωση στο επόμενο
+  collect_route run (τελικό /sim/balls state για bin/deck — τα
+  `sim_collection_credit` πυροδοτούνται συχνά στη διέλευση ράμπας, βλ.
+  collection log #7 σημείωση telemetry).
 
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
