@@ -165,13 +165,14 @@ def test_instant_nav_failure_triggers_reverse_recovery():
     assert "route_leg_skip" not in events
 
 
-def test_consecutive_nav_skips_abort_route_loudly():
-    # Run-5/6 regression: when every goal is rejected, stop after 2
-    # consecutive nav skips instead of burning through the whole route.
+def test_persistent_nav_failures_walk_the_whole_plan():
+    # User decision (log #13): a nav collapse records the failed stop and the
+    # SAME plan continues from the next ball — completion only when every
+    # planned ball is accounted for (collected or failed).
     mission, ball_map, now = _mission_in_nav(
         ball_positions=((2.0, 0.0), (4.0, 0.0), (6.0, 0.0), (8.0, 0.5))
     )
-    for _ in range(80):
+    for _ in range(120):
         if mission.is_done:
             break
         # Slow failures (elapsed > instant threshold) exhaust retries fast.
@@ -180,10 +181,14 @@ def test_consecutive_nav_skips_abort_route_loudly():
         _tick(mission, ball_map, nav_state="idle", now=now, dt=0.1)
     assert mission.is_done
     statuses = [s.status for s in mission.stops]
-    assert statuses.count("skipped") == 2      # aborted at the cascade cap
-    assert "pending" in statuses               # rest left for a rerun
+    assert statuses.count("skipped") == 4      # every stop accounted for
+    assert "pending" not in statuses
     events = dict(mission.drain_events())
-    assert events.get("route_aborted", {}).get("reason") == "nav_rejected_cascade"
+    complete = events.get("route_complete", {})
+    assert complete.get("planned_total") == 4
+    assert sorted(complete.get("failed_ball_ids", [])) == sorted(
+        s.ball_id for s in mission.stops
+    )
 
 
 def test_nav_unavailable_blocks_loudly():
@@ -450,30 +455,39 @@ def _front_ball_obs(x=1.0, y=0.1):
     )
 
 
-def test_ball_ahead_on_leg_triggers_opportunistic_capture():
-    # Runs 5-7 froze with balls suspected under the chassis: Nav2 cannot see
-    # them, so a ball visible ahead is collected instead of plowed over.
-    mission, ball_map, now = _mission_in_nav(
-        ball_positions=((6.0, 0.0), (1.0, 0.1))  # stop 2's ball lies on the leg
-    )
-    assert [s.ball_id for s in mission.stops] == [2, 1]  # nearest first...
-    # Current stop is ball 2 at (1.0, 0.1)? Ensure a far current target:
-    # rebuild: current stop should be the far one for this scenario.
+def test_planned_ball_ahead_on_leg_triggers_opportunistic_capture():
+    # Runs 5-7 froze with balls suspected under the chassis: a PLANNED ball
+    # visible ahead is collected instead of plowed over, then the leg resumes.
     mission, ball_map, now = _mission_in_nav(ball_positions=((6.0, 0.0),))
+    # A confirmed new ball joins the plan via insertion, then shows up ahead.
     ball_map.balls[9] = MappedBall(
         9, 1.0, 0.1, 0.9, 0.0, NOW, "oak_depth", seen_count=4, state="detected"
     )
+    _tick(mission, ball_map, nav_state="active", now=now)  # insertion tick
+    assert 9 in {s.ball_id for s in mission.stops}
     _tick(mission, ball_map, nav_state="active", now=now,
           observation=_front_ball_obs(1.0, 0.1))
     assert mission.phase == "opportunistic"
     assert mission.nav_goal is None  # Nav2 goal dropped for the capture
-    # Collection confirmed: the unplanned ball is credited, leg resumes.
+    # Collection confirmed: the planned stop is credited, leg resumes.
     _tick(mission, ball_map, confirmed=True, now=now)
     assert mission.phase == "nav"
     assert mission.stops[mission.current_index].ball_id == 1
+    credited = [s for s in mission.stops if s.ball_id == 9]
+    assert credited[0].status == "collected"
     events = [t for t, _ in mission.drain_events()]
     assert "route_opportunistic_start" in events
     assert "route_opportunistic_collected" in events
+
+
+def test_unplanned_ball_ahead_never_diverts_the_leg():
+    # Plan-only rule (user decision, log #13): an unconfirmed stray sighting
+    # ahead does not hijack the leg.
+    mission, ball_map, now = _mission_in_nav(ball_positions=((6.0, 0.0),))
+    _tick(mission, ball_map, nav_state="active", now=now,
+          observation=_front_ball_obs(1.0, 0.1))  # no matching plan ball
+    assert mission.phase == "nav"
+    assert mission.nav_goal is not None
 
 
 def test_opportunistic_credits_matching_pending_stop():
@@ -494,6 +508,10 @@ def test_opportunistic_credits_matching_pending_stop():
 
 def test_opportunistic_timeout_resumes_leg():
     mission, ball_map, now = _mission_in_nav(ball_positions=((6.0, 0.0),))
+    ball_map.balls[9] = MappedBall(
+        9, 1.0, 0.0, 0.9, 0.0, NOW, "oak_depth", seen_count=4, state="detected"
+    )
+    _tick(mission, ball_map, nav_state="active", now=now)  # insertion tick
     _tick(mission, ball_map, nav_state="active", now=now,
           observation=_front_ball_obs())
     assert mission.phase == "opportunistic"

@@ -79,19 +79,23 @@ _NAV_INSTANT_FAIL_S = 2.0
 _NAV_MAX_RECOVERIES = 2
 _NAV_RECOVER_REVERSE_S = 2.5
 _NAV_RECOVER_SPEED_M_S = -0.15
-# Consecutive stops skipped on nav failure before the route aborts loudly
-# instead of burning through every remaining stop (run-5/6 cascades).
-_MAX_CONSECUTIVE_NAV_SKIPS = 2
 # Opportunistic capture during Nav2 legs: Nav2 cannot see balls (lidar plane
 # is above them) so legs plow straight through — runs 5-7 froze with a ball
 # suspected under the chassis. A ball visible ahead within this range/bearing
-# is collected on the spot, then the leg resumes.
+# is collected on the spot, then the leg resumes. PLAN-ONLY (user decision,
+# log #13): the ball must belong to a pending/active stop — anything else is
+# ignored (confirmed new balls join the plan via insertion anyway).
 _OPP_CAPTURE_RANGE_M = 1.2
 _OPP_CAPTURE_BEARING_RAD = math.radians(40.0)
 _OPP_TIMEOUT_S = 15.0
-# A collected opportunistic ball credits the pending stop whose planned ball
-# lies within this distance.
+# An opportunistic ball matches the plan stop whose planned ball lies within
+# this distance.
 _OPP_STOP_MATCH_M = 0.8
+# Blind reverse recoveries are capped PER RUN: repeated reversing under
+# persistent rejections walked the robot into the fence (run 6). Failures
+# beyond the budget skip the stop and the plan simply continues (user
+# decision, log #13: record the failure, move to the next planned ball).
+_TOTAL_RECOVERY_BUDGET = 4
 
 _IDLE_CMD = ConceptACommand(
     state=CollectorState.IDLE,
@@ -163,9 +167,10 @@ class CollectRouteMission:
         self._nav_last_state: str = "idle"
         self._nav_attempts: int = 0
         self._nav_recoveries: int = 0
+        self._total_recoveries: int = 0
         self._recover_until_s: float = 0.0
-        self._consecutive_nav_skips: int = 0
         self._opp_locked: tuple[float, float] | None = None
+        self._opp_stop_id: int | None = None
         self._opp_elapsed_s: float = 0.0
         self._approach_elapsed_s: float = 0.0
         self._missing_scan_elapsed_s: float = 0.0
@@ -245,6 +250,11 @@ class CollectRouteMission:
             "phase": self.phase,
             "current_ball_id": self.current_ball_id,
             "stop_count": len(self.stops),
+            "planned_total": len(self.stops),
+            "remaining": counts.get("pending", 0) + counts.get("active", 0),
+            "failed_ball_ids": [
+                s.ball_id for s in self.stops if s.status in ("skipped", "missing")
+            ],
             "stops": counts,
             "insertions": self.insertion_count,
             "scan_steps": self._scan_steps_taken,
@@ -457,9 +467,10 @@ class CollectRouteMission:
             self.current_blocker = "nav2_action_unavailable"
             return _NAV_IDLE_CMD
 
-        # A ball directly ahead on the leg: collect it instead of plowing
-        # over it (Nav2 cannot see balls — runs 5-7 froze with one suspected
-        # under the chassis). The leg resumes right after.
+        # A PLANNED ball directly ahead on the leg: collect it instead of
+        # plowing over it (Nav2 cannot see balls — runs 5-7 froze with one
+        # suspected under the chassis). Plan-only: an unplanned sighting never
+        # diverts the leg. The leg resumes right after.
         if (
             observation.visible
             and observation.world_x_m is not None
@@ -467,20 +478,26 @@ class CollectRouteMission:
             and observation.distance_m <= _OPP_CAPTURE_RANGE_M
             and abs(observation.bearing_rad) <= _OPP_CAPTURE_BEARING_RAD
         ):
-            self.phase = "opportunistic"
-            self._nav_goal = None  # controller cancels the Nav2 goal
-            self._opp_locked = (observation.world_x_m, observation.world_y_m)
-            self._opp_elapsed_s = 0.0
-            behavior.reset()
-            behavior.start_tracking(observation)
-            self._emit(
-                "route_opportunistic_start",
-                ball_id=stop.ball_id,
-                ball_x_m=observation.world_x_m,
-                ball_y_m=observation.world_y_m,
-                distance_m=observation.distance_m,
+            matched = self._matching_plan_stop(
+                observation.world_x_m, observation.world_y_m
             )
-            return behavior.update(observation, dt_s, collection_confirmed=False)
+            if matched is not None:
+                self.phase = "opportunistic"
+                self._nav_goal = None  # controller cancels the Nav2 goal
+                self._opp_locked = (observation.world_x_m, observation.world_y_m)
+                self._opp_stop_id = matched.ball_id
+                self._opp_elapsed_s = 0.0
+                behavior.reset()
+                behavior.start_tracking(observation)
+                self._emit(
+                    "route_opportunistic_start",
+                    ball_id=matched.ball_id,
+                    resumed_stop=stop.ball_id,
+                    ball_x_m=observation.world_x_m,
+                    ball_y_m=observation.world_y_m,
+                    distance_m=observation.distance_m,
+                )
+                return behavior.update(observation, dt_s, collection_confirmed=False)
 
         # The mapped ball may have drifted since the plan (e.g. nudged by a
         # previous capture attempt — run-4 stops 12/6 retried into the STALE
@@ -539,8 +556,12 @@ class CollectRouteMission:
         # ended an approach near the net; the whole route burned through in
         # 1.3 s). Back straight out of the inflated zone, then re-issue.
         if failed and self._nav_elapsed_s < _NAV_INSTANT_FAIL_S:
-            if self._nav_recoveries < _NAV_MAX_RECOVERIES:
+            if (
+                self._nav_recoveries < _NAV_MAX_RECOVERIES
+                and self._total_recoveries < _TOTAL_RECOVERY_BUDGET
+            ):
                 self._nav_recoveries += 1
+                self._total_recoveries += 1
                 self._emit(
                     "route_nav_recovery",
                     ball_id=stop.ball_id,
@@ -561,22 +582,8 @@ class CollectRouteMission:
                 reason="nav_timeout" if timed_out else "nav_failed",
             )
             if self._nav_attempts > NAV_RETRIES:
-                self._consecutive_nav_skips += 1
-                if self._consecutive_nav_skips >= _MAX_CONSECUTIVE_NAV_SKIPS:
-                    # Everything is being rejected — burning through the rest
-                    # of the route is pointless (run-5/6 cascades) and blind
-                    # recovery reversing walked the robot into the fence.
-                    # Stop loudly; remaining stops stay pending for a rerun.
-                    stop.status = "skipped"
-                    ball_map.set_state(stop.ball_id, "collection_failed")
-                    self.current_blocker = "nav_rejected_cascade"
-                    self._emit(
-                        "route_aborted",
-                        reason="nav_rejected_cascade",
-                        consecutive_skips=self._consecutive_nav_skips,
-                    )
-                    self._finish()
-                    return _IDLE_CMD
+                # Record the failure and continue the SAME plan from the next
+                # planned ball (user decision, log #13) — no route abort.
                 self._skip_current(ball_map, "skipped")
                 return _NAV_IDLE_CMD
             # Drop the goal for one tick so the controller cancels the
@@ -585,7 +592,6 @@ class CollectRouteMission:
             return _NAV_IDLE_CMD
 
         if nav_state == "reached":
-            self._consecutive_nav_skips = 0
             self._enter_approach(robot_pose, behavior, ball_map, now)
         return _NAV_IDLE_CMD
 
@@ -839,23 +845,26 @@ class CollectRouteMission:
             behavior.start_tracking(tracking_obs)
         return behavior.update(tracking_obs, dt_s, collection_confirmed=False)
 
-    def _credit_opportunistic_stop(self) -> int | None:
-        """Mark the pending stop whose planned ball matches the collected one."""
-        if self._opp_locked is None:
-            return None
+    def _matching_plan_stop(self, x: float, y: float) -> "RouteStop | None":
+        """The pending/active stop whose planned ball lies nearest (x, y)."""
         best: RouteStop | None = None
         best_d = _OPP_STOP_MATCH_M
         for s in self.stops:
             if s.status not in ("pending", "active"):
                 continue
-            d = math.hypot(s.ball_x_m - self._opp_locked[0], s.ball_y_m - self._opp_locked[1])
+            d = math.hypot(s.ball_x_m - x, s.ball_y_m - y)
             if d < best_d:
                 best, best_d = s, d
-        if best is None:
-            return None
-        best.status = "collected"
-        self._renumber()
-        return best.ball_id
+        return best
+
+    def _credit_opportunistic_stop(self) -> int | None:
+        """Mark the plan stop matched at opportunistic start as collected."""
+        for s in self.stops:
+            if s.ball_id == self._opp_stop_id and s.status in ("pending", "active"):
+                s.status = "collected"
+                self._renumber()
+                return s.ball_id
+        return None
 
     def _recover_phase(self, now: float) -> ConceptACommand:
         """Reverse straight back out of costmap inflation, then retry the leg."""
@@ -919,15 +928,19 @@ class CollectRouteMission:
             self._enter_nav()
 
     def _finish(self) -> None:
+        """The plan ledger is exhausted: every planned ball (initial scan +
+        insertions) is accounted for as collected or failed. Completion is
+        declared here and only here (user decision, log #13)."""
         self.phase = "done"
         self._nav_goal = None
-        collected = sum(1 for s in self.stops if s.status == "collected")
+        failed = [s.ball_id for s in self.stops if s.status in ("skipped", "missing")]
         self._emit(
             "route_complete",
-            stops=len(self.stops),
-            collected=collected,
+            planned_total=len(self.stops),
+            collected=sum(1 for s in self.stops if s.status == "collected"),
             skipped=sum(1 for s in self.stops if s.status == "skipped"),
             missing=sum(1 for s in self.stops if s.status == "missing"),
+            failed_ball_ids=failed,
             insertions=self.insertion_count,
         )
 

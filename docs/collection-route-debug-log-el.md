@@ -479,3 +479,26 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
   συλλογές αντί για σφηνώματα → λιγότερα «failed to make progress»,
   λιγότερα recovery reverses, και ταχύτερο συνολικό μάζεμα.
 - **Status**: ✅ κώδικας (104 tests)· ⏳ run 8 (restart stack για rebuild).
+
+### 13. Πολιτική πλάνου (απόφαση χρήστη): ledger, plan-only, συνέχιση χωρίς abort
+
+- **Απόφαση χρήστη**: (α) το mission κρατά ΣΥΝΟΛΟ πλάνου = μπάλες του 360°
+  scan + insertions· αφαιρείται ό,τι μαζεύεται· (β) μπάλα μαζεύεται ΜΟΝΟ
+  αν ανήκει στο πλάνο (αρχικό ή insertion) — καμία παρέκκλιση για εκτός
+  πλάνου· (γ) σε προβλήματα navigation, η προβληματική μπάλα καταχωρείται
+  στις ΑΠΟΤΥΧΙΕΣ και το ΙΔΙΟ πλάνο συνεχίζει από την επόμενη μπάλα· (δ)
+  ολοκλήρωση = όταν κάθε μπάλα του πλάνου έχει λογαριαστεί
+  (collected/failed) → event completed.
+- **Υλοποίηση**:
+  - Το `route_aborted`/cascade abort του #10 ΚΑΤΑΡΓΗΘΗΚΕ — nav skip →
+    καταχώρηση αποτυχίας → επόμενο stop του ίδιου πλάνου.
+  - Blind reverse recoveries: ΣΥΝΟΛΙΚΟ budget 4/run (πέρα από το 2/stop) —
+    μετά, οι αποτυχίες απλά προσπερνιούνται (όχι fence-walking του run 6).
+  - Opportunistic capture: **plan-only** — ενεργοποιείται μόνο όταν η
+    μπάλα μπροστά ταιριάζει (≤0.8 m) με pending/active stop· τα
+    confirmed νέα μπαίνουν στο πλάνο μέσω insertion ούτως ή άλλως, τα
+    αχαρτογράφητα στιγμιαία sightings αγνοούνται.
+  - Ledger στο telemetry: `planned_total`, `remaining`, `failed_ball_ids`·
+    το `route_complete` αναφέρει planned_total/collected/skipped/missing/
+    failed_ball_ids/insertions.
+- **Status**: ✅ κώδικας (105 tests)· ⏳ run 8.
