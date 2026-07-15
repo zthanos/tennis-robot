@@ -436,11 +436,75 @@ def test_wandering_map_entry_abandons_stop():
 
 def test_current_target_xy_reports_pursued_ball():
     mission, ball_map, now = _mission_in_nav(ball_positions=((3.0, 0.0),))
-    assert mission.current_target_xy == (3.0, 0.0)
+    assert mission.current_target_xy is None  # nav legs watch the road ahead
     _tick(mission, ball_map, nav_state="pending", now=now)
     _tick(mission, ball_map, nav_state="reached", now=now)
     assert mission.phase == "approach"
     assert mission.current_target_xy == mission._locked_world
+
+
+def _front_ball_obs(x=1.0, y=0.1):
+    return BallObservationInput(
+        visible=True, bearing_rad=math.atan2(y, x), distance_m=math.hypot(x, y),
+        confidence=0.9, source="oak_ai_depth", world_x_m=x, world_y_m=y,
+    )
+
+
+def test_ball_ahead_on_leg_triggers_opportunistic_capture():
+    # Runs 5-7 froze with balls suspected under the chassis: Nav2 cannot see
+    # them, so a ball visible ahead is collected instead of plowed over.
+    mission, ball_map, now = _mission_in_nav(
+        ball_positions=((6.0, 0.0), (1.0, 0.1))  # stop 2's ball lies on the leg
+    )
+    assert [s.ball_id for s in mission.stops] == [2, 1]  # nearest first...
+    # Current stop is ball 2 at (1.0, 0.1)? Ensure a far current target:
+    # rebuild: current stop should be the far one for this scenario.
+    mission, ball_map, now = _mission_in_nav(ball_positions=((6.0, 0.0),))
+    ball_map.balls[9] = MappedBall(
+        9, 1.0, 0.1, 0.9, 0.0, NOW, "oak_depth", seen_count=4, state="detected"
+    )
+    _tick(mission, ball_map, nav_state="active", now=now,
+          observation=_front_ball_obs(1.0, 0.1))
+    assert mission.phase == "opportunistic"
+    assert mission.nav_goal is None  # Nav2 goal dropped for the capture
+    # Collection confirmed: the unplanned ball is credited, leg resumes.
+    _tick(mission, ball_map, confirmed=True, now=now)
+    assert mission.phase == "nav"
+    assert mission.stops[mission.current_index].ball_id == 1
+    events = [t for t, _ in mission.drain_events()]
+    assert "route_opportunistic_start" in events
+    assert "route_opportunistic_collected" in events
+
+
+def test_opportunistic_credits_matching_pending_stop():
+    mission, ball_map, now = _mission_in_nav(
+        ball_positions=((5.0, 0.0), (1.1, 0.05))
+    )
+    # Route order: near ball (id 2) first — make the FAR stop current by
+    # collecting the near one opportunistically only if it's NOT current:
+    # current stop is id 2 at (1.1, 0.05); the front obs IS the current ball.
+    _tick(mission, ball_map, nav_state="active", now=now,
+          observation=_front_ball_obs(1.1, 0.05))
+    assert mission.phase == "opportunistic"
+    _tick(mission, ball_map, confirmed=True, now=now)
+    # Credited stop was the CURRENT one → settle, then advance to the far ball.
+    assert mission.phase == "settle"
+    assert mission.stops[0].status == "collected"
+
+
+def test_opportunistic_timeout_resumes_leg():
+    mission, ball_map, now = _mission_in_nav(ball_positions=((6.0, 0.0),))
+    _tick(mission, ball_map, nav_state="active", now=now,
+          observation=_front_ball_obs())
+    assert mission.phase == "opportunistic"
+    for _ in range(20):  # 20 × 1 s > _OPP_TIMEOUT_S
+        if mission.phase != "opportunistic":
+            break
+        _tick(mission, ball_map, now=now, dt=1.0)
+    assert mission.phase == "nav"
+    assert mission.stops[0].status == "active"
+    events = [t for t, _ in mission.drain_events()]
+    assert "route_opportunistic_abort" in events
 
 
 def test_route_export_orders_and_polyline():

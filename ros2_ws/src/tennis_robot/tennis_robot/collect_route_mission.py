@@ -82,6 +82,16 @@ _NAV_RECOVER_SPEED_M_S = -0.15
 # Consecutive stops skipped on nav failure before the route aborts loudly
 # instead of burning through every remaining stop (run-5/6 cascades).
 _MAX_CONSECUTIVE_NAV_SKIPS = 2
+# Opportunistic capture during Nav2 legs: Nav2 cannot see balls (lidar plane
+# is above them) so legs plow straight through — runs 5-7 froze with a ball
+# suspected under the chassis. A ball visible ahead within this range/bearing
+# is collected on the spot, then the leg resumes.
+_OPP_CAPTURE_RANGE_M = 1.2
+_OPP_CAPTURE_BEARING_RAD = math.radians(40.0)
+_OPP_TIMEOUT_S = 15.0
+# A collected opportunistic ball credits the pending stop whose planned ball
+# lies within this distance.
+_OPP_STOP_MATCH_M = 0.8
 
 _IDLE_CMD = ConceptACommand(
     state=CollectorState.IDLE,
@@ -155,6 +165,8 @@ class CollectRouteMission:
         self._nav_recoveries: int = 0
         self._recover_until_s: float = 0.0
         self._consecutive_nav_skips: int = 0
+        self._opp_locked: tuple[float, float] | None = None
+        self._opp_elapsed_s: float = 0.0
         self._approach_elapsed_s: float = 0.0
         self._missing_scan_elapsed_s: float = 0.0
         self._live_seen_in_approach: bool = False
@@ -193,10 +205,16 @@ class CollectRouteMission:
 
     @property
     def current_target_xy(self) -> tuple[float, float] | None:
-        """World position of the ball being pursued (lock if approaching)."""
+        """World position of the ball being pursued (lock if approaching).
+
+        None during nav legs on purpose: there the interesting observation is
+        whatever ball is nearest ahead (opportunistic capture), not the
+        distant target of the leg."""
         if self.phase == "approach" and self._locked_world is not None:
             return self._locked_world
-        if self.phase in ("nav", "approach") and self.current_index < len(self.stops):
+        if self.phase == "opportunistic" and self._opp_locked is not None:
+            return self._opp_locked
+        if self.phase == "approach" and self.current_index < len(self.stops):
             stop = self.stops[self.current_index]
             return (stop.ball_x_m, stop.ball_y_m)
         return None
@@ -270,7 +288,13 @@ class CollectRouteMission:
         if self.phase == "plan":
             return self._plan_phase(robot_pose, ball_map, court, now)
         if self.phase == "nav":
-            return self._nav_phase(dt_s, robot_pose, behavior, ball_map, nav_state, now, court)
+            return self._nav_phase(
+                observation, dt_s, robot_pose, behavior, ball_map, nav_state, now, court
+            )
+        if self.phase == "opportunistic":
+            return self._opportunistic_phase(
+                observation, collection_confirmed, dt_s, robot_pose, behavior, ball_map
+            )
         if self.phase == "recover":
             return self._recover_phase(now)
         if self.phase == "approach":
@@ -415,6 +439,7 @@ class CollectRouteMission:
 
     def _nav_phase(
         self,
+        observation: BallObservationInput,
         dt_s: float,
         robot_pose: tuple[float, float, float],
         behavior: ConceptACollectorBehavior,
@@ -431,6 +456,31 @@ class CollectRouteMission:
         if nav_state == "unavailable":
             self.current_blocker = "nav2_action_unavailable"
             return _NAV_IDLE_CMD
+
+        # A ball directly ahead on the leg: collect it instead of plowing
+        # over it (Nav2 cannot see balls — runs 5-7 froze with one suspected
+        # under the chassis). The leg resumes right after.
+        if (
+            observation.visible
+            and observation.world_x_m is not None
+            and observation.world_y_m is not None
+            and observation.distance_m <= _OPP_CAPTURE_RANGE_M
+            and abs(observation.bearing_rad) <= _OPP_CAPTURE_BEARING_RAD
+        ):
+            self.phase = "opportunistic"
+            self._nav_goal = None  # controller cancels the Nav2 goal
+            self._opp_locked = (observation.world_x_m, observation.world_y_m)
+            self._opp_elapsed_s = 0.0
+            behavior.reset()
+            behavior.start_tracking(observation)
+            self._emit(
+                "route_opportunistic_start",
+                ball_id=stop.ball_id,
+                ball_x_m=observation.world_x_m,
+                ball_y_m=observation.world_y_m,
+                distance_m=observation.distance_m,
+            )
+            return behavior.update(observation, dt_s, collection_confirmed=False)
 
         # The mapped ball may have drifted since the plan (e.g. nudged by a
         # previous capture attempt — run-4 stops 12/6 retried into the STALE
@@ -724,6 +774,88 @@ class CollectRouteMission:
         self._nav_goal = (stop.approach.x_m, stop.approach.y_m, stop.approach.yaw_rad)
         self._nav_elapsed_s = 0.0
         self._nav_last_state = "idle"
+
+    def _opportunistic_phase(
+        self,
+        observation: BallObservationInput,
+        collection_confirmed: bool,
+        dt_s: float,
+        robot_pose: tuple[float, float, float],
+        behavior: ConceptACollectorBehavior,
+        ball_map: BallMap,
+    ) -> ConceptACommand:
+        stop = self._current_stop()
+        if stop is None:
+            self._finish()
+            return _IDLE_CMD
+
+        if collection_confirmed:
+            behavior.reset()
+            credited = self._credit_opportunistic_stop()
+            self._emit(
+                "route_opportunistic_collected",
+                ball_id=credited,
+                resumed_stop=stop.ball_id,
+            )
+            self._opp_locked = None
+            if stop.status == "collected":
+                # The opportunistic ball WAS the current stop's ball.
+                self.phase = "settle"
+                self._settle_remaining_s = _SETTLE_HOLD_S
+            else:
+                self._enter_nav_retry(stop)
+            return _IDLE_CMD
+
+        self._opp_elapsed_s += dt_s
+        if (
+            observation.visible
+            and observation.world_x_m is not None
+            and observation.world_y_m is not None
+            and self._opp_locked is not None
+            and math.hypot(
+                observation.world_x_m - self._opp_locked[0],
+                observation.world_y_m - self._opp_locked[1],
+            )
+            <= _RELOCK_GATE_M
+        ):
+            self._opp_locked = (observation.world_x_m, observation.world_y_m)
+
+        if behavior.gave_up or self._opp_elapsed_s > _OPP_TIMEOUT_S:
+            # Not worth a fight — resume the leg; the ball stays mapped.
+            behavior.reset()
+            self._emit("route_opportunistic_abort", resumed_stop=stop.ball_id)
+            self._opp_locked = None
+            self._enter_nav_retry(stop)
+            return _NAV_IDLE_CMD
+
+        robot_x, robot_y, robot_yaw = robot_pose
+        locked_obs = (
+            _world_to_robot_obs(*self._opp_locked, robot_x, robot_y, robot_yaw)
+            if self._opp_locked is not None
+            else None
+        )
+        tracking_obs = locked_obs if locked_obs is not None else observation
+        if behavior.state == CollectorState.SCAN and tracking_obs.visible:
+            behavior.start_tracking(tracking_obs)
+        return behavior.update(tracking_obs, dt_s, collection_confirmed=False)
+
+    def _credit_opportunistic_stop(self) -> int | None:
+        """Mark the pending stop whose planned ball matches the collected one."""
+        if self._opp_locked is None:
+            return None
+        best: RouteStop | None = None
+        best_d = _OPP_STOP_MATCH_M
+        for s in self.stops:
+            if s.status not in ("pending", "active"):
+                continue
+            d = math.hypot(s.ball_x_m - self._opp_locked[0], s.ball_y_m - self._opp_locked[1])
+            if d < best_d:
+                best, best_d = s, d
+        if best is None:
+            return None
+        best.status = "collected"
+        self._renumber()
+        return best.ball_id
 
     def _recover_phase(self, now: float) -> ConceptACommand:
         """Reverse straight back out of costmap inflation, then retry the leg."""

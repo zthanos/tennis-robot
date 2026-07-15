@@ -455,3 +455,27 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
   costmap injection — βαρύτερο).
 - **Status**: ✅ instrumentation· ⏳ run 8 για την απόδειξη του «από
   κάτω», και απόφαση χρήστη για το opportunistic capture.
+
+### 12. Opportunistic capture στα Nav2 legs (fix για τα reverses/χαμένο plan)
+
+- **Αναφορά χρήστη (run 7)**: «πάλι έβαλε reverse χωρίς λόγο και έχασε
+  το plan» — τα τυφλά recovery reverses + το cascade abort είναι κακή
+  απάντηση όταν η ρίζα είναι μπάλες στην πορεία των legs που ο Nav2 δεν
+  βλέπει.
+- **Υλοποίηση**: νέο mission phase `opportunistic` — όταν στη διάρκεια
+  Nav2 leg η κάμερα δει μπάλα μπροστά (≤1.2 m, |bearing| ≤ 40°):
+  1. Ακυρώνεται το goal, ο collector την μαζεύει επιτόπου (lock/refresh
+     όπως στο approach, timeout 15 s).
+  2. Στο confirm: πιστώνεται το pending stop της οποίας η planned μπάλα
+     είναι εντός 0.8 m (αν υπάρχει) — αν ήταν του ΤΡΕΧΟΝΤΟΣ stop → settle
+     και κανονική συνέχεια· αλλιώς το leg επανεκδίδεται και το route
+     συνεχίζει με το stop της κομμένο από τη λίστα.
+  3. Σε αποτυχία/timeout: `route_opportunistic_abort` και το leg
+     συνεχίζει (η μπάλα μένει στον χάρτη).
+  - Events: `route_opportunistic_start/collected/abort`. Στα nav legs το
+    observation είναι πλέον το πλησιέστερο-στο-ρομπότ (το target-aware
+    ισχύει στο approach/opportunistic).
+- **Αναμενόμενο αποτέλεσμα**: οι «αόρατες» μπάλες των legs γίνονται
+  συλλογές αντί για σφηνώματα → λιγότερα «failed to make progress»,
+  λιγότερα recovery reverses, και ταχύτερο συνολικό μάζεμα.
+- **Status**: ✅ κώδικας (104 tests)· ⏳ run 8 (restart stack για rebuild).
