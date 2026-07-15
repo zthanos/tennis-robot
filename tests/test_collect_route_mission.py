@@ -258,6 +258,28 @@ def test_phantom_without_live_sighting_goes_missing_fast():
     assert events.get("route_ball_missing", {}).get("reason") == "no_live_sighting_at_standoff"
 
 
+def test_first_sighting_adopts_mislocated_scan_entry():
+    # Scan-created map entries carry up to ~0.5 m error (run-3 lock_error_m);
+    # the FIRST sighting within 1.0 m of the plan re-centres the lock, while
+    # later refreshes keep the strict 0.6 m anti-steal gate.
+    mission, ball_map, behavior, now = _mission_in_approach(ball_positions=((3.0, 0.0),))
+    off_plan = BallObservationInput(
+        visible=True, bearing_rad=0.3, distance_m=1.5, confidence=0.9,
+        source="oak_ai_depth", world_x_m=3.5, world_y_m=0.7,  # 0.86 m from lock
+    )
+    _tick(mission, ball_map, pose=(1.7, 0.0, 0.0), now=now,
+          behavior=behavior, observation=off_plan)
+    assert mission._locked_world == (3.5, 0.7)
+    # A different ball 0.9 m away can no longer steal the refreshed lock.
+    thief = BallObservationInput(
+        visible=True, bearing_rad=-0.4, distance_m=2.0, confidence=0.9,
+        source="oak_ai_depth", world_x_m=4.3, world_y_m=1.2,
+    )
+    _tick(mission, ball_map, pose=(1.7, 0.0, 0.0), now=now,
+          behavior=behavior, observation=thief)
+    assert mission._locked_world == (3.5, 0.7)
+
+
 def test_live_sighting_keeps_approach_alive_past_missing_budget():
     mission, ball_map, behavior, now = _mission_in_approach(ball_positions=((3.0, 0.0),))
     live = BallObservationInput(

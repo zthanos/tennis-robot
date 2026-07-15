@@ -62,6 +62,10 @@ _SETTLE_INTAKE_S = 0.25
 # Max distance between a fresh sighting and the locked mapped ball for the
 # lock to be refreshed (same physical ball) — see collect_one debug-log #44.
 _RELOCK_GATE_M = 0.6
+# Wider gate for the FIRST sighting of an approach: entries created by the
+# 9 m 360° scan carry up to ~0.5 m position error (run-3 lock_error_m data),
+# so from the standoff the nearest ball within 1 m of the plan is the target.
+_INITIAL_ADOPT_GATE_M = 1.0
 
 _IDLE_CMD = ConceptACommand(
     state=CollectorState.IDLE,
@@ -485,6 +489,12 @@ class CollectRouteMission:
         # Refresh the lock while the ball stays visible (blind-zone pattern
         # from collect_one, debug-log #44): live sightings within the gate
         # shrink the frozen error before the near-field blind zone takes over.
+        # The first sighting of the approach gets the wider adoption gate —
+        # scan-created entries can be ~0.5 m off; later refreshes use the
+        # strict gate so a different ball cannot steal the lock mid-capture.
+        refresh_gate_m = (
+            _RELOCK_GATE_M if self._live_seen_in_approach else _INITIAL_ADOPT_GATE_M
+        )
         if (
             observation.visible
             and observation.world_x_m is not None
@@ -494,7 +504,7 @@ class CollectRouteMission:
                 observation.world_x_m - self._locked_world[0],
                 observation.world_y_m - self._locked_world[1],
             )
-            <= _RELOCK_GATE_M
+            <= refresh_gate_m
         ):
             self._locked_world = (observation.world_x_m, observation.world_y_m)
             self._live_seen_in_approach = True
