@@ -19,6 +19,10 @@
     // nav goals/cancels/errors appear alongside the robot's collection events.
     let _navTestLog = [];
     let _lastServerCollectionEvents = [];
+    const _basketBeamHistory = {
+      left: { triggered: false, lastCrossingAtMs: null },
+      right: { triggered: false, lastCrossingAtMs: null },
+    };
     let lastSurveyDiscovery = null;
     let robotPath = [];
     let discoveryCleared = false;
@@ -84,7 +88,15 @@
         target.innerHTML = `<div class="terminal-empty">${_collectionLogClearedAtS === null ? "No collection decisions yet." : "Log cleared. Waiting for new collection decisions."}</div>`;
         return;
       }
-      const hidden = new Set(["t_s", "type", "mode", "clock"]);
+      const hidden = new Set([
+        "t_s", "type", "mode", "clock", "schema_version", "run_id", "recorded_at_s",
+        "sim_time_s", "route_stops", "route_failed_ball_ids", "planned_order",
+        "nearest_sim_ball", "locked_world", "route_nav_goal",
+        "current_blocker", "fallback_mode", "lane", "phase", "motion_owner",
+        "motion_path", "nav2_state", "route_freeze_initial_plan", "route_nav_attempts",
+        "route_phase", "route_remaining", "route_stop_count", "route_current_ball_id",
+        "robot_x_m", "robot_y_m",
+      ]);
       const labelFor = {
         mode_enter: "mode",
         scan_start: "scan start",
@@ -106,29 +118,121 @@
         nav_test_timeout: "nav running",
         nav_test_out_of_bounds: "out of bounds",
         nav_test_error: "nav2 down",
+        route_leg_start: "next ball",
+        route_ball_missing: "ball missing",
+        route_ball_finalized: "ball finalized",
+        route_opportunistic_collected: "ball collected",
+        basket_entry_candidate: "basket entry",
+        basket_owner_assigned: "capture linked",
+        basket_bin_candidate: "inside basket",
+        basket_ball_retained: "basket retained",
+        route_missing_deferred: "waiting retention",
+        route_advance: "route advance",
+        route_stop_finalized: "stop finalized",
+        route_capture_probe: "capture probe",
+        route_planned: "route planned",
+        route_scan_start: "360 scan",
+        basket_retained: "basket retained",
+        sim_collection_credit: "collection credited",
+        beam_collection_credit: "beam credited",
+        route_ball_swept: "swept (no credit)",
+        route_pass_start: "crossing ball",
+        beam_false_credit: "beam false credit",
+        beam_missed_credit: "beam missed ball",
       };
       const severityFor = type => (
         type === "scan_blocked" || type === "lane_collect_timeout" || type === "lane_collect_gave_up"
+          || type === "route_ball_missing" || type === "beam_false_credit" || type === "beam_missed_credit"
           || type === "nav2_unavailable" || type === "nav_test_out_of_bounds" || type === "nav_test_error"
           ? "error"
           : type === "lane_collect_abort" || type === "nav_test_timeout"
             ? "warn"
             : "info"
       );
-      const detailText = event => Object.entries(event)
-        .filter(([key, value]) => !hidden.has(key) && value !== null && value !== undefined && value !== "")
-        .map(([key, value]) => {
-          const rendered = Array.isArray(value) || typeof value === "object" ? JSON.stringify(value) : value;
-          return `${key}=${rendered}`;
-        })
-        .join("  ");
+      const numberText = (value, digits = 2) => {
+        const number = Number(value);
+        return Number.isFinite(number) ? number.toFixed(digits) : "-";
+      };
+      const ballText = value => value === null || value === undefined ? "Ball -" : `Ball ${value}`;
+      const positionText = event => `(${numberText(event.local_x_m)}, ${numberText(event.local_y_m)}) m`;
+      const canonicalDetail = event => {
+        const entity = event.ball_def || "physical ball";
+        switch (event.type) {
+          case "mode_enter":
+            return `Entered ${event.requested || event.mode || "collection"} mode`;
+          case "route_scan_start":
+            return "Started the frozen 360 scan";
+          case "route_planned": {
+            const order = Array.isArray(event.planned_order)
+              ? event.planned_order.map(stop => stop.ball_id).filter(id => id !== undefined).join(" -> ")
+              : "-";
+            return `${event.stops ?? 0} stops, ${numberText(event.route_length_m, 1)} m | Order ${order}`;
+          }
+          case "route_leg_start":
+            return `${ballText(event.ball_id)} | Goal (${numberText(event.goal_x_m)}, ${numberText(event.goal_y_m)}) m | ${event.approach_mode || "direct"}`;
+          case "route_opportunistic_start":
+            return `${ballText(event.ball_id)} seen ${numberText(event.distance_m, 1)} m ahead | Paused route to ${ballText(event.resumed_stop)}`;
+          case "route_opportunistic_abort":
+            return `Capture ended without confirmation | Resuming ${ballText(event.resumed_stop)}`;
+          case "basket_owner_assigned":
+            return `${entity} linked to ${ballText(event.route_ball_id)} at ${event.zone || "onboard"} | ${positionText(event)}`;
+          case "basket_entry_candidate":
+            return `${entity} crossed the basket entry for ${ballText(event.route_ball_id)} | ${positionText(event)}`;
+          case "basket_bin_candidate":
+            return `${entity} entered the bin | Waiting ${numberText(event.required_dwell_s, 2)} s retention`;
+          case "basket_bin_candidate_lost":
+            return `${entity} left the bin before retention completed`;
+          case "basket_retained":
+            return `${entity} retained for ${numberText(event.dwell_s, 2)} s | ${ballText(event.route_ball_id)}`;
+          case "sim_collection_credit":
+            return `${ballText(event.route_ball_id)} credited from ${entity} | Stable in bin ${numberText(event.dwell_s, 2)} s`;
+          case "beam_collection_credit":
+            return `Basket beam latched | IR ${numberText(event.ir_left, 0)} / ${numberText(event.ir_right, 0)}`;
+          case "beam_false_credit":
+            return `Beam credited ${event.beam_count ?? "?"} but only ${event.truth_count ?? "?"} retained | Check for early/blocked beam`;
+          case "beam_missed_credit":
+            return `${event.truth_count ?? "?"} retained but beam saw ${event.beam_count ?? "?"} | Beam blocked or mispositioned`;
+          case "route_missing_deferred":
+            return `${ballText(event.ball_id)} is onboard | Missing decision deferred until retention result`;
+          case "route_ball_missing":
+            return `${ballText(event.ball_id)} marked missing | ${String(event.reason || "no confirmation").replaceAll("_", " ")}`;
+          case "route_stop_finalized":
+            return `${ballText(event.ball_id)} finalized as ${event.status || "unknown"} | Attempts ${event.attempts ?? 0}`;
+          case "route_opportunistic_collected":
+            return `${ballText(event.ball_id)} collected${event.delayed_attribution ? " by delayed attribution" : ""}`;
+          case "route_advance":
+            return `${ballText(event.previous_ball_id)} ${event.previous_status || "finished"} | Next ${ballText(event.next_ball_id)} | ${event.remaining ?? 0} remaining`;
+          case "route_fine_approach":
+            return `${ballText(event.ball_id)} | Fine approach lock ${event.locked ? "ready" : "missing"}`;
+          case "route_capture_probe": {
+            const probe = event.nearest_sim_ball;
+            const physical = probe && typeof probe === "object"
+              ? `${probe.def || "ball"} at (${numberText(probe.local_x_m)}, ${numberText(probe.local_y_m)}) m`
+              : "No physical ball nearby";
+            return `${ballText(event.ball_id)} | ${event.mission_phase || "-"} / ${event.behavior_state || "-"} | ${physical}`;
+          }
+          case "nav2_goal_cancel":
+            return `Navigation goal cancelled | ${String(event.reason || "requested").replaceAll("_", " ")}`;
+          default:
+            return Object.entries(event)
+              .filter(([key, value]) => (
+                !hidden.has(key)
+                && value !== null
+                && value !== undefined
+                && value !== ""
+                && typeof value !== "object"
+              ))
+              .map(([key, value]) => `${key.replaceAll("_", " ")}: ${value}`)
+              .join(" | ");
+        }
+      };
       target.innerHTML = rows.map(event => {
         const type = event.type || "event";
         const severity = severityFor(type);
         return `<div class="terminal-row">
           <span class="terminal-time">${escapeHtml(event.clock || fmt(event.t_s, "s"))}</span>
           <span class="terminal-type ${severity === "info" ? "" : severity}">${escapeHtml(labelFor[type] || type)}</span>
-          <span class="terminal-detail">${escapeHtml(detailText(event) || "ok")}</span>
+          <span class="terminal-detail">${escapeHtml(canonicalDetail(event) || "Completed")}</span>
         </div>`;
       }).join("");
     }
@@ -157,6 +261,29 @@
         ["Blocker", t.current_blocker || "none"],
         ["Nav2", `${t.nav2_enabled ? "enabled" : "disabled"} / ${t.nav2_state || "-"}`],
         ["Lane", `${t.lane_started ? "started" : "not started"} | ${t.waypoint_index ?? "-"} / ${t.waypoint_count ?? "-"}`],
+      ]);
+    }
+    function renderCollectionRun(run) {
+      const status = document.getElementById("collectionRunStatus");
+      const kv = document.getElementById("collectionRunKv");
+      if (!kv) return;
+      const r = run || {};
+      const hasRun = Number(r.planned || 0) > 0 || Number(r.basket_retained || 0) > 0;
+      if (status) {
+        status.textContent = hasRun ? (r.status || "running") : "waiting";
+        status.style.color = Number(r.failed || 0) > 0
+          ? "var(--warn)"
+          : (hasRun ? "var(--accent)" : "var(--muted)");
+      }
+      setKv("collectionRunKv", [
+        ["Basket retained", r.basket_retained ?? 0],
+        ["Beam / truth (sim)", `${r.beam_credits ?? 0} / ${r.truth_retained ?? 0}`],
+        ["Route collected", r.route_collected ?? 0],
+        ["Failed", r.failed ?? 0],
+        ["Missing / skipped", `${r.missing ?? 0} / ${r.skipped ?? 0}`],
+        ["Remaining", r.remaining ?? 0],
+        ["Active ball", r.active_ball_id ?? "-"],
+        ["Failed ball IDs", (r.failed_ball_ids || []).join(", ") || "-"],
       ]);
     }
     // --- Lazy view loading ----------------------------------------------------
@@ -259,15 +386,13 @@
       const isAutonomous = AUTONOMOUS_MODES.has(actualMode);
 
       const btnMapCourt = document.querySelector('#commandForm [value="map_court"]');
-      const btnCollectOne = document.querySelectorAll(
-        '[data-command-mode="collect_one"], #commandForm [value="collect_one"]'
+      const btnCollectRoute = document.querySelectorAll(
+        '[data-command-mode="collect_route"], #commandForm [value="collect_route"]'
       );
-      const btnCollect  = document.querySelector('#commandForm [value="collect"]');
       const hintEl      = document.getElementById("commandHint");
 
       if (btnMapCourt) btnMapCourt.disabled = !hasSession || isAutonomous;
-      btnCollectOne.forEach(btn => { btn.disabled = isAutonomous; });
-      if (btnCollect)  btnCollect.disabled  = !hasSurvey || isAutonomous;
+      btnCollectRoute.forEach(btn => { btn.disabled = !hasSurvey || isAutonomous; });
 
       const MANUAL_MODES = new Set([...DPAD_MODES, "turn_180"]);
       document.querySelectorAll("#commandForm .command").forEach(btn => {
@@ -277,7 +402,7 @@
       if (hintEl) {
         if (isAutonomous)    hintEl.textContent = `Αυτόνομη λειτουργία ενεργή (${actualMode}) — πάτα Stop για έλεγχο`;
         else if (!hasSession) hintEl.textContent = "Επίλεξε vendor και γήπεδο πρώτα (Vendors →)";
-        else if (!hasSurvey) hintEl.textContent = "Collect χρειάζεται Map Court για το ενεργό γήπεδο";
+        else if (!hasSurvey) hintEl.textContent = "Collect Route χρειάζεται Map Court για το ενεργό γήπεδο";
         else                 hintEl.textContent = "";
       }
     }
@@ -356,28 +481,6 @@
       if (copyBtn) copyBtn.addEventListener("click", copyCollectionLog);
       const clearBtn = document.getElementById("collectionLogClear");
       if (clearBtn) clearBtn.addEventListener("click", clearCollectionLog);
-      // Nav Test lives in its own module (nav_test.js); wire its controls here.
-      window.ControlPanelNavTest.wire();
-      const collectorAction = async action => {
-        const response = await fetch("/api/collector", {
-          method: "POST", headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({action})
-        });
-        const state = await response.json();
-        const target = document.getElementById("collectorManualStatus");
-        const pwm = Number(state.speed);
-        if (target) {
-          target.textContent = state.ok
-            ? `${state.running ? "running" : "stopped"} · commanded PWM ${Number.isFinite(pwm) ? pwm : "—"}/255 · ${state.port || "simulation"}`
-            : `collector error · ${state.message || "command failed"}`;
-        }
-        const bar = document.getElementById("collectorSpeedBar");
-        if (bar) bar.style.width = `${Number.isFinite(pwm) ? Math.max(0, Math.min(100, pwm / 255 * 100)) : 0}%`;
-      };
-      document.getElementById("collectorStart")?.addEventListener("click", () => collectorAction("start"));
-      document.getElementById("collectorStop")?.addEventListener("click", () => collectorAction("stop"));
-      document.getElementById("collectorSpeedDown")?.addEventListener("click", () => collectorAction("speed_down"));
-      document.getElementById("collectorSpeedUp")?.addEventListener("click", () => collectorAction("speed_up"));
     };
     async function copyCollectionLog() {
       const btn = document.getElementById("collectionLogCopy");
@@ -438,8 +541,6 @@
       const mounts = robot.sensor_mounts || {};
       const oakDepth = robot.oak_depth || {};
       const scan = robot.scan || {};
-      const collectOne = robot.collect_one || {};
-      const collectPattern = robot.collect_pattern || {};
       const balls = robot.balls || {};
       const completion = robot.completion || {};
       const diag = robot.diagnostics || {};
@@ -465,12 +566,10 @@
         ["Robot yaw", fmt((pose.yaw_rad || 0) * 180 / Math.PI, "deg")],
         ["Collector state", robot.collector_state || "idle"],
         ["Search", `${search.search_state || "idle"} / Zone ${search.zone_id || "?"}`],
-        ["Collect pattern", collectPattern.phase || "idle"],
         ["Coverage", fmt(search.coverage_pct, "%")],
         ["LiDAR height", fmt(mounts.front_lidar?.world_z_m, "m")],
         ["OAK-D height", fmt(mounts.front_camera?.world_z_m, "m")],
         ["OAK-D Depth", oakDepth.used_for_current_observation ? `${fmt(oakDepth.range_m, "m")} used` : (oakDepth.available ? "available" : "unavailable")],
-        ["Collect one", collectOne.phase || "idle"],
         ["Side complete", completion.current_side_complete ? "yes" : "no"],
         ["Remaining balls", `${balls.same_side_remaining ?? "?"} same-side / ${balls.total_remaining ?? "?"} total`],
         ["Across net", balls.across_net_remaining ?? "none"],
@@ -490,8 +589,7 @@
         ["Controller state", robot.collector_state || "idle"],
         ["Search state", search.search_state || "idle"],
         ["Search target", `${fmt(search.target_x_m, "m")}, ${fmt(search.target_y_m, "m")}`],
-        ["Collect pattern", `${collectPattern.phase || "idle"} / failures ${collectPattern.failures ?? 0}`],
-        ["Collect one phase", collectOne.phase || "idle"]
+        ["Collection route", robot.collection_run?.status || "idle"]
       ]);
       setKv("telemetryKv", [
         ["Mission health", diag.health || "unknown"],
@@ -546,7 +644,7 @@
           : { ...(robot.map_mission || {}), source_label: "Mapping mission" }
       );
       safe(() => renderMapMission(mapMissionForGrid));
-      safe(() => renderCollectionTruth(robot.collection_truth || {}));
+      safe(() => renderCollectionRun(robot.collection_run || {}));
       safe(() => renderCollectionTerminal(robot.collection_events || []));
       safe(() => renderCollectionIr(sensors.ir_intake));
       safe(updateCommandButtons);
@@ -1735,6 +1833,7 @@
         const pct = Math.min(100, Math.round((value / 1000) * 100));
         const triggered = value > threshold;
         valEl.textContent = Math.round(value);
+        valEl.removeAttribute("title");
         barEl.style.width = `${pct}%`;
         barEl.style.background = triggered ? "#2fd08f" : "rgba(145,162,178,0.45)";
         panelEl.style.borderColor = triggered ? "rgba(47,208,143,0.55)" : "var(--line)";
@@ -1785,31 +1884,44 @@
       const available = ir?.left_available || ir?.right_available;
       const statusEl = document.getElementById("collIrStatus");
       if (statusEl) statusEl.textContent = available ? "live" : "no signal";
-      function renderOne(valueId, barId, panelId, value, avail) {
+      function renderOne(side, valueId, lastId, barId, panelId, value, avail) {
         const valEl = document.getElementById(valueId);
+        const lastEl = document.getElementById(lastId);
         const barEl = document.getElementById(barId);
         const panelEl = document.getElementById(panelId);
-        if (!valEl || !barEl || !panelEl) return;
+        if (!valEl || !lastEl || !barEl || !panelEl) return;
         if (!avail || value === null || value === undefined) {
           valEl.textContent = "N/A";
+          lastEl.textContent = "No sensor signal";
           barEl.style.width = "0%";
           barEl.style.background = "rgba(255,255,255,0.15)";
           panelEl.style.borderColor = "var(--line)";
           return;
         }
-        const pct = Math.min(100, Math.round((value / 1000) * 100));
         const triggered = value > threshold;
-        valEl.textContent = Math.round(value);
-        barEl.style.width = `${pct}%`;
+        const history = _basketBeamHistory[side];
+        if (triggered && !history.triggered) history.lastCrossingAtMs = Date.now();
+        history.triggered = triggered;
+        valEl.textContent = triggered ? "BALL" : "CLEAR";
+        if (triggered) {
+          lastEl.textContent = "Crossing now";
+        } else if (history.lastCrossingAtMs !== null) {
+          const elapsedS = Math.max(0, Math.round((Date.now() - history.lastCrossingAtMs) / 1000));
+          lastEl.textContent = `Last crossing ${elapsedS}s ago`;
+        } else {
+          lastEl.textContent = "No crossing seen";
+        }
+        valEl.title = `Raw sensor value ${Math.round(value)}; threshold ${Math.round(threshold)}`;
+        barEl.style.width = triggered ? "100%" : "0%";
         barEl.style.background = triggered ? "#2fd08f" : "rgba(145,162,178,0.45)";
         panelEl.style.borderColor = triggered ? "rgba(47,208,143,0.55)" : "var(--line)";
       }
-      renderOne("collIrLeftValue", "collIrLeftBar", "collIrLeftPanel", ir?.left, ir?.left_available ?? (ir !== undefined));
-      renderOne("collIrRightValue", "collIrRightBar", "collIrRightPanel", ir?.right, ir?.right_available ?? (ir !== undefined));
+      renderOne("left", "collIrLeftValue", "collIrLeftLast", "collIrLeftBar", "collIrLeftPanel", ir?.left, ir?.left_available ?? (ir !== undefined));
+      renderOne("right", "collIrRightValue", "collIrRightLast", "collIrRightBar", "collIrRightPanel", ir?.right, ir?.right_available ?? (ir !== undefined));
       const badge = document.getElementById("collIrBadge");
       if (badge) {
         const triggered = !!ir?.triggered;
-        badge.textContent = available ? (triggered ? "TRIGGERED: YES — collection gate open" : "TRIGGERED: NO — ball not in intake zone") : "TRIGGERED: sensors not available";
+        badge.textContent = available ? (triggered ? "BALL CROSSING" : "ENTRY CLEAR") : "NO SENSOR SIGNAL";
         badge.style.background = triggered ? "rgba(47,208,143,0.15)" : (available ? "rgba(255,255,255,0.04)" : "rgba(255,80,80,0.10)");
         badge.style.color = triggered ? "#2fd08f" : (available ? "var(--muted)" : "#ff6060");
       }

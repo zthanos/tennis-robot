@@ -1,30 +1,33 @@
-"""collect_route mission: 360° scan → route plan → Nav2 legs → fine capture.
+"""collect_route mission: 360° scan → one planned drive-through route.
 
 Pure FSM — no rclpy. The controller owns the ConceptACollectorBehavior, the
 BallMap and the Nav2LaneNavigator; it passes their state into update() each
 tick and wires `nav_goal` to the navigator (same ownership contract as
 CollectOneMission / ServiceLineDistributionScanMission.nav2_target).
 
-Flow:
+Runtime flow:
   SCAN_ROTATE  step-rotate 360° while the controller feeds every camera
                detection into the ball map with the scan-range override.
-  PLAN         order confirmed same-side balls (greedy NN + 2-opt) and compute
-               a boundary-aware approach pose per stop.
-  NAV_TO_BALL  expose the approach pose as a Nav2 goal; wheels belong to Nav2
-               (the mission returns an idle command, twist_mux arbitration).
-  FINE_APPROACH  ConceptACollectorBehavior ALIGN→APPROACH→CAPTURE on the
-               locked mapped ball (collect_one's blind-zone lock pattern).
-  SETTLE       short post-capture hold, then the next stop.
-Balls confirmed mid-route that are not in the plan are added by cheapest
-insertion (never reordering the leg in progress or earlier stops).
+  PLAN         order confirmed same-side balls once and calculate a straight
+               crossing for each: the ball centre must pass through the funnel.
+  DRIVE         Nav2 reaches each run-in entry; the mission drives straight
+               through the funnel crossing and immediately continues to the
+               following crossing.
+
+Collection is deliberately not a mission transition.  A basket/beam
+confirmation only credits telemetry for the nearest planned crossing; it never
+causes a wait, retry, fine approach, or route replan.  This makes the route a
+single fixed traversal even when a ball is missed.
 """
 
 from __future__ import annotations
 
 import math
+import os
 
 from tennis_robot.ball_map import BallMap, across_net
 from tennis_robot.collection_route_planner import (
+    ApproachPose,
     CourtModel,
     RoutePlannerConfig,
     RouteStop,
@@ -33,6 +36,9 @@ from tennis_robot.collection_route_planner import (
     order_route,
     remaining_route_length_m,
     route_polyline,
+    SWEEP_OVERRUN_M,
+    SWEEP_RUN_IN_M,
+    sweep_route,
 )
 from tennis_robot.collector import (
     BallObservationInput,
@@ -44,10 +50,38 @@ from tennis_robot.collector import (
 )
 from tennis_robot.config_utils import _env_float
 
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 # ── Config ─────────────────────────────────────────────────────────────────────
 
 NAV_TIMEOUT_S = _env_float("COLLECT_ROUTE_NAV_TIMEOUT_S", 60.0)
-NAV_RETRIES = int(_env_float("COLLECT_ROUTE_NAV_RETRIES", 2))
+# Sweep mode (log #21): one continuous drive-through route, collection fully
+# decoupled — no stops, no fine approach, intake always on, beam counts.
+_SWEEP_ARRIVE_M = 0.45
+_SWEEP_CREDIT_MATCH_M = 1.5
+# The crossing itself is driven by the MISSION, dead straight: Nav2's
+# continuous path corrections near the ball slapped it away with the funnel
+# cheeks (user observation, run 15). Steering is allowed only while further
+# than _SWEEP_BLIND_M before the ball; inside that window the heading is
+# frozen and the funnel does the centring.
+_SWEEP_PASS_SPEED_M_S = _env_float("COLLECT_ROUTE_SWEEP_PASS_SPEED_M_S", 0.35)
+_SWEEP_BLIND_M = 0.6
+_SWEEP_PASS_TIMEOUT_S = 10.0
+_SWEEP_PASS_ANGULAR_GAIN = 1.2
+_SWEEP_PASS_MAX_ANGULAR_RAD_S = 0.5
+# After the first run-in, links between funnel crossings stay mission-owned.
+# Sending another NavigateToPose here made Nav2 stop and perform a final-yaw
+# rotation before every ball.  The link controller always has forward motion;
+# it bends the route into the following run-in instead.
+_SWEEP_LINK_SPEED_M_S = _env_float("COLLECT_ROUTE_SWEEP_LINK_SPEED_M_S", 0.35)
+_SWEEP_LINK_ARRIVE_M = 0.18
+NAV_RETRIES = int(_env_float("COLLECT_ROUTE_NAV_RETRIES", 0))
 MAX_BALL_ATTEMPTS = int(_env_float("COLLECT_ROUTE_MAX_BALL_ATTEMPTS", 2))
 MISSING_SCAN_S = _env_float("COLLECT_ROUTE_MISSING_SCAN_S", 6.0)
 APPROACH_TIMEOUT_S = _env_float("COLLECT_PATTERN_COLLECTION_TIMEOUT_S", 35.0)
@@ -66,37 +100,26 @@ _RELOCK_GATE_M = 0.6
 # 9 m 360° scan carry up to ~0.5 m position error (run-3 lock_error_m data),
 # so from the standoff the nearest ball within 1 m of the plan is the target.
 _INITIAL_ADOPT_GATE_M = 1.0
-# Refresh the nav goal when the mapped ball drifted this far from the stop's
-# planned position (nudged balls, refined estimates).
+# Dynamic-plan mode may refresh the nav goal when the mapped ball drifted this
+# far from the stop's planned position. Frozen initial-plan mode deliberately
+# keeps the scan-time position and goal unchanged for the whole Nav2 leg.
 _GOAL_REFRESH_DRIFT_M = 0.3
 # ...but an entry that wandered this far from the PLAN-time position is not
 # the same physical ball any more (run-4 stop 6: chain-merges dragged the
 # entry 4+ m across the court and the approach followed it) — drop the stop.
 _GOAL_DRIFT_ABANDON_M = 1.5
-# Nav failure faster than this = the planner rejected the request outright
-# (start pose inside costmap inflation), not a genuine navigation failure.
-_NAV_INSTANT_FAIL_S = 2.0
-_NAV_MAX_RECOVERIES = 2
-_NAV_RECOVER_REVERSE_S = 2.5
-_NAV_RECOVER_SPEED_M_S = -0.15
 # Opportunistic capture during Nav2 legs: Nav2 cannot see balls (lidar plane
 # is above them) so legs plow straight through — runs 5-7 froze with a ball
 # suspected under the chassis. A ball visible ahead within this range/bearing
-# is collected on the spot, then the leg resumes. PLAN-ONLY (user decision,
-# log #13): the ball must belong to a pending/active stop — anything else is
-# ignored (confirmed new balls join the plan via insertion anyway).
+# is collected on the spot, then the leg resumes. PLAN-ONLY: the ball must
+# belong to a pending/active stop — anything else is ignored while the initial
+# 360° plan is frozen.
 _OPP_CAPTURE_RANGE_M = 1.2
 _OPP_CAPTURE_BEARING_RAD = math.radians(40.0)
 _OPP_TIMEOUT_S = 15.0
 # An opportunistic ball matches the plan stop whose planned ball lies within
 # this distance.
 _OPP_STOP_MATCH_M = 0.8
-# Blind reverse recoveries are capped PER RUN: repeated reversing under
-# persistent rejections walked the robot into the fence (run 6). Failures
-# beyond the budget skip the stop and the plan simply continues (user
-# decision, log #13: record the failure, move to the next planned ball).
-_TOTAL_RECOVERY_BUDGET = 4
-
 _IDLE_CMD = ConceptACommand(
     state=CollectorState.IDLE,
     base=BaseCommand(0.0, 0.0),
@@ -151,8 +174,28 @@ def _world_to_robot_obs(
 class CollectRouteMission:
     """Fast multi-ball collection: scan once, plan the route, execute it."""
 
-    def __init__(self, planner_cfg: RoutePlannerConfig | None = None) -> None:
+    def __init__(
+        self,
+        planner_cfg: RoutePlannerConfig | None = None,
+        *,
+        freeze_initial_plan: bool | None = None,
+        sweep: bool | None = None,
+    ) -> None:
         self.planner_cfg = planner_cfg or RoutePlannerConfig.from_env()
+        self.freeze_initial_plan = (
+            _env_bool("COLLECT_ROUTE_FREEZE_INITIAL_PLAN", True)
+            if freeze_initial_plan is None
+            else freeze_initial_plan
+        )
+        # `collect_route` is a route traversal, not a sequence of capture
+        # attempts.  Do not let an environment setting silently restore the
+        # old stop-and-wait mission.  The explicit argument remains solely for
+        # the legacy pure-FSM tests while that code is being retired.
+        self.sweep = True if sweep is None else sweep
+        self._sweep_confirm_latched = False
+        self._pass_active = False
+        self._link_active = False
+        self._pass_elapsed_s = 0.0
         self.phase: str = "idle"  # idle|scan|plan|nav|approach|settle|done
         self.stops: list[RouteStop] = []
         self.current_index: int = 0
@@ -165,23 +208,26 @@ class CollectRouteMission:
         self._nav_goal: tuple[float, float, float] | None = None
         self._nav_elapsed_s: float = 0.0
         self._nav_last_state: str = "idle"
+        self._nav_seen_running: bool = False
         self._nav_attempts: int = 0
-        self._nav_recoveries: int = 0
-        self._total_recoveries: int = 0
-        self._recover_until_s: float = 0.0
         self._opp_locked: tuple[float, float] | None = None
         self._opp_stop_id: int | None = None
         self._opp_elapsed_s: float = 0.0
         self._approach_elapsed_s: float = 0.0
         self._missing_scan_elapsed_s: float = 0.0
         self._live_seen_in_approach: bool = False
+        self._capture_pending_reported_for: int | None = None
         self._locked_world: tuple[float, float] | None = None
         self._settle_remaining_s: float = 0.0
         self._events: list[tuple[str, dict]] = []
         self._complete_reported = False
 
     def reset(self) -> None:
-        self.__init__(self.planner_cfg)
+        self.__init__(
+            self.planner_cfg,
+            freeze_initial_plan=self.freeze_initial_plan,
+            sweep=self.sweep,
+        )
 
     def start(self, robot_pose: tuple[float, float, float]) -> None:
         self.reset()
@@ -209,6 +255,20 @@ class CollectRouteMission:
         return None
 
     @property
+    def capture_ball_id(self) -> int | None:
+        """Route stop currently feeding the intake, including opportunistic capture.
+
+        Only capture phases own the intake: during a Nav2 leg no capture is
+        intended, and binding a stray ball bumped onboard mid-leg to the
+        not-yet-reached target stop would credit that stop for the wrong ball.
+        """
+        if self.phase == "opportunistic":
+            return self._opp_stop_id
+        if self.phase in ("approach", "settle") and self.current_index < len(self.stops):
+            return self.stops[self.current_index].ball_id
+        return None
+
+    @property
     def current_target_xy(self) -> tuple[float, float] | None:
         """World position of the ball being pursued (lock if approaching).
 
@@ -230,6 +290,22 @@ class CollectRouteMission:
 
     def _emit(self, event_type: str, **fields: object) -> None:
         self._events.append((event_type, fields))
+
+    def _route_snapshot(self) -> list[dict[str, object]]:
+        return [
+            {
+                "ball_id": s.ball_id,
+                "order": s.order,
+                "status": s.status,
+                "ball_x_m": round(s.ball_x_m, 3),
+                "ball_y_m": round(s.ball_y_m, 3),
+                "goal_x_m": round(s.approach.x_m, 3),
+                "goal_y_m": round(s.approach.y_m, 3),
+                "goal_yaw_rad": round(s.approach.yaw_rad, 3),
+                "attempts": s.attempts,
+            }
+            for s in self.stops
+        ]
 
     # ── Console export ─────────────────────────────────────────────────────────
 
@@ -253,10 +329,13 @@ class CollectRouteMission:
             "planned_total": len(self.stops),
             "remaining": counts.get("pending", 0) + counts.get("active", 0),
             "failed_ball_ids": [
-                s.ball_id for s in self.stops if s.status in ("skipped", "missing")
+                s.ball_id
+                for s in self.stops
+                if s.status in ("skipped", "missing", "swept")
             ],
             "stops": counts,
             "insertions": self.insertion_count,
+            "freeze_initial_plan": self.freeze_initial_plan,
             "scan_steps": self._scan_steps_taken,
             "nav_attempts": self._nav_attempts,
             "current_blocker": self.current_blocker,
@@ -267,6 +346,11 @@ class CollectRouteMission:
                     "status": s.status,
                     "approach_mode": s.approach.mode,
                     "risk": s.approach.risk,
+                    "ball_x_m": round(s.ball_x_m, 3),
+                    "ball_y_m": round(s.ball_y_m, 3),
+                    "goal_x_m": round(s.approach.x_m, 3),
+                    "goal_y_m": round(s.approach.y_m, 3),
+                    "attempts": s.attempts,
                 }
                 for s in self.stops
             ],
@@ -285,12 +369,17 @@ class CollectRouteMission:
         now: float,
         nav_state: str,
         court: CourtModel | None,
+        confirmed_ball_id: int | None = None,
+        capture_pending_ball_id: int | None = None,
     ) -> ConceptACommand:
         self.current_blocker = None
         if self.phase == "idle":
             self.start(robot_pose)
 
-        if self.phase in ("nav", "approach", "settle"):
+        if (
+            not self.freeze_initial_plan
+            and self.phase in ("nav", "approach", "settle")
+        ):
             self._insert_new_balls(ball_map, robot_pose, court, now)
 
         if self.phase == "scan":
@@ -299,17 +388,38 @@ class CollectRouteMission:
             return self._plan_phase(robot_pose, ball_map, court, now)
         if self.phase == "nav":
             return self._nav_phase(
-                observation, dt_s, robot_pose, behavior, ball_map, nav_state, now, court
+                observation,
+                dt_s,
+                robot_pose,
+                behavior,
+                ball_map,
+                nav_state,
+                now,
+                court,
+                collection_confirmed,
+                confirmed_ball_id,
             )
         if self.phase == "opportunistic":
             return self._opportunistic_phase(
-                observation, collection_confirmed, dt_s, robot_pose, behavior, ball_map
+                observation,
+                collection_confirmed,
+                dt_s,
+                robot_pose,
+                behavior,
+                ball_map,
+                confirmed_ball_id,
             )
-        if self.phase == "recover":
-            return self._recover_phase(now)
         if self.phase == "approach":
             return self._approach_phase(
-                observation, collection_confirmed, dt_s, robot_pose, behavior, ball_map, now
+                observation,
+                collection_confirmed,
+                dt_s,
+                robot_pose,
+                behavior,
+                ball_map,
+                now,
+                confirmed_ball_id,
+                capture_pending_ball_id,
             )
         if self.phase == "settle":
             return self._settle_phase(dt_s, behavior)
@@ -396,22 +506,49 @@ class CollectRouteMission:
             return _IDLE_CMD
 
         by_id = {b[0]: (b[1], b[2]) for b in balls}
-        ordered_ids = order_route((robot_x, robot_y), balls, self.planner_cfg)
-        self.stops = []
-        prev_xy = (robot_x, robot_y)
-        for order, ball_id in enumerate(ordered_ids, start=1):
-            ball_xy = by_id[ball_id]
-            approach = approach_pose_for_ball(ball_xy, prev_xy, court, self.planner_cfg)
-            self.stops.append(
+        if self.sweep:
+            # Sweep mode (log #21): the Nav2 goal of every leg is the EXIT
+            # pose PAST the ball — the funnel crosses the ball mid-leg. No
+            # stop is ever made; collection is counted, never waited for.
+            legs = sweep_route((robot_x, robot_y), balls, court, self.planner_cfg)
+            ordered_ids = [leg.ball_id for leg in legs]
+            self.stops = [
                 RouteStop(
-                    ball_id=ball_id,
-                    ball_x_m=ball_xy[0],
-                    ball_y_m=ball_xy[1],
-                    approach=approach,
+                    ball_id=leg.ball_id,
+                    ball_x_m=leg.ball_x_m,
+                    ball_y_m=leg.ball_y_m,
+                    approach=ApproachPose(
+                        x_m=leg.exit_x_m,
+                        y_m=leg.exit_y_m,
+                        yaw_rad=leg.yaw_rad,
+                        mode=leg.mode,
+                        risk=leg.risk,
+                    ),
                     order=order,
+                    sweep_entry_x_m=leg.entry_x_m,
+                    sweep_entry_y_m=leg.entry_y_m,
                 )
-            )
-            prev_xy = ball_xy
+                for order, leg in enumerate(legs, start=1)
+            ]
+        else:
+            ordered_ids = order_route((robot_x, robot_y), balls, self.planner_cfg)
+            self.stops = []
+            prev_xy = (robot_x, robot_y)
+            for order, ball_id in enumerate(ordered_ids, start=1):
+                ball_xy = by_id[ball_id]
+                approach = approach_pose_for_ball(
+                    ball_xy, prev_xy, court, self.planner_cfg
+                )
+                self.stops.append(
+                    RouteStop(
+                        ball_id=ball_id,
+                        ball_x_m=ball_xy[0],
+                        ball_y_m=ball_xy[1],
+                        approach=approach,
+                        order=order,
+                    )
+                )
+                prev_xy = ball_xy
         self._planned_ids = set(ordered_ids)
         self.current_index = 0
         self._emit(
@@ -419,6 +556,9 @@ class CollectRouteMission:
             stops=len(self.stops),
             lateral_stops=sum(1 for s in self.stops if s.approach.mode == "lateral"),
             route_length_m=remaining_route_length_m((robot_x, robot_y), self.stops),
+            frozen=self.freeze_initial_plan,
+            sweep=self.sweep,
+            planned_order=self._route_snapshot(),
         )
         self._enter_nav()
         return _IDLE_CMD
@@ -432,10 +572,17 @@ class CollectRouteMission:
             return
         stop.status = "active"
         self.phase = "nav"
-        self._nav_goal = (stop.approach.x_m, stop.approach.y_m, stop.approach.yaw_rad)
+        if self.sweep:
+            # Nav2 drives only to the ENTRY of the run-in; the crossing
+            # itself is mission-driven, dead straight (no cheek slaps).
+            ex, ey = self._sweep_entry_xy(stop)
+            self._nav_goal = (ex, ey, stop.approach.yaw_rad)
+            self._pass_active = False
+        else:
+            self._nav_goal = (stop.approach.x_m, stop.approach.y_m, stop.approach.yaw_rad)
         self._nav_elapsed_s = 0.0
         self._nav_last_state = "idle"
-        self._nav_recoveries = 0
+        self._nav_seen_running = False
         self._emit(
             "route_leg_start",
             ball_id=stop.ball_id,
@@ -457,11 +604,39 @@ class CollectRouteMission:
         nav_state: str,
         now: float,
         court: "CourtModel | None" = None,
+        collection_confirmed: bool = False,
+        confirmed_ball_id: int | None = None,
     ) -> ConceptACommand:
         stop = self._current_stop()
         if stop is None:
             self._finish()
             return _IDLE_CMD
+
+        if self.sweep:
+            return self._sweep_drive(
+                dt_s, robot_pose, behavior, ball_map, nav_state, collection_confirmed
+            )
+
+        # A retention that completes mid-leg (ball launched at the tail of an
+        # aborted capture settles after the roller stopped — run 8) must still
+        # land in the ledger. Only EXPLICIT ground-truth attributions credit
+        # here; an ownerless confirm never defaults to the untouched current
+        # stop the way the approach-phase confirm does.
+        if collection_confirmed and confirmed_ball_id is not None:
+            credited = self._credit_confirmed_stop(confirmed_ball_id)
+            if credited is not None:
+                ball_map.set_state(credited, "collected")
+                self._emit(
+                    "route_delayed_collection_attributed",
+                    ball_id=credited,
+                    resumed_stop=stop.ball_id,
+                    phase="nav",
+                )
+                if credited == stop.ball_id:
+                    # The current leg's ball is already in the basket: skip
+                    # the drive to its ghost standoff and move on.
+                    self._advance("collected")
+                    return _NAV_IDLE_CMD
 
         if nav_state == "unavailable":
             self.current_blocker = "nav2_action_unavailable"
@@ -481,32 +656,32 @@ class CollectRouteMission:
             matched = self._matching_plan_stop(
                 observation.world_x_m, observation.world_y_m
             )
-            if matched is not None:
-                self.phase = "opportunistic"
-                self._nav_goal = None  # controller cancels the Nav2 goal
-                self._opp_locked = (observation.world_x_m, observation.world_y_m)
-                self._opp_stop_id = matched.ball_id
-                self._opp_elapsed_s = 0.0
-                behavior.reset()
-                behavior.start_tracking(observation)
+            if matched is not None and matched is not stop:
+                # Route rule R2: NO chase capture. Promote the on-path stop to
+                # be the NEXT stop and take it with the normal standoff +
+                # straight fine approach. The old opportunistic chase captured
+                # at speed: it punted balls metres away (run 9, 5 misses) and
+                # bounced launches back out of the basket (run 10, 5 false
+                # beam credits).
+                self.stops.remove(matched)
+                self.stops.insert(self.current_index, matched)
+                stop.status = "pending"
+                matched.status = "active"
+                self._renumber()
                 self._emit(
-                    "route_opportunistic_start",
+                    "route_on_path_promoted",
                     ball_id=matched.ball_id,
-                    resumed_stop=stop.ball_id,
-                    ball_x_m=observation.world_x_m,
-                    ball_y_m=observation.world_y_m,
+                    postponed_stop=stop.ball_id,
                     distance_m=observation.distance_m,
                 )
-                return behavior.update(observation, dt_s, collection_confirmed=False)
+                self._enter_nav_retry(matched)
+                return _NAV_IDLE_CMD
 
-        # The mapped ball may have drifted since the plan (e.g. nudged by a
-        # previous capture attempt — run-4 stops 12/6 retried into the STALE
-        # standoff and found nothing). Follow the live map entry: refresh the
-        # ball position and approach pose when it moved meaningfully — but an
-        # entry far from the PLAN position has chain-merged onto other balls
-        # (run-4 stop 6 wandered 4+ m): drop it instead of chasing it.
+        # Dynamic-plan mode follows map refinements. Frozen initial-plan mode
+        # keeps both the scan-time ball position and its Nav2 goal immutable;
+        # live observations are adopted later by the fine-approach lock.
         entry = ball_map.balls.get(stop.ball_id)
-        if entry is not None and math.hypot(
+        if not self.freeze_initial_plan and entry is not None and math.hypot(
             entry.x_m - stop.planned_x_m, entry.y_m - stop.planned_y_m
         ) > _GOAL_DRIFT_ABANDON_M:
             self._emit(
@@ -519,7 +694,7 @@ class CollectRouteMission:
             )
             self._skip_current(ball_map, "missing")
             return _NAV_IDLE_CMD
-        if entry is not None and math.hypot(
+        if not self.freeze_initial_plan and entry is not None and math.hypot(
             entry.x_m - stop.ball_x_m, entry.y_m - stop.ball_y_m
         ) > _GOAL_REFRESH_DRIFT_M:
             stop.ball_x_m, stop.ball_y_m = entry.x_m, entry.y_m
@@ -544,34 +719,22 @@ class CollectRouteMission:
             self._nav_goal = (stop.approach.x_m, stop.approach.y_m, stop.approach.yaw_rad)
             self._nav_elapsed_s = 0.0
             self._nav_last_state = "idle"
+            self._nav_seen_running = False
             return _NAV_IDLE_CMD
 
         self._nav_elapsed_s += dt_s
-        failed = nav_state == "failed" and self._nav_last_state != "failed"
+        if nav_state in ("pending", "active"):
+            self._nav_seen_running = True
+        # A failed result from the previous stop can remain visible for one
+        # controller tick after advancing. Accept failure only after this goal
+        # has entered Nav2's running states, preventing cascade-skips.
+        failed = (
+            nav_state == "failed"
+            and self._nav_seen_running
+            and self._nav_last_state != "failed"
+        )
         timed_out = self._nav_elapsed_s > NAV_TIMEOUT_S
         self._nav_last_state = nav_state
-
-        # Instant rejection usually means the START pose is inside costmap
-        # inflation (run-5: every goal aborted in <0.1 s after the robot
-        # ended an approach near the net; the whole route burned through in
-        # 1.3 s). Back straight out of the inflated zone, then re-issue.
-        if failed and self._nav_elapsed_s < _NAV_INSTANT_FAIL_S:
-            if (
-                self._nav_recoveries < _NAV_MAX_RECOVERIES
-                and self._total_recoveries < _TOTAL_RECOVERY_BUDGET
-            ):
-                self._nav_recoveries += 1
-                self._total_recoveries += 1
-                self._emit(
-                    "route_nav_recovery",
-                    ball_id=stop.ball_id,
-                    recovery=self._nav_recoveries,
-                    nav_elapsed_s=self._nav_elapsed_s,
-                )
-                self.phase = "recover"
-                self._recover_until_s = now + _NAV_RECOVER_REVERSE_S
-                self._nav_goal = None
-                return _NAV_IDLE_CMD
 
         if failed or timed_out:
             self._nav_attempts += 1
@@ -610,6 +773,7 @@ class CollectRouteMission:
         self._approach_elapsed_s = 0.0
         self._missing_scan_elapsed_s = 0.0
         self._live_seen_in_approach = False
+        self._capture_pending_reported_for = None
         behavior.reset()
         ball = ball_map.balls.get(stop.ball_id) if stop is not None else None
         self._locked_world = (ball.x_m, ball.y_m) if ball is not None else None
@@ -628,6 +792,8 @@ class CollectRouteMission:
         behavior: ConceptACollectorBehavior,
         ball_map: BallMap,
         now: float,
+        confirmed_ball_id: int | None,
+        capture_pending_ball_id: int | None,
     ) -> ConceptACommand:
         stop = self._current_stop()
         if stop is None:
@@ -635,15 +801,28 @@ class CollectRouteMission:
             return _IDLE_CMD
 
         if collection_confirmed:
-            behavior.reset()
-            stop.status = "collected"
-            self.phase = "settle"
-            self._settle_remaining_s = _SETTLE_HOLD_S
-            self._emit("route_ball_collected", ball_id=stop.ball_id, order=stop.order)
-            return ConceptACommand(
-                state=CollectorState.COLLECTED,
-                base=BaseCommand(0.0, 0.0),
-                collector=CollectorCommand(behavior.config.lift_wheel_speed, True),
+            credited = self._credit_confirmed_stop(confirmed_ball_id or stop.ball_id)
+            if credited is not None:
+                ball_map.set_state(credited, "collected")
+            if credited == stop.ball_id:
+                behavior.reset()
+                self.phase = "settle"
+                self._settle_remaining_s = _SETTLE_HOLD_S
+                self._emit("route_ball_collected", ball_id=stop.ball_id, order=stop.order)
+                return ConceptACommand(
+                    state=CollectorState.COLLECTED,
+                    base=BaseCommand(0.0, 0.0),
+                    collector=CollectorCommand(behavior.config.lift_wheel_speed, True),
+                )
+            # Delayed retention of an EARLIER ball settled mid-approach: credit
+            # it and keep the current capture untouched — resetting the behavior
+            # here restarted ALIGN/APPROACH from scratch against an un-reset
+            # 35 s budget and threw away live capture progress.
+            self._emit(
+                "route_delayed_collection_attributed",
+                ball_id=credited,
+                resumed_stop=stop.ball_id,
+                phase="approach",
             )
 
         robot_x, robot_y, robot_yaw = robot_pose
@@ -673,7 +852,7 @@ class CollectRouteMission:
             self._live_seen_in_approach = True
 
         # Hard budget FIRST — before any early-return branch below. Run-3
-        # incident (collection-route-debug-log-el #6): the turn-toward-target
+        # incident (archive/collection-route-debug-log-el #6): the turn-toward-target
         # branch returned before this check ever ran, so a phantom chase
         # pushed into the net for 78 s with the 35 s timeout never firing.
         if behavior.gave_up or self._approach_elapsed_s > APPROACH_TIMEOUT_S:
@@ -687,18 +866,24 @@ class CollectRouteMission:
         # sighting near the lock by then means the map entry is a phantom —
         # skip it instead of dead-reckoning a capture into whatever stands
         # there (run 3 drove into the net this way, lock_error_m 3.3-4.0).
-        if (
-            not self._live_seen_in_approach
-            and self._approach_elapsed_s > MISSING_SCAN_S
-        ):
-            self._emit(
-                "route_ball_missing",
-                ball_id=stop.ball_id,
-                reason="no_live_sighting_at_standoff",
-            )
-            behavior.reset()
-            self._skip_current(ball_map, "missing")
-            return _IDLE_CMD
+        if not self._live_seen_in_approach and self._approach_elapsed_s > MISSING_SCAN_S:
+            if capture_pending_ball_id == stop.ball_id:
+                if self._capture_pending_reported_for != stop.ball_id:
+                    self._capture_pending_reported_for = stop.ball_id
+                    self._emit(
+                        "route_missing_deferred",
+                        ball_id=stop.ball_id,
+                        reason="onboard_capture_pending_retention",
+                    )
+            else:
+                self._emit(
+                    "route_ball_missing",
+                    ball_id=stop.ball_id,
+                    reason="no_live_sighting_at_standoff",
+                )
+                behavior.reset()
+                self._skip_current(ball_map, "missing")
+                return _IDLE_CMD
 
         if self._locked_world is None:
             # Mapped entry vanished (stale/pruned): give the camera a short
@@ -775,11 +960,256 @@ class CollectRouteMission:
             self._enter_nav_retry(stop)
         return _IDLE_CMD
 
+    # ── SWEEP DRIVE (log #21: collection decoupled from the route) ─────────────
+
+    def _sweep_cmd(self, behavior: ConceptACollectorBehavior) -> ConceptACommand:
+        """Nav2 owns the base; the intake runs for the whole route."""
+        return ConceptACommand(
+            state=CollectorState.SURVEY,
+            base=BaseCommand(0.0, 0.0),
+            collector=CollectorCommand(behavior.config.lift_wheel_speed, True),
+        )
+
+    def _credit_nearest_sweep_ball(
+        self, robot_pose: tuple[float, float, float], ball_map: BallMap
+    ) -> None:
+        """A beam crossing belongs to the closest un-collected planned ball.
+
+        Reporting only — the route never waits for or branches on a credit."""
+        robot_x, robot_y, _ = robot_pose
+        best: RouteStop | None = None
+        best_d = _SWEEP_CREDIT_MATCH_M
+        for s in self.stops:
+            if s.status == "collected":
+                continue
+            d = math.hypot(s.ball_x_m - robot_x, s.ball_y_m - robot_y)
+            if d < best_d:
+                best, best_d = s, d
+        if best is None:
+            return
+        best.status = "collected"
+        ball_map.set_state(best.ball_id, "collected")
+        self._renumber()
+        self._emit(
+            "route_ball_collected",
+            ball_id=best.ball_id,
+            order=best.order,
+            match_distance_m=best_d,
+        )
+
+    def _sweep_drive(
+        self,
+        dt_s: float,
+        robot_pose: tuple[float, float, float],
+        behavior: ConceptACollectorBehavior,
+        ball_map: BallMap,
+        nav_state: str,
+        collection_confirmed: bool,
+    ) -> ConceptACommand:
+        stop = self._current_stop()
+        if stop is None:
+            self._finish()
+            return _IDLE_CMD
+
+        # Rising edge only: the beam latch stays True for the whole crossing.
+        if collection_confirmed and not self._sweep_confirm_latched:
+            self._credit_nearest_sweep_ball(robot_pose, ball_map)
+        self._sweep_confirm_latched = collection_confirmed
+
+        if self._pass_active:
+            return self._sweep_pass_tick(dt_s, robot_pose, behavior, ball_map)
+        if self._link_active:
+            return self._sweep_link_tick(dt_s, robot_pose, behavior, ball_map)
+
+        if nav_state == "unavailable":
+            self.current_blocker = "nav2_action_unavailable"
+            return self._sweep_cmd(behavior)
+
+        if self._nav_goal is None:
+            ex, ey = self._sweep_entry_xy(stop)
+            self._nav_goal = (ex, ey, stop.approach.yaw_rad)
+            self._nav_elapsed_s = 0.0
+            self._nav_last_state = "idle"
+            self._nav_seen_running = False
+            return self._sweep_cmd(behavior)
+
+        self._nav_elapsed_s += dt_s
+        if nav_state in ("pending", "active"):
+            self._nav_seen_running = True
+        failed = (
+            nav_state == "failed"
+            and self._nav_seen_running
+            and self._nav_last_state != "failed"
+        )
+        timed_out = self._nav_elapsed_s > NAV_TIMEOUT_S
+        self._nav_last_state = nav_state
+
+        robot_x, robot_y, _ = robot_pose
+        entry_x, entry_y = self._sweep_entry_xy(stop)
+        at_entry = nav_state == "reached" or (
+            math.hypot(robot_x - entry_x, robot_y - entry_y) <= _SWEEP_ARRIVE_M
+        )
+        if at_entry:
+            # Hand the base to the mission for the crossing: cancel the Nav2
+            # goal and drive the run-in dead straight.
+            self._pass_active = True
+            self._pass_elapsed_s = 0.0
+            self._nav_goal = None
+            self._emit("route_pass_start", ball_id=stop.ball_id, order=stop.order)
+            return self._sweep_pass_tick(dt_s, robot_pose, behavior, ball_map)
+
+        if failed or timed_out:
+            self._emit(
+                "route_leg_skip",
+                ball_id=stop.ball_id,
+                reason="nav_timeout" if timed_out else "nav_failed",
+            )
+            self._skip_current(ball_map, "skipped")
+            return self._sweep_cmd(behavior)
+
+        return self._sweep_cmd(behavior)
+
+    def _sweep_entry_xy(self, stop: RouteStop) -> tuple[float, float]:
+        if stop.sweep_entry_x_m is not None and stop.sweep_entry_y_m is not None:
+            return stop.sweep_entry_x_m, stop.sweep_entry_y_m
+        hx = math.cos(stop.approach.yaw_rad)
+        hy = math.sin(stop.approach.yaw_rad)
+        return (
+            stop.ball_x_m - hx * SWEEP_RUN_IN_M,
+            stop.ball_y_m - hy * SWEEP_RUN_IN_M,
+        )
+
+    def _sweep_pass_tick(
+        self,
+        dt_s: float,
+        robot_pose: tuple[float, float, float],
+        behavior: ConceptACollectorBehavior,
+        ball_map: BallMap,
+    ) -> ConceptACommand:
+        """Mission-driven straight crossing over the ball.
+
+        Nav2 corrections near the ball slapped it away with the funnel cheeks;
+        here the heading is corrected only while the ball is still further
+        than _SWEEP_BLIND_M ahead, then frozen — the funnel does the rest."""
+        stop = self._current_stop()
+        if stop is None:
+            self._finish()
+            return _IDLE_CMD
+        robot_x, robot_y, robot_yaw = robot_pose
+        hx = math.cos(stop.approach.yaw_rad)
+        hy = math.sin(stop.approach.yaw_rad)
+        # Signed progress along the crossing axis, zero AT the ball.
+        progress = (robot_x - stop.ball_x_m) * hx + (robot_y - stop.ball_y_m) * hy
+        self._pass_elapsed_s += dt_s
+
+        if progress >= SWEEP_OVERRUN_M or self._pass_elapsed_s > _SWEEP_PASS_TIMEOUT_S:
+            self._pass_active = False
+            previous_status = stop.status
+            if stop.status == "active":
+                stop.status = "swept"
+                previous_status = "swept"
+                self._emit("route_ball_swept", ball_id=stop.ball_id, order=stop.order)
+            self._advance_sweep(previous_status)
+            if self._link_active:
+                return self._sweep_link_tick(dt_s, robot_pose, behavior, ball_map)
+            return self._sweep_cmd(behavior)
+
+        angular = 0.0
+        if progress < -_SWEEP_BLIND_M:
+            # Still far from the ball: small correction toward the ball point.
+            bearing = _angle_delta(
+                math.atan2(stop.ball_y_m - robot_y, stop.ball_x_m - robot_x),
+                robot_yaw,
+            )
+            angular = max(
+                -_SWEEP_PASS_MAX_ANGULAR_RAD_S,
+                min(
+                    _SWEEP_PASS_MAX_ANGULAR_RAD_S,
+                    bearing * _SWEEP_PASS_ANGULAR_GAIN,
+                ),
+            )
+        return ConceptACommand(
+            state=CollectorState.APPROACH,
+            base=BaseCommand(_SWEEP_PASS_SPEED_M_S, angular),
+            collector=CollectorCommand(behavior.config.lift_wheel_speed, True),
+        )
+
+    def _advance_sweep(self, previous_status: str) -> None:
+        """Continue the fixed route without handing the next crossing to Nav2.
+
+        The first entry is Nav2-owned for obstacle-aware access.  Afterwards
+        the route is a continuous, forward-moving curve from an exit to the
+        next run-in, so a new Nav2 final-pose rotation cannot interrupt it.
+        """
+        previous = self._current_stop()
+        self.current_index += 1
+        while self.current_index < len(self.stops) and self.stops[
+            self.current_index
+        ].status not in ("pending",):
+            self.current_index += 1
+        if self.current_index >= len(self.stops):
+            self._finish()
+            return
+
+        next_stop = self.stops[self.current_index]
+        next_stop.status = "active"
+        self.phase = "nav"
+        self._nav_goal = None
+        self._link_active = True
+        self._emit(
+            "route_advance",
+            previous_ball_id=previous.ball_id if previous is not None else None,
+            previous_status=previous_status,
+            next_ball_id=next_stop.ball_id,
+            next_order=next_stop.order,
+            remaining=sum(
+                1 for s in self.stops[self.current_index:] if s.status == "pending"
+            ),
+            continuous=True,
+        )
+
+    def _sweep_link_tick(
+        self,
+        dt_s: float,
+        robot_pose: tuple[float, float, float],
+        behavior: ConceptACollectorBehavior,
+        ball_map: BallMap,
+    ) -> ConceptACommand:
+        """Forward-only curved link from one crossing to the next run-in."""
+        stop = self._current_stop()
+        if stop is None:
+            self._finish()
+            return _IDLE_CMD
+        robot_x, robot_y, robot_yaw = robot_pose
+        entry_x, entry_y = self._sweep_entry_xy(stop)
+        distance = math.hypot(entry_x - robot_x, entry_y - robot_y)
+        if distance <= _SWEEP_LINK_ARRIVE_M:
+            self._link_active = False
+            self._pass_active = True
+            self._pass_elapsed_s = 0.0
+            self._emit("route_pass_start", ball_id=stop.ball_id, order=stop.order)
+            return self._sweep_pass_tick(dt_s, robot_pose, behavior, ball_map)
+
+        bearing = _angle_delta(math.atan2(entry_y - robot_y, entry_x - robot_x), robot_yaw)
+        angular = max(
+            -_SWEEP_PASS_MAX_ANGULAR_RAD_S,
+            min(_SWEEP_PASS_MAX_ANGULAR_RAD_S, bearing * _SWEEP_PASS_ANGULAR_GAIN),
+        )
+        # Never stop to turn.  Even a sharp join creeps forward while the
+        # bounded steering curve brings the funnel onto the next run-in.
+        linear = _SWEEP_LINK_SPEED_M_S * max(0.25, math.cos(bearing))
+        return ConceptACommand(
+            state=CollectorState.APPROACH,
+            base=BaseCommand(linear, angular),
+            collector=CollectorCommand(behavior.config.lift_wheel_speed, True),
+        )
+
     def _enter_nav_retry(self, stop: RouteStop) -> None:
         self.phase = "nav"
         self._nav_goal = (stop.approach.x_m, stop.approach.y_m, stop.approach.yaw_rad)
         self._nav_elapsed_s = 0.0
         self._nav_last_state = "idle"
+        self._nav_seen_running = False
 
     def _opportunistic_phase(
         self,
@@ -789,6 +1219,7 @@ class CollectRouteMission:
         robot_pose: tuple[float, float, float],
         behavior: ConceptACollectorBehavior,
         ball_map: BallMap,
+        confirmed_ball_id: int | None,
     ) -> ConceptACommand:
         stop = self._current_stop()
         if stop is None:
@@ -796,21 +1227,34 @@ class CollectRouteMission:
             return _IDLE_CMD
 
         if collection_confirmed:
-            behavior.reset()
-            credited = self._credit_opportunistic_stop()
+            delayed = (
+                confirmed_ball_id is not None
+                and confirmed_ball_id != self._opp_stop_id
+            )
+            credited = self._credit_confirmed_stop(
+                confirmed_ball_id or self._opp_stop_id
+            )
+            if credited is not None:
+                ball_map.set_state(credited, "collected")
             self._emit(
                 "route_opportunistic_collected",
                 ball_id=credited,
                 resumed_stop=stop.ball_id,
+                delayed_attribution=delayed,
             )
-            self._opp_locked = None
-            if stop.status == "collected":
-                # The opportunistic ball WAS the current stop's ball.
-                self.phase = "settle"
-                self._settle_remaining_s = _SETTLE_HOLD_S
-            else:
-                self._enter_nav_retry(stop)
-            return _IDLE_CMD
+            if not delayed:
+                behavior.reset()
+                self._opp_locked = None
+                if stop.status == "collected":
+                    # The opportunistic ball WAS the current stop's ball.
+                    self.phase = "settle"
+                    self._settle_remaining_s = _SETTLE_HOLD_S
+                else:
+                    self._enter_nav_retry(stop)
+                return _IDLE_CMD
+            # Delayed retention of an EARLIER ball: credit it and keep chasing
+            # the opportunistic ball — dropping the lock here re-issued the leg
+            # while the live ball sat half-captured in the funnel.
 
         self._opp_elapsed_s += dt_s
         if (
@@ -857,29 +1301,16 @@ class CollectRouteMission:
                 best, best_d = s, d
         return best
 
-    def _credit_opportunistic_stop(self) -> int | None:
-        """Mark the plan stop matched at opportunistic start as collected."""
+    def _credit_confirmed_stop(self, ball_id: int | None) -> int | None:
+        """Credit the stop that owned intake entry, even after a delayed settle."""
         for s in self.stops:
-            if s.ball_id == self._opp_stop_id and s.status in ("pending", "active"):
+            if s.ball_id == ball_id and s.status != "collected":
                 s.status = "collected"
                 self._renumber()
                 return s.ball_id
+            if s.ball_id == ball_id:
+                return s.ball_id
         return None
-
-    def _recover_phase(self, now: float) -> ConceptACommand:
-        """Reverse straight back out of costmap inflation, then retry the leg."""
-        if now < self._recover_until_s:
-            return ConceptACommand(
-                state=CollectorState.SURVEY,
-                base=BaseCommand(_NAV_RECOVER_SPEED_M_S, 0.0),
-                collector=CollectorCommand(0.0, False),
-            )
-        stop = self._current_stop()
-        if stop is None:
-            self._finish()
-            return _IDLE_CMD
-        self._enter_nav_retry(stop)
-        return _NAV_IDLE_CMD
 
     # ── SETTLE ─────────────────────────────────────────────────────────────────
 
@@ -912,9 +1343,19 @@ class CollectRouteMission:
         if stop is not None:
             stop.status = status
             ball_map.set_state(stop.ball_id, "collection_failed")
-        self._advance()
+            self._emit(
+                "route_stop_finalized",
+                ball_id=stop.ball_id,
+                order=stop.order,
+                status=status,
+                attempts=max(stop.attempts, self._nav_attempts),
+                nav_attempts=self._nav_attempts,
+                collection_attempts=stop.attempts,
+            )
+        self._advance(status)
 
-    def _advance(self) -> None:
+    def _advance(self, previous_status: str = "collected") -> None:
+        previous = self.stops[self.current_index] if self.current_index < len(self.stops) else None
         self._nav_attempts = 0
         self._locked_world = None
         self.current_index += 1
@@ -925,21 +1366,37 @@ class CollectRouteMission:
         if self.current_index >= len(self.stops):
             self._finish()
         else:
+            next_stop = self.stops[self.current_index]
+            self._emit(
+                "route_advance",
+                previous_ball_id=previous.ball_id if previous is not None else None,
+                previous_status=previous_status,
+                next_ball_id=next_stop.ball_id,
+                next_order=next_stop.order,
+                remaining=sum(
+                    1 for s in self.stops[self.current_index:] if s.status == "pending"
+                ),
+            )
             self._enter_nav()
 
     def _finish(self) -> None:
-        """The plan ledger is exhausted: every planned ball (initial scan +
-        insertions) is accounted for as collected or failed. Completion is
-        declared here and only here (user decision, log #13)."""
+        """The plan ledger is exhausted: every planned ball is accounted for
+        as collected or failed. Completion is declared here and only here."""
         self.phase = "done"
         self._nav_goal = None
-        failed = [s.ball_id for s in self.stops if s.status in ("skipped", "missing")]
+        # "swept" = crossed without a beam credit: the ball stayed on court.
+        failed = [
+            s.ball_id
+            for s in self.stops
+            if s.status in ("skipped", "missing", "swept")
+        ]
         self._emit(
             "route_complete",
             planned_total=len(self.stops),
             collected=sum(1 for s in self.stops if s.status == "collected"),
             skipped=sum(1 for s in self.stops if s.status == "skipped"),
             missing=sum(1 for s in self.stops if s.status == "missing"),
+            swept_uncollected=sum(1 for s in self.stops if s.status == "swept"),
             failed_ball_ids=failed,
             insertions=self.insertion_count,
         )

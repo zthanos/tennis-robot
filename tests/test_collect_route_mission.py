@@ -1,6 +1,7 @@
-"""Tests for CollectRouteMission — scan/plan/nav/approach transitions and
-dynamic cheapest insertion. Pure Python (no rclpy); BallMap is seeded directly
-like tests/test_ball_map_console_export.py.
+"""Tests for CollectRouteMission — scan/plan/nav/approach transitions.
+
+Pure Python (no rclpy); BallMap is seeded directly like
+tests/test_ball_map_console_export.py.
 """
 
 import math
@@ -33,15 +34,29 @@ def _ball_map(*positions, min_seen=3):
     return m
 
 
-def _mission():
-    return CollectRouteMission(RoutePlannerConfig(two_opt=True))
+def _mission(*, freeze_initial_plan=True, sweep=False):
+    return CollectRouteMission(
+        RoutePlannerConfig(two_opt=True),
+        freeze_initial_plan=freeze_initial_plan,
+        sweep=sweep,
+    )
+
+
+def test_runtime_default_is_fixed_drive_through_route(monkeypatch):
+    """The deployed mission must not be switched back by an env variable."""
+    monkeypatch.setenv("COLLECT_ROUTE_SWEEP", "false")
+    mission = CollectRouteMission(RoutePlannerConfig(two_opt=True))
+    assert mission.sweep is True
 
 
 def _tick(mission, ball_map, pose=(0.0, 0.0, 0.0), nav_state="idle",
-          observation=NO_BALL, confirmed=False, now=NOW, behavior=None, dt=0.032):
+          observation=NO_BALL, confirmed=False, confirmed_ball_id=None,
+          capture_pending_ball_id=None, now=NOW, behavior=None, dt=0.032):
     behavior = behavior or ConceptACollectorBehavior(ConceptAConfig())
     return mission.update(
-        observation, confirmed, dt, pose, behavior, ball_map, now, nav_state, None
+        observation, confirmed, dt, pose, behavior, ball_map, now, nav_state, None,
+        confirmed_ball_id,
+        capture_pending_ball_id,
     )
 
 
@@ -120,6 +135,17 @@ def _mission_in_nav(ball_positions=((3.0, 0.0),)):
     return mission, ball_map, now
 
 
+def _mission_in_nav_with_insertion(ball_positions=((3.0, 0.0),)):
+    mission = _mission(freeze_initial_plan=False)
+    ball_map = _ball_map(*ball_positions)
+    mission.start((0.0, 0.0, 0.0))
+    now = _run_scan(mission, ball_map)
+    _tick(mission, ball_map, now=now)
+    assert mission.phase == "nav"
+    mission.drain_events()
+    return mission, ball_map, now
+
+
 def test_nav_reached_enters_fine_approach():
     mission, ball_map, now = _mission_in_nav()
     _tick(mission, ball_map, nav_state="pending", now=now)
@@ -132,37 +158,34 @@ def test_nav_reached_enters_fine_approach():
 
 def test_nav_failures_skip_after_retries():
     mission, ball_map, now = _mission_in_nav()
-    # Genuine (slow) failures: the leg runs >2 s before failing, so the
-    # instant-fail recovery path stays out of the way.
-    for _ in range(4):
-        if mission.phase != "nav":
-            break
-        _tick(mission, ball_map, nav_state="active", now=now, dt=3.0)
-        _tick(mission, ball_map, nav_state="failed", now=now, dt=0.1)
-        _tick(mission, ball_map, nav_state="idle", now=now, dt=0.1)  # cancel + re-issue
+    _tick(mission, ball_map, nav_state="active", now=now, dt=3.0)
+    cmd = _tick(mission, ball_map, nav_state="failed", now=now, dt=0.1)
     assert mission.is_done
+    assert cmd.base.linear_speed_m_s == 0.0
     assert mission.stops[0].status == "skipped"
     assert ball_map.balls[1].state == "collection_failed"
 
 
-def test_instant_nav_failure_triggers_reverse_recovery():
-    # Run-5 regression: goals rejected in <0.1 s (robot inside costmap
-    # inflation) burned through the whole route in 1.3 s. Instant failures
-    # must trigger a reverse recovery, not consume the retry budget.
-    mission, ball_map, now = _mission_in_nav()
+def test_instant_nav_failure_skips_without_reverse_and_advances():
+    mission, ball_map, now = _mission_in_nav(
+        ball_positions=((2.0, 0.0), (4.0, 0.0))
+    )
     _tick(mission, ball_map, nav_state="pending", now=now)
     cmd = _tick(mission, ball_map, nav_state="failed", now=now)  # instant fail
-    assert mission.phase == "recover"
-    cmd = _tick(mission, ball_map, nav_state="idle", now=now + 0.1)
-    assert cmd.base.linear_speed_m_s < 0.0  # reversing out of inflation
-    # Recovery window over: leg re-issued, stop still active, no skip.
-    _tick(mission, ball_map, nav_state="idle", now=now + 5.0)
     assert mission.phase == "nav"
+    assert cmd.base.linear_speed_m_s == 0.0
     assert mission.nav_goal is not None
-    assert mission.stops[0].status == "active"
+    assert mission.stops[0].status == "skipped"
+    assert mission.current_ball_id == 2
+    # The previous action's failed result may linger until the new goal is
+    # accepted. It must not cascade-skip ball 2.
+    _tick(mission, ball_map, nav_state="failed", now=now + 0.1)
+    assert mission.current_ball_id == 2
+    assert mission.stops[1].status == "active"
     events = [t for t, _ in mission.drain_events()]
-    assert "route_nav_recovery" in events
-    assert "route_leg_skip" not in events
+    assert "route_nav_recovery" not in events
+    assert "route_leg_skip" in events
+    assert "route_advance" in events
 
 
 def test_persistent_nav_failures_walk_the_whole_plan():
@@ -175,7 +198,6 @@ def test_persistent_nav_failures_walk_the_whole_plan():
     for _ in range(120):
         if mission.is_done:
             break
-        # Slow failures (elapsed > instant threshold) exhaust retries fast.
         _tick(mission, ball_map, nav_state="active", now=now, dt=3.0)
         _tick(mission, ball_map, nav_state="failed", now=now, dt=0.1)
         _tick(mission, ball_map, nav_state="idle", now=now, dt=0.1)
@@ -305,6 +327,67 @@ def test_phantom_without_live_sighting_goes_missing_fast():
     assert events.get("route_ball_missing", {}).get("reason") == "no_live_sighting_at_standoff"
 
 
+def test_onboard_capture_is_not_marked_missing_before_bin_retention():
+    mission, ball_map, behavior, now = _mission_in_approach(
+        ball_positions=((3.0, 0.0),)
+    )
+    for _ in range(20):
+        _tick(
+            mission,
+            ball_map,
+            pose=(1.7, 0.0, 0.0),
+            now=now,
+            behavior=behavior,
+            dt=0.5,
+            capture_pending_ball_id=1,
+        )
+
+    assert mission.phase == "approach"
+    assert mission.stops[0].status == "active"
+    events = dict(mission.drain_events())
+    assert events["route_missing_deferred"]["reason"] == "onboard_capture_pending_retention"
+
+    _tick(
+        mission,
+        ball_map,
+        confirmed=True,
+        confirmed_ball_id=1,
+        capture_pending_ball_id=1,
+        now=now,
+        behavior=behavior,
+    )
+    assert mission.phase == "settle"
+    assert mission.stops[0].status == "collected"
+
+
+def test_capture_that_leaves_robot_no_longer_blocks_missing_decision():
+    mission, ball_map, behavior, now = _mission_in_approach(
+        ball_positions=((3.0, 0.0),)
+    )
+    for _ in range(14):
+        _tick(
+            mission,
+            ball_map,
+            pose=(1.7, 0.0, 0.0),
+            now=now,
+            behavior=behavior,
+            dt=0.5,
+            capture_pending_ball_id=1,
+        )
+
+    assert mission.stops[0].status == "active"
+    _tick(
+        mission,
+        ball_map,
+        pose=(1.7, 0.0, 0.0),
+        now=now,
+        behavior=behavior,
+        dt=0.5,
+        capture_pending_ball_id=None,
+    )
+    assert mission.stops[0].status == "missing"
+
+
 def test_first_sighting_adopts_mislocated_scan_entry():
     # Scan-created map entries carry up to ~0.5 m error (run-3 lock_error_m);
     # the FIRST sighting within 1.0 m of the plan re-centres the lock, while
@@ -383,7 +466,7 @@ def test_missing_ball_marks_missing_after_scan_budget():
 
 
 def test_new_ball_inserted_at_cheapest_slot():
-    mission, ball_map, now = _mission_in_nav(
+    mission, ball_map, now = _mission_in_nav_with_insertion(
         ball_positions=((2.0, 0.0), (4.0, 0.0), (8.0, 0.0))
     )
     order_before = [s.ball_id for s in mission.stops]
@@ -403,7 +486,7 @@ def test_new_ball_inserted_at_cheapest_slot():
 
 
 def test_far_detour_ball_appended_at_end():
-    mission, ball_map, now = _mission_in_nav(
+    mission, ball_map, now = _mission_in_nav_with_insertion(
         ball_positions=((2.0, 0.0), (4.0, 0.0))
     )
     ball_map.balls[9] = MappedBall(
@@ -413,25 +496,51 @@ def test_far_detour_ball_appended_at_end():
     assert [s.ball_id for s in mission.stops] == [1, 2, 9]
 
 
-def test_nav_goal_follows_drifted_map_entry():
-    # A nudged ball moves in the map; the nav leg must follow the fresh
-    # position instead of driving to the stale plan-time standoff (run-4
-    # stops 12/6 retried into empty space and were declared missing).
+def test_default_route_ignores_new_balls_after_initial_plan():
+    mission, ball_map, now = _mission_in_nav(
+        ball_positions=((2.0, 0.0), (4.0, 0.0), (8.0, 0.0))
+    )
+    ball_map.balls[9] = MappedBall(
+        9, 6.0, 0.2, 0.9, 0.0, NOW, "oak_depth", seen_count=4, state="detected"
+    )
+    _tick(mission, ball_map, nav_state="active", now=now)
+    assert [s.ball_id for s in mission.stops] == [1, 2, 3]
+    assert mission.insertion_count == 0
+    assert "route_insertion" not in [event for event, _ in mission.drain_events()]
+
+
+def test_frozen_route_keeps_scan_time_goal_when_map_entry_drifts():
     mission, ball_map, now = _mission_in_nav(ball_positions=((3.0, 0.0),))
     old_goal = mission.nav_goal
+    old_position = (mission.stops[0].ball_x_m, mission.stops[0].ball_y_m)
     ball_map.balls[1].x_m, ball_map.balls[1].y_m = 3.9, 0.8  # drift 1.2 m
+    _tick(mission, ball_map, nav_state="active", now=now)
+    stop = mission.stops[0]
+    assert (stop.ball_x_m, stop.ball_y_m) == old_position
+    assert mission.nav_goal == old_goal
+    events = dict(mission.drain_events())
+    assert "route_goal_updated" not in events
+
+
+def test_dynamic_route_goal_follows_drifted_map_entry():
+    mission, ball_map, now = _mission_in_nav_with_insertion(
+        ball_positions=((3.0, 0.0),)
+    )
+    old_goal = mission.nav_goal
+    ball_map.balls[1].x_m, ball_map.balls[1].y_m = 3.9, 0.8
     _tick(mission, ball_map, nav_state="active", now=now)
     stop = mission.stops[0]
     assert (stop.ball_x_m, stop.ball_y_m) == (3.9, 0.8)
     assert mission.nav_goal != old_goal
-    events = dict(mission.drain_events())
-    assert "route_goal_updated" in events
+    assert "route_goal_updated" in dict(mission.drain_events())
 
 
-def test_wandering_map_entry_abandons_stop():
+def test_dynamic_route_abandons_wandering_map_entry():
     # Run-4 stop 6: chain-merges dragged the entry 4+ m; the mission must
     # drop the stop instead of following the wandering entry across court.
-    mission, ball_map, now = _mission_in_nav(ball_positions=((3.0, 0.0),))
+    mission, ball_map, now = _mission_in_nav_with_insertion(
+        ball_positions=((3.0, 0.0),)
+    )
     ball_map.balls[1].x_m, ball_map.balls[1].y_m = 3.5, 4.0  # 4 m from plan
     _tick(mission, ball_map, nav_state="active", now=now)
     assert mission.stops[0].status == "missing"
@@ -455,10 +564,13 @@ def _front_ball_obs(x=1.0, y=0.1):
     )
 
 
-def test_planned_ball_ahead_on_leg_triggers_opportunistic_capture():
-    # Runs 5-7 froze with balls suspected under the chassis: a PLANNED ball
-    # visible ahead is collected instead of plowed over, then the leg resumes.
-    mission, ball_map, now = _mission_in_nav(ball_positions=((6.0, 0.0),))
+def test_planned_ball_ahead_on_leg_is_promoted_to_next_stop():
+    # Route rule R2 (no chase capture): a PLANNED ball visible ahead becomes
+    # the NEXT stop with a normal standoff + straight fine approach — the old
+    # chase punted balls away (run 9) and bounced launches out (run 10).
+    mission, ball_map, now = _mission_in_nav_with_insertion(
+        ball_positions=((6.0, 0.0),)
+    )
     # A confirmed new ball joins the plan via insertion, then shows up ahead.
     ball_map.balls[9] = MappedBall(
         9, 1.0, 0.1, 0.9, 0.0, NOW, "oak_depth", seen_count=4, state="detected"
@@ -467,17 +579,14 @@ def test_planned_ball_ahead_on_leg_triggers_opportunistic_capture():
     assert 9 in {s.ball_id for s in mission.stops}
     _tick(mission, ball_map, nav_state="active", now=now,
           observation=_front_ball_obs(1.0, 0.1))
-    assert mission.phase == "opportunistic"
-    assert mission.nav_goal is None  # Nav2 goal dropped for the capture
-    # Collection confirmed: the planned stop is credited, leg resumes.
-    _tick(mission, ball_map, confirmed=True, now=now)
-    assert mission.phase == "nav"
-    assert mission.stops[mission.current_index].ball_id == 1
-    credited = [s for s in mission.stops if s.ball_id == 9]
-    assert credited[0].status == "collected"
-    events = [t for t, _ in mission.drain_events()]
-    assert "route_opportunistic_start" in events
-    assert "route_opportunistic_collected" in events
+    assert mission.phase == "nav"  # no chase: a proper leg to its standoff
+    assert mission.current_ball_id == 9
+    assert mission.nav_goal is not None
+    postponed = [s for s in mission.stops if s.ball_id == 1]
+    assert postponed[0].status == "pending"
+    events = dict(mission.drain_events())
+    assert events["route_on_path_promoted"]["ball_id"] == 9
+    assert events["route_on_path_promoted"]["postponed_stop"] == 1
 
 
 def test_unplanned_ball_ahead_never_diverts_the_leg():
@@ -490,39 +599,120 @@ def test_unplanned_ball_ahead_never_diverts_the_leg():
     assert mission.nav_goal is not None
 
 
-def test_opportunistic_credits_matching_pending_stop():
+def test_current_stop_ball_ahead_keeps_the_leg():
+    # Seeing the CURRENT leg's own ball ahead is the normal end of the leg:
+    # Nav2 is already driving to its standoff — no promotion, no goal churn.
     mission, ball_map, now = _mission_in_nav(
         ball_positions=((5.0, 0.0), (1.1, 0.05))
     )
-    # Route order: near ball (id 2) first — make the FAR stop current by
-    # collecting the near one opportunistically only if it's NOT current:
-    # current stop is id 2 at (1.1, 0.05); the front obs IS the current ball.
+    goal_before = mission.nav_goal
     _tick(mission, ball_map, nav_state="active", now=now,
           observation=_front_ball_obs(1.1, 0.05))
-    assert mission.phase == "opportunistic"
-    _tick(mission, ball_map, confirmed=True, now=now)
-    # Credited stop was the CURRENT one → settle, then advance to the far ball.
-    assert mission.phase == "settle"
+    assert mission.phase == "nav"
+    assert mission.nav_goal == goal_before
+    assert "route_on_path_promoted" not in [t for t, _ in mission.drain_events()]
+
+
+def test_delayed_retention_is_credited_to_original_route_stop():
+    mission, ball_map, now = _mission_in_nav(
+        ball_positions=((3.0, 0.0), (6.0, 0.0))
+    )
+    # The first ball entered the receiver, later rolled out, and its stop was
+    # finalized missing. It finally settles while the second stop is active.
+    mission.stops[0].status = "missing"
+    mission.stops[1].status = "active"
+    mission.current_index = 1
+    mission.phase = "opportunistic"
+    mission._opp_stop_id = 2
+    mission._opp_locked = (6.0, 0.0)
+
+    _tick(
+        mission,
+        ball_map,
+        confirmed=True,
+        confirmed_ball_id=1,
+        now=now,
+    )
+
     assert mission.stops[0].status == "collected"
+    assert mission.stops[1].status == "active"
+    # The in-progress opportunistic capture of ball 2 must NOT be aborted by
+    # the delayed credit of ball 1: the lock and phase stay put.
+    assert mission.phase == "opportunistic"
+    assert mission._opp_locked == (6.0, 0.0)
+    assert ball_map.balls[1].state == "collected"
+    event = dict(mission.drain_events())["route_opportunistic_collected"]
+    assert event["ball_id"] == 1
+    assert event["resumed_stop"] == 2
+    assert event["delayed_attribution"] is True
 
 
-def test_opportunistic_timeout_resumes_leg():
-    mission, ball_map, now = _mission_in_nav(ball_positions=((6.0, 0.0),))
+def test_nav_phase_delayed_retention_credits_current_stop_and_skips_leg():
+    # Run-8 regression: a ball launched at the tail of an aborted capture
+    # settled into the bin AFTER the leg to its ghost standoff had started;
+    # the credit must land on the ledger and the ghost leg must be skipped.
+    mission, ball_map, now = _mission_in_nav(
+        ball_positions=((3.0, 0.0), (6.0, 0.0))
+    )
+    _tick(
+        mission,
+        ball_map,
+        nav_state="active",
+        now=now,
+        confirmed=True,
+        confirmed_ball_id=1,
+    )
+    assert mission.stops[0].status == "collected"
+    assert ball_map.balls[1].state == "collected"
+    assert mission.current_ball_id == 2
+    assert mission.phase == "nav"
+    events = dict(mission.drain_events())
+    assert events["route_delayed_collection_attributed"]["phase"] == "nav"
+    assert "route_advance" in events
+
+
+def test_nav_phase_delayed_retention_for_other_stop_keeps_current_leg():
+    mission, ball_map, now = _mission_in_nav(
+        ball_positions=((3.0, 0.0), (6.0, 0.0))
+    )
+    _tick(
+        mission,
+        ball_map,
+        nav_state="active",
+        now=now,
+        confirmed=True,
+        confirmed_ball_id=2,
+    )
+    assert mission.stops[1].status == "collected"
+    assert mission.current_ball_id == 1
+    assert mission.phase == "nav"
+    # An ownerless confirm (no ground-truth attribution) must NOT credit the
+    # untouched current stop.
+    _tick(mission, ball_map, nav_state="active", now=now, confirmed=True)
+    assert mission.stops[0].status == "active"
+
+
+def test_promotion_does_not_churn_while_ball_stays_visible():
+    # After promotion the on-path ball IS the current stop; seeing it ahead
+    # on subsequent ticks must not re-promote or reset the leg.
+    mission, ball_map, now = _mission_in_nav_with_insertion(
+        ball_positions=((6.0, 0.0),)
+    )
     ball_map.balls[9] = MappedBall(
         9, 1.0, 0.0, 0.9, 0.0, NOW, "oak_depth", seen_count=4, state="detected"
     )
     _tick(mission, ball_map, nav_state="active", now=now)  # insertion tick
     _tick(mission, ball_map, nav_state="active", now=now,
           observation=_front_ball_obs())
-    assert mission.phase == "opportunistic"
-    for _ in range(20):  # 20 × 1 s > _OPP_TIMEOUT_S
-        if mission.phase != "opportunistic":
-            break
-        _tick(mission, ball_map, now=now, dt=1.0)
-    assert mission.phase == "nav"
-    assert mission.stops[0].status == "active"
-    events = [t for t, _ in mission.drain_events()]
-    assert "route_opportunistic_abort" in events
+    assert mission.current_ball_id == 9
+    goal = mission.nav_goal
+    mission.drain_events()
+    for _ in range(5):
+        _tick(mission, ball_map, nav_state="active", now=now,
+              observation=_front_ball_obs())
+    assert mission.current_ball_id == 9
+    assert mission.nav_goal == goal
+    assert "route_on_path_promoted" not in [t for t, _ in mission.drain_events()]
 
 
 def test_route_export_orders_and_polyline():
@@ -533,3 +723,114 @@ def test_route_export_orders_and_polyline():
     assert planned_order == {1: 1, 2: 2}
     assert polyline[0] == {"x_m": 0.0, "y_m": 0.0}
     assert len(polyline) == 5  # robot + (approach, ball) × 2
+
+
+# ── Sweep mode (log #21: collection decoupled from the route) ──────────────────
+
+
+def _sweep_mission_in_drive(ball_positions=((3.0, 0.0), (6.0, 0.0))):
+    mission = _mission(sweep=True)
+    ball_map = _ball_map(*ball_positions)
+    mission.start((0.0, 0.0, 0.0))
+    now = _run_scan(mission, ball_map)
+    _tick(mission, ball_map, now=now)  # plan → drive
+    assert mission.phase == "nav"
+    mission.drain_events()
+    return mission, ball_map, now
+
+
+def test_sweep_goals_are_entry_poses_before_the_ball():
+    # Nav2 drives only to the run-in ENTRY; the crossing is mission-driven
+    # (Nav2 corrections near the ball slapped it away with the cheeks).
+    mission, ball_map, now = _sweep_mission_in_drive()
+    goal = mission.nav_goal
+    assert goal is not None and abs(goal[0] - 2.0) < 1e-6  # 1.0 m before ball 1
+    cmd = _tick(mission, ball_map, nav_state="active", now=now)
+    assert cmd.collector.intake_enabled  # intake on for the whole route
+
+
+def test_sweep_pass_is_straight_and_advances_without_stopping():
+    mission, ball_map, now = _sweep_mission_in_drive()
+    _tick(mission, ball_map, nav_state="active", now=now)
+    # Entry reached: the mission takes the base and drives the crossing.
+    cmd = _tick(mission, ball_map, pose=(2.0, 0.0, 0.0), nav_state="reached", now=now)
+    assert mission.nav_goal is None  # Nav2 cancelled for the pass
+    assert cmd.base.linear_speed_m_s > 0.0
+    assert cmd.base.angular_speed_rad_s == 0.0  # heading frozen near the ball
+    assert cmd.collector.intake_enabled
+    # Past the ball + overrun: link to the next run-in remains mission-owned,
+    # so Nav2 cannot stop and rotate before ball 2.
+    cmd = _tick(mission, ball_map, pose=(3.4, 0.0, 0.0), now=now)
+    assert mission.phase == "nav"
+    assert mission.current_ball_id == 2
+    assert mission.nav_goal is None
+    assert mission._link_active
+    assert cmd.base.linear_speed_m_s > 0.0
+    events = [t for t, _ in mission.drain_events()]
+    assert "route_pass_start" in events
+    assert "route_ball_swept" in events
+    assert "route_fine_approach" not in events
+
+
+def test_sweep_link_bends_to_second_ball_without_in_place_rotation():
+    mission, ball_map, now = _sweep_mission_in_drive(
+        ball_positions=((3.0, 0.0), (6.0, 1.0))
+    )
+    _tick(mission, ball_map, pose=(2.0, 0.0, 0.0), nav_state="reached", now=now)
+    _tick(mission, ball_map, pose=(3.4, 0.0, 0.0), now=now)
+    cmd = _tick(mission, ball_map, pose=(3.4, 0.0, 0.0), now=now)
+
+    assert mission._link_active
+    assert cmd.base.linear_speed_m_s > 0.0
+    assert cmd.base.angular_speed_rad_s > 0.0
+
+
+def test_sweep_beam_credit_marks_nearest_ball_only_once():
+    mission, ball_map, now = _sweep_mission_in_drive()
+    # Beam latch stays True for several ticks while crossing ball 1.
+    _tick(mission, ball_map, pose=(3.0, 0.0, 0.0), nav_state="active",
+          now=now, confirmed=True)
+    _tick(mission, ball_map, pose=(3.0, 0.0, 0.0), nav_state="active",
+          now=now, confirmed=True)
+    collected = [s.ball_id for s in mission.stops if s.status == "collected"]
+    assert collected == [1]
+    assert ball_map.balls[1].state == "collected"
+
+
+def test_sweep_confirmation_never_waits_or_replans_the_route():
+    """A retained ball is a metric; it cannot alter the planned traversal."""
+    mission, ball_map, now = _sweep_mission_in_drive()
+    first_goal = mission.nav_goal
+
+    # The first crossing is credited before the robot has passed it.  The
+    # route still owns the same active crossing and its same fixed goal.
+    _tick(mission, ball_map, pose=(2.0, 0.0, 0.0), nav_state="active",
+          now=now, confirmed=True)
+    assert mission.phase == "nav"
+    assert mission.current_ball_id == 1
+    # Reaching the run-in transfers the base to the straight pass.  This is
+    # geometric progression, not a capture transition.
+    assert first_goal is not None
+    assert mission.nav_goal is None
+    assert mission._pass_active
+    assert mission.stops[0].status == "collected"
+
+    # Once the geometric crossing is complete, it advances normally; no
+    # settle/fine-approach path is entered because the credit exists.
+    _tick(mission, ball_map, pose=(2.0, 0.0, 0.0), nav_state="reached", now=now)
+    _tick(mission, ball_map, pose=(3.4, 0.0, 0.0), now=now)
+    assert mission.phase == "nav"
+    assert mission.current_ball_id == 2
+    assert "route_fine_approach" not in [event for event, _ in mission.drain_events()]
+
+
+def test_sweep_route_completes_regardless_of_missed_balls():
+    mission, ball_map, now = _sweep_mission_in_drive()
+    _tick(mission, ball_map, nav_state="reached", now=now)  # ball 1: no credit
+    _tick(mission, ball_map, pose=(6.0, 0.0, 0.0), nav_state="active",
+          now=now, confirmed=True)  # ball 2 credited at the crossing
+    assert mission.is_done
+    done = dict(mission.drain_events())["route_complete"]
+    assert done["collected"] == 1
+    assert done["swept_uncollected"] == 1
+    assert done["failed_ball_ids"] == [1]

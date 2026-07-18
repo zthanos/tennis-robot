@@ -240,3 +240,42 @@ def test_route_polyline_skips_terminal_stops():
     xs = [p["x_m"] for p in line]
     assert xs == [0.0, 3.0, 4.0, 7.0, 8.0]
     assert remaining_route_length_m((0.0, 0.0), stops) == 8.0
+
+
+def test_sweep_route_generates_chained_through_passes():
+    # Log #21: collection decoupled from the route — every ball is crossed
+    # centred in the funnel on a straight run-in, no stops.
+    from tennis_robot.collection_route_planner import (
+        SWEEP_OVERRUN_M,
+        SWEEP_RUN_IN_M,
+        sweep_route,
+    )
+
+    cfg = RoutePlannerConfig(two_opt=True)
+    legs = sweep_route((0.0, 0.0), [(1, 2.0, 0.0), (2, 4.0, 0.0)], None, cfg)
+    assert [l.ball_id for l in legs] == [1, 2]
+    l1, l2 = legs
+    assert abs(l1.entry_x_m - (2.0 - SWEEP_RUN_IN_M)) < 1e-6
+    assert abs(l1.exit_x_m - (2.0 + SWEEP_OVERRUN_M)) < 1e-6
+    assert abs(l1.yaw_rad) < 1e-6  # facing the ball along the run-in
+    # Leg 2 chains from leg 1's exit: still straight ahead, no rotation.
+    assert abs(l2.yaw_rad) < 1e-6
+    assert l2.entry_x_m < l2.ball_x_m
+
+
+def test_sweep_shortens_second_run_in_before_it_turns_back():
+    from tennis_robot.collection_route_planner import SWEEP_RUN_IN_M, sweep_route
+
+    legs = sweep_route(
+        (0.0, 0.0), [(1, 1.469, 0.017), (2, 2.240, 0.402)], None, CFG
+    )
+    first, second = legs
+    hx, hy = math.cos(second.yaw_rad), math.sin(second.yaw_rad)
+    # The second entry now lies ahead of the first exit along its own heading;
+    # the old fixed 1 m entry was behind it and forced a rotate.
+    forward_link = (
+        (second.entry_x_m - first.exit_x_m) * hx
+        + (second.entry_y_m - first.exit_y_m) * hy
+    )
+    assert forward_link >= 0.079
+    assert math.hypot(second.ball_x_m - second.entry_x_m, second.ball_y_m - second.entry_y_m) < SWEEP_RUN_IN_M

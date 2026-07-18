@@ -1752,7 +1752,7 @@
 
 - **Στόχος** (issue #10): γρήγορο μάζεμα όλων των μπαλών του μισού γηπέδου
   πάνω στον working μηχανισμό. Σχεδίαση στο νέο
-  `docs/collection-route-plan-el.md`.
+  `docs/archive/collection-route-plan-el.md`.
 - **Υπόθεση**: 360° scan (create gate 3→9 m στο BallMap) + greedy NN/2-opt
   ordering + Nav2 legs + ο υπάρχων P-controller για το τελικό capture
   αρκούν· μπάλες κοντά σε φράχτη/φιλέ θέλουν πλάγιο approach heading ώστε
@@ -1769,17 +1769,17 @@
   ball_map export 5)· πλήρης σουίτα 84 passed (το test_console_app
   collection error προϋπάρχει στο main, περνάει standalone).
 - **Status**: κώδικας ΟΚ offline· **εκκρεμεί sim επαλήθευση** κατά τα
-  βήματα του §8 στο collection-route-plan-el.md (Nav2 stack up, lateral
+  βήματα του §8 στο archive/collection-route-plan-el.md (Nav2 stack up, lateral
   κοντά σε φράχτη/φιλέ, insertion mid-route, route overlay στο console).
 - **➡️ Συνέχεια ΕΚΤΟΣ αυτού του log**: ο αλγόριθμος μαζέματος έχει πλέον
-  δικό του τεκμηριωμένο log — `docs/collection-route-debug-log-el.md`
+  δικό του τεκμηριωμένο log — `docs/archive/collection-route-debug-log-el.md`
   (εγγραφή #1 = αυτή η υλοποίηση, με τα ευρήματα αναλυτικά). Το παρόν log
   μένει για ό,τι αφορά τον ΜΗΧΑΝΙΣΜΟ intake (γεωμετρία, roller, basket).
 
 ### 59. Funnel cheeks: στένεμα εξόδου ώστε η παράδοση να μπαίνει στο validated envelope (⏳ bench)
 
 - **Πρόβλημα** (από τα collect_route runs 2-3, βλ.
-  collection-route-debug-log-el.md #3, παρατήρηση χρήστη): το funnel δεν
+  archive/collection-route-debug-log-el.md #3, παρατήρηση χρήστη): το funnel δεν
   οδηγεί την μπάλα ΑΝΑΜΕΣΑ στους τροχούς — είναι πιο ανοιχτό. Τα παλιά
   cheeks τελείωναν στο (0.647, ±0.146) → η μπάλα έβγαινε με κέντρο έως
   |y|=0.108, ενώ το bench-validated capture envelope είναι ±0.08. Στο
@@ -1817,3 +1817,22 @@
   `rpy="0 -0.51 0"` → base_footprint pose `0.45 0 0.015 0 -0.51 0`.
 - Target-direction unit vector (camera pos → roller target):
   `dx=0.165, dz=0.092 → normalized (0.8736, 0, 0.4870)`.
+
+### 60. Funnel iteration 2: στένεμα + πλησίασμα των cheeks στους τροχούς (sweep mode)
+
+- **Παρατήρηση (χρήστης, run 14 / sweep mode)**: το funnel δεν είναι αρκετά
+  στενό προς τους τροχούς και δεν οδηγεί σωστά τη μπάλα προς τα μέσα· μπορεί
+  να έρθει πιο κοντά στους τροχούς.
+- **Ανάλυση**: πίσω άκρα cheeks στο (0.680, ±0.104) → cap κέντρου μπάλας
+  |y| ≤ 0.066 → η ΕΠΙΦΑΝΕΙΑ της μπάλας φτάνει 0.099, ΕΞΩ από την κεντρική
+  γραμμή τροχού (±0.090): επαφή με το έξω τεταρτημόριο = πλάγια εκτροπή
+  (ίδιος μηχανισμός με το #59 αλλά στο νέο, ευρύτερο πλευρικό envelope των
+  sweep διελεύσεων). Συν 90 mm αφύλαχτη διαδρομή έως τους τροχούς.
+- **Αλλαγή (funnel.urdf.xacro)**: πίσω άκρα (0.680, ±0.104) → (0.655,
+  ±0.083)· στόμιο αμετάβλητο (0.876, ±0.205). Νέο box: 0.2524×0.01×0.10,
+  origin (0.7655, ±0.144), yaw ±0.504. Νέο cap κέντρου: |y| ≤ 0.045 →
+  επιφάνεια ≤ 0.078 < 0.090 → επαφή ΜΟΝΟ με το έσω τεταρτημόριο (σαρώνει
+  προς το nip). Απόσταση άκρου από κέντρο τροχού 65.4 mm (κανόνας ≥65 mm,
+  r=0.060 + carriage travel — οριακά εντός).
+- **Status**: ✅ γεωμετρία· ⏳ επαλήθευση σε sweep run (πλάγιες διελεύσεις
+  με offset ±0.10-0.15 πρέπει πλέον να κεντράρονται αντί να εκτρέπονται).

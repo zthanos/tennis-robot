@@ -1,3 +1,9 @@
+# ΑΡΧΕΙΟ — ιστορικό log του παλαιού collect_route
+
+> Δεν χρησιμοποιείται ως specification ή οδηγός υλοποίησης. Περιέχει ιστορικές
+> δοκιμές και διορθώσεις του προηγούμενου per-ball μοντέλου. Το ενεργό
+> specification είναι το [Ενεργός οδηγός συνεχούς διαδρομής](../collection-route-rules-el.md).
+
 # Collection route (collect_route) — log
 
 Σκοπός: αρχείο-καταγραφή για κάθε ενέργεια/διόρθωση γύρω από τον αλγόριθμο
@@ -502,3 +508,243 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
     το `route_complete` αναφέρει planned_total/collected/skipped/missing/
     failed_ball_ids/insertions.
 - **Status**: ✅ κώδικας (105 tests)· ⏳ run 8.
+
+### 14. Code review του frozen-plan diff: 4 στοχευμένα fixes πριν το verification run
+
+- **Πλαίσιο**: review του working-tree diff (freeze initial plan, retention-based
+  credit). 10 επιβεβαιωμένα ευρήματα (8 correctness, 2 cleanup) — εφαρμόστηκαν
+  ΜΟΝΟ όσα επηρεάζουν την αξιολόγηση της εκτέλεσης του παγωμένου πλάνου στο
+  sim. Το nav-reject cascade (χωρίς reverse recovery + NAV_RETRIES=0)
+  αφέθηκε συνειδητά: το reverse recovery είχε false triggers και αφαιρέθηκε
+  με απόφαση χρήστη· αποδεκτό ρίσκο για το run.
+- **Fixes**:
+  1. `ball_map.update`: το absorb από terminal entries (collected/
+     collection_failed) γίνεται μόνο όταν το terminal είναι το ΠΛΗΣΙΕΣΤΕΡΟ
+     match. Πριν, ghost εντός merge_dist (0.65–1.6 m) «έκλεβε» τα
+     observations πλησιέστερης ενεργής μπάλας (χαλούσε relock/refresh σε
+     πυκνά clusters) και μπλόκαρε τη δημιουργία νέων entries σε ΟΛΑ τα modes.
+  2. Delayed attribution (approach + opportunistic): καθυστερημένο retention
+     παλιότερης μπάλας πιστώνεται ΧΩΡΙΣ να διακόπτει το τρέχον capture —
+     πριν, γινόταν behavior.reset, έπεφτε το `_opp_locked` και επανεκδιδόταν
+     το Nav2 leg ενώ η ζωντανή μπάλα ήταν μισο-πιασμένη στο funnel.
+  3. `capture_ball_id`: owner binding μόνο σε approach/settle/opportunistic —
+     όχι κατά το nav leg, ώστε μπάλα που «κλωτσιέται» onboard στη διαδρομή να
+     μην πιστωθεί στο μη-προσεγγισμένο ακόμα stop.
+  4. `_assign_sim_ball_route_owners`: η ζώνη deck ΔΕΝ ανανεώνει πλέον το
+     capture-pending grace (deck ≠ δρόμος προς bin, |y|>0.14) — το missing
+     decision μένει στο 6 s phantom gate αντί να κολλάει ως το 35 s budget.
+- **Καταγεγραμμένα, εκτός scope (σκόπιμα, για μετά το run)**: hardware paths
+  (IR latch χωρίς dwell πίσω από το χείλος· capture_pending μόνο από sim
+  ground truth· διπλό credit mark_nearest_collected+set_state)· deck-credit
+  regression των collect/collect_one· efficiency (telemetry rebuild ανά
+  event, route_stops σε κάθε event του deque, 3x sim-ball transforms/tick)·
+  dead code στο control panel (renderCollectionTruth, ορφανό nav_test).
+- **Status**: ✅ κώδικας (116 tests, το delayed-attribution test ενημερώθηκε
+  να απαιτεί συνέχιση του capture)· ⏳ sim verification run του frozen πλάνου.
+
+### 15. Run 8: μπάλες στο καλάθι αμέτρητες — frame mismatch odom↔map στο zone scoring
+
+- **Παρατήρηση (run 1784265681-454, 2026-07-17)**: counter 4, αλλά 7 μπάλες
+  φυσικά στο καλάθι (gz ground truth: ball_02/09/13/06 μετρημένες +
+  ball_00/12/05 αμέτρητες). Τα stops 12 (ball_00) και 8 (ball_05) βγήκαν
+  «missing» ενώ οι μπάλες τους ήταν ήδη μέσα → το πλάνο κυνηγούσε ghosts.
+- **Root cause**: το `gazebo_extras._gz_point_to_odom` αγκυρώνει τις
+  ground-truth θέσεις μπαλών στο **odom** pose, ενώ ο controller υπολογίζει
+  τις onboard ζώνες με το **map/slam_tf** pose. Σφάλμα στα robot-local =
+  απόκλιση odom↔map (skid-steer drift). Αρχή run ≈0 → μπάλες 1-4 σωστές·
+  από t≈110 s (drift 0.3-1.0 m) μπάλα στο καλάθι (true local ~0.25 m)
+  υπολογιζόταν local έως (-0.8, 0) → εκτός ζωνών → ποτέ bin/retained.
+  Απόδειξη: probe ball_05 @235.2 s local (-0.816) με z=0.058 (ύψος πάτου
+  καλαθιού — court rest είναι 0.033). Τα «deck» owner assignments των
+  ball_00/12/05 ήταν μπάλες στο σκούπισμα, μετατοπισμένες από το drift.
+- **Δευτερεύον**: το `_check_collection` έκοβε ΟΛΟ το sim tracking όταν το
+  intake ήταν off → μπάλα που κάθεται στο bin αμέσως μετά από
+  opportunistic abort (roller off) δεν παρακολουθιόταν καν.
+- **Fixes**:
+  1. `gazebo_extras`: το /sim/balls δημοσιεύει πλέον και **true robot-local**
+     συντεταγμένες (`local_x/local_y/local_z`, ball+robot pose από το ίδιο gz
+     snapshot — ανεξάρτητες από κάθε drift). Το x/y μένει odom-anchored για
+     τους παλιούς καταναλωτές.
+  2. `controller`: νέος κοινός helper `_sim_ball_local()` (προτιμά τα
+     ground-truth locals, fallback ο παλιός map-frame μετασχηματισμός για
+     παλιά fixtures) — αντικατέστησε και τα 4 αντιγραμμένα transform loops
+     (bonus: το reuse εύρημα του review).
+  3. `_check_collection`: το sim ground-truth path τρέχει ΑΝΕΞΑΡΤΗΤΑ από το
+     intake_enabled — το retention μετά από abort πιστώνεται.
+  4. `_nav_phase`: δέχεται delayed confirmation (μόνο με ρητό
+     confirmed_ball_id): πιστώνει το stop, και αν είναι το ΤΡΕΧΟΝ stop
+     παρακάμπτει το leg προς το ghost standoff (route_advance με collected).
+- **Σημείωση εγκυρότητας δεδομένων**: το pose/info του Gazebo Harmonic
+  εκπέμπει ΟΛΕΣ τις οντότητες (και κοιμισμένες) — το σχόλιο «only moved
+  entities» δεν ισχύει εδώ· το merge cache παραμένει ως άμυνα.
+- **Status**: ✅ κώδικας (118 tests, +2 nav-phase delayed credit)· ⏳ run 9
+  (θέλει rebuild/restart του stack — gazebo_extras + controller άλλαξαν).
+
+### 16. Run 9 ΕΠΙΤΥΧΕΣ (σωστή λογιστική) → beam-primary confirmation + truth referee
+
+- **Run 9 (1784270673-460, 2026-07-17)**: route_complete — planned 12,
+  collected 7, missing 5 (3, 9, 10, 6, 5), skipped 0, insertions 0. Το frame
+  fix του #15 επιβεβαιώθηκε: **counter = μπάλες στο καλάθι σε όλο το run**
+  (7=7), πλήρεις αλυσίδες entry→bin→retained→credit με σωστά locals βαθιά στο
+  run (t=305 s), pose error 0.02. Πρώτο τεκμηριωμένα σωστό run του frozen
+  360° πλάνου: ολοκλήρωση by exhaustion με ειλικρινές ledger.
+- **Ανοιχτό (φυσικό, όχι λογιστικό)**: και τα 5 misses ίδιο μοτίβο — το
+  opportunistic chase ΣΠΡΩΧΝΕΙ τη μπάλα με το χωνί αντί να τη συλλάβει
+  (π.χ. ball 3/ball_06: 15 s κυνήγι, κλωτσήθηκε 4+ m εκτός playable area,
+  μετά το frozen standoff ήταν άδειο → missing). Επόμενο behavioral θέμα:
+  ευθυγράμμιση/ταχύτητα του chase — ΔΕΝ αφορά scoring.
+- **Beam-primary (απόφαση χρήστη — sim και hardware να κρίνονται από το
+  ΙΔΙΟ σήμα)**:
+  - `SIM_COLLECTION_CONFIRM_SOURCE=beam` (default): το collection_confirmed
+    στο sim είναι πλέον το basket IR latch (τα sim beams τροφοδοτούν ήδη το
+    /ir/readings) — ίδιος κώδικας με hardware. `=truth` επαναφέρει το
+    ground-truth dwell (debug fallback).
+  - Ground truth → διαιτητής: `_sim_retention_step(credit=False)` συνεχίζει
+    zones/retention events, και ο νέος `CreditReconciler`
+    (collection_scoring) συγκρίνει beam vs truth counts· επίμονη απόκλιση
+    >5 s → `beam_false_credit` / `beam_missed_credit` (critical). Το
+    beam-μπλοκαρισμένο-από-γεμάτο-καλάθι θα φανεί ως beam_missed_credit.
+  - Hardware parity: το capture-pending deferral απενεργό σε beam mode
+    (κανένα ground-truth σήμα στον έλεγχο)· νέο event
+    `beam_collection_credit` στο latch.
+  - Fix του review #3 (διπλό credit): σε collect_route χωρίς ground-truth
+    id, ο controller ΔΕΝ κάνει πια mark_nearest_collected — το mission
+    αποδίδει το credit στο δικό του stop (μοναδική απόδοση ανά capture).
+- **Status**: ✅ κώδικας (121 tests, +3 CreditReconciler)· ⏳ run 10
+  (beam-primary πιστοποίηση του hardware confirmation pipeline).
+
+### 17. Run 10 (beam-primary): ο διαιτητής έπιασε τα ψέματα του beam — debounce + επόμενο βήμα route
+
+- **Run 10 (1784276141-459)**: 15 beam credits, 2 truth retained (delta +13,
+  όλα flagged ως beam_false_credit από τον CreditReconciler — ο διαιτητής
+  του #16 δούλεψε από το πρώτο run).
+- **Ανάλυση τιμών ray**: (α) πραγματικές διελεύσεις = συμμετρικές τιμές
+  (652/646 → επιφάνεια μπάλας 77 mm από κάθε sensor, κεντραρισμένη στο
+  tray) αλλά ΔΙΠΛΟμετρημένες — το latch καθάριζε στιγμιαία στο αναπήδημα·
+  (β) ψεύτικα credits = μονόπλευρες τιμές (899/352) ΤΗ ΣΤΙΓΜΗ opportunistic
+  chase: η μπάλα διέσχισε το επίπεδο του beam και ΒΓΗΚΕ ξανά (launch πάνω σε
+  κινούμενο/στρίβον ρομπότ → αναπήδηση έξω). Το beam είναι ανιχνευτής
+  ΔΙΕΛΕΥΣΗΣ, όχι παραμονής — το ίδιο ψέμα θα έλεγε και στο hardware. Το
+  mission πίστωνε το stop και έφευγε αφήνοντας τη μπάλα.
+- **Fixes τώρα**: (1) beam debounce/re-arm (BEAM_REARM_QUIET_S=0.6 s μετά το
+  καθάρισμα πριν νέο count — μία διέλευση=ένα credit)· (2) το panel
+  Collection Run δείχνει «Beam / truth (sim)» ώστε η απόκλιση να είναι
+  ορατή live.
+- **Επόμενα (προτάσεις, εκκρεμεί απόφαση)**: (α) route που βοηθά τη συλλογή
+  χωρίς διορθώσεις — κατάργηση του επιθετικού opportunistic chase (πηγή και
+  των 5 misses του run 9 ΚΑΙ των 5 bounce-outs του run 10): μπάλα στην
+  πορεία του leg γίνεται κανονικό επόμενο stop με ευθύ fine approach·
+  approach yaw ευθυγραμμισμένο με το leg (ελάχιστη επιτόπια περιστροφή
+  κοντά σε pending μπάλες)· legs που αποφεύγουν διαδρόμους πάνω από άλλες
+  planned μπάλες. (β) staggered δεύτερο beam (entry x≈0.40 + retention
+  x≈0.28): κατεύθυνση διέλευσης → «μπήκε ΚΑΙ έμεινε» — ίδια λύση sim και
+  hardware (λύνει και το full-basket blocking ως ανιχνεύσιμο σήμα).
+- **Status**: ✅ debounce + panel (tests πράσινα)· ⏳ απόφαση χρήστη για
+  route redesign + staggered beams.
+
+### 18. Κανόνες βέλτιστης διαδρομής (R1-R5) + R2: promotion αντί για chase
+
+- **Απόφαση χρήστη**: το route να συμπεριλαμβάνει και τον ΤΡΟΠΟ συλλογής —
+  κοντά σε εμπόδιο πάντα πλαϊνή/παράλληλη προσέγγιση· κανόνες βέλτιστης
+  διαδρομής. Πλήρης λίστα: docs/collection-route-rules-el.md (R1 παράλληλη
+  ήδη υπήρχε στον planner· R3 drive-through, R4 rotation clearance,
+  R5 leg-corridor penalty εκκρεμούν).
+- **R2 υλοποιήθηκε**: το opportunistic chase ΚΑΤΑΡΓΗΘΗΚΕ ως trigger — planned
+  μπάλα στην πορεία του leg γίνεται το ΕΠΟΜΕΝΟ stop (τοπική αναδιάταξη,
+  frozen ledger ανέπαφο) και συλλέγεται με κανονικό standoff + ευθύ fine
+  approach. Event `route_on_path_promoted`, το προηγούμενο stop σε pending.
+  Ίδια μπάλα ορατή ξανά → κανένα churn (δεν ξανα-προωθείται). Το
+  `_opportunistic_phase` μένει προσωρινά ως νεκρός κώδικας (τα delayed
+  credits πάνε πλέον μέσω approach/nav phase).
+- **Αναμενόμενο**: εξαφάνιση των punts (run 9) και των bounce-outs/ψεύτικων
+  beam credits (run 10) — όλα τα captures πλέον στάσιμα/ευθεία.
+- **Status**: ✅ κώδικας (121 tests· 3 opportunistic tests ξαναγράφτηκαν για
+  promotion)· ⏳ run 11 (beam-primary + R2)· ⏳ R3/R4/R5.
+
+### 19. Run 11: το intake αθώο — το beam έβλεπε μπάλες γηπέδου μέσα από το πλέγμα
+
+- **Run 11 (1784279285-461)**: route 11 collected / 1 missing, truth 7 —
+  4 «έξω» (παρατήρηση χρήστη). R2 promotion: κανένα chase/punt ✓.
+- **Ανάλυση**: οι 7 πραγματικές συλλήψεις = πλήρης αλυσίδα entry→bin→
+  ΣΥΜΜΕΤΡΙΚΟ beam credit (≈640/630)→retained — **7/7 launches πέτυχαν, ο
+  μηχανισμός intake ΔΕΝ φταίει**. Τα 4 ψεύτικα credits (59.8/118.9/149.6/
+  194.1 s): ΚΑΝΕΝΑ entry/bin candidate + ΜΟΝΟΠΛΕΥΡΟ ir (901/233, 178/514,
+  497/682, 857/414 → αντικείμενο 2-11 cm από το ένα sensor) = **μπάλα
+  γηπέδου δίπλα στο ρομπότ ορατή μέσα από το συρμάτινο πλέγμα**: beam z
+  0.063, κορυφή μπάλας εδάφους 0.066. Το stop πιστωνόταν καθώς το ρομπότ
+  περνούσε δίπλα από μπάλα — γι' αυτό έμειναν 4 έξω με stops "collected".
+- **Fix**: basket_ir_z +0.033→+0.045 (beam 0.075 από το court: πάνω από
+  κορυφή μπάλας εδάφους 0.066, κάτω από κορυφή μπάλας στο tray 0.096)·
+  ίδια αλλαγή στο visual confirmation_beam_z (basket.urdf.xacro).
+- **Παρατήρηση για hardware**: σε πραγματικό συρμάτινο καλάθι ισχύει το
+  ίδιο — το beam πρέπει να είναι πάνω από ύψος μπάλας εδάφους ή με σκίαση
+  (solid bracket) προς τα έξω.
+- **Status**: ✅ κώδικας/urdf (tests πράσινα)· ⏳ run 12 (στόχος: beam =
+  truth = καλάθι, 0 false credits).
+
+### 20. Run 12: ψεύτικο credit από αναπηδώσα μπάλα → beam symmetry gate
+
+- **Run 12 (1784290711-462)**: μπάλες 1-2 καθαρές· t=61.0 ψεύτικο credit
+  (stop 4 «collected» ενώ το ρομπότ απλά πέρασε δίπλα — παρατήρηση χρήστη):
+  ir 869/576, ΚΑΝΕΝΑ entry/bin candidate = μπάλα που αναπηδά δίπλα στο
+  ρομπότ, ορατή μέσα από το πλέγμα. Το ύψος 0.075 (#19) κάλυψε στατικές
+  μπάλες εδάφους, όχι αναπηδήσεις.
+- **Διαχωριστικό από τα δεδομένα**: πραγματικές διελεύσεις = ΣΥΜΜΕΤΡΙΚΑ ir
+  (631/625, 638/633, 635/645 — κεντραρισμένη μπάλα στο tray)· όλες οι
+  ψεύτικες μονόπλευρες/ασύμμετρες (869/576, 901/233, 178/514, 497/682).
+- **Fix**: το latch απαιτεί ΚΑΙ τα δύο >500 ΚΑΙ |L-R| ≤ 200
+  (BEAM_SYMMETRY_MAX_DELTA). Όλα τα πραγματικά credits των runs 11-12
+  περνούν (diff ≤13), όλα τα ψεύτικα κόβονται.
+- **Εκκρεμεί (σημείωση χρήστη)**: περιστροφή/καθυστέρηση στην εκκίνηση κάθε
+  leg (Nav2 rotate-to-path) → R3 drive-through ordering.
+- **Status**: ✅ κώδικας (tests πράσινα)· ⏳ run 13.
+
+### 21. ΑΠΟΦΑΣΗ ΧΡΗΣΤΗ: διαχωρισμός συλλογής από διαδρομή (sweep route)
+
+- Η διαδρομή σχεδιάζεται ΜΙΑ φορά από τις θέσεις του 360 (+costmap για τον
+  χώρο) ως συνεχές πέρασμα: κάθε μπάλα πρέπει να βρίσκεται ΣΤΟ ΧΩΝΙ (funnel
+  corridor) καθώς το ρομπότ περνάει — through-poses, όχι στάσεις.
+- ΚΑΜΙΑ σύνδεση συλλογής-διαδρομής: χωρίς stop/fine approach/settle/retry
+  ανά μπάλα· intake συνεχώς ενεργό· η διαδρομή ολοκληρώνεται ανεξάρτητα από
+  το αν μαζεύτηκε κάθε μπάλα. Beam(+referee) απλώς μετράνε· ό,τι μείνει →
+  αναφορά στο τέλος (μελλοντικά δεύτερο πέρασμα).
+- Λύνει: καθυστερήσεις μπάλα-σε-μπάλα (καμία στάση/στροφή), ledger απλό
+  (μέτρημα, όχι πίστωση stop), τα ψεύτικα credits δεν εκτρέπουν πλέον
+  τίποτα. Εκκρεμεί: υλοποίηση sweep planner + εκτέλεση (NavigateThroughPoses
+  ή διαδοχικά goals χωρίς παύση).
+
+### 22. Sweep mode υλοποιημένο: μία συνεχής διαδρομή, συλλογή αποσυνδεδεμένη
+
+- **Planner** (log #21, task 1): `sweep_route()` — αλυσιδωτά drive-through
+  legs: ευθύ run-in 1.0 m πριν από κάθε μπάλα (κεντραρισμένη στο χωνί),
+  exit 0.35 m μετά, το επόμενο leg ξεκινά από την έξοδο του προηγούμενου
+  (μηδενικές επιτόπιες στροφές)· heading από approach_pose_for_ball
+  (incoming ή obstacle-parallel R1).
+- **Mission** (task 2): `COLLECT_ROUTE_SWEEP` (default true)· τα RouteStops
+  επαναχρησιμοποιούνται με approach = EXIT pose (goal ΠΕΡΑ από τη μπάλα).
+  `_sweep_drive`: reached ή απόσταση ≤0.45 m → αμέσως επόμενο goal — καμία
+  στάση/approach/settle/retry/promotion· nav failure/timeout → skip και
+  συνέχεια· intake ενεργό σε όλο το drive (SURVEY + lift_wheel_speed).
+  Beam credit (rising edge) → πίστωση στην πλησιέστερη un-collected planned
+  μπάλα ≤1.5 m (μόνο για αναφορά — η ροή δεν επηρεάζεται ποτέ). Πέρασμα
+  χωρίς credit → status "swept" → μετρά στα failed του route_complete
+  (νέο πεδίο swept_uncollected). Νέα events: route_ball_swept.
+- **Status**: ✅ κώδικας (126 tests, 5 νέα sweep)· ⏳ run 14 (πρώτο sweep
+  run — στόχος: συνεχής ροή χωρίς παύσεις, Beam=truth, αναφορά τίμια)·
+  ⏳ task 3: costmap validation των poses + console panel.
+
+### 23. Sweep pass: το πέρασμα το οδηγεί το mission, όχι ο Nav2
+
+- **Παρατήρηση (χρήστης, run 15)**: οι συνεχείς διορθώσεις πορείας του Nav2
+  μέχρι το exit pose χτυπούσαν τη μπάλα με τα μάγουλα του χωνιού και την
+  έδιωχναν.
+- **Αλλαγή**: το Nav2 goal κάθε sweep leg είναι πλέον το ENTRY (1.0 m πριν
+  τη μπάλα, yaw προς αυτήν). Στο reached/≤0.45 m: το goal ακυρώνεται και το
+  mission οδηγεί το πέρασμα (`_sweep_pass_tick`): ευθεία με
+  COLLECT_ROUTE_SWEEP_PASS_SPEED_M_S=0.35· μικρή διόρθωση heading ΜΟΝΟ όσο
+  η μπάλα απέχει >0.6 m (gain 1.2, cap 0.5 rad/s)· μέσα στο τελευταίο 0.6 m
+  το heading ΠΑΓΩΝΕΙ — το κεντράρισμα το κάνει το χωνί (#60). Ολοκλήρωση
+  pass: πρόοδος ≥0.35 m μετά τη μπάλα (ή timeout 10 s) → αμέσως επόμενο
+  entry goal. Νέο event: route_pass_start.
+- **Status**: ✅ κώδικας (126 tests)· ⏳ run 16 (sweep + στενό funnel #60 +
+  ευθύ pass — στόχος: καθαρές διελεύσεις χωρίς εκτροπές).

@@ -84,6 +84,10 @@ class RouteStop:
     # cap around this point (chain-merged entries can wander metres away).
     planned_x_m: float = 0.0
     planned_y_m: float = 0.0
+    # Sweep-only exact run-in.  It can be shorter than SWEEP_RUN_IN_M for
+    # closely-spaced balls so the route never needs to turn back.
+    sweep_entry_x_m: float | None = None
+    sweep_entry_y_m: float | None = None
 
     def __post_init__(self) -> None:
         if self.planned_x_m == 0.0 and self.planned_y_m == 0.0:
@@ -497,3 +501,78 @@ def remaining_route_length_m(
 ) -> float:
     points = [(p["x_m"], p["y_m"]) for p in route_polyline(robot_xy, stops)]
     return round(_path_length(points), 2)
+
+
+# ── Sweep route: collection decoupled from the route (debug log #21) ───────────
+
+SWEEP_RUN_IN_M = 1.0
+SWEEP_OVERRUN_M = 0.35
+# Preserve a small moving link before the next crossing.  Without this cap,
+# closely-spaced balls put the next 1 m run-in BEHIND the previous exit,
+# forcing a rotate/reverse despite a drive-through route.
+SWEEP_MIN_LINK_M = 0.08
+
+
+@dataclass(frozen=True)
+class SweepLeg:
+    """One drive-through pass: straight run-in, ball centred in the funnel,
+    exit past it. No stop — the route continues regardless of capture."""
+
+    ball_id: int
+    ball_x_m: float
+    ball_y_m: float
+    entry_x_m: float
+    entry_y_m: float
+    exit_x_m: float
+    exit_y_m: float
+    yaw_rad: float
+    mode: str  # "direct" | "lateral"
+    risk: str
+
+
+def sweep_route(
+    start_xy: tuple[float, float],
+    balls: list[tuple[int, float, float]],
+    court: "CourtModel | None",
+    cfg: RoutePlannerConfig,
+) -> list[SweepLeg]:
+    """Ordered drive-through legs over every ball.
+
+    Heading per ball comes from approach_pose_for_ball (incoming direction,
+    or obstacle-parallel lateral with corridor/pose checks — rule R1); the
+    run-in starts up to SWEEP_RUN_IN_M before the ball so the funnel receives
+    it centred. For a following, closely-spaced ball the run-in is shortened
+    instead of being placed behind the previous exit; the exit lies
+    SWEEP_OVERRUN_M past the ball (drive-through, no in-place rotation)."""
+    order = order_route(start_xy, balls, cfg)
+    by_id = {b[0]: (b[1], b[2]) for b in balls}
+    legs: list[SweepLeg] = []
+    cx, cy = start_xy
+    for ball_id in order:
+        bx, by = by_id[ball_id]
+        pose = approach_pose_for_ball((bx, by), (cx, cy), court, cfg)
+        hx, hy = math.cos(pose.yaw_rad), math.sin(pose.yaw_rad)
+        # The next entry must be ahead of the prior exit along the crossing
+        # heading.  A fixed 1 m run-in fails this whenever two balls are
+        # closer than run-in + overrun (seen in live route #1 → #2).
+        forward_to_ball = (bx - cx) * hx + (by - cy) * hy
+        run_in_m = min(
+            SWEEP_RUN_IN_M,
+            max(0.0, forward_to_ball - SWEEP_MIN_LINK_M),
+        )
+        legs.append(
+            SweepLeg(
+                ball_id=ball_id,
+                ball_x_m=bx,
+                ball_y_m=by,
+                entry_x_m=bx - hx * run_in_m,
+                entry_y_m=by - hy * run_in_m,
+                exit_x_m=bx + hx * SWEEP_OVERRUN_M,
+                exit_y_m=by + hy * SWEEP_OVERRUN_M,
+                yaw_rad=pose.yaw_rad,
+                mode=pose.mode,
+                risk=pose.risk,
+            )
+        )
+        cx, cy = legs[-1].exit_x_m, legs[-1].exit_y_m
+    return legs

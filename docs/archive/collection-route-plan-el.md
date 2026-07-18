@@ -1,3 +1,9 @@
+# ΑΡΧΕΙΟ — παλαιό σχέδιο Collect Route
+
+> Δεν χρησιμοποιείται ως specification ή οδηγός υλοποίησης. Περιγράφει το
+> παλαιό μοντέλο Nav2 goal και fine capture ανά μπάλα. Το ενεργό specification
+> είναι το [Ενεργός οδηγός συνεχούς διαδρομής](../collection-route-rules-el.md).
+
 # Collect Route — γρήγορο μάζεμα με 360° scan, route planning και Nav2
 
 Σχεδίαση και as-built τεκμηρίωση του mode `collect_route` (issue #10). Υλοποιεί
