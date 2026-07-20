@@ -15,6 +15,7 @@ from tennis_robot.perception_covariance_calibration import (
     CalibrationArtifact,
     CalibrationError,
     RangeDepthQualityDiagonalModel,
+    compute_artifact_sha256,
 )
 
 
@@ -92,8 +93,7 @@ def fit_conservative_artifact(
     rmse_axis_m = [
         math.sqrt(sum(row[axis] for row in squared) / len(squared)) for axis in range(3)
     ]
-    artifact = CalibrationArtifact.from_dict(
-        {
+    artifact_data = {
             "schema_version": "perception-covariance-calibration/v1",
             "calibration_id": calibration_id,
             "model_id": "range_depth_quality_diagonal_v1",
@@ -119,8 +119,9 @@ def fit_conservative_artifact(
                 "max_axis_error_m": max_axis_error_m,
                 "rmse_axis_m": rmse_axis_m,
             },
-        }
-    )
+    }
+    artifact_data["artifact_sha256"] = compute_artifact_sha256(artifact_data)
+    artifact = CalibrationArtifact.from_dict(artifact_data)
     assert_conservative(artifact, accepted)
     return artifact
 

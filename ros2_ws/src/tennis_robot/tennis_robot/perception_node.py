@@ -217,6 +217,8 @@ class PerceptionNode(Node):
         arr.header.frame_id = CAMERA_FRAME_ID
         arr.spatial_targets_healthy = self._spatial_targets_healthy
         arr.spatial_targets_health_reason = self._spatial_targets_health_reason
+        arr.calibration_id = self._spatial_targets_artifact_id or ""
+        arr.configuration_id = self._spatial_targets_artifact_version or ""
         for r in fused:
             det = r["detection"]
             m = BallDetection()

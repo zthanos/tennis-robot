@@ -87,6 +87,8 @@ def test_controller_consumes_canonical_detection_array_end_to_end():
         message.header.stamp.sec = 10
         message.spatial_targets_healthy = True
         message.spatial_targets_health_reason = "healthy"
+        message.calibration_id = "gazebo-range-depth-quality-diagonal-v1-20260719-v2"
+        message.configuration_id = "gazebo-v2"
         transform = TransformStamped()
         transform.transform.rotation.w = 1.0
         controller._tf_buffer.lookup_transform = lambda *args: transform
@@ -127,6 +129,8 @@ def test_controller_consumes_canonical_detection_array_end_to_end():
         empty.header.frame_id = PERCEPTION_FRAME_ID
         empty.spatial_targets_healthy = True
         empty.spatial_targets_health_reason = "healthy"
+        empty.calibration_id = "gazebo-range-depth-quality-diagonal-v1-20260719-v2"
+        empty.configuration_id = "gazebo-v2"
         previous_seq = controller._latest_obs_seq
         _publish_until_received(executor, publisher, empty, controller, previous_seq)
         assert controller._fresh_perception_observation().visible is False
@@ -172,7 +176,7 @@ def test_metadata_rejection_precedes_tf_lookup(reason, mutate):
     controller._perception_spatial_validation_config = PerceptionSpatialValidationConfig(1.0, 1.0, 1e-9, 0.001, 1.0)
     calls = []; controller._tf_buffer.lookup_transform = lambda *args: calls.append(args)
     try:
-        message = BallDetectionArray(); message.header.frame_id = PERCEPTION_FRAME_ID; message.header.stamp.sec = 10; message.spatial_targets_healthy = True; message.spatial_targets_health_reason = "healthy"
+        message = BallDetectionArray(); message.header.frame_id = PERCEPTION_FRAME_ID; message.header.stamp.sec = 10; message.spatial_targets_healthy = True; message.spatial_targets_health_reason = "healthy"; message.calibration_id = "gazebo-range-depth-quality-diagonal-v1-20260719-v2"; message.configuration_id = "gazebo-v2"
         detection = _spatial_detection(distance_m=1., bearing_rad=0., right_m=0., down_m=0., forward_m=1., confidence=1.)
         mutate(detection); message.detections = [detection]; controller._on_ball_detections(message)
         assert controller._latest_obs.source == "perception_metadata_rejected"
@@ -186,7 +190,7 @@ def test_tf_failure_has_no_current_pose_fallback():
     rclpy.init(); controller = ControllerNode(); controller._perception_spatial_validation_config = PerceptionSpatialValidationConfig(1.0, 1.0, 1e-9, 0.001, 1.0)
     controller._robot_x = 99.0; controller._tf_buffer.lookup_transform = lambda *args: (_ for _ in ()).throw(RuntimeError("missing tf"))
     try:
-        message = BallDetectionArray(); message.header.frame_id = PERCEPTION_FRAME_ID; message.header.stamp.sec = 10; message.spatial_targets_healthy = True; message.spatial_targets_health_reason = "healthy"; message.detections = [_spatial_detection(distance_m=1., bearing_rad=0., right_m=0., down_m=0., forward_m=1., confidence=1.)]
+        message = BallDetectionArray(); message.header.frame_id = PERCEPTION_FRAME_ID; message.header.stamp.sec = 10; message.spatial_targets_healthy = True; message.spatial_targets_health_reason = "healthy"; message.calibration_id = "gazebo-range-depth-quality-diagonal-v1-20260719-v2"; message.configuration_id = "gazebo-v2"; message.detections = [_spatial_detection(distance_m=1., bearing_rad=0., right_m=0., down_m=0., forward_m=1., confidence=1.)]
         controller._on_ball_detections(message)
         assert controller._latest_obs.source == "perception_tf_rejected" and not controller._latest_obs.visible
     finally:

@@ -44,7 +44,7 @@ class TF:
         )
 
 
-def frame(*, healthy=True, spatial=True):
+def frame(*, healthy=True, spatial=True, calibration_id="gazebo-range-depth-quality-diagonal-v1-20260719-v2", configuration_id="gazebo-v2"):
     stamp = N(sec=1, nanosec=0)
     detection = N(
         has_spatial=spatial,
@@ -58,6 +58,8 @@ def frame(*, healthy=True, spatial=True):
     return N(
         header=N(stamp=stamp, frame_id="camera_link_optical_frame"),
         spatial_targets_healthy=healthy,
+        calibration_id=calibration_id,
+        configuration_id=configuration_id,
         detections=[detection],
     )
 
@@ -110,6 +112,8 @@ def test_valid_frame_forwards_accepted_observation_with_supplied_scan_step():
     )
     assert isinstance(builder.items[0], AcceptedSpatialObservation)
     assert builder.items[0].scan_step_id == "step-01"
+    assert builder.items[0].calibration_id == "gazebo-range-depth-quality-diagonal-v1-20260719-v2"
+    assert builder.items[0].configuration_id == "gazebo-v2"
     assert tf.timestamps == [(1.0, "camera_link_optical_frame")]
 
 
@@ -129,13 +133,32 @@ def test_rejections_and_missing_configuration_forward_only_rejection():
         assert isinstance(builder.items[0], SpatialObservationRejection)
 
 
+def test_missing_or_empty_calibration_identity_is_a_typed_rejection():
+    for detection_frame in (
+        frame(calibration_id=""),
+        frame(configuration_id=""),
+    ):
+        builder = BuilderSpy()
+        runtime_adapter().forward(
+            scan_id="scan", frame=detection_frame, scan_step_id="step-01", builder=builder
+        )
+        rejection = builder.items[0]
+        assert isinstance(rejection, SpatialObservationRejection)
+        assert rejection.detail == "calibration_identity_missing"
+    legacy = frame()
+    del legacy.calibration_id
+    del legacy.configuration_id
+    builder = BuilderSpy()
+    runtime_adapter().forward(scan_id="scan", frame=legacy, scan_step_id="step-01", builder=builder)
+    assert builder.items[0].detail == "calibration_identity_missing"
+
+
 def test_session_connects_runtime_adapter_to_builder_without_scan_policy():
     session = CollectionSnapshotRuntimeSession(
         scan_id="scan",
         scan_timestamp_s=1.0,
         robot_pose_at_scan=SCAN_POSE,
         configuration_snapshot=default_configuration(),
-        validation_config=validation_config(),
         expected_scan_step_ids=("step-01", "step-02"),
         tf_provider=TF(),
     )
@@ -148,4 +171,7 @@ def test_session_connects_runtime_adapter_to_builder_without_scan_policy():
     )
     assert session.builder.required_coverage_fraction == (
         default_configuration().scan.required_coverage_fraction
+    )
+    assert session.adapter.validation_config == (
+        default_configuration().perception_spatial_validation
     )

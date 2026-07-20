@@ -135,6 +135,7 @@
       }
     }
   },
+  "artifact_sha256": "51a12a612e499d371dbaba2ef20f801ce3dcc74a76583377f9e763ae2af39e53",
   "calibrated_at": "2026-07-19",
   "calibration_id": "gazebo-range-depth-quality-diagonal-v1-20260719",
   "depth_quality_validity_domain": {

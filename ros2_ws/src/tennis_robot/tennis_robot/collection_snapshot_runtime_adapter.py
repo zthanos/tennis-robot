@@ -76,6 +76,15 @@ class CollectionSnapshotRuntimeAdapter:
                 rgb_timestamp_s,
                 "non_spatial_detection",
             )
+        calibration_id = getattr(frame, "calibration_id", "")
+        configuration_id = getattr(frame, "configuration_id", "")
+        if not isinstance(calibration_id, str) or not calibration_id or not isinstance(configuration_id, str) or not configuration_id:
+            return self._reject(
+                SpatialObservationRejectionCode.PERCEPTION_METADATA_REJECTED,
+                detection_index,
+                rgb_timestamp_s,
+                "calibration_identity_missing",
+            )
 
         metadata_reason = validate_spatial_metadata(
             rgb_timestamp_s,
@@ -107,8 +116,8 @@ class CollectionSnapshotRuntimeAdapter:
             rgb_timestamp_s,
             _stamp(detection_message.matched_depth_stamp),
             frame.header.frame_id,
-            getattr(frame, "calibration_id", "runtime"),
-            getattr(frame, "configuration_id", "runtime"),
+            calibration_id,
+            configuration_id,
         )
         return self.pure.accept(
             scan_id=scan_id,
@@ -138,7 +147,6 @@ class CollectionSnapshotRuntimeSession:
         scan_timestamp_s: float,
         robot_pose_at_scan: Pose2D,
         configuration_snapshot: CollectionRouteConfiguration,
-        validation_config: PerceptionSpatialValidationConfig,
         expected_scan_step_ids: tuple[str, ...],
         tf_provider,
         map_frame: str = "map",
@@ -151,9 +159,11 @@ class CollectionSnapshotRuntimeSession:
             expected_scan_step_ids=expected_scan_step_ids,
             map_frame=map_frame,
         )
+        # Validation thresholds and localization covariance have a single
+        # source of truth: the immutable configuration snapshot itself.
         self.adapter = CollectionSnapshotRuntimeAdapter(
             tf_provider=tf_provider,
-            validation_config=validation_config,
+            validation_config=configuration_snapshot.perception_spatial_validation,
             localization_xy_covariance=configuration_snapshot.gazebo_snapshot.localization_xy_covariance,
         )
 

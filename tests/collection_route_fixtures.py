@@ -13,6 +13,11 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ros2_ws", "src", "tennis_robot"))
 
+from tennis_robot.perception_covariance_calibration import (
+    CalibrationArtifact,
+    PerceptionSpatialValidationConfig,
+    compute_artifact_sha256,
+)
 from tennis_robot.collection_route_types import (
     BallReasonCode,
     BallResult,
@@ -79,6 +84,34 @@ def default_profile() -> ExecutionProfile:
     return ExecutionProfile(1.0, 0.5, 1.5, 0.1, 1.0, 1.0, 0.2, 1.0, 0.3, 1.25, 0.1, 0.1, False, False)
 
 
+def default_spatial_validation() -> PerceptionSpatialValidationConfig:
+    return PerceptionSpatialValidationConfig(0.05, 0.5, 1e-9, 1e-6, 1.0)
+
+
+def default_calibration_artifact() -> CalibrationArtifact:
+    # Mirrors the approved gazebo-v2 artifact identity/parameters with a
+    # genuinely computed content hash; fixtures carry no implicit defaults.
+    data = {
+        "schema_version": "perception-covariance-calibration/v1",
+        "calibration_id": "gazebo-range-depth-quality-diagonal-v1-20260719-v2",
+        "model_id": "range_depth_quality_diagonal_v1",
+        "model_version": "gazebo-v2",
+        "platform": "gazebo",
+        "calibrated_at": "2026-07-19",
+        "parameters": {
+            "axis_variance_floor_m2": [0.0, 0.000514, 0.002111],
+            "axis_range_variance_per_m2": [2e-06, 4.4e-05, 7.1e-05],
+            "axis_quality_variance_m2": [0.0, 0.001049, 0.0],
+        },
+        "range_validity_domain_m": {"min": 1.021574547701437, "max": 2.9799470906893557},
+        "depth_quality_validity_domain": {"min": 0.8979591836734694, "max": 1.0},
+        "evidence_reference": "docs/gazebo-perception-covariance-c2-amendment-coverage-report-el.md",
+        "acceptance_metrics": {"accepted_sample_count": 270},
+    }
+    data["artifact_sha256"] = compute_artifact_sha256(data)
+    return CalibrationArtifact.from_dict(data)
+
+
 def default_configuration(maximum_candidate_count: int = 20) -> CollectionRouteConfiguration:
     return CollectionRouteConfiguration(
         "collection-route/v1",
@@ -97,6 +130,8 @@ def default_configuration(maximum_candidate_count: int = 20) -> CollectionRouteC
             LocalizationXYCovariance(PositionCovariance2D(0.01, 0.0, 0.01)),
             SnapshotAssociationConfiguration(9.0, 2, 2),
         ),
+        default_spatial_validation(),
+        default_calibration_artifact(),
     )
 
 

@@ -21,3 +21,37 @@
   `tests/test_collection_snapshot_runtime_adapter.py` πράσινα (10/10), μαζί με
   νέο test ότι coverage/timeout έχουν μοναδική πηγή το configuration snapshot.
 - **Status:** ΟΚ.
+
+## #2 — Πλήρες configuration snapshot + calibration identity + artifact_sha256
+
+- **Υπόθεση:** Το `configuration_snapshot` δεν περιείχε τα spec groups
+  `perception_spatial_validation` και `calibration_artifact`, το artifact δεν
+  είχε content hash, και το runtime bridge έκανε
+  `getattr(frame, "calibration_id", "runtime")` — πάντα ψεύτικη ταυτότητα αφού
+  το `BallDetectionArray` δεν είχε τέτοια fields.
+- **Αλλαγές:**
+  - `CollectionRouteConfiguration`: νέα required groups
+    `perception_spatial_validation` (ο ίδιος τύπος
+    `PerceptionSpatialValidationConfig` — καμία διπλή δήλωση) και
+    `calibration_artifact` (ο ίδιος τύπος `CalibrationArtifact`), με exact-field
+    to_dict/from_dict και wrapping του `CalibrationError` σε
+    `DomainValidationError`. Το `localization_xy_covariance` μένει μόνο στο
+    `gazebo_snapshot`.
+  - `CalibrationArtifact`: νέο required πεδίο `artifact_sha256` (sha256 του
+    canonical JSON χωρίς το ίδιο το πεδίο, μέσω `compute_artifact_sha256`)· το
+    `from_dict` επαληθεύει το hash, νέο `to_dict` για round-trip. Τα δύο
+    committed gazebo artifacts (v1/v2) ξαναγράφτηκαν με πραγματικά υπολογισμένο
+    hash· `fit_conservative_artifact` και `build_gazebo_covariance_artifact.py`
+    υπολογίζουν το hash κατά την παραγωγή.
+  - `BallDetectionArray.msg`: νέα `calibration_id` + `configuration_id`· ο
+    `perception_node` τα γεμίζει από το `SpatialCalibrationRuntime`
+    (artifact_id/artifact_version, κενά όταν unhealthy). Το runtime bridge τα
+    απαιτεί και απορρίπτει typed (`calibration_identity_missing`) όταν
+    λείπουν/είναι κενά — κανένα implicit default.
+  - Το session αντλεί πλέον το validation config από το
+    `configuration_snapshot.perception_spatial_validation` (μία πηγή αλήθειας).
+- **Αποτέλεσμα:** 101 non-ROS tests πράσινα, συμπεριλαμβανομένων νέων tests για
+  serialization των groups, sha-tampering rejection και typed rejection της
+  ελλιπούς calibration ταυτότητας. `test_perception_contract_ros.py`
+  ενημερωμένο για τα νέα fields (τρέχει μόνο με rclpy).
+- **Status:** ΟΚ.

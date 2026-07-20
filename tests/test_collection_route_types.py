@@ -9,6 +9,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ros2_ws", "src", "tennis_robot"))
 
+from collection_route_fixtures import default_calibration_artifact, default_spatial_validation
 from tennis_robot.collection_route_types import (
     BallReasonCode,
     BallResult,
@@ -69,7 +70,31 @@ def configuration() -> CollectionRouteConfiguration:
             LocalizationXYCovariance(PositionCovariance2D(0.01, 0.0, 0.01)),
             SnapshotAssociationConfiguration(9.0, 2, 2),
         ),
+        default_spatial_validation(),
+        default_calibration_artifact(),
     )
+
+
+def test_configuration_snapshot_serializes_validation_and_calibration_groups():
+    encoded = configuration().to_dict()
+    assert set(encoded["perception_spatial_validation"]) == {
+        "max_rgb_depth_timestamp_delta_s", "max_detection_to_tf_age_s",
+        "covariance_psd_relative_tolerance", "min_position_covariance_trace_m2",
+        "max_position_covariance_trace_m2",
+    }
+    artifact = encoded["calibration_artifact"]
+    assert artifact["calibration_id"] and artifact["model_id"] and artifact["model_version"]
+    assert artifact["platform"] == "gazebo" and len(artifact["artifact_sha256"]) == 64
+    assert CollectionRouteConfiguration.from_dict(encoded) == configuration()
+    for missing in ("perception_spatial_validation", "calibration_artifact"):
+        broken = configuration().to_dict(); del broken[missing]
+        with pytest.raises(DomainValidationError):
+            CollectionRouteConfiguration.from_dict(broken)
+    tampered = configuration().to_dict()
+    tampered["calibration_artifact"] = dict(tampered["calibration_artifact"])
+    tampered["calibration_artifact"]["calibration_id"] = "forged"
+    with pytest.raises(DomainValidationError, match="sha256"):
+        CollectionRouteConfiguration.from_dict(tampered)
 
 
 def snapshot(ball_ids: tuple[str, ...] = ("ball_1", "ball_2")) -> ScanSnapshot:

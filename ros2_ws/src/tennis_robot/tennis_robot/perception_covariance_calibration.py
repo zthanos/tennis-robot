@@ -1,11 +1,18 @@
 """Pure calibrated measurement-covariance artifact contract."""
 from __future__ import annotations
 from dataclasses import dataclass
+import hashlib
 import json
 import math
 from pathlib import Path
 
 class CalibrationError(ValueError): pass
+
+def compute_artifact_sha256(data: dict) -> str:
+    """Canonical content hash of an artifact dict, excluding the hash field itself."""
+    body = {key: value for key, value in dict(data).items() if key != "artifact_sha256"}
+    encoded = json.dumps(body, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 @dataclass(frozen=True)
 class PerceptionSpatialValidationConfig:
@@ -13,7 +20,14 @@ class PerceptionSpatialValidationConfig:
     covariance_psd_relative_tolerance: float; min_position_covariance_trace_m2: float; max_position_covariance_trace_m2: float
     def __post_init__(self):
         values=(self.max_rgb_depth_timestamp_delta_s,self.max_detection_to_tf_age_s,self.covariance_psd_relative_tolerance,self.min_position_covariance_trace_m2,self.max_position_covariance_trace_m2)
-        if any(not math.isfinite(v) for v in values) or self.max_rgb_depth_timestamp_delta_s<=0 or self.max_detection_to_tf_age_s<=0 or not 0<=self.covariance_psd_relative_tolerance<1 or not 0<=self.min_position_covariance_trace_m2<=self.max_position_covariance_trace_m2 or self.max_position_covariance_trace_m2<=0: raise CalibrationError("invalid spatial validation config")
+        if any(isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) for v in values) or self.max_rgb_depth_timestamp_delta_s<=0 or self.max_detection_to_tf_age_s<=0 or not 0<=self.covariance_psd_relative_tolerance<1 or not 0<=self.min_position_covariance_trace_m2<=self.max_position_covariance_trace_m2 or self.max_position_covariance_trace_m2<=0: raise CalibrationError("invalid spatial validation config")
+    def to_dict(self) -> dict:
+        return {name: getattr(self, name) for name in self.__dataclass_fields__}
+    @classmethod
+    def from_dict(cls, data: dict) -> "PerceptionSpatialValidationConfig":
+        if not isinstance(data, dict) or set(data) != set(cls.__dataclass_fields__):
+            raise CalibrationError("invalid spatial validation config fields")
+        return cls(**data)
 
 def validate_spatial_metadata(rgb_s, depth_s, covariance, config):
     if not isinstance(config, PerceptionSpatialValidationConfig): return "validation_config_invalid"
@@ -35,19 +49,39 @@ class CalibrationArtifact:
     calibrated_at: str; floor: tuple[float, float, float]
     range_coeff: tuple[float, float, float]; quality_coeff: tuple[float, float, float]
     range_min_m: float; range_max_m: float; quality_min: float; quality_max: float
-    evidence_reference: str; acceptance_metrics: dict
+    evidence_reference: str; acceptance_metrics: dict; artifact_sha256: str
 
     @classmethod
     def from_dict(cls, data: dict) -> "CalibrationArtifact":
-        expected = {"schema_version","calibration_id","model_id","model_version","platform","calibrated_at","parameters","range_validity_domain_m","depth_quality_validity_domain","evidence_reference","acceptance_metrics"}
+        expected = {"schema_version","calibration_id","model_id","model_version","platform","calibrated_at","parameters","range_validity_domain_m","depth_quality_validity_domain","evidence_reference","acceptance_metrics","artifact_sha256"}
         if set(data) != expected or data["schema_version"] != "perception-covariance-calibration/v1": raise CalibrationError("invalid artifact schema")
+        if data["artifact_sha256"] != compute_artifact_sha256(data): raise CalibrationError("artifact sha256 mismatch")
         p, r, q = data["parameters"], data["range_validity_domain_m"], data["depth_quality_validity_domain"]
-        try: artifact = cls(data["calibration_id"], data["model_id"], data["model_version"], data["platform"], data["calibrated_at"], tuple(p["axis_variance_floor_m2"]), tuple(p["axis_range_variance_per_m2"]), tuple(p["axis_quality_variance_m2"]), float(r["min"]), float(r["max"]), float(q["min"]), float(q["max"]), data["evidence_reference"], data["acceptance_metrics"])
+        try: artifact = cls(data["calibration_id"], data["model_id"], data["model_version"], data["platform"], data["calibrated_at"], tuple(p["axis_variance_floor_m2"]), tuple(p["axis_range_variance_per_m2"]), tuple(p["axis_quality_variance_m2"]), float(r["min"]), float(r["max"]), float(q["min"]), float(q["max"]), data["evidence_reference"], data["acceptance_metrics"], data["artifact_sha256"])
         except (KeyError, TypeError, ValueError) as exc: raise CalibrationError("invalid artifact values") from exc
         artifact.validate(); return artifact
 
+    def to_dict(self) -> dict:
+        return {
+            "schema_version": "perception-covariance-calibration/v1",
+            "calibration_id": self.calibration_id, "model_id": self.model_id,
+            "model_version": self.model_version, "platform": self.platform,
+            "calibrated_at": self.calibrated_at,
+            "parameters": {
+                "axis_variance_floor_m2": list(self.floor),
+                "axis_range_variance_per_m2": list(self.range_coeff),
+                "axis_quality_variance_m2": list(self.quality_coeff),
+            },
+            "range_validity_domain_m": {"min": self.range_min_m, "max": self.range_max_m},
+            "depth_quality_validity_domain": {"min": self.quality_min, "max": self.quality_max},
+            "evidence_reference": self.evidence_reference,
+            "acceptance_metrics": self.acceptance_metrics,
+            "artifact_sha256": self.artifact_sha256,
+        }
+
     def validate(self) -> None:
         if self.model_id != "range_depth_quality_diagonal_v1" or not all(isinstance(v, str) and v for v in (self.calibration_id,self.model_version,self.platform,self.calibrated_at,self.evidence_reference)): raise CalibrationError("invalid artifact identity")
+        if not isinstance(self.artifact_sha256, str) or len(self.artifact_sha256) != 64 or any(c not in "0123456789abcdef" for c in self.artifact_sha256): raise CalibrationError("invalid artifact sha256")
         if not isinstance(self.acceptance_metrics, dict) or not self.acceptance_metrics: raise CalibrationError("acceptance metrics required")
         for values in (self.floor,self.range_coeff,self.quality_coeff):
             if len(values) != 3 or any(not isinstance(v,(int,float)) or not math.isfinite(v) or v < 0 for v in values): raise CalibrationError("invalid calibrated coefficients")

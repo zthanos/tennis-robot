@@ -12,6 +12,9 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "ros2_ws" / "src" / "tennis_robot"))
 
+from tennis_robot.perception_covariance_calibration import (  # noqa: E402
+    compute_artifact_sha256,
+)
 from tennis_robot.perception_covariance_evidence import (  # noqa: E402
     CalibrationSample,
     assert_conservative,
@@ -22,7 +25,7 @@ from tennis_robot.perception_covariance_evidence import (  # noqa: E402
 
 
 def _artifact_json(artifact, acceptance_metrics: dict) -> dict:
-    return {
+    payload = {
         "schema_version": "perception-covariance-calibration/v1",
         "calibration_id": artifact.calibration_id,
         "model_id": artifact.model_id,
@@ -39,6 +42,8 @@ def _artifact_json(artifact, acceptance_metrics: dict) -> dict:
         "evidence_reference": artifact.evidence_reference,
         "acceptance_metrics": acceptance_metrics,
     }
+    payload["artifact_sha256"] = compute_artifact_sha256(payload)
+    return payload
 
 
 def main() -> None:

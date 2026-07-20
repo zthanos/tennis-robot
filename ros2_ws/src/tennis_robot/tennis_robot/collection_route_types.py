@@ -12,6 +12,12 @@ from enum import Enum
 import math
 from typing import Any, Mapping, TypeVar
 
+from tennis_robot.perception_covariance_calibration import (
+    CalibrationArtifact,
+    CalibrationError,
+    PerceptionSpatialValidationConfig,
+)
+
 POSITION_TOLERANCE_M = 1e-6
 ANGLE_TOLERANCE_RAD = 1e-6
 PROGRESS_TOLERANCE_M = 1e-6
@@ -578,16 +584,21 @@ class PlanningConfiguration:
 
 @dataclass(frozen=True)
 class CollectionRouteConfiguration:
-    schema_version: str; mechanical: MechanicalConfiguration; uncertainty: UncertaintyConfiguration; safety: SafetyConfiguration; scan: ScanConfiguration; feasibility: FeasibilityConfiguration; connector: ConnectorConfiguration; global_route_search: GlobalRouteSearchConfiguration; shared_pass: SharedPassConfiguration; follow_up: FollowUpConfiguration; planning: PlanningConfiguration; gazebo_snapshot: GazeboSnapshotConfiguration
+    schema_version: str; mechanical: MechanicalConfiguration; uncertainty: UncertaintyConfiguration; safety: SafetyConfiguration; scan: ScanConfiguration; feasibility: FeasibilityConfiguration; connector: ConnectorConfiguration; global_route_search: GlobalRouteSearchConfiguration; shared_pass: SharedPassConfiguration; follow_up: FollowUpConfiguration; planning: PlanningConfiguration; gazebo_snapshot: GazeboSnapshotConfiguration; perception_spatial_validation: PerceptionSpatialValidationConfig; calibration_artifact: CalibrationArtifact
     def __post_init__(self) -> None:
         _non_empty(self.schema_version, "schema_version")
-        for name, typ in (("mechanical", MechanicalConfiguration), ("uncertainty", UncertaintyConfiguration), ("safety", SafetyConfiguration), ("scan", ScanConfiguration), ("feasibility", FeasibilityConfiguration), ("connector", ConnectorConfiguration), ("global_route_search", GlobalRouteSearchConfiguration), ("shared_pass", SharedPassConfiguration), ("follow_up", FollowUpConfiguration), ("planning", PlanningConfiguration), ("gazebo_snapshot", GazeboSnapshotConfiguration)):
+        for name, typ in (("mechanical", MechanicalConfiguration), ("uncertainty", UncertaintyConfiguration), ("safety", SafetyConfiguration), ("scan", ScanConfiguration), ("feasibility", FeasibilityConfiguration), ("connector", ConnectorConfiguration), ("global_route_search", GlobalRouteSearchConfiguration), ("shared_pass", SharedPassConfiguration), ("follow_up", FollowUpConfiguration), ("planning", PlanningConfiguration), ("gazebo_snapshot", GazeboSnapshotConfiguration), ("perception_spatial_validation", PerceptionSpatialValidationConfig), ("calibration_artifact", CalibrationArtifact)):
             if not isinstance(getattr(self, name), typ): raise DomainValidationError(f"{name} must be {typ.__name__}")
-    def to_dict(self) -> dict[str, Any]: return {"schema_version": self.schema_version, "mechanical": self.mechanical.to_dict(), "uncertainty": self.uncertainty.to_dict(), "safety": self.safety.to_dict(), "scan": self.scan.to_dict(), "feasibility": self.feasibility.to_dict(), "connector": self.connector.to_dict(), "global_route_search": self.global_route_search.to_dict(), "shared_pass": self.shared_pass.to_dict(), "follow_up": self.follow_up.to_dict(), "planning": self.planning.to_dict(), "gazebo_snapshot": self.gazebo_snapshot.to_dict()}
+    def to_dict(self) -> dict[str, Any]: return {"schema_version": self.schema_version, "mechanical": self.mechanical.to_dict(), "uncertainty": self.uncertainty.to_dict(), "safety": self.safety.to_dict(), "scan": self.scan.to_dict(), "feasibility": self.feasibility.to_dict(), "connector": self.connector.to_dict(), "global_route_search": self.global_route_search.to_dict(), "shared_pass": self.shared_pass.to_dict(), "follow_up": self.follow_up.to_dict(), "planning": self.planning.to_dict(), "gazebo_snapshot": self.gazebo_snapshot.to_dict(), "perception_spatial_validation": self.perception_spatial_validation.to_dict(), "calibration_artifact": self.calibration_artifact.to_dict()}
     @classmethod
     def from_dict(cls: type[_T], data: Mapping[str, Any]) -> _T:
         _fields(data, set(cls.__dataclass_fields__), "CollectionRouteConfiguration")
-        return cls(data["schema_version"], MechanicalConfiguration.from_dict(data["mechanical"]), UncertaintyConfiguration.from_dict(data["uncertainty"]), SafetyConfiguration.from_dict(data["safety"]), ScanConfiguration.from_dict(data["scan"]), FeasibilityConfiguration.from_dict(data["feasibility"]), ConnectorConfiguration.from_dict(data["connector"]), GlobalRouteSearchConfiguration.from_dict(data["global_route_search"]), SharedPassConfiguration.from_dict(data["shared_pass"]), FollowUpConfiguration.from_dict(data["follow_up"]), PlanningConfiguration.from_dict(data["planning"]), GazeboSnapshotConfiguration.from_dict(data["gazebo_snapshot"]))
+        try:
+            perception_spatial_validation = PerceptionSpatialValidationConfig.from_dict(data["perception_spatial_validation"])
+            calibration_artifact = CalibrationArtifact.from_dict(data["calibration_artifact"])
+        except CalibrationError as exc:
+            raise DomainValidationError(str(exc)) from exc
+        return cls(data["schema_version"], MechanicalConfiguration.from_dict(data["mechanical"]), UncertaintyConfiguration.from_dict(data["uncertainty"]), SafetyConfiguration.from_dict(data["safety"]), ScanConfiguration.from_dict(data["scan"]), FeasibilityConfiguration.from_dict(data["feasibility"]), ConnectorConfiguration.from_dict(data["connector"]), GlobalRouteSearchConfiguration.from_dict(data["global_route_search"]), SharedPassConfiguration.from_dict(data["shared_pass"]), FollowUpConfiguration.from_dict(data["follow_up"]), PlanningConfiguration.from_dict(data["planning"]), GazeboSnapshotConfiguration.from_dict(data["gazebo_snapshot"]), perception_spatial_validation, calibration_artifact)
 
 
 @dataclass(frozen=True)
