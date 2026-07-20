@@ -18,7 +18,13 @@ from tennis_robot.collection_route_types import (
     BallResult,
     BallStatus,
     CollectionRouteConfiguration,
+    ConnectorConfiguration,
     ExecutionProfile,
+    FeasibilityConfiguration,
+    FollowUpConfiguration,
+    GazeboSnapshotConfiguration,
+    GlobalRouteSearchConfiguration,
+    LocalizationXYCovariance,
     MechanicalConfiguration,
     PlanningConfiguration,
     PlanningStatus,
@@ -28,6 +34,8 @@ from tennis_robot.collection_route_types import (
     SafetyConfiguration,
     ScanConfiguration,
     ScanSnapshot,
+    SharedPassConfiguration,
+    SnapshotAssociationConfiguration,
     SnapshotBall,
     UncertaintyConfiguration,
 )
@@ -68,7 +76,7 @@ class CollectionRouteFixture:
 
 
 def default_profile() -> ExecutionProfile:
-    return ExecutionProfile(1.0, 0.5, 1.5, 1.0, 1.0, 0.2, 1.0, 0.3, 1.25, 0.1, 0.1, False, False)
+    return ExecutionProfile(1.0, 0.5, 1.5, 0.1, 1.0, 1.0, 0.2, 1.0, 0.3, 1.25, 0.1, 0.1, False, False)
 
 
 def default_configuration(maximum_candidate_count: int = 20) -> CollectionRouteConfiguration:
@@ -78,7 +86,17 @@ def default_configuration(maximum_candidate_count: int = 20) -> CollectionRouteC
         UncertaintyConfiguration(0.02, 0.03, 0.04),
         SafetyConfiguration(0.1, 0.15, 0.2, 0.5, 0.2, 2.0, 2.0, 10.0),
         ScanConfiguration(1.0, 20.0, 2),
+        FeasibilityConfiguration(16, 2.0, 0.04, 0.05, 0.50, 0.75, 0.20),
+        ConnectorConfiguration(20.0, 1.5, 3.0),
+        GlobalRouteSearchConfiguration(1000, 0.5, 1.0, 0.8, 0.2, 1.0, 1.0, 1.0, 1.0, 1.0),
+        SharedPassConfiguration(3, 100, 0.5),
+        FollowUpConfiguration(False, 1),
         PlanningConfiguration(default_profile(), 1.0, maximum_candidate_count, 1.0, 1.0, 1.0, 1.0, 1.0),
+        GazeboSnapshotConfiguration(
+            "gazebo-mvp-provisional-planning-safety-v1",
+            LocalizationXYCovariance(PositionCovariance2D(0.01, 0.0, 0.01)),
+            SnapshotAssociationConfiguration(9.0, 2, 2),
+        ),
     )
 
 
