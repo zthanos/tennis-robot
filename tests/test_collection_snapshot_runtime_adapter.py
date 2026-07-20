@@ -7,7 +7,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ros2_ws", "src", "tennis_robot"))
 
-from collection_route_fixtures import SCAN_POSE, default_configuration
+from collection_route_fixtures import SCAN_POSE, default_configuration, default_court_half_boundary
 from tennis_robot.collection_route_types import (
     AcceptedSpatialObservation,
     CollectionRouteConfiguration,
@@ -31,8 +31,9 @@ class BuilderSpy:
 
 
 class TF:
-    def __init__(self, fail=False):
+    def __init__(self, fail=False, skew_s=0.0):
         self.fail = fail
+        self.skew_s = skew_s
         self.timestamps = []
 
     def at(self, timestamp_s, frame_id):
@@ -40,7 +41,7 @@ class TF:
         if self.fail:
             raise RuntimeError("TF unavailable")
         return TimestampedCameraToMapTransform(
-            timestamp_s, "map", frame_id, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0)
+            timestamp_s + self.skew_s, "map", frame_id, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0)
         )
 
 
@@ -133,6 +134,16 @@ def test_rejections_and_missing_configuration_forward_only_rejection():
         assert isinstance(builder.items[0], SpatialObservationRejection)
 
 
+def test_stale_tf_transform_beyond_max_detection_to_tf_age_is_rejected():
+    builder = BuilderSpy()
+    runtime_adapter(TF(skew_s=2.0)).forward(
+        scan_id="scan", frame=frame(), scan_step_id="step-01", builder=builder
+    )
+    rejection = builder.items[0]
+    assert isinstance(rejection, SpatialObservationRejection)
+    assert rejection.detail == "detection_to_tf_age_exceeded"
+
+
 def test_missing_or_empty_calibration_identity_is_a_typed_rejection():
     for detection_frame in (
         frame(calibration_id=""),
@@ -160,6 +171,7 @@ def test_session_connects_runtime_adapter_to_builder_without_scan_policy():
         robot_pose_at_scan=SCAN_POSE,
         configuration_snapshot=default_configuration(),
         expected_scan_step_ids=("step-01", "step-02"),
+        court_half_boundary=default_court_half_boundary(),
         tf_provider=TF(),
     )
     session.forward_frame(frame(), scan_step_id="step-01")

@@ -55,3 +55,38 @@
   ελλιπούς calibration ταυτότητας. `test_perception_contract_ros.py`
   ενημερωμένο για τα νέα fields (τρέχει μόνο με rclpy).
 - **Status:** ΟΚ.
+
+## #3 — Localization budget στη fusion, cross-half filter, TF age, builder fixes
+
+- **Υπόθεση (fusion):** Ο adapter πρόσθετε το localization covariance ΣΕ ΚΑΘΕ
+  observation και ο builder έκανε information fusion σαν να ήταν ανεξάρτητα·
+  με k observations το κοινό localization σφάλμα διαιρούνταν με k και η fused
+  covariance έπεφτε κάτω από το conservative budget 0.01 m².
+- **Αλλαγές:**
+  - `PerceptionSpatialObservationAdapter`: το `AcceptedSpatialObservation`
+    κρατά ΜΟΝΟ τη rotated measurement covariance (το localization config
+    παραμένει required input — η απουσία του είναι typed rejection). Ο builder
+    προσθέτει το `localization_xy_covariance` ΜΙΑ φορά ανά μπάλα στο
+    `finalize`. Test αποδεικνύει ότι με 4 σχεδόν τέλειες observations η τελική
+    covariance μένει ≥ 0.01 m² (budget + measurement/k).
+  - Cross-half filter: νέο injected `CourtHalfBoundary` (net line + πλευρά
+    ρομπότ από το court model, όχι hardcoded) required στον builder και στο
+    session· observation στην απέναντι πλευρά ή ακριβώς πάνω στο φιλέ γίνεται
+    typed rejection με detail `opposite_court_half`. Test με μπάλα ακριβώς
+    πίσω από το φιλέ.
+  - `max_detection_to_tf_age_s`: επιβάλλεται πλέον στο runtime bridge — αν το
+    transform του tf_provider απέχει από το RGB stamp πάνω από το όριο,
+    typed `perception_tf_rejected` με detail `detection_to_tf_age_exceeded`.
+    Ο pure adapter κρατά το exact-timestamp check.
+  - Builder fixes: (α) το scan step μετρά σε coverage ΜΟΝΟ όταν η observation
+    γίνει τελικά δεκτή (μετά και το ambiguous-association gate)· (β) singular
+    covariance (det≈0) γίνεται typed rejection `singular_covariance` αντί για
+    ZeroDivisionError· (γ) same-step observation σε υπάρχον track μένει
+    σιωπηλή απόρριψη αλλά καταγράφεται στο νέο telemetry
+    `duplicate_step_observations`· (δ) docstring τεκμηριώνει ότι min
+    confirmations = distinct steps και confidence = μέσος όρος.
+- **Αποτέλεσμα:** Πλήρες Φάση-2R gate: 107 passed, 1 skipped (ROS contract
+  test χωρίς rclpy). Ολόκληρο το tests/ (πλην του προϋπάρχοντος, άσχετου
+  sys.path collection issue του test_console_app σε whole-dir runs): 237
+  passed, 1 skipped.
+- **Status:** ΟΚ — η Φάση 2R κλείνει με 3 commits στο feat/collection-pattern.

@@ -9,7 +9,7 @@ from tennis_robot.collection_route_types import (
     SpatialObservationRejection,
     SpatialObservationRejectionCode,
 )
-from tennis_robot.collection_scan_snapshot import ScanSnapshotBuilder
+from tennis_robot.collection_scan_snapshot import CourtHalfBoundary, ScanSnapshotBuilder
 from tennis_robot.perception_covariance_calibration import (
     PerceptionSpatialValidationConfig,
     validate_spatial_metadata,
@@ -108,6 +108,13 @@ class CollectionSnapshotRuntimeAdapter:
                 rgb_timestamp_s,
                 "tf_at_rgb_timestamp_unavailable",
             )
+        if abs(transform.timestamp_s - rgb_timestamp_s) > self.validation_config.max_detection_to_tf_age_s:
+            return self._reject(
+                SpatialObservationRejectionCode.PERCEPTION_TF_REJECTED,
+                detection_index,
+                rgb_timestamp_s,
+                "detection_to_tf_age_exceeded",
+            )
 
         detection = C1ValidatedSpatialDetection(
             (detection_message.position_x, detection_message.position_y, detection_message.position_z),
@@ -148,6 +155,7 @@ class CollectionSnapshotRuntimeSession:
         robot_pose_at_scan: Pose2D,
         configuration_snapshot: CollectionRouteConfiguration,
         expected_scan_step_ids: tuple[str, ...],
+        court_half_boundary: CourtHalfBoundary,
         tf_provider,
         map_frame: str = "map",
     ) -> None:
@@ -157,6 +165,7 @@ class CollectionSnapshotRuntimeSession:
             robot_pose_at_scan=robot_pose_at_scan,
             configuration_snapshot=configuration_snapshot,
             expected_scan_step_ids=expected_scan_step_ids,
+            court_half_boundary=court_half_boundary,
             map_frame=map_frame,
         )
         # Validation thresholds and localization covariance have a single

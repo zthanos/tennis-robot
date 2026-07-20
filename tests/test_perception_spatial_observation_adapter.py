@@ -8,10 +8,13 @@ from tennis_robot.perception_spatial_observation_adapter import C1ValidatedSpati
 
 def _d(): return C1ValidatedSpatialDetection((1.,0.,2.), (1.,0.,0.,0.,4.,0.,0.,0.,9.), .9, 10.,10., "camera_link_optical_frame", "gazebo-v2", "config-1")
 def _t(): return TimestampedCameraToMapTransform(10., "map", "camera_link_optical_frame", (2.,3.,0.), (0.,0.,0.7071067811865475,0.7071067811865476))
-def test_rotation_and_localization_addition():
+def test_rotation_keeps_measurement_only_covariance_without_localization_addition():
+    # The localization budget is applied once per fused ball by the builder,
+    # never per observation; the adapter publishes the rotated camera XY
+    # measurement covariance unchanged.
     result=PerceptionSpatialObservationAdapter().accept(scan_id="s", detection_index=0, detection=_d(), transform=_t(), localization_xy_covariance=LocalizationXYCovariance(PositionCovariance2D(.5,0.,.25)), scan_step_id="step-1")
     assert result.position_map_xy.x_m == 2.0 and result.position_map_xy.y_m == 4.0
-    assert result.position_covariance_map_xy.xx == 4.5 and result.position_covariance_map_xy.yy == 1.25
+    assert result.position_covariance_map_xy.xx == pytest.approx(4.0) and result.position_covariance_map_xy.yy == pytest.approx(1.0)
 def test_missing_step_or_covariance_rejects():
     a=PerceptionSpatialObservationAdapter(); assert isinstance(a.accept(scan_id="s", detection_index=0, detection=_d(), transform=_t(), localization_xy_covariance=None, scan_step_id="x"), SpatialObservationRejection)
     assert isinstance(a.accept(scan_id="s", detection_index=0, detection=_d(), transform=_t(), localization_xy_covariance=LocalizationXYCovariance(PositionCovariance2D(1.,0.,1.)), scan_step_id=None), SpatialObservationRejection)

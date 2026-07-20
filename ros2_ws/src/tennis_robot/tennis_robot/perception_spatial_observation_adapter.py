@@ -35,7 +35,15 @@ class TimestampedCameraToMapTransform:
 
 
 class PerceptionSpatialObservationAdapter:
-    """Projects already validated metadata; it performs no ROS/TF lookup."""
+    """Projects already validated metadata; it performs no ROS/TF lookup.
+
+    The accepted observation carries ONLY the rotated camera-XY measurement
+    covariance. The configured ``localization_xy_covariance`` is still a
+    required input (its absence is a typed rejection) but it is applied exactly
+    once per fused ball by the snapshot builder at finalize — adding it to
+    every observation would let information fusion divide the shared
+    localization error by the observation count.
+    """
     def accept(self, *, scan_id: str, detection_index: int, detection: C1ValidatedSpatialDetection,
                transform: TimestampedCameraToMapTransform,
                localization_xy_covariance: LocalizationXYCovariance | None,
@@ -64,8 +72,7 @@ class PerceptionSpatialObservationAdapter:
             xx=r00*r00*cam.xx+2*r00*r01*cam.xy+r01*r01*cam.yy
             xy=r00*r10*cam.xx+(r00*r11+r01*r10)*cam.xy+r01*r11*cam.yy
             yy=r10*r10*cam.xx+2*r10*r11*cam.xy+r11*r11*cam.yy
-            loc=localization_xy_covariance.covariance
-            return AcceptedSpatialObservation(scan_id, detection_index, detection.rgb_timestamp_s, detection.matched_depth_timestamp_s, Point2D(tx+r00*x+r01*y, ty+r10*x+r11*y), PositionCovariance2D(xx+loc.xx, xy+loc.xy, yy+loc.yy), detection.confidence, scan_step_id, detection.calibration_id, detection.configuration_id)
+            return AcceptedSpatialObservation(scan_id, detection_index, detection.rgb_timestamp_s, detection.matched_depth_timestamp_s, Point2D(tx+r00*x+r01*y, ty+r10*x+r11*y), PositionCovariance2D(xx, xy, yy), detection.confidence, scan_step_id, detection.calibration_id, detection.configuration_id)
         except (ValueError, TypeError, DomainValidationError):
             return self._reject(SpatialObservationRejectionCode.PERCEPTION_METADATA_REJECTED, detection_index, detection.rgb_timestamp_s, "invalid_c1_spatial_detection")
 

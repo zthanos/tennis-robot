@@ -84,6 +84,14 @@ def default_profile() -> ExecutionProfile:
     return ExecutionProfile(1.0, 0.5, 1.5, 0.1, 1.0, 1.0, 0.2, 1.0, 0.3, 1.25, 0.1, 0.1, False, False)
 
 
+def default_court_half_boundary():
+    """Robot-side half plane derived from the fixture court net (robot at x>0)."""
+    from tennis_robot.collection_scan_snapshot import CourtHalfBoundary
+
+    court = CourtFixture()
+    return CourtHalfBoundary(court.net_start, court.net_end, -1)
+
+
 def default_spatial_validation() -> PerceptionSpatialValidationConfig:
     return PerceptionSpatialValidationConfig(0.05, 0.5, 1e-9, 1e-6, 1.0)
 
