@@ -1,0 +1,170 @@
+{
+  "acceptance_metrics": {
+    "accepted_sample_count": 180,
+    "associated_target_evidence_directory": "runtime/c2_controlled_coverage",
+    "conservative_check": "passed_per_axis_for_every_accepted_target_sample_in_every_range_quality_bin",
+    "coverage_evidence_report_reference": "docs/gazebo-perception-covariance-c2-evidence-report-el.md",
+    "coverage_thresholds": {
+      "maximum_target_outlier_rate": 0.35,
+      "minimum_accepted_samples_per_bin": 30,
+      "target_association_ambiguity_margin_m": 0.01,
+      "target_association_gate_m": 0.2,
+      "target_residual_outlier_threshold_m": 0.1
+    },
+    "max_axis_error_m": [
+      0.0032001405913264823,
+      0.029968443987941518,
+      0.04899773016644238
+    ],
+    "range_quality_bin_metrics": {
+      "r0_q90": {
+        "accepted_target_sample_count": 30,
+        "conservative_per_axis": true,
+        "max_axis_error_m": [
+          0.001076078567275985,
+          0.020293704660979683,
+          0.04671740614290698
+        ]
+      },
+      "r0_q98": {
+        "accepted_target_sample_count": 30,
+        "conservative_per_axis": true,
+        "max_axis_error_m": [
+          0.0010932202331124918,
+          0.020283097547109108,
+          0.04673788741011098
+        ]
+      },
+      "r1_q90": {
+        "accepted_target_sample_count": 30,
+        "conservative_per_axis": true,
+        "max_axis_error_m": [
+          9.782133812132946e-05,
+          0.0012949281843840088,
+          0.03200535993057119
+        ]
+      },
+      "r1_q98": {
+        "accepted_target_sample_count": 30,
+        "conservative_per_axis": true,
+        "max_axis_error_m": [
+          7.536255803491412e-05,
+          0.0014840698175732844,
+          0.031965686934544824
+        ]
+      },
+      "r2_q90": {
+        "accepted_target_sample_count": 30,
+        "conservative_per_axis": true,
+        "max_axis_error_m": [
+          0.0031968234307135197,
+          0.029936999736870584,
+          0.04899773016644238
+        ]
+      },
+      "r2_q98": {
+        "accepted_target_sample_count": 30,
+        "conservative_per_axis": true,
+        "max_axis_error_m": [
+          0.0032001405913264823,
+          0.029968443987941518,
+          0.048357301900638916
+        ]
+      }
+    },
+    "rmse_axis_m": [
+      0.0019015153618648,
+      0.01807912243755444,
+      0.042703139933897294
+    ],
+    "trial_manifest_reference": "config/gazebo_covariance_c2_trials.json",
+    "trial_metrics": {
+      "r0_q90": {
+        "ambiguous_detections": 0,
+        "non_target_detections": 29,
+        "target_association_rejection_rate": 0.0,
+        "target_outlier_rate": 0.0,
+        "target_outliers": 0,
+        "target_samples": 30,
+        "unmatched_detections": 0
+      },
+      "r0_q98": {
+        "ambiguous_detections": 0,
+        "non_target_detections": 29,
+        "target_association_rejection_rate": 0.0,
+        "target_outlier_rate": 0.0,
+        "target_outliers": 0,
+        "target_samples": 30,
+        "unmatched_detections": 0
+      },
+      "r1_q90": {
+        "ambiguous_detections": 0,
+        "non_target_detections": 29,
+        "target_association_rejection_rate": 0.03225806451612903,
+        "target_outlier_rate": 0.0,
+        "target_outliers": 0,
+        "target_samples": 30,
+        "unmatched_detections": 1
+      },
+      "r1_q98": {
+        "ambiguous_detections": 0,
+        "non_target_detections": 29,
+        "target_association_rejection_rate": 0.0625,
+        "target_outlier_rate": 0.0,
+        "target_outliers": 0,
+        "target_samples": 30,
+        "unmatched_detections": 2
+      },
+      "r2_q90": {
+        "ambiguous_detections": 0,
+        "non_target_detections": 65,
+        "target_association_rejection_rate": 0.0,
+        "target_outlier_rate": 0.0,
+        "target_outliers": 0,
+        "target_samples": 30,
+        "unmatched_detections": 0
+      },
+      "r2_q98": {
+        "ambiguous_detections": 0,
+        "non_target_detections": 71,
+        "target_association_rejection_rate": 0.0,
+        "target_outlier_rate": 0.0,
+        "target_outliers": 0,
+        "target_samples": 30,
+        "unmatched_detections": 0
+      }
+    }
+  },
+  "calibrated_at": "2026-07-19",
+  "calibration_id": "gazebo-range-depth-quality-diagonal-v1-20260719",
+  "depth_quality_validity_domain": {
+    "max": 0.9797979797979798,
+    "min": 0.8979591836734694
+  },
+  "evidence_reference": "docs/gazebo-perception-covariance-c2-evidence-report-el.md",
+  "model_id": "range_depth_quality_diagonal_v1",
+  "model_version": "gazebo-v1",
+  "parameters": {
+    "axis_quality_variance_m2": [
+      0.0,
+      0.001017,
+      0.0
+    ],
+    "axis_range_variance_per_m2": [
+      2e-06,
+      4.5e-05,
+      7.1e-05
+    ],
+    "axis_variance_floor_m2": [
+      0.0,
+      0.000503,
+      0.002111
+    ]
+  },
+  "platform": "gazebo",
+  "range_validity_domain_m": {
+    "max": 2.9799470906893557,
+    "min": 1.021574547701437
+  },
+  "schema_version": "perception-covariance-calibration/v1"
+}

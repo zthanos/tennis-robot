@@ -71,6 +71,7 @@ from tennis_robot.mapping import (
     ServiceLineDistributionScanMission,
 )
 from tennis_robot.motion_controller import MOTION_COMMAND_TOPIC
+from tennis_robot.perception_covariance_calibration import PerceptionSpatialValidationConfig, validate_spatial_metadata
 try:
     from tennis_robot.nav2_lane_navigator import Nav2LaneNavigator, LaneNavState
     _NAV2_AVAILABLE = True
@@ -176,6 +177,8 @@ class ControllerNode(Node):
         self.collect_one_mission = CollectOneMission()
         self.collect_route_mission = CollectRouteMission()
         self._court_model: CourtModel | None = None
+        self._perception_spatial_validation_config: PerceptionSpatialValidationConfig | None = None
+        self._last_perception_rejection_reason: str | None = None
         self._map_mission = MapLeftSideMission(
             LidarSurveyBoundaryProvider(), self._map_supervisor_balls
         )
@@ -337,6 +340,44 @@ class ControllerNode(Node):
             self._latest_camera_balls = []
             return
 
+        if not msg.spatial_targets_healthy:
+            self._latest_obs = BallObservationInput(visible=False, source="spatial_targets_unhealthy")
+            self._latest_observations = []
+            self._latest_camera_balls = []
+            self._latest_obs_seq += 1
+            return
+
+        config = self._perception_spatial_validation_config
+        if config is None:
+            self._latest_obs = BallObservationInput(visible=False, source="perception_metadata_rejected")
+            self._last_perception_rejection_reason = "validation_config_invalid"
+            self._latest_observations = []; self._latest_camera_balls = []; self._latest_obs_seq += 1
+            return
+
+        rgb_s = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec) * 1e-9
+        spatial = [d for d in msg.detections if d.has_spatial]
+        for detection in spatial:
+            depth_s = float(detection.matched_depth_stamp.sec) + float(detection.matched_depth_stamp.nanosec) * 1e-9
+            reason = validate_spatial_metadata(rgb_s, depth_s, tuple(detection.position_covariance), config)
+            if reason:
+                self._latest_obs = BallObservationInput(visible=False, source="perception_metadata_rejected")
+                self._last_perception_rejection_reason = reason
+                self._latest_observations = []; self._latest_camera_balls = []; self._latest_obs_seq += 1
+                return
+
+        try:
+            camera_to_map = self._tf_buffer.lookup_transform(
+                "map", msg.header.frame_id, RclpyTime.from_msg(msg.header.stamp)
+            )
+        except Exception:
+            self._latest_obs = BallObservationInput(visible=False, source="perception_tf_rejected")
+            self._latest_observations = []
+            self._latest_camera_balls = []
+            self._latest_obs_seq += 1
+            return
+        q = camera_to_map.transform.rotation
+        tx, ty, tz = camera_to_map.transform.translation.x, camera_to_map.transform.translation.y, camera_to_map.transform.translation.z
+
         received_at = self._runtime_seconds()
         observations: list[BallObservationInput] = []
         camera_balls: list[dict] = []
@@ -347,16 +388,12 @@ class ControllerNode(Node):
                 or detection.distance_m <= 0.0
             ):
                 continue
-
-            # Optical XYZ is +right/+down/+forward. Convert it to the robot
-            # planar frame (+forward/+left), then through the authoritative
-            # controller pose into map/world coordinates.
-            local_x = PERCEPTION_CAMERA_X_M + float(detection.position_z)
-            local_y = -float(detection.position_x)
-            cos_yaw = math.cos(self._robot_yaw)
-            sin_yaw = math.sin(self._robot_yaw)
-            world_x = self._robot_x + cos_yaw * local_x - sin_yaw * local_y
-            world_y = self._robot_y + sin_yaw * local_x + cos_yaw * local_y
+            # Rotate camera optical XYZ with TF evaluated at the RGB stamp.
+            x, y, z = float(detection.position_x), float(detection.position_y), float(detection.position_z)
+            xx, yy, zz = q.x*q.x, q.y*q.y, q.z*q.z
+            xy, xz, yz, wx, wy, wz = q.x*q.y, q.x*q.z, q.y*q.z, q.w*q.x, q.w*q.y, q.w*q.z
+            world_x = tx + (1 - 2*(yy + zz))*x + 2*(xy - wz)*y + 2*(xz + wy)*z
+            world_y = ty + 2*(xy + wz)*x + (1 - 2*(xx + zz))*y + 2*(yz - wx)*z
             observation = BallObservationInput(
                 visible=True,
                 bearing_rad=float(detection.bearing_rad),

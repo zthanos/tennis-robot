@@ -119,17 +119,9 @@ def estimate_depth_ball_observation(
 
     if depth_frame_m.size == 0:
         return None
-    depth_height, depth_width = depth_frame_m.shape[:2]
-    scale_x = depth_width / max(1, frame_width_px)
-    scale_y = depth_height / max(1, frame_height_px)
-    cx = detection.center_x * scale_x
-    cy = detection.center_y * scale_y
-    half_w = max(1, int(detection.width * scale_x * roi_scale / 2))
-    half_h = max(1, int(detection.height * scale_y * roi_scale / 2))
-    x0 = max(0, int(round(cx)) - half_w)
-    x1 = min(depth_width, int(round(cx)) + half_w + 1)
-    y0 = max(0, int(round(cy)) - half_h)
-    y1 = min(depth_height, int(round(cy)) + half_h + 1)
+    x0, x1, y0, y1 = depth_fusion_roi_bounds(
+        detection, depth_frame_m, frame_width_px, frame_height_px, roi_scale
+    )
     roi = depth_frame_m[y0:y1, x0:x1]
     valid = roi[np.isfinite(roi) & (roi > 0)]
     if valid.size == 0:
@@ -149,6 +141,52 @@ def estimate_depth_ball_observation(
         distance_m=distance_m,
         distance_source="oak_depth",
     )
+
+
+def depth_fusion_roi_bounds(
+    detection: BallDetection,
+    depth_frame_m: np.ndarray,
+    frame_width_px: int,
+    frame_height_px: int,
+    roi_scale: float = 0.55,
+) -> tuple[int, int, int, int]:
+    """Return the exact depth ROI bounds shared by fusion and quality checks."""
+    depth_height, depth_width = depth_frame_m.shape[:2]
+    scale_x = depth_width / max(1, frame_width_px)
+    scale_y = depth_height / max(1, frame_height_px)
+    cx = detection.center_x * scale_x
+    cy = detection.center_y * scale_y
+    half_w = max(1, int(detection.width * scale_x * roi_scale / 2))
+    half_h = max(1, int(detection.height * scale_y * roi_scale / 2))
+    x0 = max(0, int(round(cx)) - half_w)
+    x1 = min(depth_width, int(round(cx)) + half_w + 1)
+    y0 = max(0, int(round(cy)) - half_h)
+    y1 = min(depth_height, int(round(cy)) + half_h + 1)
+    return x0, x1, y0, y1
+
+
+def depth_roi_quality(
+    detection: BallDetection,
+    depth_frame_m: np.ndarray,
+    frame_width_px: int,
+    frame_height_px: int,
+    roi_scale: float = 0.55,
+) -> float:
+    """Return the valid-depth fraction of the fusion ROI, in ``[0, 1]``.
+
+    C2 uses this explicit metric for calibration.  It shares the ROI geometry
+    with :func:`estimate_depth_ball_observation`; it does not synthesize a
+    quality score from the estimated range or covariance.
+    """
+    if depth_frame_m.size == 0:
+        return 0.0
+    x0, x1, y0, y1 = depth_fusion_roi_bounds(
+        detection, depth_frame_m, frame_width_px, frame_height_px, roi_scale
+    )
+    roi = depth_frame_m[y0:y1, x0:x1]
+    if roi.size == 0:
+        return 0.0
+    return float(np.count_nonzero(np.isfinite(roi) & (roi > 0)) / roi.size)
 
 
 def camera_frame_position(

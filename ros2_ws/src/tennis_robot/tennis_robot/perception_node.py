@@ -48,7 +48,12 @@ from tennis_robot.perception import (
     build_survey_vision,
     camera_frame_position,
     estimate_depth_ball_observation,
+    depth_roi_quality,
     pixel_elevation_rad,
+)
+from tennis_robot.perception_covariance_calibration import (
+    evaluate_producer_spatial_covariance,
+    load_spatial_calibration_runtime,
 )
 
 DEPTH_MIN_RANGE = float(os.getenv("DEPTH_MIN_RANGE_M", "0.1"))
@@ -66,6 +71,18 @@ class PerceptionNode(Node):
 
         # Primary perception: neural detector emulating the OAK-D on-device AI.
         self._detector = load_ball_detector(logger=self.get_logger())
+        runtime = load_spatial_calibration_runtime(
+            os.getenv("PERCEPTION_COVARIANCE_CALIBRATION_ARTIFACT"),
+            expected_platform=os.getenv("PERCEPTION_CALIBRATION_PLATFORM", "oak_d"),
+            expected_calibration_id=os.getenv("PERCEPTION_COVARIANCE_CALIBRATION_ID") or None,
+            expected_model_version=os.getenv("PERCEPTION_COVARIANCE_MODEL_VERSION") or None,
+            required_path=os.getenv("PERCEPTION_COVARIANCE_REQUIRED_ARTIFACT") or None,
+        )
+        self._spatial_targets_healthy = runtime.healthy
+        self._spatial_targets_health_reason = runtime.health_reason
+        self._covariance_model = runtime.model
+        self._spatial_targets_artifact_id = runtime.artifact_id
+        self._spatial_targets_artifact_version = runtime.artifact_version
 
         self._rgb_sub = message_filters.Subscriber(
             self, Image, "/camera/image_raw", qos_profile=1
@@ -89,7 +106,11 @@ class PerceptionNode(Node):
         self.get_logger().info(
             f"perception_node started (detector={self._detector.name}, "
             f"fov={CAMERA_FOV_RAD:.3f} rad, "
-            f"rgb_depth_slop={RGB_DEPTH_SYNC_SLOP_S:.3f}s)"
+            f"rgb_depth_slop={RGB_DEPTH_SYNC_SLOP_S:.3f}s, "
+            f"spatial_targets_healthy={self._spatial_targets_healthy}, "
+            f"spatial_targets_health_reason={self._spatial_targets_health_reason}, "
+            f"calibration_id={self._spatial_targets_artifact_id}, "
+            f"calibration_version={self._spatial_targets_artifact_version})"
         )
 
     # -- subscriptions ------------------------------------------------------
@@ -110,7 +131,7 @@ class PerceptionNode(Node):
             detections, depth, image_msg.width, image_msg.height
         )
 
-        self._publish_detection_array(fused, image_msg.header.stamp)
+        self._publish_detection_array(fused, image_msg.header.stamp, depth_msg.header.stamp)
         self._publish_survey_vision(frame, depth)
 
     # -- decoding -----------------------------------------------------------
@@ -164,27 +185,38 @@ class PerceptionNode(Node):
             ball_obs = estimate_depth_ball_observation(
                 det, depth, w, h, CAMERA_FOV_RAD
             )
-            if ball_obs is not None:
+            if ball_obs is not None and self._covariance_model is not None:
                 elevation = pixel_elevation_rad(det.center_y, h, vertical_fov)
+                pos = camera_frame_position(
+                    ball_obs.bearing_rad, ball_obs.distance_m, elevation
+                )
+                quality = depth_roi_quality(det, depth, w, h)
+                covariance = evaluate_producer_spatial_covariance(
+                    self._covariance_model, pos, quality
+                )
+                if covariance.covariance is None:
+                    records.append(rec)
+                    continue
                 rec.update(
                     has_spatial=True,
                     bearing_rad=float(ball_obs.bearing_rad),
                     distance_m=float(ball_obs.distance_m),
-                    pos=camera_frame_position(
-                        ball_obs.bearing_rad, ball_obs.distance_m, elevation
-                    ),
+                    pos=pos,
+                    covariance=covariance.covariance,
                 )
             records.append(rec)
         records.sort(key=lambda r: (not r["has_spatial"], r["distance_m"]))
         return records
 
     # -- publishers ---------------------------------------------------------
-    def _publish_detection_array(self, fused: list[dict], stamp) -> None:
+    def _publish_detection_array(self, fused: list[dict], stamp, depth_stamp) -> None:
         from tennis_robot_msgs.msg import BallDetection, BallDetectionArray
 
         arr = BallDetectionArray()
         arr.header.stamp = stamp
         arr.header.frame_id = CAMERA_FRAME_ID
+        arr.spatial_targets_healthy = self._spatial_targets_healthy
+        arr.spatial_targets_health_reason = self._spatial_targets_health_reason
         for r in fused:
             det = r["detection"]
             m = BallDetection()
@@ -193,8 +225,10 @@ class PerceptionNode(Node):
             m.bbox_center_y = float(det.center_y)
             m.bbox_width = float(det.width)
             m.bbox_height = float(det.height)
-            m.has_spatial = bool(r["has_spatial"])
-            if r["has_spatial"]:
+            m.has_spatial = bool(r["has_spatial"] and self._spatial_targets_healthy)
+            if m.has_spatial:
+                m.matched_depth_stamp = depth_stamp
+                m.position_covariance = [float(value) for value in r["covariance"]]
                 m.bearing_rad = float(r["bearing_rad"])
                 m.distance_m = float(r["distance_m"])
                 m.position_x, m.position_y, m.position_z = (float(v) for v in r["pos"])

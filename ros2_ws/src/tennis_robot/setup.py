@@ -37,6 +37,7 @@ setup(
             "collector_logic_node = tennis_robot.collector_logic_node:main",
             "court_landmarks_node = tennis_robot.court_landmarks_node:main",
             "court_survey_mission_node = tennis_robot.court_survey_mission_node:main",
+            "gazebo_covariance_recorder = tennis_robot.gazebo_covariance_recorder:main",
         ],
     },
 )

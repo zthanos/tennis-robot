@@ -277,6 +277,7 @@ class GazeboExtrasNode(Node):
     def _ball_entry(self, leaf: str, world_point: tuple[float, float, float]) -> dict:
         x, y, z = self._gz_point_to_odom(world_point)
         lx, ly, lz = self._gz_point_to_local(world_point)
+        wx, wy, wz = world_point
         return {
             "def": leaf,
             "x": round(x, 4),
@@ -288,6 +289,11 @@ class GazeboExtrasNode(Node):
             "local_x": round(lx, 4),
             "local_y": round(ly, 4),
             "local_z": round(lz, 4),
+            # C2 calibration diagnostics: Gazebo world pose, separate from
+            # the odom-anchored operational fields above.
+            "world_x": round(wx, 4),
+            "world_y": round(wy, 4),
+            "world_z": round(wz, 4),
         }
 
     def destroy_node(self) -> bool:
@@ -339,7 +345,7 @@ class GazeboExtrasNode(Node):
             self._pub_true_pose.publish(
                 String(
                     data=json.dumps(
-                        {"x": round(gx, 3), "y": round(gy, 3), "yaw": round(gyaw, 4)}
+                        {"x": round(gx, 3), "y": round(gy, 3), "z": round(gzz, 3), "yaw": round(gyaw, 4)}
                     )
                 )
             )

@@ -46,10 +46,13 @@ def _site_packages(install_dir: str, pkg: str) -> list:
     )
 
 
-_robot_paths = _site_packages(ROS2_INSTALL, "tennis_robot")
-_msgs_paths = _site_packages(ROS2_INSTALL, "tennis_robot_msgs")
 _source_robot_path = f"{WORKSPACE}/ros2_ws/src/tennis_robot"
-ROS_PYTHONPATH = ":".join([_source_robot_path] + _robot_paths + _msgs_paths + [os.environ.get("PYTHONPATH", "")])
+_robot_paths = _site_packages(ROS2_INSTALL, "tennis_robot")
+# Keep the sourced ROS overlay authoritative.  Adding Python paths resolved
+# from ROS2_INSTALL here previously put the image-baked message package before
+# install_docker, so a newly generated BallDetectionArray schema was silently
+# replaced by its stale image copy at runtime.
+ROS_PYTHONPATH = ":".join([_source_robot_path, os.environ.get("PYTHONPATH", "")])
 CONTROL_PANEL_PYTHONPATH = ":".join(
     [_source_robot_path] + _robot_paths + [f"{WORKSPACE}/scripts"] + [os.environ.get("PYTHONPATH", "")]
 )
@@ -341,6 +344,12 @@ def generate_launch_description():
             "BALL_CONF_THRESHOLD": os.getenv("BALL_CONF_THRESHOLD", "0.35"),
             "BALL_CLASS_IDS": os.getenv("BALL_CLASS_IDS", "32"),
             "CAMERA_FRAME_ID": "camera_link_optical_frame",
+            # C2 v2 activation: Gazebo loads only the reviewed v2 artifact.
+            "PERCEPTION_CALIBRATION_PLATFORM": "gazebo",
+            "PERCEPTION_COVARIANCE_CALIBRATION_ARTIFACT": f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v2.json",
+            "PERCEPTION_COVARIANCE_REQUIRED_ARTIFACT": f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v2.json",
+            "PERCEPTION_COVARIANCE_CALIBRATION_ID": "gazebo-range-depth-quality-diagonal-v1-20260719-v2",
+            "PERCEPTION_COVARIANCE_MODEL_VERSION": "gazebo-v2",
         },
     )
 

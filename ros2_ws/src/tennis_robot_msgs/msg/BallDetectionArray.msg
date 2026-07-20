@@ -9,4 +9,7 @@
 # header.frame_id  = camera_link_optical_frame (REP-103 optical convention)
 std_msgs/Header header
 
+bool spatial_targets_healthy
+string spatial_targets_health_reason
+
 BallDetection[] detections
