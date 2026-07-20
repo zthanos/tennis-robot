@@ -1,0 +1,6 @@
+string ball_id
+float64 position_x_m
+float64 position_y_m
+float64 progress_s
+float64 heading_rad
+float64 predicted_lateral_error

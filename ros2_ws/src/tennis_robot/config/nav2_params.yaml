@@ -29,7 +29,7 @@ controller_server:
     failure_tolerance: 0.3
     progress_checker_plugins: ["progress_checker"]
     goal_checker_plugins: ["general_goal_checker"]
-    controller_plugins: ["FollowPath"]
+    controller_plugins: ["FollowPath", "CollectionFollowPath"]
 
     progress_checker:
       # Count meaningful in-place rotation as progress. The previous
@@ -68,6 +68,12 @@ controller_server:
       rotate_to_heading_min_angle: 0.785
       max_angular_accel: 2.0
       max_robot_pose_search_dist: 10.0
+
+    # Collection-only controller. Execution tuning and profiles arrive through
+    # the immutable CollectionExecutionContext; this block deliberately has no
+    # fallback motion/profile parameters.
+    CollectionFollowPath:
+      plugin: "tennis_robot_collection_controller::CollectionNav2Controller"
 
 local_costmap:
   local_costmap:

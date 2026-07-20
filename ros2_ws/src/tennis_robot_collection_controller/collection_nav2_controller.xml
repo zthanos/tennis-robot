@@ -1,0 +1,9 @@
+<class_libraries>
+<library path="collection_nav2_controller">
+  <class
+    type="tennis_robot_collection_controller::CollectionNav2Controller"
+    base_class_type="nav2_core::Controller">
+    <description>Frozen collection-route controller with exact execution-context binding.</description>
+  </class>
+</library>
+</class_libraries>

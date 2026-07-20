@@ -1,0 +1,17 @@
+string plan_id
+string path_sha256
+uint8 SUCCEEDED=0
+uint8 CANCELED=1
+uint8 FAILED=2
+uint8 action_outcome
+---
+uint8 ACCEPTED=0
+uint8 MISSING_CONTEXT=1
+uint8 PLAN_HASH_MISMATCH=2
+uint8 INVALID_LIFECYCLE=3
+uint8 INVALID_ACTION_OUTCOME=4
+uint8 TERMINAL_NOT_REACHED=5
+
+bool accepted
+uint8 rejection_code
+string detail

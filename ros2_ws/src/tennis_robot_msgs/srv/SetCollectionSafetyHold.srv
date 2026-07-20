@@ -1,0 +1,13 @@
+string plan_id
+string path_sha256
+bool hold
+---
+uint8 ACCEPTED=0
+uint8 MISSING_CONTEXT=1
+uint8 PLAN_HASH_MISMATCH=2
+uint8 INVALID_LIFECYCLE=3
+uint8 RESUME_CONTRACT_FAILED=4
+
+bool accepted
+uint8 rejection_code
+string detail

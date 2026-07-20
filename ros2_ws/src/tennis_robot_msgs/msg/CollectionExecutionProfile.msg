@@ -1,0 +1,14 @@
+float64 nominal_speed_mps
+float64 min_speed_mps
+float64 max_speed_mps
+float64 nominal_speed_warning_tolerance_mps
+float64 max_acceleration_mps2
+float64 max_deceleration_mps2
+float64 required_entry_m
+float64 required_run_in_m
+float64 required_run_out_m
+float64 max_curvature_per_m
+float64 max_lateral_error_m
+float64 max_heading_error_rad
+bool allow_reversing
+bool allow_standalone_rotate

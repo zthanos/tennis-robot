@@ -1,0 +1,5 @@
+float64 lookahead_distance_m
+float64 max_angular_velocity_rad_s
+float64 progress_projection_window_m
+float64 crossing_speed_window_m
+float64 terminal_progress_tolerance_m
