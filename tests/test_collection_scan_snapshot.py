@@ -7,7 +7,15 @@ from tennis_robot.collection_route_types import *
 from collection_route_fixtures import default_configuration, SCAN_POSE
 
 def obs(step,x=1.,y=2.,c=.9): return AcceptedSpatialObservation("scan",0,1.,1.,Point2D(x,y),PositionCovariance2D(.1,0.,.1),c,step,"gazebo-v2","cfg")
-def builder(**kw): return ScanSnapshotBuilder(scan_id="scan",scan_timestamp_s=1.,robot_pose_at_scan=SCAN_POSE,configuration_snapshot=default_configuration(),expected_scan_step_ids=("a","b"),required_coverage_fraction=1.,scan_timeout_s=5.,**kw)
+def builder(**kw):
+    kw.setdefault("configuration_snapshot",default_configuration())
+    return ScanSnapshotBuilder(scan_id="scan",scan_timestamp_s=1.,robot_pose_at_scan=SCAN_POSE,expected_scan_step_ids=("a","b"),**kw)
+
+def test_coverage_and_timeout_have_single_source_in_configuration_snapshot():
+    b=builder(); scan=default_configuration().scan
+    assert b.required_coverage_fraction == scan.required_coverage_fraction
+    assert b.scan_timeout_s == scan.scan_timeout_s
+    with pytest.raises(ScanSnapshotFailure): ScanSnapshotBuilder(scan_id="scan",scan_timestamp_s=1.,robot_pose_at_scan=SCAN_POSE,configuration_snapshot=None,expected_scan_step_ids=("a",))
 
 def test_empty_snapshot_requires_complete_coverage_and_is_immutable():
     b=builder(); b.add(obs("a",1.,2.)); b.add(obs("b",10.,2.)); s=b.finalize(2.)
@@ -21,7 +29,7 @@ def test_confirmed_snapshot_duplicate_fusion_and_stable_id():
 
 def test_timeout_and_failed_lifecycle():
     b=builder(); b.add(obs("a")); b.add(obs("b"))
-    with pytest.raises(ScanSnapshotFailure, match="scan_timeout") as error: b.finalize(7.)
+    with pytest.raises(ScanSnapshotFailure, match="scan_timeout") as error: b.finalize(1.+default_configuration().scan.scan_timeout_s+1.)
     assert error.value.code is ScanSnapshotFailureCode.TIMEOUT
     with pytest.raises(ScanSnapshotFailure): b.add(obs("a"))
 

@@ -34,12 +34,25 @@ class _Track:
         return Point2D((c*ux-b*uy)/det,(-b*ux+a*uy)/det),cov
 
 class ScanSnapshotBuilder:
-    def __init__(self, *, scan_id:str, scan_timestamp_s:float, robot_pose_at_scan:Pose2D, configuration_snapshot:CollectionRouteConfiguration, expected_scan_step_ids:tuple[str,...], required_coverage_fraction:float, scan_timeout_s:float, map_frame:str="map"):
-        if not scan_id or map_frame != "map" or not math.isfinite(scan_timestamp_s) or not isinstance(expected_scan_step_ids, tuple) or not expected_scan_step_ids or any(not isinstance(x,str) or not x for x in expected_scan_step_ids) or len(set(expected_scan_step_ids)) != len(expected_scan_step_ids) or not math.isfinite(required_coverage_fraction) or not 0 < required_coverage_fraction <= 1 or not math.isfinite(scan_timeout_s) or scan_timeout_s <= 0: raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,"invalid scan lifecycle configuration")
+    """Aggregates adapter outputs for one scan.
+
+    Constructor arguments are scan-instance data only; the coverage fraction and
+    scan timeout are read exclusively from ``configuration_snapshot.scan`` so a
+    snapshot can never disagree with its own serialized configuration.
+    """
+    def __init__(self, *, scan_id:str, scan_timestamp_s:float, robot_pose_at_scan:Pose2D, configuration_snapshot:CollectionRouteConfiguration, expected_scan_step_ids:tuple[str,...], map_frame:str="map"):
+        if not isinstance(configuration_snapshot, CollectionRouteConfiguration): raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,"configuration_snapshot must be CollectionRouteConfiguration")
+        if not scan_id or map_frame != "map" or not math.isfinite(scan_timestamp_s) or not isinstance(expected_scan_step_ids, tuple) or not expected_scan_step_ids or any(not isinstance(x,str) or not x for x in expected_scan_step_ids) or len(set(expected_scan_step_ids)) != len(expected_scan_step_ids): raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,"invalid scan lifecycle configuration")
         self.scan_id,self.scan_timestamp_s,self.robot_pose_at_scan=scan_id,scan_timestamp_s,robot_pose_at_scan
         self.configuration_snapshot,self.map_frame=configuration_snapshot,map_frame
-        self.expected_scan_step_ids=expected_scan_step_ids; self.required_coverage_fraction=required_coverage_fraction; self.scan_timeout_s=scan_timeout_s
+        self.expected_scan_step_ids=expected_scan_step_ids
         self._accepted_steps=set(); self._tracks=[]; self._state="collecting"; self.rejections=[]
+
+    @property
+    def required_coverage_fraction(self) -> float: return self.configuration_snapshot.scan.required_coverage_fraction
+
+    @property
+    def scan_timeout_s(self) -> float: return self.configuration_snapshot.scan.scan_timeout_s
     def add(self, item):
         if self._state!="collecting": raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,"scan is not collecting")
         if isinstance(item, SpatialObservationRejection): self.rejections.append(item); return
