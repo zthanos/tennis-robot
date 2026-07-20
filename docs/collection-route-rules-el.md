@@ -57,6 +57,47 @@ planning -> aborted_planning
 planning -> completed_no_targets
 ```
 
+### Pure executor contracts (Phase 4A)
+
+Το pure executor δέχεται μόνο injected dependencies και immutable typed
+results. Δεν εισάγει ROS, actions, clocks ή raw-string FSM events.
+
+`FollowUpConfiguration` είναι μέρος του immutable configuration snapshot και
+έχει τα υποχρεωτικά πεδία `enabled: bool` και `max_total_runs: positive int`.
+Το `max_total_runs` περιλαμβάνει τον αρχικό cycle: όταν `enabled=false` πρέπει
+να είναι ακριβώς `1`, όταν `enabled=true, max_total_runs=1` δεν εκτελείται
+follow-up, και όταν είναι `N` επιτρέπονται έως `N` πλήρεις
+scan→plan→execute cycles. Ο run counter αυξάνεται όταν αρχίζει νέο navigation
+προς scan pose.
+
+Τα injected pure dependency results είναι immutable typed values:
+
+- `NavigatorResult`: `running`, `succeeded`, `failed(reason)`,
+  `unavailable(reason)`.
+- `ScanSessionResult`: `running`, `snapshot_ready(snapshot)`, `failed(reason)`.
+- `CollectorStartResult`: `starting`, `ready`, `failed(reason)`.
+- `CollectorStopResult`: `stopping`, `stopped`, `failed(reason)`.
+- `PathFollowerResult`: `running(progress_s, trajectory_tube_ok,
+  remaining_run_in_m, requires_reverse, requires_standalone_rotate)`,
+  `completed`, `failed(reason)`.
+- `SafetyResult`: `clear`, `blocked`, `timeout`.
+
+Τα `reason` είναι structured reason codes, όχι raw strings.
+
+Στο safety pause ο executor αποθηκεύει immutable `s_before_pause`. Με
+`SafetyResult.clear`, resume επιτρέπεται μόνο όταν το τελευταίο
+`PathFollowerResult` έχει `progress_s >= s_before_pause`,
+`trajectory_tube_ok=true`, `remaining_run_in_m` τουλάχιστον ίσο με το
+απαιτούμενο run-in του επόμενου crossing και δεν απαιτεί reverse ή standalone
+rotate. Κάθε άλλη περίπτωση είναι `aborted_tracking`. `SafetyResult.timeout`
+είναι `aborted_safety`.
+
+Μετά από ολοκληρωμένη ή ήδη aborted route, failed/timeout collector stop κάνει
+`force_disable`, καταγράφει telemetry `collector_stop_fault` και δεν αλλάζει
+το ήδη καταγεγραμμένο route outcome: συνεχίζει
+`evaluating_results -> completed`. Το `aborted_collector` αφορά μόνο start
+failure ή jam/full/health failure κατά την ενεργή route.
+
 ## Scan και frozen snapshot
 
 1. Το ρομπότ πηγαίνει στο κέντρο της service line της τρέχουσας πλευράς.
@@ -81,6 +122,122 @@ ball_id, ball_position, confidence, position_covariance
 
 Το snapshot απαιτεί timestamp-aligned detection/depth, duplicate-ball fusion
 και ελάχιστο ορισμένο αριθμό επιβεβαιωτικών observations.
+
+### Snapshot geometry και planner view
+
+Για το Gazebo MVP το canonical `SnapshotBall` διατηρεί:
+
+```text
+position_map_xy: Point2D
+position_covariance_map_xy: symmetric PSD 2×2 covariance (m²)
+```
+
+Camera XYZ χρησιμοποιείται μόνο για timestamped TF projection προς map XY.
+Το Z δεν είναι μέρος του Gazebo MVP snapshot/planner contract.
+
+### Stable perception metadata boundary
+
+Το `/perception/ball_detections` (`BallDetectionArray`) παραμένει το μοναδικό
+downstream contract για ball perception. Το `BallDetectionArray.header.stamp`
+είναι το RGB acquisition timestamp. Το υπάρχον `has_spatial` παραμένει
+validity flag: μόνο detection με `has_spatial=true` είναι spatial target. Κάθε
+τέτοιο detection φέρει το timestamp του depth frame που έγινε match
+(`matched_depth_stamp`) και 3×3 position covariance της θέσης στο
+`camera_link_optical_frame` (REP-103 optical, row-major, m²). Detection με
+`has_spatial=false` ή missing/invalid spatial metadata αγνοείται από τον
+`ScanSnapshotBuilder` και δεν μπαίνει σε snapshot. Empty arrays παραμένουν
+perception heartbeat.
+
+Ο downstream transform προς `map` γίνεται με TF/localization pose στο RGB
+detection timestamp, ποτέ με την τρέχουσα pose του robot. Στο Gazebo MVP ο
+adapter λαμβάνει timestamp-aligned `map_from_camera` transform και required
+explicit `localization_xy_covariance` configuration. Η snapshot XY covariance
+είναι rotated camera XY covariance συν αυτή τη configured conservative
+localization covariance· δεν υπάρχει implicit default ή zero-covariance
+assumption.
+
+Για το Gazebo MVP η μοναδική επιτρεπτή provisional planning-safety profile
+configuration είναι:
+
+```text
+localization_xy_covariance_m2:
+  [[0.01, 0.0],
+   [0.0, 0.01]]
+```
+
+Είναι declared conservative engineering budget για Gazebo planning, όχι
+calibrated claim για physical localization. Αποθηκεύεται αυτούσια και
+immutable στο `configuration_snapshot`, δεν έχει default/fallback και δεν
+ενεργοποιεί physical snapshot. Μελλοντικό timestamped Gazebo GT +
+`map`-alignment evidence μπορεί να την αντικαταστήσει χωρίς να μπλοκάρει το
+τρέχον Phase 2 MVP.
+
+Ο `ScanSnapshotBuilder` δεν επαναλαμβάνει RGB/depth fusion ούτε TF/metadata
+validation: καταναλώνει μόνο accepted output του reusable adapter.
+
+Metadata που λείπουν, είναι stale ή ασυνεπή δημιουργούν typed rejected
+observation στο snapshot boundary. Δεν υπάρχει fallback σε current-pose
+transform, unstamped depth ή estimated covariance. Αν τα rejected observations
+εμποδίσουν coverage ή confirmation, το scan λήγει ως `aborted_scan`.
+
+### Immutable snapshot configuration και adapter contract
+
+Το `ScanSnapshot` και το `CollectionRoutePlan` αποθηκεύουν immutable copy:
+
+```text
+perception_spatial_validation:
+  max_rgb_depth_timestamp_delta_s
+  max_detection_to_tf_age_s
+  covariance_psd_relative_tolerance
+  min_position_covariance_trace_m2
+  max_position_covariance_trace_m2
+  localization_xy_covariance
+calibration_artifact:
+  calibration_id, model_id, model_version, platform, artifact_sha256,
+  parameters, range_domain_m, depth_quality_domain, evidence_reference,
+  calibration_date, acceptance_metrics
+snapshot_association:
+  association_mahalanobis_gate_chi2, min_confirmations,
+  scan_step_id, min_distinct_scan_steps
+```
+
+Δεν υπάρχουν implicit defaults: missing/invalid configuration δεν δημιουργεί
+εκτελέσιμο snapshot ή plan.
+
+`PerceptionSpatialObservationAdapter` είναι το κοινό boundary για
+`controller_node.py` και builder. Input: canonical `BallDetectionArray`,
+detection index, timestamped `map_from_camera` transform, timestamped
+Gazebo `localization_xy_covariance` configuration και immutable validation + calibration
+configuration. Output είναι ακριβώς ένα από:
+
+```text
+AcceptedSpatialObservation {
+  scan_id, rgb_timestamp, matched_depth_timestamp, map_xy, map_covariance_2x2,
+  confidence, scan_step_id, calibration/configuration identity
+}
+SpatialObservationRejection { code, detection_index, rgb_timestamp, detail }
+```
+
+Codes περιλαμβάνουν τουλάχιστον `spatial_targets_unhealthy`,
+`non_spatial_detection`, `perception_metadata_rejected`,
+`perception_tf_rejected` και `frame_mismatch`. Physical mode δεν ενεργοποιεί
+collection snapshot χωρίς ξεχωριστό verified localization covariance contract.
+
+### Calibrated covariance production
+
+Ο producer υπολογίζει την 3×3 camera-optical covariance από calibrated model
+με inputs τουλάχιστον range και depth-quality metrics. Diagonal covariance
+επιτρέπεται μόνο όταν οι axis variances τεκμηριώνονται από calibration evidence.
+Gazebo και physical OAK-D χρησιμοποιούν το ίδιο model interface και το ίδιο ROS
+contract, αλλά διαφορετικά calibrated parameter sets επιτρέπονται.
+
+Κάθε calibration είναι versioned artifact/configuration με model/version ID,
+parameters, range/depth-quality validity domain, dataset ή Gazebo scenario που
+τη δικαιολογεί, ημερομηνία και acceptance metrics. Το model/version και τα
+parameters είναι μέρος του `configuration_snapshot` του `ScanSnapshot` και του
+`CollectionRoutePlan`. Εκτός validity domain ή με ανεπαρκές depth quality ο
+producer θέτει `has_spatial=false`: δεν επιτρέπεται extrapolation, arbitrary
+covariance ή fallback covariance.
 
 Το perception monitor παραμένει ενεργό μετά το scan, αλλά post-scan detections
 χρησιμοποιούνται αποκλειστικά για telemetry/validation. Δεν εισάγονται στον
@@ -172,6 +329,122 @@ replan. Καταγράφεται `target_position_invalidated` και η τελ�
   collision checking. Έλεγχος μόνο σε αραιά sampled poses δεν αρκεί.
 - Μετωπικό fallback προς εμπόδιο απαγορεύεται.
 
+### Deterministic Phase 3A geometry contract
+
+Το pure Phase 3A δέχεται explicit `CourtModel` με closed
+`navigable_polygon` και `obstacles[{id, kind, polygon}]`, όπου το `kind` είναι
+`net | fence | post | bench | other`. Κάθε obstacle και το exterior του
+navigable polygon ελέγχεται inflated με required
+`footprint_clearance_radius_m`, τον conservative circumscribed radius του
+robot + funnel footprint + safety margin. Ένα straight segment είναι valid
+μόνο όταν ολόκληρο το swept disk του κέντρου δεν τέμνει inflated obstacle ή
+exterior court area.
+
+Για heading `h` με lateral normal `n`, ο effective capture corridor είναι:
+
+```text
+capture_half_width_m - ball_radius_m
+- confidence_multiplier * sqrt(nᵀ Σ_xy n)
+- tracking_lateral_error_bound_m
+- capture_safety_margin_m
+```
+
+Η snapshot covariance περιλαμβάνει ήδη Gazebo localization covariance και δεν
+προστίθεται δεύτερη φορά. Το width πρέπει να είναι αυστηρά θετικό.
+
+Ο planner παράγει μόνο το finite deterministic set από `N` equally spaced
+headings στο `[0, 2π)` και τις δύο ακριβείς tangent directions κάθε relevant
+net/fence segment. Αν η ball απέχει από uninflated net/fence boundary το πολύ
+`tangent_activation_distance_m`, κάθε heading οφείλει να ικανοποιεί
+`abs(wrap(h - tangent_heading)) <= max_parallel_heading_error`. Σε corner
+ισχύουν ταυτόχρονα όλα τα active constraints.
+
+Για crossing `p` και direction `u(h)`, `entry = p - minimum_run_in_m*u` και
+`exit = p + minimum_run_out_m*u`. Failure στο entry ή στο full entry→crossing
+segment είναι `no_entry`; αντίστοιχο failure στο exit/crossing→exit είναι
+`no_exit`. Ball μέσα σε inflated keepout είναι `keepout`. Το `turn_radius`
+δεν εκδίδεται στο Phase 3A: isolated straight pass έχει zero curvature και
+connector feasibility αξιολογείται στο Phase 3B.
+
+### Deterministic Phase 3B1 connector contract
+
+Το Phase 3B1 παράγει μόνο forward, simple CSC Dubins connectors των families
+`LSL`, `RSR`, `LSR`, `RSL`. CCC (`RLR`, `LRL`), loops, self-intersecting
+connectors, reverse και standalone rotate απαγορεύονται. Κάθε edge λαμβάνει
+μόνο required immutable configuration: `minimum_turning_radius_m`,
+`max_connector_length_m`, `max_connector_arc_angle_rad` και
+`max_connector_total_turn_rad`; δεν υπάρχουν defaults.
+
+Connector που δεν έχει CSC candidate το οποίο ταυτόχρονα τηρεί radius, length,
+individual-arc, total-turn και continuous swept-disk collision check έχει
+typed edge rejection `turning_constraint_rejected`. Τα `collision`, `length`
+και `turning-limit` rejections παραμένουν διακριτά edge telemetry. Το
+`unreachable_turn_radius` δεν εκδίδεται ακόμη για BallResult: απαιτεί
+μελλοντική global graph evaluation που αποδεικνύει ότι κάθε connector προς/από
+κάθε candidate pass της μπάλας απορρίφθηκε για αυτόν τον λόγο.
+
+### Deterministic Phase 3B2 global search contract
+
+Το immutable `GlobalRouteSearchConfiguration` είναι required planner input και
+αντιγράφεται αυτούσιο στο `CollectionRoutePlan.configuration_snapshot`:
+`max_search_expansions`, `terminal_run_out_m`, connector/crossing nominal
+speed, turn-energy equivalent και τα πέντε non-negative weights length/time/
+curvature/energy/pass-count, με τουλάχιστον ένα θετικό weight. Δεν υπάρχουν
+defaults.
+
+Για selected route, `L` είναι το άθροισμα connector, funnel-pass και terminal
+lengths. `T` είναι connector/terminal length divided by connector nominal
+speed συν pass length divided by crossing nominal speed. `K` είναι το sum των
+absolute connector arc angles, `E = L + turn_energy_equivalent_m_per_rad*K`
+και `C = wL*L + wT*T + wK*K + wE*E + wP*pass_count`. Είναι planner surrogate:
+δεν περιλαμβάνει acceleration/deceleration estimate.
+
+Ο solver κάνει deterministic bounded DFS/branch-and-bound σε simple directed
+paths. Η σειρά είναι maximum unique covered IDs, minimum `C`, minimum pass
+count, stable route-ID tie-break. Κάθε final pass απαιτεί straight forward
+terminal extension `terminal_run_out_m` με continuous swept-disk check.
+
+Το ανεξάρτητο `planning_search_status` είναι `complete | budget_exhausted |
+failed`. Με budget exhaustion και valid terminal route το plan είναι
+executable `partial` και unexamined targets είναι `deferred/planning_budget`.
+Χωρίς valid terminal route επιστρέφεται non-executable `planning_timeout`.
+Όταν η search ολοκληρωθεί αλλά κανένα candidate δεν έχει valid terminal,
+`planning_search_status=complete` και το αποτέλεσμα παραμένει
+`planning_timeout`; το status περιγράφει terminal-validity outcome, όχι μόνο
+budget exhaustion.
+
+### Deterministic Phase 3C shared-pass contract
+
+Το required immutable `SharedPassConfiguration` έχει χωρίς defaults
+`max_shared_pass_balls >= 2`, positive `max_shared_pass_candidates` και
+positive `minimum_mechanical_ball_spacing_m`. Ο generator χρησιμοποιεί μόνο
+ήδη valid 3A single-ball candidates με ακριβώς κοινό heading. Κάθε member
+διατηρεί έτσι effective corridor, tangent και individual collision validity.
+
+Τα members ταξινομούνται longitudinally στο heading. Κάθε adjacent pair έχει
+separation τουλάχιστον `minimum_mechanical_ball_spacing_m`. Το shared entry
+είναι πριν από το πρώτο crossing κατά `minimum_run_in_m`, το exit μετά από το
+τελευταίο κατά `minimum_run_out_m`, και όλο το entry→exit segment περνά
+continuous swept-disk/boundary check. Δεν επιτρέπεται runtime shrink, stop ή
+διαφορετικό heading μεταξύ members.
+
+Παράγονται deterministic groups μεγέθους 2 έως cap και σε deterministic order
+μέχρι `max_shared_pass_candidates`. Cap exhaustion είναι μόνο candidate-
+generation budget telemetry, ποτέ deterministic `unreachable`. Κάθε shared
+candidate φέρει όλα τα `covered_ball_ids` και εισέρχεται στο B1/B2 API ως
+ordinary pass node.
+
+### Deterministic Phase 3D planner composition
+
+Το `collection_route_planner_v2.py` είναι το μοναδικό pure orchestration entry
+point. Εκτελεί με σταθερή σειρά `ScanSnapshot → 3A individual candidates →
+3C shared candidates → deterministic merge/deduplicate → B1 graph → B2
+solver → immutable CollectionRoutePlan`. Το final plan έχει ordered connector,
+funnel-pass και terminal segments, contiguous progress, execution-profile
+references, terminal pose, planning/search statuses, πλήρη BallResult set και
+το πλήρες immutable configuration snapshot. Δεν εισάγεται ROS/runtime access
+σε καμία από αυτές τις φάσεις.
+
 ## Collector και speed profile
 
 Η RoutePath δεν ξεκινά πριν ο collector δηλώσει `collector_ready` μέσα σε
@@ -182,6 +455,7 @@ terminal pose.
 Το ExecutionProfile ορίζει ανά segment:
 
 - nominal/minimum/maximum crossing speed,
+- required `nominal_speed_warning_tolerance_mps` χωρίς default,
 - acceleration πριν από entry και deceleration μετά από exit,
 - minimum run-in και run-out,
 - maximum curvature και tracking tolerance.
@@ -189,6 +463,24 @@ terminal pose.
 Ένα pass είναι μηχανικά άκυρο αν δεν μπορεί να φτάσει στο crossing με stable
 heading και speed μέσα στο έγκυρο εύρος. Jam, collector health failure ή full
 hopper τερματίζουν το run ως `aborted_collector`; δεν προκαλούν route replan.
+
+Στο crossing, `speed < min_speed_mps` ή `speed > max_speed_mps` είναι hard
+`profile_violation`. Αν η speed είναι εντός αυτού του κλειστού interval αλλά
+`abs(speed - nominal_speed_mps) > nominal_speed_warning_tolerance_mps`, η
+route παραμένει profile-compliant και καταγράφεται μόνο telemetry
+`nominal_speed_deviation`. Το typed `ProfileComplianceVerdict` περιέχει
+`hard_compliant`, optional `hard_violation_reason`, `nominal_tracking`,
+`measured_speed_mps` και `nominal_speed_error_mps`. Nominal deviation δεν
+κάνει abort ή replan χωρίς μελλοντικό, ρητό sustained-speed contract.
+
+Κάθε `FUNNEL_PASS` περιέχει immutable ordered `planned_crossings[]`. Κάθε
+`PlannedCrossing` έχει `ball_id`, `position_xy`, `progress_s`, `heading_rad`
+και `predicted_lateral_error`. Τα ball IDs εμφανίζονται ακριβώς μία φορά, το
+`progress_s` αυξάνει αυστηρά και τα IDs είναι ακριβώς ίδια, με την ίδια σειρά,
+με το summary `covered_ball_ids`. Single-ball pass έχει ένα crossing· shared
+pass έχει ένα ανά μπάλα στις πραγματικές διαμήκεις θέσεις του pass. Per-crossing
+telemetry και profile verdict συνδέονται με `ball_id + progress_s`, ποτέ με
+ένα κοινό representative crossing point.
 
 Το `collector_stopping` έχει timeout. Σε timeout γίνεται force-disable και
 καταγράφεται collector fault, χωρίς να αλλάζει το ήδη καταγεγραμμένο αποτέλεσμα
@@ -268,6 +560,8 @@ route progress. Console και logs δείχνουν την RoutePath και ό�
 - crossing speed/acceleration/deceleration limits,
 - `max_parallel_heading_error`, trajectory tube και progress window,
 - scan coverage/timeout/minimum confirmation,
+- maximum RGB-depth timestamp delta, maximum detection-to-localization/TF age
+  και covariance validity thresholds,
 - planning budget και operational-cost weights,
 - costmap inflation και safety timeout.
 
