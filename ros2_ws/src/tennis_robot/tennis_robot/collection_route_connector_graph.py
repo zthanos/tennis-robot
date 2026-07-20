@@ -1,0 +1,227 @@
+"""Pure Phase 3B1 CSC Dubins connector graph.
+
+Only forward simple CSC connectors are represented here.  This module neither
+orders passes nor chooses a route.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum
+import math
+
+from tennis_robot.collection_route_planner_v2 import CourtModel, FunnelPassCandidate, _segment_is_collision_free
+from tennis_robot.collection_route_types import CollectionRouteConfiguration, Pose2D, ScanSnapshot
+
+
+_CSC_MODES = ("LSL", "RSR", "LSR", "RSL")
+_ARC_CHORD_ANGLE_RAD = math.pi / 12.0
+_EPSILON = 1e-9
+
+
+class ConnectorRejectionCode(str, Enum):
+    TURNING_CONSTRAINT_REJECTED = "turning_constraint_rejected"
+    LENGTH_REJECTED = "length_rejected"
+    COLLISION_REJECTED = "collision_rejected"
+
+
+@dataclass(frozen=True)
+class ConnectorPrimitive:
+    kind: str
+    length_m: float
+    arc_angle_rad: float
+
+
+@dataclass(frozen=True)
+class ConnectorPath:
+    mode: str
+    primitives: tuple[ConnectorPrimitive, ...]
+    poses: tuple[Pose2D, ...]
+    length_m: float
+    total_turn_rad: float
+
+
+@dataclass(frozen=True)
+class ConnectorEdge:
+    edge_id: str
+    source_node_id: str
+    target_node_id: str
+    path: ConnectorPath | None
+    maximum_curvature_per_m: float | None
+    collision_free: bool
+    rejection: ConnectorRejectionCode | None
+
+    def __post_init__(self) -> None:
+        if self.rejection is None and (self.path is None or not self.collision_free):
+            raise ValueError("accepted edge must have collision-free path")
+        if self.rejection is not None and self.collision_free:
+            raise ValueError("rejected edge cannot report collision-free")
+
+
+@dataclass(frozen=True)
+class DirectedCandidateGraph:
+    pass_nodes: tuple[tuple[str, FunnelPassCandidate], ...]
+    edges: tuple[ConnectorEdge, ...]
+
+
+def build_directed_candidate_graph(
+    *,
+    snapshot: ScanSnapshot,
+    candidates: tuple[FunnelPassCandidate, ...],
+    court: CourtModel,
+    configuration: CollectionRouteConfiguration,
+) -> DirectedCandidateGraph:
+    """Build start→entry and exit→other-entry CSC edges for Phase 3B1."""
+    if not isinstance(snapshot, ScanSnapshot):
+        raise ValueError("snapshot must be ScanSnapshot")
+    if not isinstance(court, CourtModel):
+        raise ValueError("court must be CourtModel")
+    if not isinstance(configuration, CollectionRouteConfiguration):
+        raise ValueError("configuration must be CollectionRouteConfiguration")
+    if snapshot.configuration_snapshot != configuration:
+        raise ValueError("configuration must exactly match snapshot configuration")
+    if not isinstance(candidates, tuple) or any(not isinstance(item, FunnelPassCandidate) for item in candidates):
+        raise ValueError("candidates must be tuple of FunnelPassCandidate")
+
+    ordered_candidates = tuple(sorted(candidates, key=lambda item: (item.ball_id, item.heading_rad, item.entry_pose.x_m, item.entry_pose.y_m, item.exit_pose.x_m, item.exit_pose.y_m, item.covered_ball_ids)))
+    pass_nodes = tuple((f"pass:{candidate.ball_id}:{index}", candidate) for index, candidate in enumerate(ordered_candidates))
+    edges: list[ConnectorEdge] = []
+    for node_id, candidate in pass_nodes:
+        edges.extend(_connector_edges("start", snapshot.robot_pose_at_scan, node_id, candidate.entry_pose, court, configuration))
+    for source_id, source in pass_nodes:
+        for target_id, target in pass_nodes:
+            if source_id == target_id:
+                continue
+            edges.extend(_connector_edges(source_id, source.exit_pose, target_id, target.entry_pose, court, configuration))
+    return DirectedCandidateGraph(pass_nodes, tuple(edges))
+
+
+def _connector_edges(source_id, source_pose, target_id, target_pose, court, configuration):
+    return tuple(
+        _build_edge(source_id, source_pose, target_id, target_pose, mode, court, configuration)
+        for mode in _CSC_MODES
+    )
+
+
+def _build_edge(source_id, source, target_id, target, mode, court, configuration):
+    edge_id = f"{source_id}->{target_id}:{mode}"
+    radius = configuration.mechanical.minimum_turning_radius_m
+    normalized = _dubins_parameters(source, target, radius, mode)
+    if normalized is None:
+        return ConnectorEdge(edge_id, source_id, target_id, None, None, False, ConnectorRejectionCode.TURNING_CONSTRAINT_REJECTED)
+    path = _materialize_path(source, radius, mode, normalized)
+    connector = configuration.connector
+    arc_angles = tuple(primitive.arc_angle_rad for primitive in path.primitives if primitive.kind != "S")
+    if (
+        path.length_m > connector.max_connector_length_m + _EPSILON
+        or any(angle > connector.max_connector_arc_angle_rad + _EPSILON for angle in arc_angles)
+        or path.total_turn_rad > connector.max_connector_total_turn_rad + _EPSILON
+        or _self_intersects(path.poses)
+    ):
+        return ConnectorEdge(edge_id, source_id, target_id, None, None, False, ConnectorRejectionCode.TURNING_CONSTRAINT_REJECTED if path.length_m <= connector.max_connector_length_m + _EPSILON else ConnectorRejectionCode.LENGTH_REJECTED)
+    if not _path_is_collision_free(path, court, configuration.feasibility.footprint_clearance_radius_m, radius):
+        return ConnectorEdge(edge_id, source_id, target_id, path, 1.0 / radius, False, ConnectorRejectionCode.COLLISION_REJECTED)
+    return ConnectorEdge(edge_id, source_id, target_id, path, 1.0 / radius, True, None)
+
+
+def _dubins_parameters(start: Pose2D, target: Pose2D, radius: float, mode: str):
+    dx, dy = target.x_m - start.x_m, target.y_m - start.y_m
+    distance = math.hypot(dx, dy) / radius
+    theta = math.atan2(dy, dx) if distance > _EPSILON else 0.0
+    alpha = _mod2pi(start.yaw_rad - theta)
+    beta = _mod2pi(target.yaw_rad - theta)
+    if mode == "LSL":
+        p2 = 2 + distance * distance - 2 * math.cos(alpha - beta) + 2 * distance * (math.sin(alpha) - math.sin(beta))
+        if p2 < 0: return None
+        tmp = math.atan2(math.cos(beta) - math.cos(alpha), distance + math.sin(alpha) - math.sin(beta))
+        return _mod2pi(-alpha + tmp), math.sqrt(p2), _mod2pi(beta - tmp)
+    if mode == "RSR":
+        p2 = 2 + distance * distance - 2 * math.cos(alpha - beta) + 2 * distance * (math.sin(beta) - math.sin(alpha))
+        if p2 < 0: return None
+        tmp = math.atan2(math.cos(alpha) - math.cos(beta), distance - math.sin(alpha) + math.sin(beta))
+        return _mod2pi(alpha - tmp), math.sqrt(p2), _mod2pi(-beta + tmp)
+    if mode == "LSR":
+        p2 = -2 + distance * distance + 2 * math.cos(alpha - beta) + 2 * distance * (math.sin(alpha) + math.sin(beta))
+        if p2 < 0: return None
+        p = math.sqrt(p2)
+        tmp = math.atan2(-math.cos(alpha) - math.cos(beta), distance + math.sin(alpha) + math.sin(beta)) - math.atan2(-2.0, p)
+        return _mod2pi(-alpha + tmp), p, _mod2pi(-_mod2pi(beta) + tmp)
+    if mode == "RSL":
+        p2 = distance * distance - 2 + 2 * math.cos(alpha - beta) - 2 * distance * (math.sin(alpha) + math.sin(beta))
+        if p2 < 0: return None
+        p = math.sqrt(p2)
+        tmp = math.atan2(math.cos(alpha) + math.cos(beta), distance - math.sin(alpha) - math.sin(beta)) - math.atan2(2.0, p)
+        return _mod2pi(alpha - tmp), p, _mod2pi(beta - tmp)
+    raise ValueError("only CSC Dubins modes are permitted")
+
+
+def _materialize_path(start, radius, mode, normalized_lengths):
+    kinds = tuple(mode)
+    primitives = tuple(
+        ConnectorPrimitive(kind, length * radius, 0.0 if kind == "S" else length)
+        for kind, length in zip(kinds, normalized_lengths)
+    )
+    poses = [start]
+    current = start
+    for primitive in primitives:
+        current = _advance(current, primitive, radius)
+        poses.append(current)
+    return ConnectorPath(mode, primitives, tuple(poses), sum(item.length_m for item in primitives), sum(item.arc_angle_rad for item in primitives))
+
+
+def _advance(pose, primitive, radius):
+    if primitive.kind == "S":
+        return Pose2D(pose.x_m + primitive.length_m * math.cos(pose.yaw_rad), pose.y_m + primitive.length_m * math.sin(pose.yaw_rad), pose.yaw_rad)
+    sign = 1.0 if primitive.kind == "L" else -1.0
+    angle = primitive.arc_angle_rad
+    next_yaw = pose.yaw_rad + sign * angle
+    return Pose2D(
+        pose.x_m + sign * radius * (math.sin(next_yaw) - math.sin(pose.yaw_rad)),
+        pose.y_m - sign * radius * (math.cos(next_yaw) - math.cos(pose.yaw_rad)),
+        next_yaw,
+    )
+
+
+def _path_is_collision_free(path, court, clearance, radius):
+    current = path.poses[0]
+    for primitive in path.primitives:
+        subdivisions = 1 if primitive.kind == "S" else max(1, math.ceil(primitive.arc_angle_rad / _ARC_CHORD_ANGLE_RAD))
+        delta = primitive.length_m / subdivisions
+        piece = ConnectorPrimitive(primitive.kind, delta, 0.0 if primitive.kind == "S" else primitive.arc_angle_rad / subdivisions)
+        sagitta = 0.0 if primitive.kind == "S" else radius * (1.0 - math.cos(piece.arc_angle_rad / 2.0))
+        for _ in range(subdivisions):
+            next_pose = _advance(current, piece, radius)
+            if not _segment_is_collision_free(
+                _point(current), _point(next_pose), court, clearance + sagitta
+            ):
+                return False
+            current = next_pose
+    return True
+
+
+def _self_intersects(poses):
+    # CSC limits make each primitive simple; this catches chord-level loops.
+    segments = list(zip(poses, poses[1:]))
+    for index, (first_start, first_end) in enumerate(segments):
+        for second_index, (second_start, second_end) in enumerate(segments[index + 2:], start=index + 2):
+            if second_index == index + 1:
+                continue
+            if _segments_intersect(first_start, first_end, second_start, second_end):
+                return True
+    return False
+
+
+def _segments_intersect(a, b, c, d):
+    def cross(first, second, third):
+        return (second.x_m - first.x_m) * (third.y_m - first.y_m) - (second.y_m - first.y_m) * (third.x_m - first.x_m)
+    ab_c, ab_d, cd_a, cd_b = cross(a, b, c), cross(a, b, d), cross(c, d, a), cross(c, d, b)
+    return (ab_c > _EPSILON) != (ab_d > _EPSILON) and (cd_a > _EPSILON) != (cd_b > _EPSILON)
+
+
+def _point(pose):
+    from tennis_robot.collection_route_types import Point2D
+    return Point2D(pose.x_m, pose.y_m)
+
+
+def _mod2pi(value):
+    return value % (2.0 * math.pi)
