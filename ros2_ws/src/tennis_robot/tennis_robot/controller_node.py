@@ -45,8 +45,11 @@ from tennis_robot import yaw_from_quaternion
 
 from tennis_robot.ball_map import BallMap, BallMapConfig, across_net
 from tennis_robot.collect_one_mission import CollectOneMission
-from tennis_robot.collect_route_mission import CollectRouteMission
-from tennis_robot.collection_route_planner import CourtModel, remaining_route_length_m
+from tennis_robot.collection_executor_node_factory import (
+    CollectionExecutorNodeCache,
+    CollectionExecutorNodeFactory,
+)
+from tennis_robot.collection_route_executor import ExecutorState
 from tennis_robot.collection_scoring import (
     CreditReconciler,
     SimRetentionTracker,
@@ -62,6 +65,8 @@ from tennis_robot.collector import (
     ConceptACommand,
     ConceptAConfig,
 )
+from tennis_robot.collector_driver import GazeboCollectorDriver
+from tennis_robot.collector_interface import CollectorInterface
 from tennis_robot.config_utils import _env_float
 from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
 from tennis_robot.mapping import (
@@ -166,6 +171,10 @@ def _survey_vision_from_json(payload: str) -> SurveyVision:
 
 
 class ControllerNode(Node):
+    # Class seam used by the node-wiring unit test; production uses the real
+    # Phase 6D.3 factory without a runtime feature flag or fallback.
+    collection_executor_factory_type = CollectionExecutorNodeFactory
+
     def __init__(self) -> None:
         super().__init__("tennis_robot_controller")
 
@@ -175,8 +184,6 @@ class ControllerNode(Node):
         self.survey_behavior = Ros2LidarCourtSurvey.from_env()
         self.ball_map = BallMap(BallMapConfig(court_ball_margin_m=COURT_BALL_MARGIN_M))
         self.collect_one_mission = CollectOneMission()
-        self.collect_route_mission = CollectRouteMission()
-        self._court_model: CourtModel | None = None
         self._perception_spatial_validation_config: PerceptionSpatialValidationConfig | None = None
         self._last_perception_rejection_reason: str | None = None
         self._map_mission = MapLeftSideMission(
@@ -231,6 +238,11 @@ class ControllerNode(Node):
         self._run_id = f"{int(self.started_at)}-{os.getpid()}"
         self._collect_route_run_start_count = 0
         self._last_collect_route_summary: dict = {}
+        self._collect_route_executor = None
+        self._collect_route_executor_factory = None
+        self._collect_route_executor_events: list[dict] = []
+        self._collect_route_executor_complete_reported = False
+        self._collection_executor_cache = CollectionExecutorNodeCache()
         self._last_collection_event_key: tuple | None = None
         self._last_collection_scan_key: tuple | None = None
         self._collect_route_last_probe_s: float = 0.0
@@ -241,6 +253,7 @@ class ControllerNode(Node):
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
+        self._latest_ball_detections_msg = None
         self._latest_observations: list[BallObservationInput] = []
         self._latest_obs_received_at = 0.0
         self._latest_obs_seq = 0
@@ -250,6 +263,7 @@ class ControllerNode(Node):
         self._latest_camera_balls_received_at = 0.0
         self._last_bad_perception_frame = ""
         self._lidar_ranges: list[float] | None = None
+        self._latest_scan_msg = None
         self._lidar_angle_min: float = -math.pi
         self._lidar_angle_increment: float | None = None
         self._robot_x = 0.0
@@ -326,6 +340,8 @@ class ControllerNode(Node):
 
     def _on_ball_detections(self, msg: BallDetectionArray) -> None:
         """Consume the canonical sim/real OAK-D perception contract."""
+        self._latest_ball_detections_msg = msg
+        self._collection_executor_cache.latest_ball_detections = msg
         if msg.header.frame_id != PERCEPTION_FRAME_ID:
             if msg.header.frame_id != self._last_bad_perception_frame:
                 self.get_logger().error(
@@ -429,6 +445,8 @@ class ControllerNode(Node):
         self._latest_obs_seq += 1
 
     def _on_scan(self, msg: LaserScan) -> None:
+        self._latest_scan_msg = msg
+        self._collection_executor_cache.latest_scan = msg
         self._lidar_ranges = [float(r) for r in msg.ranges]
         self._lidar_angle_min = float(msg.angle_min)
         self._lidar_angle_increment = float(msg.angle_increment)
@@ -553,58 +571,25 @@ class ControllerNode(Node):
         )
         mapped_observation = self._mapping_observation(mapping_observation)
         self._mapped_obs_seq = self._latest_obs_seq
-        collect_route_create_allowed = (
-            self.control_mode != "collect_route"
-            or not self.collect_route_mission.freeze_initial_plan
-            or self.collect_route_mission.phase in {"idle", "scan"}
-        )
         mapped_ball_id, is_new_ball = self.ball_map.update(
             mapped_observation,
             now,
-            allow_create=collect_route_create_allowed,
+            allow_create=True,
         )
         control_mapping_observation = self._mapping_observation(observation)
-        ignored_new_detections = 0
-        if (
-            self.control_mode == "collect_route"
-            and new_detection_frame
-            and not collect_route_create_allowed
-            and mapped_ball_id is None
-            and mapped_observation.visible
-            and mapped_observation.world_x_m is not None
-            and mapped_observation.world_y_m is not None
-        ):
-            ignored_new_detections += 1
 
-        # collect_route maps EVERY detection of the frame, not only the
-        # nearest: the 360° scan must register balls behind/beside the closest
-        # one. When the initial plan is frozen, detections after the scan may
-        # still refine existing entries but cannot add new route candidates.
+        # Keep the console ball map populated from every camera detection.  The
+        # executor owns its own immutable scan snapshot and never consumes this
+        # legacy BallMap registry.
         if new_detection_frame and self.control_mode == "collect_route":
             for extra in self._latest_observations:
                 if extra is not self._latest_obs:
                     extra_mapped = self._mapping_observation(extra)
-                    extra_id, _ = self.ball_map.update(
+                    self.ball_map.update(
                         extra_mapped,
                         now,
-                        allow_create=collect_route_create_allowed,
+                        allow_create=True,
                     )
-                    if (
-                        not collect_route_create_allowed
-                        and extra_id is None
-                        and extra_mapped.visible
-                        and extra_mapped.world_x_m is not None
-                        and extra_mapped.world_y_m is not None
-                    ):
-                        ignored_new_detections += 1
-
-        if ignored_new_detections:
-            self._record_collection_event(
-                "route_detection_ignored",
-                reason="frozen_initial_plan",
-                ignored_count=ignored_new_detections,
-                mission_phase=self.collect_route_mission.phase,
-            )
 
         if self.loop_count % 90 == 0:
             self.ball_map.prune_phantoms(now)
@@ -627,10 +612,7 @@ class ControllerNode(Node):
                 mapped_ball_id,
             )
         elif effective_mode == "collect_route":
-            command = self._collect_route_command_for_mode(
-                effective_mode,
-                self._collect_route_target_observation(control_mapping_observation),
-            )
+            command = self._collect_route_command_for_mode(effective_mode)
         elif effective_mode == "map_left_side":
             command = self._map_mission_command_for_mode(effective_mode)
         elif effective_mode in self._MANUAL_MODES:
@@ -638,14 +620,30 @@ class ControllerNode(Node):
         else:
             command = self._collector_command_for_mode(effective_mode, control_observation)
 
-        self.collection_confirmed = self._check_collection(command)
-        if self._sim_balls_seen and SIM_COLLECTION_CONFIRM_SOURCE != "truth":
+        if effective_mode == "collect_route":
+            # Collection outcome belongs exclusively to executor plan results
+            # and crossing telemetry.  Ground truth may still animate/referee
+            # retained sim balls, but it cannot credit or mutate the route.
+            self.collection_confirmed = False
+            if self._sim_balls_seen:
+                self._sim_retention_step(credit=False)
+        else:
+            self.collection_confirmed = self._check_collection(command)
+        if (
+            effective_mode != "collect_route"
+            and self._sim_balls_seen
+            and SIM_COLLECTION_CONFIRM_SOURCE != "truth"
+        ):
             reconcile = self._credit_reconciler.poll(now)
             if reconcile is not None:
                 self._record_collection_event(
                     reconcile.pop("event"), severity="critical", **reconcile
                 )
-        if self._sim_bin_candidate_active and not self.collection_confirmed:
+        if (
+            effective_mode != "collect_route"
+            and self._sim_bin_candidate_active
+            and not self.collection_confirmed
+        ):
             # The ball has crossed the lip. Hold the chassis still while the
             # intake remains active and prove that the ball stays in the bin.
             command = ConceptACommand(
@@ -653,15 +651,10 @@ class ControllerNode(Node):
                 base=BaseCommand(0.0, 0.0),
                 collector=command.collector,
             )
-        if self.collection_confirmed:
+        if effective_mode != "collect_route" and self.collection_confirmed:
             if self._confirmed_route_ball_id is not None:
                 collected_id = self._confirmed_route_ball_id
                 self.ball_map.set_state(collected_id, "collected")
-            elif self.control_mode == "collect_route":
-                # The route mission attributes the credit to its own stop and
-                # sets the map state itself; marking the nearest entry here as
-                # well retired a SECOND ball per capture on the beam path.
-                collected_id = None
             else:
                 collected_id = self.ball_map.mark_nearest_collected(
                     self._robot_x, self._robot_y, now
@@ -698,9 +691,15 @@ class ControllerNode(Node):
             self._record_collection_event("nav2_goal_cancel", reason=f"mode_exit:{new_mode}")
             self._nav2_lane.reset()
         if previous_mode == "collect_route":
-            self._last_collect_route_summary = self._build_collect_route_summary(
-                status="complete" if self.collect_route_mission.is_done else "stopped"
+            terminal = bool(
+                self._collect_route_executor is not None
+                and self._collect_route_executor.is_terminal
             )
+            self._last_collect_route_summary = self._build_collect_route_summary(
+                status=None if terminal else "stopped"
+            )
+            if self._collect_route_executor_factory is not None and not terminal:
+                self._collect_route_executor_factory.stop()
         self.behavior.reset()
         self.search_behavior.reset()
         if not (self.control_mode == "map_court" and new_mode == "idle"):
@@ -711,7 +710,6 @@ class ControllerNode(Node):
             self._collection_scan.reset()
         self.control_mode = new_mode
         self.collect_one_mission.reset()
-        self.collect_route_mission.reset()
         self.ball_map.max_create_distance_override_m = None
         self._reset_collect_pattern()
         self.scan_side_started_at = None
@@ -729,6 +727,10 @@ class ControllerNode(Node):
             if new_mode == "collect_route":
                 self._collect_route_run_start_count = self.collection_count
                 self._last_collect_route_summary = {}
+                self._collect_route_executor = None
+                self._collect_route_executor_factory = None
+                self._collect_route_executor_events = []
+                self._collect_route_executor_complete_reported = False
                 self._sim_ball_route_owner.clear()
                 self._sim_ball_route_last_onboard_s.clear()
                 self._credit_reconciler = CreditReconciler()
@@ -1367,162 +1369,108 @@ class ControllerNode(Node):
             return self._collect_route_observation(nearest_observation)
         return self._collect_route_observation(best)
 
-    def _collect_route_command_for_mode(
-        self, mode: str, observation: BallObservationInput
-    ) -> ConceptACommand:
-        mission = self.collect_route_mission
-        now = self._runtime_seconds()
+    def _collect_route_command_for_mode(self, mode: str) -> ConceptACommand:
         if self._on_mode_changed(mode):
             self.ball_map.reset()
-            self._collect_start_time = now
-            self._court_model = CourtModel.from_boundary_file(DEFAULT_BOUNDARY_FILE)
-            if self._court_model is None:
-                self.get_logger().warning(
-                    f"collect_route: no usable court model at {DEFAULT_BOUNDARY_FILE}; "
-                    "approach poses degrade to direct (no lateral fence/net handling)"
-                )
-            # Register balls out to camera range during the 360° scan.
-            self.ball_map.max_create_distance_override_m = mission.planner_cfg.scan_range_m
-            # Calibrate the map↔world frame offset while localization is
-            # still trustworthy; _pose_error_m measures drift from here.
-            if self._sim_true_pose is not None:
-                self._pose_frame_offset = (
-                    self._sim_true_pose[0] - self._robot_x,
-                    self._sim_true_pose[1] - self._robot_y,
-                )
-            mission.start(self._robot_pose_2d())
+            self._collect_start_time = self._runtime_seconds()
+            self._start_collection_route_executor()
 
-        if self._nav2_lane is None:
-            # collect_route drives its legs via Nav2 exclusively — fail loud,
-            # never silently substitute the P-controller for the legs.
-            self._record_collection_event(
-                "nav2_unavailable",
-                detail="nav2_msgs/rclpy.action not importable; collect_route stopped (no fallback)",
-            )
-            return ConceptACommand(
-                state=CollectorState.IDLE,
-                base=BaseCommand(0.0, 0.0),
-                collector=CollectorCommand(0.0, False),
-            )
+        if self._collect_route_executor is None:
+            raise RuntimeError("collect_route executor was not constructed on mode entry")
 
-        self._assign_sim_ball_route_owners()
-        command = mission.update(
-            observation,
-            self.collection_confirmed,
-            TIME_STEP_S,
-            self._robot_pose_2d(),
-            self.behavior,
-            self.ball_map,
-            now,
-            self._nav2_lane.state.value,
-            self._court_model,
-            self._confirmed_route_ball_id if self.collection_confirmed else None,
-            self._pending_sim_capture_ball_id(now),
+        self._collection_executor_cache.latest_scan = self._latest_scan_msg
+        self._collection_executor_cache.latest_ball_detections = (
+            self._latest_ball_detections_msg
+        )
+        self._collection_executor_cache.robot_x_m = self._robot_x
+        self._collection_executor_cache.robot_y_m = self._robot_y
+        self._collection_executor_cache.robot_yaw_rad = self._robot_yaw
+        state = self._collect_route_executor.tick()
+
+        if (
+            self._collect_route_executor.is_terminal
+            and not self._collect_route_executor_complete_reported
+        ):
+            self._collect_route_executor_complete_reported = True
+            self.get_logger().info(f"collect_route executor terminal: {state.value}")
+            self._publish_command("idle", "controller-collect-route-complete")
+
+        # HANDS-OFF: scan rotation and FollowPath own the base through their
+        # dedicated mux inputs; the executor collector port owns the collector.
+        return ConceptACommand(
+            state=CollectorState.IDLE,
+            base=BaseCommand(0.0, 0.0),
+            collector=CollectorCommand(0.0, False),
         )
 
-        # LiDAR forward guard for the fine approach: the capture stream owns
-        # the wheels here (priority 100, no costmap), and the lidar plane
-        # cannot see balls — anything solid dead ahead is net/fence/furniture.
-        # Run 3 pushed into the net this way; stop forward motion and let the
-        # approach timeout convert the blockage into a retry/skip.
-        if command.base.linear_speed_m_s > 0.0 and mission.phase == "approach":
-            front_m = self._front_range_m()
-            if front_m is not None and front_m < COLLECT_ROUTE_FRONT_BLOCK_M:
-                command = ConceptACommand(
-                    state=command.state,
-                    base=BaseCommand(0.0, command.base.angular_speed_rad_s),
-                    collector=command.collector,
-                )
-                if now - self._collect_route_last_block_event_s >= 2.0:
-                    self._collect_route_last_block_event_s = now
-                    self._record_collection_event(
-                        "route_approach_blocked",
-                        ball_id=mission.current_ball_id,
-                        front_range_m=front_m,
-                    )
-
-        # Scan-range override only lives while the mission scans.
-        if not mission.scanning:
-            self.ball_map.max_create_distance_override_m = None
-
-        # Nav2 wiring: the mission exposes the goal, the controller owns the
-        # navigator (same split as the lawnmower sweep).
-        goal = mission.nav_goal
-        if goal is not None:
-            self._nav2_lane.request(*goal)
-            if self._nav2_lane.state == LaneNavState.UNAVAILABLE:
-                self._record_collection_event(
-                    "nav2_unavailable",
-                    detail="navigate_to_pose action server not up; collect_route stopped (no fallback)",
-                    target_x_m=goal[0],
-                    target_y_m=goal[1],
-                )
-        elif self._nav2_lane.busy:
-            self._nav2_lane.cancel()
-
-        self.active_mapped_target_id = mission.current_ball_id
-        for event_type, fields in mission.drain_events():
-            self._record_collection_event(event_type, **fields)
-
-        # Ground-truth capture probe (sim only): while a leg or fine approach
-        # runs, record where the nearest physical ball actually is in the
-        # robot frame every ~2 s. Evidence trail for capture stalls (#2) and
-        # for nav freezes (#11: suspected ball wedged under the chassis —
-        # Nav2 cannot see balls, so legs plow straight through them).
-        if mission.phase in ("approach", "nav") and self._sim_balls_seen:
-            if now - self._collect_route_last_probe_s >= 2.0:
-                self._collect_route_last_probe_s = now
-                probe = self._nearest_sim_ball_local()
-                # Lock-vs-truth: distance from the mission's locked world point
-                # to the nearest physical ball. Quantifies how far the approach
-                # is steering from reality (lateral-capture-error investigation).
-                lock_error_m = None
-                locked = mission._locked_world
-                if locked is not None and self._sim_balls:
-                    lock_error_m = round(
-                        min(
-                            math.hypot(b["x"] - locked[0], b["y"] - locked[1])
-                            for b in self._sim_balls
-                        ),
-                        3,
-                    )
-                self._record_collection_event(
-                    "route_capture_probe",
-                    ball_id=mission.current_ball_id,
-                    mission_phase=mission.phase,
-                    behavior_state=self.behavior.state.value,
-                    approach_elapsed_s=mission._approach_elapsed_s,
-                    intake_beam_broken=self._intake_beam_broken,
-                    intake_roller_latched=self._intake_roller_latched,
-                    locked_world=list(locked) if locked else None,
-                    lock_error_m=lock_error_m,
-                    pose_error_m=self._pose_error_m(),
-                    nearest_sim_ball=probe,
-                )
-
-        # Localization watchdog (sim only): a believed-vs-truth pose gap of
-        # metres invalidates every downstream decision (goals, side checks,
-        # ball projections) — run-6 rejected all goals with the robot
-        # believed at the fence. Loud event, throttled.
-        pose_error = self._pose_error_m()
-        if pose_error is not None and pose_error > 1.0:
-            if now - self._last_pose_divergence_event_s >= 5.0:
-                self._last_pose_divergence_event_s = now
-                self._record_collection_event(
-                    "pose_divergence",
-                    pose_error_m=pose_error,
-                    believed=[round(self._robot_x, 2), round(self._robot_y, 2)],
-                    true=[round(self._sim_true_pose[0], 2), round(self._sim_true_pose[1], 2)],
-                    pose_source=self._pose_source,
-                )
-
-        if mission.is_done and not mission._complete_reported:
-            mission._complete_reported = True
-            self.get_logger().info(
-                f"collect_route complete; total={self.collection_count}"
+    def _start_collection_route_executor(self) -> None:
+        if self._nav2_lane is None:
+            raise RuntimeError(
+                "collect_route requires Nav2 action dependencies; no fallback is available"
             )
-            self._publish_command("idle", "controller-collect-route-complete")
-        return command
+        self._declare_collection_route_parameters()
+        calibration_path = os.getenv("COLLECTION_ROUTE_CALIBRATION_ARTIFACT")
+        if not calibration_path:
+            raise RuntimeError(
+                "COLLECTION_ROUTE_CALIBRATION_ARTIFACT is required for collect_route"
+            )
+        from ament_index_python.packages import get_package_share_directory
+
+        config_dir = Path(get_package_share_directory("tennis_robot")) / "config"
+        self._collection_executor_cache.latest_scan = self._latest_scan_msg
+        self._collection_executor_cache.latest_ball_detections = (
+            self._latest_ball_detections_msg
+        )
+        self._collection_executor_cache.robot_x_m = self._robot_x
+        self._collection_executor_cache.robot_y_m = self._robot_y
+        self._collection_executor_cache.robot_yaw_rad = self._robot_yaw
+
+        def publish_collector_speed(speed_rad_s: float) -> None:
+            message = CollectorCmd()
+            message.lift_wheel_speed = float(speed_rad_s)
+            message.intake_enabled = abs(speed_rad_s) > 1e-9
+            self._pub_collector.publish(message)
+
+        collector_interface = CollectorInterface(
+            GazeboCollectorDriver(publish_collector_speed)
+        )
+        factory = self.collection_executor_factory_type(
+            node=self,
+            tf_buffer=self._tf_buffer,
+            cache=self._collection_executor_cache,
+            lane_navigator=self._nav2_lane,
+            collector_interface=collector_interface,
+            court_boundary_path=DEFAULT_BOUNDARY_FILE,
+            collection_route_config_path=config_dir / "collection_route.yaml",
+            calibration_artifact_path=calibration_path,
+            telemetry_sink=self._on_collection_executor_telemetry,
+        )
+        executor = factory.build()
+        executor.start()
+        self._collect_route_executor_factory = factory
+        self._collect_route_executor = executor
+
+    def _declare_collection_route_parameters(self) -> None:
+        from ament_index_python.packages import get_package_share_directory
+        import yaml
+
+        params_path = (
+            Path(get_package_share_directory("tennis_robot")) / "config" / "nav2_params.yaml"
+        )
+        source = yaml.safe_load(params_path.read_text(encoding="utf-8"))
+        try:
+            values = source["collection_route_executor"]["ros__parameters"]
+        except (KeyError, TypeError) as exc:
+            raise RuntimeError(
+                f"missing collection_route_executor parameters in {params_path}"
+            ) from exc
+        for name, value in values.items():
+            if name != "use_sim_time" and not self.has_parameter(name):
+                self.declare_parameter(name, value)
+
+    def _on_collection_executor_telemetry(self, event: dict) -> None:
+        self._collect_route_executor_events.append(dict(event))
+        del self._collect_route_executor_events[:-100]
 
     def _record_collection_event(self, event_type: str, **fields: object) -> None:
         now = self._runtime_seconds()
@@ -1548,23 +1496,13 @@ class ControllerNode(Node):
             "robot_y_m": round(self._robot_y, 3),
         }
         if self.control_mode == "collect_route" or event_type.startswith("route_"):
-            route = self.collect_route_mission.telemetry()
-            route_goal = self.collect_route_mission.nav_goal
+            route = self._build_collect_route_summary()
             event.update(
                 {
-                    "route_phase": route.get("phase"),
-                    "route_current_ball_id": route.get("current_ball_id"),
-                    "route_remaining": route.get("remaining"),
-                    "route_stop_count": route.get("stop_count"),
-                    "route_failed_ball_ids": route.get("failed_ball_ids"),
-                    "route_freeze_initial_plan": route.get("freeze_initial_plan"),
-                    "route_nav_attempts": route.get("nav_attempts"),
-                    "route_nav_goal": (
-                        [round(route_goal[0], 3), round(route_goal[1], 3), round(route_goal[2], 3)]
-                        if route_goal is not None
-                        else None
-                    ),
-                    "route_stops": route.get("route"),
+                    "route_phase": route.get("state"),
+                    "route_outcome": route.get("route_outcome"),
+                    "route_plan_id": route.get("plan_id"),
+                    "route_planning_status": route.get("planning_status"),
                 }
             )
         for key, value in fields.items():
@@ -2106,6 +2044,12 @@ class ControllerNode(Node):
         twist.angular.z = command.base.angular_speed_rad_s
         self._pub_motion_cmd.publish(twist)
 
+        if self.control_mode == "collect_route":
+            # Executor Collector port is the sole writer for this mode.  In
+            # particular, do not publish a per-tick zero that would fight its
+            # one-shot start()/stop() commands.
+            return
+
         requested = command.collector
         if command.state == CollectorState.CAPTURE:
             # Committed ingest: the wheels MUST already spin when the ball
@@ -2150,11 +2094,18 @@ class ControllerNode(Node):
         route: list[dict] = []
         planned_order: dict[int, int] | None = None
         insertions = 0
-        if self.control_mode == "collect_route":
-            route, planned_order = self.collect_route_mission.route_export(
-                (self._robot_x, self._robot_y)
-            )
-            insertions = self.collect_route_mission.insertion_count
+        if self.control_mode == "collect_route" and self._collect_route_executor is not None:
+            plan = self._collect_route_executor.plan
+            if plan is not None:
+                route = [
+                    {
+                        "x_m": point.pose.x_m,
+                        "y_m": point.pose.y_m,
+                        "yaw_rad": point.pose.yaw_rad,
+                    }
+                    for segment in plan.segments
+                    for point in segment.path.points
+                ]
         balls = self.ball_map.to_console_balls(
             self._robot_x,
             self.active_mapped_target_id,
@@ -2168,9 +2119,7 @@ class ControllerNode(Node):
             "balls_collectable": len(confirmed),
         }
         if len(route) > 1:
-            metrics["total_distance_m"] = remaining_route_length_m(
-                (self._robot_x, self._robot_y), self.collect_route_mission.stops
-            )
+            metrics["total_distance_m"] = self._collect_route_executor.plan.total_length_m
             metrics["planned_replans"] = insertions
         return {
             "balls": balls,
@@ -2186,36 +2135,52 @@ class ControllerNode(Node):
             "metrics": metrics,
         }
 
-    def _build_collect_route_summary(self, status: str = "running") -> dict:
-        route = self.collect_route_mission.telemetry()
-        stops = route.get("stops", {})
-        missing = int(stops.get("missing", 0))
-        skipped = int(stops.get("skipped", 0))
-        return {
+    def _build_collect_route_summary(self, status: str | None = None) -> dict:
+        executor = self._collect_route_executor
+        state = executor.state.value if executor is not None else ExecutorState.IDLE.value
+        outcome = (
+            executor.route_outcome.value
+            if executor is not None and executor.route_outcome is not None
+            else None
+        )
+        payload = {
             "run_id": self._run_id,
-            "status": status,
-            "planned": int(route.get("planned_total", 0)),
-            "basket_retained": max(
-                0, self.collection_count - self._collect_route_run_start_count
+            "status": status or state,
+            "state": state,
+            "route_outcome": outcome,
+            "plan_id": None,
+            "planning_status": None,
+            "ball_results": [],
+            "segments": [],
+            "crossings": [],
+            "executed_crossing_telemetry": (
+                self._collect_route_executor_factory.crossing_telemetry
+                if self._collect_route_executor_factory is not None
+                else []
             ),
-            # Sim referee counters: beam credits vs ground-truth retention.
-            # Diverging values mean the beam is lying (bounce-outs, blocking).
-            "beam_credits": self._credit_reconciler.beam_count,
-            "truth_retained": self._credit_reconciler.truth_count,
-            "route_collected": int(stops.get("collected", 0)),
-            "failed": missing + skipped,
-            "missing": missing,
-            "skipped": skipped,
-            "remaining": int(route.get("remaining", 0)),
-            "active_ball_id": route.get("current_ball_id"),
-            "failed_ball_ids": list(route.get("failed_ball_ids", [])),
+            "executor_events": list(self._collect_route_executor_events),
         }
+        plan = executor.plan if executor is not None else None
+        if plan is not None:
+            serialized = plan.to_dict()
+            payload.update(
+                {
+                    "plan_id": serialized["plan_id"],
+                    "planning_status": serialized["planning_status"],
+                    "ball_results": serialized["ball_results"],
+                    "segments": serialized["segments"],
+                    "crossings": [
+                        crossing
+                        for segment in serialized["segments"]
+                        for crossing in segment["planned_crossings"]
+                    ],
+                }
+            )
+        return payload
 
     def _collect_route_summary_for_status(self) -> dict:
         if self.control_mode == "collect_route":
-            return self._build_collect_route_summary(
-                status="complete" if self.collect_route_mission.is_done else "running"
-            )
+            return self._build_collect_route_summary()
         return self._last_collect_route_summary
 
     def _publish_status(self, command: ConceptACommand, observation: BallObservationInput) -> None:
@@ -2251,7 +2216,11 @@ class ControllerNode(Node):
             "collection_lane_collecting": self._collection_lane_collecting,
             "collection_opportunistic_collecting": self._collection_opportunistic_collecting,
             "collection_scan": self._collection_scan.telemetry(),
-            "collect_route": self.collect_route_mission.telemetry(),
+            "collect_route": (
+                self._build_collect_route_summary()
+                if self.control_mode == "collect_route"
+                else self._last_collect_route_summary
+            ),
             "collection_run": self._collect_route_summary_for_status(),
             "pose_error_m": self._pose_error_m(),
             "collection_truth": self._collection_truth(command),

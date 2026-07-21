@@ -26,6 +26,10 @@ def test_empty_snapshot_requires_complete_coverage_and_is_immutable():
     with pytest.raises(FrozenInstanceError): s.scan_id="x"
     with pytest.raises(ScanSnapshotFailure): b.add(obs("a"))
 
+def test_valid_empty_heartbeat_steps_produce_empty_snapshot():
+    b=builder(); b.record_empty_step("a"); b.record_empty_step("b"); s=b.finalize(2.)
+    assert s.balls == ()
+
 def test_confirmed_snapshot_duplicate_fusion_and_stable_id():
     b=builder(); b.add(obs("a",1,2)); b.add(obs("b",1.2,2)); s=b.finalize(2.)
     assert len(s.balls)==1 and s.balls[0].ball_id=="scan/target-1" and s.balls[0].position.x_m==pytest.approx(1.1)

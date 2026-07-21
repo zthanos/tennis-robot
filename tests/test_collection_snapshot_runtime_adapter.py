@@ -187,3 +187,16 @@ def test_session_connects_runtime_adapter_to_builder_without_scan_policy():
     assert session.adapter.validation_config == (
         default_configuration().perception_spatial_validation
     )
+
+
+def test_session_counts_valid_empty_heartbeat_as_scan_coverage():
+    session = CollectionSnapshotRuntimeSession(
+        scan_id="scan", scan_timestamp_s=1.0, robot_pose_at_scan=SCAN_POSE,
+        configuration_snapshot=default_configuration(),
+        expected_scan_step_ids=("step-01",),
+        court_half_boundary=default_court_half_boundary(), tf_provider=TF(),
+    )
+    empty = frame()
+    empty.detections = []
+    session.forward_frame(empty, scan_step_id="step-01")
+    assert session.finalize(now_s=2.0).balls == ()

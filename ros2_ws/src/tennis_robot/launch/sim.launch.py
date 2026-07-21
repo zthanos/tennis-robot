@@ -374,6 +374,12 @@ def generate_launch_description():
             "ROBOT_STATUS_FILE": os.getenv(
                 "ROBOT_STATUS_FILE", f"{WORKSPACE}/runtime/robot_status.json"
             ),
+            # Required, explicit 6D.4 executor input.  The factory validates
+            # the artifact and has no model/config fallback.
+            "COLLECTION_ROUTE_CALIBRATION_ARTIFACT": os.getenv(
+                "COLLECTION_ROUTE_CALIBRATION_ARTIFACT",
+                f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v2.json",
+            ),
         },
     )
 

@@ -205,7 +205,7 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     cache.latest_scan = "new-scan"
     assert built.handles.scan_provider() == "new-scan"
     built.handles.cmd_vel(0.75)
-    assert node.publishers[0][0] == "/navigation/cmd_vel"
+    assert node.publishers[0][0] == "/cmd_vel_collection"
     assert node.publishers[0][1].messages[-1].angular.z == 0.75
     assert {topic for topic, _ in node.clients} == {
         "/CollectionFollowPath/load_collection_execution_context",
@@ -250,6 +250,14 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     }
     node.subscriptions[0].callback(SimpleNamespace(**state_values))
     assert built.handles.state_provider() == state_values
+    assert built.crossing_telemetry == [{
+        key: state_values[key]
+        for key in (
+            "plan_id", "progress_s", "active_segment_id", "active_ball_id",
+            "active_crossing_progress_s", "measured_speed_mps",
+            "lateral_error_m", "heading_error_rad", "profile_verdict",
+        )
+    }]
 
 
 def test_load_sender_fills_real_context_message_field_for_field(factory):

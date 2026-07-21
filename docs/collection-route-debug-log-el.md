@@ -514,3 +514,47 @@
   Καμία αλλαγή σε `controller_node.py`, legacy mission, mode dispatch/control
   loop ή robot status.
 - **Status:** ΟΚ.
+
+## #18 — (Φάση 6D.4) Atomic flip του `collect_route` στον νέο executor
+
+- **Υπόθεση:** Το live cut-over πρέπει να έχει έναν μόνο motion/collector owner:
+  ο executor δημιουργείται μία φορά στην είσοδο του mode, κάνει `start()` και
+  `tick()` στο υπάρχον 32 ms loop, ενώ το `ControllerNode` επιστρέφει hands-off
+  command. Δεν υπάρχει legacy mission/config/court fallback.
+- **Αλλαγή:** Το `collect_route` dispatch δεν καλεί πλέον
+  `CollectRouteMission.start/update`, legacy confirmation, `mark_nearest` ή
+  route credit. Στην είσοδο κατασκευάζει `CollectionExecutorNodeFactory` με το
+  explicit `runtime/court_boundary.json`, το packaged `collection_route.yaml`,
+  required calibration artifact και required tuning/runtime params που
+  φορτώνονται από `nav2_params.yaml`, και αποτυγχάνει άμεσα αν λείπει κάτι. Τα
+  raw canonical detections, `/scan`, pose/TF, Nav2 και publisher-backed
+  collector interface συνδέονται στα factory handles. Το per-tick command έχει
+  base `(0,0)` και collector idle, ενώ `_apply_command` δεν δημοσιεύει καθόλου
+  `/collector/cmd` στο `collect_route`, ώστε μόνο το executor port να κάνει
+  start/stop. Έγκυρο empty perception heartbeat μετρά πλέον ως scan coverage,
+  ώστε empty scan να παράγει `EMPTY_NO_BALLS` και `completed_no_targets`.
+- **Arbitration:** Η scan περιστροφή δημοσιεύει απευθείας στο
+  `/cmd_vel_collection` (twist_mux priority 70). Το πραγματικό FollowPath
+  controller δημοσιεύει στο `/cmd_vel_nav` (priority 50). Μετά το τελευταίο
+  scan zero, το collection input λήγει με το configured mux timeout 0.5 s και
+  το Nav2 αναλαμβάνει· ο hands-off zero του node μένει στο upstream
+  `/navigation/cmd_vel` και δεν μπορεί να overwrite το scan publisher.
+- **Status/console contract:** Τα `collect_route` και `collection_run` είναι
+  πλέον executor serialization: `state`, `route_outcome`, `plan_id`,
+  `planning_status`, `ball_results`, πλήρη `segments`, flattened planned
+  `crossings`, bounded executed crossing telemetry από το controller-state
+  stream και executor events. Το `collection_run.status` διατηρείται για το
+  υπάρχον JS και ισούται με το executor state όσο τρέχει. Το `map.route`
+  διατηρεί το υπάρχον `{x_m,y_m,yaw_rad}` point shape, τώρα από τα segment paths.
+  Τα legacy aggregate counters (`planned`, `missing`, `route_collected` κ.λπ.)
+  δεν παράγονται πλέον· τυχόν JS προσαρμογή τους παραμένει για 6D.5.
+- **Έλεγχος:** Node-wiring fake tests καλύπτουν build/start-on-entry, per-tick
+  tick, `completed_no_targets`, executor status και collector hands-off. Το
+  container startup smoke σηκώνει πραγματικό `controller_node`, πραγματικό
+  `controller_server`/CollectionFollowPath και minimal NavigateToPose/sensor/TF
+  dependencies και απαιτεί δημοσιευμένο `completed_no_targets` χωρίς crash.
+- **Status:** ΟΚ. Requested gate: **7 passed in 0.43s**. Ευρύτερο executor/
+  ports/snapshot regression: **74 passed in 0.99s**. Container startup smoke:
+  overlay **3 packages finished [1.17s]**, πραγματικός `controller_server`
+  activated, `controller_node` έγραψε `collect_route executor terminal:
+  completed_no_targets`, launch test **Ran 1 test — OK**.

@@ -124,6 +124,14 @@ class ScanSnapshotBuilder:
             self.duplicate_step_observations.append(item); return
         track.observations.append(item)
 
+    def record_empty_step(self, scan_step_id: str) -> None:
+        """Count one valid empty perception heartbeat toward scan coverage."""
+        if self._state != "collecting":
+            raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE, "scan is not collecting")
+        if scan_step_id not in self.expected_scan_step_ids:
+            raise ScanSnapshotFailure(ScanSnapshotFailureCode.UNKNOWN_SCAN_STEP)
+        self._accepted_steps.add(scan_step_id)
+
     def finalize(self, now_s:float):
         if self._state!="collecting": raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,"scan already finalized")
         if not math.isfinite(now_s) or now_s-self.scan_timestamp_s > self.scan_timeout_s:

@@ -267,6 +267,7 @@ class _CollectionRosTransport:
         self.finalize_client = node.create_client(ros.FinalizeService, base + "/finalize_collection_execution_context")
         self.action_client = ros.ActionClient(node, ros.FollowPath, "/follow_path")
         self.latest_state = None
+        self.crossing_telemetry = []
         self.state_subscription = node.create_subscription(ros.CollectionControllerState, base + "/state", self._on_state, 10)
         self.load_future = self.goal_future = self.goal_handle = self.result_future = None
 
@@ -279,7 +280,22 @@ class _CollectionRosTransport:
             and self.action_client.wait_for_server(timeout_sec=timeout_sec)
         )
 
-    def _on_state(self, message): self.latest_state = message
+    def _on_state(self, message):
+        self.latest_state = message
+        if bool(getattr(message, "has_active_crossing", False)):
+            sample = {
+                name: getattr(message, name)
+                for name in (
+                    "plan_id", "progress_s", "active_segment_id", "active_ball_id",
+                    "active_crossing_progress_s", "measured_speed_mps",
+                    "lateral_error_m", "heading_error_rad", "profile_verdict",
+                )
+            }
+            if not self.crossing_telemetry or sample != self.crossing_telemetry[-1]:
+                self.crossing_telemetry.append(sample)
+                # Bounded status telemetry: enough for debugging a route without
+                # allowing a long controller run to grow robot_status forever.
+                del self.crossing_telemetry[:-200]
 
     def load_sender(self, values):
         request = self.ros.LoadService.Request()
@@ -353,6 +369,8 @@ class CollectionExecutorNodeFactory:
         if not callable(telemetry_sink):
             raise CollectionExecutorNodeFactoryError("telemetry_sink must be callable")
         self.node, self.cache, self.ros = node, cache, ros_types or load_ros_types()
+        self._lane_navigator = lane_navigator
+        self._collector_interface = collector_interface
         court_boundary = load_court_boundary(court_boundary_path)
         configuration = build_collection_route_configuration(
             load_collection_route_source(collection_route_config_path),
@@ -375,7 +393,12 @@ class CollectionExecutorNodeFactory:
             tf_provider=_TfProvider(tf_buffer, self.ros),
         )
         self.transport = _CollectionRosTransport(node, self.ros, controller_id=self.config.controller_id)
-        publisher = node.create_publisher(self.ros.Twist, "/navigation/cmd_vel", 1)
+        # Scan rotation owns twist_mux's collection input (priority 70).  The
+        # FollowPath controller publishes on /cmd_vel_nav (priority 50).  Once
+        # scan rotation stops publishing, the collection input expires after
+        # the mux timeout and Nav2 takes over; the two producers never share a
+        # topic and the controller's hands-off zero cannot overwrite scanning.
+        publisher = node.create_publisher(self.ros.Twist, "/cmd_vel_collection", 1)
 
         def publish_scan_twist(angular_z):
             message = self.ros.Twist()
@@ -401,6 +424,20 @@ class CollectionExecutorNodeFactory:
 
     def build(self):
         return build_collection_route_executor(node=self.node, config=self.config, handles=self.handles)
+
+    def stop(self) -> None:
+        """Best-effort release of every actuator owned by this factory run."""
+        self.handles.cmd_vel(0.0)
+        goal_handle = self.transport.goal_handle
+        if goal_handle is not None:
+            goal_handle.cancel_goal_async()
+        if hasattr(self._lane_navigator, "reset"):
+            self._lane_navigator.reset()
+        self._collector_interface.stop()
+
+    @property
+    def crossing_telemetry(self):
+        return list(self.transport.crossing_telemetry)
 
 
 def build_collection_route_executor_from_node(**kwargs):
