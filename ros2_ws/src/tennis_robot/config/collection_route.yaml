@@ -1,0 +1,100 @@
+# Explicit Gazebo MVP runtime source for CollectionRouteConfiguration.
+# calibration_artifact is intentionally absent: the caller supplies its path.
+schema_version: collection-route/v1
+mechanical:
+  capture_half_width_m: 0.17
+  ball_radius_m: 0.033
+  robot_length_m: 0.8
+  robot_width_m: 0.6
+  funnel_length_m: 0.4
+  funnel_width_m: 0.34
+  safety_margin_m: 0.05
+  minimum_turning_radius_m: 0.8
+  maximum_curvature_per_m: 1.25
+  minimum_entry_m: 0.2
+  minimum_run_in_m: 1.0
+  minimum_run_out_m: 0.3
+  minimum_mechanical_ball_spacing_m: 0.5
+safety:
+  static_obstacle_clearance_m: 0.1
+  costmap_inflation_m: 0.15
+  trajectory_tube_radius_m: 0.2
+  progress_window_m: 0.5
+  max_parallel_heading_error_rad: 0.2
+  collector_start_timeout_s: 2.0
+  collector_stop_timeout_s: 2.0
+  safety_pause_timeout_s: 10.0
+scan:
+  required_coverage_fraction: 1.0
+  scan_timeout_s: 20.0
+  minimum_confirmation_count: 2
+feasibility:
+  heading_sample_count: 16
+  confidence_multiplier: 2.0
+  tracking_lateral_error_bound_m: 0.04
+  capture_safety_margin_m: 0.05
+  footprint_clearance_radius_m: 0.50
+  tangent_activation_distance_m: 0.75
+  max_parallel_heading_error_rad: 0.20
+connector:
+  max_connector_length_m: 20.0
+  max_connector_arc_angle_rad: 1.5
+  max_connector_total_turn_rad: 3.0
+global_route_search:
+  max_search_expansions: 1000
+  terminal_run_out_m: 0.5
+  connector_nominal_speed_m_s: 1.0
+  crossing_nominal_speed_m_s: 0.8
+  turn_energy_equivalent_m_per_rad: 0.2
+  weight_length: 1.0
+  weight_time: 1.0
+  weight_curvature: 1.0
+  weight_energy: 1.0
+  weight_pass_count: 1.0
+shared_pass:
+  max_shared_pass_balls: 3
+  max_shared_pass_candidates: 100
+  minimum_mechanical_ball_spacing_m: 0.5
+follow_up:
+  enabled: false
+  max_total_runs: 1
+planning:
+  default_execution_profile:
+    nominal_speed_mps: 1.0
+    min_speed_mps: 0.5
+    max_speed_mps: 1.5
+    nominal_speed_warning_tolerance_mps: 0.1
+    max_acceleration_mps2: 1.0
+    max_deceleration_mps2: 1.0
+    required_entry_m: 0.2
+    required_run_in_m: 1.0
+    required_run_out_m: 0.3
+    max_curvature_per_m: 1.25
+    max_lateral_error_m: 0.1
+    max_heading_error_rad: 0.1
+    allow_reversing: false
+    allow_standalone_rotate: false
+  maximum_planning_time_s: 1.0
+  maximum_candidate_count: 20
+  cost_weight_length: 1.0
+  cost_weight_time: 1.0
+  cost_weight_curvature: 1.0
+  cost_weight_energy: 1.0
+  cost_weight_passes: 1.0
+gazebo_snapshot:
+  configuration_id: gazebo-mvp-provisional-planning-safety-v1
+  localization_xy_covariance:
+    covariance:
+      xx: 0.01
+      xy: 0.0
+      yy: 0.01
+  association:
+    association_mahalanobis_gate_chi2: 9.0
+    min_confirmations: 2
+    min_distinct_scan_steps: 2
+perception_spatial_validation:
+  max_rgb_depth_timestamp_delta_s: 0.05
+  max_detection_to_tf_age_s: 0.5
+  covariance_psd_relative_tolerance: 1.0e-9
+  min_position_covariance_trace_m2: 1.0e-6
+  max_position_covariance_trace_m2: 1.0

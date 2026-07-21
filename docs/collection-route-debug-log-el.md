@@ -454,3 +454,29 @@
   tracking_core 7 + isolated launch 5 = **25/0 πράσινα** — καμία regression από
   το 6D.1. debug log #15. Καμία αλλαγή controller_node/legacy/C++ source.
 - **Status:** ΟΚ.
+
+## #16 — (Φάση 6D.2) Runtime `CollectionRouteConfiguration` builder (pure)
+
+- **Υπόθεση:** Το immutable configuration των 12 groups υπήρχε μόνο σε test
+  fixtures/smoke scripts. Το runtime cutover 6D.3 χρειάζεται έναν ROS-free
+  builder που δέχεται ήδη parsed mapping και δεν εφευρίσκει καμία τιμή.
+- **Αλλαγή:** Νέο `collection_route_config_builder.py` με
+  `build_collection_route_configuration(source, *, calibration_artifact_path)`.
+  Το source schema είναι το serialized `CollectionRouteConfiguration` χωρίς το
+  `calibration_artifact`: κάθε root/group/nested πεδίο είναι υποχρεωτικό και
+  exact, ενώ missing/extra/invalid τιμές γίνονται typed
+  `CollectionRouteConfigurationBuildError` με group/field context. Όλα τα group
+  values περνούν από τα υπάρχοντα `from_dict`/dataclass `__post_init__`. Το
+  versioned artifact φορτώνεται αποκλειστικά από το ρητό path μέσω
+  `load_artifact`, χωρίς ROS/env/path discovery ή fallback. Νέο packaged
+  `config/collection_route.yaml` με τις Gazebo MVP fixture τιμές, explicit
+  provisional localization covariance `[[0.01, 0], [0, 0.01]]`, association
+  thresholds και τα πέντε perception spatial validation thresholds. Δεν υπάρχει
+  `UncertaintyConfiguration`.
+- **Αποτέλεσμα:** Νέο `tests/test_collection_route_config_builder.py`: structural
+  equality με baseline + πραγματικό gazebo-v2 artifact, αυτούσιο configuration
+  identity σε `ScanSnapshotBuilder` και `plan_collection_route`, typed failures
+  για missing group/field, invalid group value και invalid artifact path, και
+  `to_dict`/`from_dict` round-trip. Καμία αλλαγή σε `controller_node` και καμία
+  διαγραφή legacy.
+- **Status:** ΟΚ.
