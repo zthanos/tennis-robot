@@ -9,8 +9,13 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ros2_ws", "src", "tennis_robot"))
 
 from collection_route_fixtures import FAKE_TIME_S, default_configuration
+import math
+
 from tennis_robot.collection_route_connector_graph import (
     ConnectorRejectionCode,
+    _dubins_parameters,
+    _materialize_path,
+    _self_intersects,
     build_directed_candidate_graph,
 )
 from tennis_robot.collection_route_planner_v2 import CourtModel, FunnelPassCandidate, PolygonObstacle
@@ -49,6 +54,59 @@ def graph(configuration, candidates, model=None, start=Pose2D(0.0, 0.0, 0.0)):
         court=model or court(),
         configuration=configuration,
     )
+
+
+def _chord_sum(poses):
+    return sum(
+        math.hypot(poses[index + 1].x_m - poses[index].x_m, poses[index + 1].y_m - poses[index].y_m)
+        for index in range(len(poses) - 1)
+    )
+
+
+# Start/target pairs chosen so each CSC family resolves with real (non-zero) arcs.
+_CURVED_CASES = {
+    "LSL": (Pose2D(0.0, 0.0, 0.0), Pose2D(3.0, 2.0, math.radians(80))),
+    "RSR": (Pose2D(0.0, 0.0, 0.0), Pose2D(3.0, -2.0, math.radians(-80))),
+    "LSR": (Pose2D(0.0, 0.0, 0.0), Pose2D(3.0, 0.5, math.radians(-40))),
+    "RSL": (Pose2D(0.0, 0.0, 0.0), Pose2D(3.0, -0.5, math.radians(40))),
+}
+
+
+@pytest.mark.parametrize("mode", ["LSL", "RSR", "LSR", "RSL"])
+def test_densified_arc_poses_chord_sum_tracks_arc_length(mode):
+    radius = default_configuration().mechanical.minimum_turning_radius_m
+    start, target = _CURVED_CASES[mode]
+    normalized = _dubins_parameters(start, target, radius, mode)
+    assert normalized is not None
+    path = _materialize_path(start, radius, mode, normalized)
+    # A real curved connector (has at least one non-zero arc primitive).
+    assert any(primitive.kind != "S" and primitive.arc_angle_rad > 1e-6 for primitive in path.primitives)
+    # The densified chord polyline is within 0.5% of the arc-based length_m; the
+    # sparse two-pose-per-arc encoding was off by metres for the same connector.
+    assert abs(_chord_sum(path.poses) - path.length_m) <= 0.005 * path.length_m
+    # length_m stays arc-based (unchanged by densification) and the simple CSC
+    # chord polyline does not self-intersect.
+    assert not _self_intersects(path.poses)
+
+
+def test_densification_keeps_endpoints_and_turn_invariant():
+    # Only pose sampling changes: the connector endpoint, primitives and total
+    # turn are identical to a single-advance-per-primitive materialization.
+    radius = default_configuration().mechanical.minimum_turning_radius_m
+    start, target = _CURVED_CASES["LSL"]
+    normalized = _dubins_parameters(start, target, radius, "LSL")
+    path = _materialize_path(start, radius, "LSL", normalized)
+    assert path.poses[0] == start
+    # Endpoint reproduced by chaining the full primitives directly.
+    from tennis_robot.collection_route_connector_graph import _advance
+
+    current = start
+    for primitive in path.primitives:
+        current = _advance(current, primitive, radius)
+    assert path.poses[-1].x_m == pytest.approx(current.x_m)
+    assert path.poses[-1].y_m == pytest.approx(current.y_m)
+    assert path.poses[-1].yaw_rad == pytest.approx(current.yaw_rad)
+    assert path.total_turn_rad == pytest.approx(sum(p.arc_angle_rad for p in path.primitives))
 
 
 def test_feasible_forward_csc_connector_and_immutable_edge_data():

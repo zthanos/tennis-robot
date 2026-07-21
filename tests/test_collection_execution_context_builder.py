@@ -83,7 +83,14 @@ def test_context_identity_and_terminal_fields_mirror_the_plan():
     assert context.plan_id == plan.plan_id
     assert context.map_frame == plan.map_frame
     assert context.context_activation_timeout_s == 5.0
-    assert context.terminal_progress_s == plan.total_length_m
+    # terminal_progress_s is the flattened chord-polyline length (progress the
+    # controller reaches); for this straight plan chord == arc == total_length_m.
+    polyline = sum(
+        math.hypot(b.x - a.x, b.y - a.y)
+        for a, b in zip(context.follow_path_poses, context.follow_path_poses[1:])
+    )
+    assert context.terminal_progress_s == pytest.approx(polyline)
+    assert context.terminal_progress_s == pytest.approx(plan.total_length_m)
     # terminal pose: yaw -> quaternion, z=0.
     assert context.terminal_pose.x == plan.terminal_pose.x_m
     assert context.terminal_pose.y == plan.terminal_pose.y_m
@@ -149,6 +156,33 @@ def test_follow_path_poses_are_tracking_plan_valid():
     # Last pose equals the terminal pose within the same tolerance.
     last = poses[-1]
     assert math.hypot(last.x - context.terminal_pose.x, last.y - context.terminal_pose.y) <= context.controller_tuning.terminal_progress_tolerance_m
+
+
+def test_curved_route_terminal_progress_is_chord_length_within_arc():
+    # An off-axis ball forces a curved start->entry connector, so the arc-based
+    # total_length_m strictly exceeds the flattened chord sum.  terminal_progress_s
+    # must equal the chord sum (what the controller reaches) and stay at or below
+    # the arc length, within the controller tolerance.
+    config = default_configuration()
+    plan = plan_collection_route(
+        snapshot=_snapshot(config, ("curve", 0.0, 3.0)), court=_court(), configuration=config
+    ).plan
+    assert plan.is_executable
+    tuning = _tuning()
+    context = build_execution_context(
+        plan, controller_tuning=tuning, context_schema_version=CONTEXT_SCHEMA_VERSION,
+        context_activation_timeout_s=5.0,
+    )
+    polyline = sum(
+        math.hypot(b.x - a.x, b.y - a.y)
+        for a, b in zip(context.follow_path_poses, context.follow_path_poses[1:])
+    )
+    assert context.terminal_progress_s == pytest.approx(polyline)
+    # Chord sum is at or below the arc length (curved => strictly below).
+    assert context.terminal_progress_s <= plan.total_length_m + 1e-9
+    assert plan.total_length_m - context.terminal_progress_s > 0.0
+    # ...but within the controller's terminal tolerance (thanks to densification).
+    assert plan.total_length_m - context.terminal_progress_s <= tuning.terminal_progress_tolerance_m
 
 
 def test_join_poses_are_deduplicated():

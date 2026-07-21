@@ -54,6 +54,14 @@ _SEGMENT_TYPE_CODE = {
 # The C++ plugin only accepts this schema string.
 CONTEXT_SCHEMA_VERSION = "collection-execution-context/v1"
 
+# Segment-join poses are the same geometric point reached from two sides (a
+# connector's materialized endpoint vs the next segment's start pose), so they
+# can differ by floating-point noise (~1e-15 m) rather than being bit-identical.
+# The C++ tracking core requires strictly increasing per-pose progress, so any
+# such sub-nanometre gap must be collapsed.  This threshold is far below any
+# real path geometry (dense arc chords are centimetres) and far above fp noise.
+_JOIN_DEDUP_EPSILON_M = 1e-9
+
 # 1-1 with CollectionExecutionProfile.msg, in message field order.
 _PROFILE_FIELDS = (
     "nominal_speed_mps",
@@ -167,9 +175,10 @@ def _pose_from_yaw(x_m: float, y_m: float, yaw_rad: float) -> CanonicalPose:
 def build_follow_path_poses(plan: CollectionRoutePlan) -> tuple[CanonicalPose, ...]:
     """Flatten the plan's ordered segment paths into one pose list.
 
-    Exact-duplicate join poses (a connector exit that equals the next segment's
-    entry) are dropped so every consecutive 2D step is strictly positive, as
-    ``make_tracking_plan`` requires.
+    Coincident join poses (a connector exit that meets the next segment's entry
+    at the same point, up to floating-point noise) are dropped so every
+    consecutive 2D step is strictly positive and progress strictly increases, as
+    the C++ ``make_tracking_plan`` / tracking core require.
     """
     poses: list[CanonicalPose] = []
     last_xy: tuple[float, float] | None = None
@@ -177,11 +186,18 @@ def build_follow_path_poses(plan: CollectionRoutePlan) -> tuple[CanonicalPose, .
         for point in segment.path.points:
             pose = point.pose
             xy = (pose.x_m, pose.y_m)
-            if last_xy is not None and xy == last_xy:
-                continue  # exact-duplicate join pose
+            if last_xy is not None and math.hypot(xy[0] - last_xy[0], xy[1] - last_xy[1]) <= _JOIN_DEDUP_EPSILON_M:
+                continue  # coincident join pose (same point from two segments)
             poses.append(_pose_from_yaw(pose.x_m, pose.y_m, pose.yaw_rad))
             last_xy = xy
     return tuple(poses)
+
+
+def _polyline_length_2d(poses: tuple[CanonicalPose, ...]) -> float:
+    return sum(
+        math.hypot(current.x - previous.x, current.y - previous.y)
+        for previous, current in zip(poses, poses[1:])
+    )
 
 
 def canonical_configuration_snapshot_json(plan: CollectionRoutePlan) -> str:
@@ -263,6 +279,18 @@ def build_execution_context(
     segments = tuple(_build_segment(segment) for segment in plan.segments)
     terminal = plan.terminal_pose
 
+    # terminal_progress_s is the progress the controller *reaches* at the
+    # terminal pose.  The controller measures progress as the cumulative 2D chord
+    # length of the received path, so it is the flattened polyline length — NOT
+    # the plan's arc-based total_length_m.  For any curved connector the arc
+    # length strictly exceeds the chord sum, and the C++ tracking core hard-
+    # rejects terminal_progress_s > path.back().progress_s (no tolerance); arc
+    # densification (Phase 6B.1) shrinks that gap to well under
+    # terminal_progress_tolerance_m but never closes it, so the terminal must be
+    # chord-based.  For a straight route chord == arc and this equals
+    # total_length_m.  Segment progress spans stay arc-based (unchanged).
+    terminal_progress_s = _polyline_length_2d(poses)
+
     return CollectionExecutionContextValues(
         context_schema_version=context_schema_version,
         plan_id=plan.plan_id,
@@ -270,7 +298,7 @@ def build_execution_context(
         context_activation_timeout_s=float(context_activation_timeout_s),
         segments=segments,
         controller_tuning=controller_tuning,
-        terminal_progress_s=plan.total_length_m,
+        terminal_progress_s=terminal_progress_s,
         terminal_pose=_pose_from_yaw(terminal.x_m, terminal.y_m, terminal.yaw_rad),
         configuration_snapshot_json=canonical_configuration_snapshot_json(plan),
         map_frame=plan.map_frame,

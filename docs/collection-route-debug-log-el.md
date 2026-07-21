@@ -286,3 +286,43 @@
   numbers του `default_configuration` επιβιώνουν parse→dump. Καμία αλλαγή σε C++
   implementation (μόνο νέο test target στο CMakeLists) ή controller_node.
 - **Status:** ΟΚ.
+
+## #12 — (Φάση 6B.1) Densify Dubins connector arc poses + chord-based terminal progress
+
+- **Υπόθεση:** Το parity της 6B περνούσε ΜΟΝΟ με ευθύγραμμη route. Το
+  `_materialize_path` (collection_route_connector_graph.py) αποθήκευε 2 poses ανά
+  arc primitive (start,end), οπότε η flattened chord polyline ήταν πολύ κοντύτερη
+  από το ARC-based `length_m` (μετρημένο LSL R=0.8: connector arc 2.376 vs single
+  chord· γενικά err μέτρα). Ο C++ `make_tracking_plan` αθροίζει chord polyline και
+  απαιτεί ≈ `terminal_progress_s` εντός `terminal_progress_tolerance_m`, οπότε
+  ΚΑΘΕ curved route απορριπτόταν. Στόχος: densify ΜΟΝΟ το pose sampling, χωρίς
+  αλλαγή cost/scoring/length.
+- **Αλλαγή:** (1) `_materialize_path`: κάθε arc primitive υποδιαιρείται σε
+  `max(1, ceil(arc_angle/_ARC_CHORD_ANGLE_RAD))` sub-arcs (ΙΔΙΟ granularity 15°
+  με το `_path_is_collision_free`), advance ανά sub-arc, append κάθε ενδιάμεση
+  pose. Straight (S) μένει 2 poses. **`primitives`, `length_m`, `arc_angle_rad`,
+  `total_turn_rad` ΜΕΝΟΥΝ arc-based** — μόνο το `poses` tuple πυκνώνει (chord-sum
+  τώρα εντός ~0.04% του arc length ανά connector· επαληθεύτηκε per-mode
+  LSL/RSR/LSR/RSL). `_self_intersects` δεν βγάζει false positive (πιο πυκνά chords
+  ακολουθούν στενότερα ένα simple CSC). (2) **Δύο επιπλέον fixes στον 6B serializer
+  που αποκάλυψε το container parity με curved route** (ο C++ tracking-core
+  constructor, ΟΧΙ μόνο το make_tracking_plan): (α) `build_follow_path_poses` —
+  τα join poses μεταξύ segments διαφέρουν ~2e-15 (densified connector endpoint vs
+  pass entry_pose), οπότε το exact-equality dedup τα άφηνε → step 2e-15 έσπαγε το
+  strict-increasing progress του core· άλλαξε σε epsilon dedup
+  (`_JOIN_DEDUP_EPSILON_M=1e-9`). (β) `terminal_progress_s` = **flattened chord
+  polyline length** (η πρόοδος που ΜΕΤΡΑΕΙ/φτάνει ο controller), ΟΧΙ το arc-based
+  `plan.total_length_m`: ο core κάνει HARD `terminal_progress_s <=
+  path.back().progress_s` (chord-sum, χωρίς tolerance)· αφού arc > chord ΠΑΝΤΑ για
+  curved, το arc-based terminal ΔΕΝ περνάει ποτέ. Τα segment progress spans μένουν
+  arc-based (το valid_load_context τα δέχεται εντός tolerance). Καμία αλλαγή σε C++
+  /controller_node/scoring/FSM.
+- **Αποτέλεσμα:** Pure gate (connector_graph + global_solver + composition +
+  execution_context_builder) 43 passed (νέα: 4 param chord-sum≈arc ανά CSC mode +
+  endpoint/turn invariance + curved terminal-progress). Container parity ΤΩΡΑ με
+  **CURVED** route (robot (0,0,0)→ball (0,3), start→entry χρειάζεται ~90° Dubins·
+  sparse err 0.12m FAIL vs densified 0.004m PASS εναντίον tol 0.05): 2/2 gtests
+  PASSED — sha256 match + Load ACCEPTED + `setPlan` δεκτό (make_tracking_plan
+  length/terminal + tracking-core constructor). Ο fixture (0,3) επιλέχθηκε επειδή
+  το pre-6B.1 sparse θα αποτύγχανε (0.12>0.05)· η densification το ΞΕΜΠΛΟΚΑΡΕΙ.
+- **Status:** ΟΚ.

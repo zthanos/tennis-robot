@@ -81,11 +81,16 @@ def _pose_list(poses):
 def build_fixture() -> dict:
     config = _default_configuration()
     court = build_court_model(_BOUNDARY)
-    # A single free ball straight ahead of the robot (heading 0, same y) so the
-    # whole route is one straight line, clear of net/fence walls.
+    # A single free ball straight abeam of the robot (robot faces +x at the
+    # origin, ball directly up) so the start->entry Dubins connector must make a
+    # large ~90deg turn — a strongly CURVED route.  With the Phase 6B.1 arc
+    # densification the flattened polyline length tracks the arc-based
+    # total_length to ~0.004 m (well inside terminal_progress_tolerance_m); the
+    # pre-6B.1 sparse 2-pose-per-arc encoding fell ~0.12 m short here, which
+    # make_tracking_plan rejected as path_terminal_progress_mismatch.
     snapshot = ScanSnapshot(
         "scan-parity", 1000.0, "map", Pose2D(0.0, 0.0, 0.0),
-        (SnapshotBall("ball-parity", Point2D(3.0, 0.0), 0.95, PositionCovariance2D(1e-6, 0.0, 1e-6)),),
+        (SnapshotBall("ball-parity", Point2D(0.0, 3.0), 0.95, PositionCovariance2D(1e-6, 0.0, 1e-6)),),
         config,
     )
     plan = plan_collection_route(snapshot=snapshot, court=court, configuration=config).plan

@@ -161,11 +161,24 @@ def _materialize_path(start, radius, mode, normalized_lengths):
         ConnectorPrimitive(kind, length * radius, 0.0 if kind == "S" else length)
         for kind, length in zip(kinds, normalized_lengths)
     )
+    # Densify arc primitives into ≤ _ARC_CHORD_ANGLE_RAD sub-arcs so the chord
+    # polyline of ``poses`` tracks the true arc length (a sparse two-pose arc has
+    # a chord far shorter than its arc, which the C++ make_tracking_plan rejects
+    # against progress).  This is the SAME granularity as _path_is_collision_free
+    # and touches only the pose sampling — primitives, length_m, arc_angle_rad and
+    # total_turn_rad stay arc-based, so scoring/cost/progress spans are unchanged.
     poses = [start]
     current = start
     for primitive in primitives:
-        current = _advance(current, primitive, radius)
-        poses.append(current)
+        subdivisions = 1 if primitive.kind == "S" else max(1, math.ceil(primitive.arc_angle_rad / _ARC_CHORD_ANGLE_RAD))
+        piece = ConnectorPrimitive(
+            primitive.kind,
+            primitive.length_m / subdivisions,
+            0.0 if primitive.kind == "S" else primitive.arc_angle_rad / subdivisions,
+        )
+        for _ in range(subdivisions):
+            current = _advance(current, piece, radius)
+            poses.append(current)
     return ConnectorPath(mode, primitives, tuple(poses), sum(item.length_m for item in primitives), sum(item.arc_angle_rad for item in primitives))
 
 
