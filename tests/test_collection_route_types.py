@@ -44,7 +44,6 @@ from tennis_robot.collection_route_types import (
     SharedPassConfiguration,
     SnapshotBall,
     SnapshotAssociationConfiguration,
-    UncertaintyConfiguration,
 )
 
 
@@ -56,7 +55,6 @@ def configuration() -> CollectionRouteConfiguration:
     return CollectionRouteConfiguration(
         "collection-route/v1",
         MechanicalConfiguration(0.17, 0.033, 0.8, 0.6, 0.4, 0.34, 0.05, 0.8, 1.25, 0.2, 1.0, 0.3, 0.2),
-        UncertaintyConfiguration(0.02, 0.03, 0.04),
         SafetyConfiguration(0.1, 0.15, 0.2, 0.5, 0.2, 2.0, 2.0, 10.0),
         ScanConfiguration(1.0, 20.0, 2),
         FeasibilityConfiguration(16, 2.0, 0.04, 0.05, 0.50, 0.75, 0.20),
@@ -95,6 +93,17 @@ def test_configuration_snapshot_serializes_validation_and_calibration_groups():
     tampered["calibration_artifact"]["calibration_id"] = "forged"
     with pytest.raises(DomainValidationError, match="sha256"):
         CollectionRouteConfiguration.from_dict(tampered)
+
+
+def test_configuration_snapshot_has_no_uncertainty_group():
+    # Uncertainty lives in the snapshot covariance and feasibility tracking
+    # bound; a separate group would risk double-counting localization.
+    encoded = configuration().to_dict()
+    assert "uncertainty" not in encoded
+    with_dead_group = configuration().to_dict()
+    with_dead_group["uncertainty"] = {"ball_position_uncertainty_m": 0.02, "localization_uncertainty_m": 0.03, "tracking_uncertainty_m": 0.04}
+    with pytest.raises(DomainValidationError):
+        CollectionRouteConfiguration.from_dict(with_dead_group)
 
 
 def snapshot(ball_ids: tuple[str, ...] = ("ball_1", "ball_2")) -> ScanSnapshot:

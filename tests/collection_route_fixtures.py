@@ -42,7 +42,6 @@ from tennis_robot.collection_route_types import (
     SharedPassConfiguration,
     SnapshotAssociationConfiguration,
     SnapshotBall,
-    UncertaintyConfiguration,
 )
 
 MAP_FRAME = "map"
@@ -124,7 +123,6 @@ def default_configuration(maximum_candidate_count: int = 20) -> CollectionRouteC
     return CollectionRouteConfiguration(
         "collection-route/v1",
         MechanicalConfiguration(0.17, 0.033, 0.8, 0.6, 0.4, 0.34, 0.05, 0.8, 1.25, 0.2, 1.0, 0.3, 0.5),
-        UncertaintyConfiguration(0.02, 0.03, 0.04),
         SafetyConfiguration(0.1, 0.15, 0.2, 0.5, 0.2, 2.0, 2.0, 10.0),
         ScanConfiguration(1.0, 20.0, 2),
         FeasibilityConfiguration(16, 2.0, 0.04, 0.05, 0.50, 0.75, 0.20),

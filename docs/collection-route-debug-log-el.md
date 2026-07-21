@@ -86,7 +86,23 @@
     `duplicate_step_observations`· (δ) docstring τεκμηριώνει ότι min
     confirmations = distinct steps και confidence = μέσος όρος.
 - **Αποτέλεσμα:** Πλήρες Φάση-2R gate: 107 passed, 1 skipped (ROS contract
-  test χωρίς rclpy). Ολόκληρο το tests/ (πλην του προϋπάρχοντος, άσχετου
-  sys.path collection issue του test_console_app σε whole-dir runs): 237
-  passed, 1 skipped.
-- **Status:** ΟΚ — η Φάση 2R κλείνει με 3 commits στο feat/collection-pattern.
+  test χωρίς rclpy).
+- **Status:** ΟΚ — η Φάση 2R έκλεισε με 3 commits.
+
+## #4 — (Φάση 3-5R, F6) Αφαίρεση dead UncertaintyConfiguration
+
+- **Υπόθεση:** Το `UncertaintyConfiguration` group στο
+  `CollectionRouteConfiguration` δεν διαβάζεται πουθενά στη γεωμετρία 3A/3B/3C
+  ούτε στον executor/follower — οι αβεβαιότητες κωδικοποιούνται ήδη στο snapshot
+  covariance (ball-position + localization, μετά τη 2R fusion) και στο
+  `feasibility.tracking_lateral_error_bound_m`. Ένα ξεχωριστό group ρίσκαρε
+  μελλοντικό double-counting του localization.
+- **Αλλαγή:** Πλήρης αφαίρεση της `UncertaintyConfiguration` και του πεδίου
+  `uncertainty` από `CollectionRouteConfiguration` (dataclass, type check,
+  to_dict, from_dict). Ενημερώθηκαν `default_configuration` και το config helper
+  του `test_collection_route_types`. Τα `perception_spatial_validation`,
+  `calibration_artifact`, `gazebo_snapshot` δεν αγγίχτηκαν.
+- **Αποτέλεσμα:** Νέο test ότι το to_dict δεν έχει `uncertainty` και ότι
+  extra `uncertainty` key απορρίπτεται· 13 types/fixtures + 72 λοιπά pure tests
+  πράσινα.
+- **Status:** ΟΚ.
