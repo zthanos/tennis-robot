@@ -416,8 +416,15 @@ class CollectionRouteExecutor:
 
     def _can_follow_up(self) -> bool:
         assert self.plan is not None
+        # A follow-up run is "collect more balls in further passes", not a
+        # retry: it is allowed only after a clean route completion, never after
+        # a safety/tracking/collector abort of the active route.
         policy = self.plan.configuration_snapshot.follow_up
-        return policy.enabled and self.run_count < policy.max_total_runs
+        return (
+            self.route_outcome is ExecutorState.ROUTE_COMPLETED
+            and policy.enabled
+            and self.run_count < policy.max_total_runs
+        )
 
     def _elapsed(self, started_at_s: float | None, timeout_s: float) -> bool:
         return started_at_s is not None and self._clock.now_s() - started_at_s >= timeout_s

@@ -185,3 +185,19 @@
   slow+off-tube crossing δίνει speed hard_violation ΚΑΙ ξεχωριστό tracking
   violation. 5 follower tests + 91 gate tests πράσινα.
 - **Status:** ΟΚ.
+
+## #9 — (Φάση 3-5R, F5) Follow-up μόνο μετά από καθαρό ROUTE_COMPLETED
+
+- **Υπόθεση:** Το `_can_follow_up` έλεγχε μόνο `policy.enabled` και τον run
+  counter, όχι το `route_outcome`. Έτσι, με follow-up enabled, ένα active-route
+  abort (safety/tracking/collector) ξεκινούσε νέο scan cycle — auto-retry μετά
+  από αποτυχία, εκπληκτικό. (Απόφαση χρήστη: follow-up = «μάζεψε κι άλλες
+  μπάλες σε επιπλέον περάσματα», όχι retry.)
+- **Αλλαγή:** Το `_can_follow_up` απαιτεί επιπλέον
+  `route_outcome is ExecutorState.ROUTE_COMPLETED`. Καμία αλλαγή στα FSM
+  transitions.
+- **Αποτέλεσμα:** Νέο test: ABORTED_SAFETY + follow-up enabled → COMPLETED,
+  run_count 1, navigator.starts 1 (κανένα νέο cycle)· καθαρό ROUTE_COMPLETED +
+  follow-up enabled → run_count 2, navigator.starts 2. 10 executor tests
+  πράσινα.
+- **Status:** ΟΚ.

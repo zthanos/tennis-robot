@@ -231,6 +231,36 @@ def test_bounded_follow_up_enabled_disabled_and_limit():
     assert one.run_count == 1
 
 
+def test_follow_up_requires_clean_route_completion():
+    # Follow-up is enabled, but an active-route safety abort must end the run
+    # without starting a new scan cycle.
+    aborted = snapshot(follow_up=FollowUpConfiguration(True, 2))
+    executor, _ = make_executor(snap=aborted, safety=(SafetyResult(SafetyStatus.TIMEOUT),))
+    advance_to_execution(executor)
+    finish(executor)
+    assert executor.route_outcome is ExecutorState.ABORTED_SAFETY
+    assert executor.state is ExecutorState.COMPLETED
+    assert executor.run_count == 1
+    assert executor._navigator.starts == 1
+
+    # A clean completion under the same follow-up policy does start a new cycle.
+    first = snapshot(follow_up=FollowUpConfiguration(True, 2), scan_id="first")
+    second = snapshot(follow_up=FollowUpConfiguration(True, 2), scan_id="second")
+    planner = Planner(executable_plan(first))
+    planner.plan = lambda s: executable_plan(s)
+    completed, _ = make_executor(
+        snap=first,
+        scan=(ScanSessionResult(ScanSessionStatus.SNAPSHOT_READY, first), ScanSessionResult(ScanSessionStatus.SNAPSHOT_READY, second)),
+        planner=planner,
+        follower=Follower((PathFollowerResult(PathFollowerStatus.COMPLETED), PathFollowerResult(PathFollowerStatus.COMPLETED))),
+    )
+    completed.start()
+    for _ in range(16): completed.tick()
+    assert completed.route_outcome is ExecutorState.ROUTE_COMPLETED
+    assert completed.run_count == 2
+    assert completed._navigator.starts == 2
+
+
 def test_post_scan_events_do_not_replan_or_mutate_geometry():
     snap = snapshot(); planner = Planner(executable_plan(snap))
     executor, _ = make_executor(snap=snap, planner=planner)
