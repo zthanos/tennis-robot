@@ -100,7 +100,6 @@ PERCEPTION_FRAME_ID = os.getenv(
 PERCEPTION_CAMERA_X_M = float(os.getenv("PERCEPTION_CAMERA_X_M", "0.535"))
 COLLECTION_EVENT_SCHEMA_VERSION = 2
 SIM_BASKET_RETENTION_DWELL_S = _env_float("SIM_BASKET_RETENTION_DWELL_S", 0.75)
-SIM_CAPTURE_PENDING_GRACE_S = _env_float("SIM_CAPTURE_PENDING_GRACE_S", 4.0)
 # "beam" (default): collection is confirmed by the SAME basket IR latch the
 # hardware uses; sim ground truth only referees (beam-vs-truth reconciliation).
 # "truth": legacy ground-truth bin-dwell confirmation (debug fallback).
@@ -127,9 +126,6 @@ COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
 IR_INTAKE_TRIGGER_THRESHOLD = 500.0
 SCAN_SIDE_DURATION_S = 12.0
 COLLECT_PATTERN_COLLECTION_TIMEOUT_S = _env_float("COLLECT_PATTERN_COLLECTION_TIMEOUT_S", 35.0)
-# Fine-approach forward guard, measured FROM THE LIDAR (mast at x=-0.42): the
-# funnel tip sits 1.30 m ahead of it, so 1.45 stops ~15 cm before contact.
-COLLECT_ROUTE_FRONT_BLOCK_M = _env_float("COLLECT_ROUTE_FRONT_BLOCK_M", 1.45)
 MAPPED_BALL_MERGE_DISTANCE_M = 0.65
 MAPPED_BALL_MAX_MERGE_DISTANCE_M = 1.6
 MAPPED_BALL_MIN_SEEN_COUNT = 5
@@ -281,9 +277,6 @@ class ControllerNode(Node):
         self._sim_retention_tracker = SimRetentionTracker(SIM_BASKET_RETENTION_DWELL_S)
         self._credit_reconciler = CreditReconciler()
         self._sim_bin_candidate_active = False
-        self._sim_ball_route_owner: dict[str, int] = {}
-        self._sim_ball_route_last_onboard_s: dict[str, float] = {}
-        self._confirmed_route_ball_id: int | None = None
         self._lost_retained_sim_ball_defs: set[str] = set()
         self._hardware_collection_latched = False
         self._beam_rearm_at_s = 0.0
@@ -521,16 +514,6 @@ class ControllerNode(Node):
         }
         self._counted_sim_ball_defs.intersection_update(current_defs)
         self._lost_retained_sim_ball_defs.intersection_update(current_defs)
-        self._sim_ball_route_owner = {
-            ball_def: ball_id
-            for ball_def, ball_id in self._sim_ball_route_owner.items()
-            if ball_def in current_defs
-        }
-        self._sim_ball_route_last_onboard_s = {
-            ball_def: last_onboard_s
-            for ball_def, last_onboard_s in self._sim_ball_route_last_onboard_s.items()
-            if ball_def in current_defs
-        }
         self._sim_retention_tracker.retain_only(current_defs)
 
     # ── main step (runs at TIME_STEP_S Hz) ─────────────────────────────────────
@@ -652,13 +635,9 @@ class ControllerNode(Node):
                 collector=command.collector,
             )
         if effective_mode != "collect_route" and self.collection_confirmed:
-            if self._confirmed_route_ball_id is not None:
-                collected_id = self._confirmed_route_ball_id
-                self.ball_map.set_state(collected_id, "collected")
-            else:
-                collected_id = self.ball_map.mark_nearest_collected(
-                    self._robot_x, self._robot_y, now
-                )
+            collected_id = self.ball_map.mark_nearest_collected(
+                self._robot_x, self._robot_y, now
+            )
             if collected_id == self.active_mapped_target_id:
                 self.active_mapped_target_id = None
 
@@ -731,8 +710,6 @@ class ControllerNode(Node):
                 self._collect_route_executor_factory = None
                 self._collect_route_executor_events = []
                 self._collect_route_executor_complete_reported = False
-                self._sim_ball_route_owner.clear()
-                self._sim_ball_route_last_onboard_s.clear()
                 self._credit_reconciler = CreditReconciler()
             self._record_collection_event("mode_enter", requested=self._control_command_mode)
         return True
@@ -1312,63 +1289,6 @@ class ControllerNode(Node):
             return "outside_active_lane"
         return None
 
-    def _collect_route_observation(
-        self, observation: BallObservationInput
-    ) -> BallObservationInput:
-        """Same-side/in-court gate against the SURVEYED court geometry.
-
-        The legacy _same_side_search_observation assumes the net at world x=0;
-        in the SLAM map frame the net sits wherever the survey found it
-        (run-3 incident: x≈8.08), so with a court model loaded the real net
-        line and fence polygon are authoritative."""
-        if self._court_model is None:
-            return self._same_side_search_observation(observation)
-        if (
-            not observation.visible
-            or observation.world_x_m is None
-            or observation.world_y_m is None
-        ):
-            return observation
-        if not self._court_model.same_side(
-            self._robot_x, self._robot_y, observation.world_x_m, observation.world_y_m
-        ):
-            return BallObservationInput(visible=False, source="across_net_filtered")
-        if not self._court_model.contains(observation.world_x_m, observation.world_y_m):
-            return BallObservationInput(visible=False, source="out_of_court_filtered")
-        return observation
-
-    def _collect_route_target_observation(
-        self, nearest_observation: BallObservationInput
-    ) -> BallObservationInput:
-        """Prefer the detection nearest the CURRENT TARGET over the detection
-        nearest the robot.
-
-        Run-4 finding (archive/collection-route-debug-log-el #8): with ball clusters,
-        the nearest-to-robot detection often refers to a DIFFERENT ball, so
-        the target 'never gets a live sighting' and real balls were declared
-        missing (seen_count 174-757). The controller has the whole frame —
-        pick the detection closest to the mission's pursued ball."""
-        target = self.collect_route_mission.current_target_xy
-        fresh = (
-            self._latest_obs_received_at > 0.0
-            and self._runtime_seconds() - self._latest_obs_received_at
-            <= PERCEPTION_OBSERVATION_TIMEOUT_S
-        )
-        if target is None or not fresh or not self._latest_observations:
-            return self._collect_route_observation(nearest_observation)
-        best = min(
-            self._latest_observations,
-            key=lambda obs: math.hypot(
-                (obs.world_x_m or 1e9) - target[0], (obs.world_y_m or 1e9) - target[1]
-            ),
-        )
-        if (
-            best.world_x_m is None
-            or math.hypot(best.world_x_m - target[0], best.world_y_m - target[1]) > 1.5
-        ):
-            return self._collect_route_observation(nearest_observation)
-        return self._collect_route_observation(best)
-
     def _collect_route_command_for_mode(self, mode: str) -> ConceptACommand:
         if self._on_mode_changed(mode):
             self.ball_map.reset()
@@ -1755,7 +1675,6 @@ class ControllerNode(Node):
 
     def _check_collection(self, command: ConceptACommand) -> bool:
         self._sim_bin_candidate_active = False
-        self._confirmed_route_ball_id = None
         if self._sim_balls_seen and SIM_COLLECTION_CONFIRM_SOURCE == "truth":
             # Legacy ground-truth confirmation (debug fallback): credit on the
             # bin retention dwell. NOT gated on intake_enabled — a ball
@@ -1865,11 +1784,9 @@ class ControllerNode(Node):
                     ball_z_m=round(bz, 3),
                     dwell_s=round(retention.dwell_s, 3),
                     required_dwell_s=SIM_BASKET_RETENTION_DWELL_S,
-                    route_ball_id=self._sim_ball_route_owner.get(ball_def),
+                    route_ball_id=None,
                 )
             if retention.retained:
-                owner = self._sim_ball_route_owner.pop(ball_def, None)
-                self._sim_ball_route_last_onboard_s.pop(ball_def, None)
                 collected_msg = String()
                 collected_msg.data = ball_def
                 self._pub_ball_collected.publish(collected_msg)
@@ -1877,7 +1794,6 @@ class ControllerNode(Node):
                 if not credit:
                     self._credit_reconciler.on_truth_retained(now)
                     continue
-                self._confirmed_route_ball_id = owner
                 self.collection_count += 1
                 self._record_collection_event(
                     "sim_collection_credit",
@@ -1888,66 +1804,10 @@ class ControllerNode(Node):
                     ball_z_m=round(bz, 3),
                     dwell_s=round(retention.dwell_s, 3),
                     confirmation="stable_behind_retention_lip",
-                    route_ball_id=owner,
+                    route_ball_id=None,
                 )
                 return True
         return False
-
-    def _assign_sim_ball_route_owners(self) -> None:
-        """Bind an onboard sim ball to its route stop before retention completes."""
-        route_ball_id = self.collect_route_mission.capture_ball_id
-        if not self._sim_balls_seen or route_ball_id is None:
-            return
-        now = self._runtime_seconds()
-        for ball in self._sim_balls:
-            ball_def = str(ball.get("def", ""))
-            if (
-                not ball_def
-                or ball_def in self._counted_sim_ball_defs
-            ):
-                continue
-            lx, ly, bz = self._sim_ball_local(ball)
-            zone = onboard_ball_zone(lx, ly, bz)
-            if zone not in {"deck", "receiver", "bin"}:
-                continue
-            if ball_def not in self._sim_ball_route_owner:
-                self._sim_ball_route_owner[ball_def] = route_ball_id
-                self._record_collection_event(
-                    "basket_owner_assigned",
-                    ball_def=ball_def,
-                    zone=zone,
-                    local_x_m=round(lx, 3),
-                    local_y_m=round(ly, 3),
-                    ball_z_m=round(bz, 3),
-                    route_ball_id=route_ball_id,
-                )
-            # A deck-parked ball (beside the bin, |y| > bin half-width) can
-            # never reach the retention zone: it must not keep extending the
-            # capture-pending grace, or the missing decision stalls for the
-            # full 35 s approach budget instead of the 6 s phantom gate.
-            if zone in {"receiver", "bin"}:
-                self._sim_ball_route_last_onboard_s[ball_def] = now
-
-    def _pending_sim_capture_ball_id(self, now_s: float) -> int | None:
-        """Return the current stop only while its linked ball is still onboard."""
-        if SIM_COLLECTION_CONFIRM_SOURCE != "truth":
-            # Hardware parity: the real robot has no ground-truth "ball is
-            # onboard" signal, so beam-primary runs must not defer the
-            # missing decision on one either.
-            return None
-        route_ball_id = self.collect_route_mission.capture_ball_id
-        if route_ball_id is None:
-            return None
-        for ball_def, owner_ball_id in self._sim_ball_route_owner.items():
-            if owner_ball_id != route_ball_id:
-                continue
-            last_onboard_s = self._sim_ball_route_last_onboard_s.get(ball_def)
-            if (
-                last_onboard_s is not None
-                and now_s - last_onboard_s <= SIM_CAPTURE_PENDING_GRACE_S
-            ):
-                return route_ball_id
-        return None
 
     def _monitor_retained_sim_balls(self) -> None:
         """Log a critical post-credit escape instead of hiding it as success."""

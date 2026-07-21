@@ -558,3 +558,35 @@
   overlay **3 packages finished [1.17s]**, πραγματικός `controller_server`
   activated, `controller_node` έγραψε `collect_route executor terminal:
   completed_no_targets`, launch test **Ran 1 test — OK**.
+
+## #19 — (Φάση 6D.5) Οριστική αφαίρεση legacy route + parity hygiene
+
+- **Υπόθεση:** Μετά το 6D.4 οι `_collect_route_observation` και
+  `_collect_route_target_observation` δεν έχουν call sites, επειδή ο executor
+  καταναλώνει τα canonical detections απευθείας. Τα
+  `_assign_sim_ball_route_owners` και `_pending_sim_capture_ball_id` είναι επίσης
+  orphaned και εξαρτώνται αποκλειστικά από το legacy
+  `capture_ball_id`· δεν μοιράζονται με `collect`, `collect_one` ή
+  `collect_pattern`.
+- **Αλλαγή:** Αφαιρέθηκαν οι τέσσερις orphaned helpers, τα
+  route-owner/grace fields και τα unused `SIM_CAPTURE_PENDING_GRACE_S` /
+  `COLLECT_ROUTE_FRONT_BLOCK_M`. Το κοινό sim retention, beam/truth reconciliation
+  και `mark_nearest_collected` των άλλων modes παραμένουν. Το
+  `DEFAULT_BOUNDARY_FILE` παραμένει επειδή το χρειάζεται ο νέος factory,
+  και `_last_collect_route_summary` επειδή διατηρεί το terminal/stopped
+  executor status μετά την έξοδο από το mode. Διαγράφηκαν το
+  `collect_route_mission.py`, ο παλαιός `collection_route_planner.py` και τα
+  δύο legacy test modules. Νέο AST-based static test αποτυγχάνει αν
+  source/script/test εισάγει ξανά τα legacy modules ή `CollectRouteMission`.
+  Το parity gtest κάνει `GTEST_SKIP()` στην κορυφή του `SetUp()` όταν
+  λείπει το `COLLECTION_PARITY_FIXTURE`, με null-safe `TearDown()`.
+- **Αποτέλεσμα:** Το πλήρες pytest gate στο ROS 2 Humble container
+  πέρασε **292 tests** (ignore μόνο το γνωστό `test_console_app.py`),
+  συμπεριλαμβανομένου του static import guard. Το clean isolated
+  colcon build των msgs/controller/tennis_robot ολοκλήρωσε **3
+  packages**. Το bare controller colcon test πέρασε **6/6 CTest
+  targets**, με τα δύο parity cases ρητά **SKIPPED** και return code 0.
+  Με fixture, το `run_collection_parity.sh` πέρασε **2/2**. Το
+  node-startup smoke έχτισε καθαρά τα τρία packages και παρατήρησε
+  `collect_route executor terminal: completed_no_targets` (**1/1 OK**).
+- **Status:** ΟΚ.

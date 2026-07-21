@@ -142,6 +142,9 @@ class CollectionExecutionContextParityTest : public ::testing::Test
 protected:
   void SetUp() override
   {
+    if (std::getenv("COLLECTION_PARITY_FIXTURE") == nullptr) {
+      GTEST_SKIP() << "COLLECTION_PARITY_FIXTURE is not set; run the parity harness";
+    }
     fixture_ = load_fixture();
     controller_node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>("collection_parity_controller");
     client_node_ = std::make_shared<rclcpp::Node>("collection_parity_client");
@@ -161,12 +164,18 @@ protected:
 
   void TearDown() override
   {
-    controller_->deactivate();
-    controller_->cleanup();
+    if (controller_) {
+      controller_->deactivate();
+      controller_->cleanup();
+    }
     controller_.reset();
     plugin_loader_.reset();
-    executor_.remove_node(client_node_);
-    executor_.remove_node(controller_node_->get_node_base_interface());
+    if (client_node_) {
+      executor_.remove_node(client_node_);
+    }
+    if (controller_node_) {
+      executor_.remove_node(controller_node_->get_node_base_interface());
+    }
     client_node_.reset();
     controller_node_.reset();
   }
