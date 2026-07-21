@@ -201,3 +201,42 @@
   follow-up enabled → run_count 2, navigator.starts 2. 10 executor tests
   πράσινα.
 - **Status:** ΟΚ.
+
+## #10 — (Φάση 6A) Pure CourtModel builder από court_boundary.json v2
+
+- **Υπόθεση:** Ο planner (`collection_route_planner_v2`) χρειάζεται explicit
+  immutable `CourtModel` (closed `navigable_polygon` + `obstacles[{id,kind,
+  polygon}]`), αλλά το survey γράφει `court_boundary.json`
+  (schema `court_knowledge_model/v2`, frame `map`). Λείπει καθαρό, offline
+  μεταφραστικό στρώμα dict→CourtModel — πρώτο slice της Φάσης 6 (μόνο pure
+  module + tests, καμία αλλαγή σε ROS wiring / controller / 3A geometry).
+- **Αλλαγή:** Νέο pure module
+  `ros2_ws/.../collection_court_model_builder.py` με `build_court_model(dict)
+  -> CourtModel` (χωρίς ROS/file I/O import). Κρίσιμες σχεδιαστικές αποφάσεις:
+  (α) `navigable_polygon` = τα 4 fence corners — ο planner ελέγχει το inflated
+  exterior ως keepout, άρα ο φράχτης-ως-όριο καλύπτεται· ΔΕΝ μπαίνει ως filled
+  polygon (θα έκανε κάθε εσωτερική μπάλα point-in-polygon → KEEPOUT). (β) Ο
+  φράχτης ΕΠΙΣΗΣ ως ΤΕΣΣΕΡΑ λεπτά `fence`-kind wall obstacles (ένα ανά ακμή,
+  inner long edge πάνω στην ακμή, body offset `FENCE_WALL_THICKNESS_M=0.05`
+  ΕΞΩ), ώστε ο planner να παράγει fence-tangent headings
+  (`_active_tangent_headings` παίρνει tangent μόνο από net/fence kinds) χωρίς
+  false keepout σε εσωτερικές μπάλες. (γ) Το φιλέ ως ένα λεπτό `net`-kind wall
+  post-to-post (`NET_WALL_THICKNESS_M=0.04`, centred)· τα posts είναι τα άκρα
+  του net wall (όχι ξεχωριστά `post` obstacles) για αποφυγή spurious
+  perpendicular tangents. (δ) Εσωτερικά obstacles → axis-aligned ορθογώνια από
+  `center`+`size_m`· `class`→kind mapping `perimeter_fixture`→`bench`,
+  unknown→`other` (κανένα από τα δύο δεν δίνει tangent). Απαιτεί
+  `schema==court_knowledge_model/v2`, `frame==map`, `status==OK`,
+  `completed==True`, παρουσία `fence.corners`/`net`· κάθε missing/invalid →
+  typed `CourtModelBuildError`, όχι σιωπηλό default.
+- **Αποτέλεσμα:** Νέο `tests/test_collection_court_model_builder.py` (15
+  cases) — κάθε geometry test περνά το CourtModel σε πραγματικό
+  `analyze_snapshot`: εσωτερική μπάλα ΔΕΝ βγαίνει KEEPOUT· μπάλα κοντά σε ακμή
+  φράχτη → μόνο παράλληλα (fence-tangent) headings· μπάλα κοντά στο φιλέ →
+  net-tangent· μπάλα εκτός φράχτη → KEEPOUT (exterior)· μπάλα πάνω σε εσωτερικό
+  obstacle → KEEPOUT· 6 invalid-schema typed rejections· determinism. Gate
+  (`test_collection_court_model_builder` + `..._planner_v2` +
+  `..._planner_composition`) 33 passed· ο builder διαβάζει και το πραγματικό
+  `runtime/court_boundary.json` καθαρά (4 fence walls + net + 4 fixtures).
+  Καμία αλλαγή στο `collection_route_planner_v2.py`.
+- **Status:** ΟΚ.
