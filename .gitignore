@@ -32,3 +32,5 @@ ros2_ws/log/
 # VS Code C++ IntelliSense caches
 .vscode/browse.vc.db*
 .vscode/c_cpp_properties.json
+ros2_ws/build_smoke/
+ros2_ws/install_smoke/
