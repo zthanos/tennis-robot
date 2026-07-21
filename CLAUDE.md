@@ -12,10 +12,23 @@ New implementation work should start from `docs/architecture-implementation-guid
 
 ## Commands
 
+> **Platform: development happens on native Linux (Ubuntu).** The entry point is
+> `./run_ubuntu.sh` (Gazebo GUI + RViz with native Intel/AMD DRI acceleration;
+> `UBUNTU_GPU=false ./run_ubuntu.sh` for software rendering). The legacy `run.sh`
+> and the "From WSL shell" `docker compose` invocations below remain the WSL 2
+> path and are kept only for reference — prefer `run_ubuntu.sh` here. `uv run`
+> commands run directly in the Linux shell (the `powershell` fences below are
+> historical).
+
 ### Run the simulation (Gazebo)
 
 ```bash
-# From WSL shell:
+# Native Ubuntu (preferred):
+./run_ubuntu.sh
+# Software-rendering fallback:
+UBUNTU_GPU=false ./run_ubuntu.sh
+
+# Legacy WSL 2 path (reference only):
 docker compose --profile gazebo up gazebo
 # With RViz visualization (map, TF, /scan, robot model):
 docker compose --profile gazebo up gazebo rviz
