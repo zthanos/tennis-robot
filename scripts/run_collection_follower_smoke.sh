@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 6C.2 container smoke — Python PathFollower vs the REAL C++ controller.
+# Phase 6D.3 container construction smoke — node factory vs real controller.
 #
 # Run from the host with:
 #
@@ -9,8 +9,8 @@
 # It (1) colcon-builds tennis_robot_msgs + tennis_robot_collection_controller +
 # tennis_robot into an isolated overlay, then (2) runs a launch_test that brings
 # up a real nav2 controller_server with the CollectionFollowPath plugin and lets
-# the pure LiveCollectionPathFollower adapter drive a real curved plan through
-# the full Load -> FollowPath -> terminal -> Finalize handshake.
+# CollectionExecutorNodeFactory construct every ROS handle, then drives a real
+# curved plan through Load -> FollowPath -> terminal -> Finalize.
 #
 # NOTE: no `set -u` — the ROS setup.sh scripts reference unbound vars.
 set -eo pipefail

@@ -87,6 +87,20 @@ collection_route_executor:
     collection_controller_tuning.progress_projection_window_m: 10.0
     collection_controller_tuning.crossing_speed_window_m: 0.25
     collection_controller_tuning.terminal_progress_tolerance_m: 0.05
+    # Phase 6D.3 node-side executor configuration. Every value is required by
+    # CollectionExecutorNodeFactory; there are deliberately no code defaults.
+    collection_route.context_schema_version: "collection-execution-context/v1"
+    collection_route.context_activation_timeout_s: 10.0
+    collection_route.scan_step_count: 8
+    collection_route.scan_yaw_tolerance_rad: 0.10
+    collection_route.scan_start_yaw_rad: 0.0
+    collection_route.scan_angular_speed_rad_s: 0.50
+    collection_route.scan_timeout_s: 20.0
+    collection_route.safety_forward_half_angle_rad: 0.35
+    collection_route.safety_stop_distance_m: 0.60
+    collection_route.safety_pause_timeout_s: 10.0
+    collection_route.safety_max_scan_age_s: 0.50
+    collection_route.controller_id: "CollectionFollowPath"
 
 local_costmap:
   local_costmap:

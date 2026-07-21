@@ -12,6 +12,7 @@ dependencies = [
     "duckdb>=1.5.3",
     "matplotlib>=3.10.9",
     "onnxruntime>=1.20",
+    "PyYAML>=6.0",
 ]
 
 [dependency-groups]

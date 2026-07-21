@@ -480,3 +480,37 @@
   `to_dict`/`from_dict` round-trip. Καμία αλλαγή σε `controller_node` και καμία
   διαγραφή legacy.
 - **Status:** ΟΚ.
+
+## #17 — (Φάση 6D.3) Node-side ROS handles + dormant executor assembly
+
+- **Υπόθεση:** Το 6C assembly είχε όλα τα pure ports, αλλά τα πραγματικά ROS
+  service/action/message handles υπήρχαν μόνο hand-built μέσα στο 6C.2 smoke.
+  Το παρόν βήμα κατασκευάζει το πλήρες node-side transport χωρίς να το συνδέει
+  στο `controller_node` control loop ή στο `collect_route` dispatch (cut-over
+  παραμένει αποκλειστικά στο 6D.4).
+- **Αλλαγή:** Νέο `collection_executor_node_factory.py`: explicit node cache για
+  latest `/scan`, yaw και canonical `BallDetectionArray`; TF wrapper που ζητά
+  camera→map transform ακριβώς στο RGB timestamp και επιστρέφει
+  `TimestampedCameraToMapTransform`; service clients για Load/Hold/Finalize,
+  FollowPath action client, controller-state subscription και angular-only
+  `/navigation/cmd_vel` publisher. Ο `load_sender` είναι το μοναδικό ROS
+  serialization boundary και αντιγράφει 1:1 όλα τα context/segment/profile/
+  crossing/tuning/terminal/configuration fields (segment codes 0/1/2). Το
+  immutable snapshot χτίζεται από explicit `collection_route.yaml` + calibration
+  artifact, ενώ tuning και operational scan/safety/context values διαβάζονται
+  ως required ROS params από `nav2_params.yaml` χωρίς code defaults. Τα explicit
+  helpers παράγουν scan pose στο κέντρο της service line της τρέχουσας πλευράς
+  και `CourtHalfBoundary` από τα surveyed court axes/net posts· invalid ή
+  αμφίσημη γεωμετρία αποτυγχάνει άμεσα. Προστέθηκε δηλωμένη PyYAML dependency.
+- **Αποτέλεσμα:** `tests/test_collection_executor_node_factory.py` με fake node/
+  TF/clients/action/messages αποδεικνύει την κατασκευή όλων των assembly handles,
+  live cache providers, cmd_vel shape, endpoints, fail-loud missing param και
+  field-by-field ROS context serialization από πραγματικό 6B value-object.
+  Offline gate: **49 passed in 0.49s** (`node_factory` + `path_follower_port` +
+  `executor_ports`). Το container smoke πλέον αφαιρεί τον hand-built transport,
+  κατασκευάζει handles και executor μέσω του factory και οδηγεί τον πραγματικό
+  C++ `CollectionFollowPath`: overlay **3 packages finished [0.97s]**, controller
+  `Reached the goal!`, launch test **Ran 1 test — OK**, Finalize ACCEPTED.
+  Καμία αλλαγή σε `controller_node.py`, legacy mission, mode dispatch/control
+  loop ή robot status.
+- **Status:** ΟΚ.

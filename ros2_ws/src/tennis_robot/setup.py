@@ -17,7 +17,7 @@ setup(
         (f"share/{package_name}/meshes", glob("meshes/*")),
         (f"share/{package_name}/config", glob("config/*.yaml") + glob("config/*.xml")),
     ],
-    install_requires=["setuptools"],
+    install_requires=["setuptools", "PyYAML>=6.0"],
     zip_safe=True,
     maintainer="thano",
     maintainer_email="thanos.zikas21@gmail.com",
