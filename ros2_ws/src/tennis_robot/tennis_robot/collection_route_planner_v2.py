@@ -13,6 +13,7 @@ import math
 from tennis_robot.collection_route_types import (
     BallReasonCode,
     CollectionRouteConfiguration,
+    CollectionRoutePlan,
     DomainValidationError,
     Point2D,
     Pose2D,
@@ -117,11 +118,31 @@ def analyze_snapshot(
     return tuple(_analyze_ball(ball, court, configuration) for ball in snapshot.balls)
 
 
-def plan_collection_route(*, snapshot: ScanSnapshot, court: CourtModel, configuration: CollectionRouteConfiguration):
+@dataclass(frozen=True)
+class PlannerResult:
+    """Immutable output of one pure planner run.
+
+    ``plan`` is the frozen route artifact; the remaining fields are
+    planner-run telemetry that is not a property of the route itself and is
+    deliberately kept out of the ``CollectionRoutePlan`` contract.  New
+    planner telemetry is added here, not on the plan.
+    """
+    plan: CollectionRoutePlan
+    shared_pass_candidate_budget_exhausted: bool
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan, CollectionRoutePlan):
+            raise PlannerInputError("PlannerResult requires a CollectionRoutePlan")
+        if not isinstance(self.shared_pass_candidate_budget_exhausted, bool):
+            raise PlannerInputError("shared_pass_candidate_budget_exhausted must be bool")
+
+
+def plan_collection_route(*, snapshot: ScanSnapshot, court: CourtModel, configuration: CollectionRouteConfiguration) -> PlannerResult:
     """Compose the pure Phase 3A→3C→3B1→3B2 planner pipeline.
 
     This is intentionally the sole planner orchestration API.  It imports the
     lower-level pure layers lazily to keep their geometry contracts acyclic.
+    Returns a ``PlannerResult`` wrapping the frozen plan and planner telemetry.
     """
     from tennis_robot.collection_route_connector_graph import build_directed_candidate_graph
     from tennis_robot.collection_route_global_solver import solve_global_route
@@ -146,13 +167,14 @@ def plan_collection_route(*, snapshot: ScanSnapshot, court: CourtModel, configur
         court=court,
         configuration=configuration,
     )
-    return solve_global_route(
+    plan = solve_global_route(
         snapshot=snapshot,
         feasibility=individual,
         graph=graph,
         court=court,
         configuration=configuration,
     )
+    return PlannerResult(plan, shared.candidate_budget_exhausted)
 
 
 def _merge_candidates(candidates: tuple[FunnelPassCandidate, ...]) -> tuple[FunnelPassCandidate, ...]:

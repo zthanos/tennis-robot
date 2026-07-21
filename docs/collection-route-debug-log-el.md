@@ -143,3 +143,24 @@
   collapse → `NO_CANDIDATE_FOUND`. Τα προϋπάρχοντα no_entry/no_exit tests
   παραμένουν πράσινα (34 planner/shared/solver/composition tests).
 - **Status:** ΟΚ.
+
+## #7 — (Φάση 3-5R, F3) shared-pass candidate_budget_exhausted σε observable telemetry
+
+- **Υπόθεση:** Το `SharedPassGenerationResult.candidate_budget_exhausted`
+  παραγόταν στο Phase 3C αλλά το `plan_collection_route` το πετούσε — δεν
+  έφτανε σε κανένα observable output.
+- **Απόφαση χρήστη (F3):** Δεν αλλάζουμε το immutable `CollectionRoutePlan`
+  contract. Το `plan_collection_route` επιστρέφει νέο frozen wrapper
+  `PlannerResult(plan, shared_pass_candidate_budget_exhausted)`, επεκτάσιμο για
+  μελλοντικό planner telemetry. Το plan μένει καθαρό frozen artifact· στη
+  Φάση 6 το wiring κάνει `.plan` unwrap (το `PurePlanner.plan()` protocol
+  παραμένει `-> CollectionRoutePlan`).
+- **Αλλαγή:** Νέο `PlannerResult` στο `collection_route_planner_v2.py`·
+  `plan_collection_route -> PlannerResult`. Ενημερώθηκαν οι callers: τα
+  executor test helpers (`executable_plan`/`empty_plan`) κάνουν `.plan` unwrap,
+  το composition test διαβάζει `.plan` και το flag από το wrapper.
+- **Αποτέλεσμα:** Νέο composition test ότι με `max_shared_pass_candidates=1` +
+  3 ευθυγραμμισμένες μπάλες το flag γίνεται True και δεν υπάρχει στο plan, ενώ
+  single-ball snapshot δίνει False. 27 composition/executor/planner_v2 tests
+  πράσινα.
+- **Status:** ΟΚ.

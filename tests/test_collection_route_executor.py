@@ -85,8 +85,8 @@ def snapshot(*, balls=("ball",), follow_up=FollowUpConfiguration(False, 1), scan
     return ScanSnapshot(scan_id, 100.0, "map", Pose2D(0.0, 0.0, 0.0), tuple(SnapshotBall(ball, Point2D(3.0 + index, 0.0), 0.9, PositionCovariance2D(1e-4, 0.0, 1e-4)) for index, ball in enumerate(balls)), config)
 
 
-def executable_plan(snap): return plan_collection_route(snapshot=snap, court=court(), configuration=snap.configuration_snapshot)
-def empty_plan(snap): return plan_collection_route(snapshot=snap, court=court(), configuration=snap.configuration_snapshot)
+def executable_plan(snap): return plan_collection_route(snapshot=snap, court=court(), configuration=snap.configuration_snapshot).plan
+def empty_plan(snap): return plan_collection_route(snapshot=snap, court=court(), configuration=snap.configuration_snapshot).plan
 
 
 def make_executor(*, snap, nav=(NavigatorResult(NavigatorStatus.SUCCEEDED),), scan=None, planner=None,
