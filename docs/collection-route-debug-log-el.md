@@ -240,3 +240,49 @@
   `runtime/court_boundary.json` καθαρά (4 fence walls + net + 4 fixtures).
   Καμία αλλαγή στο `collection_route_planner_v2.py`.
 - **Status:** ΟΚ.
+
+## #11 — (Φάση 6B) Pure PathFollower serialization + cross-language sha256/JSON parity
+
+- **Υπόθεση:** Ο C++ collection controller δέχεται ένα
+  `CollectionExecutionContext` + `nav_msgs/Path` που πρέπει να παραχθούν από το
+  immutable `CollectionRoutePlan`. Δύο cross-language συμβόλαια είναι εύθραυστα:
+  (α) το `path_sha256` (ο controller ξανα-υπολογίζει sha256 πάνω στο received
+  path με `collection_path_sha256_v1` — πρέπει byte-for-byte ίδιο), (β) το
+  `configuration_snapshot_json` (ο C++ κάνει `nlohmann::json::parse(s).dump()`
+  και ΑΠΟΡΡΙΠΤΕΙ αν `!= s`). Χρειάζεται pure serializer + απόδειξη ότι ο
+  ΠΡΑΓΜΑΤΙΚΟΣ C++ το δέχεται. Μόνο pure modules + parity harness· καμία live
+  action/service wiring ούτε αλλαγή controller_node (6C).
+- **Αλλαγή:** Τρία pure modules (χωρίς ROS import):
+  (1) `collection_path_canonicalization.py` — αναπαράγει ΑΚΡΙΒΩΣ το v1 wire
+  format (BE u32 frame len + UTF-8 + BE u32 pose count + 7× BE float64
+  x,y,z,qx,qy,qz,qw ανά pose) → lowercase-hex sha256· non-finite float → typed
+  `CanonicalizationError`. (2) `collection_execution_context_builder.py` —
+  `build_execution_context(plan, *, controller_tuning, context_schema_version,
+  context_activation_timeout_s)` → immutable `CollectionExecutionContextValues`
+  με ΟΛΑ τα field-values του msg (segments/type-codes 0/1/2, profiles 14-πεδία
+  1-1, crossings, terminal_progress=total_length, terminal_pose yaw→quat) +
+  `build_follow_path_poses` (ενώνει segment paths, αφαιρεί exact-duplicate join
+  poses ώστε κάθε 2D step > 0) + `canonical_configuration_snapshot_json`
+  (`json.dumps(sort_keys=True, separators=(",",":"), ensure_ascii=False,
+  allow_nan=False)`). `ControllerTuning` (5 πεδία) validated θετικό όπως ο C++
+  `valid_tuning`· είναι runtime input, ΔΕΝ ανήκει στο
+  `CollectionRouteConfiguration`. (3) Parity: `scripts/emit_collection_parity_
+  fixture.py` (pure, χτίζει real plan_collection_route plan μέσω 6A CourtModel
+  builder + serializer → fixture JSON), νέο gtest
+  `test/test_collection_execution_context_parity.cpp` (φορτώνει το ΠΡΑΓΜΑΤΙΚΟ
+  plugin μέσω pluginlib, καλεί το πραγματικό Load service + `setPlan`),
+  `scripts/run_collection_parity.sh` orchestration μέσα στο container. Ο parity
+  fixture χρησιμοποιεί ΕΥΘΥΓΡΑΜΜΗ route (net wall @x=8, robot (0,0,0)→ball
+  (3,0)) ώστε polyline length == total_length ΑΚΡΙΒΩΣ (curved connectors έχουν
+  chord-vs-arc σφάλμα > tolerance → θα έσπαγε το `make_tracking_plan`).
+- **Αποτέλεσμα:** Pure gate (`test_collection_path_canonicalization` +
+  `test_collection_execution_context_builder` + `..._planner_composition`) 28
+  passed. Container parity (`docker run … bash scripts/run_collection_parity.sh`)
+  build 2 pkgs 29.6s → 2/2 gtests PASSED: (i) Python sha256 ==
+  `collection_path_sha256_v1` του C++ για το ίδιο path, (ii) Load **ACCEPTED**
+  (άρα το canonical JSON επέζησε `nlohmann parse→dump`, segments/tuning/terminal
+  πέρασαν `valid_load_context`), (iii) `setPlan` δεκτό (path_sha256 match +
+  `make_tracking_plan`). Το nlohmann canonical JSON ταίριαξε με την πρώτη — τα
+  numbers του `default_configuration` επιβιώνουν parse→dump. Καμία αλλαγή σε C++
+  implementation (μόνο νέο test target στο CMakeLists) ή controller_node.
+- **Status:** ΟΚ.

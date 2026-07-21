@@ -67,6 +67,18 @@ if(BUILD_TESTING)
   target_link_libraries(test_collection_nav2_controller_runtime collection_nav2_controller)
   ament_target_dependencies(test_collection_nav2_controller_runtime
     pluginlib rclcpp rclcpp_lifecycle tennis_robot_msgs)
+  # Phase 6B cross-language parity: loads the plugin at runtime (pluginlib) and
+  # feeds it a context+path produced by the pure Python serializer, so it links
+  # only the exported canonicalization lib, not the plugin target.
+  ament_add_gtest(test_collection_execution_context_parity
+    test/test_collection_execution_context_parity.cpp
+    SKIP_LINKING_MAIN_LIBRARIES)
+  target_link_libraries(test_collection_execution_context_parity collection_path_canonicalization)
+  ament_target_dependencies(test_collection_execution_context_parity
+    nav2_core pluginlib rclcpp rclcpp_lifecycle tennis_robot_msgs nav_msgs)
+  set_tests_properties(test_collection_execution_context_parity PROPERTIES
+    ENVIRONMENT
+      "AMENT_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}:$ENV{AMENT_PREFIX_PATH};LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}")
   add_launch_test(test/test_collection_controller_server_isolated.launch.py TIMEOUT 60)
   set_tests_properties(test_test_collection_controller_server_isolated.launch.py PROPERTIES
     ENVIRONMENT "AMENT_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/../tennis_robot:${CMAKE_INSTALL_PREFIX}:$ENV{AMENT_PREFIX_PATH};LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}")
