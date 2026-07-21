@@ -75,6 +75,19 @@ controller_server:
     CollectionFollowPath:
       plugin: "tennis_robot_collection_controller::CollectionNav2Controller"
 
+# Collection route executor node (Phase 6C.2+). controller_tuning is
+# controller-runtime config, NOT part of the frozen plan: the Python follower
+# reads these 5 params (read_controller_tuning) and passes them to the 6B
+# CollectionExecutionContext builder. All must be > 0 (matches C++ valid_tuning).
+collection_route_executor:
+  ros__parameters:
+    use_sim_time: true
+    collection_controller_tuning.lookahead_distance_m: 1.0
+    collection_controller_tuning.max_angular_velocity_rad_s: 3.0
+    collection_controller_tuning.progress_projection_window_m: 10.0
+    collection_controller_tuning.crossing_speed_window_m: 0.25
+    collection_controller_tuning.terminal_progress_tolerance_m: 0.05
+
 local_costmap:
   local_costmap:
     ros__parameters:

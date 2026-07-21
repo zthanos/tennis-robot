@@ -369,3 +369,52 @@
   runtime_adapter`) 42 passed. Καμία αλλαγή controller_node/collect_route_mission
   /C++/6B serializers.
 - **Status:** ΟΚ.
+
+## #14 — (Φάση 6C.2) Live PathFollower port + σύνθεση CollectionRouteExecutor
+
+- **Υπόθεση:** Λείπει ο 8ος port (PathFollower) που οδηγεί τον ΠΡΑΓΜΑΤΙΚΟ C++
+  `CollectionFollowPath` controller, + η σύνθεση που συναρμολογεί και τους 8
+  ports σε έναν `CollectionRouteExecutor`. Δεύτερο μισό της σύνθεσης 6C. ΚΑΜΙΑ
+  αλλαγή controller_node/legacy/C++ (6D).
+- **Αλλαγή:** (1) Νέο `collection_path_follower_port.py` — **κανένα rclpy import**·
+  `LiveCollectionPathFollower` υλοποιεί το PathFollower Protocol με injected
+  duck-typed handles (load/follow_path/hold/finalize senders + load_outcome/
+  goal_status/state providers + clock). Handshake non-blocking polling (σαν
+  Nav2LaneNavigator): start(plan)→build 6B context/path/sha256 (ΧΡΗΣΙΜΟΠΟΙΕΙ τους
+  6B serializers) + Load async· result()→ σε Load ACCEPTED στέλνει FollowPath
+  (controller_id="CollectionFollowPath") εντός activation timeout, μετά map
+  CollectionControllerState+goal status → PathFollowerResult (goal SUCCEEDED→
+  completed· lifecycle FAILED ή failure_reason≠NONE→failed(reason)· EXECUTING/
+  SAFETY_PAUSED→running με progress_s, tube_ok=lateral≤trajectory_tube_radius,
+  remaining_run_in από reuse του pure CollectionPathFollower.remaining_run_in_m·
+  Load reject/activation timeout→failed). pure `failure_reason_for_code` map
+  (SAFETY_RESUME_INVALID→ίδιο, υπόλοιπα tube/curvature/speed/reverse/rotate/
+  non-monotonic→PATH_FAILED). pause/resume→SetCollectionSafetyHold(hold true/
+  false). **Απόφαση Finalize:** ο follower στέλνει FinalizeCollectionExecution
+  Context(SUCCEEDED) ΑΥΤΟΜΑΤΑ ΜΙΑ φορά στο result()==completed transition (goal
+  action terminal success = η μόνη στιγμή που ο C++ context είναι terminal_ready·
+  αλλιώς TERMINAL_NOT_REACHED)· ο executor δεν χρειάζεται να ξέρει για Finalize.
+  (2) Νέο `collection_executor_assembly.py` — `build_collection_route_executor
+  (node, config, handles)` συναρμολογεί ΚΑΙ τους 8 ports (6C.1 adapters + αυτόν
+  τον follower + PurePlanner=plan_collection_route wrapper με CourtModel από 6A
+  builder + ScanSessionDriver)· `read_controller_tuning(node)` διαβάζει τα 5
+  tuning params (duck-typed node.get_parameter, κανένα rclpy import), validated
+  θετικά (ControllerTuning == C++ valid_tuning). (3) nav2_params.yaml: νέο
+  `collection_route_executor` node block με τα 5 controller_tuning params
+  (controller-runtime config, ΟΧΙ μέρος του frozen plan· ο 6D node τα διαβάζει).
+- **Αποτέλεσμα:** Νέο `tests/test_collection_path_follower_port.py` (fake service/
+  action/state handles) — κάθε mapping: Load accept→FollowPath sent· SUCCEEDED→
+  completed+Finalize ΜΙΑ φορά· failure_reason X→failed reason· EXECUTING→running
+  με σωστό remaining_run_in/tube_ok· tube violation· SAFETY_PAUSED→running·
+  Load reject→failed· activation timeout→failed· Finalize ΜΟΝΟ σε terminal·
+  pause/resume→Hold calls· read_controller_tuning· **assembly full fake cycle
+  idle→…→COMPLETED**. Pure gate (`..._path_follower_port` + `..._executor_ports`
+  + `..._route_executor`) 52 passed. **Container smoke** (`docker run … bash
+  scripts/run_collection_follower_smoke.sh`): launch_test σηκώνει ΠΡΑΓΜΑΤΙΚΟ nav2
+  controller_server + CollectionFollowPath plugin, ο ΠΥΘΩΝΙΚΟΣ
+  LiveCollectionPathFollower οδηγεί ΠΡΑΓΜΑΤΙΚΟ curved plan (robot(0,0,0)→ball
+  (0,3)) end-to-end: Load ACCEPTED → FollowPath (controller_id+sha match) →
+  "Reached the goal!" → Finalize ACCEPTED. 1 test PASSED (robot pre-parked στο
+  terminal pose, xy goal tolerance 0.10, ίδιο pattern με το 6B isolated launch
+  test). Καμία αλλαγή controller_node/collect_route_mission/C++.
+- **Status:** ΟΚ.
