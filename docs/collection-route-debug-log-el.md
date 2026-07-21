@@ -326,3 +326,46 @@
   length/terminal + tracking-core constructor). Ο fixture (0,3) επιλέχθηκε επειδή
   το pre-6B.1 sparse θα αποτύγχανε (0.12>0.05)· η densification το ΞΕΜΠΛΟΚΑΡΕΙ.
 - **Status:** ΟΚ.
+
+## #13 — (Φάση 6C.1) ROS adapters για sensor/actuator + scan executor ports
+
+- **Υπόθεση:** Ο pure `CollectionRouteExecutor` (collection_route_executor.py)
+  δέχεται injected ports (ScanPoseNavigator/ScanSession/Collector/SafetyMonitor/
+  TelemetrySink/MonotonicClock) που επιστρέφουν typed results. Λείπουν οι ROS
+  υλοποιήσεις. Πρώτο μισό της σύνθεσης — μόνο sensor/actuator adapters + scan
+  driver, ΚΑΜΙΑ αλλαγή controller_node, ΚΑΝΕΝΑ FollowPath/C++ context (6C.2),
+  ΚΑΜΙΑ διαγραφή legacy (6D).
+- **Αλλαγή:** Νέο `collection_executor_ports.py` — **κανένα rclpy import**· κάθε
+  ROS touch-point είναι injected duck-typed handle (node, publisher callable,
+  "latest message" provider) που θα δώσει το 6C.2, ώστε ολόκληρο το module +
+  η decision logic να είναι offline-testable. Ports: (1) `RosMonotonicClock`
+  (node.get_clock().now().nanoseconds*1e-9). (2) `telemetry_event_to_dict`
+  (pure) + `CallbackTelemetrySink` (emit→dict→callback). (3)
+  `ScanPoseNavigatorAdapter` wrap Nav2LaneNavigator· pure `navigator_result_for_
+  state(str)` map (idle/pending/active→RUNNING, reached→SUCCEEDED, failed→
+  FAILED, unavailable→UNAVAILABLE) — δέχεται το plain state string, ΔΕΝ κάνει
+  import το ROS-bound LaneNavState enum. (4) `GazeboCollectorAdapter` wrap
+  CollectorInterface· MVP: start_result→READY άμεσα, active_fault→None,
+  stop_result→STOPPED, force_disable→stop — **κανένα ψεύτικο fault** (το real
+  hardware θα wire-άρει jam/full/health μελλοντικά, τεκμηριωμένο). (5)
+  SafetyMonitor: pure `forward_sector_blocked(...)` (valid return εντός forward
+  sector < stop_distance) + pure `ForwardSectorSafetyLogic` (blocked-duration
+  timeout FSM: CLEAR/BLOCKED/TIMEOUT, thresholds required χωρίς defaults) + thin
+  `LidarSafetyMonitor` (/scan provider callback· missing scan→CLEAR, documented
+  future stale-watchdog). (6) ScanSession: pure `ScanRotationFsm` (360° discrete
+  step targets start+k*step_angle, observe(yaw)→step_id όταν εντός tolerance,
+  is_complete μετά από step_count captures — testable με fake yaw feed,
+  ξεχωριστό από cmd_vel) + thin `ScanSessionDriver` (yaw/frame providers +
+  cmd_vel callable + clock· ανά step forward_frame στο CollectionSnapshotRuntime
+  Session, στο τέλος finalize→SNAPSHOT_READY(snapshot) ή FAILED(SCAN_FAILED)·
+  wall-clock scan_timeout guard fail-loud). Όλα τα required thresholds/config
+  validated (ExecutorPortError, κανένα default).
+- **Αποτέλεσμα:** Νέο `tests/test_collection_executor_ports.py` (fake node/clock/
+  navigator/collector/laserscan/frames) — typed result mapping ανά port·
+  lidar return εντός sector→BLOCKED / εκτός→CLEAR / παρατεταμένο→TIMEOUT /
+  invalid(inf/out-of-range)→ignored· scan rotation FSM ολοκληρώνει 360° και
+  παράγει SNAPSHOT_READY· finalize-fail & rotation-stall→FAILED. Gate
+  (`test_collection_executor_ports` + `..._route_executor` + `..._snapshot_
+  runtime_adapter`) 42 passed. Καμία αλλαγή controller_node/collect_route_mission
+  /C++/6B serializers.
+- **Status:** ΟΚ.
