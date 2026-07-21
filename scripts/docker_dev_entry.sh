@@ -33,12 +33,12 @@ else
 fi
 
 if [ "${DEV_OVERLAY:-true}" = "true" ]; then
-  echo "[dev_entry] building workspace overlay (tennis_robot, tennis_robot_msgs)…"
+  echo "[dev_entry] building workspace overlay (tennis_robot_msgs, tennis_robot_collection_controller, tennis_robot)…"
   cd /workspace/ros2_ws
   colcon build \
     --build-base build_docker \
     --install-base install_docker \
-    --packages-select tennis_robot_msgs tennis_robot
+    --packages-select tennis_robot_msgs tennis_robot_collection_controller tennis_robot
   . install_docker/local_setup.sh
   echo "[dev_entry] overlay active: /workspace/ros2_ws/install_docker"
 else

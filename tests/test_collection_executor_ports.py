@@ -24,6 +24,7 @@ from tennis_robot.collection_executor_ports import (
     RosMonotonicClock,
     ScanPoseNavigatorAdapter,
     ScanRotationFsm,
+    ScanSample,
     ScanSessionDriver,
     forward_sector_blocked,
     navigator_result_for_state,
@@ -154,11 +155,27 @@ def test_gazebo_collector_adapter_maps_ports_without_inventing_faults():
 
 
 # ── 5. SafetyMonitor ─────────────────────────────────────────────────────────
-def _scan(ranges, *, angle_min=-math.pi / 2, angle_increment=math.pi / 4, range_min=0.1, range_max=30.0):
-    return N(ranges=list(ranges), angle_min=angle_min, angle_increment=angle_increment, range_min=range_min, range_max=range_max)
+def _scan(ranges, *, stamp_s=0.0, angle_min=-math.pi / 2, angle_increment=math.pi / 4, range_min=0.1, range_max=30.0):
+    sec = int(stamp_s)
+    return N(header=N(stamp=N(sec=sec, nanosec=int(round((stamp_s - sec) * 1e9)))),
+             ranges=list(ranges), angle_min=angle_min, angle_increment=angle_increment, range_min=range_min, range_max=range_max)
+
+
+def _sample(ranges, *, stamp_s, angle_min=-math.pi / 2, angle_increment=math.pi / 4, range_min=0.1, range_max=30.0):
+    return ScanSample(stamp_s=stamp_s, ranges=tuple(ranges), angle_min=angle_min,
+                      angle_increment=angle_increment, range_min=range_min, range_max=range_max)
+
+
+def _logic():
+    return ForwardSectorSafetyLogic(forward_half_angle_rad=math.radians(20), stop_distance_m=1.0,
+                                    safety_pause_timeout_s=2.0, max_scan_age_s=0.5)
 
 
 # indices 0..4 -> bearings -90, -45, 0, 45, 90 deg
+_CLEAR = [10, 10, 10, 10, 10]
+_BLOCKED = [10, 10, 0.5, 10, 10]
+
+
 def test_forward_sector_blocked_detects_only_valid_forward_returns():
     common = dict(angle_min=-math.pi / 2, angle_increment=math.pi / 4, range_min=0.1, range_max=30.0,
                   forward_half_angle_rad=math.radians(20), stop_distance_m=1.0)
@@ -172,42 +189,65 @@ def test_forward_sector_blocked_detects_only_valid_forward_returns():
 
 
 def test_safety_logic_clear_blocked_then_timeout():
-    clock = Clock()
-    logic = ForwardSectorSafetyLogic(forward_half_angle_rad=math.radians(20), stop_distance_m=1.0, safety_pause_timeout_s=2.0)
-    kw = dict(angle_min=-math.pi / 2, angle_increment=math.pi / 4, range_min=0.1, range_max=30.0)
-    clear = [10, 10, 10, 10, 10]
-    blocked = [10, 10, 0.5, 10, 10]
-    # Clear first.
-    assert logic.evaluate(ranges=clear, now_s=0.0, **kw).status is SafetyStatus.CLEAR
-    # Newly blocked -> BLOCKED (timer starts).
-    assert logic.evaluate(ranges=blocked, now_s=0.0, **kw).status is SafetyStatus.BLOCKED
+    logic = _logic()
+    # Fresh clear scan (age 0) -> CLEAR.
+    assert logic.evaluate(scan=_sample(_CLEAR, stamp_s=0.0), now_s=0.0).status is SafetyStatus.CLEAR
+    # Fresh blocked scan -> BLOCKED (timer starts).
+    assert logic.evaluate(scan=_sample(_BLOCKED, stamp_s=0.0), now_s=0.0).status is SafetyStatus.BLOCKED
     # Still blocked, under timeout -> BLOCKED.
-    assert logic.evaluate(ranges=blocked, now_s=1.5, **kw).status is SafetyStatus.BLOCKED
+    assert logic.evaluate(scan=_sample(_BLOCKED, stamp_s=1.5), now_s=1.5).status is SafetyStatus.BLOCKED
     # Sustained past the timeout -> TIMEOUT.
-    assert logic.evaluate(ranges=blocked, now_s=2.0, **kw).status is SafetyStatus.TIMEOUT
+    assert logic.evaluate(scan=_sample(_BLOCKED, stamp_s=2.0), now_s=2.0).status is SafetyStatus.TIMEOUT
     # Clearing resets the block timer.
-    assert logic.evaluate(ranges=clear, now_s=3.0, **kw).status is SafetyStatus.CLEAR
-    assert logic.evaluate(ranges=blocked, now_s=3.0, **kw).status is SafetyStatus.BLOCKED
+    assert logic.evaluate(scan=_sample(_CLEAR, stamp_s=3.0), now_s=3.0).status is SafetyStatus.CLEAR
+    assert logic.evaluate(scan=_sample(_BLOCKED, stamp_s=3.0), now_s=3.0).status is SafetyStatus.BLOCKED
+
+
+def test_safety_watchdog_missing_and_stale_scan_are_failsafe_blocked():
+    logic = _logic()
+    # No scan at all -> fail-safe BLOCKED (not clear).
+    assert logic.evaluate(scan=None, now_s=0.0).status is SafetyStatus.BLOCKED
+    # A fresh clear scan clears it.
+    assert logic.evaluate(scan=_sample(_CLEAR, stamp_s=0.0), now_s=0.0).status is SafetyStatus.CLEAR
+    # A clear-content but STALE scan (age 0.6 > max 0.5) -> fail-safe BLOCKED.
+    assert logic.evaluate(scan=_sample(_CLEAR, stamp_s=0.0), now_s=0.6).status is SafetyStatus.BLOCKED
+
+
+def test_safety_watchdog_sustained_stale_scan_times_out():
+    logic = _logic()
+    # Prolonged absence of a fresh scan escalates BLOCKED -> TIMEOUT like an obstacle.
+    assert logic.evaluate(scan=None, now_s=0.0).status is SafetyStatus.BLOCKED
+    assert logic.evaluate(scan=None, now_s=1.0).status is SafetyStatus.BLOCKED
+    assert logic.evaluate(scan=None, now_s=2.0).status is SafetyStatus.TIMEOUT
 
 
 def test_safety_logic_rejects_missing_thresholds():
-    for bad in ({"forward_half_angle_rad": 0.0}, {"stop_distance_m": -1.0}, {"safety_pause_timeout_s": float("inf")}):
-        kwargs = {"forward_half_angle_rad": 0.3, "stop_distance_m": 1.0, "safety_pause_timeout_s": 2.0, **bad}
+    base = {"forward_half_angle_rad": 0.3, "stop_distance_m": 1.0, "safety_pause_timeout_s": 2.0, "max_scan_age_s": 0.5}
+    for bad in ({"forward_half_angle_rad": 0.0}, {"stop_distance_m": -1.0},
+                {"safety_pause_timeout_s": float("inf")}, {"max_scan_age_s": 0.0}):
         with pytest.raises(ExecutorPortError):
-            ForwardSectorSafetyLogic(**kwargs)
+            ForwardSectorSafetyLogic(**{**base, **bad})
 
 
-def test_lidar_safety_monitor_reads_latest_scan_and_missing_is_clear():
+def test_lidar_safety_monitor_missing_scan_is_failsafe_blocked():
     clock = Clock()
-    logic = ForwardSectorSafetyLogic(forward_half_angle_rad=math.radians(20), stop_distance_m=1.0, safety_pause_timeout_s=2.0)
-    box = {"scan": None}
-    monitor = LidarSafetyMonitor(logic=logic, clock=clock, scan_provider=lambda: box["scan"])
-    # No scan yet -> clear.
-    assert monitor.result().status is SafetyStatus.CLEAR
-    box["scan"] = _scan([10, 10, 0.5, 10, 10])
+    monitor = LidarSafetyMonitor(logic=_logic(), clock=clock, scan_provider=lambda: None)
+    # No scan yet -> fail-safe BLOCKED.
     assert monitor.result().status is SafetyStatus.BLOCKED
-    box["scan"] = _scan([10, 10, 10, 10, 10])
+
+
+def test_lidar_safety_monitor_reads_fresh_scan_stamp():
+    clock = Clock(value=100.0)
+    box = {"scan": _scan(_BLOCKED, stamp_s=100.0)}
+    monitor = LidarSafetyMonitor(logic=_logic(), clock=clock, scan_provider=lambda: box["scan"])
+    # Fresh blocked scan -> BLOCKED.
+    assert monitor.result().status is SafetyStatus.BLOCKED
+    # Fresh clear scan -> CLEAR.
+    box["scan"] = _scan(_CLEAR, stamp_s=100.0)
     assert monitor.result().status is SafetyStatus.CLEAR
+    # Scan stops updating; clock advances past max_scan_age_s -> fail-safe BLOCKED.
+    clock.value = 100.6
+    assert monitor.result().status is SafetyStatus.BLOCKED
 
 
 # ── 6. ScanSession ───────────────────────────────────────────────────────────

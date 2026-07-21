@@ -380,11 +380,22 @@ def _assembly_smoke_handles(plan):
 
     plan_snapshot = _snapshot_for(plan)
 
+    # A fresh, clear scan (stamp 0 == the FakeNode clock now_s 0) keeps the
+    # fail-safe watchdog CLEAR so the happy-path cycle can complete.
+    from types import SimpleNamespace as _N
+
+    def _clear_scan():
+        return _N(
+            header=_N(stamp=_N(sec=0, nanosec=0)),
+            ranges=[10.0, 10.0, 10.0, 10.0, 10.0],
+            angle_min=-math.pi / 2, angle_increment=math.pi / 4, range_min=0.1, range_max=30.0,
+        )
+
     handles = CollectionExecutorHandles(
         telemetry_sink=telemetry.append,
         lane_navigator=LaneNav(),
         collector_interface=Collector(),
-        scan_provider=lambda: None,
+        scan_provider=_clear_scan,
         yaw_provider=lambda: 0.0,
         frame_provider=lambda: None,
         cmd_vel=lambda angular: None,
@@ -426,6 +437,7 @@ def test_build_collection_route_executor_runs_full_fake_cycle_to_completed():
         safety_forward_half_angle_rad=0.3,
         safety_stop_distance_m=1.0,
         safety_pause_timeout_s=2.0,
+        safety_max_scan_age_s=0.5,
     )
     executor = build_collection_route_executor(node=node, config=config, handles=handles)
     executor.start()

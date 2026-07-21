@@ -125,13 +125,18 @@ RUN apt-get update \
   && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
   && rm -rf /var/lib/apt/lists/*
 
-# ── tennis_robot last: edits here rebuild ONLY this package (seconds) ──────────
+# ── tennis_robot last: edits here rebuild ONLY these packages (seconds) ────────
 # Bump TENNIS_ROBOT_VER to bust the COPY cache when source changes aren't detected
 ARG TENNIS_ROBOT_VER=23
+# The collection controller (C++ Nav2 plugin) is baked here so the real sim
+# loads it via controller_id="CollectionFollowPath". It depends on
+# tennis_robot_msgs (already built above and sourced via install/setup.sh);
+# colcon resolves build order from that dependency.
+COPY ros2_ws/src/tennis_robot_collection_controller src/tennis_robot_collection_controller
 COPY ros2_ws/src/tennis_robot src/tennis_robot
 RUN . /opt/ros/humble/setup.sh \
   && . install/setup.sh \
-  && colcon build --packages-select tennis_robot --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  && colcon build --packages-select tennis_robot_collection_controller tennis_robot --cmake-args -DCMAKE_BUILD_TYPE=Release \
   && sed -i '/self\._navigator\.waitUntilNav2Active/d' \
        /ros2_ws/src/tennis_robot/tennis_robot/court_survey_mission_node.py \
   && printf '#!/usr/bin/env python3\nimport sys; sys.path.insert(0, "/ros2_ws/src/tennis_robot")\nfrom tennis_robot.court_landmarks_node import main\nsys.exit(main())\n' \

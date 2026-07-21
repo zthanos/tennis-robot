@@ -24,6 +24,7 @@ take plain values, separate from the thin ROS wrappers.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import math
 
 from tennis_robot.collection_route_executor import (
@@ -205,35 +206,47 @@ def forward_sector_blocked(
     return False
 
 
-class ForwardSectorSafetyLogic:
-    """Pure SafetyResult decision: forward-sector obstacle + blocked-duration timeout.
+@dataclass(frozen=True)
+class ScanSample:
+    """One lidar frame reduced to the plain values the safety logic needs."""
 
-    Any valid forward return closer than ``stop_distance_m`` is BLOCKED; a block
+    stamp_s: float
+    ranges: tuple[float, ...]
+    angle_min: float
+    angle_increment: float
+    range_min: float
+    range_max: float
+
+
+class ForwardSectorSafetyLogic:
+    """Pure SafetyResult decision: forward-sector obstacle + stale-scan watchdog.
+
+    A block is raised when a valid forward return is closer than
+    ``stop_distance_m`` OR when there is no fresh scan — a missing scan, or one
+    older than ``max_scan_age_s``, is BLOCKED (fail-safe), never CLEAR.  A block
     sustained for at least ``safety_pause_timeout_s`` becomes TIMEOUT; otherwise
     CLEAR.  All thresholds are required (no defaults).
     """
 
-    def __init__(self, *, forward_half_angle_rad: float, stop_distance_m: float, safety_pause_timeout_s: float) -> None:
+    def __init__(
+        self,
+        *,
+        forward_half_angle_rad: float,
+        stop_distance_m: float,
+        safety_pause_timeout_s: float,
+        max_scan_age_s: float,
+    ) -> None:
         self._forward_half_angle_rad = _require_positive_finite(forward_half_angle_rad, "forward_half_angle_rad")
         if self._forward_half_angle_rad > math.pi:
             raise ExecutorPortError("forward_half_angle_rad must be <= pi")
         self._stop_distance_m = _require_positive_finite(stop_distance_m, "stop_distance_m")
         self._safety_pause_timeout_s = _require_positive_finite(safety_pause_timeout_s, "safety_pause_timeout_s")
+        self._max_scan_age_s = _require_positive_finite(max_scan_age_s, "max_scan_age_s")
         self._blocked_since_s: float | None = None
 
-    def evaluate(
-        self, *, ranges, angle_min: float, angle_increment: float, range_min: float, range_max: float, now_s: float
-    ) -> SafetyResult:
+    def evaluate(self, *, scan: "ScanSample | None", now_s: float) -> SafetyResult:
         now_s = _require_finite(now_s, "now_s")
-        blocked = forward_sector_blocked(
-            ranges=ranges,
-            angle_min=angle_min,
-            angle_increment=angle_increment,
-            range_min=range_min,
-            range_max=range_max,
-            forward_half_angle_rad=self._forward_half_angle_rad,
-            stop_distance_m=self._stop_distance_m,
-        )
+        blocked = self._is_blocked(scan, now_s)
         if not blocked:
             self._blocked_since_s = None
             return SafetyResult(SafetyStatus.CLEAR)
@@ -243,14 +256,32 @@ class ForwardSectorSafetyLogic:
             return SafetyResult(SafetyStatus.TIMEOUT)
         return SafetyResult(SafetyStatus.BLOCKED)
 
+    def _is_blocked(self, scan: "ScanSample | None", now_s: float) -> bool:
+        # Fail-safe: no scan, or a scan older than max_scan_age_s, blocks.
+        if scan is None or now_s - scan.stamp_s > self._max_scan_age_s:
+            return True
+        return forward_sector_blocked(
+            ranges=scan.ranges,
+            angle_min=scan.angle_min,
+            angle_increment=scan.angle_increment,
+            range_min=scan.range_min,
+            range_max=scan.range_max,
+            forward_half_angle_rad=self._forward_half_angle_rad,
+            stop_distance_m=self._stop_distance_m,
+        )
+
+
+def _stamp_seconds(stamp) -> float:
+    return float(stamp.sec) + float(stamp.nanosec) * 1e-9
+
 
 class LidarSafetyMonitor:
     """SafetyMonitor port that feeds the latest /scan LaserScan into the pure logic.
 
     ``scan_provider`` returns the most recent ``sensor_msgs/LaserScan`` (or
-    ``None`` if none received yet).  A missing scan is treated as CLEAR — the
-    forward sector is evaluated as empty; a stale-scan watchdog is a future
-    refinement.  The node owns the subscription; this wrapper never subscribes.
+    ``None`` if none received yet).  A missing or stale scan is fail-safe BLOCKED
+    (see :class:`ForwardSectorSafetyLogic`).  The node owns the subscription;
+    this wrapper never subscribes.
     """
 
     def __init__(self, *, logic: ForwardSectorSafetyLogic, clock, scan_provider) -> None:
@@ -265,18 +296,17 @@ class LidarSafetyMonitor:
     def result(self) -> SafetyResult:
         now_s = self._clock.now_s()
         scan = self._scan_provider()
-        if scan is None:
-            return self._logic.evaluate(
-                ranges=(), angle_min=0.0, angle_increment=0.0, range_min=0.0, range_max=0.0, now_s=now_s
+        sample = None
+        if scan is not None:
+            sample = ScanSample(
+                stamp_s=_stamp_seconds(scan.header.stamp),
+                ranges=tuple(scan.ranges),
+                angle_min=scan.angle_min,
+                angle_increment=scan.angle_increment,
+                range_min=scan.range_min,
+                range_max=scan.range_max,
             )
-        return self._logic.evaluate(
-            ranges=tuple(scan.ranges),
-            angle_min=scan.angle_min,
-            angle_increment=scan.angle_increment,
-            range_min=scan.range_min,
-            range_max=scan.range_max,
-            now_s=now_s,
-        )
+        return self._logic.evaluate(scan=sample, now_s=now_s)
 
 
 # ── 6. ScanSession (pure rotation-step FSM + thin 360deg driver) ──────────────

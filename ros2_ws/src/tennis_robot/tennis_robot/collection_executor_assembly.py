@@ -82,6 +82,7 @@ class CollectionExecutorConfig:
     safety_forward_half_angle_rad: float
     safety_stop_distance_m: float
     safety_pause_timeout_s: float
+    safety_max_scan_age_s: float
     controller_id: str = DEFAULT_CONTROLLER_ID
 
 
@@ -146,6 +147,7 @@ def build_collection_route_executor(
         forward_half_angle_rad=config.safety_forward_half_angle_rad,
         stop_distance_m=config.safety_stop_distance_m,
         safety_pause_timeout_s=config.safety_pause_timeout_s,
+        max_scan_age_s=config.safety_max_scan_age_s,
     )
     safety_monitor = LidarSafetyMonitor(logic=safety_logic, clock=clock, scan_provider=handles.scan_provider)
 

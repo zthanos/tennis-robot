@@ -418,3 +418,39 @@
   terminal pose, xy goal tolerance 0.10, ίδιο pattern με το 6B isolated launch
   test). Καμία αλλαγή controller_node/collect_route_mission/C++.
 - **Status:** ΟΚ.
+
+## #15 — (Φάση 6D.1) Build-config για το collection controller + fail-safe scan watchdog
+
+- **Υπόθεση:** Το `tennis_robot_collection_controller` (C++ Nav2 plugin) χτιζόταν
+  ΜΟΝΟ σε isolated overlays στα smokes — ΟΧΙ στο image bake ούτε στον dev overlay,
+  άρα το πραγματικό σιμ ΔΕΝ φόρτωνε το plugin (το controller_id
+  "CollectionFollowPath" δεν θα έβρισκε class). Prerequisite infra πριν το atomic
+  node cutover (6D.2). Παράλληλα carry-forward από 6C.1: το missing/None /scan
+  → CLEAR (όχι fail-safe).
+- **Αλλαγή:** **Μέρος 1 (build config):** (α) `Dockerfile.gazebo` — νέο
+  `COPY tennis_robot_collection_controller` + το bake `colcon build` άλλαξε σε
+  `--packages-select tennis_robot_collection_controller tennis_robot` (msgs ήδη
+  χτισμένο νωρίτερα + sourced, ο controller εξαρτάται από msgs — colcon λύνει τη
+  σειρά). (β) `scripts/docker_dev_entry.sh` — dev overlay select έγινε
+  `tennis_robot_msgs tennis_robot_collection_controller tennis_robot`. (γ)
+  `package.xml` exec_depend υπήρχε ήδη. Καμία αλλαγή C++ source ή nav2_params.
+  **Μέρος 2 (fail-safe scan watchdog):** στο `collection_executor_ports.py` νέο
+  immutable `ScanSample(stamp_s, ranges, angle_min/increment, range_min/max)`· το
+  `ForwardSectorSafetyLogic` πήρε required `max_scan_age_s` (no default) και το
+  `_is_blocked` πλέον: **scan is None Ή age > max_scan_age_s → BLOCKED (fail-safe)**,
+  αλλιώς forward_sector_blocked· το ίδιο blocked-duration timeout FSM κλιμακώνει
+  σε TIMEOUT. `LidarSafetyMonitor.result()` εξάγει το stamp από το LaserScan
+  header (`_stamp_seconds`) και χτίζει `ScanSample` (ή None). `CollectionExecutor
+  Config.safety_max_scan_age_s` + wiring στο assembly (explicit, no default).
+- **Αποτέλεσμα:** Pure gate (`test_collection_executor_ports` +
+  `test_collection_path_follower_port`) 45 passed — νέα watchdog tests: missing→
+  BLOCKED, stale→BLOCKED, fresh clear→CLEAR, fresh blocked→BLOCKED, sustained
+  stale→TIMEOUT, monitor stamp-freshness· assembly smoke ενημερώθηκε με fresh
+  clear scan (missing πλέον BLOCKED). **Container verify**: clean build 3 pkgs
+  (msgs 6.4s + controller 24.3s + tennis_robot 0.55s = 31.3s) — το plugin πλέον
+  χτίζεται στο packages-select. C++ tests (εξαιρώντας το harness-only parity
+  gtest που θέλει COLLECTION_PARITY_FIXTURE env, τρέχει μέσω
+  run_collection_parity.sh): plugin 1 + runtime 5 + path_canonicalization 7 +
+  tracking_core 7 + isolated launch 5 = **25/0 πράσινα** — καμία regression από
+  το 6D.1. debug log #15. Καμία αλλαγή controller_node/legacy/C++ source.
+- **Status:** ΟΚ.
