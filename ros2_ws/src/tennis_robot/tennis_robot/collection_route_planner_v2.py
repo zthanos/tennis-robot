@@ -209,12 +209,16 @@ def _analyze_ball(ball, court: CourtModel, configuration: CollectionRouteConfigu
         return PerBallFeasibility(ball.ball_id, (), BallReasonCode.NO_ENTRY)
 
     candidates: list[FunnelPassCandidate] = []
+    corridor_collapsed = False
     entry_failed = False
     exit_failed = False
     for heading in tangent_valid:
         effective_width = _effective_capture_half_width(ball, heading, configuration)
         if effective_width <= 0.0:
-            entry_failed = True
+            # Uncertainty/margins consume the whole capture corridor for this
+            # heading.  This is not an entry-geometry failure, so it is tracked
+            # separately and reported as no_candidate_found.
+            corridor_collapsed = True
             continue
         direction = (math.cos(heading), math.sin(heading))
         entry = Point2D(
@@ -245,11 +249,15 @@ def _analyze_ball(ball, court: CourtModel, configuration: CollectionRouteConfigu
         )
     if candidates:
         return PerBallFeasibility(ball.ball_id, tuple(candidates), None)
-    return PerBallFeasibility(
-        ball.ball_id,
-        (),
-        BallReasonCode.NO_ENTRY if entry_failed else BallReasonCode.NO_EXIT if exit_failed else BallReasonCode.NO_ENTRY,
-    )
+    # Report the earliest blocking geometric stage; a pure corridor collapse
+    # (no entry/exit geometry failure) is no_candidate_found, not no_entry.
+    if entry_failed:
+        reason = BallReasonCode.NO_ENTRY
+    elif exit_failed:
+        reason = BallReasonCode.NO_EXIT
+    else:
+        reason = BallReasonCode.NO_CANDIDATE_FOUND
+    return PerBallFeasibility(ball.ball_id, (), reason)
 
 
 def _effective_capture_half_width(ball, heading: float, configuration: CollectionRouteConfiguration) -> float:

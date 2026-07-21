@@ -118,6 +118,21 @@ def test_corner_with_incompatible_tangent_constraints_is_no_entry():
     assert feasibility.unreachable_reason is BallReasonCode.NO_ENTRY
 
 
+def test_corridor_collapse_is_no_candidate_found_not_no_entry():
+    # A large isotropic position covariance drives the effective capture
+    # corridor non-positive for every heading; that is a corridor collapse
+    # (no_candidate_found), never an entry-geometry failure.
+    config = configuration()
+    snapshot = ScanSnapshot(
+        "scan-corridor-collapse", FAKE_TIME_S, "map", SCAN_POSE,
+        (SnapshotBall("ball-1", Point2D(0.0, 0.0), 0.95, PositionCovariance2D(1.0, 0.0, 1.0)),),
+        config,
+    )
+    feasibility = analyze_snapshot(snapshot, court(), config)[0]
+    assert feasibility.candidates == ()
+    assert feasibility.unreachable_reason is BallReasonCode.NO_CANDIDATE_FOUND
+
+
 def test_phase_3a_never_emits_turn_radius_reason():
     feasibility = result(configuration(), court())
     assert feasibility.unreachable_reason is not BallReasonCode.TURN_RADIUS

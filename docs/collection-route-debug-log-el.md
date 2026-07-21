@@ -125,3 +125,21 @@
   Νέα tests: όλα τα start edges collision-rejected → PLANNING_TIMEOUT· όλες
   keepout → EMPTY_NO_FEASIBLE_TARGETS. 18 solver+composition tests πράσινα.
 - **Status:** ΟΚ.
+
+## #6 — (Φάση 3-5R, F2) Corridor collapse ≠ no_entry· διακριτά reason codes
+
+- **Υπόθεση:** Στο `_analyze_ball`, όταν `effective_width <= 0` (corridor
+  collapse από uncertainty/margins) το heading χρεωνόταν σε `entry_failed`, και
+  τα `entry_failed`/`exit_failed` ήταν κοινά boolean με το τελικό reason να
+  προτιμά πάντα `NO_ENTRY`. Έτσι corridor collapse ή exit-only failures με
+  παρεμβαλλόμενο collapse κατέληγαν λανθασμένα `no_entry`.
+- **Αλλαγή:** Τρία ξεχωριστά flags (`corridor_collapsed`, `entry_failed`,
+  `exit_failed`). Corridor collapse → δικό του flag. Τελικό reason κατά
+  precedence της πραγματικής αιτίας: entry_failed → `NO_ENTRY`, αλλιώς
+  exit_failed → `NO_EXIT`, αλλιώς (μόνο corridor collapse) →
+  `NO_CANDIDATE_FOUND` (κατά την επιλογή του χρήστη). Καμία αλλαγή στη γεωμετρία
+  ή στη σειρά ελέγχων.
+- **Αποτέλεσμα:** Νέο test με μεγάλη isotropic covariance → όλες οι headings
+  collapse → `NO_CANDIDATE_FOUND`. Τα προϋπάρχοντα no_entry/no_exit tests
+  παραμένουν πράσινα (34 planner/shared/solver/composition tests).
+- **Status:** ΟΚ.
