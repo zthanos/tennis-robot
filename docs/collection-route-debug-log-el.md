@@ -106,3 +106,22 @@
   extra `uncertainty` key απορρίπτεται· 13 types/fixtures + 72 λοιπά pure tests
   πράσινα.
 - **Status:** ΟΚ.
+
+## #5 — (Φάση 3-5R, F1) Status όταν best is None από τα ball results
+
+- **Υπόθεση:** Στον `solve_global_route`, όταν `best is None` το status κρινόταν
+  από το `outgoing.get("start")` (ύπαρξη valid start edge), όχι από τα
+  πραγματικά ball outcomes. Έτσι μια 3A-feasible μπάλα χωρίς usable start edge
+  (π.χ. όλα τα start edges collision-rejected) έβγαινε λανθασμένα
+  `EMPTY_NO_FEASIBLE_TARGETS` ενώ το BallResult της ήταν DEFERRED/ROUTE_CONFLICT
+  — αντιφατικό με το spec (EMPTY_NO_FEASIBLE = run completed_no_targets, μόνο
+  όταν όλες οι μπάλες είναι deterministically unreachable).
+- **Αλλαγή:** Υπολογίζονται πρώτα τα ball results· `EMPTY_NO_FEASIBLE_TARGETS`
+  μόνο όταν ΟΛΑ είναι `UNREACHABLE`, αλλιώς (έστω μία DEFERRED) →
+  `PLANNING_TIMEOUT` (non-executable, zero geometry, χωρίς segments). Το
+  `search_status` (complete/budget_exhausted) δεν αλλάζει.
+- **Αποτέλεσμα:** Το προϋπάρχον `test_directed_edges_only_define_valid_route_search`
+  ενημερώθηκε (πλέον PLANNING_TIMEOUT + DEFERRED/ROUTE_CONFLICT, zero geometry).
+  Νέα tests: όλα τα start edges collision-rejected → PLANNING_TIMEOUT· όλες
+  keepout → EMPTY_NO_FEASIBLE_TARGETS. 18 solver+composition tests πράσινα.
+- **Status:** ΟΚ.

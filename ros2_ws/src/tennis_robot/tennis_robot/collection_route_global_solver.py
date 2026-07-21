@@ -91,8 +91,15 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
 
     search_status = PlanningSearchStatus.BUDGET_EXHAUSTED if exhausted else PlanningSearchStatus.COMPLETE
     if best is None:
-        status = PlanningStatus.PLANNING_TIMEOUT if outgoing.get("start") else PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS
-        return _empty_plan(snapshot, configuration, status, search_status, _ball_results(snapshot, feasibility, (), exhausted, expanded_nodes, by_node, graph, court, configuration))
+        # Derive the status from the actual ball outcomes, not from whether a
+        # start edge exists.  EMPTY_NO_FEASIBLE_TARGETS is reserved for the case
+        # where every target is deterministically UNREACHABLE (the run ends as
+        # completed_no_targets).  A ball that is 3A-feasible but left out of any
+        # valid terminal route is DEFERRED, which is a non-executable
+        # PLANNING_TIMEOUT, never a "no feasible targets" outcome.
+        results = _ball_results(snapshot, feasibility, (), exhausted, expanded_nodes, by_node, graph, court, configuration)
+        status = PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS if all(result.status is BallStatus.UNREACHABLE for result in results) else PlanningStatus.PLANNING_TIMEOUT
+        return _empty_plan(snapshot, configuration, status, search_status, results)
     status = PlanningStatus.FEASIBLE if set(best.covered_ball_ids) == set(all_ball_ids) and not exhausted else PlanningStatus.PARTIAL
     selected_passes = {
         ball_id: f"pass:{node_id}"

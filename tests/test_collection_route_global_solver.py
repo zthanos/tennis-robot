@@ -72,14 +72,58 @@ def test_score_uses_pass_count_after_equal_coverage_and_cost_weights():
 
 
 def test_directed_edges_only_define_valid_route_search():
+    # A 3A-feasible ball with no usable start edge is left out of every valid
+    # terminal route: it is DEFERRED (route_conflict) and the plan is a
+    # non-executable PLANNING_TIMEOUT, not EMPTY_NO_FEASIBLE_TARGETS.
     configuration = default_configuration()
     item = candidate("a", ("ball-a",), 4.0)
     snap = snapshot(configuration, "ball-a")
     full = build_directed_candidate_graph(snapshot=snap, candidates=(item,), court=court(), configuration=configuration)
     graph = DirectedCandidateGraph(full.pass_nodes, tuple(edge for edge in full.edges if edge.source_node_id != "start"))
     plan = solve(configuration, ("ball-a",), (item,), graph=graph)
-    assert plan.planning_status is PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS
+    assert plan.planning_status is PlanningStatus.PLANNING_TIMEOUT
+    assert not plan.is_executable
+    assert plan.segments == ()
+    assert plan.ball_results[0].status is BallStatus.DEFERRED
     assert plan.ball_results[0].reason_code is BallReasonCode.ROUTE_CONFLICT
+
+
+def test_collision_rejected_start_edges_yield_planning_timeout_not_no_feasible_targets():
+    # Every start edge is collision-rejected while the balls remain 3A-feasible;
+    # the correct outcome is DEFERRED balls under PLANNING_TIMEOUT.
+    configuration = default_configuration()
+    first = candidate("a", ("ball-a",), 4.0)
+    second = candidate("b", ("ball-b",), 8.0)
+    snap = snapshot(configuration, "ball-a", "ball-b")
+    full = build_directed_candidate_graph(snapshot=snap, candidates=(first, second), court=court(), configuration=configuration)
+    graph = DirectedCandidateGraph(
+        full.pass_nodes,
+        tuple(
+            replace(edge, path=None, maximum_curvature_per_m=None, collision_free=False, rejection=ConnectorRejectionCode.COLLISION_REJECTED)
+            if edge.source_node_id == "start" else edge
+            for edge in full.edges
+        ),
+    )
+    plan = solve(configuration, ("ball-a", "ball-b"), (first, second), graph=graph)
+    assert plan.planning_status is PlanningStatus.PLANNING_TIMEOUT
+    assert not plan.is_executable
+    assert {result.status for result in plan.ball_results} == {BallStatus.DEFERRED}
+    assert {result.reason_code for result in plan.ball_results} == {BallReasonCode.ROUTE_CONFLICT}
+
+
+def test_all_unreachable_balls_yield_empty_no_feasible_targets():
+    # Contrast with F1: when every target is deterministically UNREACHABLE the
+    # status stays EMPTY_NO_FEASIBLE_TARGETS.
+    configuration = default_configuration()
+    snap = snapshot(configuration, "ball-a", "ball-b")
+    graph = build_directed_candidate_graph(snapshot=snap, candidates=(), court=court(), configuration=configuration)
+    feasibility = (
+        PerBallFeasibility("ball-a", (), BallReasonCode.KEEPOUT),
+        PerBallFeasibility("ball-b", (), BallReasonCode.KEEPOUT),
+    )
+    plan = solve_global_route(snapshot=snap, feasibility=feasibility, graph=graph, court=court(), configuration=configuration)
+    assert plan.planning_status is PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS
+    assert {result.status for result in plan.ball_results} == {BallStatus.UNREACHABLE}
 
 
 def test_terminal_extension_rejection_invalidates_route():
