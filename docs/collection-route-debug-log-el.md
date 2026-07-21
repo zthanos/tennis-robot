@@ -164,3 +164,24 @@
   single-ball snapshot δίνει False. 27 composition/executor/planner_v2 tests
   πράσινα.
 - **Status:** ΟΚ.
+
+## #8 — (Φάση 3-5R, F4) Speed-only verdict· lateral/heading σε ξεχωριστό telemetry
+
+- **Υπόθεση:** Ο pure follower έβαζε lateral/heading exceedance στο
+  `hard_violation_reason` (`LATERAL_ERROR_EXCEEDED`/`HEADING_ERROR_EXCEEDED`),
+  κάνοντας `hard_compliant=False`. Το C++ `collection_tracking_core.cpp` όμως
+  κρατά το crossing `ProfileComplianceVerdict.hard_violation_reason` speed-only
+  (kSpeedBelowMin/kSpeedAboveMax) και βγάζει lateral/heading ως ξεχωριστά
+  tracking failures — το Python verdict απέκλινε από το spec/C++.
+- **Αλλαγή:** Το `ProfileViolationReason` κρατά μόνο `SPEED_BELOW_MIN`/
+  `SPEED_ABOVE_MAX`. Το `_measure_crossing` υπολογίζει speed-only violation και
+  ξεχωριστό `tracking_compliant` (lateral ≤ max_lateral ΚΑΙ heading ≤
+  max_heading). Νέο πεδίο `CrossingMeasurement.tracking_compliant` και νέο
+  `FollowerTelemetryCode.CROSSING_TRACKING_VIOLATION`, που εκπέμπεται ανεξάρτητα
+  από το speed verdict και ΔΕΝ αλλάζει το `hard_compliant`.
+- **Αποτέλεσμα:** Το `test_crossing_lateral_heading_metrics` ενημερώθηκε
+  (verdict compliant + CROSSING_TRACKING_VIOLATION, όχι PROFILE_VIOLATION). Νέο
+  test ότι το enum είναι speed-only (ίδιες τιμές με το C++ verdict) και ότι
+  slow+off-tube crossing δίνει speed hard_violation ΚΑΙ ξεχωριστό tracking
+  violation. 5 follower tests + 91 gate tests πράσινα.
+- **Status:** ΟΚ.

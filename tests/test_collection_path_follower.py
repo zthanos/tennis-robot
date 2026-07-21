@@ -95,9 +95,32 @@ def test_crossing_lateral_heading_metrics_terminal_and_immutable_plan():
     measurement = telemetry(update, FollowerTelemetryCode.CROSSING_MEASUREMENT).crossing
     assert measurement.lateral_error_m == pytest.approx(0.11)
     assert measurement.heading_error_rad == pytest.approx(0.2)
-    assert measurement.verdict.hard_violation_reason is ProfileViolationReason.LATERAL_ERROR_EXCEEDED
+    # Lateral/heading exceedance with in-range speed is a tube/tracking
+    # violation, not a hard verdict violation: the verdict stays compliant and
+    # a separate CROSSING_TRACKING_VIOLATION event is emitted.
+    assert measurement.verdict.hard_compliant is True
+    assert measurement.verdict.hard_violation_reason is None
+    assert measurement.tracking_compliant is False
+    assert telemetry(update, FollowerTelemetryCode.CROSSING_TRACKING_VIOLATION).crossing is measurement
+    assert not any(event.code is FollowerTelemetryCode.PROFILE_VIOLATION for event in update.telemetry)
     completed = follower.observe(Pose2D(3.0, 0.0, 0.0), 1.0)
     assert completed.result.status is PathFollowerStatus.COMPLETED
+
+
+def test_hard_violation_reason_is_speed_only_matching_cpp_verdict():
+    # The pure follower's ProfileViolationReason must mirror the C++
+    # CollectionProfileComplianceVerdict.hard_violation_reason, which only
+    # names speed for the crossing verdict; lateral/heading are separate.
+    assert {reason.value for reason in ProfileViolationReason} == {"speed_below_min", "speed_above_max"}
+    # A crossing that is both slow and off-tube: hard verdict is the speed
+    # reason, and the tracking violation is reported independently.
+    follower = CollectionPathFollower(plan())
+    update = follower.observe(Pose2D(1.0, 0.11, 0.2), 0.4)
+    measurement = telemetry(update, FollowerTelemetryCode.CROSSING_MEASUREMENT).crossing
+    assert measurement.verdict.hard_violation_reason is ProfileViolationReason.SPEED_BELOW_MIN
+    assert measurement.tracking_compliant is False
+    assert telemetry(update, FollowerTelemetryCode.PROFILE_VIOLATION).crossing is measurement
+    assert telemetry(update, FollowerTelemetryCode.CROSSING_TRACKING_VIOLATION).crossing is measurement
     frozen = plan()
     with pytest.raises(FrozenInstanceError):
         frozen.segments[0].planned_crossings[0].progress_s = 2.0

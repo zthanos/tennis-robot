@@ -23,10 +23,11 @@ class _StringEnum(str, Enum):
 
 
 class ProfileViolationReason(_StringEnum):
+    # Speed is the only hard, safety-critical profile violation, matching the
+    # C++ ProfileComplianceVerdict.hard_violation_reason (speed-only). Lateral
+    # and heading exceedances are tube/tracking telemetry, not hard violations.
     SPEED_BELOW_MIN = "speed_below_min"
     SPEED_ABOVE_MAX = "speed_above_max"
-    LATERAL_ERROR_EXCEEDED = "lateral_error_exceeded"
-    HEADING_ERROR_EXCEEDED = "heading_error_exceeded"
 
 
 class NominalTracking(_StringEnum):
@@ -39,6 +40,7 @@ class FollowerTelemetryCode(_StringEnum):
     PROFILE_VIOLATION = "profile_violation"
     NOMINAL_SPEED_DEVIATION = "nominal_speed_deviation"
     TRAJECTORY_TUBE_VIOLATION = "trajectory_tube_violation"
+    CROSSING_TRACKING_VIOLATION = "crossing_tracking_violation"
 
 
 @dataclass(frozen=True)
@@ -69,6 +71,7 @@ class CrossingMeasurement:
     lateral_error_m: float
     heading_error_rad: float
     verdict: ProfileComplianceVerdict
+    tracking_compliant: bool
 
     def __post_init__(self) -> None:
         if not self.ball_id or not math.isfinite(self.progress_s) or self.progress_s < 0.0:
@@ -76,6 +79,8 @@ class CrossingMeasurement:
         for value in (self.measured_speed_mps, self.lateral_error_m, self.heading_error_rad):
             if not math.isfinite(value):
                 raise ValueError("crossing measurement must be finite")
+        if not isinstance(self.tracking_compliant, bool):
+            raise ValueError("tracking_compliant must be bool")
 
 
 @dataclass(frozen=True)
@@ -155,6 +160,10 @@ class CollectionPathFollower:
                     telemetry.append(FollowerTelemetryEvent(FollowerTelemetryCode.PROFILE_VIOLATION, measurement))
                 elif measurement.verdict.nominal_tracking is NominalTracking.DEVIATED:
                     telemetry.append(FollowerTelemetryEvent(FollowerTelemetryCode.NOMINAL_SPEED_DEVIATION, measurement))
+                # Lateral/heading exceedance is separate tube/tracking telemetry
+                # and never flips the speed-only hard verdict.
+                if not measurement.tracking_compliant:
+                    telemetry.append(FollowerTelemetryEvent(FollowerTelemetryCode.CROSSING_TRACKING_VIOLATION, measurement))
         if self._last_progress_s >= self._plan.total_length_m:
             result = PathFollowerResult(PathFollowerStatus.COMPLETED)
         else:
@@ -167,18 +176,17 @@ class CollectionPathFollower:
         dx, dy = pose.x_m - crossing.position_xy.x_m, pose.y_m - crossing.position_xy.y_m
         lateral_error = abs(dx * normal[0] + dy * normal[1])
         heading_error = abs(_angle_delta(pose.yaw_rad, crossing.heading_rad))
+        # Only speed is a hard profile violation (speed-only verdict, aligned
+        # with the C++ core). Lateral/heading go to tracking_compliant instead.
         violation = None
         if speed < profile.min_speed_mps:
             violation = ProfileViolationReason.SPEED_BELOW_MIN
         elif speed > profile.max_speed_mps:
             violation = ProfileViolationReason.SPEED_ABOVE_MAX
-        elif lateral_error > profile.max_lateral_error_m:
-            violation = ProfileViolationReason.LATERAL_ERROR_EXCEEDED
-        elif heading_error > profile.max_heading_error_rad:
-            violation = ProfileViolationReason.HEADING_ERROR_EXCEEDED
+        tracking_compliant = lateral_error <= profile.max_lateral_error_m and heading_error <= profile.max_heading_error_rad
         nominal_error = abs(speed - profile.nominal_speed_mps)
         tracking = NominalTracking.DEVIATED if profile.min_speed_mps <= speed <= profile.max_speed_mps and nominal_error > profile.nominal_speed_warning_tolerance_mps else NominalTracking.WITHIN_TOLERANCE
-        return CrossingMeasurement(crossing.ball_id, crossing.progress_s, speed, lateral_error, heading_error, ProfileComplianceVerdict(violation is None, violation, tracking, speed, nominal_error))
+        return CrossingMeasurement(crossing.ball_id, crossing.progress_s, speed, lateral_error, heading_error, ProfileComplianceVerdict(violation is None, violation, tracking, speed, nominal_error), tracking_compliant)
 
     def _profile_for_crossing(self, crossing: PlannedCrossing) -> ExecutionProfile:
         for segment in self._plan.segments:
