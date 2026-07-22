@@ -590,3 +590,49 @@
   node-startup smoke έχτισε καθαρά τα τρία packages και παρατήρησε
   `collect_route executor terminal: completed_no_targets` (**1/1 OK**).
 - **Status:** ΟΚ.
+
+## #20 — (Φάση 7, sim run 1) `aborted_scan`: collision στο `/cmd_vel_collection`
+- **Υπόθεση (αρχική):** Το πρώτο Gazebo run του νέου `collect_route` (S1, άδεια
+  πλευρά) έφτασε στο scan pose (Nav2 «Reached the goal!») αλλά κατέληξε
+  `aborted_scan` μετά ~20s. Πρώτη υποψία: το ρομπότ δεν περιστράφηκε.
+- **Παρατήρηση χρήστη:** Το ρομπότ **έκανε** περιστροφή (αργή/κομπιαστή).
+- **Root cause (επιβεβαιωμένο στον κώδικα):** Δύο publishers στο **ίδιο**
+  `/cmd_vel_collection`: (1) το scan rotation του executor
+  (`collection_executor_node_factory` → `publish_scan_twist`, `angular.z`), και
+  (2) το hands-off base twist `(0,0)` που ο `_apply_command` publishάρει στο
+  `/navigation/cmd_vel` **πριν** τον collect_route guard, και ο `MotionController`
+  το relay στο `/cmd_vel_collection`. Και τα δύο @ ~31 Hz → η περιστροφή γίνεται
+  stuttering/μισή ταχύτητα → τα 8 steps (45°, 0.5 rad/s, ~12.6s καθαρά) δεν
+  ολοκληρώνονται εντός `scan_timeout_s=20s` → `aborted_scan` (timeout).
+- **Fix:** Στο `controller_node._apply_command` ο `collect_route` guard
+  μετακινήθηκε **πάνω** από το `_pub_motion_cmd.publish(twist)` — σε collect_route
+  ο node δεν publishάρει **κανένα** base twist· ο executor κατέχει αποκλειστικά
+  τα κανάλια (scan → `/cmd_vel_collection` 70, FollowPath → `/cmd_vel_nav` 50) και
+  τον collector (Collector port).
+- **Status:** ΕΦΑΡΜΟΣΤΗΚΕ, ΕΚΚΡΕΜΕΙ sim επαλήθευση (rebuild + ξανα-S1). Uncommitted
+  μέχρι να επιβεβαιωθεί στο Gazebo.
+
+## #21 — (Φάση 7, sim run 2-3) `insufficient_coverage`: rejected detections δεν μετρούσαν coverage
+- **Παρατήρηση:** Μετά τον cmd_vel fix (#20) η περιστροφή ολοκληρώνεται (όχι πια
+  timeout), αλλά το scan κατέληξε `aborted_scan (scan_failure=insufficient_coverage:
+  4/8 steps covered)`. Η σκηνή είχε 15 μπάλες στην **απέναντι** μισή (RViz SimBalls).
+- **Root cause:** Το coverage καταγραφόταν μόνο για (α) empty heartbeat frames
+  (`record_empty_step`, όταν `not frame.detections`) και (β) **accepted** detections
+  (`builder.add`). Ένα scan step του οποίου το frame είχε detections που **όλα
+  απορρίφθηκαν** (cross-half `opposite_court_half`, stale metadata κ.λπ.) δεν
+  μετρούσε coverage — έπεφτε ανάμεσα στις δύο διαδρομές. Τα 4 steps που κοιτούσαν
+  τις far-half μπάλες → uncovered → coverage 4/8 < required 1.0.
+- **Fix:** Το coverage μετράει **παρατήρηση sector**, όχι ball acceptance.
+  `record_empty_step` → μετονομάστηκε `record_visited_step`· ο
+  `CollectionSnapshotRuntimeAdapter.forward` το καλεί για **κάθε** frame με έγκυρη
+  ταυτότητα (healthy + calibration_id + configuration_id + scan_step_id),
+  **ανεξάρτητα** αν οι detections γίνουν accept ή reject, και μετά επεξεργάζεται
+  κανονικά τις detections. Απαραίτητο και για πραγματικά runs (S2+): rejected
+  detection στη δική σου μισή δεν πρέπει να χάνει coverage.
+- **Diagnostics που προστέθηκαν (#20/#21):** το `ScanSessionDriver.last_failure_detail`
+  + το node terminal log δείχνουν πλέον `scan_failure=<code>: N/M steps`.
+- **Tests:** test_collection_scan_snapshot + test_collection_snapshot_runtime_adapter
+  ενημερωμένα (rename + νέο assert ότι non-empty frame μαρκάρει visited_step)· 51
+  targeted + 281 regression πράσινα.
+- **Status:** ΕΦΑΡΜΟΣΤΗΚΕ, ΕΚΚΡΕΜΕΙ sim επαλήθευση (rebuild + ξανα-S1 → αναμένεται
+  `completed_no_targets`). Uncommitted μαζί με #20.

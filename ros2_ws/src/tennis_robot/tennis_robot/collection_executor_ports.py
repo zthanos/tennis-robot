@@ -400,10 +400,15 @@ class ScanSessionDriver:
         self._scan_timeout_s = _require_positive_finite(scan_timeout_s, "scan_timeout_s")
         self._started_at_s: float | None = None
         self._terminal: ScanSessionResult | None = None
+        # Diagnostic: the specific snapshot-builder failure code that produced a
+        # SCAN_FAILED (e.g. scan_timeout vs insufficient_coverage). Surfaced by
+        # the node when it logs an aborted_scan terminal.
+        self.last_failure_detail: str | None = None
 
     def start(self) -> None:
         self._started_at_s = self._clock.now_s()
         self._terminal = None
+        self.last_failure_detail = None
         self._cmd_vel(self._angular_speed_rad_s)
 
     def result(self) -> ScanSessionResult:
@@ -435,7 +440,9 @@ class ScanSessionDriver:
     def _finalize(self) -> ScanSessionResult:
         try:
             snapshot = self._session.finalize(self._clock.now_s())
-        except Exception:  # any snapshot-builder failure is a scan failure
+        except Exception as exc:  # any snapshot-builder failure is a scan failure
+            code = getattr(getattr(exc, "code", None), "value", None)
+            self.last_failure_detail = f"{code}: {exc}" if code else repr(exc)
             self._terminal = ScanSessionResult(ScanSessionStatus.FAILED, reason=ExecutorReasonCode.SCAN_FAILED)
             return self._terminal
         self._terminal = ScanSessionResult(ScanSessionStatus.SNAPSHOT_READY, snapshot=snapshot)

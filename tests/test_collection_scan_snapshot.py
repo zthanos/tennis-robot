@@ -27,7 +27,7 @@ def test_empty_snapshot_requires_complete_coverage_and_is_immutable():
     with pytest.raises(ScanSnapshotFailure): b.add(obs("a"))
 
 def test_valid_empty_heartbeat_steps_produce_empty_snapshot():
-    b=builder(); b.record_empty_step("a"); b.record_empty_step("b"); s=b.finalize(2.)
+    b=builder(); b.record_visited_step("a"); b.record_visited_step("b"); s=b.finalize(2.)
     assert s.balls == ()
 
 def test_confirmed_snapshot_duplicate_fusion_and_stable_id():
@@ -36,13 +36,13 @@ def test_confirmed_snapshot_duplicate_fusion_and_stable_id():
 
 def test_timeout_and_failed_lifecycle():
     b=builder(); b.add(obs("a")); b.add(obs("b"))
-    with pytest.raises(ScanSnapshotFailure, match="scan_timeout") as error: b.finalize(1.+default_configuration().scan.scan_timeout_s+1.)
+    with pytest.raises(ScanSnapshotFailure, match="steps") as error: b.finalize(1.+default_configuration().scan.scan_timeout_s+1.)
     assert error.value.code is ScanSnapshotFailureCode.TIMEOUT
     with pytest.raises(ScanSnapshotFailure): b.add(obs("a"))
 
 def test_insufficient_coverage_unknown_duplicate_and_rejections_do_not_count():
     b=builder(); b.add(obs("a")); b.add(obs("a")); b.add(obs("unknown")); b.add(SpatialObservationRejection(SpatialObservationRejectionCode.NON_SPATIAL_DETECTION,0,1.,"x"))
-    with pytest.raises(ScanSnapshotFailure, match="insufficient_coverage") as error: b.finalize(2.)
+    with pytest.raises(ScanSnapshotFailure, match="covered") as error: b.finalize(2.)
     assert error.value.code is ScanSnapshotFailureCode.INSUFFICIENT_COVERAGE
     assert any(item.detail=="unknown_scan_step" for item in b.rejections)
     with pytest.raises(ScanSnapshotFailure): b.finalize(2.)
@@ -78,7 +78,7 @@ def test_ambiguous_association_rejection_does_not_count_scan_step_coverage():
     b.add(obs("a",1.,-3.)); b.add(obs("b",4.,-3.))          # two separated tracks
     b.add(obs("c",2.5,-3.,cov=PositionCovariance2D(.4,0.,.4)))  # gates to both
     assert b.rejections[-1].detail=="ambiguous_scan_local_association"
-    with pytest.raises(ScanSnapshotFailure, match="insufficient_coverage"): b.finalize(2.)
+    with pytest.raises(ScanSnapshotFailure, match="covered"): b.finalize(2.)
 
 def test_same_step_duplicate_in_track_is_recorded_in_telemetry():
     b=builder()

@@ -25,9 +25,13 @@ from tennis_robot.perception_spatial_observation_adapter import TimestampedCamer
 class BuilderSpy:
     def __init__(self):
         self.items = []
+        self.visited_steps = []
 
     def add(self, item):
         self.items.append(item)
+
+    def record_visited_step(self, scan_step_id):
+        self.visited_steps.append(scan_step_id)
 
 
 class TF:
@@ -116,6 +120,9 @@ def test_valid_frame_forwards_accepted_observation_with_supplied_scan_step():
     assert builder.items[0].calibration_id == "gazebo-range-depth-quality-diagonal-v1-20260719-v2"
     assert builder.items[0].configuration_id == "gazebo-v2"
     assert tf.timestamps == [(1.0, "camera_link_optical_frame")]
+    # A frame WITH detections still marks its sector visited for coverage, so a
+    # step whose detections are later all rejected does not lose coverage.
+    assert builder.visited_steps == ["step-01"]
 
 
 def test_rejections_and_missing_configuration_forward_only_rejection():

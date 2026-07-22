@@ -124,8 +124,11 @@ class ScanSnapshotBuilder:
             self.duplicate_step_observations.append(item); return
         track.observations.append(item)
 
-    def record_empty_step(self, scan_step_id: str) -> None:
-        """Count one valid empty perception heartbeat toward scan coverage."""
+    def record_visited_step(self, scan_step_id: str) -> None:
+        """Count one valid perception frame from this heading toward scan
+        coverage. Coverage measures whether the sector was observed at all — a
+        heartbeat OR a frame whose detections were all rejected (cross-half,
+        stale metadata) still counts; it is not gated on accepting a ball."""
         if self._state != "collecting":
             raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE, "scan is not collecting")
         if scan_step_id not in self.expected_scan_step_ids:
@@ -135,9 +138,9 @@ class ScanSnapshotBuilder:
     def finalize(self, now_s:float):
         if self._state!="collecting": raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,"scan already finalized")
         if not math.isfinite(now_s) or now_s-self.scan_timestamp_s > self.scan_timeout_s:
-            self._state="failed"; raise ScanSnapshotFailure(ScanSnapshotFailureCode.TIMEOUT)
+            self._state="failed"; raise ScanSnapshotFailure(ScanSnapshotFailureCode.TIMEOUT, f"{len(self._accepted_steps)}/{len(self.expected_scan_step_ids)} steps")
         if len(self._accepted_steps)/len(self.expected_scan_step_ids) < self.required_coverage_fraction:
-            self._state="failed"; raise ScanSnapshotFailure(ScanSnapshotFailureCode.INSUFFICIENT_COVERAGE)
+            self._state="failed"; raise ScanSnapshotFailure(ScanSnapshotFailureCode.INSUFFICIENT_COVERAGE, f"{len(self._accepted_steps)}/{len(self.expected_scan_step_ids)} steps covered")
         balls=[]
         association = self.configuration_snapshot.gazebo_snapshot.association
         localization = self.configuration_snapshot.gazebo_snapshot.localization_xy_covariance.covariance

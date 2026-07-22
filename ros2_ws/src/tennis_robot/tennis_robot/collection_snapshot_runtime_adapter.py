@@ -41,17 +41,20 @@ class CollectionSnapshotRuntimeAdapter:
 
     def forward(self, *, scan_id: str, frame, scan_step_id: str | None, builder) -> None:
         rgb_timestamp_s = _stamp(frame.header.stamp)
-        if not frame.detections:
-            calibration_id = getattr(frame, "calibration_id", "")
-            configuration_id = getattr(frame, "configuration_id", "")
-            if (
-                frame.spatial_targets_healthy
-                and isinstance(calibration_id, str) and calibration_id
-                and isinstance(configuration_id, str) and configuration_id
-                and scan_step_id
-            ):
-                builder.record_empty_step(scan_step_id)
-            return
+        calibration_id = getattr(frame, "calibration_id", "")
+        configuration_id = getattr(frame, "configuration_id", "")
+        if (
+            frame.spatial_targets_healthy
+            and isinstance(calibration_id, str) and calibration_id
+            and isinstance(configuration_id, str) and configuration_id
+            and scan_step_id
+        ):
+            # Any valid perception frame from this heading marks the sector
+            # covered — even a heartbeat, or a frame whose detections are all
+            # rejected (e.g. cross-half balls). Coverage is sector observation,
+            # not ball acceptance; gating it on accepted balls made a scan of an
+            # empty own-half fail whenever the far half was visible.
+            builder.record_visited_step(scan_step_id)
         for index, detection_message in enumerate(frame.detections):
             result = self._adapt_one(
                 scan_id=scan_id,

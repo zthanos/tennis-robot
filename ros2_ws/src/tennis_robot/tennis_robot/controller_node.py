@@ -1312,7 +1312,13 @@ class ControllerNode(Node):
             and not self._collect_route_executor_complete_reported
         ):
             self._collect_route_executor_complete_reported = True
-            self.get_logger().info(f"collect_route executor terminal: {state.value}")
+            detail = ""
+            if state.value == "aborted_scan":
+                session = getattr(self._collect_route_executor, "_scan_session", None)
+                reason = getattr(session, "last_failure_detail", None)
+                if reason:
+                    detail = f" (scan_failure={reason})"
+            self.get_logger().info(f"collect_route executor terminal: {state.value}{detail}")
             self._publish_command("idle", "controller-collect-route-complete")
 
         # HANDS-OFF: scan rotation and FollowPath own the base through their
@@ -1899,16 +1905,20 @@ class ControllerNode(Node):
         self._collection_lane_collect_elapsed_s = 0.0
 
     def _apply_command(self, command: ConceptACommand) -> None:
+        if self.control_mode == "collect_route":
+            # HANDS-OFF: the executor owns base motion (scan rotation ->
+            # /cmd_vel_collection, FollowPath -> /cmd_vel_nav) and the collector
+            # (via its Collector port).  Publishing a per-tick base twist here
+            # would be relayed by the MotionController onto /cmd_vel_collection
+            # and fight the scan rotation on the SAME topic — the robot rotates
+            # in stutters, never completes the 360 scan within scan_timeout_s,
+            # and the run ends as aborted_scan (Phase 7 finding, sim run 1).
+            return
+
         twist = Twist()
         twist.linear.x = command.base.linear_speed_m_s
         twist.angular.z = command.base.angular_speed_rad_s
         self._pub_motion_cmd.publish(twist)
-
-        if self.control_mode == "collect_route":
-            # Executor Collector port is the sole writer for this mode.  In
-            # particular, do not publish a per-tick zero that would fight its
-            # one-shot start()/stop() commands.
-            return
 
         requested = command.collector
         if command.state == CollectorState.CAPTURE:
