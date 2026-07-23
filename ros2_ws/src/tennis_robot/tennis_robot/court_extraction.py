@@ -1,6 +1,6 @@
 """Court Knowledge Model extraction from a LiDAR occupancy point set.
 
-Pure, ROS-free functions (see docs/court-survey-v2-spec-el.md). Given the
+Pure, ROS-free functions (see docs/survey/court-survey-v2-spec-el.md). Given the
 accumulated map-frame LiDAR points and the LiDAR-locked net, this produces the
 Court Knowledge Model: net + posts, fence rectangle, court lines (net-anchored
 standard ITF geometry), interior obstacles, run-off distances and singles/doubles.

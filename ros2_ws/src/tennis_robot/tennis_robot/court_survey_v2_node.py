@@ -4,7 +4,7 @@
 Replaces the dead-reckoning perimeter FSM. The court is MEASURED from the
 accumulated 360° LiDAR occupancy map, not traced by a fragile perimeter drive.
 
-Flow (see docs/court-survey-v2-spec-el.md):
+Flow (see docs/survey/court-survey-v2-spec-el.md):
   INIT → FIND_NET (drive to net, lock it → court frame)
        → COVERAGE (deterministic drive-to-waypoint on the SLAM pose to each
                    vantage point; NOT Nav2 — Nav2 proved too flaky run-to-run)

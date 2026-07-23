@@ -13,7 +13,7 @@ Save the map when done:
     ros2 service call /slam_toolbox/save_map slam_toolbox/srv/SaveMap \\
         "{name: {data: 'runtime/court_map'}}"
 
-See docs/slam-mapping-el.md.
+See docs/survey/slam-mapping-el.md.
 """
 
 import os

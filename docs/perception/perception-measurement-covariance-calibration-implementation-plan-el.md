@@ -33,7 +33,7 @@
 ## Phase C2 — Gazebo calibration evidence
 
 Create and validate a Gazebo artifact against the documented
-[`gazebo calibration scenario`](gazebo-perception-covariance-calibration-scenario-el.md)
+[`gazebo calibration scenario`](covariance/gazebo-perception-covariance-calibration-scenario-el.md)
 and its acceptance metrics. The evidence capture must compare raw fusion XYZ
 with timestamp-aligned `/sim/balls` ground truth, record every rejection, fit
 only from measured errors, and emit a versioned report. The artifact gate

@@ -95,7 +95,7 @@ REAL:  OAK-D on-device YOLO (DepthAI) ──────────────
 On the real robot the on-device network publishes the same
 `BallDetectionArray` (via a thin DepthAI adapter), so `controller_node`,
 `collector`, Nav2 and the Behaviour Tree are untouched. This mirrors the sensor
-parity already established in `docs/sensor-topic-contract-el.md`, where the
+parity already established in `docs/hardware/sensor-topic-contract-el.md`, where the
 driver only has to match topic name, `frame_id` and message type.
 
 ## Configuration

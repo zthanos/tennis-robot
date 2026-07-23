@@ -2,7 +2,7 @@
 
 The previous dead-reckoning perimeter FSM has been replaced by
 ``court_survey_v2_node`` (occupancy map → Court Knowledge Model; see
-docs/court-survey-v2-spec-el.md). Git history retains the old implementation.
+docs/survey/court-survey-v2-spec-el.md). Git history retains the old implementation.
 
 This thin module keeps the installed console entry
 ``court_survey_mission_node:main`` valid regardless of colcon entry-point

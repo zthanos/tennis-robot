@@ -16,9 +16,9 @@ Current mechanical sources of truth:
 
 - `ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro`
 - `ros2_ws/src/tennis_robot/urdf/components/basket.urdf.xacro`
-- `docs/dual-wheel-intake-design-el.md`
-- `docs/basket-bin-redesign-spec-el.md`
-- `docs/intake-debug-log-el.md`
+- `docs/mechanism/dual-wheel-intake-design-el.md`
+- `docs/mechanism/basket-bin-redesign-spec-el.md`
+- `docs/mechanism/intake-debug-log-el.md`
 
 The next SCAD model should be generated from the validated 920 x 580 mm 4WD
 chassis, dual-wheel intake, and basket v2.1 dimensions. Do not restore an old

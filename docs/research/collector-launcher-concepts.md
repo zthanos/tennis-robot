@@ -51,13 +51,13 @@ real mechanism would be fragile on court surfaces.
 Decision record:
 
 ```text
-docs/intake-concept-decision-el.md
+docs/mechanism/intake-concept-decision-el.md
 ```
 
 Measurement report:
 
 ```text
-docs/intake-bench-sweep-report-el.md
+docs/mechanism/intake-bench-sweep-report-el.md
 ```
 
 Next concept direction:

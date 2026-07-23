@@ -219,7 +219,7 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
             f"expected both intake wheel contact sensors, patched only {sorted(patched_sensors)}"
         )
 
-    # Lateral compliance for the rigid nip (docs/dual-wheel-intake-design-el.md):
+    # Lateral compliance for the rigid nip (docs/mechanism/dual-wheel-intake-design-el.md):
     # each wheel's passive prismatic y-carriage gets a spring so the nominal
     # 3 mm/side interference becomes grip force instead of a rigid jam
     # (lesson of collect_test1/2; same SDF spring technique as debug-log #9).
@@ -485,7 +485,7 @@ def main() -> int:
             f"controllers_config:={controllers_config}",
             f"expose_intake_carriage_state:={os.getenv('INTAKE_EXPOSE_CARRIAGE_STATE', 'false')}",
             # Dual-wheel intake tuning + Concept Validation Plan gates
-            # (docs/dual-wheel-intake-design-el.md).
+            # (docs/mechanism/dual-wheel-intake-design-el.md).
             f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', '0.060')}",
             f"intake_wheel_gap:={os.getenv('INTAKE_WHEEL_GAP_M', '0.056')}",
             f"intake_nip_x:={os.getenv('INTAKE_NIP_X_M', '0.540')}",

@@ -4,7 +4,7 @@
 
 The current Webots controller and world are now treated as **legacy reference**
 for the next implementation phase. New work should follow
-`docs/architecture-implementation-guide-el.md` and the active baseline plans in
+`docs/process/architecture-implementation-guide-el.md` and the active baseline plans in
 `docs/` before extending the existing controller behavior.
 
 This is a first simulation-first experiment for a tennis-ball collecting and serving robot.

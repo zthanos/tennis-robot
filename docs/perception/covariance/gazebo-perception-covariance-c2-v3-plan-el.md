@@ -57,8 +57,8 @@ Range bin που δεν συγκεντρώνει evidence δεν εντάσσε�
 4. Νέο immutable artifact:
    `calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v3.json`.
 5. Evidence και activation reports:
-   `docs/gazebo-perception-covariance-c2-v3-artifact-report-el.md` και
-   `docs/gazebo-perception-covariance-c2-v3-activation-report-el.md`.
+   `docs/perception/covariance/gazebo-perception-covariance-c2-v3-artifact-report-el.md` και
+   `docs/perception/covariance/gazebo-perception-covariance-c2-v3-activation-report-el.md`.
 
 ## Activation gates
 

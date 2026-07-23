@@ -660,7 +660,7 @@
   εμφανίζει πλέον τον dominant λόγο και τα observed/calibrated ranges.
 - **Calibration decision:** Δεν αλλάζει ούτε γίνεται overwrite το v2 artifact.
   Η επέκταση σχεδιάζεται ως ξεχωριστό Gazebo v3 evidence/activation flow στο
-  `docs/gazebo-perception-covariance-c2-v3-plan-el.md`. Ο design στόχος `0.2–9 m`
+  `docs/perception/covariance/gazebo-perception-covariance-c2-v3-plan-el.md`. Ο design στόχος `0.2–9 m`
   θα περιοριστεί στο effective range που περνά πραγματικά neural-detection και
   covariance gates. Physical OAK-D evidence παραμένει ανεξάρτητο.
 - **Tests:** Νέα pure diagnostics tests καλύπτουν empty heartbeat έναντι rejected

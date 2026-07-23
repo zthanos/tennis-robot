@@ -4,7 +4,7 @@ Counterpart of the Gazebo sensor plugins + ros_gz_bridge: brings up the physical
 LiDAR and OAK-D drivers and REMAPS them onto the exact same topic names and
 frame_ids the simulation uses, so perception/controller code is identical sim↔real.
 
-Canonical contract (see docs/sensor-topic-contract-el.md):
+Canonical contract (see docs/hardware/sensor-topic-contract-el.md):
     /scan              sensor_msgs/LaserScan   frame_id=lidar_link
     /camera/image_raw  sensor_msgs/Image rgb8  frame_id=camera_link
     /camera/depth      sensor_msgs/Image 32FC1 frame_id=camera_link  (metres)

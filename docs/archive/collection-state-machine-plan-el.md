@@ -193,7 +193,7 @@ stored_ball_count = 17
 ```
 
 Για το πρώτο physical MVP, προτιμάται IR break-beam στο throat ή στο hopper
-entry, όπως περιγράφεται στο `docs/concept-a-funnel-lift-wheel-plan.md`.
+entry, όπως περιγράφεται στο `docs/mechanism/concept-a-funnel-lift-wheel-plan.md`.
 
 ### DoD
 

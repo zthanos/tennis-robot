@@ -6,8 +6,8 @@ Branch: `feat/dual-wheel-intake-concept`
 Αυτό το έγγραφο ορίζει τη γεωμετρία, τη φυσική και τα κριτήρια αποδοχής του
 dual-wheel intake που αντικαθιστά το single top-roller concept. Η απόφαση
 εγκατάλειψης του top roller τεκμηριώνεται στο
-`docs/intake-concept-decision-el.md` και στο
-`docs/intake-bench-sweep-report-el.md`.
+`docs/mechanism/intake-concept-decision-el.md` και στο
+`docs/mechanism/intake-bench-sweep-report-el.md`.
 
 ## Αποφάσεις χρήστη (2026-07-10)
 
@@ -225,7 +225,7 @@ INTAKE_WHEEL_GAP_M, INTAKE_WHEEL_RADIUS_M, INTAKE_NIP_X_M,
 INTAKE_SWEEP_WHEEL_SPEEDS, INTAKE_SWEEP_DRIVE_SPEEDS
 ```
 
-Criteria (από `docs/intake-concept-decision-el.md` — transport concept):
+Criteria (από `docs/mechanism/intake-concept-decision-el.md` — transport concept):
 
 ```text
 Required:
@@ -274,5 +274,5 @@ release 0.133 m/s, no crest) — το dual-wheel πρέπει να περνά τ
 `release_criteria.json` ανά run· αποτυχία phase σταματά την πρόοδο στην
 επόμενη (fail-fast, όπως το stop/continue gate του bench report).
 
-Κάθε βήμα καταγράφεται στο `docs/intake-debug-log-el.md` (hypothesis /
+Κάθε βήμα καταγράφεται στο `docs/mechanism/intake-debug-log-el.md` (hypothesis /
 result / status) το ίδιο turn με την αλλαγή.
