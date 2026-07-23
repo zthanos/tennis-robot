@@ -119,6 +119,50 @@ def estimate_depth_ball_observation(
 
     if depth_frame_m.size == 0:
         return None
+    x0, x1, y0, y1 = depth_fusion_roi_bounds(
+        detection, depth_frame_m, frame_width_px, frame_height_px, roi_scale
+    )
+    roi = depth_frame_m[y0:y1, x0:x1]
+    valid = roi[np.isfinite(roi) & (roi > 0)]
+    if valid.size == 0:
+        return None
+
+    # Use the 20th percentile instead of median: for small ball detections the ROI
+    # contains background pixels at large depth; the lower percentile picks the
+    # near surface (ball face) rather than the background-contaminated median.
+    optical_z_m = float(np.percentile(valid, 20) if valid.size >= 5 else np.min(valid))
+    normalized_x = (detection.center_x - frame_width_px / 2) / (frame_width_px / 2)
+    # Robot/navigation convention is +left / counter-clockwise. Image columns
+    # grow to the right, so a detection right of centre has a negative bearing.
+    bearing_rad = -math.atan(normalized_x * math.tan(camera_fov_rad / 2))
+    vertical_fov_rad = camera_fov_rad * (frame_height_px / max(1, frame_width_px))
+    elevation_rad = pixel_elevation_rad(
+        detection.center_y, frame_height_px, vertical_fov_rad
+    )
+    # Gazebo's depth image stores optical-axis Z, not Euclidean slant range.
+    # camera_frame_position() expects slant range, so undo the ray projection
+    # exactly once.  Treating Z as range applies both cosines a second time and
+    # increasingly underestimates XYZ for off-centre balls.
+    ray_scale = math.sqrt(
+        1.0 + math.tan(bearing_rad) ** 2 + math.tan(elevation_rad) ** 2
+    )
+    distance_m = optical_z_m * ray_scale
+    return BallObservation(
+        detection=detection,
+        bearing_rad=bearing_rad,
+        distance_m=distance_m,
+        distance_source="oak_depth",
+    )
+
+
+def depth_fusion_roi_bounds(
+    detection: BallDetection,
+    depth_frame_m: np.ndarray,
+    frame_width_px: int,
+    frame_height_px: int,
+    roi_scale: float = 0.55,
+) -> tuple[int, int, int, int]:
+    """Return the exact depth ROI bounds shared by fusion and quality checks."""
     depth_height, depth_width = depth_frame_m.shape[:2]
     scale_x = depth_width / max(1, frame_width_px)
     scale_y = depth_height / max(1, frame_height_px)
@@ -130,25 +174,31 @@ def estimate_depth_ball_observation(
     x1 = min(depth_width, int(round(cx)) + half_w + 1)
     y0 = max(0, int(round(cy)) - half_h)
     y1 = min(depth_height, int(round(cy)) + half_h + 1)
-    roi = depth_frame_m[y0:y1, x0:x1]
-    valid = roi[np.isfinite(roi) & (roi > 0)]
-    if valid.size == 0:
-        return None
+    return x0, x1, y0, y1
 
-    # Use the 20th percentile instead of median: for small ball detections the ROI
-    # contains background pixels at large depth; the lower percentile picks the
-    # near surface (ball face) rather than the background-contaminated median.
-    distance_m = float(np.percentile(valid, 20) if valid.size >= 5 else np.min(valid))
-    normalized_x = (detection.center_x - frame_width_px / 2) / (frame_width_px / 2)
-    # Robot/navigation convention is +left / counter-clockwise. Image columns
-    # grow to the right, so a detection right of centre has a negative bearing.
-    bearing_rad = -math.atan(normalized_x * math.tan(camera_fov_rad / 2))
-    return BallObservation(
-        detection=detection,
-        bearing_rad=bearing_rad,
-        distance_m=distance_m,
-        distance_source="oak_depth",
+
+def depth_roi_quality(
+    detection: BallDetection,
+    depth_frame_m: np.ndarray,
+    frame_width_px: int,
+    frame_height_px: int,
+    roi_scale: float = 0.55,
+) -> float:
+    """Return the valid-depth fraction of the fusion ROI, in ``[0, 1]``.
+
+    C2 uses this explicit metric for calibration.  It shares the ROI geometry
+    with :func:`estimate_depth_ball_observation`; it does not synthesize a
+    quality score from the estimated range or covariance.
+    """
+    if depth_frame_m.size == 0:
+        return 0.0
+    x0, x1, y0, y1 = depth_fusion_roi_bounds(
+        detection, depth_frame_m, frame_width_px, frame_height_px, roi_scale
     )
+    roi = depth_frame_m[y0:y1, x0:x1]
+    if roi.size == 0:
+        return 0.0
+    return float(np.count_nonzero(np.isfinite(roi) & (roi > 0)) / roi.size)
 
 
 def camera_frame_position(
@@ -162,10 +212,17 @@ def camera_frame_position(
     ``bearing_rad`` follows the robot convention (+left / CCW), while
     ``elevation_rad`` is positive up.
     """
-    horiz = distance_m * math.cos(elevation_rad)
-    right = -horiz * math.sin(bearing_rad)
-    down = -distance_m * math.sin(elevation_rad)
-    forward = horiz * math.cos(bearing_rad)
+    # Pixel angles describe the independent image-plane ray slopes X/Z and
+    # Y/Z. Recover optical Z from the Euclidean range, then apply those slopes.
+    # This matches pinhole/depth-camera geometry for simultaneous horizontal
+    # and vertical offsets (a chained yaw/pitch spherical projection does not).
+    tan_bearing = math.tan(bearing_rad)
+    tan_elevation = math.tan(elevation_rad)
+    forward = distance_m / math.sqrt(
+        1.0 + tan_bearing * tan_bearing + tan_elevation * tan_elevation
+    )
+    right = -forward * tan_bearing
+    down = -forward * tan_elevation
     return right, down, forward
 
 

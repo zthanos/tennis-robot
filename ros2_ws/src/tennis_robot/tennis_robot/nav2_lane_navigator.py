@@ -149,7 +149,12 @@ class Nav2LaneNavigator:
         except Exception:  # noqa: BLE001
             handle = None
         if handle is None or not handle.accepted:
-            self._state = LaneNavState.FAILED
+            # The action endpoint becomes discoverable before bt_navigator is
+            # lifecycle-active and rejects goals in that short startup window.
+            # Treat rejection as temporarily unavailable so collect_route can
+            # retry.  A goal that was accepted and later aborted still becomes
+            # FAILED in _on_result and remains a real navigation failure.
+            self._state = LaneNavState.UNAVAILABLE
             self._goal_handle = None
             return
         self._goal_handle = handle

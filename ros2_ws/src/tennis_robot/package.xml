@@ -18,6 +18,8 @@
   <depend>ros_gz_interfaces</depend>
   <depend>visualization_msgs</depend>
   <depend>tennis_robot_msgs</depend>
+  <exec_depend>tennis_robot_collection_controller</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
 
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>

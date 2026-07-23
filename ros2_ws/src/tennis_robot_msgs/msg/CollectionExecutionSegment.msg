@@ -1,0 +1,10 @@
+uint8 CONNECTOR=0
+uint8 FUNNEL_PASS=1
+uint8 TERMINAL_CONNECTOR=2
+
+string segment_id
+uint8 segment_type
+float64 progress_start_s
+float64 progress_end_s
+tennis_robot_msgs/CollectionExecutionProfile execution_profile
+tennis_robot_msgs/CollectionPlannedCrossing[] planned_crossings

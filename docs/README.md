@@ -7,10 +7,13 @@ prototype.
 
 Use these files for purchasing, cutting, CAD alignment, and software assumptions:
 
+- `feature-delivery-contract-el.md` - mandatory specification, design, and implementation-plan workflow for substantial new features.
 - `prototype-purchase-list-el.md` - current purchase list for the first build.
 - `plywood-cut-list.md` - plywood cut list and assembly instructions.
 - `architecture-implementation-guide-el.md` - source-of-truth implementation guide; treats current code as legacy reference for the next Webots rebuild.
-- `collection-state-machine-plan-el.md` - active target selection, approach, collection, verification, and retry behavior plan.
+- `collection-route-rules-el.md` - active specification for the planned continuous collection route.
+- `collection-route-design-el.md` - active technical design for implementing the continuous collection route.
+- `collection-route-implementation-plan-el.md` - active phased implementation plan for the continuous collection route rewrite.
 - `concept-a-funnel-lift-wheel-plan.md` - active Concept A build plan.
 - `mission-dashboard-plan-el.md` - active mission-control dashboard evolution plan.
 - `collector-wiring-reference-el.md` - active bench wiring reference for the first Arduino Nano + TB6612FNG collector prototype.

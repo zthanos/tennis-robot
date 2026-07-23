@@ -140,11 +140,16 @@
   <xacro:property name="ir_x" value="0.720"/>
   <xacro:property name="ir_y" value="0.105"/>
   <xacro:property name="ir_z" value="-0.005"/>
-  <!-- Basket confirmation beam crosses the midpoint of the inclined receiver
-       at the rolling ball's equator. Sensor coordinates are base_link-frame. -->
-  <xacro:property name="basket_ir_x" value="${float($(arg basket_floor_front_x)) + float($(arg basket_receiver_run)) / 2.0}"/>
+  <!-- Basket confirmation beam is behind the retention lip, halfway down the
+       internal management tray. A ball on the external receiver is not yet
+       collected and must keep the intake running until it crosses this beam. -->
+  <xacro:property name="basket_ir_x" value="${float($(arg basket_floor_front_x)) - float($(arg basket_management_run)) / 2.0}"/>
   <xacro:property name="basket_ir_y" value="0.105"/> 
-  <xacro:property name="basket_ir_z" value="${float($(arg basket_floor_top_z)) + float($(arg basket_management_rise)) + float($(arg basket_receiver_rise)) / 2.0 + 0.033 - base_link_height}"/>
+  <!-- Beam height 0.075 above court: ABOVE a court ball's top (0.066) so the
+       ray cannot clip balls standing beside the robot through the open wire
+       mesh (run 11: 4 false credits, one-sided ir hits 2-11 cm from one
+       sensor), yet still well below a tray-rolling ball's top (0.096). -->
+  <xacro:property name="basket_ir_z" value="${float($(arg basket_floor_top_z)) + float($(arg basket_management_rise)) / 2.0 + 0.045 - base_link_height}"/>
 
   <xacro:property name="max_linear_acceleration" value="2.0"/> 
   <xacro:property name="max_angular_acceleration" value="4.0"/>

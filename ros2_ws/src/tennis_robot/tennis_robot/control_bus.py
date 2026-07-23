@@ -15,6 +15,7 @@ SUPPORTED_MODES = {
     "collect",
     "collect_one",
     "collect_pattern",
+    "collect_route",
     "search",
     "scan_side",
     "map_court",

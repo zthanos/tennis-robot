@@ -1,0 +1,9 @@
+string context_schema_version
+string plan_id
+string path_sha256
+float64 context_activation_timeout_s
+tennis_robot_msgs/CollectionExecutionSegment[] segments
+tennis_robot_msgs/CollectionControllerTuning controller_tuning
+float64 terminal_progress_s
+geometry_msgs/Pose terminal_pose
+string configuration_snapshot_json

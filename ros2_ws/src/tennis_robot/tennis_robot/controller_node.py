@@ -7,6 +7,7 @@ are imported unchanged from the controllers/ tree.
 
 Subscribes:
   /perception/ball_detections (tennis_robot_msgs/BallDetectionArray)
+  /perception/diagnostics (std_msgs/String, JSON; operator diagnostics only)
   /survey/vision     (std_msgs/String, JSON)
   /scan              (sensor_msgs/LaserScan)
   /odom              (nav_msgs/Odometry)
@@ -45,6 +46,17 @@ from tennis_robot import yaw_from_quaternion
 
 from tennis_robot.ball_map import BallMap, BallMapConfig, across_net
 from tennis_robot.collect_one_mission import CollectOneMission
+from tennis_robot.collection_executor_node_factory import (
+    CollectionExecutorNodeCache,
+    CollectionExecutorNodeFactory,
+)
+from tennis_robot.collection_route_executor import ExecutorState
+from tennis_robot.collection_scoring import (
+    CreditReconciler,
+    SimRetentionTracker,
+    onboard_ball_zone,
+    retained_ball_still_in_bin,
+)
 from tennis_robot.collector import (
     BallObservationInput,
     BaseCommand,
@@ -54,14 +66,19 @@ from tennis_robot.collector import (
     ConceptACommand,
     ConceptAConfig,
 )
+from tennis_robot.collector_driver import GazeboCollectorDriver
+from tennis_robot.collector_interface import CollectorInterface
 from tennis_robot.config_utils import _env_float
 from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
 from tennis_robot.mapping import (
+    DEFAULT_BOUNDARY_FILE,
     LidarSurveyBoundaryProvider,
     MapLeftSideMission,
     ServiceLineDistributionScanMission,
 )
 from tennis_robot.motion_controller import MOTION_COMMAND_TOPIC
+from tennis_robot.perception_covariance_calibration import PerceptionSpatialValidationConfig, validate_spatial_metadata
+from tennis_robot.perception_diagnostics import format_no_targets_diagnostic
 try:
     from tennis_robot.nav2_lane_navigator import Nav2LaneNavigator, LaneNavState
     _NAV2_AVAILABLE = True
@@ -84,6 +101,17 @@ PERCEPTION_FRAME_ID = os.getenv(
 )
 PERCEPTION_CAMERA_X_M = float(os.getenv("PERCEPTION_CAMERA_X_M", "0.535"))
 COLLECTION_EVENT_SCHEMA_VERSION = 2
+SIM_BASKET_RETENTION_DWELL_S = _env_float("SIM_BASKET_RETENTION_DWELL_S", 0.75)
+# "beam" (default): collection is confirmed by the SAME basket IR latch the
+# hardware uses; sim ground truth only referees (beam-vs-truth reconciliation).
+# "truth": legacy ground-truth bin-dwell confirmation (debug fallback).
+SIM_COLLECTION_CONFIRM_SOURCE = os.getenv(
+    "SIM_COLLECTION_CONFIRM_SOURCE", "beam"
+).strip().lower()
+# After the basket beam clears, ignore re-breaks for this long: one bouncing
+# ball is one collection, not two (run 10 double-counted every crossing).
+BEAM_REARM_QUIET_S = _env_float("BEAM_REARM_QUIET_S", 0.6)
+BEAM_SYMMETRY_MAX_DELTA = _env_float("BEAM_SYMMETRY_MAX_DELTA", 200.0)
 NET_X_M = 0.0
 NET_SIDE_CLEARANCE_M = 0.25
 COURT_MAX_X_M = 11.885
@@ -93,14 +121,10 @@ COURT_BALL_MARGIN_M = _env_float("COURT_BALL_MARGIN_M", 3.2)
 # physically inside the basket volume, not when it touches the entry lip. The
 # lip/roller contact is just the launch impulse; hardware/sim confirmation
 # comes from the basket beam pair (see gazebo_extras_node.py).
-# Low-hopper basket (debug-log #41-#46): collection is credited once the ball
-# is inside the basket x/y volume and above ground-ball height. Bin v2.1 lowered
-# the floor to 0.025, so a collected resting ball sits at centre z~=0.058; the
-# one-shot sim-ball def guard below prevents repeated counts while Gazebo removes
-# the collected ball.
-BASKET_ZONE_X_M = (0.02, 0.42)
-BASKET_HALF_WIDTH_M = 0.14
-BASKET_MIN_BALL_Z_M = 0.055
+# Low-hopper basket (debug-log #41-#46): receiver/deck contact is only an entry
+# candidate. Collection is credited after continuous residence behind the
+# retention lip, inside the bin. Zone gates and dwell tracking live in
+# collection_scoring; the one-shot sim-ball def guard prevents repeated counts.
 IR_INTAKE_TRIGGER_THRESHOLD = 500.0
 SCAN_SIDE_DURATION_S = 12.0
 COLLECT_PATTERN_COLLECTION_TIMEOUT_S = _env_float("COLLECT_PATTERN_COLLECTION_TIMEOUT_S", 35.0)
@@ -145,6 +169,10 @@ def _survey_vision_from_json(payload: str) -> SurveyVision:
 
 
 class ControllerNode(Node):
+    # Class seam used by the node-wiring unit test; production uses the real
+    # Phase 6D.3 factory without a runtime feature flag or fallback.
+    collection_executor_factory_type = CollectionExecutorNodeFactory
+
     def __init__(self) -> None:
         super().__init__("tennis_robot_controller")
 
@@ -154,6 +182,8 @@ class ControllerNode(Node):
         self.survey_behavior = Ros2LidarCourtSurvey.from_env()
         self.ball_map = BallMap(BallMapConfig(court_ball_margin_m=COURT_BALL_MARGIN_M))
         self.collect_one_mission = CollectOneMission()
+        self._perception_spatial_validation_config: PerceptionSpatialValidationConfig | None = None
+        self._last_perception_rejection_reason: str | None = None
         self._map_mission = MapLeftSideMission(
             LidarSurveyBoundaryProvider(), self._map_supervisor_balls
         )
@@ -168,7 +198,10 @@ class ControllerNode(Node):
                 "Source the Nav2 install or set COLLECTION_USE_NAV2=false to use the P-controller deliberately."
             )
         self._use_nav2_lanes = self._nav2_requested and _NAV2_AVAILABLE
-        self._nav2_lane = Nav2LaneNavigator(self) if self._use_nav2_lanes else None
+        # The navigator is constructed whenever Nav2 deps are importable:
+        # collect_route always drives its legs via Nav2, while the lawnmower
+        # sweep keeps honoring COLLECTION_USE_NAV2 via _use_nav2_lanes.
+        self._nav2_lane = Nav2LaneNavigator(self) if _NAV2_AVAILABLE else None
 
         # ── state ──────────────────────────────────────────────────────────────
         self.control_mode = "idle"
@@ -194,6 +227,9 @@ class ControllerNode(Node):
         self._last_status_file_write_s: float = 0.0
         self._collection_events: deque[dict] = deque(maxlen=60)
         self._collection_event_started_at: float | None = None
+        # Actual ground speed from /odom twist (valid even while collect_route is
+        # hands-off and the Python base command is idle).
+        self._robot_speed_mps: float = 0.0
         self._collection_event_log = Path(
             os.getenv(
                 "COLLECTION_EVENT_LOG_FILE",
@@ -201,11 +237,26 @@ class ControllerNode(Node):
             )
         )
         self._run_id = f"{int(self.started_at)}-{os.getpid()}"
+        self._collect_route_run_start_count = 0
+        self._last_collect_route_summary: dict = {}
+        self._collect_route_executor = None
+        self._collect_route_executor_factory = None
+        self._collect_route_executor_events: list[dict] = []
+        self._collect_route_executor_complete_reported = False
+        self._collection_executor_cache = CollectionExecutorNodeCache()
         self._last_collection_event_key: tuple | None = None
         self._last_collection_scan_key: tuple | None = None
+        self._collect_route_last_probe_s: float = 0.0
+        self._collect_route_last_block_event_s: float = 0.0
+        self._sim_true_pose: tuple[float, float, float] | None = None
+        self._pose_frame_offset: tuple[float, float] | None = None
+        self._last_pose_divergence_event_s: float = 0.0
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
+        self._latest_ball_detections_msg = None
+        self._latest_perception_diagnostics: dict = {}
+        self._latest_observations: list[BallObservationInput] = []
         self._latest_obs_received_at = 0.0
         self._latest_obs_seq = 0
         self._mapped_obs_seq = 0
@@ -214,6 +265,7 @@ class ControllerNode(Node):
         self._latest_camera_balls_received_at = 0.0
         self._last_bad_perception_frame = ""
         self._lidar_ranges: list[float] | None = None
+        self._latest_scan_msg = None
         self._lidar_angle_min: float = -math.pi
         self._lidar_angle_increment: float | None = None
         self._robot_x = 0.0
@@ -228,7 +280,12 @@ class ControllerNode(Node):
         self._sim_balls: list[dict] = []
         self._sim_balls_seen = False
         self._counted_sim_ball_defs: set[str] = set()
+        self._sim_retention_tracker = SimRetentionTracker(SIM_BASKET_RETENTION_DWELL_S)
+        self._credit_reconciler = CreditReconciler()
+        self._sim_bin_candidate_active = False
+        self._lost_retained_sim_ball_defs: set[str] = set()
         self._hardware_collection_latched = False
+        self._beam_rearm_at_s = 0.0
         self._turn_180_start_yaw: float = 0.0
 
         # ── pose source: SLAM-corrected TF with /odom fallback ─────────────────
@@ -246,6 +303,9 @@ class ControllerNode(Node):
             self._on_ball_detections,
             1,
         )
+        self.create_subscription(
+            String, "/perception/diagnostics", self._on_perception_diagnostics, 10
+        )
         self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
         self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
         self.create_subscription(Odometry, "/odom", self._on_odom, 10)
@@ -258,6 +318,9 @@ class ControllerNode(Node):
         )
         self.create_subscription(RobotCommand, "/robot/command", self._on_command, 10)
         self.create_subscription(String, "/sim/balls", self._on_sim_balls, 1)
+        self.create_subscription(
+            String, "/sim/robot_true_pose", self._on_sim_true_pose, 1
+        )
 
         # ── publishers ─────────────────────────────────────────────────────────
         self._pub_motion_cmd = self.create_publisher(Twist, MOTION_COMMAND_TOPIC, 1)
@@ -277,8 +340,18 @@ class ControllerNode(Node):
     def _on_survey_vision(self, msg: String) -> None:
         self._latest_survey_vision = _survey_vision_from_json(msg.data)
 
+    def _on_perception_diagnostics(self, msg: String) -> None:
+        try:
+            payload = json.loads(msg.data)
+        except (json.JSONDecodeError, TypeError):
+            return
+        if isinstance(payload, dict) and payload.get("schema_version") == 1:
+            self._latest_perception_diagnostics = payload
+
     def _on_ball_detections(self, msg: BallDetectionArray) -> None:
         """Consume the canonical sim/real OAK-D perception contract."""
+        self._latest_ball_detections_msg = msg
+        self._collection_executor_cache.latest_ball_detections = msg
         if msg.header.frame_id != PERCEPTION_FRAME_ID:
             if msg.header.frame_id != self._last_bad_perception_frame:
                 self.get_logger().error(
@@ -289,8 +362,47 @@ class ControllerNode(Node):
             self._latest_obs = BallObservationInput(
                 visible=False, source="invalid_perception_frame"
             )
+            self._latest_observations = []
             self._latest_camera_balls = []
             return
+
+        if not msg.spatial_targets_healthy:
+            self._latest_obs = BallObservationInput(visible=False, source="spatial_targets_unhealthy")
+            self._latest_observations = []
+            self._latest_camera_balls = []
+            self._latest_obs_seq += 1
+            return
+
+        config = self._perception_spatial_validation_config
+        if config is None:
+            self._latest_obs = BallObservationInput(visible=False, source="perception_metadata_rejected")
+            self._last_perception_rejection_reason = "validation_config_invalid"
+            self._latest_observations = []; self._latest_camera_balls = []; self._latest_obs_seq += 1
+            return
+
+        rgb_s = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec) * 1e-9
+        spatial = [d for d in msg.detections if d.has_spatial]
+        for detection in spatial:
+            depth_s = float(detection.matched_depth_stamp.sec) + float(detection.matched_depth_stamp.nanosec) * 1e-9
+            reason = validate_spatial_metadata(rgb_s, depth_s, tuple(detection.position_covariance), config)
+            if reason:
+                self._latest_obs = BallObservationInput(visible=False, source="perception_metadata_rejected")
+                self._last_perception_rejection_reason = reason
+                self._latest_observations = []; self._latest_camera_balls = []; self._latest_obs_seq += 1
+                return
+
+        try:
+            camera_to_map = self._tf_buffer.lookup_transform(
+                "map", msg.header.frame_id, RclpyTime.from_msg(msg.header.stamp)
+            )
+        except Exception:
+            self._latest_obs = BallObservationInput(visible=False, source="perception_tf_rejected")
+            self._latest_observations = []
+            self._latest_camera_balls = []
+            self._latest_obs_seq += 1
+            return
+        q = camera_to_map.transform.rotation
+        tx, ty, tz = camera_to_map.transform.translation.x, camera_to_map.transform.translation.y, camera_to_map.transform.translation.z
 
         received_at = self._runtime_seconds()
         observations: list[BallObservationInput] = []
@@ -302,16 +414,12 @@ class ControllerNode(Node):
                 or detection.distance_m <= 0.0
             ):
                 continue
-
-            # Optical XYZ is +right/+down/+forward. Convert it to the robot
-            # planar frame (+forward/+left), then through the authoritative
-            # controller pose into map/world coordinates.
-            local_x = PERCEPTION_CAMERA_X_M + float(detection.position_z)
-            local_y = -float(detection.position_x)
-            cos_yaw = math.cos(self._robot_yaw)
-            sin_yaw = math.sin(self._robot_yaw)
-            world_x = self._robot_x + cos_yaw * local_x - sin_yaw * local_y
-            world_y = self._robot_y + sin_yaw * local_x + cos_yaw * local_y
+            # Rotate camera optical XYZ with TF evaluated at the RGB stamp.
+            x, y, z = float(detection.position_x), float(detection.position_y), float(detection.position_z)
+            xx, yy, zz = q.x*q.x, q.y*q.y, q.z*q.z
+            xy, xz, yz, wx, wy, wz = q.x*q.y, q.x*q.z, q.y*q.z, q.w*q.x, q.w*q.y, q.w*q.z
+            world_x = tx + (1 - 2*(yy + zz))*x + 2*(xy - wz)*y + 2*(xz + wy)*z
+            world_y = ty + 2*(xy + wz)*x + (1 - 2*(xx + zz))*y + 2*(yz - wx)*z
             observation = BallObservationInput(
                 visible=True,
                 bearing_rad=float(detection.bearing_rad),
@@ -340,17 +448,23 @@ class ControllerNode(Node):
             if observations
             else BallObservationInput(visible=False, source="no_detection")
         )
+        self._latest_observations = observations
         self._latest_camera_balls = camera_balls
         self._latest_obs_received_at = received_at
         self._latest_camera_balls_received_at = received_at
         self._latest_obs_seq += 1
 
     def _on_scan(self, msg: LaserScan) -> None:
+        self._latest_scan_msg = msg
+        self._collection_executor_cache.latest_scan = msg
         self._lidar_ranges = [float(r) for r in msg.ranges]
         self._lidar_angle_min = float(msg.angle_min)
         self._lidar_angle_increment = float(msg.angle_increment)
 
     def _on_odom(self, msg: Odometry) -> None:
+        # Velocity always comes from /odom regardless of pose source (SLAM TF
+        # supplies pose, not twist), so capture it before the pose short-circuit.
+        self._robot_speed_mps = math.hypot(msg.twist.twist.linear.x, msg.twist.twist.linear.y)
         if self._pose_source == "slam_tf":
             return  # SLAM TF is authoritative once available
         self._robot_x = msg.pose.pose.position.x
@@ -379,6 +493,34 @@ class ControllerNode(Node):
         self._control_command_mode = msg.mode
         self._control_command_source = msg.source
 
+    def _on_sim_true_pose(self, msg: String) -> None:
+        """Sim-only ground truth from gz pose/info (world frame ≈ map frame:
+        the survey map is anchored at the world-origin start pose)."""
+        try:
+            d = json.loads(msg.data)
+            self._sim_true_pose = (float(d["x"]), float(d["y"]), float(d["yaw"]))
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            self._sim_true_pose = None
+
+    def _pose_error_m(self) -> float | None:
+        """Believed (SLAM/odom) pose vs sim ground truth, metres.
+
+        The map frame is anchored at the robot's start pose while the Gazebo
+        world frame is court-centred (~8.4 m apart), so the raw difference is
+        a constant offset. It is calibrated at collect_route start (when
+        localization is trustworthy); the reported error is the DEVIATION
+        from that initial offset — i.e. actual localization drift."""
+        if self._sim_true_pose is None:
+            return None
+        dx = self._sim_true_pose[0] - self._robot_x
+        dy = self._sim_true_pose[1] - self._robot_y
+        if self._pose_frame_offset is None:
+            return None
+        return round(
+            math.hypot(dx - self._pose_frame_offset[0], dy - self._pose_frame_offset[1]),
+            3,
+        )
+
     def _on_sim_balls(self, msg: String) -> None:
         self._sim_balls_seen = True
         try:
@@ -391,6 +533,8 @@ class ControllerNode(Node):
             if ball.get("def") is not None
         }
         self._counted_sim_ball_defs.intersection_update(current_defs)
+        self._lost_retained_sim_ball_defs.intersection_update(current_defs)
+        self._sim_retention_tracker.retain_only(current_defs)
 
     # ── main step (runs at TIME_STEP_S Hz) ─────────────────────────────────────
 
@@ -421,15 +565,34 @@ class ControllerNode(Node):
         self._update_pose_from_tf()
         observation = self._fresh_perception_observation()
         now = self._runtime_seconds()
+        self._monitor_retained_sim_balls()
+        new_detection_frame = self._latest_obs_seq != self._mapped_obs_seq
         mapping_observation = (
             observation
-            if self._latest_obs_seq != self._mapped_obs_seq
+            if new_detection_frame
             else BallObservationInput(visible=False, source="observation_already_mapped")
         )
         mapped_observation = self._mapping_observation(mapping_observation)
         self._mapped_obs_seq = self._latest_obs_seq
-        mapped_ball_id, is_new_ball = self.ball_map.update(mapped_observation, now)
+        mapped_ball_id, is_new_ball = self.ball_map.update(
+            mapped_observation,
+            now,
+            allow_create=True,
+        )
         control_mapping_observation = self._mapping_observation(observation)
+
+        # Keep the console ball map populated from every camera detection.  The
+        # executor owns its own immutable scan snapshot and never consumes this
+        # legacy BallMap registry.
+        if new_detection_frame and self.control_mode == "collect_route":
+            for extra in self._latest_observations:
+                if extra is not self._latest_obs:
+                    extra_mapped = self._mapping_observation(extra)
+                    self.ball_map.update(
+                        extra_mapped,
+                        now,
+                        allow_create=True,
+                    )
 
         if self.loop_count % 90 == 0:
             self.ball_map.prune_phantoms(now)
@@ -451,6 +614,8 @@ class ControllerNode(Node):
                 self._same_side_search_observation(control_mapping_observation),
                 mapped_ball_id,
             )
+        elif effective_mode == "collect_route":
+            command = self._collect_route_command_for_mode(effective_mode)
         elif effective_mode == "map_left_side":
             command = self._map_mission_command_for_mode(effective_mode)
         elif effective_mode in self._MANUAL_MODES:
@@ -458,8 +623,38 @@ class ControllerNode(Node):
         else:
             command = self._collector_command_for_mode(effective_mode, control_observation)
 
-        self.collection_confirmed = self._check_collection(command)
-        if self.collection_confirmed:
+        if effective_mode == "collect_route":
+            # Collection outcome belongs exclusively to executor plan results
+            # and crossing telemetry.  Ground truth may still animate/referee
+            # retained sim balls, but it cannot credit or mutate the route.
+            self.collection_confirmed = False
+            if self._sim_balls_seen:
+                self._sim_retention_step(credit=False)
+        else:
+            self.collection_confirmed = self._check_collection(command)
+        if (
+            effective_mode != "collect_route"
+            and self._sim_balls_seen
+            and SIM_COLLECTION_CONFIRM_SOURCE != "truth"
+        ):
+            reconcile = self._credit_reconciler.poll(now)
+            if reconcile is not None:
+                self._record_collection_event(
+                    reconcile.pop("event"), severity="critical", **reconcile
+                )
+        if (
+            effective_mode != "collect_route"
+            and self._sim_bin_candidate_active
+            and not self.collection_confirmed
+        ):
+            # The ball has crossed the lip. Hold the chassis still while the
+            # intake remains active and prove that the ball stays in the bin.
+            command = ConceptACommand(
+                state=command.state,
+                base=BaseCommand(0.0, 0.0),
+                collector=command.collector,
+            )
+        if effective_mode != "collect_route" and self.collection_confirmed:
             collected_id = self.ball_map.mark_nearest_collected(
                 self._robot_x, self._robot_y, now
             )
@@ -487,9 +682,23 @@ class ControllerNode(Node):
         if new_mode == self.control_mode:
             return False
         previous_mode = self.control_mode
-        if previous_mode == "collect" and new_mode != "collect" and self._nav2_lane is not None:
+        if (
+            previous_mode in {"collect", "collect_route"}
+            and new_mode != previous_mode
+            and self._nav2_lane is not None
+        ):
             self._record_collection_event("nav2_goal_cancel", reason=f"mode_exit:{new_mode}")
             self._nav2_lane.reset()
+        if previous_mode == "collect_route":
+            terminal = bool(
+                self._collect_route_executor is not None
+                and self._collect_route_executor.is_terminal
+            )
+            self._last_collect_route_summary = self._build_collect_route_summary(
+                status=None if terminal else "stopped"
+            )
+            if self._collect_route_executor_factory is not None and not terminal:
+                self._collect_route_executor_factory.stop()
         self.behavior.reset()
         self.search_behavior.reset()
         if not (self.control_mode == "map_court" and new_mode == "idle"):
@@ -500,19 +709,28 @@ class ControllerNode(Node):
             self._collection_scan.reset()
         self.control_mode = new_mode
         self.collect_one_mission.reset()
+        self.ball_map.max_create_distance_override_m = None
         self._reset_collect_pattern()
         self.scan_side_started_at = None
         self._collect_start_time = None
         self.active_mapped_target_id = None
         self._collection_scan_completion_reported = False
         self.get_logger().info(f"mode → {new_mode}")
-        if new_mode == "collect":
+        if new_mode in {"collect", "collect_route"}:
             self._collection_events.clear()
             self._collection_event_started_at = self._runtime_seconds()
             if self._nav2_lane is not None:
                 self._nav2_lane.reset()
             self._last_collection_event_key = None
             self._last_collection_scan_key = None
+            if new_mode == "collect_route":
+                self._collect_route_run_start_count = self.collection_count
+                self._last_collect_route_summary = {}
+                self._collect_route_executor = None
+                self._collect_route_executor_factory = None
+                self._collect_route_executor_events = []
+                self._collect_route_executor_complete_reported = False
+                self._credit_reconciler = CreditReconciler()
             self._record_collection_event("mode_enter", requested=self._control_command_mode)
         return True
 
@@ -521,7 +739,7 @@ class ControllerNode(Node):
         "move_forward_left", "move_forward_right",
         "move_backward_left", "move_backward_right",
     })
-    _AUTONOMOUS_MODES = frozenset({"map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "search", "scan_side"})
+    _AUTONOMOUS_MODES = frozenset({"map_court", "map_left_side", "collect_pattern", "collect", "collect_one", "collect_route", "search", "scan_side"})
 
     def _effective_control_mode(self, requested_mode: str) -> str:
         if requested_mode in self._MANUAL_MODES and self.control_mode in self._AUTONOMOUS_MODES:
@@ -1091,6 +1309,131 @@ class ControllerNode(Node):
             return "outside_active_lane"
         return None
 
+    def _collect_route_command_for_mode(self, mode: str) -> ConceptACommand:
+        if self._on_mode_changed(mode):
+            self.ball_map.reset()
+            self._collect_start_time = self._runtime_seconds()
+            self._start_collection_route_executor()
+
+        if self._collect_route_executor is None:
+            raise RuntimeError("collect_route executor was not constructed on mode entry")
+
+        self._collection_executor_cache.latest_scan = self._latest_scan_msg
+        self._collection_executor_cache.latest_ball_detections = (
+            self._latest_ball_detections_msg
+        )
+        self._collection_executor_cache.robot_x_m = self._robot_x
+        self._collection_executor_cache.robot_y_m = self._robot_y
+        self._collection_executor_cache.robot_yaw_rad = self._robot_yaw
+        state = self._collect_route_executor.tick()
+
+        if (
+            self._collect_route_executor.is_terminal
+            and not self._collect_route_executor_complete_reported
+        ):
+            self._collect_route_executor_complete_reported = True
+            detail = ""
+            session = getattr(self._collect_route_executor, "_scan_session", None)
+            if state.value == "aborted_scan":
+                reason = getattr(session, "last_failure_detail", None)
+                if reason:
+                    detail = f" (scan_failure={reason})"
+            elif state.value == "completed_no_targets":
+                detail = format_no_targets_diagnostic(
+                    getattr(self, "_latest_perception_diagnostics", None)
+                )
+            self.get_logger().info(f"collect_route executor terminal: {state.value}{detail}")
+            # Aggregated scan telemetry (rejection histogram + per-track step
+            # counts) explains an empty/partial snapshot: cross-half rejections,
+            # TF failures, or balls seen from too few scan steps to confirm.
+            scan_diag = getattr(session, "scan_diagnostics", None)
+            if scan_diag is not None and state.value in ("completed_no_targets", "aborted_scan"):
+                self.get_logger().info(f"collect_route scan diagnostics: {scan_diag}")
+            self._publish_command("idle", "controller-collect-route-complete")
+
+        # HANDS-OFF: scan rotation and FollowPath own the base through their
+        # dedicated mux inputs; the executor collector port owns the collector.
+        return ConceptACommand(
+            state=CollectorState.IDLE,
+            base=BaseCommand(0.0, 0.0),
+            collector=CollectorCommand(0.0, False),
+        )
+
+    def _start_collection_route_executor(self) -> None:
+        if self._nav2_lane is None:
+            raise RuntimeError(
+                "collect_route requires Nav2 action dependencies; no fallback is available"
+            )
+        self._declare_collection_route_parameters()
+        calibration_path = os.getenv("COLLECTION_ROUTE_CALIBRATION_ARTIFACT")
+        if not calibration_path:
+            raise RuntimeError(
+                "COLLECTION_ROUTE_CALIBRATION_ARTIFACT is required for collect_route"
+            )
+        from ament_index_python.packages import get_package_share_directory
+
+        config_dir = Path(get_package_share_directory("tennis_robot")) / "config"
+        self._collection_executor_cache.latest_scan = self._latest_scan_msg
+        self._collection_executor_cache.latest_ball_detections = (
+            self._latest_ball_detections_msg
+        )
+        self._collection_executor_cache.robot_x_m = self._robot_x
+        self._collection_executor_cache.robot_y_m = self._robot_y
+        self._collection_executor_cache.robot_yaw_rad = self._robot_yaw
+
+        def publish_collector_speed(speed_rad_s: float) -> None:
+            message = CollectorCmd()
+            message.lift_wheel_speed = float(speed_rad_s)
+            message.intake_enabled = abs(speed_rad_s) > 1e-9
+            self._pub_collector.publish(message)
+
+        collector_interface = CollectorInterface(
+            GazeboCollectorDriver(publish_collector_speed)
+        )
+        factory = self.collection_executor_factory_type(
+            node=self,
+            tf_buffer=self._tf_buffer,
+            cache=self._collection_executor_cache,
+            lane_navigator=self._nav2_lane,
+            collector_interface=collector_interface,
+            court_boundary_path=DEFAULT_BOUNDARY_FILE,
+            collection_route_config_path=config_dir / "collection_route.yaml",
+            calibration_artifact_path=calibration_path,
+            telemetry_sink=self._on_collection_executor_telemetry,
+        )
+        executor = factory.build()
+        executor.start()
+        self._collect_route_executor_factory = factory
+        self._collect_route_executor = executor
+
+    def _declare_collection_route_parameters(self) -> None:
+        from ament_index_python.packages import get_package_share_directory
+        import yaml
+
+        params_path = (
+            Path(get_package_share_directory("tennis_robot")) / "config" / "nav2_params.yaml"
+        )
+        source = yaml.safe_load(params_path.read_text(encoding="utf-8"))
+        try:
+            values = source["collection_route_executor"]["ros__parameters"]
+        except (KeyError, TypeError) as exc:
+            raise RuntimeError(
+                f"missing collection_route_executor parameters in {params_path}"
+            ) from exc
+        for name, value in values.items():
+            if name != "use_sim_time" and not self.has_parameter(name):
+                self.declare_parameter(name, value)
+
+    def _on_collection_executor_telemetry(self, event: dict) -> None:
+        serialized = dict(event)
+        now = self._runtime_seconds()
+        started_at = getattr(self, "_collection_event_started_at", None)
+        if started_at is not None:
+            serialized.setdefault("t_s", round(max(0.0, now - started_at), 3))
+        serialized.setdefault("sim_time_s", round(now, 3))
+        self._collect_route_executor_events.append(serialized)
+        del self._collect_route_executor_events[:-100]
+
     def _record_collection_event(self, event_type: str, **fields: object) -> None:
         now = self._runtime_seconds()
         if self._collection_event_started_at is None:
@@ -1114,6 +1457,16 @@ class ControllerNode(Node):
             "robot_x_m": round(self._robot_x, 3),
             "robot_y_m": round(self._robot_y, 3),
         }
+        if self.control_mode == "collect_route" or event_type.startswith("route_"):
+            route = self._build_collect_route_summary()
+            event.update(
+                {
+                    "route_phase": route.get("state"),
+                    "route_outcome": route.get("route_outcome"),
+                    "route_plan_id": route.get("plan_id"),
+                    "route_planning_status": route.get("planning_status"),
+                }
+            )
         for key, value in fields.items():
             if isinstance(value, float):
                 event[key] = round(value, 3)
@@ -1363,57 +1716,188 @@ class ControllerNode(Node):
         )
 
     def _check_collection(self, command: ConceptACommand) -> bool:
+        self._sim_bin_candidate_active = False
+        if self._sim_balls_seen and SIM_COLLECTION_CONFIRM_SOURCE == "truth":
+            # Legacy ground-truth confirmation (debug fallback): credit on the
+            # bin retention dwell. NOT gated on intake_enabled — a ball
+            # launched at the tail of an aborted capture settles into the bin
+            # AFTER the roller stops (run 8) and must still be credited.
+            if not self._sim_balls:
+                return False
+            return self._sim_retention_step(credit=True)
+        if self._sim_balls_seen:
+            # Beam-primary (default): the confirmation signal below is the
+            # SAME basket IR latch hardware uses — the sim beams feed
+            # /ir/readings — so a sim run certifies the hardware pipeline.
+            # Ground truth only referees: retention events plus beam-vs-truth
+            # count reconciliation, never a credit.
+            self._sim_retention_step(credit=False)
+
         if not command.collector.intake_enabled:
             self._hardware_collection_latched = False
             return False
-        # Simulation path: use ground-truth basket volume when /sim/balls is
-        # present. Gazebo beam rays can see an approaching ball before it is
-        # actually inside the hopper, so they are not authoritative in sim.
-        if self._sim_balls_seen:
-            if not self._sim_balls:
-                return False
-            return self._check_sim_collection()
 
-        # Hardware fallback: basket IR sensors. Count once per beam break.
+        # Basket IR beam pair: count once per crossing. A ball bouncing down
+        # the tray breaks/clears the beam more than once within a fraction of
+        # a second (run 10: every real crossing double-counted), so after the
+        # beam clears the latch re-arms only after a quiet period.
+        now_s = self._runtime_seconds()
+        # A real tray crossing is centred by the funnel: BOTH sensors report
+        # near-equal ranges (run 12: 631/625, 638/633). One-sided/asymmetric
+        # hits are court balls bouncing beside the robot seen through the
+        # open wire mesh (869/576, 901/233) — never a collection.
         hardware_triggered = (
             self._ir_left > IR_INTAKE_TRIGGER_THRESHOLD
-            or self._ir_right > IR_INTAKE_TRIGGER_THRESHOLD
+            and self._ir_right > IR_INTAKE_TRIGGER_THRESHOLD
+            and abs(self._ir_left - self._ir_right) <= BEAM_SYMMETRY_MAX_DELTA
         )
         if not hardware_triggered:
+            if self._hardware_collection_latched:
+                self._beam_rearm_at_s = now_s + BEAM_REARM_QUIET_S
             self._hardware_collection_latched = False
             return False
         if self._hardware_collection_latched:
             return True
         self._hardware_collection_latched = True
+        if now_s < self._beam_rearm_at_s:
+            # Same physical crossing still settling: re-latch without a count.
+            return True
         self.collection_count += 1
+        if self._sim_balls_seen:
+            self._credit_reconciler.on_beam_credit(now_s)
+        self._record_collection_event(
+            "beam_collection_credit",
+            ir_left=round(self._ir_left, 1),
+            ir_right=round(self._ir_right, 1),
+        )
         return True
 
-    def _check_sim_collection(self) -> bool:
+    def _sim_ball_local(self, ball: dict) -> tuple[float, float, float]:
+        """Ball position in the robot frame for onboard-zone scoring.
+
+        Prefers the ground-truth local coordinates published by
+        gazebo_extras. The fallback subtracts the SLAM map pose from
+        odom-anchored ball coordinates; that frame gap grows with odometry
+        drift and cost run 8 three uncounted basket balls — kept only for
+        replaying older fixtures.
+        """
+        if "local_x" in ball:
+            return (
+                float(ball["local_x"]),
+                float(ball["local_y"]),
+                float(ball.get("local_z", ball.get("z", 0.0))),
+            )
         ori_cos = math.cos(self._robot_yaw)
         ori_sin = math.sin(self._robot_yaw)
+        dx = ball["x"] - self._robot_x
+        dy = ball["y"] - self._robot_y
+        return (
+            ori_cos * dx + ori_sin * dy,
+            -ori_sin * dx + ori_cos * dy,
+            # Ball world z ~= height above court (flat ground, robot z ~ 0).
+            float(ball.get("z", 0.0)),
+        )
+
+    def _sim_retention_step(self, credit: bool) -> bool:
+        """Track ground-truth basket retention for every sim ball.
+
+        credit=True (truth mode): a completed dwell IS the collection credit.
+        credit=False (beam-primary): retention only feeds the referee — the
+        credit comes from the IR beam latch, exactly like hardware.
+        """
+        now = self._runtime_seconds()
         for ball in self._sim_balls:
             ball_def = str(ball.get("def", ""))
             if ball_def in self._counted_sim_ball_defs:
                 continue
-            dx = ball["x"] - self._robot_x
-            dy = ball["y"] - self._robot_y
-            # Approximate rotation matrix for 2D (robot is flat on the court)
-            lx = ori_cos * dx + ori_sin * dy
-            ly = -ori_sin * dx + ori_cos * dy
-            # Ball world z ~= height above court (flat ground, robot z ~ 0).
-            bz = float(ball.get("z", 0.0))
-            if (
-                BASKET_ZONE_X_M[0] <= lx <= BASKET_ZONE_X_M[1]
-                and abs(ly) <= BASKET_HALF_WIDTH_M
-                and bz >= BASKET_MIN_BALL_Z_M
-            ):
+            lx, ly, bz = self._sim_ball_local(ball)
+            zone = onboard_ball_zone(lx, ly, bz)
+            retention = self._sim_retention_tracker.update(ball_def, zone, now)
+            if credit and zone == "bin" and not retention.retained:
+                self._sim_bin_candidate_active = True
+            if retention.event is not None:
+                self._record_collection_event(
+                    retention.event,
+                    ball_def=ball_def,
+                    zone=zone,
+                    previous_zone=retention.previous_zone,
+                    local_x_m=round(lx, 3),
+                    local_y_m=round(ly, 3),
+                    ball_z_m=round(bz, 3),
+                    dwell_s=round(retention.dwell_s, 3),
+                    required_dwell_s=SIM_BASKET_RETENTION_DWELL_S,
+                    route_ball_id=None,
+                )
+            if retention.retained:
                 collected_msg = String()
                 collected_msg.data = ball_def
                 self._pub_ball_collected.publish(collected_msg)
                 self._counted_sim_ball_defs.add(ball_def)
+                if not credit:
+                    self._credit_reconciler.on_truth_retained(now)
+                    continue
                 self.collection_count += 1
+                self._record_collection_event(
+                    "sim_collection_credit",
+                    ball_def=ball_def,
+                    zone="bin",
+                    local_x_m=round(lx, 3),
+                    local_y_m=round(ly, 3),
+                    ball_z_m=round(bz, 3),
+                    dwell_s=round(retention.dwell_s, 3),
+                    confirmation="stable_behind_retention_lip",
+                    route_ball_id=None,
+                )
                 return True
         return False
+
+    def _monitor_retained_sim_balls(self) -> None:
+        """Log a critical post-credit escape instead of hiding it as success."""
+        if not self._sim_balls_seen or not self._counted_sim_ball_defs:
+            return
+        for ball in self._sim_balls:
+            ball_def = str(ball.get("def", ""))
+            if (
+                ball_def not in self._counted_sim_ball_defs
+                or ball_def in self._lost_retained_sim_ball_defs
+            ):
+                continue
+            lx, ly, bz = self._sim_ball_local(ball)
+            zone = onboard_ball_zone(lx, ly, bz)
+            if retained_ball_still_in_bin(lx, ly, bz):
+                continue
+            self._lost_retained_sim_ball_defs.add(ball_def)
+            self._record_collection_event(
+                "basket_retention_lost",
+                severity="critical",
+                ball_def=ball_def,
+                zone=zone,
+                local_x_m=round(lx, 3),
+                local_y_m=round(ly, 3),
+                ball_z_m=round(bz, 3),
+            )
+
+    def _nearest_sim_ball_local(self) -> dict | None:
+        """Nearest ground-truth ball in the robot frame (sim only): the same
+        transform _sim_retention_step uses, so the numbers are directly
+        comparable to the basket volume gates."""
+        if not self._sim_balls:
+            return None
+        best: dict | None = None
+        best_dist = math.inf
+        for ball in self._sim_balls:
+            lx, ly, bz = self._sim_ball_local(ball)
+            dist = math.hypot(lx, ly)
+            if dist < best_dist:
+                best_dist = dist
+                best = {
+                    "def": str(ball.get("def", "")),
+                    "local_x_m": round(lx, 3),
+                    "local_y_m": round(ly, 3),
+                    "z_m": round(bz, 3),
+                    "already_counted": str(ball.get("def", "")) in self._counted_sim_ball_defs,
+                }
+        return best
 
     def _map_supervisor_balls(self) -> list[tuple[float, float]]:
         side = self._map_mission.bounds.side if self._map_mission.bounds else "left"
@@ -1457,6 +1941,16 @@ class ControllerNode(Node):
         self._collection_lane_collect_elapsed_s = 0.0
 
     def _apply_command(self, command: ConceptACommand) -> None:
+        if self.control_mode == "collect_route":
+            # HANDS-OFF: the executor owns base motion (scan rotation ->
+            # /cmd_vel_collection, FollowPath -> /cmd_vel_nav) and the collector
+            # (via its Collector port).  Publishing a per-tick base twist here
+            # would be relayed by the MotionController onto /cmd_vel_collection
+            # and fight the scan rotation on the SAME topic — the robot rotates
+            # in stutters, never completes the 360 scan within scan_timeout_s,
+            # and the run ends as aborted_scan (Phase 7 finding, sim run 1).
+            return
+
         twist = Twist()
         twist.linear.x = command.base.linear_speed_m_s
         twist.angular.z = command.base.angular_speed_rad_s
@@ -1503,13 +1997,74 @@ class ControllerNode(Node):
         """Collection Map payload: recognized balls at their detected world points,
         plus the active target, robot pose and camera cone for the renderer."""
         cfg = self.ball_map.config
+        route: list[dict] = []
+        planned_order: dict[int, int] | None = None
+        insertions = 0
+        if self.control_mode == "collect_route" and self._collect_route_executor is not None:
+            plan = self._collect_route_executor.plan
+            if plan is not None:
+                route = [
+                    {
+                        "x_m": point.pose.x_m,
+                        "y_m": point.pose.y_m,
+                        "yaw_rad": point.pose.yaw_rad,
+                    }
+                    for segment in plan.segments
+                    for point in segment.path.points
+                ]
         balls = self.ball_map.to_console_balls(
-            self._robot_x, self.active_mapped_target_id, now=self._runtime_seconds()
+            self._robot_x,
+            self.active_mapped_target_id,
+            now=self._runtime_seconds(),
+            planned_order=planned_order,
         )
+        # collect_route uses the immutable scan snapshot pipeline rather than
+        # the legacy BallMap registry.  Surface its live tracks directly so the
+        # Collection Workspace updates throughout the 360-degree scan (pending
+        # after one heading, confirmed after the configured distinct-step gate).
+        snapshot_diagnostics = (
+            getattr(self._collect_route_executor_factory, "snapshot_diagnostics", {})
+            if self._collect_route_executor_factory is not None
+            else {}
+        )
+        snapshot_tracks = snapshot_diagnostics.get("tracks", [])
+        if snapshot_tracks and not balls:
+            minimum = int(snapshot_diagnostics.get("minimum_confirmation_count", 2))
+            balls = [
+                {
+                    "id": f"route-scan-track-{index + 1}",
+                    "x_m": float(track["x_m"]),
+                    "y_m": float(track["y_m"]),
+                    "side": "same_side",
+                    "visible_candidate": len(track.get("steps", ())) >= minimum,
+                    "confirmed": bool(
+                        track.get(
+                            "confirmed",
+                            len(track.get("steps", ())) >= minimum,
+                        )
+                    ),
+                    "planned": False,
+                    "order": None,
+                    "source": "oak_depth",
+                }
+                for index, track in enumerate(snapshot_tracks)
+                if isinstance(track, dict)
+                and isinstance(track.get("x_m"), (int, float))
+                and isinstance(track.get("y_m"), (int, float))
+            ]
         confirmed = [b for b in balls if b["confirmed"] and b["side"] != "across_net"]
+        metrics: dict[str, object] = {
+            "balls_mapped": len(balls),
+            "balls_confirmed": len(confirmed),
+            "balls_collectable": len(confirmed),
+        }
+        if len(route) > 1:
+            metrics["total_distance_m"] = self._collect_route_executor.plan.total_length_m
+            metrics["planned_replans"] = insertions
         return {
             "balls": balls,
             "active_target_id": self.active_mapped_target_id,
+            "route": route,
             "robot": {
                 "x_m": round(self._robot_x, 3),
                 "y_m": round(self._robot_y, 3),
@@ -1517,12 +2072,91 @@ class ControllerNode(Node):
             },
             "camera_fov_rad": round(cfg.supervised_fov_rad, 4),
             "camera_max_range_m": round(cfg.supervised_max_range_m, 2),
-            "metrics": {
-                "balls_mapped": len(balls),
-                "balls_confirmed": len(confirmed),
-                "balls_collectable": len(confirmed),
-            },
+            "metrics": metrics,
         }
+
+    def _collect_route_elapsed_s(self, state: str) -> float | None:
+        """Wall-clock duration of the current collect_route run.
+
+        Ticks live while the run is active; freezes at the last executor-event
+        timestamp once the run reaches a terminal state so a finished run shows
+        its final duration rather than counting idle time.
+        """
+        started = getattr(self, "_collection_event_started_at", None)
+        if started is None:
+            return None
+        terminal = {
+            ExecutorState.IDLE.value,
+            ExecutorState.COMPLETED.value,
+            ExecutorState.COMPLETED_NO_TARGETS.value,
+        }
+        if state in terminal:
+            events = self._collect_route_executor_events
+            last = events[-1].get("t_s") if events else None
+            return round(float(last), 1) if last is not None else None
+        return round(max(0.0, self._runtime_seconds() - started), 1)
+
+    def _build_collect_route_summary(self, status: str | None = None) -> dict:
+        executor = self._collect_route_executor
+        state = executor.state.value if executor is not None else ExecutorState.IDLE.value
+        outcome = (
+            executor.route_outcome.value
+            if executor is not None and executor.route_outcome is not None
+            else None
+        )
+        payload = {
+            "run_id": self._run_id,
+            "status": status or state,
+            "state": state,
+            "route_outcome": outcome,
+            "elapsed_s": self._collect_route_elapsed_s(state),
+            "plan_id": None,
+            "planning_status": None,
+            "ball_results": [],
+            "segments": [],
+            "crossings": [],
+            "executed_crossing_telemetry": (
+                self._collect_route_executor_factory.crossing_telemetry
+                if self._collect_route_executor_factory is not None
+                else []
+            ),
+            "controller_state": (
+                getattr(self._collect_route_executor_factory, "controller_state", None)
+                if self._collect_route_executor_factory is not None
+                else None
+            ),
+            "executor_events": list(self._collect_route_executor_events),
+            "perception_diagnostics": dict(
+                getattr(self, "_latest_perception_diagnostics", {})
+            ),
+            "snapshot_diagnostics": (
+                getattr(self._collect_route_executor_factory, "snapshot_diagnostics", {})
+                if self._collect_route_executor_factory is not None
+                else {}
+            ),
+        }
+        plan = executor.plan if executor is not None else None
+        if plan is not None:
+            serialized = plan.to_dict()
+            payload.update(
+                {
+                    "plan_id": serialized["plan_id"],
+                    "planning_status": serialized["planning_status"],
+                    "ball_results": serialized["ball_results"],
+                    "segments": serialized["segments"],
+                    "crossings": [
+                        crossing
+                        for segment in serialized["segments"]
+                        for crossing in segment["planned_crossings"]
+                    ],
+                }
+            )
+        return payload
+
+    def _collect_route_summary_for_status(self) -> dict:
+        if self.control_mode == "collect_route":
+            return self._build_collect_route_summary()
+        return self._last_collect_route_summary
 
     def _publish_status(self, command: ConceptACommand, observation: BallObservationInput) -> None:
         status = {
@@ -1539,6 +2173,7 @@ class ControllerNode(Node):
             "pose_source": self._pose_source,
             "cmd_linear_m_s": round(command.base.linear_speed_m_s, 3),
             "cmd_angular_rad_s": round(command.base.angular_speed_rad_s, 3),
+            "measured_speed_mps": round(self._robot_speed_mps, 3),
             "ball_visible": observation.visible,
             "ball_distance_m": round(observation.distance_m, 3) if observation.visible else None,
             # Camera bearing (rad, +left per ROS) so the console can draw the live
@@ -1557,6 +2192,13 @@ class ControllerNode(Node):
             "collection_lane_collecting": self._collection_lane_collecting,
             "collection_opportunistic_collecting": self._collection_opportunistic_collecting,
             "collection_scan": self._collection_scan.telemetry(),
+            "collect_route": (
+                self._build_collect_route_summary()
+                if self.control_mode == "collect_route"
+                else self._last_collect_route_summary
+            ),
+            "collection_run": self._collect_route_summary_for_status(),
+            "pose_error_m": self._pose_error_m(),
             "collection_truth": self._collection_truth(command),
             "collection_events": list(self._collection_events),
             "collection_nav2": {

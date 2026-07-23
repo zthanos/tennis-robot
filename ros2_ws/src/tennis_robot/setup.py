@@ -17,7 +17,7 @@ setup(
         (f"share/{package_name}/meshes", glob("meshes/*")),
         (f"share/{package_name}/config", glob("config/*.yaml") + glob("config/*.xml")),
     ],
-    install_requires=["setuptools"],
+    install_requires=["setuptools", "PyYAML>=6.0"],
     zip_safe=True,
     maintainer="thano",
     maintainer_email="thanos.zikas21@gmail.com",
@@ -37,6 +37,7 @@ setup(
             "collector_logic_node = tennis_robot.collector_logic_node:main",
             "court_landmarks_node = tennis_robot.court_landmarks_node:main",
             "court_survey_mission_node = tennis_robot.court_survey_mission_node:main",
+            "gazebo_covariance_recorder = tennis_robot.gazebo_covariance_recorder:main",
         ],
     },
 )

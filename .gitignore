@@ -25,8 +25,14 @@ models/*.pt
 /robotics-stack-install.log
 ros2_ws/build_docker/
 ros2_ws/install_docker/
+ros2_ws/build_parity/
+ros2_ws/install_parity/
 ros2_ws/log/
 
 # VS Code C++ IntelliSense caches
 .vscode/browse.vc.db*
 .vscode/c_cpp_properties.json
+ros2_ws/build_smoke/
+ros2_ws/install_smoke/
+ros2_ws/build_verify/
+ros2_ws/install_verify/

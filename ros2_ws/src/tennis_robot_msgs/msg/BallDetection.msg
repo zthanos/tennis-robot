@@ -21,6 +21,8 @@ float32 bbox_height
 # has_spatial is false when the depth image had no valid pixels in the bbox ROI;
 # bearing/distance/position are then left at 0.0 and must be ignored.
 bool has_spatial
+builtin_interfaces/Time matched_depth_stamp
+float64[9] position_covariance  # XYZ, row-major 3x3, m^2, optical frame
 float32 bearing_rad           # robot/navigation convention: + = left / CCW
 float32 distance_m            # range to the ball surface (metres)
 float32 position_x            # optical +X: right (metres)

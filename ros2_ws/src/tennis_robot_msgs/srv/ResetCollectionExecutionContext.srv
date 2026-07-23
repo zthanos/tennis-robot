@@ -1,0 +1,7 @@
+---
+uint8 ACCEPTED=0
+uint8 INVALID_LIFECYCLE=1
+
+bool accepted
+uint8 rejection_code
+string detail

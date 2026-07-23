@@ -9,6 +9,7 @@ def generate_launch_description() -> LaunchDescription:
             executable="perception_node",
             name="perception_node",
             output="screen",
+            additional_env={"PERCEPTION_CALIBRATION_PLATFORM": "oak_d"},
         ),
         Node(
             package="tennis_robot",

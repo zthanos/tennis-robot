@@ -320,4 +320,4 @@ zone_heatmap[]       zone_id, estimated_count, visit_count
 6. Telemetry για όλα τα fields της ενότητας 11.
 7. Smoke test χωρίς Webots (survey → interrupt → resume → heatmap → coverage).
 8. Dashboard fields συμβατά με `docs/mission-dashboard-plan-el.md`.
-9. Collection handoff συμβατό με `docs/collection-state-machine-plan-el.md`.
+9. Historical collection handoff συμβατό με `docs/archive/collection-state-machine-plan-el.md`.

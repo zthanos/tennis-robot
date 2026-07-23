@@ -411,6 +411,20 @@
       gap: 14px;
       min-width: 0;
     }
+    .collection-workspace {
+      align-items: stretch;
+    }
+    .collection-workspace .workspace-side {
+      grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .collection-route-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+    .collection-route-actions .command:first-child {
+      width: 100%;
+    }
     .workspace-title {
       display: flex;
       gap: 12px;
@@ -704,6 +718,9 @@
       .workspace,
       .command-center {
         grid-template-columns: 1fr;
+      }
+      .collection-workspace .workspace-side {
+        grid-template-rows: auto;
       }
     }
     @media (max-width: 900px) {

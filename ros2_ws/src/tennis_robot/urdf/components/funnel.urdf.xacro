@@ -19,31 +19,36 @@
       </inertial>
 
       <xacro:if value="${enable_cheeks}">
-        <!-- Cheeks hand the ball off to the intake wheels' front quadrants:
-             rear tips at ~(0.647, ±0.146), a clear 81 mm from the wheel
-             centres (0.590, ±0.090, r=0.060+carriage travel). The spinning
-             wheel fronts continue the convergence (their front surfaces
-             sweep toward the centreline), so the cheeks only need to bring
-             the ball inside |y| < ~0.14. The old cheeks at x=0.60 would
-             intersect the wheel cylinders (51 mm < 65 mm clearance). -->
+        <!-- Cheeks guide the ball INTO the wheel nip, not just near it.
+             Iteration 2 (sweep-mode observation: exit corridor still let the
+             ball wander before the wheels): front tips unchanged at
+             ~(0.876, ±0.205) (mouth 410 mm), rear tips pulled in AND closer
+             to the wheels — (0.680, ±0.104) → (0.655, ±0.083) — so the exit
+             caps the ball centre at |y| ≤ ~0.045: ball SURFACE stays ≤0.078,
+             inside the wheel centreline (±0.090), touching only the INNER
+             front quadrant which sweeps it into the nip. The old cap (0.066)
+             let the surface reach 0.099 > 0.090 — outer-quadrant contact
+             deflected balls sideways. Rear tips clear the wheel centres
+             (0.590, ±0.090) by 65.4 mm — rule is ≥65 mm (cylinder r=0.060
+             + carriage travel). -->
         <visual name="funnel_left_cheek_vis">
-          <origin xyz="0.76 0.175 0.052" rpy="0 ${pitch} 0.25"/>
-          <geometry><box size="0.24 0.01 0.10"/></geometry>
+          <origin xyz="0.7655 0.144 0.052" rpy="0 ${pitch} 0.504"/>
+          <geometry><box size="0.2524 0.01 0.10"/></geometry>
           <material name="intake_orange"/>
         </visual>
         <collision name="funnel_left_cheek_col">
-          <origin xyz="0.76 0.175 0.052" rpy="0 ${pitch} 0.25"/>
-          <geometry><box size="0.24 0.01 0.10"/></geometry>
+          <origin xyz="0.7655 0.144 0.052" rpy="0 ${pitch} 0.504"/>
+          <geometry><box size="0.2524 0.01 0.10"/></geometry>
         </collision>
 
         <visual name="funnel_right_cheek_vis">
-          <origin xyz="0.76 -0.175 0.052" rpy="0 ${pitch} -0.25"/>
-          <geometry><box size="0.24 0.01 0.10"/></geometry>
+          <origin xyz="0.7655 -0.144 0.052" rpy="0 ${pitch} -0.504"/>
+          <geometry><box size="0.2524 0.01 0.10"/></geometry>
           <material name="intake_orange"/>
         </visual>
         <collision name="funnel_right_cheek_col">
-          <origin xyz="0.76 -0.175 0.052" rpy="0 ${pitch} -0.25"/>
-          <geometry><box size="0.24 0.01 0.10"/></geometry>
+          <origin xyz="0.7655 -0.144 0.052" rpy="0 ${pitch} -0.504"/>
+          <geometry><box size="0.2524 0.01 0.10"/></geometry>
         </collision>
       </xacro:if>
 

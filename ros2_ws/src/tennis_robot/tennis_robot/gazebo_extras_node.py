@@ -8,7 +8,9 @@ Subscribes:
 Publishes:
   /ir/readings       (tennis_robot_msgs/IrReadings)
   /collector/intake_beam_broken (std_msgs/Bool)
-  /sim/balls         (std_msgs/String, JSON list of {name, x, y})
+  /sim/balls         (std_msgs/String, JSON list of {def, x, y, z,
+                      local_x, local_y, local_z} — x/y/z odom-anchored,
+                      local_* true robot-frame for onboard-zone scoring)
   /sim/ball_markers  (visualization_msgs/MarkerArray, base_link frame —
                       ground-truth balls for RViz, incl. z so a ball riding
                       the scoop ramp is visible in the FrontFollow view)
@@ -104,6 +106,9 @@ class GazeboExtrasNode(Node):
             MarkerArray, "/sim/roller_contact_markers", 10
         )
         self._pub_roller_contact = self.create_publisher(Bool, "/sim/roller_contact", 10)
+        # Ground-truth robot pose (world frame, straight from gz pose/info):
+        # lets consumers measure SLAM/odom divergence (collect_route log #10).
+        self._pub_true_pose = self.create_publisher(String, "/sim/robot_true_pose", 1)
         self._robot_pose: tuple[float, float, float, float] | None = None  # x, y, z, yaw
         self._gz_robot_pose: tuple[float, float, float, float] | None = None
         self._contact_points: list[tuple[float, float, float]] = []
@@ -154,10 +159,7 @@ class GazeboExtrasNode(Node):
                 continue
             if self._robot_pose is None or self._gz_robot_pose is None:
                 continue
-            x, y, z = self._gz_point_to_odom((t.x, t.y, t.z))
-            self._balls[leaf] = {
-                "def": leaf, "x": round(x, 4), "y": round(y, 4), "z": round(z, 4)
-            }
+            self._balls[leaf] = self._ball_entry(leaf, (t.x, t.y, t.z))
 
     def _start_gz_pose_reader(self) -> None:
         """Read Gazebo pose/info directly because the ROS bridge drops names."""
@@ -224,41 +226,75 @@ class GazeboExtrasNode(Node):
             ball_poses.append((leaf, position))
 
         for leaf, position in ball_poses:
-            x = float(position.get("x", 0.0))
-            y = float(position.get("y", 0.0))
-            z = float(position.get("z", 0.0))
+            point = (
+                float(position.get("x", 0.0)),
+                float(position.get("y", 0.0)),
+                float(position.get("z", 0.0)),
+            )
             if self._robot_pose is not None and self._gz_robot_pose is not None:
-                x, y, z = self._gz_point_to_odom((x, y, z))
-            self._balls[leaf] = {
-                "def": leaf,
-                "x": round(x, 4),
-                "y": round(y, 4),
-                "z": round(z, 4),
-            }
+                self._balls[leaf] = self._ball_entry(leaf, point)
+            else:
+                self._balls[leaf] = {
+                    "def": leaf,
+                    "x": round(point[0], 4),
+                    "y": round(point[1], 4),
+                    "z": round(point[2], 4),
+                }
+
+    def _gz_point_to_local(
+        self, point: tuple[float, float, float]
+    ) -> tuple[float, float, float]:
+        """True robot-frame coordinates: ball and robot pose come from the
+        same Gazebo snapshot, so this vector is exact regardless of any
+        odom/map drift downstream."""
+        assert self._gz_robot_pose is not None
+        gx, gy, gz = point
+        grx, gry, grz, gryaw = self._gz_robot_pose
+        dgx = gx - grx
+        dgy = gy - gry
+        cos_g = math.cos(-gryaw)
+        sin_g = math.sin(-gryaw)
+        return (
+            cos_g * dgx - sin_g * dgy,
+            sin_g * dgx + cos_g * dgy,
+            gz - grz,
+        )
 
     def _gz_point_to_odom(
         self, point: tuple[float, float, float]
     ) -> tuple[float, float, float]:
         assert self._robot_pose is not None
-        assert self._gz_robot_pose is not None
-        gx, gy, gz = point
-        grx, gry, grz, gryaw = self._gz_robot_pose
+        local_x, local_y, local_z = self._gz_point_to_local(point)
         orx, ory, orz, oryaw = self._robot_pose
-
-        dgx = gx - grx
-        dgy = gy - gry
-        cos_g = math.cos(-gryaw)
-        sin_g = math.sin(-gryaw)
-        local_x = cos_g * dgx - sin_g * dgy
-        local_y = sin_g * dgx + cos_g * dgy
-
         cos_o = math.cos(oryaw)
         sin_o = math.sin(oryaw)
         return (
             orx + cos_o * local_x - sin_o * local_y,
             ory + sin_o * local_x + cos_o * local_y,
-            orz + (gz - grz),
+            orz + local_z,
         )
+
+    def _ball_entry(self, leaf: str, world_point: tuple[float, float, float]) -> dict:
+        x, y, z = self._gz_point_to_odom(world_point)
+        lx, ly, lz = self._gz_point_to_local(world_point)
+        wx, wy, wz = world_point
+        return {
+            "def": leaf,
+            "x": round(x, 4),
+            "y": round(y, 4),
+            "z": round(z, 4),
+            # Onboard-zone scoring must use these robot-frame values: x/y
+            # above are odom-anchored and drift away from the controller's
+            # map-frame pose (run 8 lost three basket credits to that gap).
+            "local_x": round(lx, 4),
+            "local_y": round(ly, 4),
+            "local_z": round(lz, 4),
+            # C2 calibration diagnostics: Gazebo world pose, separate from
+            # the odom-anchored operational fields above.
+            "world_x": round(wx, 4),
+            "world_y": round(wy, 4),
+            "world_z": round(wz, 4),
+        }
 
     def destroy_node(self) -> bool:
         if self._gz_pose_proc is not None:
@@ -304,6 +340,15 @@ class GazeboExtrasNode(Node):
         ir_msg.left = self._ir_left
         ir_msg.right = self._ir_right
         self._pub_ir.publish(ir_msg)
+        if self._gz_robot_pose is not None:
+            gx, gy, gzz, gyaw = self._gz_robot_pose
+            self._pub_true_pose.publish(
+                String(
+                    data=json.dumps(
+                        {"x": round(gx, 3), "y": round(gy, 3), "z": round(gzz, 3), "yaw": round(gyaw, 4)}
+                    )
+                )
+            )
         self._pub_intake_beam.publish(
             Bool(
                 data=(

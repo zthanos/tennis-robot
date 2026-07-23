@@ -58,3 +58,62 @@ def test_staleness_marks_not_visible():
     b1 = next(b for b in out if b["id"] == 1)
     assert b1["confirmed"] is True
     assert b1["visible_candidate"] is False
+
+
+def test_planned_order_populates_route_fields():
+    out = _seed().to_console_balls(-6.0, now=100.0, planned_order={1: 2, 4: 1})
+    by_id = {b["id"]: b for b in out}
+    assert by_id[1]["planned"] is True and by_id[1]["order"] == 2
+    assert by_id[4]["planned"] is True and by_id[4]["order"] == 1
+    assert by_id[2]["planned"] is False and by_id[2]["order"] is None
+
+
+def test_create_distance_override_allows_far_scan_entries():
+    from tennis_robot.collector import BallObservationInput
+
+    def far_obs():
+        return BallObservationInput(
+            visible=True, distance_m=8.0, confidence=0.8, source="oak_ai_depth",
+            world_x_m=-8.0, world_y_m=1.0,
+        )
+
+    m = BallMap(BallMapConfig())
+    ball_id, is_new = m.update(far_obs(), now=100.0)
+    assert ball_id is None  # default 3 m create gate rejects an 8 m sighting
+
+    m.max_create_distance_override_m = 9.0
+    ball_id, is_new = m.update(far_obs(), now=100.0)
+    assert ball_id is not None and is_new
+
+    m.max_create_distance_override_m = None
+    ball_id, is_new = m.update(
+        BallObservationInput(
+            visible=True, distance_m=8.0, confidence=0.8, source="oak_ai_depth",
+            world_x_m=-2.0, world_y_m=-4.0,
+        ),
+        now=100.0,
+    )
+    assert ball_id is None  # gate restored after the scan
+
+
+def test_terminal_failed_ball_is_not_resurrected_by_update():
+    from tennis_robot.collector import BallObservationInput
+
+    m = BallMap(BallMapConfig())
+    m.balls[1] = MappedBall(
+        1, 2.0, 0.0, 0.9, 0.0, 100.0, "oak_depth", seen_count=6, state="collection_failed"
+    )
+    ball_id, is_new = m.update(
+        BallObservationInput(
+            visible=True,
+            distance_m=1.0,
+            confidence=0.9,
+            source="oak_ai_depth",
+            world_x_m=2.1,
+            world_y_m=0.05,
+        ),
+        now=101.0,
+    )
+    assert (ball_id, is_new) == (1, False)
+    assert m.balls[1].state == "collection_failed"
+    assert len(m.balls) == 1

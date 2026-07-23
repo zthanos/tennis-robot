@@ -1748,6 +1748,67 @@
 - Εκκρεμότητες CAD: λεπτομέρεια στήριξης hood (transverse bar vs funnel
   frame), IR beam vs mesh alignment, plywood-cut-list αναθεώρηση.
 
+### 58. collect_route: 360° scan → route plan → Nav2 legs (κώδικας, unit-tested)
+
+- **Στόχος** (issue #10): γρήγορο μάζεμα όλων των μπαλών του μισού γηπέδου
+  πάνω στον working μηχανισμό. Σχεδίαση στο νέο
+  `docs/archive/collection-route-plan-el.md`.
+- **Υπόθεση**: 360° scan (create gate 3→9 m στο BallMap) + greedy NN/2-opt
+  ordering + Nav2 legs + ο υπάρχων P-controller για το τελικό capture
+  αρκούν· μπάλες κοντά σε φράχτη/φιλέ θέλουν πλάγιο approach heading ώστε
+  το funnel corridor (±0.17 m) να μένει καθαρό.
+- **Υλοποίηση**: `collection_route_planner.py` (planner library: CourtModel
+  από court_boundary.json v2, order_route, cheapest_insertion,
+  approach_pose_for_ball direct/lateral), `collect_route_mission.py` (FSM
+  scan→plan→nav→approach→settle, insertion, fail-loud στο Nav2),
+  controller wiring (mode `collect_route`, multi-ball frame feed στο scan,
+  route/order/metrics στο Collection Map payload), κουμπί «Collect Route».
+  Ο Nav2LaneNavigator κατασκευάζεται πλέον όποτε τα deps υπάρχουν (το
+  lawnmower path συνεχίζει να τιμά το COLLECTION_USE_NAV2).
+- **Αποτέλεσμα**: 35 νέα unit tests πράσινα (planner 16, mission 14,
+  ball_map export 5)· πλήρης σουίτα 84 passed (το test_console_app
+  collection error προϋπάρχει στο main, περνάει standalone).
+- **Status**: κώδικας ΟΚ offline· **εκκρεμεί sim επαλήθευση** κατά τα
+  βήματα του §8 στο archive/collection-route-plan-el.md (Nav2 stack up, lateral
+  κοντά σε φράχτη/φιλέ, insertion mid-route, route overlay στο console).
+- **➡️ Συνέχεια ΕΚΤΟΣ αυτού του log**: ο αλγόριθμος μαζέματος έχει πλέον
+  δικό του τεκμηριωμένο log — `docs/archive/collection-route-debug-log-el.md`
+  (εγγραφή #1 = αυτή η υλοποίηση, με τα ευρήματα αναλυτικά). Το παρόν log
+  μένει για ό,τι αφορά τον ΜΗΧΑΝΙΣΜΟ intake (γεωμετρία, roller, basket).
+
+### 59. Funnel cheeks: στένεμα εξόδου ώστε η παράδοση να μπαίνει στο validated envelope (⏳ bench)
+
+- **Πρόβλημα** (από τα collect_route runs 2-3, βλ.
+  archive/collection-route-debug-log-el.md #3, παρατήρηση χρήστη): το funnel δεν
+  οδηγεί την μπάλα ΑΝΑΜΕΣΑ στους τροχούς — είναι πιο ανοιχτό. Τα παλιά
+  cheeks τελείωναν στο (0.647, ±0.146) → η μπάλα έβγαινε με κέντρο έως
+  |y|=0.108, ενώ το bench-validated capture envelope είναι ±0.08. Στο
+  0.10-0.15 offset η μπάλα συναντά το ΕΞΩΤΕΡΙΚΟ μπροστινό τεταρτημόριο
+  του τροχού (επιφάνεια που σαρώνει προς τα έξω) → εκτρέπεται πλάγια·
+  υπήρχε και διάδρομος διαφυγής y 0.15-0.20 ανάμεσα σε cheek tip και
+  εξωτερική παρειά τροχού. Αποτέλεσμα στα runs: λοξά launches που
+  παρκάρουν μπάλες στο deck δίπλα στο bin.
+- **Αλλαγή** (`funnel.urdf.xacro`, ίδιο μπροστινό άνοιγμα): cheek boxes
+  0.2205×0.01×0.10 στο (0.778, ±0.1545) yaw ±0.476 rad → front tips
+  αμετάβλητα (0.876, ±0.205), rear tips (0.680, ±0.104). Ball-centre exit
+  cap = 0.104−0.005−0.033 = **±0.066** ✓ εντός ±0.08. Rear tip σε 91 mm
+  από κέντρο τροχού (κανόνας ≥65 mm — τα παλιά x=0.60 cheeks ήταν 51 mm).
+  Επαληθεύτηκε αριθμητικά + offline URDF/SDF generation· το friction
+  patch του generator πιάνει με name substring "cheek_col" — αμετάβλητο.
+- **Bench validation (2026-07-15, runs σε
+  `runtime/intake_sweeps/cheek_v2_lateral_{1x,5x_gate*}`)**:
+  - 1x envelope sweep 0.0/0.08/0.10/0.12/0.14 → **όλα 6/6 required**.
+  - 5x repeatability gate: **0.12 → 5/5 με 6/6, 0.14 → 5/5 με 6/6** (ένα
+    run κατέρρευσε στο startup — «controllers did not become active»,
+    γνωστό bringup flake, ΟΧΙ αποτυχία capture· ξανατρέχτηκε καθαρά).
+  - Το validated lateral envelope διπλασιάστηκε: ±0.08 → **±0.14**, που
+    καλύπτει το χειρότερο μετρημένο σφάλμα προσέγγισης των collect_route
+    runs (~0.15 πριν το adoption-gate fix του collection log #7).
+- **Status**: ✅ VALIDATED στο bench· ⏳ live επιβεβαίωση στο επόμενο
+  collect_route run (τελικό /sim/balls state για bin/deck — τα
+  `sim_collection_credit` πυροδοτούνται συχνά στη διέλευση ράμπας, βλ.
+  collection log #7 σημείωση telemetry).
+
 ## Σημαντικά reference numbers (μη τα ξαναϋπολογίζεις)
 - Roller/channel effective world position (τρέχοντα defaults
   `INTAKE_ROLLER_X_OFFSET_M=0.015`, `INTAKE_ROLLER_Z_OFFSET_M=-0.005`):
@@ -1756,3 +1817,22 @@
   `rpy="0 -0.51 0"` → base_footprint pose `0.45 0 0.015 0 -0.51 0`.
 - Target-direction unit vector (camera pos → roller target):
   `dx=0.165, dz=0.092 → normalized (0.8736, 0, 0.4870)`.
+
+### 60. Funnel iteration 2: στένεμα + πλησίασμα των cheeks στους τροχούς (sweep mode)
+
+- **Παρατήρηση (χρήστης, run 14 / sweep mode)**: το funnel δεν είναι αρκετά
+  στενό προς τους τροχούς και δεν οδηγεί σωστά τη μπάλα προς τα μέσα· μπορεί
+  να έρθει πιο κοντά στους τροχούς.
+- **Ανάλυση**: πίσω άκρα cheeks στο (0.680, ±0.104) → cap κέντρου μπάλας
+  |y| ≤ 0.066 → η ΕΠΙΦΑΝΕΙΑ της μπάλας φτάνει 0.099, ΕΞΩ από την κεντρική
+  γραμμή τροχού (±0.090): επαφή με το έξω τεταρτημόριο = πλάγια εκτροπή
+  (ίδιος μηχανισμός με το #59 αλλά στο νέο, ευρύτερο πλευρικό envelope των
+  sweep διελεύσεων). Συν 90 mm αφύλαχτη διαδρομή έως τους τροχούς.
+- **Αλλαγή (funnel.urdf.xacro)**: πίσω άκρα (0.680, ±0.104) → (0.655,
+  ±0.083)· στόμιο αμετάβλητο (0.876, ±0.205). Νέο box: 0.2524×0.01×0.10,
+  origin (0.7655, ±0.144), yaw ±0.504. Νέο cap κέντρου: |y| ≤ 0.045 →
+  επιφάνεια ≤ 0.078 < 0.090 → επαφή ΜΟΝΟ με το έσω τεταρτημόριο (σαρώνει
+  προς το nip). Απόσταση άκρου από κέντρο τροχού 65.4 mm (κανόνας ≥65 mm,
+  r=0.060 + carriage travel — οριακά εντός).
+- **Status**: ✅ γεωμετρία· ⏳ επαλήθευση σε sweep run (πλάγιες διελεύσεις
+  με offset ±0.10-0.15 πρέπει πλέον να κεντράρονται αντί να εκτρέπονται).

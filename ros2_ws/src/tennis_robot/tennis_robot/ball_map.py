@@ -82,6 +82,10 @@ class BallMap:
         self.balls: dict[int, MappedBall] = {}
         self._next_id = 1
         self._seeded_signature: tuple[tuple[float, float], ...] = ()
+        # Temporary widening of the create gate (e.g. the collect_route 360°
+        # scan registers balls out to camera range instead of 3 m). None uses
+        # config.max_create_distance_m.
+        self.max_create_distance_override_m: float | None = None
 
     def __len__(self) -> int:
         return len(self.balls)
@@ -96,7 +100,13 @@ class BallMap:
         self._next_id = 1
         self._seeded_signature = ()
 
-    def update(self, observation: BallObservationInput, now: float) -> tuple[int | None, bool]:
+    def update(
+        self,
+        observation: BallObservationInput,
+        now: float,
+        *,
+        allow_create: bool = True,
+    ) -> tuple[int | None, bool]:
         """Merge observation into the map.
 
         Returns (ball_id, is_new).  is_new=True means a new entry was created.
@@ -111,19 +121,29 @@ class BallMap:
         ):
             return None, False
 
+        # Terminal entries (collected/collection_failed) absorb re-detections of
+        # the same spot, but only when they are the NEAREST match: a closer live
+        # entry must keep receiving its observations, or a terminal ghost within
+        # merge_dist (0.65-1.6 m) starves every neighbouring active ball.
         merge_dist = self._merge_distance(observation)
         best_id: int | None = None
         best_dist = merge_dist
+        best_terminal = False
         for ball_id, ball in self.balls.items():
-            if ball.state == "collected":
-                continue
             dist = math.hypot(ball.x_m - observation.world_x_m, ball.y_m - observation.world_y_m)
             if dist < best_dist:
                 best_id = ball_id
                 best_dist = dist
+                best_terminal = ball.state in {"collected", "collection_failed"}
+
+        if best_terminal and best_id is not None:
+            return best_id, False
 
         if best_id is None:
-            if observation.distance_m > cfg.max_create_distance_m:
+            if not allow_create:
+                return None, False
+            max_create_m = self.max_create_distance_override_m or cfg.max_create_distance_m
+            if observation.distance_m > max_create_m:
                 return None, False
             ball_id = self._next_id
             self._next_id += 1
@@ -181,6 +201,7 @@ class BallMap:
         active_target_id: int | None = None,
         now: float | None = None,
         include_collected: bool = False,
+        planned_order: dict[int, int] | None = None,
     ) -> list[dict[str, Any]]:
         """Export recognized balls in the shape the Collection Map renderer expects.
 
@@ -215,8 +236,9 @@ class BallMap:
                 "side": side,
                 "confirmed": confirmed,
                 "visible_candidate": confirmed and fresh,
-                "planned": ball.id == active_target_id,
-                "order": None,
+                "planned": ball.id == active_target_id
+                or ball.id in (planned_order or {}),
+                "order": (planned_order or {}).get(ball.id),
             })
         return out
 

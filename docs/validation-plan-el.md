@@ -129,7 +129,7 @@ Resume Plan Or Rescan
 4. Add matrix-based side scan for the selected collection side.
 5. Connect camera detections to matrix cells and planned targets.
 6. Add path validation before committing to a planned target.
-7. Add final approach and collection behavior following `docs/collection-state-machine-plan-el.md`.
+7. Follow the active continuous-route behavior in `docs/collection-route-rules-el.md`.
 8. Add simulated collection event.
 9. Add structured telemetry logs for Court Knowledge Model status, matrix scan, planning decisions and failures.
 10. Add repeatable smoke/regression scenarios.

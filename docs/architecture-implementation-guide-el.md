@@ -19,7 +19,7 @@ documents και όχι από την τρέχουσα μορφή του Webots 
 
 - `docs/validation-plan-el.md`
 - `docs/court-knowledge-model-specification.md`
-- `docs/collection-state-machine-plan-el.md`
+- `docs/archive/collection-state-machine-plan-el.md` (ιστορικό, μη ενεργό)
 - `docs/mission-dashboard-plan-el.md`
 - `docs/concept-a-funnel-lift-wheel-plan.md`
 - `docs/prototype-purchase-list-el.md`
@@ -210,7 +210,8 @@ SUCCESS
 RESUME_SEARCH
 ```
 
-Source: `docs/collection-state-machine-plan-el.md`
+Historical source: `docs/archive/collection-state-machine-plan-el.md`.
+For the active `collect_route` behavior use `docs/collection-route-rules-el.md`.
 
 ### Mission Dashboard
 

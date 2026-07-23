@@ -1,3 +1,8 @@
+# ΑΡΧΕΙΟ — μη ενεργό half-court scan route overview
+
+> Δεν χρησιμοποιείται ως specification ή οδηγός υλοποίησης για `collect_route`.
+> Το ενεργό specification είναι το [Ενεργός οδηγός συνεχούς διαδρομής](../collection-route-rules-el.md).
+
 # Half-Court Scan And Route Overview
 
 Last checked: 2026-05-27

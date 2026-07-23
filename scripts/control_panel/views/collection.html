@@ -18,63 +18,37 @@
           <div class="workspace-side">
             <div class="panel">
               <h3>Controls</h3>
-              <div class="mission-actions">
-                <button class="command" type="button" data-command-mode="collect_one">Collect One</button>
-                <button class="command" type="button" data-command-mode="collect">Collect</button>
+              <div class="collection-route-actions">
+                <button class="command" type="button" data-command-mode="collect_route">Collect Route</button>
                 <button class="command" type="button" data-command-mode="idle" value="idle">Stop</button>
               </div>
-              <h4 style="margin:18px 0 8px;">Collector manual test</h4>
-              <div class="mission-actions">
-                <button id="collectorStart" class="command" type="button">Start</button>
-                <button id="collectorStop" class="secondary-action" type="button">Stop</button>
-                <button id="collectorSpeedDown" class="secondary-action" type="button">Speed −</button>
-                <button id="collectorSpeedUp" class="secondary-action" type="button">Speed +</button>
-              </div>
-              <div id="collectorManualStatus" class="workspace-note">stopped · commanded PWM —/255</div>
-              <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
-                <div id="collectorSpeedBar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 0.15s;"></div>
-              </div>
             </div>
             <div class="panel">
-              <h3>Nav Test <span id="navTestStatus">idle</span></h3>
-              <div class="nav-test-grid">
-                <label>X m<input id="navGoalX" type="number" step="0.05" inputmode="decimal"></label>
-                <label>Y m<input id="navGoalY" type="number" step="0.05" inputmode="decimal"></label>
-                <label>Yaw rad<input id="navGoalYaw" type="number" step="0.05" inputmode="decimal"></label>
-              </div>
-              <div class="mission-actions nav-test-actions">
-                <button id="navUseCurrent" class="secondary-action" type="button">Use Current</button>
-                <button id="navForwardSmall" class="secondary-action" type="button">Forward 0.5m</button>
-                <button id="navSendGoal" class="command" type="button">Send Pose</button>
-                <button id="navCancelGoal" class="secondary-action" type="button">Cancel</button>
-              </div>
-              <div id="navTestOutput" class="workspace-note nav-test-output"></div>
+              <h3>Collection Run <span id="collectionRunStatus">waiting</span></h3>
+              <div id="collectionRunKv" class="kv"></div>
             </div>
             <div class="panel">
-              <h3>Collection Truth <span id="collectionTruthStatus">waiting</span></h3>
-              <div id="collectionTruthKv" class="kv"></div>
-            </div>
-            <div class="panel">
-              <h3>IR Intake Sensors <span id="collIrStatus">waiting</span></h3>
-              <p class="workspace-note" style="margin:0 0 12px;">Collection gate fires when either sensor exceeds threshold. 1000 = ball in intake, 0 = clear.</p>
+              <h3>Basket Entry Beams <span id="collIrStatus">waiting</span></h3>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div id="collIrLeftPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">LEFT</div>
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">LEFT BEAM</div>
                   <div id="collIrLeftValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">-</div>
+                  <div id="collIrLeftLast" style="margin-top:4px;font-size:12px;color:var(--muted);">No crossing seen</div>
                   <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
                     <div id="collIrLeftBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
                   </div>
                 </div>
                 <div id="collIrRightPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">RIGHT</div>
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">RIGHT BEAM</div>
                   <div id="collIrRightValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">-</div>
+                  <div id="collIrRightLast" style="margin-top:4px;font-size:12px;color:var(--muted);">No crossing seen</div>
                   <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
                     <div id="collIrRightBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
                   </div>
                 </div>
               </div>
               <div id="collIrBadge" style="margin-top:12px;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;text-align:center;background:rgba(255,255,255,0.04);color:var(--muted);">
-                TRIGGERED: -
+                WAITING FOR SIGNAL
               </div>
             </div>
           </div>

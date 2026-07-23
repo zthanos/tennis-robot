@@ -64,7 +64,10 @@
     <xacro:property name="receiver_centre_x" value="${receiver_top_mid_x - sin(receiver_pitch) * floor_thickness / 2.0}"/>
     <xacro:property name="receiver_centre_z" value="${receiver_top_mid_z - cos(receiver_pitch) * floor_thickness / 2.0}"/>
     <xacro:property name="receiver_half_width" value="${entry_half_width}"/>
-    <xacro:property name="confirmation_beam_z" value="${receiver_top_mid_z + 0.033}"/>
+    <xacro:property name="confirmation_beam_x" value="${management_top_mid_x}"/>
+    <!-- Matches basket_ir_z in tennis_robot.urdf.xacro: above court-ball top
+         (0.066) so the beam cannot see ground balls through the mesh. -->
+    <xacro:property name="confirmation_beam_z" value="${management_top_mid_z + 0.045}"/>
     <!-- Optional mesh entry tunnel. Its roof rises toward the wheels, so balls
          from upper basket layers roll rearward instead of spilling into the
          intake. The clear corridor below remains larger than one ball. -->
@@ -261,12 +264,12 @@
         </visual>
       </xacro:if>
 
-      <xacro:if value="${receiver_run > 0.0}">
+      <xacro:if value="${management_run > 0.0}">
         <!-- Sensor bodies remain on the chassis. This line only visualises the
              transverse confirmation beam through the removable mesh. -->
         <visual name="basket_ir_beam_line_vis">
-          <origin xyz="${receiver_top_mid_x} 0 ${confirmation_beam_z}" rpy="1.5708 0 0"/>
-          <geometry><cylinder radius="0.003" length="${2.0 * receiver_half_width + 0.03}"/></geometry>
+          <origin xyz="${confirmation_beam_x} 0 ${confirmation_beam_z}" rpy="1.5708 0 0"/>
+          <geometry><cylinder radius="0.003" length="${2.0 * half_width + 0.03}"/></geometry>
           <material name="ir_beam_red"/>
         </visual>
       </xacro:if>

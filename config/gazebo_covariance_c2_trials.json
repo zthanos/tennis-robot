@@ -1,0 +1,20 @@
+{
+  "schema_version": "gazebo-covariance-trials/v1",
+  "ground_truth_reference": "/sim/balls:ball_02",
+  "minimum_accepted_samples_per_bin": 30,
+  "maximum_outlier_rate": 0.35,
+  "association_gate_m": 0.20,
+  "association_ambiguity_margin_m": 0.01,
+  "target_residual_outlier_threshold_m": 0.10,
+  "trials": [
+    {"id": "r0_q90", "ball_id": "ball_02", "robot_pose": {"x_m": -7.85, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "0.75-1.25", "quality_bin": "0.85-0.95", "missing_pixel_ratio": 0.10, "mask_seed": 101},
+    {"id": "r0_q98", "ball_id": "ball_02", "robot_pose": {"x_m": -7.85, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "0.75-1.25", "quality_bin": "0.95-1.00", "missing_pixel_ratio": 0.02, "mask_seed": 102},
+    {"id": "r0_q100", "ball_id": "ball_02", "robot_pose": {"x_m": -7.85, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "0.75-1.25", "quality_bin": "1.00-1.00", "missing_pixel_ratio": 0.0, "mask_seed": 0},
+    {"id": "r1_q90", "ball_id": "ball_02", "robot_pose": {"x_m": -8.46, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "1.25-2.00", "quality_bin": "0.85-0.95", "missing_pixel_ratio": 0.10, "mask_seed": 201},
+    {"id": "r1_q98", "ball_id": "ball_02", "robot_pose": {"x_m": -8.46, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "1.25-2.00", "quality_bin": "0.95-1.00", "missing_pixel_ratio": 0.02, "mask_seed": 202},
+    {"id": "r1_q100", "ball_id": "ball_02", "robot_pose": {"x_m": -8.46, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "1.25-2.00", "quality_bin": "1.00-1.00", "missing_pixel_ratio": 0.0, "mask_seed": 0},
+    {"id": "r2_q90", "ball_id": "ball_02", "robot_pose": {"x_m": -9.88, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "2.00-3.00", "quality_bin": "0.85-0.95", "missing_pixel_ratio": 0.10, "mask_seed": 301},
+    {"id": "r2_q98", "ball_id": "ball_02", "robot_pose": {"x_m": -9.88, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "2.00-3.00", "quality_bin": "0.95-1.00", "missing_pixel_ratio": 0.02, "mask_seed": 302},
+    {"id": "r2_q100", "ball_id": "ball_02", "robot_pose": {"x_m": -9.88, "y_m": 0.0, "yaw_rad": 0.0}, "range_bin": "2.00-3.00", "quality_bin": "1.00-1.00", "missing_pixel_ratio": 0.0, "mask_seed": 0}
+  ]
+}

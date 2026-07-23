@@ -1,3 +1,9 @@
+# ΑΡΧΕΙΟ — παλαιό state-machine σχέδιο συλλογής
+
+> Δεν χρησιμοποιείται ως specification ή οδηγός υλοποίησης για `collect_route`.
+> Περιγράφει το παλαιό per-ball flow. Το ενεργό specification είναι το
+> [Ενεργός οδηγός συνεχούς διαδρομής](../collection-route-rules-el.md).
+
 # Tennis Robot Collection State Machine Plan
 
 Αυτό το έγγραφο ορίζει το behavior plan για τη συλλογή μίας μπάλας αφού το
