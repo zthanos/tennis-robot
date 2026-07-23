@@ -52,6 +52,34 @@ compose). Άρα το deployment είναι στην ουσία **migration Humb
 Jazzy · pure pytest 321 · **sim launch native Jazzy** (Gazebo Harmonic + Nav2 +
 nodes) · ένα collect_route run end-to-end στο PC χωρίς container.
 
+### WS1 status (2026-07-23) — σχεδόν κλειστό, ΚΑΜΙΑ αλλαγή στο plugin
+
+Validated native Jazzy στο PC:
+- **Build καθαρό** (3 πακέτα)· το C++ `CollectionFollowPath` plugin compile-άρει στο
+  Jazzy Nav2 API **χωρίς κώδικα**.
+- **Tests:** tracking_core gtests 9/9 (incl. #30), path_canon/plugin/runtime 13/13,
+  pure pytest 321.
+- **Native sim launch** (headless): Gazebo Harmonic (gz 8.11) + ros_gz bridge + και
+  τα 15 nodes σηκώνονται· gz_ros2_control φορτώνει (`controller_manager` up,
+  `Received robot description`).
+
+Διορθώσεις (branch `feat/pi-deployment`):
+1. **Build recipe:** οι ROS builds πρέπει να χρησιμοποιούν το **system Python**
+   (`/usr/bin`), όχι το uv-managed (`~/.local/bin/python3.12`) που shadow-άρει το PATH
+   (μόνο το system έχει `empy`/`lark`+ROS modules). Θα μπει σε native build script.
+2. **Jazzy Nav2 goal_checker:** το Jazzy απαιτεί non-empty `goal_checker_id` στο
+   FollowPath goal (Humble το δεχόταν κενό). Runtime ήδη OK· διορθώθηκε το isolated
+   launch test.
+3. **gz_ros2_control plugin path:** το DEB είναι στο `/opt/ros/jazzy/lib`· το
+   `sim.launch.py` έδειχνε container path — τώρα καλύπτει και τα δύο via
+   `AMENT_PREFIX_PATH`.
+4. **Python runtime deps (pip):** `duckdb` (control panel) + `onnxruntime` (perception)
+   — ήταν baked στο Humble container· χρειάζονται explicit install (και για το Pi/WS2).
+
+Ανοιχτό (minor): 1 survey-**RPP** integration test failure (γενικός Nav2 controller,
+όχι το δικό μας plugin) — status 6 αντί 4· θέλει έναν έλεγχο. Εναπομείναν πλήρες gate:
+collect_route run native Jazzy end-to-end.
+
 ---
 
 ## WS2 — Pi bring-up (aarch64)

@@ -209,7 +209,7 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         self.set_pose(4.0)
         path = self.route(); load = LoadCollectionExecutionContext.Request(); load.context = self.context(path)
         self.assertTrue(self.call(self.load, load).accepted)
-        goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'
+        goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'; goal.goal_checker_id = 'collection_goal_checker'
         sent = self.send_goal(goal)
         result = sent.get_result_async(); rclpy.spin_until_future_complete(self.node, result, timeout_sec=10.0)
         self.assertEqual(result.result().status, 4)  # action succeeded at terminal pose
@@ -219,7 +219,7 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
 
     def test_missing_context_and_hash_mismatch_do_not_fallback_to_rpp(self):
         self.set_pose(4.0)
-        path = self.route(); goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'
+        path = self.route(); goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'; goal.goal_checker_id = 'collection_goal_checker'
         sent = self.send_goal(goal)
         result = sent.get_result_async(); rclpy.spin_until_future_complete(self.node, result, timeout_sec=10.0)
         self.assertNotEqual(result.result().status, 4)
@@ -228,7 +228,7 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         self.set_pose_and_wait(0.0); self.cmd.clear(); self.states.clear()
         path = self.route(); load = LoadCollectionExecutionContext.Request(); load.context = self.context(path)
         self.assertTrue(self.call(self.load, load).accepted)
-        goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'
+        goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'; goal.goal_checker_id = 'collection_goal_checker'
         sent = self.send_goal(goal); self.spin()
         self.wait_for_state(CollectionControllerState.EXECUTING, digest=path_hash(path))
         hold = SetCollectionSafetyHold.Request(); hold.plan_id = 'c3-plan'; hold.path_sha256 = path_hash(path); hold.hold = True
@@ -244,14 +244,14 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         self.set_pose_and_wait(0.0); self.cmd.clear()
         path = self.route(); load = LoadCollectionExecutionContext.Request(); load.context = self.context(path)
         self.assertTrue(self.call(self.load, load).accepted)
-        collection = FollowPath.Goal(); collection.path = path; collection.controller_id = 'CollectionFollowPath'
+        collection = FollowPath.Goal(); collection.path = path; collection.controller_id = 'CollectionFollowPath'; collection.goal_checker_id = 'collection_goal_checker'
         sent = self.send_goal(collection); self.spin()
         self.assertTrue(self.cmd)
         self.assertTrue(all(command.linear.x >= 0.0 for command in self.cmd))
         self.assertTrue(all(not (command.linear.x == 0.0 and command.angular.z != 0.0) for command in self.cmd))
         self.cleanup_collection_goal(self.goal_registry[-1])
         self.set_pose_and_wait(4.0)
-        survey = FollowPath.Goal(); survey.path = path; survey.controller_id = 'FollowPath'
+        survey = FollowPath.Goal(); survey.path = path; survey.controller_id = 'FollowPath'; survey.goal_checker_id = 'general_goal_checker'
         sent = self.send_goal(survey)
         result = sent.get_result_async(); rclpy.spin_until_future_complete(self.node, result, timeout_sec=10.0)
         self.assertEqual(result.result().status, 4)

@@ -117,8 +117,20 @@ def generate_launch_description():
     # Tell Gazebo where the gz_ros2_control system plugin lives. Sourcing the
     # workspace does NOT reliably set this, so Gazebo fails to load the plugin
     # ("Could not find shared library") and exits before controllers can spawn.
-    _gz_plugin_path = f"{ROS2_INSTALL}/gz_ros2_control/lib:" + os.environ.get(
-        "GZ_SIM_SYSTEM_PLUGIN_PATH", ""
+    # Cover both layouts: the container/source build puts the plugin under
+    # {ROS2_INSTALL}/gz_ros2_control/lib; a native Jazzy apt install ships
+    # libgz_ros2_control-system.so in each ROS prefix's lib/ (AMENT_PREFIX_PATH).
+    _ament_lib_dirs = [
+        f"{prefix}/lib"
+        for prefix in os.environ.get("AMENT_PREFIX_PATH", "").split(":")
+        if prefix
+    ]
+    _gz_plugin_path = ":".join(
+        filter(
+            None,
+            [f"{ROS2_INSTALL}/gz_ros2_control/lib", *_ament_lib_dirs,
+             os.environ.get("GZ_SIM_SYSTEM_PLUGIN_PATH", "")],
+        )
     )
     _gz_resource_path = ":".join(
         filter(
