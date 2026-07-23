@@ -16,9 +16,9 @@ bt_navigator:
     default_server_timeout: 20
     navigators: ["navigate_to_pose", "navigate_through_poses"]
     navigate_to_pose:
-      plugin: "nav2_bt_navigator/NavigateToPoseNavigator"
+      plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
     navigate_through_poses:
-      plugin: "nav2_bt_navigator/NavigateThroughPosesNavigator"
+      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
 
 controller_server:
   ros__parameters:
@@ -203,7 +203,7 @@ planner_server:
       # SLAM costmaps.  NavFn Dijkstra produces "Failed to create a plan from
       # potential" errors when the gradient field can't be extracted — Smac avoids
       # this by using a proper A* search with a valid path guarantee.
-      plugin: "nav2_smac_planner/SmacPlanner2D"
+      plugin: "nav2_smac_planner::SmacPlanner2D"
       tolerance: 0.5
       allow_unknown: true
       max_iterations: 1000000
@@ -226,13 +226,13 @@ behavior_server:
     transform_tolerance: 0.2
     behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
     spin:
-      plugin: "nav2_behaviors/Spin"
+      plugin: "nav2_behaviors::Spin"
     backup:
-      plugin: "nav2_behaviors/BackUp"
+      plugin: "nav2_behaviors::BackUp"
     drive_on_heading:
-      plugin: "nav2_behaviors/DriveOnHeading"
+      plugin: "nav2_behaviors::DriveOnHeading"
     wait:
-      plugin: "nav2_behaviors/Wait"
+      plugin: "nav2_behaviors::Wait"
     simulate_ahead_time: 2.0
     # Slow spin: less wheel slip → odom more accurate → SLAM drift reduced.
     # At 0.25 rad/s, 90° takes ~6s (Spin behavior does closed-loop with odom).
