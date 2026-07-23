@@ -233,7 +233,7 @@ class ControllerNode(Node):
         self._collection_event_log = Path(
             os.getenv(
                 "COLLECTION_EVENT_LOG_FILE",
-                "/workspace/runtime/collection_events.jsonl",
+                str(Path(os.getenv("TENNIS_ROBOT_ROOT", "/workspace")) / "runtime" / "collection_events.jsonl"),
             )
         )
         self._run_id = f"{int(self.started_at)}-{os.getpid()}"

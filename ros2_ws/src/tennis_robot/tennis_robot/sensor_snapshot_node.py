@@ -22,7 +22,10 @@ from tennis_robot.debug_display import bgra_bmp_data_url
 from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
 from tennis_robot.perception import detect_obstacle_class, build_survey_vision
 
-_STATUS_FILE = os.getenv("ROBOT_STATUS_FILE", "/workspace/runtime/robot_status.json")
+_STATUS_FILE = os.getenv(
+    "ROBOT_STATUS_FILE",
+    os.path.join(os.getenv("TENNIS_ROBOT_ROOT", "/workspace"), "runtime", "robot_status.json"),
+)
 
 WRITE_INTERVAL_S = float(os.getenv("SENSOR_SNAPSHOT_INTERVAL_S", "1.0"))
 LIDAR_FRONT_INDEX_RATIO = float(os.getenv("LIDAR_FRONT_INDEX_RATIO", "0.5"))

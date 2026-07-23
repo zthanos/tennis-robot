@@ -19,6 +19,9 @@ cd "$SCRIPT_DIR"
 export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-false}"
 export SLAM_MODE="${SLAM_MODE:-localization}"
 export WORKSPACE="$SCRIPT_DIR"
+# Nodes default their runtime-file paths under $TENNIS_ROBOT_ROOT (the old
+# container mount was /workspace, which is not writable natively).
+export TENNIS_ROBOT_ROOT="$SCRIPT_DIR"
 
 # ROS builds and node entry points must use the SYSTEM Python. A uv-managed
 # python3.12 under ~/.local/bin shadows it in PATH and lacks the ROS/build
