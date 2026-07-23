@@ -47,6 +47,25 @@ def test_one_free_ball_and_multiple_ball_connector_route():
     assert any(segment.type.value == "connector" for segment in multi.segments)
 
 
+def test_connector_segments_relax_heading_gate_while_passes_keep_default():
+    configuration = default_configuration()
+    plan = plan_collection_route(
+        snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 5.0, 0.4)),
+        court=court(), configuration=configuration,
+    ).plan
+    default_gate = configuration.planning.default_execution_profile.max_heading_error_rad
+    connector_gate = configuration.planning.connector_max_heading_error_rad
+    assert connector_gate > default_gate
+    connectors = [s for s in plan.segments if s.type.value in ("connector", "terminal_connector")]
+    passes = [s for s in plan.segments if s.type.value == "funnel_pass"]
+    assert any(s.type.value == "connector" for s in connectors) and passes
+    for s in plan.segments:
+        if s.type.value == "connector":
+            assert s.execution_profile.max_heading_error_rad == connector_gate
+        elif s.type.value == "funnel_pass":
+            assert s.execution_profile.max_heading_error_rad == default_gate
+
+
 def test_shared_pass_is_selected_when_it_covers_two_aligned_balls():
     configuration = default_configuration()
     plan = plan_collection_route(snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 4.0, 0.0)), court=court(), configuration=configuration).plan
@@ -69,6 +88,18 @@ def test_budget_exhaustion_returns_executable_partial_plan():
     assert plan.planning_status is PlanningStatus.PARTIAL
     assert plan.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
     assert plan.is_executable
+
+
+def test_declared_candidate_cap_bounds_graph_and_reports_unexamined_target():
+    base = default_configuration()
+    configuration = replace(base, planning=replace(base.planning, maximum_candidate_count=1))
+    plan = plan_collection_route(
+        snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 8.0, 3.0)),
+        court=court(), configuration=configuration,
+    ).plan
+    assert plan.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
+    assert plan.planning_status is PlanningStatus.PARTIAL
+    assert any(result.reason_code is BallReasonCode.PLANNING_BUDGET for result in plan.ball_results)
 
 
 def test_no_valid_terminal_route_returns_non_executable_planning_timeout():

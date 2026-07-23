@@ -19,6 +19,9 @@ from launch_ros.actions import Node
 def generate_launch_description():
     pkg_share = get_package_share_directory("tennis_robot")
     default_params = os.path.join(pkg_share, "config", "nav2_params.yaml")
+    default_nav_to_pose_bt_xml = os.path.join(
+        pkg_share, "config", "navigate_to_pose.xml"
+    )
 
     use_sim_time = LaunchConfiguration("use_sim_time")
     params_file = LaunchConfiguration("params_file")
@@ -62,7 +65,10 @@ def generate_launch_description():
         package="nav2_bt_navigator",
         executable="bt_navigator",
         output="screen",
-        parameters=[params_file, {"use_sim_time": use_sim_time}],
+        parameters=[params_file, {
+            "use_sim_time": use_sim_time,
+            "default_nav_to_pose_bt_xml": default_nav_to_pose_bt_xml,
+        }],
     )
 
     lifecycle_manager = Node(

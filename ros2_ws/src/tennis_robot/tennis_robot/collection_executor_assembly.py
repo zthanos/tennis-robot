@@ -84,6 +84,7 @@ class CollectionExecutorConfig:
     safety_pause_timeout_s: float
     safety_max_scan_age_s: float
     controller_id: str = DEFAULT_CONTROLLER_ID
+    goal_checker_id: str = "collection_goal_checker"
 
 
 @dataclass(frozen=True)
@@ -155,7 +156,10 @@ def build_collection_route_executor(
         fsm=ScanRotationFsm(
             step_count=config.scan_step_count,
             yaw_tolerance_rad=config.scan_yaw_tolerance_rad,
-            start_yaw_rad=config.scan_start_yaw_rad,
+            # Navigation ends at this yaw.  A separate fixed start yaw can
+            # force up to almost one extra revolution before scan-step-0 and
+            # exhaust the scan timeout before all headings are visited.
+            start_yaw_rad=config.scan_pose_xy_yaw[2],
         ),
         snapshot_session=handles.scan_snapshot_session,
         yaw_provider=handles.yaw_provider,

@@ -171,6 +171,7 @@ class CollectionSnapshotRuntimeSession:
         expected_scan_step_ids: tuple[str, ...],
         court_half_boundary: CourtHalfBoundary,
         tf_provider,
+        robot_pose_provider=None,
         map_frame: str = "map",
     ) -> None:
         self.builder = ScanSnapshotBuilder(
@@ -189,6 +190,12 @@ class CollectionSnapshotRuntimeSession:
             validation_config=configuration_snapshot.perception_spatial_validation,
             localization_xy_covariance=configuration_snapshot.gazebo_snapshot.localization_xy_covariance,
         )
+        if robot_pose_provider is not None and not callable(robot_pose_provider):
+            raise TypeError("robot_pose_provider must be callable")
+        self._robot_pose_provider = robot_pose_provider
+
+    def start(self, scan_timestamp_s: float) -> None:
+        self.builder.start(scan_timestamp_s)
 
     def forward_frame(self, frame, *, scan_step_id: str | None) -> None:
         self.adapter.forward(
@@ -199,4 +206,9 @@ class CollectionSnapshotRuntimeSession:
         )
 
     def finalize(self, now_s: float):
-        return self.builder.finalize(now_s)
+        robot_pose = self._robot_pose_provider() if self._robot_pose_provider is not None else None
+        return self.builder.finalize(now_s, robot_pose_at_scan=robot_pose)
+
+    @property
+    def diagnostics(self) -> dict:
+        return self.builder.diagnostics

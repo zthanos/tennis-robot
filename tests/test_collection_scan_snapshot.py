@@ -20,6 +20,15 @@ def test_coverage_and_timeout_have_single_source_in_configuration_snapshot():
     with pytest.raises(ScanSnapshotFailure): ScanSnapshotBuilder(scan_id="scan",scan_timestamp_s=1.,robot_pose_at_scan=SCAN_POSE,configuration_snapshot=None,expected_scan_step_ids=("a",),court_half_boundary=default_court_half_boundary())
     with pytest.raises(ScanSnapshotFailure): ScanSnapshotBuilder(scan_id="scan",scan_timestamp_s=1.,robot_pose_at_scan=SCAN_POSE,configuration_snapshot=default_configuration(),expected_scan_step_ids=("a",),court_half_boundary=None)
 
+def test_scan_start_rebinds_timeout_epoch_before_observations():
+    b=builder(expected_scan_step_ids=("a",)); b.start(10.)
+    assert b.scan_timestamp_s == 10.
+
+def test_finalize_uses_live_post_scan_robot_pose():
+    b=builder(expected_scan_step_ids=("a",)); b.record_visited_step("a")
+    live_pose=Pose2D(1.2,-.3,.7); s=b.finalize(1.1,robot_pose_at_scan=live_pose)
+    assert s.robot_pose_at_scan == live_pose
+
 def test_empty_snapshot_requires_complete_coverage_and_is_immutable():
     b=builder(); b.add(obs("a",1.,2.)); b.add(obs("b",10.,2.)); s=b.finalize(2.)
     assert s.balls == ()
@@ -87,3 +96,29 @@ def test_same_step_duplicate_in_track_is_recorded_in_telemetry():
     assert len(b.duplicate_step_observations)==1
     assert b.duplicate_step_observations[0].scan_step_id=="a"
     assert len(s.balls)==1 and b.rejections==[]
+    assert b.diagnostics == {
+        "expected_steps": 2,
+        "visited_steps": 2,
+        "minimum_confirmation_count": 2,
+        "track_count": 1,
+        "track_distinct_steps": [2],
+        "accepted_observations": 2,
+        "duplicate_step_observations": 1,
+        "rejection_counts": {},
+        "tracks": [{
+            "x_m": 1.0,
+            "y_m": 2.0,
+            "steps": ["a", "b"],
+            "confirmed": True,
+            "covariance_trace_m2": 0.1,
+        }],
+    }
+
+def test_association_uses_shared_localization_budget_once():
+    b=builder()
+    precise=PositionCovariance2D(1e-4,0.,1e-4)
+    b.add(obs("a",1.,2.,cov=precise))
+    b.add(obs("b",1.2,2.,cov=precise))
+    snapshot=b.finalize(2.)
+    assert len(snapshot.balls)==1
+    assert b.diagnostics["track_distinct_steps"] == [2]

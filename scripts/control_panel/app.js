@@ -15,6 +15,10 @@
     let sensors = {};
     let _lastCollectionEvents = [];
     let _collectionLogClearedAtS = null;
+    // Monotonic per-session recency key for the collection log.  sim_time_s does
+    // not reset between collection runs (unlike t_s), so ordering stays "most
+    // recent first" even across repeated runs; t_s is the fallback.
+    const eventRecency = (event) => Number(event?.sim_time_s ?? event?.t_s ?? 0);
     // Client-side Nav Test entries, merged into the Collection Log so manual
     // nav goals/cancels/errors appear alongside the robot's collection events.
     let _navTestLog = [];
@@ -73,15 +77,17 @@
       _lastServerCollectionEvents = Array.isArray(events) ? events : [];
       // Merge server collection events with local Nav Test entries, ordered by time.
       const sourceEvents = [..._lastServerCollectionEvents, ..._navTestLog]
-        .sort((a, b) => (Number(a.t_s) || 0) - (Number(b.t_s) || 0));
-      const newestTime = sourceEvents.reduce((max, event) => Math.max(max, Number(event.t_s) || 0), 0);
+        .sort((a, b) => eventRecency(a) - eventRecency(b));
+      const newestTime = sourceEvents.reduce((max, event) => Math.max(max, eventRecency(event)), 0);
       if (_collectionLogClearedAtS !== null && newestTime > 0 && newestTime < _collectionLogClearedAtS) {
         _collectionLogClearedAtS = null;
       }
       const visibleEvents = _collectionLogClearedAtS === null
         ? sourceEvents
-        : sourceEvents.filter(event => (Number(event.t_s) || 0) > _collectionLogClearedAtS);
+        : sourceEvents.filter(event => eventRecency(event) > _collectionLogClearedAtS);
       _lastCollectionEvents = visibleEvents;
+      // Ascending by recency above, so the tail holds the newest; reverse so the
+      // most recent action renders first (top).
       const rows = visibleEvents.slice(-32).reverse();
       if (status) status.textContent = rows.length ? `${rows.length} events` : (_collectionLogClearedAtS === null ? "waiting" : "cleared");
       if (!rows.length) {
@@ -137,6 +143,8 @@
         beam_collection_credit: "beam credited",
         route_ball_swept: "swept (no credit)",
         route_pass_start: "crossing ball",
+        route_executor_state_changed: "route state",
+        route_executor_route_outcome: "route outcome",
         beam_false_credit: "beam false credit",
         beam_missed_credit: "beam missed ball",
       };
@@ -162,6 +170,10 @@
             return `Entered ${event.requested || event.mode || "collection"} mode`;
           case "route_scan_start":
             return "Started the frozen 360 scan";
+          case "route_executor_state_changed":
+            return `Collection executor entered ${String(event.state || "unknown").replaceAll("_", " ")}${event.reason ? ` | ${String(event.reason).replaceAll("_", " ")}` : ""}${event.detail ? ` | ${String(event.detail)}` : ""}`;
+          case "route_executor_route_outcome":
+            return `Collection route finished as ${String(event.state || "unknown").replaceAll("_", " ")}${event.reason ? ` | ${String(event.reason).replaceAll("_", " ")}` : ""}${event.detail ? ` | ${String(event.detail)}` : ""}`;
           case "route_planned": {
             const order = Array.isArray(event.planned_order)
               ? event.planned_order.map(stop => stop.ball_id).filter(id => id !== undefined).join(" -> ")
@@ -263,7 +275,7 @@
         ["Lane", `${t.lane_started ? "started" : "not started"} | ${t.waypoint_index ?? "-"} / ${t.waypoint_count ?? "-"}`],
       ]);
     }
-    function renderCollectionRun(run) {
+    function renderCollectionRun(run, robot) {
       const status = document.getElementById("collectionRunStatus");
       const kv = document.getElementById("collectionRunKv");
       if (!kv) return;
@@ -275,7 +287,11 @@
           ? "var(--warn)"
           : (hasRun ? "var(--accent)" : "var(--muted)");
       }
+      const speed = Number(robot?.measured_speed_mps ?? 0);
+      const elapsed = r.elapsed_s;
       setKv("collectionRunKv", [
+        ["Speed", `${speed.toFixed(2)} m/s`],
+        ["Elapsed", elapsed != null ? `${Number(elapsed).toFixed(1)} s` : "-"],
         ["Basket retained", r.basket_retained ?? 0],
         ["Beam / truth (sim)", `${r.beam_credits ?? 0} / ${r.truth_retained ?? 0}`],
         ["Route collected", r.route_collected ?? 0],
@@ -508,7 +524,7 @@
     function clearCollectionLog() {
       const btn = document.getElementById("collectionLogClear");
       _collectionLogClearedAtS = _lastCollectionEvents.reduce(
-        (max, event) => Math.max(max, Number(event.t_s) || 0),
+        (max, event) => Math.max(max, eventRecency(event)),
         _collectionLogClearedAtS || 0
       );
       renderCollectionTerminal([]);
@@ -644,8 +660,17 @@
           : { ...(robot.map_mission || {}), source_label: "Mapping mission" }
       );
       safe(() => renderMapMission(mapMissionForGrid));
-      safe(() => renderCollectionRun(robot.collection_run || {}));
-      safe(() => renderCollectionTerminal(robot.collection_events || []));
+      safe(() => renderCollectionRun(robot.collection_run || {}, robot));
+      const routeExecutorEvents = Array.isArray(robot.collect_route?.executor_events)
+        ? robot.collect_route.executor_events.map(event => ({
+            ...event,
+            type: `route_executor_${event.code || "event"}`,
+          }))
+        : [];
+      safe(() => renderCollectionTerminal([
+        ...(robot.collection_events || []),
+        ...routeExecutorEvents,
+      ]));
       safe(() => renderCollectionIr(sensors.ir_intake));
       safe(updateCommandButtons);
 

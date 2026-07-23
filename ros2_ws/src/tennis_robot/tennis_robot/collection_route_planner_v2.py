@@ -161,6 +161,9 @@ def plan_collection_route(*, snapshot: ScanSnapshot, court: CourtModel, configur
         configuration=configuration,
     )
     candidates = _merge_candidates(single_candidates + shared.candidates)
+    candidates, candidate_budget_exhausted = _bounded_candidates(
+        snapshot, candidates, configuration.planning.maximum_candidate_count
+    )
     graph = build_directed_candidate_graph(
         snapshot=snapshot,
         candidates=candidates,
@@ -173,8 +176,73 @@ def plan_collection_route(*, snapshot: ScanSnapshot, court: CourtModel, configur
         graph=graph,
         court=court,
         configuration=configuration,
+        candidate_budget_exhausted=candidate_budget_exhausted,
     )
     return PlannerResult(plan, shared.candidate_budget_exhausted)
+
+
+def _bounded_candidates(
+    snapshot: ScanSnapshot,
+    candidates: tuple[FunnelPassCandidate, ...],
+    limit: int,
+) -> tuple[tuple[FunnelPassCandidate, ...], bool]:
+    """Apply the declared graph-node budget before O(N²) edge generation.
+
+    Greedy set coverage gives every target a deterministic chance to enter the
+    graph (and naturally prefers useful shared passes).  Remaining slots add
+    the closest alternatives.  This keeps graph construction bounded without
+    silently treating an unexamined target as geometrically unreachable.
+    """
+    if len(candidates) <= limit:
+        return candidates, False
+
+    start = snapshot.robot_pose_at_scan
+
+    def stable_key(item: FunnelPassCandidate):
+        return (
+            math.hypot(item.entry_pose.x_m - start.x_m, item.entry_pose.y_m - start.y_m),
+            -len(item.covered_ball_ids), item.covered_ball_ids, item.heading_rad,
+            item.entry_pose.x_m, item.entry_pose.y_m, item.exit_pose.x_m,
+            item.exit_pose.y_m, item.ball_id,
+        )
+
+    remaining = list(candidates)
+    selected: list[FunnelPassCandidate] = []
+    covered: set[str] = set()
+    coverage_counts: dict[str, int] = {ball.ball_id: 0 for ball in snapshot.balls}
+    target_ids = {ball.ball_id for ball in snapshot.balls}
+    while remaining and len(selected) < limit and covered != target_ids:
+        item = min(
+            remaining,
+            key=lambda candidate: (
+                -len(set(candidate.covered_ball_ids) - covered), stable_key(candidate)
+            ),
+        )
+        newly_covered = set(item.covered_ball_ids) - covered
+        if not newly_covered:
+            break
+        selected.append(item)
+        remaining.remove(item)
+        covered.update(item.covered_ball_ids)
+        for ball_id in item.covered_ball_ids:
+            coverage_counts[ball_id] += 1
+
+    while remaining and len(selected) < limit:
+        # Round-robin alternatives across targets instead of spending every
+        # remaining slot on headings for whichever ball is closest to start.
+        item = min(
+            remaining,
+            key=lambda candidate: (
+                min(coverage_counts[ball_id] for ball_id in candidate.covered_ball_ids),
+                sum(coverage_counts[ball_id] for ball_id in candidate.covered_ball_ids),
+                stable_key(candidate),
+            ),
+        )
+        selected.append(item)
+        remaining.remove(item)
+        for ball_id in item.covered_ball_ids:
+            coverage_counts[ball_id] += 1
+    return tuple(selected), True
 
 
 def _merge_candidates(candidates: tuple[FunnelPassCandidate, ...]) -> tuple[FunnelPassCandidate, ...]:
@@ -285,10 +353,25 @@ def _analyze_ball(ball, court: CourtModel, configuration: CollectionRouteConfigu
 def _effective_capture_half_width(ball, heading: float, configuration: CollectionRouteConfiguration) -> float:
     normal_x, normal_y = -math.sin(heading), math.cos(heading)
     covariance = ball.position_covariance
-    projected_variance = (
+    projected_map_variance = (
         normal_x * normal_x * covariance.xx
         + 2.0 * normal_x * normal_y * covariance.xy
         + normal_y * normal_y * covariance.yy
+    )
+    # SnapshotBall covariance contains the shared map-localization budget once.
+    # The robot and ball are expressed in that same map realization, so this
+    # common translational error cancels for the relative funnel crossing. Keep
+    # it in the published map covariance/keepout semantics, but subtract its
+    # projection for the relative capture-width calculation. Tracking error is
+    # still charged independently below.
+    localization = configuration.gazebo_snapshot.localization_xy_covariance.covariance
+    projected_shared_localization_variance = (
+        normal_x * normal_x * localization.xx
+        + 2.0 * normal_x * normal_y * localization.xy
+        + normal_y * normal_y * localization.yy
+    )
+    projected_variance = max(
+        0.0, projected_map_variance - projected_shared_localization_variance
     )
     projected_stddev = math.sqrt(max(0.0, projected_variance))
     feasibility = configuration.feasibility

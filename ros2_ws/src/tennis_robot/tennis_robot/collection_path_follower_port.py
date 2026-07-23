@@ -51,7 +51,33 @@ LIFECYCLE_SUCCEEDED = 5
 LIFECYCLE_FAILED = 6
 
 FAILURE_NONE = 0
+FAILURE_SPEED_BELOW_MIN = 5
+FAILURE_SPEED_ABOVE_MAX = 6
 FAILURE_SAFETY_RESUME_INVALID = 14
+
+# Human-readable labels for the CollectionControllerState.FAILURE_* uint8 codes,
+# surfaced verbatim in the collection log so an abort explains itself instead of
+# collapsing to a generic "path failed".  Mirrors the msg numbering exactly (the
+# published code is the msg constant, not the C++ TrackingFailureCode index).
+FAILURE_LABELS = {
+    0: "none",
+    1: "missing_context",
+    2: "path_hash_mismatch",
+    3: "context_activation_timeout",
+    4: "profile_unenforceable",
+    5: "speed_below_min",
+    6: "speed_above_max",
+    7: "run_in_insufficient",
+    8: "run_out_insufficient",
+    9: "curvature_exceeded",
+    10: "trajectory_tube_exceeded",
+    11: "non_monotonic_progress",
+    12: "reverse_required",
+    13: "standalone_rotate_required",
+    14: "safety_resume_invalid",
+    15: "heading_error_exceeded",
+    16: "terminal_not_reached",
+}
 
 # Mirror of FinalizeCollectionExecutionContext.srv action_outcome.
 FINALIZE_SUCCEEDED = 0
@@ -78,6 +104,37 @@ def failure_reason_for_code(failure_code: int) -> ExecutorReasonCode:
     if failure_code == FAILURE_SAFETY_RESUME_INVALID:
         return ExecutorReasonCode.SAFETY_RESUME_INVALID
     return ExecutorReasonCode.PATH_FAILED
+
+
+def _failure_detail(failure_code, state) -> str:
+    """Human-readable abort diagnostic: specific failure label + live geometry.
+
+    Answers "why did the route stop" in the collection log instead of the
+    generic executor reason, which collapses every hard controller failure to
+    ``path_failed``.
+    """
+    label = FAILURE_LABELS.get(failure_code, f"failure_{failure_code}")
+    if not state:
+        return label
+    metrics = []
+    segment = state.get("active_segment_id")
+    if segment:
+        metrics.append(f"seg {segment}")
+    fields = [
+        ("progress_s", "progress", "m"),
+        ("lateral_error_m", "lat_err", "m"),
+        ("heading_error_rad", "head_err", "rad"),
+    ]
+    # measured_speed is only populated at crossings (0.0 on connectors), so it is
+    # meaningful only for the speed-limit failures — including it elsewhere would
+    # print a misleading "speed 0.000m/s".
+    if failure_code in (FAILURE_SPEED_BELOW_MIN, FAILURE_SPEED_ABOVE_MAX):
+        fields.append(("measured_speed_mps", "speed", "m/s"))
+    for key, name, unit in fields:
+        value = state.get(key)
+        if isinstance(value, (int, float)):
+            metrics.append(f"{name} {float(value):.3f}{unit}")
+    return f"{label} | {' '.join(metrics)}" if metrics else label
 
 
 class LiveCollectionPathFollower:
@@ -215,9 +272,9 @@ class LiveCollectionPathFollower:
             self._terminal = PathFollowerResult(PathFollowerStatus.COMPLETED)
             return self._terminal
         if lifecycle == LIFECYCLE_FAILED or (failure_code is not None and failure_code != FAILURE_NONE):
-            return self._fail(failure_reason_for_code(failure_code))
+            return self._fail(failure_reason_for_code(failure_code), _failure_detail(failure_code, state))
         if goal_status in _GOAL_TERMINAL_FAILURES:
-            return self._fail(ExecutorReasonCode.PATH_FAILED)
+            return self._fail(ExecutorReasonCode.PATH_FAILED, f"nav2 goal {goal_status}")
         if lifecycle in (LIFECYCLE_EXECUTING, LIFECYCLE_SAFETY_PAUSED):
             progress_s = float(state.get("progress_s", 0.0))
             lateral_error_m = float(state.get("lateral_error_m", 0.0))
@@ -244,6 +301,6 @@ class LiveCollectionPathFollower:
             PathFollowerStatus.RUNNING, 0.0, True, self._pure.remaining_run_in_m(0.0), False, False
         )
 
-    def _fail(self, reason: ExecutorReasonCode) -> PathFollowerResult:
-        self._terminal = PathFollowerResult(PathFollowerStatus.FAILED, reason=reason)
+    def _fail(self, reason: ExecutorReasonCode, detail: str | None = None) -> PathFollowerResult:
+        self._terminal = PathFollowerResult(PathFollowerStatus.FAILED, reason=reason, detail=detail)
         return self._terminal

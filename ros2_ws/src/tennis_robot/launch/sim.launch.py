@@ -342,14 +342,18 @@ def generate_launch_description():
             "BALL_DETECTOR_BACKEND": os.getenv("BALL_DETECTOR_BACKEND", "yolo_onnx"),
             "BALL_MODEL_PATH": os.getenv("BALL_MODEL_PATH", f"{WORKSPACE}/models/yolov8n.onnx"),
             "BALL_CONF_THRESHOLD": os.getenv("BALL_CONF_THRESHOLD", "0.35"),
+            "BALL_CENTER_ZOOM_FACTOR": os.getenv("BALL_CENTER_ZOOM_FACTOR", "3.0"),
+            "BALL_CENTER_ZOOM_TILES": os.getenv(
+                "BALL_CENTER_ZOOM_TILES", "0.30:0.333,0.50:0.333,0.70:0.333"
+            ),
             "BALL_CLASS_IDS": os.getenv("BALL_CLASS_IDS", "32"),
             "CAMERA_FRAME_ID": "camera_link_optical_frame",
-            # C2 v2 activation: Gazebo loads only the reviewed v2 artifact.
+            # C2 v3 activation: reviewed evidence covers 1.02..6.77 m.
             "PERCEPTION_CALIBRATION_PLATFORM": "gazebo",
-            "PERCEPTION_COVARIANCE_CALIBRATION_ARTIFACT": f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v2.json",
-            "PERCEPTION_COVARIANCE_REQUIRED_ARTIFACT": f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v2.json",
-            "PERCEPTION_COVARIANCE_CALIBRATION_ID": "gazebo-range-depth-quality-diagonal-v1-20260719-v2",
-            "PERCEPTION_COVARIANCE_MODEL_VERSION": "gazebo-v2",
+            "PERCEPTION_COVARIANCE_CALIBRATION_ARTIFACT": f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v3.json",
+            "PERCEPTION_COVARIANCE_REQUIRED_ARTIFACT": f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v3.json",
+            "PERCEPTION_COVARIANCE_CALIBRATION_ID": "gazebo-range-depth-quality-diagonal-v1-20260722-v3",
+            "PERCEPTION_COVARIANCE_MODEL_VERSION": "gazebo-v3",
         },
     )
 
@@ -378,7 +382,7 @@ def generate_launch_description():
             # the artifact and has no model/config fallback.
             "COLLECTION_ROUTE_CALIBRATION_ARTIFACT": os.getenv(
                 "COLLECTION_ROUTE_CALIBRATION_ARTIFACT",
-                f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v2.json",
+                f"{WORKSPACE}/calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v3.json",
             ),
         },
     )

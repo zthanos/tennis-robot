@@ -13,6 +13,7 @@ struct TrackingPoint
   double x_m{};
   double y_m{};
   double progress_s{};
+  double heading_rad{};
 };
 
 struct TrackingExecutionProfile
@@ -36,6 +37,7 @@ struct CollectionControllerTuning
   double max_angular_velocity_rad_s{};
   double progress_projection_window_m{};
   double crossing_speed_window_m{};
+  double progress_tolerance_m{};
 };
 
 struct TrackingPlannedCrossing

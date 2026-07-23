@@ -130,11 +130,23 @@ def estimate_depth_ball_observation(
     # Use the 20th percentile instead of median: for small ball detections the ROI
     # contains background pixels at large depth; the lower percentile picks the
     # near surface (ball face) rather than the background-contaminated median.
-    distance_m = float(np.percentile(valid, 20) if valid.size >= 5 else np.min(valid))
+    optical_z_m = float(np.percentile(valid, 20) if valid.size >= 5 else np.min(valid))
     normalized_x = (detection.center_x - frame_width_px / 2) / (frame_width_px / 2)
     # Robot/navigation convention is +left / counter-clockwise. Image columns
     # grow to the right, so a detection right of centre has a negative bearing.
     bearing_rad = -math.atan(normalized_x * math.tan(camera_fov_rad / 2))
+    vertical_fov_rad = camera_fov_rad * (frame_height_px / max(1, frame_width_px))
+    elevation_rad = pixel_elevation_rad(
+        detection.center_y, frame_height_px, vertical_fov_rad
+    )
+    # Gazebo's depth image stores optical-axis Z, not Euclidean slant range.
+    # camera_frame_position() expects slant range, so undo the ray projection
+    # exactly once.  Treating Z as range applies both cosines a second time and
+    # increasingly underestimates XYZ for off-centre balls.
+    ray_scale = math.sqrt(
+        1.0 + math.tan(bearing_rad) ** 2 + math.tan(elevation_rad) ** 2
+    )
+    distance_m = optical_z_m * ray_scale
     return BallObservation(
         detection=detection,
         bearing_rad=bearing_rad,
@@ -200,10 +212,17 @@ def camera_frame_position(
     ``bearing_rad`` follows the robot convention (+left / CCW), while
     ``elevation_rad`` is positive up.
     """
-    horiz = distance_m * math.cos(elevation_rad)
-    right = -horiz * math.sin(bearing_rad)
-    down = -distance_m * math.sin(elevation_rad)
-    forward = horiz * math.cos(bearing_rad)
+    # Pixel angles describe the independent image-plane ray slopes X/Z and
+    # Y/Z. Recover optical Z from the Euclidean range, then apply those slopes.
+    # This matches pinhole/depth-camera geometry for simultaneous horizontal
+    # and vertical offsets (a chained yaw/pitch spherical projection does not).
+    tan_bearing = math.tan(bearing_rad)
+    tan_elevation = math.tan(elevation_rad)
+    forward = distance_m / math.sqrt(
+        1.0 + tan_bearing * tan_bearing + tan_elevation * tan_elevation
+    )
+    right = -forward * tan_bearing
+    down = -forward * tan_elevation
     return right, down, forward
 
 

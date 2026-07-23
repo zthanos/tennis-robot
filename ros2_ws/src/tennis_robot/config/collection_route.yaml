@@ -9,7 +9,10 @@ mechanical:
   funnel_length_m: 0.4
   funnel_width_m: 0.34
   safety_margin_m: 0.05
-  minimum_turning_radius_m: 0.8
+  # Conservative planning radius.  The hard controller limit remains
+  # 1.25 1/m (0.8 m mechanical radius); planning at 1.25 m limits nominal
+  # curvature to 0.8 1/m and reserves about 56% for closed-loop correction.
+  minimum_turning_radius_m: 1.25
   maximum_curvature_per_m: 1.25
   minimum_entry_m: 0.2
   minimum_run_in_m: 1.0
@@ -41,10 +44,13 @@ connector:
   max_connector_arc_angle_rad: 1.5
   max_connector_total_turn_rad: 3.0
 global_route_search:
-  max_search_expansions: 1000
+  # Coverage-first search ordering finds a full-coverage route within a few
+  # expansions per ball; this budget adds margin for varied layouts while the
+  # solve stays well under ~0.1 s at the raised candidate cap.
+  max_search_expansions: 3000
   terminal_run_out_m: 0.5
-  connector_nominal_speed_m_s: 1.0
-  crossing_nominal_speed_m_s: 0.8
+  connector_nominal_speed_m_s: 0.35
+  crossing_nominal_speed_m_s: 0.35
   turn_energy_equivalent_m_per_rad: 0.2
   weight_length: 1.0
   weight_time: 1.0
@@ -60,9 +66,9 @@ follow_up:
   max_total_runs: 1
 planning:
   default_execution_profile:
-    nominal_speed_mps: 1.0
-    min_speed_mps: 0.5
-    max_speed_mps: 1.5
+    nominal_speed_mps: 0.35
+    min_speed_mps: 0.15
+    max_speed_mps: 0.60
     nominal_speed_warning_tolerance_mps: 0.1
     max_acceleration_mps2: 1.0
     max_deceleration_mps2: 1.0
@@ -71,11 +77,22 @@ planning:
     required_run_out_m: 0.3
     max_curvature_per_m: 1.25
     max_lateral_error_m: 0.1
-    max_heading_error_rad: 0.1
+    max_heading_error_rad: 0.15
     allow_reversing: false
     allow_standalone_rotate: false
   maximum_planning_time_s: 1.0
-  maximum_candidate_count: 20
+  # Raised from 48: the analytic edge-generation gate makes the O(N^2) connector
+  # graph cheap enough (~0.5 s at 200 nodes) to keep the candidate variety needed
+  # for a full-coverage forward-only route.  At 48 the graph lacked the heading
+  # variants to chain more than ~4 balls.  Graph build is bounded by this cap
+  # regardless of ball count, so total planning stays under ~1 s.
+  maximum_candidate_count: 200
+  # Looser heading hard gate on connector (transit) segments. The pure-pursuit
+  # controller leads the path tangent by ~lookahead*curvature/2 on connector
+  # curves (~0.24 rad at the 0.8 1/m planned cap with a 0.6 m lookahead), which
+  # exceeds the capture-grade default gate (0.15 rad) and self-aborts mid-route.
+  # Crossings stay straight and keep the tight default gate for capture accuracy.
+  connector_max_heading_error_rad: 0.5
   cost_weight_length: 1.0
   cost_weight_time: 1.0
   cost_weight_curvature: 1.0

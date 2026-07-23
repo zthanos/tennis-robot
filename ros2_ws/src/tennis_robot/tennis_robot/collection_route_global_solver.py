@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import math
 
@@ -27,7 +27,7 @@ class _Route:
     covered_ball_ids: tuple[str, ...]
 
 
-def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeasibility, ...], graph: DirectedCandidateGraph, court: CourtModel, configuration: CollectionRouteConfiguration) -> CollectionRoutePlan:
+def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeasibility, ...], graph: DirectedCandidateGraph, court: CourtModel, configuration: CollectionRouteConfiguration, candidate_budget_exhausted: bool = False) -> CollectionRoutePlan:
     if snapshot.configuration_snapshot != configuration:
         raise ValueError("configuration must exactly match snapshot configuration")
     if not isinstance(feasibility, tuple) or not isinstance(graph, DirectedCandidateGraph) or not isinstance(court, CourtModel):
@@ -46,9 +46,30 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
     for edges in outgoing.values():
         edges.sort(key=lambda edge: edge.edge_id)
 
+    # Static over-approximation of the distinct balls forward-reachable from
+    # each node via valid edges (ignoring path/coverage constraints, which only
+    # shrink the true set).  Used as an admissible coverage upper bound so the
+    # search can prune any branch that provably cannot match the best coverage
+    # found so far.  Fixpoint over a graph that may contain cycles.
+    reachable_balls: dict[str, set[str]] = {
+        node_id: set(candidate.covered_ball_ids) for node_id, candidate in by_node.items()
+    }
+    changed = True
+    while changed:
+        changed = False
+        for node_id, node_edges in outgoing.items():
+            if node_id == "start":
+                continue
+            accumulated = reachable_balls[node_id]
+            before = len(accumulated)
+            for edge in node_edges:
+                accumulated |= reachable_balls[edge.target_node_id]
+            if len(accumulated) != before:
+                changed = True
+
     budget = configuration.global_route_search.max_search_expansions
     expansions = 0
-    exhausted = False
+    search_exhausted = False
     expanded_nodes: set[str] = set()
     best: _Route | None = None
 
@@ -58,37 +79,59 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
             best = route
 
     def dfs(current_node_id: str, node_ids: tuple[str, ...], edges: tuple[ConnectorEdge, ...]) -> None:
-        nonlocal expansions, exhausted
-        if exhausted:
+        nonlocal expansions, search_exhausted
+        if search_exhausted:
             return
         expansions += 1
         if expansions > budget:
-            exhausted = True
+            search_exhausted = True
             return
         expanded_nodes.add(current_node_id)
         candidate = by_node[current_node_id]
+        current_covered = {ball_id for node_id in node_ids for ball_id in by_node[node_id].covered_ball_ids}
+        search = configuration.global_route_search
+        connector_length = sum(edge.path.length_m for edge in edges)
+        connector_turn = sum(edge.path.total_turn_rad for edge in edges)
+        pass_length = sum(_pass_length(by_node[node_id], configuration) for node_id in node_ids)
         terminal = _terminal_route(candidate, court, configuration)
         if terminal is not None:
             length, duration, terminal_pose = terminal
-            connector_length = sum(edge.path.length_m for edge in edges)
-            connector_turn = sum(edge.path.total_turn_rad for edge in edges)
-            pass_length = sum(_pass_length(by_node[node_id], configuration) for node_id in node_ids)
-            pass_duration = sum(_pass_length(by_node[node_id], configuration) / configuration.global_route_search.crossing_nominal_speed_m_s for node_id in node_ids)
-            covered = tuple(sorted({ball_id for node_id in node_ids for ball_id in by_node[node_id].covered_ball_ids}))
-            consider(_Route(node_ids, edges, terminal_pose, connector_length + pass_length + length, sum(edge.path.length_m / configuration.global_route_search.connector_nominal_speed_m_s for edge in edges) + pass_duration + duration, connector_turn, covered))
-        for edge in outgoing.get(current_node_id, ()):
+            pass_duration = pass_length / search.crossing_nominal_speed_m_s
+            covered = tuple(sorted(current_covered))
+            consider(_Route(node_ids, edges, terminal_pose, connector_length + pass_length + length, sum(edge.path.length_m / search.connector_nominal_speed_m_s for edge in edges) + pass_duration + duration, connector_turn, covered))
+        # Admissible pruning: descendants of this prefix can neither exceed the
+        # forward-reachable coverage nor undercut the prefix's own cost lower
+        # bound (every extension only adds length/turn/passes plus the mandatory
+        # terminal run-out).  Prune when the incumbent already dominates.
+        if best is not None:
+            max_reachable = len(current_covered | reachable_balls[current_node_id])
+            best_coverage = len(best.covered_ball_ids)
+            if max_reachable < best_coverage:
+                return
+            if max_reachable == best_coverage and _prefix_cost_lower_bound(
+                connector_length, connector_turn, pass_length, len(node_ids), configuration
+            ) > _route_cost(best, configuration) + _COST_EPSILON:
+                return
+        # Explore high-new-coverage, then cheaper, then stable-id edges first so a
+        # strong incumbent is found early and the coverage bound prunes hard.
+        def order_key(edge: ConnectorEdge):
+            new_balls = len(set(by_node[edge.target_node_id].covered_ball_ids) - current_covered)
+            return (-new_balls, edge.path.length_m, edge.edge_id)
+        for edge in sorted(outgoing.get(current_node_id, ()), key=order_key):
             if edge.target_node_id in node_ids:
                 continue
-            current_covered = {ball_id for node_id in node_ids for ball_id in by_node[node_id].covered_ball_ids}
             if current_covered & set(by_node[edge.target_node_id].covered_ball_ids):
+                continue
+            if best is not None and len(current_covered | reachable_balls[edge.target_node_id]) < len(best.covered_ball_ids):
                 continue
             dfs(edge.target_node_id, node_ids + (edge.target_node_id,), edges + (edge,))
 
-    for edge in outgoing.get("start", ()):
-        if exhausted:
+    for edge in sorted(outgoing.get("start", ()), key=lambda edge: (edge.path.length_m, edge.edge_id)):
+        if search_exhausted:
             break
         dfs(edge.target_node_id, (edge.target_node_id,), (edge,))
 
+    exhausted = search_exhausted or candidate_budget_exhausted
     search_status = PlanningSearchStatus.BUDGET_EXHAUSTED if exhausted else PlanningSearchStatus.COMPLETE
     if best is None:
         # Derive the status from the actual ball outcomes, not from whether a
@@ -100,7 +143,10 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
         results = _ball_results(snapshot, feasibility, (), exhausted, expanded_nodes, by_node, graph, court, configuration)
         status = PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS if all(result.status is BallStatus.UNREACHABLE for result in results) else PlanningStatus.PLANNING_TIMEOUT
         return _empty_plan(snapshot, configuration, status, search_status, results)
-    status = PlanningStatus.FEASIBLE if set(best.covered_ball_ids) == set(all_ball_ids) and not exhausted else PlanningStatus.PARTIAL
+    # Coverage determines feasible vs partial.  Search/candidate exhaustion is
+    # reported independently; a budgeted search may still prove a route that
+    # covers every snapshot target.
+    status = PlanningStatus.FEASIBLE if set(best.covered_ball_ids) == set(all_ball_ids) else PlanningStatus.PARTIAL
     selected_passes = {
         ball_id: f"pass:{node_id}"
         for node_id in best.node_ids
@@ -122,10 +168,35 @@ def _pass_length(candidate, configuration):
     return math.hypot(candidate.crossing.x_m - candidate.entry_pose.x_m, candidate.crossing.y_m - candidate.entry_pose.y_m) + math.hypot(candidate.exit_pose.x_m - candidate.crossing.x_m, candidate.exit_pose.y_m - candidate.crossing.y_m)
 
 
-def _route_score(route, configuration):
+_COST_EPSILON = 1e-9
+
+
+def _cost_value(length_m, duration_s, curvature_rad, pass_count, configuration):
     search = configuration.global_route_search
-    energy = route.length_m + search.turn_energy_equivalent_m_per_rad * route.curvature_rad
-    cost = search.weight_length * route.length_m + search.weight_time * route.duration_s + search.weight_curvature * route.curvature_rad + search.weight_energy * energy + search.weight_pass_count * len(route.node_ids)
+    energy = length_m + search.turn_energy_equivalent_m_per_rad * curvature_rad
+    return search.weight_length * length_m + search.weight_time * duration_s + search.weight_curvature * curvature_rad + search.weight_energy * energy + search.weight_pass_count * pass_count
+
+
+def _route_cost(route, configuration):
+    return _cost_value(route.length_m, route.duration_s, route.curvature_rad, len(route.node_ids), configuration)
+
+
+def _prefix_cost_lower_bound(connector_length, connector_turn, pass_length, pass_count, configuration):
+    """Admissible cost lower bound for any route extending this prefix.
+
+    Every extension only adds connector/pass length, curvature and passes, and
+    every route pays the same fixed terminal run-out, so terminating the prefix
+    here yields a value no greater than any descendant's final cost.
+    """
+    search = configuration.global_route_search
+    run_out = search.terminal_run_out_m
+    length = connector_length + pass_length + run_out
+    duration = connector_length / search.connector_nominal_speed_m_s + pass_length / search.crossing_nominal_speed_m_s + run_out / search.connector_nominal_speed_m_s
+    return _cost_value(length, duration, connector_turn, pass_count, configuration)
+
+
+def _route_score(route, configuration):
+    cost = _cost_value(route.length_m, route.duration_s, route.curvature_rad, len(route.node_ids), configuration)
     route_id = "/".join(route.node_ids) + "|" + "/".join(edge.edge_id for edge in route.edges)
     return (-len(route.covered_ball_ids), cost, len(route.node_ids), route_id)
 
@@ -193,9 +264,22 @@ def _plan_from_route(snapshot, configuration, route, status, search_status, resu
     return CollectionRoutePlan(plan_id, snapshot.scan_id, snapshot.map_frame, snapshot.robot_pose_at_scan, route.terminal_pose, route.length_m, route.duration_s, status, search_status, tuple(segments), tuple(ball.ball_id for ball in snapshot.balls), results, configuration)
 
 
+def _connector_execution_profile(configuration):
+    """Default profile with the connector-specific (looser) heading hard gate.
+
+    Connectors are transit, not capture: pure-pursuit steering leads the path
+    tangent on their curves, so the capture-grade heading gate would self-abort.
+    Every other profile bound (speed, curvature, lateral tube) is unchanged.
+    """
+    return replace(
+        configuration.planning.default_execution_profile,
+        max_heading_error_rad=configuration.planning.connector_max_heading_error_rad,
+    )
+
+
 def _connector_segment(segment_id, edge, progress, configuration):
     path = Path2D(tuple(PathPoint(pose) for pose in edge.path.poses))
-    return RouteSegment(segment_id, RouteSegmentType.CONNECTOR, path, progress, progress + edge.path.length_m, configuration.planning.default_execution_profile, (), ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0))
+    return RouteSegment(segment_id, RouteSegmentType.CONNECTOR, path, progress, progress + edge.path.length_m, _connector_execution_profile(configuration), (), ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0))
 
 
 def _pass_segment(segment_id, candidate, progress, configuration, snapshot):

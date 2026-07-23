@@ -67,6 +67,8 @@ def test_telemetry_event_serialization_is_pure_dict():
     assert telemetry_event_to_dict(event) == {"code": "state_changed", "state": "scanning", "reason": "scan_failed"}
     no_reason = TelemetryEvent(TelemetryEventCode.ROUTE_OUTCOME, ExecutorState.COMPLETED)
     assert telemetry_event_to_dict(no_reason) == {"code": "route_outcome", "state": "completed", "reason": None}
+    detailed = TelemetryEvent(TelemetryEventCode.STATE_CHANGED, ExecutorState.ABORTED_TRACKING, ExecutorReasonCode.PATH_FAILED, "trajectory_tube_exceeded | seg connector-0")
+    assert telemetry_event_to_dict(detailed) == {"code": "state_changed", "state": "aborted_tracking", "reason": "path_failed", "detail": "trajectory_tube_exceeded | seg connector-0"}
 
 
 def test_callback_telemetry_sink_forwards_serialized_dict():
@@ -121,6 +123,20 @@ def test_scan_pose_navigator_requests_scan_pose_and_maps_state():
     result = adapter.result()
     assert result.status is NavigatorStatus.FAILED
     assert result.reason is ExecutorReasonCode.NAVIGATION_FAILED
+
+
+def test_scan_pose_navigator_retries_nav2_startup_unavailability():
+    navigator = FakeLaneNavigator("unavailable")
+    adapter = ScanPoseNavigatorAdapter(
+        lane_navigator=navigator, scan_pose=(1.0, -2.0, 0.5)
+    )
+    adapter.start()
+
+    result = adapter.result()
+
+    assert result.status is NavigatorStatus.RUNNING
+    assert result.reason is None
+    assert navigator.requests == [(1.0, -2.0, 0.5), (1.0, -2.0, 0.5)]
 
 
 def test_scan_pose_navigator_rejects_bad_pose():
@@ -287,6 +303,10 @@ class FakeSnapshotSession:
         self._fail = fail
         self.forwarded = []
         self.finalized_at = None
+        self.started_at = None
+
+    def start(self, now_s):
+        self.started_at = now_s
 
     def forward_frame(self, frame, *, scan_step_id):
         self.forwarded.append((frame, scan_step_id))
@@ -330,6 +350,7 @@ def test_scan_session_driver_completes_and_returns_snapshot_ready():
     driver, cmd, _ = _driver(session, yaws=[0.0, math.pi / 2, math.pi, -math.pi / 2], frame=frame)
     driver.start()
     assert cmd[0] == pytest.approx(0.5)  # started rotating
+    assert session.started_at == pytest.approx(0.0)
     results = [driver.result() for _ in range(4)]
     statuses = [r.status for r in results]
     assert statuses[:3] == [ScanSessionStatus.RUNNING] * 3

@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
+from collections import Counter
 import math
 from tennis_robot.collection_route_types import (AcceptedSpatialObservation, CollectionRouteConfiguration, DomainValidationError, Point2D, PositionCovariance2D, Pose2D, ScanSnapshot, SnapshotBall, SpatialObservationRejection, SpatialObservationRejectionCode)
 
@@ -90,6 +91,17 @@ class ScanSnapshotBuilder:
         self._accepted_steps=set(); self._tracks=[]; self._state="collecting"; self.rejections=[]
         self.duplicate_step_observations=[]
 
+    def start(self, scan_timestamp_s: float) -> None:
+        """Bind the timeout epoch to the actual start of scan rotation."""
+        if (self._state != "collecting" or self._accepted_steps or self._tracks
+                or self.rejections or self.duplicate_step_observations):
+            raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,
+                                      "scan already started collecting")
+        if not math.isfinite(scan_timestamp_s):
+            raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,
+                                      "invalid scan timestamp")
+        self.scan_timestamp_s = float(scan_timestamp_s)
+
     @property
     def required_coverage_fraction(self) -> float: return self.configuration_snapshot.scan.required_coverage_fraction
 
@@ -108,9 +120,18 @@ class ScanSnapshotBuilder:
         if det <= _SINGULAR_RELATIVE_TOLERANCE*max(cov.xx*cov.yy, cov.xy*cov.xy):
             self.rejections.append(SpatialObservationRejection(SpatialObservationRejectionCode.PERCEPTION_METADATA_REJECTED,item.detection_index,item.rgb_timestamp_s,"singular_covariance")); return
         candidates=[]
+        localization = self.configuration_snapshot.gazebo_snapshot.localization_xy_covariance.covariance
         for track in self._tracks:
             point,fused_cov=track.fused(); dx=item.position_map_xy.x_m-point.x_m; dy=item.position_map_xy.y_m-point.y_m
-            cc=PositionCovariance2D(fused_cov.xx+cov.xx,fused_cov.xy+cov.xy,fused_cov.yy+cov.yy); cdet=cc.xx*cc.yy-cc.xy*cc.xy
+            # Localization uncertainty is shared and must not be divided by
+            # observation fusion, but it still belongs in the scan-local data
+            # association innovation once. Omitting it made the gate far
+            # tighter than the observed heading-to-heading map displacement.
+            cc=PositionCovariance2D(
+                fused_cov.xx+cov.xx+localization.xx,
+                fused_cov.xy+cov.xy+localization.xy,
+                fused_cov.yy+cov.yy+localization.yy,
+            ); cdet=cc.xx*cc.yy-cc.xy*cc.xy
             d2=(cc.yy*dx*dx-2*cc.xy*dx*dy+cc.xx*dy*dy)/cdet
             if d2<=self.configuration_snapshot.gazebo_snapshot.association.association_mahalanobis_gate_chi2: candidates.append(track)
         if len(candidates)>1:
@@ -135,8 +156,50 @@ class ScanSnapshotBuilder:
             raise ScanSnapshotFailure(ScanSnapshotFailureCode.UNKNOWN_SCAN_STEP)
         self._accepted_steps.add(scan_step_id)
 
-    def finalize(self, now_s:float):
+    @property
+    def diagnostics(self) -> dict:
+        """Operator telemetry for explaining an empty finalized snapshot."""
+        rejection_counts = Counter(item.detail for item in self.rejections)
+        association = self.configuration_snapshot.gazebo_snapshot.association
+        minimum_confirmation_count = max(
+            self.configuration_snapshot.scan.minimum_confirmation_count,
+            association.min_confirmations,
+            association.min_distinct_scan_steps,
+        )
+        track_summaries = []
+        for track in self._tracks:
+            point, covariance = track.fused()
+            track_summaries.append({
+                "x_m": round(point.x_m, 3),
+                "y_m": round(point.y_m, 3),
+                "steps": sorted(track.steps),
+                "confirmed": len(track.steps) >= minimum_confirmation_count,
+                "covariance_trace_m2": round(covariance.xx + covariance.yy, 6),
+            })
+        return {
+            "expected_steps": len(self.expected_scan_step_ids),
+            "visited_steps": len(self._accepted_steps),
+            "minimum_confirmation_count": minimum_confirmation_count,
+            "track_count": len(self._tracks),
+            "track_distinct_steps": sorted(
+                (len(track.steps) for track in self._tracks), reverse=True
+            ),
+            "accepted_observations": sum(len(track.observations) for track in self._tracks),
+            "duplicate_step_observations": len(self.duplicate_step_observations),
+            "rejection_counts": dict(sorted(rejection_counts.items())),
+            "tracks": track_summaries,
+        }
+
+    def finalize(self, now_s:float, *, robot_pose_at_scan: Pose2D | None = None):
         if self._state!="collecting": raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,"scan already finalized")
+        if robot_pose_at_scan is not None:
+            if not isinstance(robot_pose_at_scan, Pose2D):
+                raise ScanSnapshotFailure(ScanSnapshotFailureCode.LIFECYCLE,
+                                          "invalid robot pose at scan")
+            # Route execution starts immediately after this scan.  Using the
+            # pre-navigation factory pose can place the controller far away
+            # from the first path segment and fail its profile on update one.
+            self.robot_pose_at_scan = robot_pose_at_scan
         if not math.isfinite(now_s) or now_s-self.scan_timestamp_s > self.scan_timeout_s:
             self._state="failed"; raise ScanSnapshotFailure(ScanSnapshotFailureCode.TIMEOUT, f"{len(self._accepted_steps)}/{len(self.expected_scan_step_ids)} steps")
         if len(self._accepted_steps)/len(self.expected_scan_step_ids) < self.required_coverage_fraction:

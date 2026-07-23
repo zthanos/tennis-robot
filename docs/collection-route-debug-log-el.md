@@ -636,3 +636,307 @@
   targeted + 281 regression πράσινα.
 - **Status:** ΕΦΑΡΜΟΣΤΗΚΕ, ΕΚΚΡΕΜΕΙ sim επαλήθευση (rebuild + ξανα-S1 → αναμένεται
   `completed_no_targets`). Uncommitted μαζί με #20.
+
+## #22 — (Φάση 7, sim run 4) `completed_no_targets` με υπαρκτό 2D ball detection
+
+- **Παρατήρηση:** Μετά από επιτυχημένο NavigateToPose και πλήρες scan, ο executor
+  κατέληξε `completed_no_targets`. Το serialized route status έδειξε
+  `planning_status=empty_no_balls` και μηδέν snapshot targets.
+- **Live evidence:** Το canonical perception heartbeat ήταν healthy και ο YOLO
+  δημοσίευε sports-ball detection με confidence περίπου `0.707`. Το ακριβές ROI
+  probe στο timestamp-matched `32FC1` depth είχε shape `5×5`, valid fraction
+  `1.0` και p20 range `3.9837 m`. Παρ' όλα αυτά το published detection είχε
+  `has_spatial=false`, μηδενικά XYZ/distance και κενό matched-depth stamp.
+- **Root cause:** Το approved Gazebo v2 covariance artifact έχει calibrated
+  range `[1.0215745, 2.9799471] m`. Η μέτρηση `~3.984 m` επέστρεψε
+  `calibration_out_of_domain`. Ο producer εφάρμοσε σωστά το no-extrapolation
+  contract, αλλά έχανε το συγκεκριμένο rejection reason και το route terminal
+  έμοιαζε με πραγματικά άδεια σκηνή.
+- **Diagnostics fix:** Προστέθηκε operator-only `/perception/diagnostics` JSON
+  heartbeat με 2D/spatial/rejected counts, rejection histogram, observed depth
+  range/quality και calibrated range. Το `BallDetectionArray` παραμένει ακριβώς
+  το canonical downstream target contract. Το controller διατηρεί το τελευταίο
+  diagnostic στο collect-route status και το `completed_no_targets` terminal log
+  εμφανίζει πλέον τον dominant λόγο και τα observed/calibrated ranges.
+- **Calibration decision:** Δεν αλλάζει ούτε γίνεται overwrite το v2 artifact.
+  Η επέκταση σχεδιάζεται ως ξεχωριστό Gazebo v3 evidence/activation flow στο
+  `docs/gazebo-perception-covariance-c2-v3-plan-el.md`. Ο design στόχος `0.2–9 m`
+  θα περιοριστεί στο effective range που περνά πραγματικά neural-detection και
+  covariance gates. Physical OAK-D evidence παραμένει ανεξάρτητο.
+- **Tests:** Νέα pure diagnostics tests καλύπτουν empty heartbeat έναντι rejected
+  2D detection και το ακριβές `calibration_out_of_domain` terminal detail.
+  Targeted host gate: **17 passed**. Στο ROS 2 Humble container πέρασαν τα ίδια
+  **17 tests** και χωριστά τα **8 perception contract tests**.
+- **Live verification:** Με rebuild/restart, το `/perception/diagnostics` έδειξε
+  frame με `detections_2d=3`, `spatial_accepted=2`, `spatial_rejected=1`,
+  `calibration_out_of_domain=1`, observed range `1.1169–6.8922 m` και calibrated
+  range `1.0216–2.9799 m`. Πλήρες collect-route run έφτασε ξανά
+  `completed_no_targets`, τώρα με terminal detail
+  `detections_2d=1, spatial=0, primary_rejection=calibration_out_of_domain,
+  observed_range_m=3.942..3.942, calibrated_range_m=1.022..2.980`. Το frozen
+  `collect_route`/`collection_run` status διατήρησε το ίδιο structured payload
+  μετά την επιστροφή σε idle.
+- **Status:** DIAGNOSTICS ΕΦΑΡΜΟΣΤΗΚΑΝ ΚΑΙ LIVE-VERIFIED· V3 CALIBRATION ΕΚΚΡΕΜΕΙ.
+
+## #23 — Perception geometry, v3 calibration και scan association
+
+- **Root causes:** (1) RGB HFOV `1.204` και depth HFOV `1.274` έκαναν το ίδιο
+  pixel ROI να δείχνει διαφορετική ακτίνα, (2) το depth optical-axis `Z`
+  χρησιμοποιούνταν σαν slant range, και (3) ο snapshot adapter αγνοούσε το
+  optical `forward Z` μετασχηματίζοντας μόνο `(right, down)` σαν map XY.
+- **Detector/scan:** Προστέθηκαν neural-only zoom tiles (factor `3.0`, confidence
+  `0.35`, χωρίς HSV fallback), containment-aware NMS και 18 scan headings. Το
+  association χρησιμοποιεί μία φορά το shared localization budget, χωρίς να
+  το διαιρεί κατά το information fusion.
+- **Calibration:** Νέο immutable v3 artifact από 18/18 trials και 540 accepted
+  samples. Κάθε trial είχε 0% target outliers. Domain `1.0218–6.7653 m`, quality
+  `0.8889–1.0`, SHA-256
+  `338adb895e764422e51ddde549726514815539a8ddcf3dbab82c17c2563b7027`.
+- **9 m clarification:** Το pilot στα `8.263 m` απέτυχε στο stock-YOLO target
+  detection gate. Τα 9 m είναι depth-sensor capability, όχι εγγυημένο neural
+  ball-perception range. Δεν έγινε extrapolation.
+- **Live result:** Η τελική σάρωση παρήγαγε 30 accepted observations, 13 tracks
+  και **10 confirmed snapshot targets** (7×3-step, 3×2-step confirmations).
+  Ο planner επέστρεψε `empty_no_feasible_targets` (1 `keepout`, 9
+  `no_candidate_found`), άρα το επόμενο blocker είναι planner/court geometry,
+  όχι perception.
+- **Reports:** `gazebo-perception-covariance-c2-v3-{coverage,artifact,
+  activation}-report-el.md` και structured `snapshot_diagnostics` στο status.
+- **Status:** PERCEPTION FIX + V3 ACTIVATION LIVE-VERIFIED. PLANNER FEASIBILITY
+  ΕΚΚΡΕΜΕΙ ΩΣ ΞΕΧΩΡΙΣΤΟ ΘΕΜΑ.
+
+## #24 — Bounded planning και end-to-end collection route
+
+- **Snapshot lifecycle:** Το timeout ξεκινά πλέον στην πραγματική έναρξη της
+  σάρωσης και το snapshot κλειδώνει το post-scan robot pose. Το scan FSM
+  αρχικοποιείται από το yaw της configured scan pose, οπότε ολοκληρώνει και τα
+  18/18 headings χωρίς ψευδές timeout μετά το navigation.
+- **Planner boundedness:** Το `maximum_candidate_count` εφαρμόζεται πριν από την
+  κατασκευή του connector graph με deterministic set coverage και ισόρροπες
+  εναλλακτικές. Το live cap είναι 48 candidates, αντί για graph ~244 nodes / ~238k
+  directed Dubins edges που μπλόκαρε τον controller node.
+- **Controller semantics:** Το heading hard gate συγκρίνει το planned path yaw
+  με το robot yaw· το lookahead bearing χρησιμοποιείται μόνο για curvature.
+  Το controller διαβάζει velocity από `/odometry/filtered`, όχι από το raw
+  Gazebo `/odom`, και το nested `profile_verdict` γράφεται ως JSON-safe dict.
+- **Tracking margin:** Planning radius `1.25 m`, hard curvature `1.25 1/m` και
+  lookahead `0.6 m`. Έτσι η nominal planned curvature περιορίζεται σε `0.8 1/m`
+  και μένει ~56% περιθώριο closed-loop correction χωρίς χαλάρωση του hard gate.
+- **Live result:** 18/18 scan headings, 29 accepted observations, 11 tracks και
+  **9 confirmed targets**. Η bounded αναζήτηση επέστρεψε `partial`: 2 selected,
+  7 deferred. Η route των `12.13 m` ολοκληρώθηκε με
+  `route_outcome=route_completed`, `failure_reason=0` και 48 crossing telemetry
+  samples. Και οι δύο ball crossings ήταν `hard_compliant=true` στα `0.35 m/s`.
+- **Status:** END-TO-END LIVE PASS. Το perception δεν είναι πλέον το blocker· η
+  κάλυψη των 7 deferred balls είναι ξεχωριστή βελτίωση search budget/follow-up.
+
+## #25 — Startup race, live 360° map και progress tolerance
+
+- **Observed log:** Πρώτη εντολή `collect_route` δόθηκε πριν το delayed Nav2
+  lifecycle bring-up και τερμάτισε `aborted_scan` με 0/18 steps. Σε επόμενη run
+  το scan είχε 13 tracks / 9 confirmed, αλλά το Collection Workspace έδειχνε 0
+  επειδή διάβαζε μόνο το legacy `BallMap`. Η route εμφάνισε επίσης typed
+  `failure_reason=11` στα 0.005 m από μικρό localization projection jitter.
+- **Nav2 readiness:** Το scan-pose adapter ξαναδοκιμάζει όταν το action endpoint
+  λείπει ή απορρίπτει goal πριν γίνει lifecycle-active. Accepted goal που μετά
+  αποτυγχάνει παραμένει κανονικό `navigation_failed`.
+- **Live map:** Τα `snapshot_diagnostics.tracks` τροφοδοτούν πλέον το map payload
+  κατά τη σάρωση. Track ενός distinct heading εμφανίζεται pending και γίνεται
+  confirmed μόλις καλύψει το configured confirmation gate. Το source δηλώνεται
+  `oak_depth` και διατηρούνται οι fused map συντεταγμένες.
+- **Controller tolerance:** Η δηλωμένη ανοχή προόδου 0.05 m χρησιμοποιείται για
+  μικρό projection regression και terminal completion. Πραγματική υποχώρηση
+  μεγαλύτερη από την ανοχή εξακολουθεί να δίνει non-monotonic hard failure.
+- **Live verification:** Εντολή στάλθηκε πριν το Nav2 activation και παρέμεινε
+  `navigating_to_scan_pose` μέχρι να γίνει διαθέσιμο. Στο step 4/18 ο χάρτης
+  έδειχνε ήδη 3 tracks (1 pending, 2 confirmed), στο 18/18 έδειχνε 12 tracks / 9
+  confirmed. Η route ξεκίνησε με `failure_reason=0`, πέρασε hard-compliant
+  crossing στα 0.35 m/s και έφτασε εντός 1.4 mm του terminal point.
+- **Tests:** 213 collection Python tests PASS. Όλα τα C++ gtests/runtime tests
+  PASS και το isolated Nav2 launch test PASS σε `ROS_DOMAIN_ID=43`.
+## #26 — Collection route σταματά στο terminal και ο Nav2 κάνει progress abort
+
+- Παρατήρηση live run: ο collection controller έφτασε στο terminal progress
+  `5.270 / 5.271 m`, επέστρεψε μηδενική ταχύτητα και δεν είχε profile failure.
+- Η τελική απόσταση της βάσης από το path goal ήταν περίπου `0.219 m`, ενώ ο
+  κοινός `general_goal_checker` απαιτούσε `0.10 m`. Ο Nav2 επομένως δεν έκλεινε
+  το FollowPath και μετά το progress timeout επέστρεφε abort.
+- Προστέθηκε αποκλειστικός `collection_goal_checker` (`0.30 m`, yaw ελεύθερο)
+  και το `goal_checker_id` περνά ρητά στο FollowPath goal. Ο γενικός checker
+  μένει στα `0.10 m`, άρα survey και κανονική πλοήγηση δεν χαλαρώνουν.
+- Η ανοχή καλύπτεται από το ανεξάρτητο terminal run-out `0.5 m` της collection
+  route και είναι μεγαλύτερη από το μετρημένο Gazebo stopping envelope.
+- Επειδή το Nav2 Humble δεν δέχεται κενό checker id όταν έχουν φορτωθεί δύο
+  plugins, τα κανονικά NavigateToPose/court-survey behavior trees δηλώνουν
+  πλέον ρητά `general_goal_checker`. Χωρίς αυτό, η μετάβαση προς το scan pose
+  απορριπτόταν πριν κινηθεί το robot.
+- **Live verification:** πλήρες νέο run με 18/18 headings, 14 tracks και 10
+  confirmed targets. Η partial route είχε μήκος `12.975 m`, δύο crossings και
+  τερμάτισε `completed / route_completed`, με `failure_reason=0`. Ο Nav2 έγραψε
+  `Reached the goal!` χωρίς progress abort. Η βάση σταμάτησε `0.277 m` από το
+  path endpoint και `0.523 m` μετά το τελευταίο ball crossing, άρα διατηρείται
+  το required run-out `0.30 m`.
+- Το Collection Log συγχωνεύει πλέον και τα `collect_route.executor_events`,
+  ώστε οι καταστάσεις scanning/planning/executing/route_completed να φαίνονται
+  στην κονσόλα αντί να μένει μόνο το αρχικό `Entered collect_route mode`.
+
+## #27 — Route καλύπτει μόνο 2–4 μπάλες: bottleneck στο candidate/edge layer
+
+- **Παρατήρηση:** Live Gazebo runs (Φ7) έδιναν route με 2 selected / 7 deferred
+  ενώ η σάρωση έβρισκε 9–14 confirmed. Πρώτη υπόθεση «ρηχή αναζήτηση»
+  (`max_search_expansions`).
+- **Μέτρηση που ανέτρεψε την υπόθεση:** σε probe 10 σκορπισμένων μπαλών, το
+  search budget `1.000 → 1.000.000` **δεν** άλλαξε τίποτα· η DFS τρέχει σε
+  **6ms** και saturate-άρει στις 4/10. Το πραγματικό όριο ήταν το
+  `maximum_candidate_count: 48`: cap 48→**4/10**, 100→8/10, **200→10/10
+  (feasible)** με την **ίδια** DFS.
+- **Root cause:** το `_build_edge` έκανε `_materialize_path` (subdivided
+  geometry) **πριν** τον έλεγχο turning/length limits. Στο cap=200
+  υπολογίζονταν **121.104 CSC edges, valid 1.781 (98,5% turning-rejected)**,
+  graph-build **3,6s** — γι' αυτό το cap κρατιόταν στο 48.
+- **Fix #1 (edge gate):** analytic turning/length gate πάνω στα closed-form
+  `(t, p, q)` **πριν** το materialize. Μέτρηση: gate-only 90ms για όλα τα 121k,
+  ίδια 1.781 valid → `_materialize_path` ~68× λιγότερα. Graph-build cap=200
+  **3,6s → 0,45s**, cap=48 286ms → 52ms. Regression test επιβεβαιώνει
+  byte-identical accept/reject set και rejection codes vs materialize-first.
+- **Fix #2 (bounded search):** cost-guided DFS ordering (μέγιστη νέα κάλυψη →
+  μικρότερο μήκος → stable id) + admissible branch-and-bound (static
+  forward-reachable coverage bound + prefix cost lower-bound). Το full-coverage
+  route βρίσκεται σε λίγα expansions ανά μπάλα· χωρίς αυτό, στο cap=200/14-ball
+  η εξαντλητική αναζήτηση εκρήγνυτο σε **12s**.
+- **Fix #3 (config):** `maximum_candidate_count 48 → 200`,
+  `max_search_expansions 1000 → 3000`. Το graph-build είναι φραγμένο από το cap
+  ανεξαρτήτως αριθμού μπαλών.
+- **Αποτέλεσμα (full pipeline, cap=200):** 10-ball **10/10 feasible σε ~490ms**,
+  14-ball **14/14 feasible σε ~733ms** — εντός του δηλωμένου
+  `maximum_planning_time_s: 1.0`.
+- **Tests:** 319 pure pytest PASS (73 collection-route). Contracts αμετάβλητα:
+  scoring (max coverage → min cost → min pass count → stable id), BallReasonCode,
+  PlanningStatus/SearchStatus, determinism. C++ αμετάβλητο.
+- **Εκτός scope (ξεχωριστό):** το tracking-abort στο handoff μετά τη σάρωση (βλ.
+  ανάλυση Φ7) παραμένει ανοιχτό και μπορεί ακόμη να εμφανιστεί live· δεν αφορά το
+  candidate/edge layer.
+
+## #28 — Abort reason στο Collection Log + διόρθωση failure-code mapping
+
+- **Live επιβεβαίωση #27:** πρώτο Gazebo run μετά το coverage fix έδειξε
+  **planned 9** (vs 2 πριν) — ο planner καλύπτει πλέον πολλές μπάλες. Όμως η route
+  κόβει αμέσως μετά τη σάρωση με `aborted tracking | path failed`, χωρίς ο λόγος
+  να φαίνεται στο log.
+- **Διόρθωση mapping (σημαντικό):** το published `CollectionControllerState.
+  failure_reason` χρησιμοποιεί **msg numbering**, ΟΧΙ τον 0-based δείκτη του C++
+  `TrackingFailureCode`. Άρα το `failure_reason=10` που είχε καταγραφεί ήταν
+  **`FAILURE_TRAJECTORY_TUBE_EXCEEDED`**, όχι `reverse_required` (που είναι 12).
+  Η προηγούμενη ανάλυση Φ7 είχε μεταφράσει λάθος τον κωδικό — γι' αυτό ακριβώς
+  χρειαζόταν ανθρωπινό label στο log.
+- **Fix (observability):** ο live PathFollower port χτίζει τώρα detail string με
+  το σωστό `FAILURE_LABELS[code]` + live geometry (`seg`, `progress`, `lat_err`,
+  `head_err`, `speed`) από το controller state, και το περνά μέσω
+  `PathFollowerResult.detail` → `TelemetryEvent.detail` →
+  `telemetry_event_to_dict` → `executor_events` → Collection Log (app.js). Το
+  executor reason contract (`path_failed`) μένει αμετάβλητο· το detail είναι
+  παράλληλη διαγνωστική πληροφορία.
+- **Αρχεία:** `collection_path_follower_port.py` (labels + `_failure_detail`),
+  `collection_route_executor.py` (`PathFollowerResult.detail`,
+  `TelemetryEvent.detail`, `_abort_active_route`/`_transition`),
+  `collection_executor_ports.py` (serialization), `scripts/control_panel/app.js`
+  (render). Node factory `state_provider` ήδη παρέχει όλα τα πεδία.
+- **Tests:** 320 pure pytest PASS (+ νέα: detail flows through port +
+  `telemetry_event_to_dict` περιλαμβάνει detail). C++ αμετάβλητο.
+- **Επόμενο:** επόμενο live run θα δείξει στο log τον πραγματικό κωδικό+γεωμετρία
+  (π.χ. `trajectory_tube_exceeded | seg connector-0 progress 0.120m lat_err
+  0.31m ...`), ώστε να κριθεί αν είναι transient handoff ή γνήσιο tube violation.
+
+## #29 — Root cause του tracking abort: pure-pursuit vs σφιχτό heading gate
+
+- **Live log (χάρη στο #28):** ο planner τώρα σχεδιάζει πλήρη διαδρομή (planned 10,
+  57.7m, replans 0) και το robot οδηγεί ~7m πριν κόψει με
+  `aborted tracking | path failed | heading_error_exceeded | seg connector-2
+  progress 7.171m lat_err 0.000m head_err -0.152rad speed 0.000m/s`.
+- **Artifact:** το `speed 0.000m/s` ΔΕΝ σημαίνει stall. Το published
+  `state.measured_speed_mps` γεμίζει **μόνο από crossing measurement**
+  (`collection_nav2_controller.cpp:340`) → πάντα 0 σε connector. Το robot κινούνταν
+  κανονικά· η πραγματική ταχύτητα υπάρχει μόνο στο RCLCPP_ERROR (`:262`).
+- **Root cause:** ο controller οδηγεί με **pure-pursuit** (lookahead 0.6m,
+  `collection_tracking_core.cpp:167`) αλλά το hard gate (`:158`) ελέγχει σφάλμα ως
+  προς το **path tangent**. Στις μεταβάσεις ευθεία→τόξο (S→C) των CSC connectors το
+  lookahead μπαίνει στο τόξο νωρίς → anticipatory turn → το heading **προηγείται**
+  του tangent κατά ~`lookahead*curvature/2` = `0.6*0.8/2 ≈ 0.24 rad` στο planned cap
+  0.8/m. Το gate ήταν **0.15 rad** → self-abort. `lat_err=0` (θέση τέλεια, καθαρά
+  heading transient) το επιβεβαιώνει. Συστηματικό: κάθε connector με curvature
+  ≳0.5/m αβορτάρει — γι' αυτό οδήγησε 7m (ήπια) και μετά κόπηκε.
+- **Γιατί λάθος στο connector:** το heading gate προστατεύει **capture alignment**,
+  που έχει σημασία μόνο στα crossings (funnel passes = **ευθεία**, κ≈0 → μηδέν lead
+  → 0.15 ικανοποιείται φυσικά). Στους connectors (transit) το heading lead είναι
+  εγγενές στο pure-pursuit και αβλαβές.
+- **Fix:** νέο config `planning.connector_max_heading_error_rad: 0.5`. Το
+  `_connector_segment` δίνει στους CONNECTOR segments profile με χαλαρό heading gate
+  (`replace(default, max_heading_error_rad=0.5)`), ενώ τα funnel passes κρατούν το
+  σφιχτό 0.15. Per-segment profile → serialize-άρεται στο C++ context
+  (`node_factory:229`) → ο core το διαβάζει ανά segment. Όλα τα άλλα bounds (speed,
+  curvature, lateral tube) αμετάβλητα. Value 0.5: άνετο πάνω από το lead
+  ~0.24-0.38 rad, πιάνει ακόμα >28.6° γνήσιο mis-tracking.
+- **Fix #28 artifact:** το `_failure_detail` δείχνει πλέον `speed` **μόνο** στα
+  speed-limit failure codes (5/6), όχι το παραπλανητικό 0 σε heading/lateral aborts.
+- **Tests:** 320 pure pytest PASS (+ νέο composition test: connectors χαλαρό gate,
+  passes default). C++ αμετάβλητο (per-segment profile ήδη υποστηρίζεται).
+- **Επόμενο:** live run — η διαδρομή πρέπει να ολοκληρώνεται χωρίς
+  `heading_error_exceeded` στους connectors.
+
+## #30 — non_monotonic_progress false-positive σε self-crossing loop routes
+
+- **Live μετά το #29:** το heading fix δούλεψε (κανένα `heading_error_exceeded`).
+  Το robot οδήγησε **35.8m / 54.9m** και **μάζεψε 2 μπάλες** (`ball_17`, `ball_12`
+  πέρασαν στο καλάθι). Έκοψε με
+  `aborted tracking | path failed | non_monotonic_progress | seg connector-10
+  progress 35.806m lat_err 0.000m head_err 0.000rad`.
+- **Artifact:** τα `lat_err=0, head_err=0` είναι **defaults** (δεν υπολογίζονται
+  γι' αυτόν τον τύπο failure — early return στο `collection_tracking_core.cpp:120`).
+  Μη ενδεικτικά.
+- **Root cause:** ο non-monotonic guard (`:120`, `:268`) χρησιμοποιεί το **global
+  nearest-point projection** (`raw`, χωρίς window — ψάχνει όλα τα segments). Οι νέες
+  υψηλής κάλυψης διαδρομές είναι **loops που αυτο-διασταυρώνονται**· εκεί που ο
+  βρόχος επιστρέφει κοντά σε προηγούμενο segment, το global nearest «κολλάει» πίσω
+  (π.χ. 35.8m→~5m) → ψευδές «η πρόοδος πήγε πίσω» → abort. Το bounded (τοπικό)
+  tracking ήταν μια χαρά.
+- **Fix (C++ tracking core):** το raw projection για τον backward έλεγχο
+  περιορίζεται σε window `progress_projection_window_m` (10m) **πίσω** από το
+  tracked progress: ανιχνεύει γνήσιο on-path regression αλλά αγνοεί μακρινά
+  self-intersections. Καμία αλλαγή σε msg/param/Python — reuse υπάρχοντος window.
+  `collection_tracking_core.cpp` raw-update guard `within_regression_window`.
+- **gtest:** νέο `SelfCrossingLoopDoesNotFalselyReportNonMonotonicProgress` —
+  figure-8 (περνά από αρχή σε t=0 και t=π), mid-path crossing, lenient profile·
+  επιβεβαιώνει κανένα false non_monotonic. Το υπάρχον regression test (γνήσιο
+  backward εντός window) παραμένει (window 10m ≫ 1m regression). Core syntax OK
+  τοπικά· τα gtests τρέχουν στο container.
+- **Δευτερεύον (χωριστό):** `beam missed ball: 2 retained but beam saw 0` —
+  reconciliation του basket-beam sensor· οι μπάλες όντως μαζεύτηκαν (basket-entry
+  events πυροδότησαν). Δεν αφορά τη διαδρομή.
+- **Επόμενο:** rebuild C++ plugin + live run· η διαδρομή πρέπει να προχωρά πέρα από
+  τα self-crossings και να πλησιάζει ολοκλήρωση.
+
+## #31 — Πρώτη πλήρης ολοκλήρωση route + UI speed/elapsed
+
+- **Live:** πρώτο `route_outcome=route_completed` / `state=completed` end-to-end (ο
+  μηχανισμός συλλογής μπαλών είναι εκτός scope προς το παρόν).
+- **UI observability:** προστέθηκαν «Speed» και «Elapsed» στο Collection Run panel.
+  - *Speed:* πραγματική ground speed από `/odom` twist. Το `_on_odom` την κρατά
+    **πριν** το `slam_tf` short-circuit (το twist έρχεται πάντα από /odom), σε
+    `_robot_speed_mps` → top-level status `measured_speed_mps`. Δεν χρησιμοποιείται
+    το `cmd_linear_m_s` γιατί στο hands-off collect_route η Python base command
+    είναι idle (0)· ούτε το `controller_state.measured_speed_mps` (crossing-only
+    artifact, βλ. #29).
+  - *Elapsed:* `_collect_route_elapsed_s(state)` — live `now - started` όσο τρέχει,
+    frozen στο last-event `t_s` σε terminal state. Στο collect_route summary →
+    `collection_run.elapsed_s`.
+  - `app.js renderCollectionRun` δείχνει τα δύο πεδία (fallback `0.00 m/s` / `-`).
+  - *Collection Log ordering:* το sort/filter/clear χρησιμοποιεί πλέον κοινό
+    `eventRecency` = `sim_time_s ?? t_s`. Το `sim_time_s` είναι μονότονο ανά
+    session (δεν μηδενίζεται ανά run όπως το `t_s`), οπότε το log μένει «πιο
+    πρόσφατο πρώτα» ακόμη και σε επαναλαμβανόμενα runs (πριν, stale events παλιού
+    run με υψηλό `t_s` επέπλεαν στην κορυφή).
+- **Tests:** 321 pure pytest PASS· controller_node/app.js syntax OK. Ο container
+  test `_build_collect_route_summary` προστατεύεται με `getattr` για το
+  `_collection_event_started_at` (το SimpleNamespace helper δεν το ορίζει).
+- **Επόμενο:** rebuild (C++ #30 + Python) + live· επανάληψη ολοκληρωμένης διαδρομής
+  με ορατά speed/elapsed ⇒ κοντά στο κλείσιμο της υλοποίησης.

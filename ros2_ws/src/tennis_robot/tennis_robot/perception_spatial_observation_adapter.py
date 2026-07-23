@@ -61,18 +61,34 @@ class PerceptionSpatialObservationAdapter:
         if not math.isclose(transform.timestamp_s, detection.rgb_timestamp_s, abs_tol=1e-9):
             return self._reject(SpatialObservationRejectionCode.PERCEPTION_TF_REJECTED, detection_index, detection.rgb_timestamp_s, "transform timestamp mismatch")
         try:
-            x, y, _ = detection.position_camera_xyz
+            x, y, z = detection.position_camera_xyz
             qx, qy, qz, qw = transform.rotation_xyzw
             tx, ty, _ = transform.translation_xyz
             if not all(math.isfinite(v) for v in (*detection.position_camera_xyz, *detection.covariance_camera_xyz, qx, qy, qz, qw, tx, ty)) or len(detection.covariance_camera_xyz) != 9:
                 raise ValueError
-            r00=1-2*(qy*qy+qz*qz); r01=2*(qx*qy-qw*qz); r10=2*(qx*qy+qw*qz); r11=1-2*(qx*qx+qz*qz)
-            a,b,d = detection.covariance_camera_xyz[0], detection.covariance_camera_xyz[1], detection.covariance_camera_xyz[4]
-            cam = PositionCovariance2D(a, b, d)
-            xx=r00*r00*cam.xx+2*r00*r01*cam.xy+r01*r01*cam.yy
-            xy=r00*r10*cam.xx+(r00*r11+r01*r10)*cam.xy+r01*r11*cam.yy
-            yy=r10*r10*cam.xx+2*r10*r11*cam.xy+r11*r11*cam.yy
-            return AcceptedSpatialObservation(scan_id, detection_index, detection.rgb_timestamp_s, detection.matched_depth_timestamp_s, Point2D(tx+r00*x+r01*y, ty+r10*x+r11*y), PositionCovariance2D(xx, xy, yy), detection.confidence, scan_step_id, detection.calibration_id, detection.configuration_id)
+            rotation = (
+                (1-2*(qy*qy+qz*qz), 2*(qx*qy-qw*qz), 2*(qx*qz+qw*qy)),
+                (2*(qx*qy+qw*qz), 1-2*(qx*qx+qz*qz), 2*(qy*qz-qw*qx)),
+                (2*(qx*qz-qw*qy), 2*(qy*qz+qw*qx), 1-2*(qx*qx+qy*qy)),
+            )
+            covariance = (
+                detection.covariance_camera_xyz[0:3],
+                detection.covariance_camera_xyz[3:6],
+                detection.covariance_camera_xyz[6:9],
+            )
+
+            def rotated_covariance(row_a: int, row_b: int) -> float:
+                return sum(
+                    rotation[row_a][i] * covariance[i][j] * rotation[row_b][j]
+                    for i in range(3) for j in range(3)
+                )
+
+            map_x = tx + rotation[0][0]*x + rotation[0][1]*y + rotation[0][2]*z
+            map_y = ty + rotation[1][0]*x + rotation[1][1]*y + rotation[1][2]*z
+            xx = rotated_covariance(0, 0)
+            xy = rotated_covariance(0, 1)
+            yy = rotated_covariance(1, 1)
+            return AcceptedSpatialObservation(scan_id, detection_index, detection.rgb_timestamp_s, detection.matched_depth_timestamp_s, Point2D(map_x, map_y), PositionCovariance2D(xx, xy, yy), detection.confidence, scan_step_id, detection.calibration_id, detection.configuration_id)
         except (ValueError, TypeError, DomainValidationError):
             return self._reject(SpatialObservationRejectionCode.PERCEPTION_METADATA_REJECTED, detection_index, detection.rgb_timestamp_s, "invalid_c1_spatial_detection")
 

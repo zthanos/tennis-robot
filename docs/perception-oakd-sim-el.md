@@ -29,6 +29,8 @@ Gazebo depth /camera/depth ────┴─▶ depth fusion (per-box ROI perce
                      ▼                                            ▼
                          /perception/ball_detections
                          (BallDetectionArray — canonical contract)
+                         /perception/diagnostics
+                         (operator-only JSON; never a target source)
 ```
 
 Stages (`tennis_robot/perception_node.py`, `tennis_robot/ball_detector.py`):
@@ -52,6 +54,7 @@ Stages (`tennis_robot/perception_node.py`, `tennis_robot/ball_detector.py`):
 | Topic | Type | Purpose |
 | --- | --- | --- |
 | `/perception/ball_detections` | `tennis_robot_msgs/BallDetectionArray` | Structured multi-ball detections mirroring DepthAI `SpatialDetectionArray`. |
+| `/perception/diagnostics` | `std_msgs/String` (JSON) | Per-frame counts, measured depth range and explicit spatial-rejection reasons for operators/tests. It is not consumed as ball data. |
 | `/survey/vision` | `std_msgs/String` (JSON) | Court-line / junction survey vision (unchanged). |
 
 `BallDetectionArray` carries a `std_msgs/Header` (stamp +
@@ -61,6 +64,24 @@ and — when depth was valid — `bearing_rad`, `distance_m`, optical-frame
 forward. `bearing_rad` follows robot/navigation convention: positive left/CCW.
 This is the entry the real OAK-D adapter will populate, so swapping the
 simulated detector for the on-device network requires no downstream change.
+
+### Τρία διαφορετικά όρια εμβέλειας
+
+Δεν πρέπει να συγχέονται:
+
+1. το depth range που μπορεί να μετρήσει ο αισθητήρας,
+2. το range στο οποίο το neural detector αναγνωρίζει αξιόπιστα μπάλα στην
+   επιλεγμένη RGB ανάλυση,
+3. το range για το οποίο υπάρχει accepted covariance calibration evidence.
+
+Ένα έγκυρο depth pixel δεν αρκεί για `has_spatial=true`: απαιτούνται neural
+detection και calibrated covariance για το συγκεκριμένο range/depth-quality.
+Το ενεργό Gazebo v3 artifact καλύπτει `1.0218–6.7653 m`, βάσει 540 accepted
+target samples. Το pilot στα `8.263 m` δεν έδωσε αξιόπιστη target detection με
+το stock YOLO, παρότι το depth sensor ήταν εντός του ονομαστικού ορίου. Άρα το
+operational simulated perception range είναι περίπου `1.02–6.77 m`, όχι 9 m.
+Το physical OAK-D απαιτεί ανεξάρτητο hardware artifact και validation του
+on-device neural model.
 
 ## Sim ↔ real parity
 
@@ -88,6 +109,8 @@ Environment variables (read by `ball_detector.load_ball_detector` and the node):
 | `BALL_CONF_THRESHOLD` | `0.35` | Min class score to keep |
 | `BALL_IOU_THRESHOLD` | `0.45` | NMS IoU threshold |
 | `BALL_CLASS_IDS` | `32` | Kept COCO class ids (`0` for a single-class custom model) |
+| `BALL_CENTER_ZOOM_FACTOR` | `3.0` (sim) | Neural crop scale for small/far balls |
+| `BALL_CENTER_ZOOM_TILES` | `0.30:0.333,0.50:0.333,0.70:0.333` (sim) | Normalized neural tile centres covering the scan sector |
 | `CAMERA_FOV_RAD` | `1.204` (sim) | Horizontal FOV, matches `oak_d.urdf.xacro` |
 | `CAMERA_FRAME_ID` | `camera_link_optical_frame` | REP-103 optical frame for the detection array |
 | `RGB_DEPTH_SYNC_SLOP_S` | `0.05` | Maximum timestamp difference for an RGB/depth pair |

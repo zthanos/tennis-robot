@@ -132,6 +132,39 @@ def test_detect_maps_boxes_back_through_letterbox(monkeypatch):
     assert out[0].center_y == pytest.approx(180, abs=2.0)
 
 
+def test_center_zoom_maps_detection_back_and_merges_full_frame_duplicate(monkeypatch):
+    # The fake model returns a centered 40x40 box for both passes.  On a
+    # 640x480 source, the zoom crop is 320x240 and its mapped box is therefore
+    # smaller in source pixels but remains centered.  Global NMS keeps one.
+    cols = [_yolo_column(320, 320, 40, 40, SPORTS_BALL, 0.9)]
+    det = _make_detector(
+        monkeypatch, cols, conf_threshold=0.35, center_zoom_factor=2.0
+    )
+    out = det.detect(np.zeros((480, 640, 3), np.uint8))
+    assert len(out) == 1
+    assert out[0].center_x == pytest.approx(320, abs=2.0)
+    assert out[0].center_y == pytest.approx(240, abs=2.0)
+
+
+def test_invalid_center_zoom_is_rejected(monkeypatch):
+    with pytest.raises(ValueError, match="center_zoom_factor"):
+        _make_detector(monkeypatch, [], center_zoom_factor=0.5)
+
+
+def test_zoom_tile_maps_detection_to_configured_centre(monkeypatch):
+    cols = [_yolo_column(320, 320, 40, 40, SPORTS_BALL, 0.9)]
+    det = _make_detector(
+        monkeypatch,
+        cols,
+        conf_threshold=0.35,
+        center_zoom_factor=3.0,
+        zoom_tiles=((0.3, 1.0 / 3.0),),
+    )
+    out = det.detect(np.zeros((480, 640, 3), np.uint8))
+    assert any(d.center_x == pytest.approx(192, abs=2.0) for d in out)
+    assert any(d.center_y == pytest.approx(160, abs=2.0) for d in out)
+
+
 # ---------------------------------------------------------------------------
 # Factory startup contract
 # ---------------------------------------------------------------------------
@@ -164,6 +197,28 @@ def test_depth_fusion_right_ball_negative_bearing():
     obs = estimate_depth_ball_observation(det, depth, 640, 480, math.radians(69))
     assert obs is not None
     assert obs.bearing_rad < -0.05  # canonical bearing is +left / CCW
+
+
+def test_depth_fusion_converts_optical_z_to_slant_range():
+    detection = BallDetection(550, 90, 20, 20, confidence=0.8)
+    depth = np.full((480, 640), 5.0, dtype=np.float32)
+    obs = estimate_depth_ball_observation(
+        detection, depth, 640, 480, math.radians(69)
+    )
+    assert obs is not None
+    elevation = pixel_elevation_rad(
+        detection.center_y, 480, math.radians(69) * 480 / 640
+    )
+    expected = 5.0 * math.sqrt(
+        1.0 + math.tan(obs.bearing_rad) ** 2 + math.tan(elevation) ** 2
+    )
+    assert obs.distance_m == pytest.approx(expected)
+    right, down, forward = camera_frame_position(
+        obs.bearing_rad, obs.distance_m, elevation
+    )
+    assert forward == pytest.approx(5.0)
+    assert right == pytest.approx(-5.0 * math.tan(obs.bearing_rad))
+    assert down == pytest.approx(-5.0 * math.tan(elevation))
 
 
 def test_camera_frame_position_conventions():

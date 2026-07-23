@@ -85,6 +85,13 @@ class FakeFactory:
         self.kwargs = kwargs
         self.executor = FakeExecutor()
         self.crossing_telemetry = [{"active_ball_id": "ball-1"}]
+        self.snapshot_diagnostics = {
+            "minimum_confirmation_count": 2,
+            "tracks": [
+                {"x_m": 3.0, "y_m": 1.0, "steps": ["scan-step-1"], "confirmed": False},
+                {"x_m": 4.0, "y_m": 2.0, "steps": ["scan-step-2", "scan-step-3"], "confirmed": True},
+            ],
+        }
         self.stopped = 0
         self.__class__.instances.append(self)
 
@@ -111,6 +118,13 @@ def _node(monkeypatch):
         _collection_executor_cache=CollectionExecutorNodeCache(),
         _latest_scan_msg="scan",
         _latest_ball_detections_msg="detections",
+        _latest_perception_diagnostics={
+            "schema_version": 1,
+            "detections_2d": 1,
+            "spatial_accepted": 0,
+            "spatial_rejected": 1,
+            "rejection_counts": {"calibration_out_of_domain": 1},
+        },
         _robot_x=1.0,
         _robot_y=2.0,
         _robot_yaw=0.3,
@@ -176,6 +190,9 @@ def test_executor_status_serializes_empty_plan_and_crossing_telemetry(monkeypatc
     assert status["segments"] == []
     assert status["crossings"] == []
     assert status["executed_crossing_telemetry"] == [{"active_ball_id": "ball-1"}]
+    assert status["perception_diagnostics"]["rejection_counts"] == {
+        "calibration_out_of_domain": 1
+    }
 
 
 def test_hands_off_apply_does_not_publish_collector_command(monkeypatch):
@@ -189,7 +206,25 @@ def test_hands_off_apply_does_not_publish_collector_command(monkeypatch):
 
     ControllerNode._apply_command(node, command)
 
-    assert len(node._pub_motion_cmd.messages) == 1
-    assert node._pub_motion_cmd.messages[0].linear.x == 0.0
-    assert node._pub_motion_cmd.messages[0].angular.z == 0.0
+    assert node._pub_motion_cmd.messages == []
     assert node._pub_collector.messages == []
+
+
+def test_collection_map_surfaces_live_snapshot_tracks(monkeypatch):
+    node = _node(monkeypatch)
+    node._start_collection_route_executor()
+    node.control_mode = "collect_route"
+    node.active_mapped_target_id = None
+    node.ball_map = SimpleNamespace(
+        config=SimpleNamespace(supervised_fov_rad=1.204, supervised_max_range_m=6.765),
+        to_console_balls=lambda *args, **kwargs: [],
+    )
+
+    payload = ControllerNode._build_map_payload(node)
+
+    assert [(ball["x_m"], ball["y_m"], ball["confirmed"]) for ball in payload["balls"]] == [
+        (3.0, 1.0, False),
+        (4.0, 2.0, True),
+    ]
+    assert payload["metrics"]["balls_mapped"] == 2
+    assert payload["metrics"]["balls_confirmed"] == 1

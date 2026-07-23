@@ -133,6 +133,37 @@ def test_corridor_collapse_is_no_candidate_found_not_no_entry():
     assert feasibility.unreachable_reason is BallReasonCode.NO_CANDIDATE_FOUND
 
 
+def test_shared_localization_covariance_cancels_from_relative_capture_width():
+    config = configuration()
+    localization = config.gazebo_snapshot.localization_xy_covariance.covariance
+    measurement_variance = 1e-4
+    snapshot = ScanSnapshot(
+        "scan-shared-localization", FAKE_TIME_S, "map", SCAN_POSE,
+        (SnapshotBall(
+            "ball-1", Point2D(0.0, 0.0), 0.95,
+            PositionCovariance2D(
+                localization.xx + measurement_variance,
+                localization.xy,
+                localization.yy + measurement_variance,
+            ),
+        ),),
+        config,
+    )
+    feasibility = analyze_snapshot(snapshot, court(), config)[0]
+    assert feasibility.reachable
+    expected = (
+        config.mechanical.capture_half_width_m
+        - config.mechanical.ball_radius_m
+        - config.feasibility.confidence_multiplier * math.sqrt(measurement_variance)
+        - config.feasibility.tracking_lateral_error_bound_m
+        - config.feasibility.capture_safety_margin_m
+    )
+    assert all(
+        candidate.effective_capture_half_width_m == pytest.approx(expected)
+        for candidate in feasibility.candidates
+    )
+
+
 def test_phase_3a_never_emits_turn_radius_reason():
     feasibility = result(configuration(), court())
     assert feasibility.unreachable_reason is not BallReasonCode.TURN_RADIUS

@@ -171,16 +171,30 @@ plan: progress, lifecycle state, safety state, collector state και telemetry.
    (`LSL`, `RSR`, `LSR`, `RSL`) edges μόνο. Κάθε edge επιβάλλει required
    minimum radius, maximum length, individual arc angle και total turn,
    αποκλείει CCC/loops/self-intersection/reverse/standalone rotate και κάνει
-   continuous swept-disk collision checking. Διατηρεί ξεχωριστά typed
-   telemetry rejections για collision, length και turning constraints. Δεν
-   επιλέγει ακόμη route ordering ή score.
-4. **B2 search and score.** Exact bounded deterministic DFS/branch-and-bound
-   αναπτύσσει simple paths μόνο από valid directed B1 edges. Κάθε terminal
-   απαιτεί straight forward extension με continuous swept-disk check. Το
-   required immutable search config ορίζει expansion budget, terminal run-out,
-   nominal speeds, turn-energy equivalent και weights. Η score είναι
-   maximum unique covered → minimum `C` → minimum pass count → stable route
-   ID, με `C` ακριβως όπως ορίζει το specification.
+   continuous swept-disk collision checking. Οι turning/length έλεγχοι
+   εφαρμόζονται **analytically** πάνω στα closed-form CSC parameters
+   `(t, p, q)` **πριν** τη materialization της subdivided γεωμετρίας· μόνο τα
+   edges που περνούν αυτό το gate materialize-άρονται και ελέγχονται για
+   self-intersection και collision. Το accept/reject verdict παραμένει
+   byte-identical με το materialize-first (regression test), αλλά ο O(N²)
+   graph build γίνεται ~8× φθηνότερος (τυπικά 98,5% των directed pairs
+   κόβονται στο analytic gate), επιτρέποντας πολύ μεγαλύτερο candidate cap.
+   Διατηρεί ξεχωριστά typed telemetry rejections για collision, length και
+   turning constraints. Δεν επιλέγει ακόμη route ordering ή score.
+4. **B2 search and score.** Bounded deterministic cost-guided DFS με
+   admissible branch-and-bound αναπτύσσει simple paths μόνο από valid directed
+   B1 edges. Τα outgoing edges εξετάζονται κατά μέγιστη νέα κάλυψη → μικρότερο
+   μήκος → stable id, ώστε ένα ισχυρό full-coverage incumbent να βρίσκεται μέσα
+   σε λίγα expansions ανά μπάλα. Ένας κλάδος κλαδεύεται όταν (α) η static
+   forward-reachable κάλυψη από τον κόμβο δεν φτάνει την κάλυψη του incumbent, ή
+   (β) το admissible cost lower-bound του prefix (prefix + terminal run-out)
+   ξεπερνά το cost του incumbent σε ίση κάλυψη. Το pruning είναι admissible, άρα
+   το επιστρεφόμενο best είναι το ίδιο optimum που θα έβρισκε η εξαντλητική
+   αναζήτηση. Κάθε terminal απαιτεί straight forward extension με continuous
+   swept-disk check. Το required immutable search config ορίζει expansion
+   budget, terminal run-out, nominal speeds, turn-energy equivalent και weights.
+   Η score είναι maximum unique covered → minimum `C` → minimum pass count →
+   stable route ID, με `C` ακριβως όπως ορίζει το specification.
    Το Phase 3C προσθέτει πριν από graph build pure shared-pass candidates από
    common-heading 3A nodes. Δεν αλλάζει B1/B2 interfaces: το node δηλώνει
    πολλαπλά `covered_ball_ids`, entry πριν από το πρώτο και exit μετά από το

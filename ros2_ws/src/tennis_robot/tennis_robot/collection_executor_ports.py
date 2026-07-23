@@ -81,11 +81,14 @@ def telemetry_event_to_dict(event: TelemetryEvent) -> dict:
     """Pure serialization of a TelemetryEvent to a robot_status.json-style dict."""
     if not isinstance(event, TelemetryEvent):
         raise ExecutorPortError("event must be a TelemetryEvent")
-    return {
+    payload = {
         "code": event.code.value,
         "state": event.state.value,
         "reason": event.reason.value if event.reason is not None else None,
     }
+    if event.detail is not None:
+        payload["detail"] = event.detail
+    return payload
 
 
 class CallbackTelemetrySink:
@@ -143,7 +146,15 @@ class ScanPoseNavigatorAdapter:
         self._navigator.request(x_m, y_m, yaw_rad)
 
     def result(self) -> NavigatorResult:
-        return navigator_result_for_state(self._navigator.state.value)
+        state_value = self._navigator.state.value
+        if state_value == "unavailable":
+            # The controller and web panel can be ready a few seconds before
+            # Nav2's delayed lifecycle bring-up.  Keep the executor in its
+            # explicit navigation state and retry instead of turning a normal
+            # startup race into an immediate aborted_scan with 0/18 steps.
+            self.start()
+            return NavigatorResult(NavigatorStatus.RUNNING)
+        return navigator_result_for_state(state_value)
 
 
 # ── 4. Collector ─────────────────────────────────────────────────────────────
@@ -405,10 +416,20 @@ class ScanSessionDriver:
         # the node when it logs an aborted_scan terminal.
         self.last_failure_detail: str | None = None
 
+    @property
+    def scan_diagnostics(self):
+        """Builder telemetry (rejection histogram + per-track step counts) for
+        explaining an empty/partial snapshot. None if the session does not
+        expose it."""
+        return getattr(self._session, "diagnostics", None)
+
     def start(self) -> None:
         self._started_at_s = self._clock.now_s()
         self._terminal = None
         self.last_failure_detail = None
+        start_session = getattr(self._session, "start", None)
+        if callable(start_session):
+            start_session(self._started_at_s)
         self._cmd_vel(self._angular_speed_rad_s)
 
     def result(self) -> ScanSessionResult:

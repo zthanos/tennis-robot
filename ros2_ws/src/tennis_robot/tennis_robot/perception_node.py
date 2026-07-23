@@ -55,6 +55,7 @@ from tennis_robot.perception_covariance_calibration import (
     evaluate_producer_spatial_covariance,
     load_spatial_calibration_runtime,
 )
+from tennis_robot.perception_diagnostics import summarize_spatial_fusion
 
 DEPTH_MIN_RANGE = float(os.getenv("DEPTH_MIN_RANGE_M", "0.1"))
 DEPTH_MAX_RANGE = float(os.getenv("DEPTH_MAX_RANGE_M", "10.0"))
@@ -99,6 +100,9 @@ class PerceptionNode(Node):
 
         msgs = __import__("tennis_robot_msgs.msg", fromlist=["BallDetectionArray"])
         self._pub_survey = self.create_publisher(String, "/survey/vision", 1)
+        self._pub_diagnostics = self.create_publisher(
+            String, "/perception/diagnostics", 10
+        )
         self._pub_detections = self.create_publisher(
             msgs.BallDetectionArray, "/perception/ball_detections", 10
         )
@@ -132,6 +136,7 @@ class PerceptionNode(Node):
         )
 
         self._publish_detection_array(fused, image_msg.header.stamp, depth_msg.header.stamp)
+        self._publish_spatial_diagnostics(fused, image_msg.header.stamp)
         self._publish_survey_vision(frame, depth)
 
     # -- decoding -----------------------------------------------------------
@@ -181,6 +186,9 @@ class PerceptionNode(Node):
                 "bearing_rad": 0.0,
                 "distance_m": float("inf"),
                 "pos": (0.0, 0.0, 0.0),
+                "estimated_distance_m": None,
+                "depth_quality": None,
+                "spatial_rejection_reason": "no_valid_depth",
             }
             ball_obs = estimate_depth_ball_observation(
                 det, depth, w, h, CAMERA_FOV_RAD
@@ -191,10 +199,13 @@ class PerceptionNode(Node):
                     ball_obs.bearing_rad, ball_obs.distance_m, elevation
                 )
                 quality = depth_roi_quality(det, depth, w, h)
+                rec["estimated_distance_m"] = float(ball_obs.distance_m)
+                rec["depth_quality"] = float(quality)
                 covariance = evaluate_producer_spatial_covariance(
                     self._covariance_model, pos, quality
                 )
                 if covariance.covariance is None:
+                    rec["spatial_rejection_reason"] = covariance.reason or "covariance_rejected"
                     records.append(rec)
                     continue
                 rec.update(
@@ -203,7 +214,12 @@ class PerceptionNode(Node):
                     distance_m=float(ball_obs.distance_m),
                     pos=pos,
                     covariance=covariance.covariance,
+                    spatial_rejection_reason=None,
                 )
+            elif ball_obs is not None:
+                rec["estimated_distance_m"] = float(ball_obs.distance_m)
+                rec["depth_quality"] = float(depth_roi_quality(det, depth, w, h))
+                rec["spatial_rejection_reason"] = "calibration_unavailable"
             records.append(rec)
         records.sort(key=lambda r: (not r["has_spatial"], r["distance_m"]))
         return records
@@ -236,6 +252,30 @@ class PerceptionNode(Node):
                 m.position_x, m.position_y, m.position_z = (float(v) for v in r["pos"])
             arr.detections.append(m)
         self._pub_detections.publish(arr)
+
+    def _publish_spatial_diagnostics(self, fused: list[dict], stamp) -> None:
+        artifact = (
+            self._covariance_model.artifact
+            if self._covariance_model is not None
+            else None
+        )
+        payload = summarize_spatial_fusion(
+            fused,
+            calibration_range_min_m=artifact.range_min_m if artifact else None,
+            calibration_range_max_m=artifact.range_max_m if artifact else None,
+        )
+        payload.update(
+            {
+                "rgb_stamp_s": float(stamp.sec) + float(stamp.nanosec) * 1e-9,
+                "spatial_targets_healthy": self._spatial_targets_healthy,
+                "spatial_targets_health_reason": self._spatial_targets_health_reason,
+                "calibration_id": self._spatial_targets_artifact_id,
+                "configuration_id": self._spatial_targets_artifact_version,
+            }
+        )
+        message = String()
+        message.data = json.dumps(payload, sort_keys=True)
+        self._pub_diagnostics.publish(message)
 
     def _publish_survey_vision(self, frame: np.ndarray, depth: np.ndarray) -> None:
         sv = build_survey_vision(frame, depth, DEPTH_MIN_RANGE, DEPTH_MAX_RANGE)

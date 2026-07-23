@@ -348,4 +348,5 @@ def main() -> None:
             rclpy.spin_once(node, timeout_sec=0.1)
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()

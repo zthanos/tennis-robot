@@ -87,6 +87,7 @@ class Node:
             "collection_route.safety_pause_timeout_s": 10.0,
             "collection_route.safety_max_scan_age_s": 0.5,
             "collection_route.controller_id": "CollectionFollowPath",
+            "collection_route.goal_checker_id": "collection_goal_checker",
         }
         self.clients, self.publishers, self.subscriptions = [], [], []
     def get_parameter(self, name):
@@ -132,7 +133,8 @@ class Load(Service):
         def __init__(self): self.context = None
 class FollowPath:
     class Goal:
-        def __init__(self): self.path, self.controller_id = None, ""
+        def __init__(self):
+            self.path, self.controller_id, self.goal_checker_id = None, "", ""
 class GoalStatus:
     STATUS_SUCCEEDED, STATUS_CANCELED, STATUS_ABORTED = 4, 5, 6
 class ActionClient:
@@ -215,6 +217,9 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     assert node.subscriptions[0].topic == "/CollectionFollowPath/state"
     session = built.handles.scan_snapshot_session
     assert callable(session.forward_frame) and callable(session.finalize)
+    assert session.builder.robot_pose_at_scan == Pose2D(*built.config.scan_pose_xy_yaw)
+    cache.robot_x_m, cache.robot_y_m, cache.robot_yaw_rad = 11.0, -4.0, -0.3
+    assert session._robot_pose_provider() == Pose2D(11.0, -4.0, -0.3)
 
     values = build_execution_context(
         curved_plan(), controller_tuning=ControllerTuning(1.0, 3.0, 10.0, 0.25, 0.05),
@@ -227,6 +232,7 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     )
     goal = built.transport.action_client.goals[-1]
     assert goal.controller_id == "CollectionFollowPath"
+    assert goal.goal_checker_id == "collection_goal_checker"
     assert goal.path.header.frame_id == "map"
     assert len(goal.path.poses) == len(values.follow_path_poses)
     assert built.handles.goal_status_provider() == "rejected"
@@ -240,24 +246,40 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     assert vars(node.clients[2][1].requests[-1]) == {
         "plan_id": "plan", "path_sha256": "sha", "action_outcome": 0,
     }
+    profile_verdict = SimpleNamespace(
+        hard_compliant=True,
+        hard_violation_reason=0,
+        nominal_tracking=True,
+        measured_speed_mps=0.8,
+        nominal_speed_error_mps=0.0,
+    )
     state_values = {
         "plan_id": "plan", "path_sha256": "sha", "lifecycle_state": 3,
         "progress_s": 1.0, "active_segment_id": "segment",
         "has_active_crossing": True, "active_ball_id": "ball",
         "active_crossing_progress_s": 1.1, "measured_speed_mps": 0.8,
         "lateral_error_m": 0.01, "heading_error_rad": 0.02,
-        "profile_verdict": object(), "failure_reason": 0,
+        "profile_verdict": profile_verdict, "failure_reason": 0,
     }
     node.subscriptions[0].callback(SimpleNamespace(**state_values))
     assert built.handles.state_provider() == state_values
+    assert built.controller_state == {
+        key: state_values[key]
+        for key in (
+            "plan_id", "lifecycle_state", "progress_s", "active_segment_id",
+            "has_active_crossing", "active_ball_id", "active_crossing_progress_s",
+            "measured_speed_mps", "lateral_error_m", "heading_error_rad",
+            "failure_reason",
+        )
+    }
     assert built.crossing_telemetry == [{
         key: state_values[key]
         for key in (
             "plan_id", "progress_s", "active_segment_id", "active_ball_id",
             "active_crossing_progress_s", "measured_speed_mps",
-            "lateral_error_m", "heading_error_rad", "profile_verdict",
+            "lateral_error_m", "heading_error_rad",
         )
-    }]
+    } | {"profile_verdict": vars(profile_verdict)}]
 
 
 def test_load_sender_fills_real_context_message_field_for_field(factory):

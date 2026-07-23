@@ -43,7 +43,8 @@ bool valid_tuning(const CollectionControllerTuning & tuning)
   return finite(tuning.lookahead_distance_m) && tuning.lookahead_distance_m > 0.0 &&
     finite(tuning.max_angular_velocity_rad_s) && tuning.max_angular_velocity_rad_s > 0.0 &&
     finite(tuning.progress_projection_window_m) && tuning.progress_projection_window_m > 0.0 &&
-    finite(tuning.crossing_speed_window_m) && tuning.crossing_speed_window_m > 0.0;
+    finite(tuning.crossing_speed_window_m) && tuning.crossing_speed_window_m > 0.0 &&
+    finite(tuning.progress_tolerance_m) && tuning.progress_tolerance_m > 0.0;
 }
 
 }  // namespace
@@ -65,6 +66,7 @@ CollectionTrackingCore::CollectionTrackingCore(CollectionTrackingPlan plan)
   for (std::size_t index = 0; index < plan_.path.size(); ++index) {
     const auto & point = plan_.path[index];
     if (!finite(point.x_m) || !finite(point.y_m) || !finite(point.progress_s) ||
+      !finite(point.heading_rad) ||
       (index > 0U && point.progress_s <= plan_.path[index - 1U].progress_s))
     {
       throw std::invalid_argument("invalid collection path");
@@ -138,7 +140,9 @@ TrackingResult CollectionTrackingCore::update(const TrackingInput & input)
   if (input.measured_speed_mps < -kEpsilon) {
     return failure(TrackingFailureCode::kReverseRequired, projection.progress_s);
   }
-  if (projection.progress_s + kEpsilon >= plan_.terminal_progress_s) {
+  if (projection.progress_s + plan_.tuning.progress_tolerance_m + kEpsilon >=
+    plan_.terminal_progress_s)
+  {
     last_progress_s_ = plan_.terminal_progress_s;
     TrackingResult result;
     result.status = TrackingStatus::kCompleted;
@@ -150,21 +154,28 @@ TrackingResult CollectionTrackingCore::update(const TrackingInput & input)
     return result;
   }
 
+  const double path_heading_error = wrap_angle(tangent_at(projection.progress_s) - input.heading_rad);
+  if (std::abs(path_heading_error) > segment->profile.max_heading_error_rad + kEpsilon) {
+    auto result = failure(TrackingFailureCode::kHeadingErrorExceeded, projection.progress_s);
+    result.lateral_error_m = projection.lateral_error_m;
+    result.heading_error_rad = path_heading_error;
+    result.remaining_run_in_m = remaining_run_in;
+    result.remaining_run_out_m = remaining_run_out;
+    return result;
+  }
+
   const auto lookahead = point_at(std::min(
     plan_.terminal_progress_s, projection.progress_s + plan_.tuning.lookahead_distance_m));
   const double target_angle = std::atan2(lookahead.y_m - input.y_m, lookahead.x_m - input.x_m);
-  const double heading_error = wrap_angle(target_angle - input.heading_rad);
-  if (std::abs(heading_error) > segment->profile.max_heading_error_rad + kEpsilon) {
-    return failure(TrackingFailureCode::kHeadingErrorExceeded, projection.progress_s);
-  }
+  const double lookahead_bearing_error = wrap_angle(target_angle - input.heading_rad);
   const double target_distance = std::hypot(lookahead.x_m - input.x_m, lookahead.y_m - input.y_m);
   if (target_distance <= kEpsilon) {
     return failure(TrackingFailureCode::kStandaloneRotateRequired, projection.progress_s);
   }
-  if (std::cos(heading_error) <= kEpsilon) {
+  if (std::cos(lookahead_bearing_error) <= kEpsilon) {
     return failure(TrackingFailureCode::kReverseRequired, projection.progress_s);
   }
-  const double curvature = 2.0 * std::sin(heading_error) / target_distance;
+  const double curvature = 2.0 * std::sin(lookahead_bearing_error) / target_distance;
   if (std::abs(curvature) > segment->profile.max_curvature_per_m + kEpsilon) {
     return failure(TrackingFailureCode::kCurvatureExceeded, projection.progress_s);
   }
@@ -179,7 +190,7 @@ TrackingResult CollectionTrackingCore::update(const TrackingInput & input)
   result.command.angular_z_rad_s = angular_velocity;
   result.progress_s = projection.progress_s;
   result.lateral_error_m = projection.lateral_error_m;
-  result.heading_error_rad = heading_error;
+  result.heading_error_rad = path_heading_error;
   result.remaining_run_in_m = remaining_run_in;
   result.remaining_run_out_m = remaining_run_out;
   if (next && std::abs(next->progress_s - projection.progress_s) <= plan_.tuning.crossing_speed_window_m + kEpsilon) {
@@ -233,7 +244,15 @@ CollectionTrackingCore::Projection CollectionTrackingCore::project_monotonically
     const double raw_y = start.y_m + raw_t * dy;
     const double current_raw_distance = std::hypot(x_m - raw_x, y_m - raw_y);
     const double raw_progress = start.progress_s + raw_t * (end.progress_s - start.progress_s);
-    if (current_raw_distance < raw_distance) {
+    // The raw projection drives the backward-motion (non-monotonic) check.  A
+    // global nearest-point search is fooled by self-crossing loop routes: where
+    // the path returns physically close to a much earlier segment, the global
+    // nearest snaps back and falsely reports regression.  Restrict it to a
+    // window behind the tracked progress so it detects genuine on-path
+    // regression while ignoring distant self-intersections.
+    const bool within_regression_window =
+      raw_progress + plan_.tuning.progress_projection_window_m + kEpsilon >= last_progress_s_;
+    if (within_regression_window && current_raw_distance < raw_distance) {
       raw_distance = current_raw_distance;
       raw = Projection{raw_progress, current_raw_distance, false, true};
     }
@@ -254,7 +273,8 @@ CollectionTrackingCore::Projection CollectionTrackingCore::project_monotonically
         current_bounded_distance, false, true};
     }
   }
-  bounded.raw_projection_behind = raw.found && raw.progress_s + kEpsilon < last_progress_s_;
+  bounded.raw_projection_behind = raw.found &&
+    raw.progress_s + plan_.tuning.progress_tolerance_m + kEpsilon < last_progress_s_;
   return bounded;
 }
 
@@ -279,7 +299,8 @@ TrackingPoint CollectionTrackingCore::point_at(const double progress_s) const
       const double t = std::clamp(
         (progress_s - start.progress_s) / (end.progress_s - start.progress_s), 0.0, 1.0);
       return TrackingPoint{
-        start.x_m + t * (end.x_m - start.x_m), start.y_m + t * (end.y_m - start.y_m), progress_s};
+        start.x_m + t * (end.x_m - start.x_m), start.y_m + t * (end.y_m - start.y_m),
+        progress_s, wrap_angle(start.heading_rad + t * wrap_angle(end.heading_rad - start.heading_rad))};
     }
   }
   return plan_.path.back();
@@ -289,13 +310,14 @@ double CollectionTrackingCore::tangent_at(const double progress_s) const
 {
   for (std::size_t index = 1; index < plan_.path.size(); ++index) {
     if (progress_s <= plan_.path[index].progress_s + kEpsilon) {
-      return std::atan2(plan_.path[index].y_m - plan_.path[index - 1U].y_m,
-        plan_.path[index].x_m - plan_.path[index - 1U].x_m);
+      const auto & start = plan_.path[index - 1U];
+      const auto & end = plan_.path[index];
+      const double t = std::clamp(
+        (progress_s - start.progress_s) / (end.progress_s - start.progress_s), 0.0, 1.0);
+      return wrap_angle(start.heading_rad + t * wrap_angle(end.heading_rad - start.heading_rad));
     }
   }
-  const auto & end = plan_.path.back();
-  const auto & start = plan_.path[plan_.path.size() - 2U];
-  return std::atan2(end.y_m - start.y_m, end.x_m - start.x_m);
+  return plan_.path.back().heading_rad;
 }
 
 std::optional<TrackingPlannedCrossing> CollectionTrackingCore::next_crossing(

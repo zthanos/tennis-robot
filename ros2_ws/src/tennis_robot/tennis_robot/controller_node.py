@@ -7,6 +7,7 @@ are imported unchanged from the controllers/ tree.
 
 Subscribes:
   /perception/ball_detections (tennis_robot_msgs/BallDetectionArray)
+  /perception/diagnostics (std_msgs/String, JSON; operator diagnostics only)
   /survey/vision     (std_msgs/String, JSON)
   /scan              (sensor_msgs/LaserScan)
   /odom              (nav_msgs/Odometry)
@@ -77,6 +78,7 @@ from tennis_robot.mapping import (
 )
 from tennis_robot.motion_controller import MOTION_COMMAND_TOPIC
 from tennis_robot.perception_covariance_calibration import PerceptionSpatialValidationConfig, validate_spatial_metadata
+from tennis_robot.perception_diagnostics import format_no_targets_diagnostic
 try:
     from tennis_robot.nav2_lane_navigator import Nav2LaneNavigator, LaneNavState
     _NAV2_AVAILABLE = True
@@ -225,6 +227,9 @@ class ControllerNode(Node):
         self._last_status_file_write_s: float = 0.0
         self._collection_events: deque[dict] = deque(maxlen=60)
         self._collection_event_started_at: float | None = None
+        # Actual ground speed from /odom twist (valid even while collect_route is
+        # hands-off and the Python base command is idle).
+        self._robot_speed_mps: float = 0.0
         self._collection_event_log = Path(
             os.getenv(
                 "COLLECTION_EVENT_LOG_FILE",
@@ -250,6 +255,7 @@ class ControllerNode(Node):
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
         self._latest_ball_detections_msg = None
+        self._latest_perception_diagnostics: dict = {}
         self._latest_observations: list[BallObservationInput] = []
         self._latest_obs_received_at = 0.0
         self._latest_obs_seq = 0
@@ -297,6 +303,9 @@ class ControllerNode(Node):
             self._on_ball_detections,
             1,
         )
+        self.create_subscription(
+            String, "/perception/diagnostics", self._on_perception_diagnostics, 10
+        )
         self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
         self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
         self.create_subscription(Odometry, "/odom", self._on_odom, 10)
@@ -330,6 +339,14 @@ class ControllerNode(Node):
 
     def _on_survey_vision(self, msg: String) -> None:
         self._latest_survey_vision = _survey_vision_from_json(msg.data)
+
+    def _on_perception_diagnostics(self, msg: String) -> None:
+        try:
+            payload = json.loads(msg.data)
+        except (json.JSONDecodeError, TypeError):
+            return
+        if isinstance(payload, dict) and payload.get("schema_version") == 1:
+            self._latest_perception_diagnostics = payload
 
     def _on_ball_detections(self, msg: BallDetectionArray) -> None:
         """Consume the canonical sim/real OAK-D perception contract."""
@@ -445,6 +462,9 @@ class ControllerNode(Node):
         self._lidar_angle_increment = float(msg.angle_increment)
 
     def _on_odom(self, msg: Odometry) -> None:
+        # Velocity always comes from /odom regardless of pose source (SLAM TF
+        # supplies pose, not twist), so capture it before the pose short-circuit.
+        self._robot_speed_mps = math.hypot(msg.twist.twist.linear.x, msg.twist.twist.linear.y)
         if self._pose_source == "slam_tf":
             return  # SLAM TF is authoritative once available
         self._robot_x = msg.pose.pose.position.x
@@ -1313,12 +1333,22 @@ class ControllerNode(Node):
         ):
             self._collect_route_executor_complete_reported = True
             detail = ""
+            session = getattr(self._collect_route_executor, "_scan_session", None)
             if state.value == "aborted_scan":
-                session = getattr(self._collect_route_executor, "_scan_session", None)
                 reason = getattr(session, "last_failure_detail", None)
                 if reason:
                     detail = f" (scan_failure={reason})"
+            elif state.value == "completed_no_targets":
+                detail = format_no_targets_diagnostic(
+                    getattr(self, "_latest_perception_diagnostics", None)
+                )
             self.get_logger().info(f"collect_route executor terminal: {state.value}{detail}")
+            # Aggregated scan telemetry (rejection histogram + per-track step
+            # counts) explains an empty/partial snapshot: cross-half rejections,
+            # TF failures, or balls seen from too few scan steps to confirm.
+            scan_diag = getattr(session, "scan_diagnostics", None)
+            if scan_diag is not None and state.value in ("completed_no_targets", "aborted_scan"):
+                self.get_logger().info(f"collect_route scan diagnostics: {scan_diag}")
             self._publish_command("idle", "controller-collect-route-complete")
 
         # HANDS-OFF: scan rotation and FollowPath own the base through their
@@ -1395,7 +1425,13 @@ class ControllerNode(Node):
                 self.declare_parameter(name, value)
 
     def _on_collection_executor_telemetry(self, event: dict) -> None:
-        self._collect_route_executor_events.append(dict(event))
+        serialized = dict(event)
+        now = self._runtime_seconds()
+        started_at = getattr(self, "_collection_event_started_at", None)
+        if started_at is not None:
+            serialized.setdefault("t_s", round(max(0.0, now - started_at), 3))
+        serialized.setdefault("sim_time_s", round(now, 3))
+        self._collect_route_executor_events.append(serialized)
         del self._collect_route_executor_events[:-100]
 
     def _record_collection_event(self, event_type: str, **fields: object) -> None:
@@ -1982,6 +2018,40 @@ class ControllerNode(Node):
             now=self._runtime_seconds(),
             planned_order=planned_order,
         )
+        # collect_route uses the immutable scan snapshot pipeline rather than
+        # the legacy BallMap registry.  Surface its live tracks directly so the
+        # Collection Workspace updates throughout the 360-degree scan (pending
+        # after one heading, confirmed after the configured distinct-step gate).
+        snapshot_diagnostics = (
+            getattr(self._collect_route_executor_factory, "snapshot_diagnostics", {})
+            if self._collect_route_executor_factory is not None
+            else {}
+        )
+        snapshot_tracks = snapshot_diagnostics.get("tracks", [])
+        if snapshot_tracks and not balls:
+            minimum = int(snapshot_diagnostics.get("minimum_confirmation_count", 2))
+            balls = [
+                {
+                    "id": f"route-scan-track-{index + 1}",
+                    "x_m": float(track["x_m"]),
+                    "y_m": float(track["y_m"]),
+                    "side": "same_side",
+                    "visible_candidate": len(track.get("steps", ())) >= minimum,
+                    "confirmed": bool(
+                        track.get(
+                            "confirmed",
+                            len(track.get("steps", ())) >= minimum,
+                        )
+                    ),
+                    "planned": False,
+                    "order": None,
+                    "source": "oak_depth",
+                }
+                for index, track in enumerate(snapshot_tracks)
+                if isinstance(track, dict)
+                and isinstance(track.get("x_m"), (int, float))
+                and isinstance(track.get("y_m"), (int, float))
+            ]
         confirmed = [b for b in balls if b["confirmed"] and b["side"] != "across_net"]
         metrics: dict[str, object] = {
             "balls_mapped": len(balls),
@@ -2005,6 +2075,27 @@ class ControllerNode(Node):
             "metrics": metrics,
         }
 
+    def _collect_route_elapsed_s(self, state: str) -> float | None:
+        """Wall-clock duration of the current collect_route run.
+
+        Ticks live while the run is active; freezes at the last executor-event
+        timestamp once the run reaches a terminal state so a finished run shows
+        its final duration rather than counting idle time.
+        """
+        started = getattr(self, "_collection_event_started_at", None)
+        if started is None:
+            return None
+        terminal = {
+            ExecutorState.IDLE.value,
+            ExecutorState.COMPLETED.value,
+            ExecutorState.COMPLETED_NO_TARGETS.value,
+        }
+        if state in terminal:
+            events = self._collect_route_executor_events
+            last = events[-1].get("t_s") if events else None
+            return round(float(last), 1) if last is not None else None
+        return round(max(0.0, self._runtime_seconds() - started), 1)
+
     def _build_collect_route_summary(self, status: str | None = None) -> dict:
         executor = self._collect_route_executor
         state = executor.state.value if executor is not None else ExecutorState.IDLE.value
@@ -2018,6 +2109,7 @@ class ControllerNode(Node):
             "status": status or state,
             "state": state,
             "route_outcome": outcome,
+            "elapsed_s": self._collect_route_elapsed_s(state),
             "plan_id": None,
             "planning_status": None,
             "ball_results": [],
@@ -2028,7 +2120,20 @@ class ControllerNode(Node):
                 if self._collect_route_executor_factory is not None
                 else []
             ),
+            "controller_state": (
+                getattr(self._collect_route_executor_factory, "controller_state", None)
+                if self._collect_route_executor_factory is not None
+                else None
+            ),
             "executor_events": list(self._collect_route_executor_events),
+            "perception_diagnostics": dict(
+                getattr(self, "_latest_perception_diagnostics", {})
+            ),
+            "snapshot_diagnostics": (
+                getattr(self._collect_route_executor_factory, "snapshot_diagnostics", {})
+                if self._collect_route_executor_factory is not None
+                else {}
+            ),
         }
         plan = executor.plan if executor is not None else None
         if plan is not None:
@@ -2068,6 +2173,7 @@ class ControllerNode(Node):
             "pose_source": self._pose_source,
             "cmd_linear_m_s": round(command.base.linear_speed_m_s, 3),
             "cmd_angular_rad_s": round(command.base.angular_speed_rad_s, 3),
+            "measured_speed_mps": round(self._robot_speed_mps, 3),
             "ball_visible": observation.visible,
             "ball_distance_m": round(observation.distance_m, 3) if observation.visible else None,
             # Camera bearing (rad, +left per ROS) so the console can draw the live

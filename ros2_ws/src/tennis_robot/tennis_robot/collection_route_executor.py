@@ -139,6 +139,9 @@ class PathFollowerResult:
     requires_reverse: bool | None = None
     requires_standalone_rotate: bool | None = None
     reason: ExecutorReasonCode | None = None
+    # Human-readable diagnostic for a failure (specific controller failure label
+    # plus geometry); opaque to the executor, surfaced verbatim in telemetry.
+    detail: str | None = None
 
     def __post_init__(self) -> None:
         running = self.status is PathFollowerStatus.RUNNING
@@ -177,6 +180,7 @@ class TelemetryEvent:
     code: TelemetryEventCode
     state: ExecutorState
     reason: ExecutorReasonCode | None = None
+    detail: str | None = None
 
 
 class ScanPoseNavigator(Protocol):
@@ -355,7 +359,7 @@ class CollectionRouteExecutor:
         if fault is not None:
             self._abort_active_route(ExecutorState.ABORTED_COLLECTOR, fault)
         elif follower.status is PathFollowerStatus.FAILED:
-            self._abort_active_route(ExecutorState.ABORTED_TRACKING, follower.reason or ExecutorReasonCode.PATH_FAILED)
+            self._abort_active_route(ExecutorState.ABORTED_TRACKING, follower.reason or ExecutorReasonCode.PATH_FAILED, follower.detail)
         elif follower.status is PathFollowerStatus.COMPLETED:
             self.route_outcome = ExecutorState.ROUTE_COMPLETED
             self._collector.stop()
@@ -397,11 +401,11 @@ class CollectionRouteExecutor:
                 return segment.execution_profile.required_run_in_m
         return 0.0
 
-    def _abort_active_route(self, outcome: ExecutorState, reason: ExecutorReasonCode) -> None:
+    def _abort_active_route(self, outcome: ExecutorState, reason: ExecutorReasonCode, detail: str | None = None) -> None:
         self.route_outcome = outcome
         self._collector.stop()
         self._collector_stopped_at_s = self._clock.now_s()
-        self._transition(outcome, reason)
+        self._transition(outcome, reason, detail)
         self._transition(ExecutorState.COLLECTOR_STOPPING)
 
     def _tick_collector_stop(self) -> None:
@@ -429,6 +433,6 @@ class CollectionRouteExecutor:
     def _elapsed(self, started_at_s: float | None, timeout_s: float) -> bool:
         return started_at_s is not None and self._clock.now_s() - started_at_s >= timeout_s
 
-    def _transition(self, state: ExecutorState, reason: ExecutorReasonCode | None = None) -> None:
+    def _transition(self, state: ExecutorState, reason: ExecutorReasonCode | None = None, detail: str | None = None) -> None:
         self.state = state
-        self._telemetry.emit(TelemetryEvent(TelemetryEventCode.STATE_CHANGED, state, reason))
+        self._telemetry.emit(TelemetryEvent(TelemetryEventCode.STATE_CHANGED, state, reason, detail))

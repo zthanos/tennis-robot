@@ -166,3 +166,44 @@ def test_built_configuration_serialization_round_trip():
     assert CollectionRouteConfiguration.from_dict(
         configuration.to_dict()
     ) == configuration
+
+
+def test_runtime_yaml_reserves_tracking_curvature_margin():
+    import yaml
+
+    source = yaml.safe_load(
+        (REPOSITORY_ROOT / "ros2_ws/src/tennis_robot/config/collection_route.yaml").read_text()
+    )
+    mechanical = source["mechanical"]
+    assert (
+        mechanical["minimum_turning_radius_m"]
+        * mechanical["maximum_curvature_per_m"]
+    ) >= 1.5
+    profile = source["planning"]["default_execution_profile"]
+    assert profile["min_speed_mps"] <= profile["nominal_speed_mps"] <= 0.6
+    assert profile["max_heading_error_rad"] <= 0.15
+
+    nav2 = yaml.safe_load(
+        (REPOSITORY_ROOT / "ros2_ws/src/tennis_robot/config/nav2_params.yaml").read_text()
+    )
+    controller = nav2["controller_server"]["ros__parameters"]
+    assert controller["odom_topic"] == "/odometry/filtered"
+    assert "collection_goal_checker" in controller["goal_checker_plugins"]
+    assert controller["collection_goal_checker"]["xy_goal_tolerance"] >= 0.25
+    executor = nav2["collection_route_executor"]["ros__parameters"]
+    assert executor["collection_controller_tuning.lookahead_distance_m"] >= 0.6
+    assert executor["collection_route.goal_checker_id"] == "collection_goal_checker"
+
+
+def test_nav2_behavior_trees_select_general_goal_checker_explicitly():
+    import xml.etree.ElementTree as ET
+
+    config_dir = REPOSITORY_ROOT / "ros2_ws/src/tennis_robot/config"
+    for filename in ("navigate_to_pose.xml", "court_survey.xml"):
+        root = ET.parse(config_dir / filename).getroot()
+        follow_path_nodes = root.findall(".//FollowPath")
+        assert follow_path_nodes
+        assert all(
+            node.attrib.get("goal_checker_id") == "general_goal_checker"
+            for node in follow_path_nodes
+        )

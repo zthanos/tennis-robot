@@ -44,6 +44,7 @@ _RUNTIME_PARAM_FIELDS = {
     "safety_pause_timeout_s": "collection_route.safety_pause_timeout_s",
     "safety_max_scan_age_s": "collection_route.safety_max_scan_age_s",
     "controller_id": "collection_route.controller_id",
+    "goal_checker_id": "collection_route.goal_checker_id",
 }
 
 _PROFILE_FIELDS = (
@@ -259,8 +260,9 @@ class _TfProvider:
 
 
 class _CollectionRosTransport:
-    def __init__(self, node, ros, *, controller_id: str):
+    def __init__(self, node, ros, *, controller_id: str, goal_checker_id: str):
         self.node, self.ros = node, ros
+        self.goal_checker_id = goal_checker_id
         base = f"/{controller_id}"
         self.load_client = node.create_client(ros.LoadService, base + "/load_collection_execution_context")
         self.hold_client = node.create_client(ros.HoldService, base + "/set_collection_safety_hold")
@@ -288,7 +290,15 @@ class _CollectionRosTransport:
                 for name in (
                     "plan_id", "progress_s", "active_segment_id", "active_ball_id",
                     "active_crossing_progress_s", "measured_speed_mps",
-                    "lateral_error_m", "heading_error_rad", "profile_verdict",
+                    "lateral_error_m", "heading_error_rad",
+                )
+            }
+            verdict = message.profile_verdict
+            sample["profile_verdict"] = {
+                name: getattr(verdict, name)
+                for name in (
+                    "hard_compliant", "hard_violation_reason", "nominal_tracking",
+                    "measured_speed_mps", "nominal_speed_error_mps",
                 )
             }
             if not self.crossing_telemetry or sample != self.crossing_telemetry[-1]:
@@ -311,6 +321,7 @@ class _CollectionRosTransport:
         self.goal_handle = self.result_future = None
         goal = self.ros.FollowPath.Goal()
         goal.controller_id = controller_id
+        goal.goal_checker_id = self.goal_checker_id
         goal.path = self.ros.Path()
         stamp = self.node.get_clock().now().to_msg()
         goal.path.header.frame_id, goal.path.header.stamp = map_frame, stamp
@@ -387,12 +398,19 @@ class CollectionExecutorNodeFactory:
         now_ns = node.get_clock().now().nanoseconds
         snapshot_session = CollectionSnapshotRuntimeSession(
             scan_id=f"collection-scan-{now_ns}", scan_timestamp_s=now_ns * 1e-9,
-            robot_pose_at_scan=robot_pose, configuration_snapshot=configuration,
+            robot_pose_at_scan=Pose2D(*self.config.scan_pose_xy_yaw),
+            configuration_snapshot=configuration,
             expected_scan_step_ids=step_ids,
             court_half_boundary=court_half_from_court_model(court_boundary, robot_pose=robot_pose),
             tf_provider=_TfProvider(tf_buffer, self.ros),
+            robot_pose_provider=lambda: _robot_pose(cache),
         )
-        self.transport = _CollectionRosTransport(node, self.ros, controller_id=self.config.controller_id)
+        self.transport = _CollectionRosTransport(
+            node,
+            self.ros,
+            controller_id=self.config.controller_id,
+            goal_checker_id=self.config.goal_checker_id,
+        )
         # Scan rotation owns twist_mux's collection input (priority 70).  The
         # FollowPath controller publishes on /cmd_vel_nav (priority 50).  Once
         # scan rotation stops publishing, the collection input expires after
@@ -406,6 +424,7 @@ class CollectionExecutorNodeFactory:
             publisher.publish(message)
 
         self.cmd_vel_publisher = publisher
+        self.snapshot_session = snapshot_session
         self.handles = CollectionExecutorHandles(
             telemetry_sink=telemetry_sink, lane_navigator=lane_navigator,
             collector_interface=collector_interface,
@@ -436,8 +455,27 @@ class CollectionExecutorNodeFactory:
         self._collector_interface.stop()
 
     @property
+    def snapshot_diagnostics(self) -> dict:
+        return self.snapshot_session.diagnostics
+
+    @property
     def crossing_telemetry(self):
         return list(self.transport.crossing_telemetry)
+
+    @property
+    def controller_state(self):
+        state = self.transport.state_provider()
+        if state is None:
+            return None
+        return {
+            name: state[name]
+            for name in (
+                "plan_id", "lifecycle_state", "progress_s", "active_segment_id",
+                "has_active_crossing", "active_ball_id", "active_crossing_progress_s",
+                "measured_speed_mps", "lateral_error_m", "heading_error_rad",
+                "failure_reason",
+            )
+        }
 
 
 def build_collection_route_executor_from_node(**kwargs):

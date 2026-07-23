@@ -1,4 +1,4 @@
-"""C2 activation contract for the approved Gazebo artifact only."""
+"""C2 activation contract for the approved Gazebo v3 artifact."""
 
 from __future__ import annotations
 
@@ -21,18 +21,19 @@ from tennis_robot.perception_covariance_calibration import (  # noqa: E402
 
 V1_ARTIFACT = ROOT / "calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v1.json"
 V2_ARTIFACT = ROOT / "calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v2.json"
+V3_ARTIFACT = ROOT / "calibration_artifacts/gazebo/range_depth_quality_diagonal_v1-gazebo-v3.json"
 MANIFEST = ROOT / "config/gazebo_covariance_c2_trials.json"
 EVIDENCE_DIR = ROOT / "runtime/c2_controlled_coverage"
-CALIBRATION_ID = "gazebo-range-depth-quality-diagonal-v1-20260719-v2"
+CALIBRATION_ID = "gazebo-range-depth-quality-diagonal-v1-20260722-v3"
 
 
 def _gazebo_runtime():
     return load_spatial_calibration_runtime(
-        V2_ARTIFACT,
+        V3_ARTIFACT,
         expected_platform="gazebo",
         expected_calibration_id=CALIBRATION_ID,
-        expected_model_version="gazebo-v2",
-        required_path=V2_ARTIFACT,
+        expected_model_version="gazebo-v3",
+        required_path=V3_ARTIFACT,
     )
 
 
@@ -41,7 +42,7 @@ def test_approved_gazebo_artifact_loads_healthy_with_runtime_identity():
     assert runtime.healthy is True
     assert runtime.health_reason == "healthy"
     assert runtime.artifact_id == CALIBRATION_ID
-    assert runtime.artifact_version == "gazebo-v2"
+    assert runtime.artifact_version == "gazebo-v3"
     assert runtime.model is not None
 
 
@@ -87,7 +88,7 @@ def test_producer_model_adapter_rejects_out_of_domain_range_or_quality():
 
 def test_out_of_domain_measurement_has_no_covariance():
     runtime = _gazebo_runtime()
-    result = runtime.model.evaluate(3.1, 0.95)
+    result = runtime.model.evaluate(6.8, 0.95)
     assert result.covariance is None
     assert result.reason == "calibration_out_of_domain"
 
@@ -102,7 +103,25 @@ def test_invalid_artifact_does_not_make_spatial_pipeline_healthy(tmp_path):
 
 
 def test_physical_oak_d_platform_rejects_the_gazebo_artifact():
-    runtime = load_spatial_calibration_runtime(V2_ARTIFACT, expected_platform="oak_d")
+    runtime = load_spatial_calibration_runtime(V3_ARTIFACT, expected_platform="oak_d")
     assert runtime.healthy is False
     assert runtime.health_reason == "calibration_platform_mismatch"
     assert runtime.model is None
+
+
+@pytest.mark.parametrize("range_m", [1.03, 1.5, 2.98, 3.78, 5.27, 6.76])
+@pytest.mark.parametrize("quality", [0.90, 0.98, 1.0])
+def test_v3_covers_declared_operational_range_and_quality(range_m, quality):
+    model = RangeDepthQualityDiagonalModel(load_artifact(V3_ARTIFACT))
+    result = model.evaluate(range_m, quality)
+    assert result.reason is None
+    assert result.covariance is not None
+
+
+def test_v3_range_boundaries_do_not_extrapolate():
+    artifact = load_artifact(V3_ARTIFACT)
+    model = RangeDepthQualityDiagonalModel(artifact)
+    assert model.evaluate(artifact.range_min_m, 1.0).reason is None
+    assert model.evaluate(artifact.range_max_m, 1.0).reason is None
+    assert model.evaluate(artifact.range_min_m - 1e-6, 1.0).reason == "calibration_out_of_domain"
+    assert model.evaluate(artifact.range_max_m + 1e-6, 1.0).reason == "calibration_out_of_domain"

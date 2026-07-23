@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <vector>
+
 #include "tennis_robot_collection_controller/collection_tracking_core.hpp"
 
 namespace tc = tennis_robot_collection_controller;
@@ -19,7 +22,7 @@ tc::CollectionTrackingPlan plan()
     {{0.0, 0.0, 0.0}, {5.0, 0.0, 5.0}},
     {{"pass-a", 0.0, 5.0, profile(), {{"ball-a", 3.0}}}},
     5.0,
-    {1.0, 2.0, 10.0, 0.25}};
+    {1.0, 2.0, 10.0, 0.25, 0.05}};
 }
 
 tc::TrackingInput input(const double x_m, const double y_m, const double heading_rad,
@@ -53,6 +56,29 @@ TEST(CollectionTrackingCore, CurvatureBoundFailsRatherThanClippingSpeed)
   EXPECT_EQ(result.status, tc::TrackingStatus::kFailed);
   EXPECT_EQ(result.failure, tc::TrackingFailureCode::kCurvatureExceeded);
   EXPECT_DOUBLE_EQ(result.command.linear_x_mps, 0.0);
+}
+
+TEST(CollectionTrackingCore, HeadingGateUsesPathYawNotIntentionalLookaheadBearing)
+{
+  auto curved = plan();
+  curved.path = {
+    {0.0, 0.0, 0.0, 0.0},
+    {0.707, -0.293, 0.765, -0.785},
+    {1.0, -1.0, 1.530, -1.570}};
+  curved.segments[0].progress_end_s = 1.530;
+  curved.segments[0].planned_crossings.clear();
+  curved.segments[0].profile.max_heading_error_rad = 0.1;
+  curved.terminal_progress_s = 1.530;
+
+  tc::CollectionTrackingCore aligned(curved);
+  const auto result = aligned.update(input(0.0, 0.0, 0.0, 0.0));
+  EXPECT_EQ(result.status, tc::TrackingStatus::kRunning);
+  EXPECT_NE(result.command.angular_z_rad_s, 0.0);
+  EXPECT_NEAR(result.heading_error_rad, 0.0, 1e-9);
+
+  tc::CollectionTrackingCore misaligned(curved);
+  EXPECT_EQ(misaligned.update(input(0.0, 0.0, 0.2, 0.0)).failure,
+    tc::TrackingFailureCode::kHeadingErrorExceeded);
 }
 
 TEST(CollectionTrackingCore, CrossingSpeedBelowAndAboveBoundsAreHardFailures)
@@ -90,6 +116,12 @@ TEST(CollectionTrackingCore, TubeAndProgressViolationsAreTyped)
   ASSERT_EQ(progress_core.update(input(2.0, 0.0, 0.0, 1.0)).status, tc::TrackingStatus::kRunning);
   EXPECT_EQ(progress_core.update(input(1.0, 0.0, 0.0, 1.0)).failure,
     tc::TrackingFailureCode::kNonMonotonicProgress);
+
+  tc::CollectionTrackingCore jitter_core(plan());
+  ASSERT_EQ(jitter_core.update(input(2.0, 0.0, 0.0, 1.0)).status,
+    tc::TrackingStatus::kRunning);
+  EXPECT_EQ(jitter_core.update(input(1.98, 0.0, 0.0, 1.0)).status,
+    tc::TrackingStatus::kRunning);
 }
 
 TEST(CollectionTrackingCore, ResumeRequiresRemainingRunInAndHoldDoesNotMeasureCrossingSpeed)
@@ -109,7 +141,10 @@ TEST(CollectionTrackingCore, ResumeRequiresRemainingRunInAndHoldDoesNotMeasureCr
 TEST(CollectionTrackingCore, TerminalConditionAndNoReverseOrStandaloneRotateCommand)
 {
   tc::CollectionTrackingCore terminal_core(plan());
-  EXPECT_EQ(terminal_core.update(input(5.0, 0.0, 0.0, 1.0)).status, tc::TrackingStatus::kCompleted);
+  const auto terminal = terminal_core.update(input(4.96, 0.0, 0.0, 1.0));
+  EXPECT_EQ(terminal.status, tc::TrackingStatus::kCompleted);
+  EXPECT_TRUE(terminal.terminal_ready);
+  EXPECT_DOUBLE_EQ(terminal.progress_s, 5.0);
 
   tc::CollectionTrackingCore forward_core(plan());
   const auto forward = forward_core.update(input(1.0, 0.0, 0.4, 1.0));
@@ -120,4 +155,53 @@ TEST(CollectionTrackingCore, TerminalConditionAndNoReverseOrStandaloneRotateComm
   tc::CollectionTrackingCore reverse_core(plan());
   EXPECT_EQ(reverse_core.update(input(1.0, 0.0, 0.0, -0.1)).failure,
     tc::TrackingFailureCode::kReverseRequired);
+}
+
+TEST(CollectionTrackingCore, SelfCrossingLoopDoesNotFalselyReportNonMonotonicProgress)
+{
+  // A figure-eight (A*sin 2t, A*sin t) passes through the origin at t=0, pi and
+  // 2*pi.  When the robot reaches the mid-path crossing (t=pi) a *global*
+  // nearest-point search snaps back to the t=0 origin (progress 0) and would
+  // falsely report backward motion.  The windowed check must ignore that distant
+  // self-intersection while still tracking the loop.  Large scale keeps curvature
+  // gentle; the lenient profile leaves only the non-monotonic guard in play.
+  const double amplitude = 10.0;
+  const int steps = 64;  // t = 0..2pi with a sample exactly at t = pi (i = 32)
+  std::vector<tc::TrackingPoint> path;
+  double progress = 0.0;
+  double prev_x = 0.0;
+  double prev_y = 0.0;
+  for (int i = 0; i <= steps; ++i) {
+    const double t = 2.0 * M_PI * static_cast<double>(i) / steps;
+    const double x = amplitude * std::sin(2.0 * t);
+    const double y = amplitude * std::sin(t);
+    if (i > 0) { progress += std::hypot(x - prev_x, y - prev_y); }
+    const double heading = std::atan2(amplitude * std::cos(t), 2.0 * amplitude * std::cos(2.0 * t));
+    path.push_back({x, y, progress, heading});
+    prev_x = x;
+    prev_y = y;
+  }
+  const double total = path.back().progress_s;
+  const tc::TrackingExecutionProfile lenient{
+    1.0, 0.1, 5.0, 0.1, 0.0, 0.0, 100.0, 5.0, 3.14159, false, false};
+  const tc::CollectionTrackingPlan loop_plan{
+    path, {{"loop", 0.0, total, lenient, {}}}, total,
+    {1.0, 100.0, 10.0, 0.25, 0.05}};
+  tc::CollectionTrackingCore core(loop_plan);
+
+  bool reached_crossing = false;
+  bool saw_non_monotonic = false;
+  for (int i = 0; i <= steps; ++i) {
+    const auto & p = path[i];
+    const auto result = core.update(input(p.x_m, p.y_m, p.heading_rad, 1.0));
+    if (result.failure == tc::TrackingFailureCode::kNonMonotonicProgress) {
+      saw_non_monotonic = true;
+    }
+    // The mid-path crossing sample must not abort as a false regression.
+    if (i == steps / 2 && result.failure != tc::TrackingFailureCode::kNonMonotonicProgress) {
+      reached_crossing = true;
+    }
+  }
+  EXPECT_FALSE(saw_non_monotonic);
+  EXPECT_TRUE(reached_crossing);
 }

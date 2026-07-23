@@ -127,7 +127,8 @@ CollectionTrackingPlan make_tracking_plan(const tennis_robot_msgs::msg::Collecti
   plan.tuning = {context.controller_tuning.lookahead_distance_m,
     context.controller_tuning.max_angular_velocity_rad_s,
     context.controller_tuning.progress_projection_window_m,
-    context.controller_tuning.crossing_speed_window_m};
+    context.controller_tuning.crossing_speed_window_m,
+    context.controller_tuning.terminal_progress_tolerance_m};
   double progress = 0.0;
   for (std::size_t index = 0; index < path.poses.size(); ++index) {
     const auto & pose = path.poses[index].pose;
@@ -142,7 +143,8 @@ CollectionTrackingPlan make_tracking_plan(const tennis_robot_msgs::msg::Collecti
       if (step <= 0.0) { throw std::invalid_argument("path_progress_invalid"); }
       progress += step;
     }
-    plan.path.push_back({pose.position.x, pose.position.y, progress});
+    plan.path.push_back({pose.position.x, pose.position.y, progress,
+      yaw_from_quaternion(pose.orientation)});
   }
   if (std::abs(progress - context.terminal_progress_s) > context.controller_tuning.terminal_progress_tolerance_m) {
     throw std::invalid_argument("path_terminal_progress_mismatch");
@@ -256,6 +258,11 @@ geometry_msgs::msg::TwistStamped CollectionNav2Controller::computeVelocityComman
   publish_state(result, result.failure);
   if (result.status == TrackingStatus::kSafetyHold || result.status == TrackingStatus::kCompleted) { return zero_command(); }
   if (result.status == TrackingStatus::kFailed) {
+    RCLCPP_ERROR(node_->get_logger(),
+      "collection_controller_profile_failure: code=%u progress_m=%.3f lateral_error_m=%.3f heading_error_rad=%.3f speed_mps=%.3f",
+      static_cast<unsigned int>(failure_code(result.failure)), result.progress_s,
+      result.lateral_error_m, result.heading_error_rad,
+      std::hypot(velocity.linear.x, velocity.linear.y));
     consume_with_failure(result.failure, result);
     throw std::runtime_error("collection_controller_profile_failure");
   }

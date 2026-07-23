@@ -15,6 +15,28 @@ def test_rotation_keeps_measurement_only_covariance_without_localization_additio
     result=PerceptionSpatialObservationAdapter().accept(scan_id="s", detection_index=0, detection=_d(), transform=_t(), localization_xy_covariance=LocalizationXYCovariance(PositionCovariance2D(.5,0.,.25)), scan_step_id="step-1")
     assert result.position_map_xy.x_m == 2.0 and result.position_map_xy.y_m == 4.0
     assert result.position_covariance_map_xy.xx == pytest.approx(4.0) and result.position_covariance_map_xy.yy == pytest.approx(1.0)
+
+def test_optical_forward_axis_is_transformed_into_map_ground_plane():
+    # REP-103 optical (right, down, forward). This quaternion maps camera
+    # forward +Z to map +X and camera right +X to map -Y.
+    transform = TimestampedCameraToMapTransform(
+        10., "map", "camera_link_optical_frame", (2., 3., .5),
+        (.5, -.5, .5, -.5),
+    )
+    detection = replace(
+        _d(),
+        position_camera_xyz=(1., .25, 4.),
+        covariance_camera_xyz=(1.,0.,0., 0.,4.,0., 0.,0.,9.),
+    )
+    result = PerceptionSpatialObservationAdapter().accept(
+        scan_id="s", detection_index=0, detection=detection, transform=transform,
+        localization_xy_covariance=LocalizationXYCovariance(PositionCovariance2D(.5,0.,.25)),
+        scan_step_id="step-1",
+    )
+    assert result.position_map_xy.x_m == pytest.approx(6.)
+    assert result.position_map_xy.y_m == pytest.approx(2.)
+    assert result.position_covariance_map_xy.xx == pytest.approx(9.)
+    assert result.position_covariance_map_xy.yy == pytest.approx(1.)
 def test_missing_step_or_covariance_rejects():
     a=PerceptionSpatialObservationAdapter(); assert isinstance(a.accept(scan_id="s", detection_index=0, detection=_d(), transform=_t(), localization_xy_covariance=None, scan_step_id="x"), SpatialObservationRejection)
     assert isinstance(a.accept(scan_id="s", detection_index=0, detection=_d(), transform=_t(), localization_xy_covariance=LocalizationXYCovariance(PositionCovariance2D(1.,0.,1.)), scan_step_id=None), SpatialObservationRejection)

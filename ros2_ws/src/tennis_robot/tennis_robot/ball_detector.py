@@ -83,6 +83,8 @@ class YoloOnnxBallDetector:
         iou_threshold: float = 0.45,
         class_ids: tuple[int, ...] = (DEFAULT_SPORTS_BALL_CLASS_ID,),
         providers: list[str] | None = None,
+        center_zoom_factor: float = 1.0,
+        zoom_tiles: tuple[tuple[float, float], ...] = ((0.5, 0.5),),
     ) -> None:
         import onnxruntime as ort  # imported lazily so the module loads without it
 
@@ -91,6 +93,15 @@ class YoloOnnxBallDetector:
         self.conf_threshold = float(conf_threshold)
         self.iou_threshold = float(iou_threshold)
         self.class_ids = set(int(c) for c in class_ids)
+        self.center_zoom_factor = float(center_zoom_factor)
+        if not np.isfinite(self.center_zoom_factor) or self.center_zoom_factor < 1.0:
+            raise ValueError("center_zoom_factor must be finite and >= 1.0")
+        self.zoom_tiles = tuple((float(x), float(y)) for x, y in zoom_tiles)
+        if not self.zoom_tiles or any(
+            not np.isfinite(x) or not np.isfinite(y) or not 0.0 <= x <= 1.0 or not 0.0 <= y <= 1.0
+            for x, y in self.zoom_tiles
+        ):
+            raise ValueError("zoom_tiles must contain finite normalized (x, y) centres")
 
         self._session = ort.InferenceSession(
             model_path,
@@ -110,6 +121,32 @@ class YoloOnnxBallDetector:
     def detect(self, frame_bgr: np.ndarray) -> list[BallDetection]:
         if frame_bgr is None or frame_bgr.size == 0:
             return []
+        detections = self._detect_single(frame_bgr)
+        if self.center_zoom_factor > 1.0:
+            h0, w0 = frame_bgr.shape[:2]
+            crop_w = max(1, int(round(w0 / self.center_zoom_factor)))
+            crop_h = max(1, int(round(h0 / self.center_zoom_factor)))
+            for centre_x, centre_y in self.zoom_tiles:
+                x0 = int(round(centre_x * w0 - crop_w / 2.0))
+                y0 = int(round(centre_y * h0 - crop_h / 2.0))
+                x0 = max(0, min(w0 - crop_w, x0))
+                y0 = max(0, min(h0 - crop_h, y0))
+                crop = frame_bgr[y0:y0 + crop_h, x0:x0 + crop_w]
+                for detection in self._detect_single(crop):
+                    detections.append(
+                        BallDetection(
+                            detection.x + x0,
+                            detection.y + y0,
+                            detection.width,
+                            detection.height,
+                            confidence=detection.confidence,
+                            label=detection.label,
+                        )
+                    )
+        return _nms_ball_detections(detections, self.iou_threshold)
+
+    def _detect_single(self, frame_bgr: np.ndarray) -> list[BallDetection]:
+        """Run one model pass and map boxes into this frame's pixel space."""
         h0, w0 = frame_bgr.shape[:2]
         blob, scale, pad = self._preprocess(frame_bgr)
         outputs = self._session.run(None, {self._input_name: blob})
@@ -229,6 +266,48 @@ def _nms(boxes_xyxy: np.ndarray, scores: np.ndarray, iou_threshold: float) -> li
     return keep
 
 
+def _nms_ball_detections(
+    detections: list[BallDetection], iou_threshold: float
+) -> list[BallDetection]:
+    """Merge full-frame and zoom-pass detections in original pixel space.
+
+    The two passes can predict substantially different box sizes for the same
+    small object.  In addition to ordinary IoU, suppress a box when at least
+    80% of the smaller box is covered by a higher-confidence box.
+    """
+    if not detections:
+        return []
+    boxes = np.asarray(
+        [[d.x, d.y, d.x + d.width, d.y + d.height] for d in detections],
+        dtype=np.float32,
+    )
+    scores = np.asarray([d.confidence for d in detections], dtype=np.float32)
+    areas = np.maximum(0.0, boxes[:, 2] - boxes[:, 0]) * np.maximum(
+        0.0, boxes[:, 3] - boxes[:, 1]
+    )
+    order = scores.argsort()[::-1]
+    keep: list[int] = []
+    while order.size > 0:
+        index = int(order[0])
+        keep.append(index)
+        if order.size == 1:
+            break
+        rest = order[1:]
+        xx1 = np.maximum(boxes[index, 0], boxes[rest, 0])
+        yy1 = np.maximum(boxes[index, 1], boxes[rest, 1])
+        xx2 = np.minimum(boxes[index, 2], boxes[rest, 2])
+        yy2 = np.minimum(boxes[index, 3], boxes[rest, 3])
+        intersection = np.maximum(0.0, xx2 - xx1) * np.maximum(0.0, yy2 - yy1)
+        union = areas[index] + areas[rest] - intersection
+        iou = np.where(union > 0.0, intersection / union, 0.0)
+        smaller = np.minimum(areas[index], areas[rest])
+        containment = np.where(smaller > 0.0, intersection / smaller, 0.0)
+        order = rest[(iou <= iou_threshold) & (containment < 0.8)]
+    merged = [detections[index] for index in keep]
+    merged.sort(key=lambda detection: detection.area_px, reverse=True)
+    return merged
+
+
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
@@ -248,6 +327,8 @@ def load_ball_detector(
       BALL_CONF_THRESHOLD    float                          (default 0.35)
       BALL_IOU_THRESHOLD     float                          (default 0.45)
       BALL_CLASS_IDS         comma list of class ids        (default 32)
+      BALL_CENTER_ZOOM_FACTOR neural center-crop scale       (default 1.0)
+      BALL_CENTER_ZOOM_TILES normalized x:y crop centres     (default 0.5:0.5)
 
     There is intentionally no classical or no-op fallback. Perception without
     its neural model is an unhealthy system and must fail loudly at startup.
@@ -263,6 +344,14 @@ def load_ball_detector(
         int(c) for c in os.getenv("BALL_CLASS_IDS", str(DEFAULT_SPORTS_BALL_CLASS_ID)).split(",")
         if c.strip() != ""
     ) or (DEFAULT_SPORTS_BALL_CLASS_ID,)
+    center_zoom_factor = float(os.getenv("BALL_CENTER_ZOOM_FACTOR", "1.0"))
+    zoom_tiles = tuple(
+        tuple(float(value) for value in item.split(":"))
+        for item in os.getenv("BALL_CENTER_ZOOM_TILES", "0.5:0.5").split(",")
+        if item.strip()
+    )
+    if any(len(tile) != 2 for tile in zoom_tiles):
+        raise ValueError("BALL_CENTER_ZOOM_TILES must be comma-separated x:y pairs")
 
     if backend != "yolo_onnx":
         raise ValueError(
@@ -281,8 +370,14 @@ def load_ball_detector(
         raise RuntimeError("onnxruntime is required for neural ball perception") from exc
 
     det = YoloOnnxBallDetector(
-        path, conf_threshold=conf, iou_threshold=iou, class_ids=class_ids,
+        path,
+        conf_threshold=conf,
+        iou_threshold=iou,
+        class_ids=class_ids,
+        center_zoom_factor=center_zoom_factor,
+        zoom_tiles=zoom_tiles,
     )
     _log("info", f"loaded YOLO ONNX detector '{path}' "
-                 f"(input={det.input_size}, conf>={conf}, classes={sorted(det.class_ids)})")
+                 f"(input={det.input_size}, conf>={conf}, classes={sorted(det.class_ids)}, "
+                 f"center_zoom={det.center_zoom_factor}, zoom_tiles={det.zoom_tiles})")
     return det

@@ -560,9 +560,15 @@ class FollowUpConfiguration:
 class PlanningConfiguration:
     default_execution_profile: ExecutionProfile; maximum_planning_time_s: float; maximum_candidate_count: int
     cost_weight_length: float; cost_weight_time: float; cost_weight_curvature: float; cost_weight_energy: float; cost_weight_passes: float
+    # Heading-error hard gate for connector (transit) segments only. Pure-pursuit
+    # steering leads the path tangent by ~lookahead*curvature/2 on connector
+    # curves; the capture-grade default gate (funnel passes) is too tight to
+    # absorb that transient, so connectors get a looser bound. Capture accuracy
+    # is unaffected: crossings are straight and keep the default gate.
+    connector_max_heading_error_rad: float = 0.5
     def __post_init__(self) -> None:
         if not isinstance(self.default_execution_profile, ExecutionProfile): raise DomainValidationError("default_execution_profile must be ExecutionProfile")
-        for name in ("maximum_planning_time_s", "cost_weight_length", "cost_weight_time", "cost_weight_curvature", "cost_weight_energy", "cost_weight_passes"): _finite(getattr(self, name), name, minimum=0.0)
+        for name in ("maximum_planning_time_s", "cost_weight_length", "cost_weight_time", "cost_weight_curvature", "cost_weight_energy", "cost_weight_passes", "connector_max_heading_error_rad"): _finite(getattr(self, name), name, minimum=0.0)
         if self.maximum_planning_time_s <= 0: raise DomainValidationError("maximum_planning_time_s must be positive")
         if isinstance(self.maximum_candidate_count, bool) or not isinstance(self.maximum_candidate_count, int) or self.maximum_candidate_count <= 0: raise DomainValidationError("maximum_candidate_count must be positive int")
     def to_dict(self) -> dict[str, Any]:

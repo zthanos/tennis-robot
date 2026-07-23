@@ -243,6 +243,24 @@ def test_state_failure_reason_maps_to_failed():
     assert result.reason is ExecutorReasonCode.PATH_FAILED
 
 
+def test_failed_result_carries_specific_reason_label_and_geometry_detail():
+    # failure_reason 10 is FAILURE_TRAJECTORY_TUBE_EXCEEDED in the msg numbering
+    # (not the C++ enum index) — the detail must name it and include live metrics.
+    transport = Transport(load_outcome="accepted", goal_status="active",
+                          state={"lifecycle_state": LIFECYCLE_EXECUTING, "active_segment_id": "connector-0",
+                                 "progress_s": 0.12, "lateral_error_m": 0.31, "heading_error_rad": 0.05,
+                                 "measured_speed_mps": 0.0, "failure_reason": 10})
+    follower, _ = _follower(transport)
+    follower.start(_curved_plan())
+    follower.result()
+    result = follower.result()
+    assert result.status is PathFollowerStatus.FAILED
+    assert result.detail is not None
+    assert "trajectory_tube_exceeded" in result.detail
+    assert "seg connector-0" in result.detail
+    assert "lat_err 0.310m" in result.detail and "progress 0.120m" in result.detail
+
+
 def test_lifecycle_failed_maps_to_failed():
     transport = Transport(load_outcome="accepted", goal_status="active",
                           state={"lifecycle_state": LIFECYCLE_FAILED, "progress_s": 1.0, "lateral_error_m": 0.0, "failure_reason": 14})
@@ -428,7 +446,7 @@ def test_build_collection_route_executor_runs_full_fake_cycle_to_completed():
         context_schema_version="collection-execution-context/v1",
         context_activation_timeout_s=5.0,
         court_boundary=_BOUNDARY,
-        scan_pose_xy_yaw=(0.0, 0.0, 0.0),
+        scan_pose_xy_yaw=(0.0, 0.0, 0.7),
         scan_step_count=1,          # single-step scan for the smoke
         scan_yaw_tolerance_rad=3.0,  # wide: any fed yaw captures the one step
         scan_start_yaw_rad=0.0,
@@ -440,6 +458,7 @@ def test_build_collection_route_executor_runs_full_fake_cycle_to_completed():
         safety_max_scan_age_s=0.5,
     )
     executor = build_collection_route_executor(node=node, config=config, handles=handles)
+    assert executor._scan_session._fsm.target_yaw_rad == pytest.approx(0.7)
     executor.start()
     for _ in range(60):
         executor.tick()

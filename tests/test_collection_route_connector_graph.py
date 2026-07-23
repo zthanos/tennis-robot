@@ -12,9 +12,14 @@ from collection_route_fixtures import FAKE_TIME_S, default_configuration
 import math
 
 from tennis_robot.collection_route_connector_graph import (
+    _CSC_MODES,
+    _EPSILON,
+    ConnectorEdge,
     ConnectorRejectionCode,
+    _build_edge,
     _dubins_parameters,
     _materialize_path,
+    _path_is_collision_free,
     _self_intersects,
     build_directed_candidate_graph,
 )
@@ -159,6 +164,65 @@ def test_continuous_swept_arc_collision_is_detected_between_sparse_endpoints():
     built = graph(configuration, (turn,), court(obstacle))
     lsl = next(edge for edge in built.edges if edge.edge_id.endswith(":LSL"))
     assert lsl.rejection is ConnectorRejectionCode.COLLISION_REJECTED
+
+
+def _reference_build_edge(source_id, source, target_id, target, mode, model, configuration):
+    """Pre-gate behaviour: materialize every CSC path, then check limits.
+
+    This mirrors the connector edge logic exactly as it existed before the
+    analytic turning/length gate was hoisted ahead of ``_materialize_path``.
+    The gated ``_build_edge`` must stay byte-identical to this reference.
+    """
+    edge_id = f"{source_id}->{target_id}:{mode}"
+    radius = configuration.mechanical.minimum_turning_radius_m
+    normalized = _dubins_parameters(source, target, radius, mode)
+    if normalized is None:
+        return ConnectorEdge(edge_id, source_id, target_id, None, None, False, ConnectorRejectionCode.TURNING_CONSTRAINT_REJECTED)
+    path = _materialize_path(source, radius, mode, normalized)
+    connector = configuration.connector
+    arc_angles = tuple(primitive.arc_angle_rad for primitive in path.primitives if primitive.kind != "S")
+    if (
+        path.length_m > connector.max_connector_length_m + _EPSILON
+        or any(angle > connector.max_connector_arc_angle_rad + _EPSILON for angle in arc_angles)
+        or path.total_turn_rad > connector.max_connector_total_turn_rad + _EPSILON
+        or _self_intersects(path.poses)
+    ):
+        return ConnectorEdge(edge_id, source_id, target_id, None, None, False, ConnectorRejectionCode.TURNING_CONSTRAINT_REJECTED if path.length_m <= connector.max_connector_length_m + _EPSILON else ConnectorRejectionCode.LENGTH_REJECTED)
+    if not _path_is_collision_free(path, model, configuration.feasibility.footprint_clearance_radius_m, radius):
+        return ConnectorEdge(edge_id, source_id, target_id, path, 1.0 / radius, False, ConnectorRejectionCode.COLLISION_REJECTED)
+    return ConnectorEdge(edge_id, source_id, target_id, path, 1.0 / radius, True, None)
+
+
+def test_analytic_gate_is_byte_identical_to_materialize_first_reference():
+    configuration = default_configuration()
+    model = court()
+    # A dense grid of source/target poses across every CSC mode exercises all
+    # gate branches: turning-rejected, length-rejected, self-intersection,
+    # collision-rejected and accepted edges.
+    poses = tuple(
+        Pose2D(x, y, yaw)
+        for x in (-6.0, -1.0, 0.0, 3.5, 12.0)
+        for y in (-4.0, 0.0, 2.5)
+        for yaw in (0.0, 1.2, math.pi, -2.0)
+    )
+    compared = 0
+    for source in poses:
+        for target in poses:
+            if source is target:
+                continue
+            for mode in _CSC_MODES:
+                gated = _build_edge("s", source, "t", target, mode, model, configuration)
+                reference = _reference_build_edge("s", source, "t", target, mode, model, configuration)
+                assert gated.rejection is reference.rejection
+                assert gated.collision_free == reference.collision_free
+                assert (gated.path is None) == (reference.path is None)
+                assert gated.maximum_curvature_per_m == reference.maximum_curvature_per_m
+                if gated.path is not None:
+                    assert gated.path.length_m == reference.path.length_m
+                    assert gated.path.total_turn_rad == reference.path.total_turn_rad
+                    assert gated.path.poses == reference.path.poses
+                compared += 1
+    assert compared > 5000
 
 
 def test_graph_is_directed_from_start_and_between_distinct_passes_only():

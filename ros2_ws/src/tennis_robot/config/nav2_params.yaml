@@ -23,12 +23,16 @@ bt_navigator:
 controller_server:
   ros__parameters:
     use_sim_time: true
+    # The raw Gazebo /odom bridge does not carry the fused body velocity used
+    # by the collection profile checks.  Keep pose and speed feedback on the
+    # same filtered odometry stream as the rest of the navigation stack.
+    odom_topic: /odometry/filtered
     controller_frequency: 20.0
     min_x_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
     progress_checker_plugins: ["progress_checker"]
-    goal_checker_plugins: ["general_goal_checker"]
+    goal_checker_plugins: ["general_goal_checker", "collection_goal_checker"]
     controller_plugins: ["FollowPath", "CollectionFollowPath"]
 
     progress_checker:
@@ -45,6 +49,16 @@ controller_server:
       xy_goal_tolerance: 0.10
       # Lane waypoints do not need a specific final heading; a tight yaw
       # tolerance made the robot spin in place at each lane end. Ignore yaw.
+      yaw_goal_tolerance: 3.14
+      stateful: true
+
+    collection_goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      # The collection controller stops at the context terminal progress. In
+      # Gazebo the chassis can settle about 0.22 m beyond that projection after
+      # the command reaches zero. The route includes a separate 0.5 m terminal
+      # run-out, so 0.30 m closes the action without weakening lane navigation.
+      xy_goal_tolerance: 0.30
       yaw_goal_tolerance: 3.14
       stateful: true
 
@@ -82,7 +96,11 @@ controller_server:
 collection_route_executor:
   ros__parameters:
     use_sim_time: true
-    collection_controller_tuning.lookahead_distance_m: 1.0
+    # A 0.4 m target was too close to the 0.228 m Dubins polyline samples:
+    # small tracking transients could request 1.33 1/m on a planned 1.0 1/m
+    # arc.  The longer target smooths that discretisation while the separate
+    # path-heading gate still enforces alignment at collection crossings.
+    collection_controller_tuning.lookahead_distance_m: 0.6
     collection_controller_tuning.max_angular_velocity_rad_s: 3.0
     collection_controller_tuning.progress_projection_window_m: 10.0
     collection_controller_tuning.crossing_speed_window_m: 0.25
@@ -91,7 +109,11 @@ collection_route_executor:
     # CollectionExecutorNodeFactory; there are deliberately no code defaults.
     collection_route.context_schema_version: "collection-execution-context/v1"
     collection_route.context_activation_timeout_s: 10.0
-    collection_route.scan_step_count: 8
+    # RGB HFOV is 69 deg, but far balls rely on the tiled neural region whose
+    # validated effective half-angle is about 26.5 deg.  The snapshot requires
+    # two distinct headings: 18 steps (20 deg spacing) guarantee that a target
+    # seen near one heading is also inside an adjacent tiled-neural view.
+    collection_route.scan_step_count: 18
     collection_route.scan_yaw_tolerance_rad: 0.10
     collection_route.scan_start_yaw_rad: 0.0
     collection_route.scan_angular_speed_rad_s: 0.50
@@ -101,6 +123,7 @@ collection_route_executor:
     collection_route.safety_pause_timeout_s: 10.0
     collection_route.safety_max_scan_age_s: 0.50
     collection_route.controller_id: "CollectionFollowPath"
+    collection_route.goal_checker_id: "collection_goal_checker"
 
 local_costmap:
   local_costmap:
