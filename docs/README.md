@@ -53,6 +53,7 @@ docs/
 ## process/
 - `architecture-implementation-guide-el.md` - source-of-truth implementation guide.
 - `feature-delivery-contract-el.md` - spec/design/plan workflow for substantial features.
+- `pi-deployment-plan-el.md` - Raspberry Pi deployment + Humble→Jazzy migration plan.
 - `validation-plan-el.md`, `project-board-plan-el.md`, `telemetry-architecture-el.md`.
 
 ## Archive
