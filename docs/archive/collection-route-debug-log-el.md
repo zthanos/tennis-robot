@@ -646,7 +646,7 @@ approach, dynamic insertion, console overlay) ώστε να μην ξαναγυ�
 
 - **Απόφαση χρήστη**: το route να συμπεριλαμβάνει και τον ΤΡΟΠΟ συλλογής —
   κοντά σε εμπόδιο πάντα πλαϊνή/παράλληλη προσέγγιση· κανόνες βέλτιστης
-  διαδρομής. Πλήρης λίστα: docs/collection-route-rules-el.md (R1 παράλληλη
+  διαδρομής. Πλήρης λίστα: docs/collection-route/collection-route-rules-el.md (R1 παράλληλη
   ήδη υπήρχε στον planner· R3 drive-through, R4 rotation clearance,
   R5 leg-corridor penalty εκκρεμούν).
 - **R2 υλοποιήθηκε**: το opportunistic chase ΚΑΤΑΡΓΗΘΗΚΕ ως trigger — planned

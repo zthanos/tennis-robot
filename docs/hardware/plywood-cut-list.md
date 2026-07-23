@@ -17,7 +17,7 @@ For the full physical-store shopping checklist, including motors, wheels,
 collector parts, fasteners, and safety electronics, see:
 
 ```text
-docs/prototype-purchase-list-el.md
+docs/hardware/prototype-purchase-list-el.md
 ```
 
 Ask the shop to keep the cuts square and to account for saw kerf, usually

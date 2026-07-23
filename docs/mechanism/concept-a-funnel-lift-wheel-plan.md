@@ -49,13 +49,13 @@ Historical CAD source: commit `de75682`, path
 Plywood cutting instructions:
 
 ```text
-docs/plywood-cut-list.md
+docs/hardware/plywood-cut-list.md
 ```
 
 Physical-store purchase checklist:
 
 ```text
-docs/prototype-purchase-list-el.md
+docs/hardware/prototype-purchase-list-el.md
 ```
 
 The same CAD model also includes the vertical mounting frame by default

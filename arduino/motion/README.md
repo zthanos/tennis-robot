@@ -49,7 +49,7 @@ state: `0`=DISARMED `1`=ARMED `2`=ESTOP · estop: `1`=tripped `0`=ok
 
 ## Pin map
 
-Matches `docs/motion-perfboard-wiring-el.md §4`:
+Matches `docs/hardware/motion-perfboard-wiring-el.md §4`:
 
 | Function | Mega pin |
 |---|---|

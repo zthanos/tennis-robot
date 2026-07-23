@@ -459,7 +459,7 @@ Active cooler (υποχρεωτικός σε αυτό το φορτίο)
 
 Το μόνο πλεονέκτημα του i5 (compute headroom) ακυρώνεται επειδή το βαρύ vision
 (stereo depth + ανίχνευση) γίνεται offload στην **OAK-D** (Myriad X VPU). Δες
-`docs/telemetry-architecture-el.md` και την ανάλυση compute budget.
+`docs/process/telemetry-architecture-el.md` και την ανάλυση compute budget.
 
 Σημαντική σημείωση τροφοδοσίας:
 

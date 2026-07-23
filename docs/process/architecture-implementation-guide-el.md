@@ -17,13 +17,13 @@ documents και όχι από την τρέχουσα μορφή του Webots 
 
 Η νέα πηγή αλήθειας είναι τα active baseline documents:
 
-- `docs/validation-plan-el.md`
-- `docs/court-knowledge-model-specification.md`
+- `docs/process/validation-plan-el.md`
+- `docs/survey/court-knowledge-model-specification.md`
 - `docs/archive/collection-state-machine-plan-el.md` (ιστορικό, μη ενεργό)
-- `docs/mission-dashboard-plan-el.md`
-- `docs/concept-a-funnel-lift-wheel-plan.md`
-- `docs/prototype-purchase-list-el.md`
-- `docs/plywood-cut-list.md`
+- `docs/collection-route/mission-dashboard-plan-el.md`
+- `docs/mechanism/concept-a-funnel-lift-wheel-plan.md`
+- `docs/hardware/prototype-purchase-list-el.md`
+- `docs/hardware/plywood-cut-list.md`
 
 ## 2. Implementation Principle
 
@@ -186,7 +186,7 @@ PLAN_COLLECTION
 EXECUTE_COLLECTION_PLAN
 ```
 
-Source: `docs/court-knowledge-model-specification.md`
+Source: `docs/survey/court-knowledge-model-specification.md`
 
 ### Collection
 
@@ -211,7 +211,7 @@ RESUME_SEARCH
 ```
 
 Historical source: `docs/archive/collection-state-machine-plan-el.md`.
-For the active `collect_route` behavior use `docs/collection-route-rules-el.md`.
+For the active `collect_route` behavior use `docs/collection-route/collection-route-rules-el.md`.
 
 ### Mission Dashboard
 
@@ -227,7 +227,7 @@ performance counters
 safety counters
 ```
 
-Source: `docs/mission-dashboard-plan-el.md`
+Source: `docs/collection-route/mission-dashboard-plan-el.md`
 
 ## 7. First Implementation Scope
 
@@ -311,7 +311,7 @@ the validation plan:
 - pass/fail behavior for the relevant DoD,
 - documented limitation if Webots cannot prove the behavior.
 
-Source: `docs/validation-plan-el.md`
+Source: `docs/process/validation-plan-el.md`
 
 ## 11. Recovery Plan Placeholder
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate the intake elevation-ramp mesh for the sim URDF.
 
-Dual-wheel intake (docs/dual-wheel-intake-design-el.md): the side wheels
+Dual-wheel intake (docs/mechanism/dual-wheel-intake-design-el.md): the side wheels
 capture and transport the ball rearward through the nip; this ramp receives
 it just behind the throat and elevates it toward the basket. The entry sits
 slightly ahead of the wheel nip so the ball is fed onto a rising surface

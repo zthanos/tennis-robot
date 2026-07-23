@@ -6,7 +6,7 @@ chute, front retention (corner guards + centre lip) and the chassis-mounted
 entry hood that closed the 45-ball load gate.
 
 All dimensions live in `params.scad` (mm, ground frame, +x forward) and are
-copied from the validated sources — `docs/basket-bin-redesign-spec-el.md`
+copied from the validated sources — `docs/mechanism/basket-bin-redesign-spec-el.md`
 and `ros2_ws/src/tennis_robot/urdf/components/basket.urdf.xacro`. Do not
 edit a number here without re-validating in the Gazebo bench.
 

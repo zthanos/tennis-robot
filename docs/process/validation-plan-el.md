@@ -125,11 +125,11 @@ Resume Plan Or Rescan
 
 1. Confirm current simulated sensor layout and document exact mount heights.
 2. Add or validate obstacle sectors from LiDAR.
-3. Add Court Knowledge Model storage and require a valid Court Knowledge Model before collection, following `docs/court-knowledge-model-specification.md`.
+3. Add Court Knowledge Model storage and require a valid Court Knowledge Model before collection, following `docs/survey/court-knowledge-model-specification.md`.
 4. Add matrix-based side scan for the selected collection side.
 5. Connect camera detections to matrix cells and planned targets.
 6. Add path validation before committing to a planned target.
-7. Follow the active continuous-route behavior in `docs/collection-route-rules-el.md`.
+7. Follow the active continuous-route behavior in `docs/collection-route/collection-route-rules-el.md`.
 8. Add simulated collection event.
 9. Add structured telemetry logs for Court Knowledge Model status, matrix scan, planning decisions and failures.
 10. Add repeatable smoke/regression scenarios.
@@ -237,7 +237,7 @@ Resume Plan Or Rescan
 4. Το robot δεν βασίζεται αποκλειστικά σε ένα sensor για κρίσιμες αποφάσεις.
 5. Υπάρχει καταγραφή detection success rate, false positives, missed balls, average time to find ball, collision/near-collision events και successful collections.
 6. Τα failure cases έχουν ταξινομηθεί σε sensing failures, navigation failures, mechanical collection failures και decision logic failures.
-7. Το mission dashboard, όπως ορίζεται στο `docs/mission-dashboard-plan-el.md`, δείχνει progress, safety counters και mission timeline χωρίς άνοιγμα raw logs.
+7. Το mission dashboard, όπως ορίζεται στο `docs/collection-route/mission-dashboard-plan-el.md`, δείχνει progress, safety counters και mission timeline χωρίς άνοιγμα raw logs.
 
 ## 6. Phase 4 - Improve Simulation Based on Real Failures
 

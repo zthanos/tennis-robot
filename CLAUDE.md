@@ -8,7 +8,7 @@ Simulation-first tennis ball collection robot. Stack: Gazebo Harmonic (simulatio
 
 ## Current Architecture Direction
 
-New implementation work should start from `docs/architecture-implementation-guide-el.md` and the active baseline docs in `docs/`, especially validation, search strategy, collection state machine, and mission dashboard plans.
+New implementation work should start from `docs/process/architecture-implementation-guide-el.md` and the active baseline docs in `docs/`, especially validation, search strategy, collection state machine, and mission dashboard plans.
 
 ## Commands
 
@@ -73,7 +73,7 @@ docker compose --profile cad up openscad-gui # OpenSCAD GUI on port 6081
 | File | Role |
 | --- | --- |
 | `controller_node.py` | Main ROS 2 node; integrates survey + motion; publishes cmd_vel and status |
-| `perception_node.py` | Simulated OAK-D AI pipeline: runs the NN detector on synchronized Gazebo RGB/depth and publishes the canonical `BallDetectionArray` contract consumed by the controller. See `docs/perception-oakd-sim-el.md` |
+| `perception_node.py` | Simulated OAK-D AI pipeline: runs the NN detector on synchronized Gazebo RGB/depth and publishes the canonical `BallDetectionArray` contract consumed by the controller. See `docs/perception/perception-oakd-sim-el.md` |
 | `ball_detector.py` | Required neural ball detector: `YoloOnnxBallDetector` (YOLOv8/v11n via ONNX Runtime). Missing/invalid models fail startup; there is no HSV fallback. |
 | `court_survey_v2_node.py` | **Active** survey coverage controller (`INIT→FIND_NET→COVERAGE→SAVING_MAP→DONE/FAILED`); writes `runtime/court_boundary.json` (schema `court_knowledge_model/v2`) |
 | `court_extraction.py` | Pure extraction functions (net/posts, fence rectangle, court lines, obstacles, run-off distances, fail-loud checks) — offline-testable |
@@ -117,7 +117,7 @@ When adding an endpoint: add a use-case method on `ConsoleApp`, add the route to
 
 ### Survey output
 
-`runtime/court_boundary.json` — written by `court_survey_v2_node.py` after survey completes (schema `court_knowledge_model/v2`). Contains net center/posts, court line geometry (court frame), fence corners + extents, run-off distances to fence, obstacles, occupancy point count, and a best-effort `map_artifact` (serialized SLAM map for Nav2 reuse). See `docs/court-survey-v2-spec-el.md`.
+`runtime/court_boundary.json` — written by `court_survey_v2_node.py` after survey completes (schema `court_knowledge_model/v2`). Contains net center/posts, court line geometry (court frame), fence corners + extents, run-off distances to fence, obstacles, occupancy point count, and a best-effort `map_artifact` (serialized SLAM map for Nav2 reuse). See `docs/survey/court-survey-v2-spec-el.md`.
 
 ### Gazebo world (`gazebo/models/tennis_court/`)
 

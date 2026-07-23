@@ -115,7 +115,7 @@ class SimPhysicsProbe(Node):
             path.parent.mkdir(parents=True, exist_ok=True)
             self._jsonl = path.open("w", encoding="utf-8")
 
-        # Dual-wheel side-pinch geometry (docs/dual-wheel-intake-design-el.md).
+        # Dual-wheel side-pinch geometry (docs/mechanism/dual-wheel-intake-design-el.md).
         self._nip_x = float(os.getenv("INTAKE_NIP_X_M", "0.540"))
         self._wheel_radius = float(os.getenv("INTAKE_WHEEL_RADIUS_M", "0.060"))
         self._wheel_gap = float(os.getenv("INTAKE_WHEEL_GAP_M", "0.056"))

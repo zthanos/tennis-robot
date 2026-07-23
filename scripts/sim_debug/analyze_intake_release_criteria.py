@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Evaluate dual-wheel intake transport criteria from contact + pose logs.
 
-Criteria follow docs/intake-concept-decision-el.md (transport concept:
+Criteria follow docs/mechanism/intake-concept-decision-el.md (transport concept:
 capture -> transport -> guide -> hopper). The --phase flag gates which
 required criteria apply, matching the Concept Validation Plan:
 

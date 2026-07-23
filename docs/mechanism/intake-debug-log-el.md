@@ -472,7 +472,7 @@
   ramp=elevation προς basket· (γ) actuation με ΔΥΟ πανομοιότυπα μοτέρ (ίδιο
   μοντέλο με του top roller), ένα ανά τροχό, αντίθετης φοράς —
   αντικαθιστά το αρχικό "ένα μοτέρ + γρανάζια" (+1 μοτέρ στο BOM).
-- **Spec**: γράφτηκε `docs/dual-wheel-intake-design-el.md` — nominal
+- **Spec**: γράφτηκε `docs/mechanism/dual-wheel-intake-design-el.md` — nominal
   Rw=45mm, gap=60mm (3mm interference/πλευρά), nip x≈0.59, τροχοί
   z 0.005-0.085 (καλύπτουν ισημερινό μπάλας z=33), ω=±45 rad/s.
 - **Κρίσιμος υπολογισμός**: ramp end z=0.128 ⇒ v_release ≥1.59 m/s (ιδανικά
@@ -675,7 +675,7 @@
     τα δύο contact topics (`/gz/roller_contact_0`, `/gz/roller_contact_1`).
   - `diagnose_motion.sh`: updated στο νέο
     `/intake_wheel_velocity_controller/commands` με `[-10,+10]`.
-  - `docs/dual-wheel-intake-design-el.md`: env typo
+  - `docs/mechanism/dual-wheel-intake-design-el.md`: env typo
     `INTAKE_WHEEL_NIP_X_M` → `INTAKE_NIP_X_M`.
 - **Sanity run μετά τα fixes**:
   - Path: `runtime/intake_sweeps/20260710_154459`.
@@ -1328,7 +1328,7 @@
 ## 2026-07-12
 
 ### 45. Καλάθι v2: βυθισμένο πλεγματένιο αφαιρούμενο μπιν — PASS envelope + retention
-- **Design spec**: `docs/basket-bin-redesign-spec-el.md` (αποφάσεις χρήστη:
+- **Design spec**: `docs/mechanism/basket-bin-redesign-spec-el.md` (αποφάσεις χρήστη:
   ~50 μπάλες, αφαιρούμενο, πλέγμα· βυθισμένο πάτωμα αντί flap/ψηλού lip).
 - **Υλοποίηση**: μπιν x 0.02-0.42 / ±0.14 / πάτωμα **0.030** (25mm
   συγκράτηση κάτω από το lip 0.055, 25mm διάκενο εδάφους) / τοίχοι 0.25·
