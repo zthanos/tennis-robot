@@ -37,16 +37,32 @@ def generate_launch_description():
     ]
 
     # ── SLAM (mapping) ────────────────────────────────────────────────────────
+    # On Jazzy slam_toolbox is a managed LifecycleNode and no longer
+    # auto-activates like on Humble; a lifecycle manager (autostart) must drive
+    # it to `active` or it never publishes map->odom. See slam_localization.launch.py.
     slam_toolbox = Node(
         package="slam_toolbox",
         executable="async_slam_toolbox_node",
         name="slam_toolbox",
         output="screen",
-        parameters=[slam_config, {"use_sim_time": use_sim_time}],
+        parameters=[slam_config, {"use_sim_time": use_sim_time,
+                                  "use_lifecycle_manager": True}],
+    )
+    slam_lifecycle_manager = Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager_slam",
+        output="screen",
+        parameters=[{
+            "use_sim_time": use_sim_time,
+            "autostart": True,
+            "node_names": ["slam_toolbox"],
+            "bond_timeout": 60.0,
+        }],
     )
 
     # NOTE: twist_mux (the cmd_vel arbiter) now lives in the base bring-up
     # (sim.launch.py / real robot), so the web D-pad and teleop work without
     # SLAM running. This launch only adds the mapping.
 
-    return LaunchDescription(args + [slam_toolbox])
+    return LaunchDescription(args + [slam_toolbox, slam_lifecycle_manager])

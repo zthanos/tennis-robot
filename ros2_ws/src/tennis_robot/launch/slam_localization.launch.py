@@ -31,6 +31,30 @@ def _newest_map_basename() -> str | None:
     return newest[: -len(".posegraph")]  # slam_toolbox wants the basename, no extension
 
 
+def _slam_lifecycle_manager() -> Node:
+    """Configure+activate the slam_toolbox lifecycle node.
+
+    On ROS 2 Jazzy slam_toolbox is a managed LifecycleNode and no longer
+    auto-activates itself the way it did on Humble — left alone it stays
+    ``unconfigured`` and never publishes map->odom, so Nav2's costmaps time out
+    on the missing ``map`` frame.  A dedicated lifecycle manager (autostart)
+    drives it to ``active``.  bond_timeout=0 disables bond monitoring because a
+    large saved posegraph can take a while to deserialize on configure.
+    """
+    return Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager_slam",
+        output="screen",
+        parameters=[{
+            "use_sim_time": True,
+            "autostart": True,
+            "node_names": ["slam_toolbox"],
+            "bond_timeout": 60.0,
+        }],
+    )
+
+
 def _launch_setup(context, *args, **kwargs):
     pkg_share = get_package_share_directory("tennis_robot")
     slam_config = os.path.join(pkg_share, "config", "slam_toolbox.yaml")
@@ -48,9 +72,10 @@ def _launch_setup(context, *args, **kwargs):
             executable="async_slam_toolbox_node",
             name="slam_toolbox",
             output="screen",
-            parameters=[slam_config, {"use_sim_time": True, "mode": "mapping"}],
+            parameters=[slam_config, {"use_sim_time": True, "mode": "mapping",
+                                      "use_lifecycle_manager": True}],
         )
-        return [node]
+        return [node, _slam_lifecycle_manager()]
 
     print(f"\n[slam_localization] Loading saved map: {map_basename}.posegraph\n")
     node = Node(
@@ -67,10 +92,11 @@ def _launch_setup(context, *args, **kwargs):
                 # Start localized at the map origin (the survey start pose), which
                 # is where the robot spawns in sim.
                 "map_start_pose": [0.0, 0.0, 0.0],
+                "use_lifecycle_manager": True,
             },
         ],
     )
-    return [node]
+    return [node, _slam_lifecycle_manager()]
 
 
 def generate_launch_description():
