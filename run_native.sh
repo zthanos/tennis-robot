@@ -54,7 +54,13 @@ trap cleanup EXIT INT TERM
 
 setsid ros2 launch tennis_robot sim.launch.py "headless:=${GAZEBO_HEADLESS}" &
 pids+=($!)
+# Let Gazebo + the robot spawn and start publishing TF before SLAM starts, then
+# let SLAM publish map->odom before Nav2 configures its costmaps — otherwise the
+# planner_server global_costmap times out waiting for the `map` frame and Nav2
+# never reaches "active" (mirrors scripts/docker_dev_entry.sh's sleeps).
+sleep "${SIM_START_DELAY_S:-12}"
 setsid ros2 launch tennis_robot "slam_${SLAM_MODE}.launch.py" &
 pids+=($!)
+sleep "${NAV2_START_DELAY_S:-25}"
 
 ros2 launch tennis_robot navigation.launch.py
