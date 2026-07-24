@@ -27,6 +27,10 @@ export TENNIS_ROBOT_ROOT="$SCRIPT_DIR"
 # Brain only — the sim (Gazebo + robot abstraction) lives on the PC.
 export TENNIS_LAUNCH_SIM=false
 export TENNIS_LAUNCH_BRAIN=true
+# Distributed sim: perception runs on the PC (the Gazebo camera lives there), so
+# it is NOT launched here. A real robot with a Pi-side camera would set this
+# false to run perception on the Pi.
+export TENNIS_PERCEPTION_ON_PC="${TENNIS_PERCEPTION_ON_PC:-true}"
 
 # System Python owns the ROS/entry-point toolchain (a uv python3.12 shadows it).
 export PATH="/usr/bin:$PATH"

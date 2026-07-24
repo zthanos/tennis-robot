@@ -96,6 +96,13 @@ def generate_launch_description():
     # stack (Pi side). Both default true → single-machine all-in-one (run_native).
     _launch_sim = os.getenv("TENNIS_LAUNCH_SIM", "true").lower() in {"1", "true", "yes"}
     _launch_brain = os.getenv("TENNIS_LAUNCH_BRAIN", "true").lower() in {"1", "true", "yes"}
+    # In the distributed sim, streaming raw RGB/depth PC->Pi plus TF timing
+    # starves the scan (perception can't place detections before their TF ages
+    # out of the buffer). TENNIS_PERCEPTION_ON_PC runs perception on the sim side
+    # next to the Gazebo camera, so only the lightweight BallDetectionArray
+    # crosses to the Pi. The real robot keeps perception on the Pi (camera is
+    # local there), so this defaults off.
+    _perception_on_pc = os.getenv("TENNIS_PERCEPTION_ON_PC", "false").lower() in {"1", "true", "yes"}
 
     # The URDF/SDF + GUI config are only needed by the sim side (spawn +
     # robot_state_publisher). On the Pi (sim off) they would fail — no xacro run.
@@ -508,6 +515,11 @@ def generate_launch_description():
                          collector_logic, twist_mux, ekf]
     _brain_node_actions = [perception, controller, navigation,
                            command_bridge, sensor_snapshots]
+    # Move perception to the sim side (next to the camera) when requested — see
+    # TENNIS_PERCEPTION_ON_PC above.
+    if _perception_on_pc:
+        _brain_node_actions.remove(perception)
+        _sim_node_actions.append(perception)
 
     # Delay ROS nodes until Gazebo + bridge are up (all-in-one), or until DDS
     # discovery of the PC sensors has settled (Pi brain).

@@ -29,7 +29,12 @@ safety:
   safety_pause_timeout_s: 10.0
 scan:
   required_coverage_fraction: 1.0
-  scan_timeout_s: 20.0
+  # 90 s (was 20): the 360° scan visits 18 headings, each waiting on a
+  # perception frame. Distributed (perception + YOLO on the Pi ARM CPU consuming
+  # the PC camera over DDS) runs ~3 s/step, so 20 s only covered 6/18 before the
+  # wall-clock guard aborted. 90 s clears the full sweep; a fast local run still
+  # finishes well under it.
+  scan_timeout_s: 90.0
   minimum_confirmation_count: 2
 feasibility:
   heading_sample_count: 16

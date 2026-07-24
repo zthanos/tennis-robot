@@ -25,8 +25,14 @@ export TENNIS_ROBOT_ROOT="$SCRIPT_DIR"
 # Shared domain so a distributed Pi (run_pi.sh) auto-discovers this sim over DDS.
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
 # TENNIS_LAUNCH_BRAIN=false → distributed mode: run ONLY the sim here; the
-# control/perception/Nav2/SLAM stack runs on the Pi (run_pi.sh).
+# control/Nav2/SLAM stack runs on the Pi (run_pi.sh).
 export TENNIS_LAUNCH_BRAIN="${TENNIS_LAUNCH_BRAIN:-true}"
+# Distributed sim: run perception on the PC (next to the Gazebo camera) so only
+# BallDetectionArray crosses to the Pi — streaming raw RGB/depth over DDS starves
+# the scan. The all-in-one run keeps perception in the brain group (local anyway).
+if [ "$TENNIS_LAUNCH_BRAIN" = "false" ]; then
+    export TENNIS_PERCEPTION_ON_PC="${TENNIS_PERCEPTION_ON_PC:-true}"
+fi
 
 # ROS builds and node entry points must use the SYSTEM Python. A uv-managed
 # python3.12 under ~/.local/bin shadows it in PATH and lacks the ROS/build
