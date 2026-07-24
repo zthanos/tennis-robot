@@ -95,17 +95,31 @@ collect_route run native Jazzy end-to-end.
 **Gate WS2:** workspace χτίζει καθαρά στο Pi · τα Pi-side nodes ξεκινούν χωρίς sim
 (π.χ. controller_node idle) · onnxruntime φορτώνει.
 
-### WS2 assets (2026-07-24) — έτοιμα, εκκρεμεί εκτέλεση στο Pi
-- `scripts/setup_pi.sh` — idempotent bring-up: (προαιρετικά) ROS 2 Jazzy apt repo +
-  ros-base· apt **μόνο control-side** πακέτα (navigation2, slam-toolbox,
-  robot-localization, twist-mux, robot-state-publisher, tf2, xacro, rmw-fastrtps —
-  **όχι** Gazebo/ros_gz/ros2_control)· `rosdep` με `--skip-keys` για τα sim deps·
-  pip (numpy, opencv-headless, duckdb, onnxruntime)· `colcon build` τα 3 πακέτα.
-- `docs/process/pi-setup-el.md` — οδηγός + Gate verify (onnxruntime import, plugin
-  package present, controller_node idle) + troubleshooting (onnxruntime piwheels
-  fallback, OOM sequential build, rosdep skip-keys).
-- **Εκκρεμεί:** εκτέλεση στο πραγματικό Pi (`INSTALL_ROS=true ./scripts/setup_pi.sh`)
-  + επαλήθευση Gate WS2. Μετά WS3 = control-only launch (partition PC↔Pi).
+### WS2 — GATE PASSED (2026-07-24, μέσω SSH στο πραγματικό Pi)
+Pi: Raspberry Pi (aarch64), **Ubuntu 24.04.4**, 4 cores, **15 GB RAM**, 512 GB NVMe
+(HAT) + 48 GB / , passwordless sudo. Bring-up μέσω SSH (key `~/.ssh/id_pi`,
+`thanos@192.168.31.111`).
+
+**Gate WS2 verify:** (a) `py deps OK` — onnxruntime **1.27.0**, numpy 2.5.1,
+duckdb 1.5.5, opencv-headless 5.0.0.93, όλα arm64 wheels (Ρίσκο #1 λύθηκε)·
+(b) `tennis_robot_collection_controller` package present + 2 plugin xml·
+(c) `controller_node` idle χωρίς sim (alive 8s, killed by timeout — όχι crash).
+`colcon build` 3 πακέτα καθαρό (msgs 39s, C++ plugin 1m6s, tennis_robot 3s).
+
+**Δύο Pi-image ιδιομορφίες που χρειάστηκαν fix (τώρα στο `setup_pi.sh`):**
+1. Το image ήρθε **χωρίς `noble-updates` pocket** → οι patched runtime libs
+   (liblz4-1/libzstd1/zlib1g 1build1.1) δεν είχαν matching `-dev` → ros-base
+   "held broken packages". Fix: `_ensure_noble_updates`.
+2. `unattended-upgrades` κρατούσε το dpkg lock στο boot → apt "Could not get
+   lock". Fix: `_apt_prepare` (stop periodic apt units + wait for lock) +
+   `DEBIAN_FRONTEND=noninteractive`/`NEEDRESTART_MODE=a`.
+
+`scripts/setup_pi.sh` (idempotent, control-only — navigation2, slam-toolbox,
+robot-localization, twist-mux, robot-state-publisher, tf2, xacro, rmw-fastrtps·
+**όχι** Gazebo/ros_gz/ros2_control· rosdep `--skip-keys`· pip deps· colcon build)
++ `docs/process/pi-setup-el.md` (οδηγός + gate + troubleshooting).
+
+**Επόμενο: WS3** — control-only launch (partition PC↔Pi) + distributed DDS.
 
 ---
 
