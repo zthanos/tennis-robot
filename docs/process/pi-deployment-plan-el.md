@@ -149,6 +149,29 @@ robot-localization, twist-mux, robot-state-publisher, tf2, xacro, rmw-fastrtps·
 **Gate WS4:** το panel ανοίγει από άλλο μηχάνημα, δείχνει live status + speed/elapsed,
 τα κουμπιά (Collect Route/Stop) λειτουργούν.
 
+### WS3 + WS4 — GATE PASSED (2026-07-24, live PC↔Pi)
+Launch split: `sim.launch.py` env-gated `TENNIS_LAUNCH_SIM`/`TENNIS_LAUNCH_BRAIN`
+(both default true = all-in-one). PC distributed = `TENNIS_LAUNCH_BRAIN=false
+./run_native.sh` (sim only). Pi = `./run_pi.sh` (brain: controller + perception
++ SLAM mapping + Nav2 + panel, `TENNIS_LAUNCH_SIM=false`), shared
+`ROS_DOMAIN_ID=42`. **Verified live** (PC sim headless ↔ Pi brain):
+- Pi sees PC `/scan`,`/camera/image_raw`,`/camera/depth`,`/clock`,`/tf`,
+  `/odometry/filtered`,`/sim/balls` over DDS· `/clock` sim-time flowing.
+- Full Pi brain up, **no node deaths**: perception (YOLO ONNX on ARM, consuming
+  PC camera), controller_node, slam_toolbox active (map->odom from PC `/scan`),
+  Nav2 «Managed nodes are active».
+- cmd_vel Pi→PC: Pi `/cmd_vel_nav` → PC robot moves (odom twist.x nonzero).
+- WS4: Pi panel HTTP 200 cross-machine (`http://<pi>:8081`), binds `0.0.0.0`.
+
+**Fix που χρειάστηκε (τώρα pinned):** fresh Pi pip έφερε opencv 5.0 + numpy 2.5·
+perception + sensor_snapshot crash-άρανε στο `detect_court_line`
+(`cv2.HoughLinesP` shape (N,1,4)→(N,4) στο 5.x). Pin `opencv<5`/`numpy<2`
+(pyproject + setup_pi) = tested PC line (opencv 4.11/numpy 1.26). Επίσης: το
+gitignored `models/yolov8n.onnx` πρέπει να αντιγραφεί στο Pi (scp).
+
+**Επόμενο: WS5** — Collect Route από το Pi UI πάνω στο PC sim (χρειάζεται
+`runtime/court_boundary.json` στο Pi: copy από PC ή Map Court από το Pi).
+
 ---
 
 ## WS5 — End-to-end verification
