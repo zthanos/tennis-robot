@@ -122,8 +122,11 @@ ros2_controllers teleop_twist_keyboard explore_lite" || \
     # onnxruntime is the ball detector's neural backend (Risk #1 on ARM64). The
     # aarch64 wheel exists on PyPI for onnxruntime>=1.20; if pip cannot find it,
     # see docs/process/pi-setup-el.md for the piwheels / source-build fallback.
+    # numpy<2 and OpenCV<5: perception is tested against the 4.x/1.x line; a
+    # fresh install otherwise pulls opencv 5.0 / numpy 2.5 and crashes in
+    # detect_court_line (cv2.HoughLinesP shape changed). Match the PC versions.
     python3 -m pip install --user --break-system-packages \
-        "numpy>=1.26" "opencv-python-headless>=4.9" "duckdb>=1.5.3" "onnxruntime>=1.20"
+        "numpy>=1.26,<2" "opencv-python-headless>=4.9,<5" "duckdb>=1.5.3" "onnxruntime>=1.20"
 fi
 
 # ── 4. Build the three workspace packages (control side only) ────────────────
