@@ -96,9 +96,11 @@ collect_route run native Jazzy end-to-end.
 (π.χ. controller_node idle) · onnxruntime φορτώνει.
 
 ### WS2 — GATE PASSED (2026-07-24, μέσω SSH στο πραγματικό Pi)
-Pi: Raspberry Pi (aarch64), **Ubuntu 24.04.4**, 4 cores, **15 GB RAM**, 512 GB NVMe
-(HAT) + 48 GB / , passwordless sudo. Bring-up μέσω SSH (key `~/.ssh/id_pi`,
-`thanos@192.168.31.111`).
+Pi: Raspberry Pi (aarch64, host `tennisserver`), **Ubuntu 24.04.4**, 4 cores,
+**15 GB RAM**, 256 GB NVMe (SPCC M.2 PCIe HAT, `/dev/nvme0n1`) + 48 GB / ,
+passwordless sudo. Bring-up μέσω SSH (key `~/.ssh/id_pi`, `thanos@192.168.31.111`).
+NVMe: unpartitioned/unmounted ακόμη — το workspace είναι στο `/` (48 GB, αρκετά)·
+προαιρετική μελλοντική μετακίνηση workspace/build στον NVMe για ταχύτητα/χώρο.
 
 **Gate WS2 verify:** (a) `py deps OK` — onnxruntime **1.27.0**, numpy 2.5.1,
 duckdb 1.5.5, opencv-headless 5.0.0.93, όλα arm64 wheels (Ρίσκο #1 λύθηκε)·

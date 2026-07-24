@@ -91,8 +91,17 @@ def generate_gazebo_gui_config():
 
 
 def generate_launch_description():
-    generate_robot_urdf()
-    generate_gazebo_gui_config()
+    # Distributed split (WS3). TENNIS_LAUNCH_SIM brings up Gazebo + the robot
+    # abstraction (PC side); TENNIS_LAUNCH_BRAIN brings up the control/perception
+    # stack (Pi side). Both default true → single-machine all-in-one (run_native).
+    _launch_sim = os.getenv("TENNIS_LAUNCH_SIM", "true").lower() in {"1", "true", "yes"}
+    _launch_brain = os.getenv("TENNIS_LAUNCH_BRAIN", "true").lower() in {"1", "true", "yes"}
+
+    # The URDF/SDF + GUI config are only needed by the sim side (spawn +
+    # robot_state_publisher). On the Pi (sim off) they would fail — no xacro run.
+    if _launch_sim:
+        generate_robot_urdf()
+        generate_gazebo_gui_config()
     bench_minimal = os.getenv("SIM_BENCH_MINIMAL", "false").lower() in {
         "1",
         "true",
@@ -196,16 +205,20 @@ def generate_launch_description():
     # gz_ros2_control plugin reads robot_description from it to start the
     # controller_manager. It also publishes TF from /joint_states (now fed by
     # joint_state_broadcaster instead of the old gz JointStatePublisher plugin).
-    with open(ROBOT_URDF, "r", encoding="utf-8") as _f:
-        _robot_description = _f.read()
-
-    robot_state_publisher = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        name="robot_state_publisher",
-        output="screen",
-        parameters=[{"robot_description": _robot_description, "use_sim_time": True}],
-    )
+    # robot_state_publisher lives on the sim side: it reads the generated URDF
+    # and publishes robot_description + the base_footprint->base_link TF. On the
+    # Pi (sim off) the URDF is never generated, so skip it there.
+    robot_state_publisher = None
+    if _launch_sim:
+        with open(ROBOT_URDF, "r", encoding="utf-8") as _f:
+            _robot_description = _f.read()
+        robot_state_publisher = Node(
+            package="robot_state_publisher",
+            executable="robot_state_publisher",
+            name="robot_state_publisher",
+            output="screen",
+            parameters=[{"robot_description": _robot_description, "use_sim_time": True}],
+        )
 
     def _spawner(controller):
         return Node(
@@ -342,6 +355,7 @@ def generate_launch_description():
         executable="perception_node",
         name="perception_node",
         output="screen",
+        parameters=[{"use_sim_time": True}],
         remappings=[_odom_remap],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
@@ -404,6 +418,7 @@ def generate_launch_description():
         executable="navigation_node",
         name="navigation_node",
         output="screen",
+        parameters=[{"use_sim_time": True}],
         # Route the legacy /cmd_vel (used by the web control-panel D-pad via
         # controller_node) through twist_mux instead of the removed gz plugin.
         remappings=[("/cmd_vel", "/cmd_vel_teleop"), _odom_remap],
@@ -414,6 +429,7 @@ def generate_launch_description():
         executable="command_bridge_node",
         name="command_bridge_node",
         output="screen",
+        parameters=[{"use_sim_time": True}],
         additional_env={
             "ROBOT_COMMAND_FILE": os.getenv(
                 "ROBOT_COMMAND_FILE", f"{WORKSPACE}/runtime/robot_command.json"
@@ -435,6 +451,7 @@ def generate_launch_description():
         executable="sensor_snapshot_node",
         name="sensor_snapshot_node",
         output="screen",
+        parameters=[{"use_sim_time": True}],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
             "ROBOT_SENSOR_FILE": os.getenv(
@@ -482,56 +499,53 @@ def generate_launch_description():
         parameters=[EKF_CONFIG, {"use_sim_time": True}],
     )
 
-    # Delay ROS nodes until Gazebo + bridge are up
+    # ── Node groups by machine (WS3 distributed split) ─────────────────────
+    # PC (sim) side: Gazebo bridge + IR/ball extractor + actuation + odometry
+    # fusion. Pi (brain) side: perception + control. The file-IPC nodes
+    # (controller, command_bridge, sensor_snapshot) and the panel share the Pi
+    # filesystem, so they sit together on the Pi.
+    _sim_node_actions = [bridge, gz_extras, drive_actuator, *cmd_vel_relays,
+                         collector_logic, twist_mux, ekf]
+    _brain_node_actions = [perception, controller, navigation,
+                           command_bridge, sensor_snapshots]
+
+    # Delay ROS nodes until Gazebo + bridge are up (all-in-one), or until DDS
+    # discovery of the PC sensors has settled (Pi brain).
     if bench_minimal:
         delayed_node_actions = [bridge, gz_extras]
     else:
-        delayed_node_actions = [
-            bridge, perception, controller, navigation,
-            command_bridge, gz_extras, sensor_snapshots, drive_actuator,
-            *cmd_vel_relays, collector_logic, twist_mux,
-            ekf,
-        ]
-
+        delayed_node_actions = []
+        if _launch_sim:
+            delayed_node_actions += _sim_node_actions
+        if _launch_brain:
+            delayed_node_actions += _brain_node_actions
     delayed_nodes = TimerAction(period=4.0, actions=delayed_node_actions)
 
-    delayed_spawn = TimerAction(
-        period=1.0,
-        actions=[spawn_robot],
-    )
-
-    # Spawn controllers sequentially. Jazzy's spawner serializes operations
-    # with a shared lock; launching all spawners at once makes repeated fresh
-    # simulations intermittently exhaust the lock timeout.
-    delayed_controllers = TimerAction(
-        period=6.0,
-        actions=[jsb_spawner],
-    )
-    controller_chain = [
-        RegisterEventHandler(
-            OnProcessExit(target_action=jsb_spawner, on_exit=[diff_drive_spawner])
-        ),
-        RegisterEventHandler(
-            OnProcessExit(target_action=diff_drive_spawner, on_exit=[intake_wheel_spawner])
-        ),
-    ]
-    if enable_assist:
-        controller_chain.append(
+    actions = [headless_arg]
+    if _launch_sim:
+        delayed_spawn = TimerAction(period=1.0, actions=[spawn_robot])
+        # Spawn controllers sequentially. Jazzy's spawner serializes operations
+        # with a shared lock; launching all spawners at once makes repeated fresh
+        # simulations intermittently exhaust the lock timeout.
+        delayed_controllers = TimerAction(period=6.0, actions=[jsb_spawner])
+        controller_chain = [
             RegisterEventHandler(
-                OnProcessExit(target_action=intake_wheel_spawner, on_exit=[assist_wheel_spawner])
+                OnProcessExit(target_action=jsb_spawner, on_exit=[diff_drive_spawner])
+            ),
+            RegisterEventHandler(
+                OnProcessExit(target_action=diff_drive_spawner, on_exit=[intake_wheel_spawner])
+            ),
+        ]
+        if enable_assist:
+            controller_chain.append(
+                RegisterEventHandler(
+                    OnProcessExit(target_action=intake_wheel_spawner, on_exit=[assist_wheel_spawner])
+                )
             )
-        )
+        actions += [gz_full, gz_headless, robot_state_publisher,
+                    delayed_spawn, delayed_controllers, *controller_chain]
 
-    actions = [
-        headless_arg,
-        gz_full,
-        gz_headless,
-        robot_state_publisher,
-        delayed_spawn,
-        delayed_nodes,
-        delayed_controllers,
-        *controller_chain,
-    ]
-    if not skip_control_panel:
-        actions.insert(5, control_panel)
+    actions.append(delayed_nodes)
+    if _launch_brain and not skip_control_panel:
+        actions.append(control_panel)
     return LaunchDescription(actions)

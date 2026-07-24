@@ -22,6 +22,11 @@ export WORKSPACE="$SCRIPT_DIR"
 # Nodes default their runtime-file paths under $TENNIS_ROBOT_ROOT (the old
 # container mount was /workspace, which is not writable natively).
 export TENNIS_ROBOT_ROOT="$SCRIPT_DIR"
+# Shared domain so a distributed Pi (run_pi.sh) auto-discovers this sim over DDS.
+export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
+# TENNIS_LAUNCH_BRAIN=false → distributed mode: run ONLY the sim here; the
+# control/perception/Nav2/SLAM stack runs on the Pi (run_pi.sh).
+export TENNIS_LAUNCH_BRAIN="${TENNIS_LAUNCH_BRAIN:-true}"
 
 # ROS builds and node entry points must use the SYSTEM Python. A uv-managed
 # python3.12 under ~/.local/bin shadows it in PATH and lacks the ROS/build
@@ -51,6 +56,13 @@ cleanup() {
     pkill -9 -f "gz sim" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
+
+if [ "$TENNIS_LAUNCH_BRAIN" = "false" ]; then
+    # Distributed PC side: run ONLY the sim (Gazebo + robot abstraction). SLAM +
+    # Nav2 + the control stack run on the Pi (run_pi.sh) and reach this over DDS.
+    echo "[run_native] distributed PC mode — sim only (control stack on the Pi)"
+    exec ros2 launch tennis_robot sim.launch.py "headless:=${GAZEBO_HEADLESS}"
+fi
 
 setsid ros2 launch tennis_robot sim.launch.py "headless:=${GAZEBO_HEADLESS}" &
 pids+=($!)
