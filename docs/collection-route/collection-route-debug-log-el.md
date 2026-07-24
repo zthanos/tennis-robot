@@ -940,3 +940,103 @@
   `_collection_event_started_at` (το SimpleNamespace helper δεν το ορίζει).
 - **Επόμενο:** rebuild (C++ #30 + Python) + live· επανάληψη ολοκληρωμένης διαδρομής
   με ορατά speed/elapsed ⇒ κοντά στο κλείσιμο της υλοποίησης.
+
+## #32 — Route map/odom mismatch: σωστό plan, μετατοπισμένη εκτέλεση
+
+- **Σύμπτωμα:** η σάρωση και ο planner έδειχναν πολλές μπάλες/crossings, αλλά το
+  robot περνούσε δίπλα τους και φυσικά κρατούσε μόνο μία ή δύο. Σε ολοκληρωμένο
+  run ο planner ανέφερε 8 covered crossings, ενώ τα Gazebo basket-entry events
+  επιβεβαίωσαν μόνο 2 retained balls.
+- **Root cause:** το immutable route και το `FollowPath` είχαν frame `map`, ενώ ο
+  Nav2 controller server δίνει στο custom `CollectionNav2Controller` το robot
+  pose στο local-costmap frame `odom`. Ο C++ tracking core, σκόπιμα χωρίς TF
+  dependency, συνέκρινε απευθείας τις odom συντεταγμένες του robot με map
+  συντεταγμένες της διαδρομής. Η διαφορά `map→odom` μετατόπιζε ολόκληρη τη φυσική
+  τροχιά από τα detected ball positions.
+- **Fix:** αμέσως πριν χτιστούν execution context/path hash γίνεται ένα
+  `lookup_transform(odom, map)` και παγώνει. Νέο pure module
+  `collection_execution_frame.py` εφαρμόζει τον ίδιο rigid 2D transform σε start,
+  terminal, όλα τα path points και όλα τα planned crossings. Planner/UI μένουν
+  στο `map`, αλλά context και FollowPath είναι συνεπή στο `odom`.
+- **Terminal hardening:** η C++ ολοκλήρωση απαιτεί πλέον και πραγματική ευκλείδεια
+  απόσταση από το terminal point εντός tolerance, όχι μόνο projection progress.
+  Η tolerance του core ευθυγραμμίστηκε με τον αποκλειστικό collection goal
+  checker στα `0.30 m`. Αν ο controller απορρίψει το terminal Finalize, ο executor
+  επιστρέφει `path_failed` αντί για ψευδές `completed`.
+- **Nav2 Humble startup:** διορθώθηκαν τα pluginlib class names του Smac planner
+  και των behavior plugins από `::` σε `/`. Πριν, ο lifecycle manager σταματούσε
+  στο configure και δεν ενεργοποιούσε όλο το navigation stack.
+- **Verification:** `220` collection pytest PASS, ROS Humble image build PASS και
+  controller package `36 tests, 0 errors, 0 failures`. Νέο headless run:
+  18/18 scan headings, 10 tracks, 8 planned crossings, συνεχής εκτέλεση με
+  lateral error περίπου `0.005–0.028 m` και χωρίς άμεσο cancel/tracking abort.
+  Το run διακόπηκε ελεγχόμενα στα `3.77 m` πριν από το πρώτο crossing όταν
+  ξεκίνησε παράλληλο native Jazzy stack πάνω στο ίδιο status/command file· δεν
+  καταγράφεται ως physical multi-ball acceptance.
+- **Acceptance που απομένει:** ένα αποκλειστικό (single-stack) live run μέχρι
+  τουλάχιστον το δεύτερο crossing, με δύο διαφορετικά basket-entry/retained ball
+  IDs. Δεν πρέπει να τρέχουν ταυτόχρονα Docker Humble και native Jazzy.
+
+## #33 — Native Jazzy: collect_route εκτελείται (δύο migration bugs)
+
+**Context:** πρώτο collect_route σε native ROS 2 Jazzy (WS1 του Pi deployment). Το
+Nav2 έφτανε `Managed nodes are active`, ο planner έβγαζε πλήρες route (10/10 balls,
+57.7 m), αλλά το robot δεν προχωρούσε — και μετά το fix, crash-άριζε στο ~50%.
+
+- **Bug 1 — Nav2 → twist_mux cmd_vel type mismatch (robot ακίνητο υπό Nav2).**
+  Το `controller_server`/`behavior_server` δημοσίευαν σκέτο `geometry_msgs/Twist`
+  στο `/cmd_vel_nav`, ενώ το twist_mux (stamped mode στο Jazzy, όπως teleop &
+  collection) έκανε subscribe ως `TwistStamped`. Το `ros2 topic info /cmd_vel_nav`
+  έδειχνε **δύο** τύπους — το DDS δεν συνέδεε ασύμβατα endpoints, οπότε **καμία
+  εντολή ταχύτητας δεν έφτανε στο diff_drive**. Ο planner «Passing new path»
+  συνεχώς, ο controller «Failed to make progress» μετά ~28 s. Το D-pad δούλευε
+  γιατί περνά από restamp relay. **Fix:** `enable_stamped_cmd_vel: true` σε
+  `controller_server` + `behavior_server` (`nav2_params.yaml`). Επαλήθευση: το
+  `/cmd_vel_nav` έγινε **single** `TwistStamped` και το robot κινήθηκε προς το
+  scan pose και εκτέλεσε το route. (Root cause = Humble→Jazzy: το Humble ήταν
+  όλο Twist· στο Jazzy ο stack πήγε TwistStamped αλλά ο Nav2 έμεινε στο default
+  `enable_stamped_cmd_vel: false`.)
+
+- **Bug 2 — `RuntimeError: Executor is already spinning` στο finalize (crash ~50%).**
+  Μόλις ο controller έφτανε `Reached the goal!`, ο executor έμπαινε στο finalize
+  και ο `controller_node` πέθαινε με exit 1. Traceback: `finalize_sender`
+  (`collection_executor_node_factory.py:399`) καλούσε
+  `spin_until_future_complete` **μέσα από το timer callback** του controller_node,
+  δηλαδή nested spin στον ίδιο single-threaded executor. Το Humble rclpy το
+  ανεχόταν (γι' αυτό ολοκλήρωναν τα προηγούμενα runs)· το Jazzy rclpy πρόσθεσε
+  guard (`_enter_spin`) και σκάει. **Fix:** fire-and-forget `call_async` (ίδιο
+  pattern με το διπλανό `hold_sender`), return `True` — το request παραδίδεται
+  στον collection controller, χωρίς αναμονή ack (ο Nav2 goal έχει ήδη πετύχει).
+  Ήταν το μοναδικό nested-spin site (τα υπόλοιπα `rclpy.spin` είναι top-level
+  `main()`). Επαλήθευση: `23` pytest (`test_collection_executor_node_factory.py`
+  + `test_collection_path_follower_port.py`) PASS.
+
+- **Επίσης σε αυτό το run:** spawners (joint_state_broadcaster, diff_drive,
+  intake) «finished cleanly» μετά από καθαρό restart — το προηγούμενο
+  `Failed to acquire lock` ήταν transient, όχι μόνιμο. Το D-pad web control
+  ξαναδούλεψε αφού διορθώθηκαν 3 UI bugs (type=submit navigation, aborted-fetch
+  NetworkError, stale-survey auto-route redirect).
+
+- **Bug 3 — `invalid terminal progress` (arc-vs-chord), σταματούσε μετά το 360.**
+  Μετά τα bug 1+2, το route σχεδιαζόταν αλλά μόλις ο executor έδινε το πρώτο
+  segment στον C++ `CollectionFollowPath`, ο controller πετούσε
+  `collection_controller_profile_unenforceable`. Το catch στο
+  `setPlan` (`collection_nav2_controller.cpp`) κατάπινε τον πραγματικό λόγο —
+  προστέθηκε `e.what()` logging και αποκαλύφθηκε: `make_tracking_plan rejected
+  path: invalid terminal progress`. **Root cause:** το `progress` που υπολογίζει
+  το `make_tracking_plan` είναι άθροισμα **chord** αποστάσεων των διακριτών
+  FollowPath poses, ενώ το `context.terminal_progress_s` είναι το **arc length**
+  της route (πάντα ≥ chord-sum σε καμπύλες). Ο έλεγχος στο `make_tracking_plan`
+  δέχεται ισότητα εντός `terminal_progress_tolerance_m`, αλλά ο constructor του
+  `CollectionTrackingCore` απαιτεί `terminal_progress_s <= path.back().progress_s`
+  **αυστηρά** → overshoot λίγων mm έριχνε το guard. Επιφάνεια τώρα επειδή η νέα
+  route planner (Phase 7, cap 200, B&B) βγάζει πιο καμπύλες διαδρομές. **Fix:**
+  cap του `terminal_progress_s` στο πραγματικό μήκος path (`progress`) στο
+  `make_tracking_plan`, αφήνοντας NaN ανέγγιχτο για τον constructor. Επαλήθευση:
+  10 tracking-core + 5 runtime + plugin + canonicalization gtests PASS.
+- **Χωριστό (μη-μπλοκάρον):** το `test_collection_controller_server_isolated.launch.py`
+  αποτυγχάνει γιατί το harness δεν δημοσιεύει robot TF (base_link→odom) — ο Nav2
+  controller_server δεν παίρνει pose, δεν καλεί το `computeVelocityCommands`,
+  καμία εντολή. Test-infra θέμα, όχι το live path (live: TF υπάρχει).
+- **Acceptance που απομένει:** πλήρης single-stack native Jazzy run που να
+  **ολοκληρώνεται** (πέρα από το finalize + πρώτο segment), + ο μηχανισμός μαζέματος.

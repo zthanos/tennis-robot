@@ -157,6 +157,35 @@ TEST(CollectionTrackingCore, TerminalConditionAndNoReverseOrStandaloneRotateComm
     tc::TrackingFailureCode::kReverseRequired);
 }
 
+TEST(CollectionTrackingCore, TerminalProgressAloneCannotCompleteAwayFromEndpoint)
+{
+  // The final segment passes the earlier point (0, 0) before ending at
+  // (0, 0.4). A projection near terminal progress is insufficient unless the
+  // robot is also physically inside the terminal tolerance.
+  auto near_return = plan();
+  near_return.path = {
+    {0.0, 0.0, 0.0, 0.0},
+    {2.0, 0.0, 2.0, 0.0},
+    {0.0, 0.0, 4.0, M_PI},
+    {0.0, 0.4, 4.4, M_PI_2}};
+  near_return.segments[0].progress_end_s = 4.4;
+  near_return.segments[0].planned_crossings.clear();
+  near_return.segments[0].profile.max_lateral_error_m = 1.0;
+  near_return.segments[0].profile.max_heading_error_rad = M_PI;
+  near_return.segments[0].profile.max_curvature_per_m = 100.0;
+  near_return.terminal_progress_s = 4.4;
+  near_return.tuning.progress_projection_window_m = 10.0;
+  near_return.tuning.progress_tolerance_m = 0.3;
+
+  tc::CollectionTrackingCore core(near_return);
+  const auto away = core.update(input(0.0, 0.0, M_PI_2, 1.0));
+  EXPECT_NE(away.status, tc::TrackingStatus::kCompleted);
+
+  tc::CollectionTrackingCore terminal_core(near_return);
+  const auto terminal = terminal_core.update(input(0.0, 0.4, M_PI_2, 1.0));
+  EXPECT_EQ(terminal.status, tc::TrackingStatus::kCompleted);
+}
+
 TEST(CollectionTrackingCore, SelfCrossingLoopDoesNotFalselyReportNonMonotonicProgress)
 {
   // A figure-eight (A*sin 2t, A*sin t) passes through the origin at t=0, pi and

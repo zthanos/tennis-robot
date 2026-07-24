@@ -140,8 +140,12 @@ TrackingResult CollectionTrackingCore::update(const TrackingInput & input)
   if (input.measured_speed_mps < -kEpsilon) {
     return failure(TrackingFailureCode::kReverseRequired, projection.progress_s);
   }
+  const auto terminal = point_at(plan_.terminal_progress_s);
+  const double terminal_distance_m =
+    std::hypot(terminal.x_m - input.x_m, terminal.y_m - input.y_m);
   if (projection.progress_s + plan_.tuning.progress_tolerance_m + kEpsilon >=
-    plan_.terminal_progress_s)
+    plan_.terminal_progress_s &&
+    terminal_distance_m <= plan_.tuning.progress_tolerance_m + kEpsilon)
   {
     last_progress_s_ = plan_.terminal_progress_s;
     TrackingResult result;

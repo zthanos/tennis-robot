@@ -16,6 +16,10 @@ from typing import Any, Mapping
 
 from tennis_robot.collection_court_model_builder import build_court_model
 from tennis_robot.collection_execution_context_builder import CollectionExecutionContextValues
+from tennis_robot.collection_execution_frame import (
+    RigidTransform2D,
+    transform_collection_plan,
+)
 from tennis_robot.collection_executor_assembly import (
     CollectionExecutorConfig, CollectionExecutorHandles,
     build_collection_route_executor, read_controller_tuning,
@@ -259,6 +263,36 @@ class _TfProvider:
         )
 
 
+class _ExecutionPlanTransformer:
+    """Freeze map→odom once, immediately before FollowPath context creation."""
+
+    def __init__(self, tf_buffer, ros):
+        self._buffer, self._ros = tf_buffer, ros
+
+    def __call__(self, plan):
+        if plan.map_frame == "odom":
+            return plan
+        transform = self._buffer.lookup_transform(
+            "odom", plan.map_frame, self._ros.time_from_seconds(0.0)
+        )
+        translation = transform.transform.translation
+        rotation = transform.transform.rotation
+        yaw = math.atan2(
+            2.0 * (rotation.w * rotation.z + rotation.x * rotation.y),
+            1.0 - 2.0 * (rotation.y * rotation.y + rotation.z * rotation.z),
+        )
+        return transform_collection_plan(
+            plan,
+            RigidTransform2D(
+                target_frame="odom",
+                source_frame=plan.map_frame,
+                x_m=float(translation.x),
+                y_m=float(translation.y),
+                yaw_rad=yaw,
+            ),
+        )
+
+
 class _CollectionRosTransport:
     def __init__(self, node, ros, *, controller_id: str, goal_checker_id: str):
         self.node, self.ros = node, ros
@@ -361,10 +395,16 @@ class _CollectionRosTransport:
     def finalize_sender(self, *, plan_id, path_sha256, action_outcome):
         request = self.ros.FinalizeService.Request()
         request.plan_id, request.path_sha256, request.action_outcome = plan_id, path_sha256, action_outcome
-        future = self.finalize_client.call_async(request)
-        self.ros.spin_until_future_complete(self.node, future, timeout_sec=5.0)
-        response = future.result() if future.done() else None
-        return bool(response is not None and response.accepted)
+        # Fire-and-forget, exactly like hold_sender above. finalize_sender runs
+        # inside the controller_node timer callback, i.e. already on the
+        # single-threaded executor, so blocking here with
+        # spin_until_future_complete raises "Executor is already spinning" on
+        # Jazzy (Humble's rclpy tolerated the nested spin, which is why the
+        # route used to complete). The request is still delivered to the
+        # collection controller; the ack is not awaited — by the time finalize
+        # is sent the Nav2 goal has already reported success.
+        self.finalize_client.call_async(request)
+        return True
 
 
 class CollectionExecutorNodeFactory:
@@ -439,6 +479,7 @@ class CollectionExecutorNodeFactory:
             state_provider=self.transport.state_provider,
             hold_sender=self.transport.hold_sender,
             finalize_sender=self.transport.finalize_sender,
+            execution_plan_transformer=_ExecutionPlanTransformer(tf_buffer, self.ros),
         )
 
     def build(self):

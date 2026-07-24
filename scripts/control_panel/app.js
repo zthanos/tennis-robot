@@ -464,29 +464,32 @@
     }
 
     // Wired after the Control view partial is injected (see loadView).
+    // The command buttons are type="button" (never form-submit): a D-pad that
+    // drives the robot must not navigate the page.  Held D-pad directions use
+    // pointer events (press-and-hold); momentary/mission commands use click.
     VIEW_INIT.control = function () {
       document.querySelectorAll("#commandForm .command").forEach(btn => {
-        if (!DPAD_MODES.has(btn.value)) return;
-        btn.addEventListener("pointerdown", e => {
-          e.preventDefault();
-          if (_dpadTimer !== null) return;
-          btn.setPointerCapture(e.pointerId);
-          _sendRawCommand(btn.value);
-          _dpadTimer = setInterval(() => _sendRawCommand(btn.value), 120);
-        });
-        btn.addEventListener("pointerup", () => _stopDpad());
-        btn.addEventListener("pointercancel", () => _stopDpad());
-      });
-
-      const commandForm = document.getElementById("commandForm");
-      if (commandForm) commandForm.addEventListener("submit", async event => {
-        event.preventDefault();
-        const mode = event.submitter?.value;
-        if (!mode || DPAD_MODES.has(mode)) return;
-        await _sendRawCommand(mode);
-        const nextView = routeForMode(mode);
-        if (nextView) setView(nextView);
-        await refresh();
+        if (DPAD_MODES.has(btn.value)) {
+          btn.addEventListener("pointerdown", e => {
+            e.preventDefault();
+            if (_dpadTimer !== null) return;
+            btn.setPointerCapture(e.pointerId);
+            _sendRawCommand(btn.value);
+            _dpadTimer = setInterval(() => _sendRawCommand(btn.value), 120);
+          });
+          btn.addEventListener("pointerup", () => _stopDpad());
+          btn.addEventListener("pointercancel", () => _stopDpad());
+        } else {
+          // turn_180, map_court, collect_route, idle — momentary commands.
+          btn.addEventListener("click", async () => {
+            const mode = btn.value;
+            if (!mode) return;
+            await _sendRawCommand(mode);
+            const nextView = routeForMode(mode);
+            if (nextView) setView(nextView);
+            await refresh();
+          });
+        }
       });
       updateCommandButtons();
     };
@@ -535,11 +538,18 @@
     }
 
     async function refresh() {
-      const response = await fetch("/api/diagnostics", { cache: "no-store" });
-      diagnostics = await response.json();
-      const sensorResponse = await fetch("/api/sensors", { cache: "no-store" });
-      sensors = await sensorResponse.json();
-      render();
+      try {
+        const response = await fetch("/api/diagnostics", { cache: "no-store" });
+        diagnostics = await response.json();
+        const sensorResponse = await fetch("/api/sensors", { cache: "no-store" });
+        sensors = await sensorResponse.json();
+        render();
+      } catch (err) {
+        // Transient fetch failures — a fetch aborted by navigation, or the
+        // server momentarily busy — must not break the 1 s polling loop or
+        // raise an uncaught rejection. The next tick recovers.
+        console.debug("refresh skipped:", err && err.message);
+      }
     }
     function render() {
       const command = diagnostics.command || {};
@@ -677,7 +687,14 @@
       // Auto-navigate to the mission workspace while survey/collection is active.
       const mapMission = robot.map_mission || {};
       const liveSurvey = diagnostics.court_survey_live || {};
-      const surveyActive = liveSurvey.running || (survey.state && !["idle", "done", "complete", "completed"].includes(String(survey.state)));
+      // Only treat the survey as active from the LIVE heartbeat, or from a
+      // non-terminal survey.state *while the robot is genuinely in a survey
+      // mode*. A crashed/aborted survey leaves survey.state stuck at a
+      // mid-value (e.g. "net_standoff") forever; without the mode guard that
+      // stale value would perpetually auto-route the user off the Control view.
+      const inSurveyMode = ["map_court", "map_left_side"].includes(robot.actual_mode);
+      const surveyActive = Boolean(liveSurvey.running) || (inSurveyMode && survey.state
+        && !["idle", "done", "complete", "completed"].includes(String(survey.state)));
       const collectionActive = (mapMission.active && !mapMission.complete) || (collectionScan.active && !collectionScan.complete);
       if (collectionActive || surveyActive) {
         const activeView = document.querySelector("section.view.active");

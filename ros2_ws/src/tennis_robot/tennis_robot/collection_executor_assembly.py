@@ -107,6 +107,7 @@ class CollectionExecutorHandles:
     state_provider: object          # callable() -> dict | None
     hold_sender: object             # callable(*, plan_id, path_sha256, hold) -> None
     finalize_sender: object         # callable(*, plan_id, path_sha256, action_outcome) -> bool
+    execution_plan_transformer: object  # callable(CollectionRoutePlan) -> CollectionRoutePlan
 
 
 class _PlanCollectionRoutePlanner:
@@ -183,6 +184,7 @@ def build_collection_route_executor(
         state_provider=handles.state_provider,
         hold_sender=handles.hold_sender,
         finalize_sender=handles.finalize_sender,
+        execution_plan_transformer=handles.execution_plan_transformer,
         clock=clock,
         controller_id=config.controller_id,
     )

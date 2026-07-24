@@ -155,6 +155,7 @@ class LiveCollectionPathFollower:
         finalize_sender,
         clock,
         controller_id: str = DEFAULT_CONTROLLER_ID,
+        execution_plan_transformer=lambda plan: plan,
     ) -> None:
         if not isinstance(controller_tuning, ControllerTuning):
             raise PathFollowerPortError("controller_tuning must be a ControllerTuning")
@@ -169,6 +170,8 @@ class LiveCollectionPathFollower:
             raise PathFollowerPortError("context_activation_timeout_s must be finite and > 0")
         if not controller_id:
             raise PathFollowerPortError("controller_id must be non-empty")
+        if not callable(execution_plan_transformer):
+            raise PathFollowerPortError("execution_plan_transformer must be callable")
         for name, handle in (
             ("load_sender", load_sender), ("load_outcome_provider", load_outcome_provider),
             ("follow_path_sender", follow_path_sender), ("goal_status_provider", goal_status_provider),
@@ -190,6 +193,7 @@ class LiveCollectionPathFollower:
         self._finalize_sender = finalize_sender
         self._clock = clock
         self._controller_id = controller_id
+        self._execution_plan_transformer = execution_plan_transformer
 
         self._reset()
 
@@ -211,6 +215,11 @@ class LiveCollectionPathFollower:
         if not isinstance(plan, CollectionRoutePlan) or not plan.is_executable:
             raise PathFollowerPortError("path follower requires an executable CollectionRoutePlan")
         self._reset()
+        plan = self._execution_plan_transformer(plan)
+        if not isinstance(plan, CollectionRoutePlan) or not plan.is_executable:
+            raise PathFollowerPortError(
+                "execution_plan_transformer must return an executable CollectionRoutePlan"
+            )
         context = build_execution_context(
             plan,
             controller_tuning=self._controller_tuning,
@@ -268,7 +277,11 @@ class LiveCollectionPathFollower:
         lifecycle = state.get("lifecycle_state") if state else None
 
         if goal_status == "succeeded" or lifecycle == LIFECYCLE_SUCCEEDED:
-            self._finalize()
+            if not self._finalize():
+                return self._fail(
+                    ExecutorReasonCode.PATH_FAILED,
+                    "collection controller rejected terminal finalize",
+                )
             self._terminal = PathFollowerResult(PathFollowerStatus.COMPLETED)
             return self._terminal
         if lifecycle == LIFECYCLE_FAILED or (failure_code is not None and failure_code != FAILURE_NONE):
@@ -286,15 +299,16 @@ class LiveCollectionPathFollower:
         # Goal accepted/pending but not yet executing (or no state yet).
         return self._pre_execution_running()
 
-    def _finalize(self) -> None:
+    def _finalize(self) -> bool:
         if self._finalize_sent:
-            return
+            return self.finalize_accepted
         self._finalize_sent = True
         self.finalize_accepted = bool(
             self._finalize_sender(
                 plan_id=self._plan_id, path_sha256=self._path_sha256, action_outcome=FINALIZE_SUCCEEDED
             )
         )
+        return self.finalize_accepted
 
     def _pre_execution_running(self) -> PathFollowerResult:
         return PathFollowerResult(

@@ -132,6 +132,7 @@ def _follower(transport, clock=None):
         state_provider=transport.state_provider,
         hold_sender=transport.hold_sender,
         finalize_sender=transport.finalize_sender,
+        execution_plan_transformer=lambda plan: plan,
         clock=clock,
     ), clock
 
@@ -287,6 +288,23 @@ def test_succeeded_completes_and_finalizes_exactly_once():
     assert len(transport.finalizes) == 1
 
 
+def test_rejected_terminal_finalize_fails_instead_of_reporting_completion():
+    transport = Transport(
+        load_outcome="accepted",
+        goal_status="succeeded",
+        state=None,
+        finalize_accepted=False,
+    )
+    follower, _ = _follower(transport)
+    follower.start(_curved_plan())
+    follower.result()  # send FollowPath
+    result = follower.result()
+    assert result.status is PathFollowerStatus.FAILED
+    assert result.reason is ExecutorReasonCode.PATH_FAILED
+    assert result.detail == "collection controller rejected terminal finalize"
+    assert len(transport.finalizes) == 1
+
+
 def test_finalize_only_on_terminal_never_mid_execution():
     transport = Transport(load_outcome="accepted", goal_status="accepted",
                           state={"lifecycle_state": LIFECYCLE_EXECUTING, "progress_s": 1.0, "lateral_error_m": 0.0, "failure_reason": 0})
@@ -425,6 +443,7 @@ def _assembly_smoke_handles(plan):
         state_provider=transport.state_provider,
         hold_sender=transport.hold_sender,
         finalize_sender=transport.finalize_sender,
+        execution_plan_transformer=lambda source: source,
     )
     return handles, transport, telemetry
 

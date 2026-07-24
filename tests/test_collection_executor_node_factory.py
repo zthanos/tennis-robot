@@ -199,7 +199,8 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     assert all(getattr(built.handles, field.name) is not None for field in fields(built.handles))
     callable_names = {"telemetry_sink", "scan_provider", "yaw_provider", "frame_provider", "cmd_vel",
                       "load_sender", "load_outcome_provider", "follow_path_sender",
-                      "goal_status_provider", "state_provider", "hold_sender", "finalize_sender"}
+                      "goal_status_provider", "state_provider", "hold_sender", "finalize_sender",
+                      "execution_plan_transformer"}
     assert all(callable(getattr(built.handles, name)) for name in callable_names)
     assert built.handles.scan_provider() == "scan"
     assert built.handles.yaw_provider() == 0.2
@@ -218,6 +219,10 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     session = built.handles.scan_snapshot_session
     assert callable(session.forward_frame) and callable(session.finalize)
     assert session.builder.robot_pose_at_scan == Pose2D(*built.config.scan_pose_xy_yaw)
+    source_plan = curved_plan()
+    execution_plan = built.handles.execution_plan_transformer(source_plan)
+    assert execution_plan.map_frame == "odom"
+    assert execution_plan.start_pose == source_plan.start_pose
     cache.robot_x_m, cache.robot_y_m, cache.robot_yaw_rad = 11.0, -4.0, -0.3
     assert session._robot_pose_provider() == Pose2D(11.0, -4.0, -0.3)
 

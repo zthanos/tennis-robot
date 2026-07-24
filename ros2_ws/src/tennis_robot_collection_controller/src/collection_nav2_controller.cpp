@@ -156,7 +156,16 @@ CollectionTrackingPlan make_tracking_plan(const tennis_robot_msgs::msg::Collecti
   {
     throw std::invalid_argument("path_terminal_pose_mismatch");
   }
-  plan.terminal_progress_s = context.terminal_progress_s;
+  // `progress` is the sum of chord lengths between the discretized FollowPath
+  // poses; context.terminal_progress_s is the route's true arc length, which is
+  // always >= the chord sum on curved routes. The check above already accepts
+  // them equal within terminal_progress_tolerance_m, but the tracking core
+  // constructor requires terminal_progress_s <= path.back().progress_s (==
+  // progress) exactly, so an arc-vs-chord overshoot of a few mm trips its
+  // "invalid terminal progress" guard. Cap the overshoot at the actual path
+  // end (leaving NaN untouched so the constructor still rejects it).
+  plan.terminal_progress_s =
+    context.terminal_progress_s > progress ? progress : context.terminal_progress_s;
   for (const auto & wire_segment : context.segments) {
     TrackingSegment segment{wire_segment.segment_id, wire_segment.progress_start_s,
       wire_segment.progress_end_s, to_tracking_profile(wire_segment.execution_profile), {}};
@@ -236,7 +245,15 @@ void CollectionNav2Controller::setPlan(const nav_msgs::msg::Path & path)
     tracking_core_ = std::make_unique<CollectionTrackingCore>(make_tracking_plan(*wire_context_, path));
     has_last_core_result_ = false; terminal_ready_ = false;
     publish_lifecycle_state();
-  } catch (const std::exception &) {
+  } catch (const std::exception & error) {
+    // Surface the concrete make_tracking_plan rejection (path_too_short,
+    // path_pose_invalid, path_terminal_pose_mismatch, invalid crossing /
+    // required run-out, profile validation, ...). Without this the caller only
+    // ever sees the opaque "profile_unenforceable" and cannot tell which
+    // invariant the planned route violated.
+    RCLCPP_ERROR(node_->get_logger(),
+      "collection_controller_profile_unenforceable: make_tracking_plan rejected path: %s",
+      error.what());
     TrackingResult failed; failed.progress_s = 0.0;
     consume_with_failure(TrackingFailureCode::kProfileUnenforceable, failed);
     throw std::runtime_error("collection_controller_profile_unenforceable");
