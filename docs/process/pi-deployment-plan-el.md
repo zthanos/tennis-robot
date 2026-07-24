@@ -95,6 +95,18 @@ collect_route run native Jazzy end-to-end.
 **Gate WS2:** workspace χτίζει καθαρά στο Pi · τα Pi-side nodes ξεκινούν χωρίς sim
 (π.χ. controller_node idle) · onnxruntime φορτώνει.
 
+### WS2 assets (2026-07-24) — έτοιμα, εκκρεμεί εκτέλεση στο Pi
+- `scripts/setup_pi.sh` — idempotent bring-up: (προαιρετικά) ROS 2 Jazzy apt repo +
+  ros-base· apt **μόνο control-side** πακέτα (navigation2, slam-toolbox,
+  robot-localization, twist-mux, robot-state-publisher, tf2, xacro, rmw-fastrtps —
+  **όχι** Gazebo/ros_gz/ros2_control)· `rosdep` με `--skip-keys` για τα sim deps·
+  pip (numpy, opencv-headless, duckdb, onnxruntime)· `colcon build` τα 3 πακέτα.
+- `docs/process/pi-setup-el.md` — οδηγός + Gate verify (onnxruntime import, plugin
+  package present, controller_node idle) + troubleshooting (onnxruntime piwheels
+  fallback, OOM sequential build, rosdep skip-keys).
+- **Εκκρεμεί:** εκτέλεση στο πραγματικό Pi (`INSTALL_ROS=true ./scripts/setup_pi.sh`)
+  + επαλήθευση Gate WS2. Μετά WS3 = control-only launch (partition PC↔Pi).
+
 ---
 
 ## WS3 — Distributed ROS 2 (PC sim ↔ Pi control)
