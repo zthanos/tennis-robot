@@ -182,6 +182,29 @@ gitignored `models/yolov8n.onnx` πρέπει να αντιγραφεί στο P
 
 **Gate WS5:** ≥1 πλήρης route completion από Pi-driven control πάνω σε PC sim.
 
+### WS5 — pipeline PASSED, ball-collecting run εκκρεμεί (2026-07-24)
+Distributed collect_route από το Pi UI (`POST /api/command mode=collect_route`)
+πάνω στο PC headless sim έτρεξε **end-to-end**: `Pi controller → navigate to
+scan pose → 360° scan (perception στο PC) → plan → Pi Nav2 → PC robot →
+executor terminal: completed`. Κανένα crash, controller_node ζωντανός.
+
+**Fixes που χρειάστηκαν:** (1) `scan_timeout_s` 20→90 (distributed sweep πιο
+αργός)· (2) **perception στο PC** (`TENNIS_PERCEPTION_ON_PC=true`, default για
+run_native brain=false + run_pi): με perception στο Pi το streaming raw camera
+PC→Pi + TF timing άφηνε το scan στο `insufficient_coverage 1/18` (~99 TF-cache
+drops)· με perception δίπλα στην κάμερα (μόνο BallDetectionArray διασχίζει) το
+scan καλύπτει κανονικά. **Απαραίτητο:** copy `runtime/court_boundary.json` στο Pi.
+
+**Εκκρεμεί για ball-collecting distributed demo:** μπάλες μέσα στο scan FOV — το
+τελευταίο run βρήκε 0 detections (headless world ~1 μπάλα, εκτός view). Το
+`/perception/ball_detections` διασχίζει σωστά PC→Pi (pub1/sub1), camera render-άρει
+(mean pixel ~197, 12 Hz). Άρα καθαρά **perception/court-content**, όχι deployment —
+πέφτει στο ήδη-ανοιχτό mechanism/beam-reconciliation work. Καθαρός δρόμος: PC sim
+με **GUI** (μπάλες ορατές) + `run_pi.sh` + trigger από Pi panel.
+
+**Deployment αρχιτεκτονική (WS1-WS4) ΠΛΗΡΗΣ & PROVEN· WS5 pipeline completes
+distributed.**
+
 ---
 
 ## Ρίσκα / αποφάσεις
