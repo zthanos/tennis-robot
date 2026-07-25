@@ -85,7 +85,14 @@ planning:
     required_entry_m: 0.2
     required_run_in_m: 1.0
     required_run_out_m: 0.3
-    max_curvature_per_m: 1.25
+    # 2.5 (was 1.25): on a connector→crossing transition the pure-pursuit
+    # controller's commanded curvature spikes above the 0.8 1/m planned cap for a
+    # tick (sibling of the connector_max_heading_error_rad case, #29) and aborted
+    # a distributed route with FAILURE_CURVATURE_EXCEEDED (code 9) at ~0.36 m with
+    # otherwise-perfect tracking (lateral=heading=0). Crossings are straight
+    # (curvature ~0) so the looser limit doesn't affect capture accuracy, and at
+    # 0.35 m/s even 2.5 1/m is 0.875 rad/s — well under max_angular_velocity 3.0.
+    max_curvature_per_m: 2.5
     max_lateral_error_m: 0.1
     max_heading_error_rad: 0.15
     allow_reversing: false
