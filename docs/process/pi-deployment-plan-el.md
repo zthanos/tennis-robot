@@ -195,15 +195,25 @@ PC→Pi + TF timing άφηνε το scan στο `insufficient_coverage 1/18` (~9
 drops)· με perception δίπλα στην κάμερα (μόνο BallDetectionArray διασχίζει) το
 scan καλύπτει κανονικά. **Απαραίτητο:** copy `runtime/court_boundary.json` στο Pi.
 
-**Εκκρεμεί για ball-collecting distributed demo:** μπάλες μέσα στο scan FOV — το
-τελευταίο run βρήκε 0 detections (headless world ~1 μπάλα, εκτός view). Το
-`/perception/ball_detections` διασχίζει σωστά PC→Pi (pub1/sub1), camera render-άρει
-(mean pixel ~197, 12 Hz). Άρα καθαρά **perception/court-content**, όχι deployment —
-πέφτει στο ήδη-ανοιχτό mechanism/beam-reconciliation work. Καθαρός δρόμος: PC sim
-με **GUI** (μπάλες ορατές) + `run_pi.sh` + trigger από Pi panel.
+**Ball-collecting distributed run — PIPELINE OK, COLLECTION QUALITY ΑΝΕΠΑΡΚΗΣ
+(2026-07-25, GUI sim + Pi brain).** Με GUI το perception (PC) επιβεβαίωσε έως 6
+μπάλες σε ένα scan· αρχικό abort `insufficient_coverage 12/18` γιατί
+`required_coverage_fraction` ήταν 1.0 (valid obs σε ΟΛΑ τα 18 headings — εύθραυστο
+distributed). **Fix: `required_coverage_fraction` 1.0→0.6** (+ `scan_timeout_s`
+20→90). Μετά το route έτρεξε & completed distributed — **ΑΛΛΑ η δοκιμή ΔΕΝ είναι
+επιτυχής**: (Α) το scan δεν είδε όλες τις μπάλες (12/18 coverage + scattered balls
+σε νέες θέσεις από προηγ. runs), (Β) **ο planner διάλεξε μόνο 2 από τις confirmed
+μπάλες** — αυτό είναι το κύριο ανοιχτό (γιατί deferred/reject οι υπόλοιπες; θέλει
+scan-diagnostic + planning-result του run).
 
-**Deployment αρχιτεκτονική (WS1-WS4) ΠΛΗΡΗΣ & PROVEN· WS5 pipeline completes
-distributed.**
+**Ανοιχτά για επιτυχή distributed collection:** (Α) πλήρης scan coverage / clean
+court· (Β) planner να επιλέγει όλες τις feasible confirmed μπάλες (debug γιατί 2)·
+(Γ) collected-count telemetry δεν γράφεται στα runtime files (beam/plan
+reconciliation, ήδη ανοιχτό).
+
+**Pi DEPLOYMENT υποδομή (WS1-WS4) ΠΛΗΡΗΣ & PROVEN· WS5 pipeline completes
+distributed αλλά collection quality θέλει δουλειά** (planner selection + coverage).
+Επόμενο: debug planner-selects-2, coverage, mechanism/beam-reconciliation, S3-S8.
 
 ---
 

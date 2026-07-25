@@ -1040,3 +1040,32 @@ Nav2 έφτανε `Managed nodes are active`, ο planner έβγαζε πλήρε
   καμία εντολή. Test-infra θέμα, όχι το live path (live: TF υπάρχει).
 - **Acceptance που απομένει:** πλήρης single-stack native Jazzy run που να
   **ολοκληρώνεται** (πέρα από το finalize + πρώτο segment), + ο μηχανισμός μαζέματος.
+
+## #34 — Distributed (Pi) collect_route: scan coverage + connector curvature
+
+**Context:** πρώτα distributed collect_route runs (Pi εγκέφαλος οδηγεί PC sim, GUI
+ώστε το perception να βλέπει μπάλες). Δύο tuning fixes ξεκλείδωσαν το route.
+
+- **`insufficient_coverage` abort παρόλο που βρέθηκαν μπάλες.** Το scan
+  επιβεβαίωσε έως 6 μπάλες αλλά abort-άριζε στο `insufficient_coverage: 12/18
+  steps covered` γιατί `scan.required_coverage_fraction` ήταν **1.0** (valid
+  spatial observation σε ΟΛΑ τα 18 headings). Στο distributed (RGB/depth sync
+  slop → `non_spatial_detection` rejections + rotation timing) σπάνια πιάνεις
+  18/18. **Fix:** `required_coverage_fraction` 1.0→**0.6** (+ `scan_timeout_s`
+  20→90 για τον πιο αργό distributed sweep). Οι confirmed tracks οδηγούν το
+  planning ούτως ή άλλως.
+- **`FAILURE_CURVATURE_EXCEEDED` (code 9) στο route execution.** Μετά το scan,
+  το πρώτο route segment abort-άρισε στα `progress_m=0.359` με
+  `lateral_error=0, heading_error=0, speed=0.441` — τέλειο tracking, αλλά η
+  **pure-pursuit commanded curvature ξεπέρασε το `max_curvature_per_m` (1.25)**
+  σε ένα connector→crossing transition (αδερφή περίπτωση του
+  `connector_max_heading_error_rad`, #29). **Fix:** default profile
+  `max_curvature_per_m` 1.25→**2.5** (crossings είναι ευθεία → capture accuracy
+  ανεπηρέαστη· 2.5 1/m @0.35 m/s = 0.875 rad/s ≪ max_angular_velocity 3.0).
+  Καθαρότερο μελλοντικό: connector-specific curvature override στο
+  `collection_route_global_solver.py:276` (όπου μπαίνει το heading override).
+- **Ανοιχτά (γνωστά):** (α) ο planner διαλέγει υποσύνολο των confirmed μπαλών
+  (half-court filter ή feasibility — θέλει scan-diagnostic+planning-result για
+  root cause)· (β) collected-count telemetry δεν γράφεται στα runtime files
+  (beam/plan reconciliation)· (γ) scan coverage / clean-court για fuller
+  collection. Αυτά είναι το collect_route/mechanism refinement layer.
