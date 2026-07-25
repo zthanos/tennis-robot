@@ -28,7 +28,12 @@ safety:
   collector_stop_timeout_s: 2.0
   safety_pause_timeout_s: 10.0
 scan:
-  required_coverage_fraction: 1.0
+  # 0.6 (was 1.0): demanding a valid spatial observation at ALL 18 scan headings
+  # is fragile — on the distributed sim the RGB/depth sync slop + rotation timing
+  # drop a few headings (e.g. 12/18 covered) even though the scan already
+  # confirmed enough balls for a route. Require a majority of headings instead;
+  # the confirmed tracks still drive planning.
+  required_coverage_fraction: 0.6
   # 90 s (was 20): the 360° scan visits 18 headings, each waiting on a
   # perception frame. Distributed (perception + YOLO on the Pi ARM CPU consuming
   # the PC camera over DDS) runs ~3 s/step, so 20 s only covered 6/18 before the
