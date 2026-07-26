@@ -42,9 +42,19 @@ class 1 = fence
 Train and export it from an Ultralytics-format dataset:
 
 ```bash
+# Terminal 1: simulation only, without runtime perception.
+TENNIS_LAUNCH_SIM=true TENNIS_LAUNCH_BRAIN=false \
+  TENNIS_PERCEPTION_ON_PC=false SIM_SKIP_CONTROL_PANEL=true \
+  ros2 launch tennis_robot sim.launch.py headless:=true
+
+# Terminal 2: capture ground-truth labels.
 python3 scripts/capture_court_scene_dataset.py \
   --output datasets/court_scene --max-images 1200
 
+# Terminal 3: deterministic balanced viewpoints.
+python3 scripts/sweep_court_scene_capture.py --count 1500
+
+# After capture completes:
 uv run --with ultralytics python scripts/train_court_scene_yolo.py \
   --data datasets/court_scene/court_scene.yaml
 ```
@@ -52,7 +62,9 @@ uv run --with ultralytics python scripts/train_court_scene_yolo.py \
 The simulation-only capture tool combines Gazebo's ground-truth robot pose with
 the static OAK-D mount transform and projects the known court geometry,
 producing drift-free YOLO boxes while the robot is driven through varied
-viewpoints. Ground truth is used only to create labels, never by runtime
+viewpoints. The sweep utility teleports the simulated robot through net,
+end-fence, side-fence, oblique, and random-heading views. Ground truth is used
+only to create labels, never by runtime
 perception. Add real OAK-D frames and review labels before hardware deployment;
 simulation-only training is a bootstrap, not final domain validation.
 

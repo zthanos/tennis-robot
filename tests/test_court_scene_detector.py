@@ -168,12 +168,30 @@ def test_dataset_projection_produces_normalized_visible_box():
     assert 0.0 < height < 1.0
 
 
-def test_dataset_projection_rejects_plane_crossing_behind_camera():
+def test_dataset_projection_clips_plane_crossing_behind_camera():
     points = [
         np.asarray([-1.0, -0.5, -1.0]),
         np.asarray([1.0, -0.5, 5.0]),
         np.asarray([1.0, 0.5, 5.0]),
         np.asarray([-1.0, 0.5, -1.0]),
+    ]
+    box = capture.project_surface_box(
+        points, np.eye(3), np.zeros(3), 640, 480, 1.204
+    )
+    assert box is not None
+    center_x, center_y, width, height = box
+    assert 0.0 <= center_x <= 1.0
+    assert 0.0 <= center_y <= 1.0
+    assert 0.0 < width <= 1.0
+    assert 0.0 < height <= 1.0
+
+
+def test_dataset_projection_rejects_plane_fully_behind_camera():
+    points = [
+        np.asarray([-1.0, -0.5, -2.0]),
+        np.asarray([1.0, -0.5, -1.0]),
+        np.asarray([1.0, 0.5, -1.0]),
+        np.asarray([-1.0, 0.5, -2.0]),
     ]
     assert (
         capture.project_surface_box(

@@ -77,15 +77,28 @@ def project_surface_box(
     *,
     near_m: float = 0.08,
 ) -> tuple[float, float, float, float] | None:
-    """Project a fully forward-facing rectangular plane to a clipped YOLO box."""
+    """Project the visible part of a rectangular plane to a clipped YOLO box."""
 
     camera_points = [
         rotation_camera_from_odom @ point + translation_camera_from_odom
         for point in points_odom
     ]
-    # Avoid fabricating boxes when a plane straddles/extends behind the camera.
-    # Capture paths should face the target; such frames are low-quality labels.
-    if any(point[2] <= near_m for point in camera_points):
+    # Clip the polygon against the camera near plane. Rejecting a whole surface
+    # when one corner is behind the camera creates false-negative labels for a
+    # nearby fence that is still plainly visible in most of the image.
+    clipped: list[np.ndarray] = []
+    previous = camera_points[-1]
+    previous_inside = previous[2] >= near_m
+    for current in camera_points:
+        current_inside = current[2] >= near_m
+        if current_inside != previous_inside:
+            fraction = (near_m - previous[2]) / (current[2] - previous[2])
+            clipped.append(previous + fraction * (current - previous))
+        if current_inside:
+            clipped.append(current)
+        previous = current
+        previous_inside = current_inside
+    if len(clipped) < 3:
         return None
     focal_x = width / (2.0 * math.tan(horizontal_fov_rad / 2.0))
     focal_y = focal_x
@@ -94,7 +107,7 @@ def project_surface_box(
             width * 0.5 + focal_x * point[0] / point[2],
             height * 0.5 + focal_y * point[1] / point[2],
         )
-        for point in camera_points
+        for point in clipped
     ]
     x0 = max(0.0, min(float(width), min(pixel[0] for pixel in pixels)))
     x1 = max(0.0, min(float(width), max(pixel[0] for pixel in pixels)))
@@ -132,6 +145,7 @@ class DatasetCaptureNode:
         self._last_capture_s = -math.inf
         self._last_capture_pose: tuple[float, float, float, float] | None = None
         self._count = 0
+        self._negative_seen = 0
         self._true_robot_pose: tuple[float, float, float, float] | None = None
         self._surfaces = [
             (label, [np.asarray(point, dtype=np.float64) for point in points])
@@ -234,8 +248,10 @@ class DatasetCaptureNode:
             )
         # Negative/background frames are useful too, but cap them to avoid a
         # dataset dominated by views where the robot faces the court floor.
-        if not labels and self._count % 5 != 0:
-            return
+        if not labels:
+            self._negative_seen += 1
+            if self._negative_seen % 5 != 0:
+                return
         split = "val" if self._count % 5 == 0 else "train"
         stem = f"gazebo_{self._count:06d}_{int(stamp_s * 1000):012d}"
         image_dir = self._args.output / "images" / split
