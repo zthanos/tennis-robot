@@ -5,8 +5,11 @@ Assumes the robot base is already running (sim.launch.py or real robot):
 
 Starts:
   navigation          (Nav2 controller/planner/behaviors/bt_navigator)
-  court_landmarks_node  (OAK-D landmark detection → /court_landmarks)
-  court_survey_mission_node  (FSM brain → NavigateToPose → court_boundary.json)
+  court_survey_mission_node  (neural /survey/vision + LiDAR → court_boundary.json)
+
+The primary perception node must already be running.  It owns both neural
+models and publishes the timestamp-matched ``/survey/vision`` heartbeat.  This
+launch deliberately does not start a second raw-camera landmark detector.
 
 SLAM must already be publishing map→odom. The Docker Gazebo service starts
 slam_mapping.launch.py already; pass start_slam:=true only for standalone use.
@@ -87,16 +90,6 @@ def generate_launch_description():
         }.items(),
     )
 
-    # ── Camera landmark detector ────────────────────────────────────────
-    court_landmarks = Node(
-        package="tennis_robot",
-        executable="court_landmarks_node",
-        name="court_landmarks_node",
-        output="screen",
-        parameters=[{"use_sim_time": use_sim_time}],
-        additional_env={"PYTHONPATH": SOURCE_PYTHONPATH},
-    )
-
     # ── Survey mission brain ────────────────────────────────────────────
     court_survey_mission = Node(
         package="tennis_robot",
@@ -110,4 +103,4 @@ def generate_launch_description():
         },
     )
 
-    return LaunchDescription(args + [slam, navigation, court_landmarks, court_survey_mission])
+    return LaunchDescription(args + [slam, navigation, court_survey_mission])

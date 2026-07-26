@@ -48,6 +48,20 @@ fi
 # shellcheck disable=SC1091
 . "$WS/install_jazzy/setup.bash"
 
+# A physical Pi-side camera runs both required neural models locally. In the
+# distributed Gazebo setup perception stays on the PC, so these files are not
+# required on the Pi.
+if [ "$TENNIS_PERCEPTION_ON_PC" = "false" ]; then
+    BALL_MODEL="${BALL_MODEL_PATH:-$SCRIPT_DIR/models/yolov8n.onnx}"
+    COURT_SCENE_MODEL="${COURT_SCENE_MODEL_PATH:-$SCRIPT_DIR/models/court_scene_yolov8n.onnx}"
+    if [ ! -s "$BALL_MODEL" ] || [ ! -s "$COURT_SCENE_MODEL" ]; then
+        echo "ERROR: Pi-side perception requires both neural model files:"
+        echo "  $BALL_MODEL"
+        echo "  $COURT_SCENE_MODEL"
+        exit 1
+    fi
+fi
+
 pids=()
 cleanup() {
     trap - EXIT INT TERM

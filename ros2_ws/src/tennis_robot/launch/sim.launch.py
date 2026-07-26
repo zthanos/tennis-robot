@@ -380,6 +380,24 @@ def generate_launch_description():
                 "BALL_CENTER_ZOOM_TILES", "0.30:0.333,0.50:0.333,0.70:0.333"
             ),
             "BALL_CLASS_IDS": os.getenv("BALL_CLASS_IDS", "32"),
+            # Required neural court-scene semantics. Custom training uses
+            # class 0=net and class 1=fence; no OpenCV runtime fallback.
+            "COURT_SCENE_DETECTOR_BACKEND": os.getenv(
+                "COURT_SCENE_DETECTOR_BACKEND", "yolo_onnx"
+            ),
+            "COURT_SCENE_MODEL_PATH": os.getenv(
+                "COURT_SCENE_MODEL_PATH",
+                f"{WORKSPACE}/models/court_scene_yolov8n.onnx",
+            ),
+            "COURT_SCENE_CLASS_MAP": os.getenv(
+                "COURT_SCENE_CLASS_MAP", "0:net,1:fence"
+            ),
+            "COURT_SCENE_CONF_THRESHOLD": os.getenv(
+                "COURT_SCENE_CONF_THRESHOLD", "0.45"
+            ),
+            "COURT_SCENE_CONFIRM_FRAMES": os.getenv(
+                "COURT_SCENE_CONFIRM_FRAMES", "3"
+            ),
             "CAMERA_FRAME_ID": "camera_link_optical_frame",
             # C2 v3 activation: reviewed evidence covers 1.02..6.77 m.
             "PERCEPTION_CALIBRATION_PLATFORM": "gazebo",

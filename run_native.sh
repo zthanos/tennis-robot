@@ -52,6 +52,20 @@ fi
 # shellcheck disable=SC1091
 . "$WS/install_jazzy/setup.bash"
 
+# Neural perception is mandatory on whichever machine owns perception. In both
+# all-in-one and distributed-PC mode that is this process.
+BALL_MODEL="${BALL_MODEL_PATH:-$SCRIPT_DIR/models/yolov8n.onnx}"
+COURT_SCENE_MODEL="${COURT_SCENE_MODEL_PATH:-$SCRIPT_DIR/models/court_scene_yolov8n.onnx}"
+if [ ! -s "$BALL_MODEL" ]; then
+    echo "ERROR: required neural ball model missing or empty: $BALL_MODEL"
+    exit 1
+fi
+if [ ! -s "$COURT_SCENE_MODEL" ]; then
+    echo "ERROR: required neural court-scene model missing or empty: $COURT_SCENE_MODEL"
+    echo "Train/export it with scripts/train_court_scene_yolo.py."
+    exit 1
+fi
+
 # sim (Gazebo + panel + nodes) and SLAM in the background, Nav2 core in the
 # foreground so the navigate_to_pose action server is up — mirrors
 # scripts/docker_dev_entry.sh. Kill the whole process group on exit.

@@ -803,6 +803,9 @@ def build_survey_vision(
     depth_frame: np.ndarray | None = None,
     depth_min_range: float = 0.1,
     depth_max_range: float = 10.0,
+    *,
+    obstacle: ObstacleDetection | None = None,
+    use_classical_obstacle_detection: bool = True,
 ) -> SurveyVision:
     """Build a SurveyVision from a camera frame and optional aligned depth frame.
 
@@ -810,7 +813,8 @@ def build_survey_vision(
     depth_min_range / depth_max_range come from the depth camera's reported range limits.
     """
     line = detect_court_line(frame) if frame is not None else None
-    obstacle = detect_obstacle_class(frame) if frame is not None else None
+    if use_classical_obstacle_detection and obstacle is None and frame is not None:
+        obstacle = detect_obstacle_class(frame)
     obstacle_class = obstacle.label if obstacle is not None else None
     junction = detect_court_junction(
         frame, depth_frame, depth_min_m=depth_min_range, depth_max_m=depth_max_range,

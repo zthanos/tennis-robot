@@ -69,6 +69,12 @@ if [ ! -s "$MODEL_PATH" ]; then
     echo "  uv run --with ultralytics python scripts/export_yolo_onnx.py"
     exit 1
 fi
+COURT_SCENE_PATH="${COURT_SCENE_MODEL_PATH:-$SCRIPT_DIR/models/court_scene_yolov8n.onnx}"
+if [ ! -s "$COURT_SCENE_PATH" ]; then
+    echo "ERROR: Neural court-scene model is missing or empty: $COURT_SCENE_PATH"
+    echo "Train/export it with scripts/train_court_scene_yolo.py, or set COURT_SCENE_MODEL_PATH."
+    exit 1
+fi
 
 COMPOSE=(
     docker compose

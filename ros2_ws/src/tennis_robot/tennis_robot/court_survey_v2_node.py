@@ -74,6 +74,7 @@ DWELL_S = float(os.getenv("COURT_SURVEY_VANTAGE_DWELL_S", "2.0"))
 GOAL_TIMEOUT_S = float(os.getenv("COURT_SURVEY_GOAL_TIMEOUT_S", "90.0"))
 FIND_NET_TIMEOUT_S = float(os.getenv("COURT_SURVEY_FIND_NET_TIMEOUT_S", "60.0"))
 NET_MIN_CONF = float(os.getenv("COURT_SURVEY_LANDMARK_MIN_CONF", "0.25"))
+VISION_MAX_AGE_S = float(os.getenv("COURT_SURVEY_VISION_MAX_AGE_S", "1.0"))
 
 # Live occupancy map (identical to the proven v1 accumulation).
 MAP_VOXEL_M = float(os.getenv("COURT_SURVEY_MAP_VOXEL_M", "0.10"))
@@ -133,6 +134,7 @@ class CourtSurveyV2Node(Node):
         self._scan_angle_inc = 2.0 * math.pi / 360.0
         self._last_scan_points: list[tuple[float, float, float]] = []
         self._vision: dict = {}
+        self._vision_received_at: float | None = None
 
         # occupancy map
         self._map_voxels: dict[tuple[int, int], tuple[float, float]] = {}
@@ -180,8 +182,10 @@ class CourtSurveyV2Node(Node):
     def _vision_cb(self, msg: String) -> None:
         try:
             self._vision = json.loads(msg.data)
+            self._vision_received_at = self._now()
         except (json.JSONDecodeError, TypeError):
             self._vision = {}
+            self._vision_received_at = None
 
     def _scan_cb(self, msg: LaserScan) -> None:
         self._scan_frame_id = msg.header.frame_id
@@ -336,13 +340,25 @@ class CourtSurveyV2Node(Node):
     # ── net locking → court frame ────────────────────────────────────────────
     def _try_lock_net(self) -> bool:
         v = self._vision or {}
+        if (
+            self._vision_received_at is None
+            or self._now() - self._vision_received_at > VISION_MAX_AGE_S
+        ):
+            return False
         cls = str(v.get("obstacle_class") or "")
-        conf = float(v.get("line_confidence") or 0.0)
-        net_seen = ("net" in cls.lower())
+        source = str(v.get("obstacle_source") or "")
+        conf = float(v.get("obstacle_confidence") or 0.0)
+        net_seen = cls.lower() == "net"
         d = self._front_range_m
         # accept lock when a net is classified ahead and we are at/near standoff,
         # using the accurate front LiDAR range as the net distance.
-        if net_seen and math.isfinite(d) and d <= NET_STANDOFF_M + 1.0:
+        if (
+            net_seen
+            and source == "neural_court_scene"
+            and conf >= NET_MIN_CONF
+            and math.isfinite(d)
+            and d <= NET_STANDOFF_M + 1.0
+        ):
             hx, hy = math.cos(self._robot_yaw), math.sin(self._robot_yaw)
             self._locked_net = {
                 "map_x_m": round(self._robot_x + hx * d, 3),
@@ -350,7 +366,9 @@ class CourtSurveyV2Node(Node):
                 "robot_x_m": round(self._robot_x, 3),
                 "robot_y_m": round(self._robot_y, 3),
                 "robot_yaw_rad": round(self._robot_yaw, 4),
-                "range_m": round(d, 3), "confidence": conf, "source": "lidar+vision",
+                "range_m": round(d, 3),
+                "confidence": conf,
+                "source": "lidar+neural_court_scene",
             }
             self.get_logger().info(
                 f"net locked at map=({self._locked_net['map_x_m']},"

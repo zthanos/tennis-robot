@@ -5,9 +5,9 @@
         </div>
         <div class="panel">
           <h3>Webcam Feed <span id="wcStatus" style="font-weight:400;color:var(--muted);font-size:13px;">— initializing</span></h3>
-          <div id="wcFeedWrap" style="position:relative;background:#05080b;border-radius:6px;overflow:hidden;min-height:240px;display:flex;align-items:center;justify-content:center;">
-            <img id="wcFrame" style="display:none;max-width:100%;border-radius:6px;" alt="webcam feed">
+          <div id="wcFeedWrap" style="position:relative;background:#05080b;border-radius:6px;overflow:hidden;aspect-ratio:4/3;width:100%;display:flex;align-items:center;justify-content:center;">
+            <img id="wcFrame" style="display:none;width:100%;height:100%;object-fit:contain;border-radius:6px;" alt="webcam feed">
             <div id="wcEmpty" style="color:var(--muted);font-size:13px;">waiting for webcam&hellip;</div>
           </div>
-          <p style="margin:12px 0 0;color:var(--muted);font-size:12px;">HSV range: H 25–72 (yellow-green). Real tennis balls (H&nbsp;25–40) are in range. Distance uses monocular focal-length formula — assumes <strong style="color:var(--ink);">60° horizontal FOV</strong>; adjust <code>WEBCAM_FOV_DEG</code> in <code>scripts/control_panel.py</code> to calibrate.</p>
+          <p style="margin:12px 0 0;color:var(--muted);font-size:12px;">Ball boxes come from the required neural detector. The diagnostic distance shown here is monocular and assumes a <strong style="color:var(--ink);">60° horizontal FOV</strong>; adjust <code>WEBCAM_FOV_DEG</code> in <code>scripts/control_panel.py</code> to calibrate. Autonomous perception uses timestamp-matched OAK-D depth instead.</p>
         </div>

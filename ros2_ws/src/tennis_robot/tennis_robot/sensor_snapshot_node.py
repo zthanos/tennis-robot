@@ -6,6 +6,7 @@ robot_sensors.json payload shape that the existing UI already renders.
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import struct
@@ -16,11 +17,11 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, LaserScan
+from std_msgs.msg import String
 
 from tennis_robot.control_bus import RobotSensorStore
 from tennis_robot.debug_display import bgra_bmp_data_url
 from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
-from tennis_robot.perception import detect_obstacle_class, build_survey_vision
 
 _STATUS_FILE = os.getenv(
     "ROBOT_STATUS_FILE",
@@ -45,14 +46,22 @@ class SensorSnapshotNode(Node):
         self._ir_right = 0.0
         self._last_write_s = 0.0
         self._front_range_m: float = math.inf
+        self._survey_vision: dict = {}
 
         self.create_subscription(Image, "/camera/image_raw", self._on_image, 1)
         self.create_subscription(Image, "/camera/depth", self._on_depth, 1)
+        self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
         self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
         self.create_subscription(LaserScan, "/gz/ir_left/scan", self._on_ir_left, 10)
         self.create_subscription(LaserScan, "/gz/ir_right/scan", self._on_ir_right, 10)
         self.create_timer(0.1, self._write_if_due)
         self.get_logger().info("sensor_snapshot_node started")
+
+    def _on_survey_vision(self, msg: String) -> None:
+        try:
+            self._survey_vision = json.loads(msg.data)
+        except (json.JSONDecodeError, TypeError):
+            self._survey_vision = {}
 
     def _on_image(self, msg: Image) -> None:
         frame = self._decode_color_image(msg)
@@ -77,31 +86,61 @@ class SensorSnapshotNode(Node):
 
     def _draw_recognition_overlay(self, frame: np.ndarray) -> None:
         h, w = frame.shape[:2]
-        roi_y0, roi_y1 = int(h * 0.06), int(h * 0.74)
-        roi_x0, roi_x1 = int(w * 0.05), int(w * 0.95)
-
-        # ── obstacle detection (net / fence) ─────────────────────────────────
-        detection = detect_obstacle_class(frame)
-        if detection is not None:
-            label = detection.label
+        vision = self._survey_vision
+        source_width = max(1, int(vision.get("image_width") or w))
+        source_height = max(1, int(vision.get("image_height") or h))
+        scale_x = w / source_width
+        scale_y = h / source_height
+        detections = vision.get("court_scene_detections") or []
+        for detection in detections:
+            bbox = detection.get("bbox") or {}
+            label = str(detection.get("label") or "")
             color = (80, 220, 255) if label == "net" else (0, 210, 120)
-            cv2.rectangle(frame, (roi_x0, roi_y0), (roi_x1, roi_y1), color, 2)
-            dist_str = f"{self._front_range_m:.2f}m" if math.isfinite(self._front_range_m) else "—"
-            text = f"{label}  {dist_str}  {detection.confidence:.0%}"
-            cv2.rectangle(frame, (roi_x0, max(0, roi_y0 - 22)),
-                          (roi_x0 + len(text) * 9, roi_y0), color, -1)
-            cv2.putText(frame, text, (roi_x0 + 4, max(14, roi_y0 - 6)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.50, (0, 0, 0), 1, cv2.LINE_AA)
-        else:
-            cv2.rectangle(frame, (roi_x0, roi_y0), (roi_x1, roi_y1), (60, 60, 60), 1)
+            x0 = int(float(bbox.get("x") or 0) * scale_x)
+            y0 = int(float(bbox.get("y") or 0) * scale_y)
+            x1 = x0 + int(float(bbox.get("width") or 0) * scale_x)
+            y1 = y0 + int(float(bbox.get("height") or 0) * scale_y)
+            cv2.rectangle(frame, (x0, y0), (x1, y1), color, 2)
+            confidence = float(detection.get("confidence") or 0.0)
+            distance = detection.get("distance_m")
+            distance_text = f"{float(distance):.2f}m" if distance is not None else "—"
+            cv2.putText(
+                frame,
+                f"{label} {distance_text} {confidence:.0%}",
+                (x0 + 4, max(16, y0 - 6)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.50,
+                color,
+                1,
+                cv2.LINE_AA,
+            )
 
-        # ── court line / baseline detection ──────────────────────────────────
-        sv = build_survey_vision(frame)
-        if sv.line_detected:
+        confirmed = vision.get("obstacle_class")
+        candidate = vision.get("obstacle_candidate_class")
+        semantic_text = (
+            f"neural:{confirmed}"
+            if confirmed
+            else f"neural candidate:{candidate or 'none'}"
+        )
+        cv2.putText(
+            frame,
+            semantic_text,
+            (8, 38),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.42,
+            (80, 220, 255),
+            1,
+            cv2.LINE_AA,
+        )
+
+        # ── court line / baseline telemetry from the perception node ─────────
+        if bool(vision.get("line_detected")):
             line_y = int(h * 0.82)
+            roi_x0, roi_x1 = int(w * 0.05), int(w * 0.95)
             cv2.line(frame, (roi_x0, line_y), (roi_x1, line_y), (255, 255, 100), 2)
-            offset_str = f"{sv.line_offset_m:.2f}m" if sv.line_offset_m is not None else "?"
-            conf_str = f"{sv.line_confidence:.0%}"
+            line_offset = vision.get("line_offset_m")
+            offset_str = f"{float(line_offset):.2f}m" if line_offset is not None else "?"
+            conf_str = f"{float(vision.get('line_confidence') or 0.0):.0%}"
             cv2.putText(frame, f"baseline  off={offset_str}  {conf_str}",
                         (roi_x0+ 4, line_y - 6),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.44, (255, 255, 100), 1, cv2.LINE_AA)
