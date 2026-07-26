@@ -24,7 +24,7 @@ models/*.pt
 /yolov8n.pt
 /datasets/court_scene/images/
 /datasets/court_scene/labels/
-/runs/court_scene/
+/runs/
 /robotics-stack-install.log
 ros2_ws/build_docker/
 ros2_ws/install_docker/

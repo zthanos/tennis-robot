@@ -298,6 +298,9 @@ def fuse_court_scene_detections(
 def select_primary_observation(
     observations: list[CourtSceneObservation],
     frame_width: int,
+    *,
+    net_fence_depth_tolerance_m: float = 0.35,
+    overlap_min_fraction: float = 0.20,
 ) -> CourtSceneObservation | None:
     """Select the obstacle blocking the robot's forward camera corridor."""
 
@@ -305,9 +308,12 @@ def select_primary_observation(
         return None
     center_x = frame_width * 0.5
 
+    def contains_center(observation: CourtSceneObservation) -> bool:
+        detection = observation.detection
+        return detection.x <= center_x <= detection.x + detection.width
+
     def key(observation: CourtSceneObservation) -> tuple:
         detection = observation.detection
-        contains_center = detection.x <= center_x <= detection.x + detection.width
         center_error = abs(detection.center_x - center_x) / max(1.0, frame_width)
         distance = (
             observation.distance_m
@@ -315,13 +321,48 @@ def select_primary_observation(
             else math.inf
         )
         return (
-            not contains_center,
+            not contains_center(observation),
             distance,
             center_error,
             -detection.confidence,
         )
 
-    return min(observations, key=key)
+    primary = min(observations, key=key)
+    if primary.detection.label != "fence":
+        return primary
+
+    def overlap_fraction(
+        first: CourtSceneDetection, second: CourtSceneDetection
+    ) -> float:
+        x0 = max(first.x, second.x)
+        y0 = max(first.y, second.y)
+        x1 = min(first.x + first.width, second.x + second.width)
+        y1 = min(first.y + first.height, second.y + second.height)
+        intersection = max(0, x1 - x0) * max(0, y1 - y0)
+        smaller_area = min(first.area_px, second.area_px)
+        return intersection / smaller_area if smaller_area > 0 else 0.0
+
+    # A net and the fence visible through it frequently produce nearly equal
+    # low-percentile depth because both ROIs contain foreground net strands.
+    # In that specific co-depth, overlapping case, the net is the semantic
+    # obstacle the survey must lock onto. A genuinely closer fence still wins.
+    net_candidates: list[CourtSceneObservation] = []
+    for observation in observations:
+        if observation.detection.label != "net" or not contains_center(observation):
+            continue
+        if overlap_fraction(observation.detection, primary.detection) < overlap_min_fraction:
+            continue
+        if primary.distance_m is None:
+            co_depth = observation.distance_m is None
+        else:
+            co_depth = (
+                observation.distance_m is not None
+                and observation.distance_m
+                <= primary.distance_m + net_fence_depth_tolerance_m
+            )
+        if co_depth:
+            net_candidates.append(observation)
+    return min(net_candidates, key=key) if net_candidates else primary
 
 
 class SemanticConfirmation:

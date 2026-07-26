@@ -22,6 +22,7 @@ from collections import Counter
 from pathlib import Path
 import shutil
 import sys
+import tempfile
 
 import yaml
 
@@ -37,10 +38,15 @@ def _normalise_names(value) -> dict[int, str]:
     return {}
 
 
-def _label_counts(config_path: Path, config: dict) -> Counter:
+def _dataset_root(config_path: Path, config: dict) -> Path:
     root = Path(config.get("path") or config_path.parent)
     if not root.is_absolute():
         root = (config_path.parent / root).resolve()
+    return root
+
+
+def _label_counts(config_path: Path, config: dict) -> Counter:
+    root = _dataset_root(config_path, config)
     train_value = config.get("train")
     if not train_value:
         raise ValueError("dataset YAML must define 'train'")
@@ -109,17 +115,28 @@ def main() -> int:
 
     print(f"Validated dataset: counts={dict(counts)}")
     model = YOLO(args.weights)
-    train_kwargs = {
-        "data": str(config_path),
-        "epochs": args.epochs,
-        "imgsz": args.imgsz,
-        "batch": args.batch,
-        "project": args.project,
-        "name": args.name,
-    }
-    if args.device:
-        train_kwargs["device"] = args.device
-    result = model.train(**train_kwargs)
+    # Ultralytics resolves an existing relative `path:` against the process
+    # working directory, while our dataset YAML is intentionally portable and
+    # relative to its own location. Feed it a temporary absolute-path config so
+    # training behaves identically regardless of the caller's current folder.
+    resolved_config = dict(config)
+    resolved_config["path"] = str(_dataset_root(config_path, config))
+    with tempfile.TemporaryDirectory(prefix="court-scene-yolo-") as temp_dir:
+        resolved_config_path = Path(temp_dir) / config_path.name
+        resolved_config_path.write_text(
+            yaml.safe_dump(resolved_config, sort_keys=False), encoding="utf-8"
+        )
+        train_kwargs = {
+            "data": str(resolved_config_path),
+            "epochs": args.epochs,
+            "imgsz": args.imgsz,
+            "batch": args.batch,
+            "project": args.project,
+            "name": args.name,
+        }
+        if args.device:
+            train_kwargs["device"] = args.device
+        result = model.train(**train_kwargs)
     save_dir = Path(result.save_dir)
     best = save_dir / "weights" / "best.pt"
     if not best.is_file():

@@ -80,3 +80,5 @@ export COURT_SCENE_CONFIRM_FRAMES=3
 The dataset must include difficult overlap cases where the foreground net and
 the perimeter fence are visible in the same frame. A missing/invalid model
 fails perception startup; the old grid heuristic is not a runtime fallback.
+The tracked `court_scene_yolov8n.metadata.json` records the checksum, training
+provenance, and validation metrics for the locally generated ONNX artifact.

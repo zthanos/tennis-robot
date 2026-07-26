@@ -28,6 +28,16 @@ capture = importlib.util.module_from_spec(_CAPTURE_SPEC)
 assert _CAPTURE_SPEC.loader is not None
 _CAPTURE_SPEC.loader.exec_module(capture)
 
+_TRAIN_PATH = (
+    Path(__file__).resolve().parents[1] / "scripts" / "train_court_scene_yolo.py"
+)
+_TRAIN_SPEC = importlib.util.spec_from_file_location(
+    "train_court_scene_yolo", _TRAIN_PATH
+)
+train = importlib.util.module_from_spec(_TRAIN_SPEC)
+assert _TRAIN_SPEC.loader is not None
+_TRAIN_SPEC.loader.exec_module(train)
+
 
 def _column(cx, cy, width, height, net_score=0.0, fence_score=0.0):
     return np.asarray(
@@ -125,6 +135,38 @@ def test_primary_observation_prefers_forward_corridor_and_nearest_depth():
     assert csd.select_primary_observation([side_fence, net], 640) == net
 
 
+def test_primary_observation_prefers_overlapping_codepth_net():
+    fence = csd.CourtSceneObservation(
+        csd.CourtSceneDetection(128, 21, 374, 97, 0.83, "fence", 1),
+        distance_m=7.06,
+        bearing_rad=-0.01,
+        valid_depth_count=2100,
+    )
+    net = csd.CourtSceneObservation(
+        csd.CourtSceneDetection(0, 75, 639, 70, 0.89, "net", 0),
+        distance_m=7.12,
+        bearing_rad=0.0,
+        valid_depth_count=4263,
+    )
+    assert csd.select_primary_observation([fence, net], 640) == net
+
+
+def test_primary_observation_keeps_genuinely_closer_fence():
+    fence = csd.CourtSceneObservation(
+        csd.CourtSceneDetection(128, 21, 374, 160, 0.83, "fence", 1),
+        distance_m=2.0,
+        bearing_rad=0.0,
+        valid_depth_count=2100,
+    )
+    net = csd.CourtSceneObservation(
+        csd.CourtSceneDetection(0, 75, 639, 100, 0.89, "net", 0),
+        distance_m=3.0,
+        bearing_rad=0.0,
+        valid_depth_count=4263,
+    )
+    assert csd.select_primary_observation([fence, net], 640) == fence
+
+
 def test_semantic_confirmation_requires_consecutive_frames_and_expires():
     confirmation = csd.SemanticConfirmation(required_frames=3)
     assert confirmation.update("net") is None
@@ -199,3 +241,9 @@ def test_dataset_projection_rejects_plane_fully_behind_camera():
         )
         is None
     )
+
+
+def test_training_dataset_root_is_relative_to_yaml(tmp_path):
+    config_path = tmp_path / "court_scene" / "court_scene.yaml"
+    config_path.parent.mkdir()
+    assert train._dataset_root(config_path, {"path": "."}) == config_path.parent

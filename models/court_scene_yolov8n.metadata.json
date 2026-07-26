@@ -1,0 +1,54 @@
+{
+  "artifact": "models/court_scene_yolov8n.onnx",
+  "artifact_sha256": "c7c1cee7e2513eb6ac54b2ffc29c9e67b5778691d896fba78c23d943a3932830",
+  "artifact_size_bytes": 12266084,
+  "created_at": "2026-07-26",
+  "classes": {
+    "0": "net",
+    "1": "fence"
+  },
+  "dataset": {
+    "source": "Gazebo ground-truth projection",
+    "images": 600,
+    "train_images": 480,
+    "val_images": 120
+  },
+  "training": {
+    "base_weights": "yolov8n.pt",
+    "base_weights_sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36",
+    "ultralytics_version": "8.4.106",
+    "image_size": 640,
+    "completed_epochs": 50,
+    "best_epoch": 48,
+    "best_precision": 0.93682,
+    "best_recall": 0.91675,
+    "best_map50": 0.95901,
+    "best_map50_95": 0.8345
+  },
+  "export": {
+    "format": "ONNX",
+    "opset": 12,
+    "simplified": true,
+    "input_shape": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "output_shape": [
+      1,
+      6,
+      8400
+    ]
+  },
+  "onnx_validation": {
+    "map50": 0.955891,
+    "map50_95": 0.822545,
+    "runtime_confidence_threshold": 0.45,
+    "net_precision_at_runtime_threshold": 0.978,
+    "net_recall_at_runtime_threshold": 0.968,
+    "fence_precision_at_runtime_threshold": 0.888,
+    "fence_recall_at_runtime_threshold": 0.89,
+    "pc_mean_inference_ms": 32.5
+  }
+}
