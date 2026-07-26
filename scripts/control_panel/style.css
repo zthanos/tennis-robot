@@ -691,6 +691,34 @@
       color: var(--muted);
       font-size: 13px;
     }
+    .sensor-frame {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #05080b;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .sensor-frame-image {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+    }
+    .sensor-frame-image.active {
+      opacity: 1;
+    }
+    .sensor-frame-placeholder {
+      position: relative;
+    }
     .sensors-top {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       align-items: start;

@@ -344,6 +344,9 @@
     document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 
     let _wcInterval = null;
+    let _wcRequestInFlight = false;
+    let _wcVisibleFrameId = "wcFrame";
+    let _wcFrameSerial = 0;
     function startWebcam() {
       if (_wcInterval) return;
       refreshWebcam();
@@ -353,26 +356,42 @@
       if (_wcInterval) { clearInterval(_wcInterval); _wcInterval = null; }
     }
     async function refreshWebcam() {
+      if (_wcRequestInFlight) return;
+      _wcRequestInFlight = true;
       try {
         const res = await fetch("/api/webcam/frame", { cache: "no-store" });
         renderWebcam(await res.json());
-      } catch (_) {}
+      } catch (_) {
+      } finally {
+        _wcRequestInFlight = false;
+      }
     }
     function renderWebcam(data) {
-      const img = document.getElementById("wcFrame");
+      const current = document.getElementById(_wcVisibleFrameId);
+      const nextId = _wcVisibleFrameId === "wcFrame" ? "wcFrameNext" : "wcFrame";
+      const next = document.getElementById(nextId);
       const empty = document.getElementById("wcEmpty");
       const status = document.getElementById("wcStatus");
       if (!data.available) {
-        img.style.display = "none";
+        _wcFrameSerial += 1;
+        current.style.display = "none";
+        next.style.display = "none";
         empty.style.display = "";
         empty.textContent = data.error || "webcam unavailable";
         status.textContent = "— unavailable";
         status.style.color = "var(--danger)";
         return;
       }
-      img.src = data.data_url;
-      img.style.display = "block";
-      empty.style.display = "none";
+      const serial = ++_wcFrameSerial;
+      next.onload = () => {
+        if (serial !== _wcFrameSerial) return;
+        next.style.display = "block";
+        current.style.display = "none";
+        empty.style.display = "none";
+        _wcVisibleFrameId = nextId;
+        next.onload = null;
+      };
+      next.src = data.data_url;
       if (data.detected) {
         status.textContent = "— ball detected";
         status.style.color = "var(--accent)";
@@ -1712,13 +1731,47 @@
     function renderSensor(id, sensor) {
       const target = document.getElementById(id);
       if (!target) return;
+      target.className = "sensor-frame";
+      let frames = Array.from(target.querySelectorAll("img[data-sensor-frame]"));
+      let placeholder = target.querySelector(".sensor-frame-placeholder");
+      if (frames.length !== 2 || !placeholder) {
+        target.replaceChildren();
+        frames = [0, 1].map(index => {
+          const image = document.createElement("img");
+          image.dataset.sensorFrame = String(index);
+          image.alt = id;
+          image.className = "sensor-frame-image";
+          target.appendChild(image);
+          return image;
+        });
+        placeholder = document.createElement("span");
+        placeholder.className = "sensor-frame-placeholder";
+        target.appendChild(placeholder);
+        target.dataset.activeFrame = "-1";
+        target.dataset.frameSerial = "0";
+      }
       if (!sensor || !sensor.data_url) {
-        target.className = "sensor-empty";
-        target.textContent = "not available";
+        target.dataset.frameSerial = String(Number(target.dataset.frameSerial || 0) + 1);
+        frames.forEach(image => image.classList.remove("active"));
+        target.dataset.activeFrame = "-1";
+        placeholder.hidden = false;
+        placeholder.textContent = "not available";
         return;
       }
-      target.className = "";
-      target.innerHTML = `<img src="${sensor.data_url}" alt="${id}">`;
+      const activeIndex = Number(target.dataset.activeFrame || -1);
+      const nextIndex = activeIndex === 0 ? 1 : 0;
+      const next = frames[nextIndex];
+      const serial = Number(target.dataset.frameSerial || 0) + 1;
+      target.dataset.frameSerial = String(serial);
+      next.onload = () => {
+        if (Number(target.dataset.frameSerial) !== serial) return;
+        next.classList.add("active");
+        if (activeIndex >= 0) frames[activeIndex].classList.remove("active");
+        placeholder.hidden = true;
+        target.dataset.activeFrame = String(nextIndex);
+        next.onload = null;
+      };
+      next.src = sensor.data_url;
     }
     function renderLidarSensor(id, sensor) {
       const target = document.getElementById(id);
