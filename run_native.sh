@@ -24,6 +24,13 @@ export WORKSPACE="$SCRIPT_DIR"
 export TENNIS_ROBOT_ROOT="$SCRIPT_DIR"
 # Shared domain so a distributed Pi (run_pi.sh) auto-discovers this sim over DDS.
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
+RUN_LOCK_FILE="/tmp/tennis_robot_native_domain_${ROS_DOMAIN_ID}.lock"
+exec 9>"$RUN_LOCK_FILE"
+if ! flock -n 9; then
+    echo "ERROR: another run_native.sh is already active for ROS_DOMAIN_ID=$ROS_DOMAIN_ID"
+    echo "Stop the existing PC stack before starting a second simulation."
+    exit 1
+fi
 # TENNIS_LAUNCH_BRAIN=false → distributed mode: run ONLY the sim here; the
 # control/Nav2/SLAM stack runs on the Pi (run_pi.sh).
 export TENNIS_LAUNCH_BRAIN="${TENNIS_LAUNCH_BRAIN:-true}"

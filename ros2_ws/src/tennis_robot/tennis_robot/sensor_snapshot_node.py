@@ -7,6 +7,7 @@ robot_sensors.json payload shape that the existing UI already renders.
 from __future__ import annotations
 
 import json
+import base64
 import math
 import os
 import struct
@@ -15,7 +16,9 @@ import time
 import cv2
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import Image, LaserScan
 from std_msgs.msg import String
 
@@ -29,6 +32,10 @@ _STATUS_FILE = os.getenv(
 )
 
 WRITE_INTERVAL_S = float(os.getenv("SENSOR_SNAPSHOT_INTERVAL_S", "1.0"))
+SNAPSHOT_MODE = os.getenv("SENSOR_SNAPSHOT_MODE", "local").strip().lower()
+PREVIEW_TOPIC = os.getenv("SENSOR_SNAPSHOT_PREVIEW_TOPIC", "/telemetry/sensor_snapshot")
+PREVIEW_WIDTH = int(os.getenv("SENSOR_SNAPSHOT_PREVIEW_WIDTH", "320"))
+PREVIEW_JPEG_QUALITY = int(os.getenv("SENSOR_SNAPSHOT_JPEG_QUALITY", "65"))
 LIDAR_FRONT_INDEX_RATIO = float(os.getenv("LIDAR_FRONT_INDEX_RATIO", "0.5"))
 LIDAR_FRONT_MIN_OBSTACLE_RANGE_M = float(os.getenv("LIDAR_FRONT_MIN_OBSTACLE_RANGE_M", "0.18"))
 IR_THRESHOLD = float(os.getenv("IR_INTAKE_TRIGGER_THRESHOLD", "500.0"))
@@ -36,7 +43,17 @@ IR_THRESHOLD = float(os.getenv("IR_INTAKE_TRIGGER_THRESHOLD", "500.0"))
 
 class SensorSnapshotNode(Node):
     def __init__(self) -> None:
-        super().__init__("sensor_snapshot_node")
+        if SNAPSHOT_MODE not in {"local", "publisher", "receiver"}:
+            raise RuntimeError(
+                f"invalid SENSOR_SNAPSHOT_MODE={SNAPSHOT_MODE!r}; "
+                "use local, publisher, or receiver"
+            )
+        node_name = (
+            "sensor_snapshot_node"
+            if SNAPSHOT_MODE == "local"
+            else f"sensor_snapshot_{SNAPSHOT_MODE}"
+        )
+        super().__init__(node_name)
         self._sensor_store = RobotSensorStore.from_env()
         self._camera: dict | None = None
         self._depth: dict | None = None
@@ -48,6 +65,25 @@ class SensorSnapshotNode(Node):
         self._front_range_m: float = math.inf
         self._survey_vision: dict = {}
 
+        preview_qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
+        self._preview_pub = None
+        if SNAPSHOT_MODE == "receiver":
+            self.create_subscription(
+                String, PREVIEW_TOPIC, self._on_preview, preview_qos
+            )
+            self.get_logger().info(
+                f"sensor_snapshot_node started (receiver: {PREVIEW_TOPIC})"
+            )
+            return
+        if SNAPSHOT_MODE == "publisher":
+            self._preview_pub = self.create_publisher(
+                String, PREVIEW_TOPIC, preview_qos
+            )
+
         self.create_subscription(Image, "/camera/image_raw", self._on_image, 1)
         self.create_subscription(Image, "/camera/depth", self._on_depth, 1)
         self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
@@ -55,7 +91,24 @@ class SensorSnapshotNode(Node):
         self.create_subscription(LaserScan, "/gz/ir_left/scan", self._on_ir_left, 10)
         self.create_subscription(LaserScan, "/gz/ir_right/scan", self._on_ir_right, 10)
         self.create_timer(0.1, self._write_if_due)
-        self.get_logger().info("sensor_snapshot_node started")
+        self.get_logger().info(
+            f"sensor_snapshot_node started ({SNAPSHOT_MODE})"
+        )
+
+    def _on_preview(self, msg: String) -> None:
+        try:
+            payload = json.loads(msg.data)
+        except (json.JSONDecodeError, TypeError):
+            return
+        if not isinstance(payload, dict) or payload.get("schema") != "sensor_preview/v1":
+            return
+        payload.pop("schema", None)
+        payload["transport"] = {
+            "mode": "compressed_dds_preview",
+            "topic": PREVIEW_TOPIC,
+            "received_at": time.time(),
+        }
+        self._sensor_store.write(payload)
 
     def _on_survey_vision(self, msg: String) -> None:
         try:
@@ -68,20 +121,19 @@ class SensorSnapshotNode(Node):
         if frame is None:
             return
         height, width = frame.shape[:2]
-        preview_width = min(width, 960)
+        preview_width = min(width, max(160, PREVIEW_WIDTH))
         preview_height = max(1, round(height * preview_width / max(1, width)))
         if preview_width != width:
             frame = cv2.resize(frame, (preview_width, preview_height), interpolation=cv2.INTER_AREA)
             height, width = frame.shape[:2]
         self._draw_recognition_overlay(frame)
-        bgra = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
         self._camera = {
             "width": int(width),
             "height": int(height),
             "native_width": int(msg.width),
             "native_height": int(msg.height),
-            "format": "bgra-bmp",
-            "data_url": bgra_bmp_data_url(bgra.tobytes(), int(width), int(height)),
+            "format": "jpeg",
+            "data_url": self._jpeg_data_url(frame),
         }
 
     def _draw_recognition_overlay(self, frame: np.ndarray) -> None:
@@ -196,17 +248,29 @@ class SensorSnapshotNode(Node):
         clipped = np.where(np.isfinite(depth) & (depth > 0), depth, max_range)
         normalized = np.clip((clipped - min_range) / span, 0.0, 1.0)
         intensity = ((1.0 - normalized) * 255).astype(np.uint8)
-        bgra = np.dstack((intensity, intensity, intensity, np.full_like(intensity, 255)))
+        preview_width = min(intensity.shape[1], max(160, PREVIEW_WIDTH))
+        preview_height = max(
+            1, round(intensity.shape[0] * preview_width / max(1, intensity.shape[1]))
+        )
+        if preview_width != intensity.shape[1]:
+            intensity = cv2.resize(
+                intensity,
+                (preview_width, preview_height),
+                interpolation=cv2.INTER_AREA,
+            )
+        bgr = cv2.cvtColor(intensity, cv2.COLOR_GRAY2BGR)
         height, width = depth.shape[:2]
         self._depth = {
-            "width": int(width),
-            "height": int(height),
-            "format": "depth-bmp",
+            "width": int(preview_width),
+            "height": int(preview_height),
+            "native_width": int(width),
+            "native_height": int(height),
+            "format": "depth-jpeg",
             "min_range_m": min_range,
             "max_range_m": max_range,
             "valid_count": int(valid.size),
             "median_range_m": None if valid.size == 0 else float(np.median(valid)),
-            "data_url": bgra_bmp_data_url(bgra.tobytes(), int(width), int(height)),
+            "data_url": self._jpeg_data_url(bgr),
         }
 
     def _on_scan(self, msg: LaserScan) -> None:
@@ -266,10 +330,15 @@ class SensorSnapshotNode(Node):
         if now - self._last_write_s < WRITE_INTERVAL_S:
             return
         self._last_write_s = now
-        self._sensor_store.write({
+        lidar = self._lidar
+        if self._preview_pub is not None and isinstance(lidar, dict):
+            # The UI renders the scan from ranges_m. Do not send the legacy BMP
+            # over DDS; it is typically ~170 kB while the numeric scan is ~7 kB.
+            lidar = {key: value for key, value in lidar.items() if key != "data_url"}
+        payload = {
             "front_camera": self._camera,
             "front_depth": self._depth,
-            "front_lidar": self._lidar,
+            "front_lidar": lidar,
             "lidar_candidates": self._lidar_candidates,
             "ir_intake": {
                 "left": self._ir_left,
@@ -279,7 +348,29 @@ class SensorSnapshotNode(Node):
                 "left_available": True,
                 "right_available": True,
             },
-        })
+        }
+        if self._preview_pub is not None:
+            payload["schema"] = "sensor_preview/v1"
+            payload["published_at"] = now
+            message = String()
+            message.data = json.dumps(payload, separators=(",", ":"))
+            self._preview_pub.publish(message)
+        else:
+            payload["transport"] = {"mode": "local"}
+            self._sensor_store.write(payload)
+
+    @staticmethod
+    def _jpeg_data_url(frame: np.ndarray) -> str:
+        quality = max(35, min(90, PREVIEW_JPEG_QUALITY))
+        ok, encoded = cv2.imencode(
+            ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality]
+        )
+        if not ok:
+            return ""
+        return (
+            "data:image/jpeg;base64,"
+            + base64.b64encode(encoded.tobytes()).decode("ascii")
+        )
 
     def _decode_color_image(self, msg: Image) -> np.ndarray | None:
         arr = np.frombuffer(bytes(msg.data), dtype=np.uint8)
@@ -318,9 +409,12 @@ def main(args=None) -> None:
     node = SensorSnapshotNode()
     try:
         rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

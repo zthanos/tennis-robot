@@ -13,6 +13,8 @@
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
+    let _refreshInFlight = false;
+    const SENSOR_VIEWS = new Set(["survey", "collection", "sensors"]);
     let _lastCollectionEvents = [];
     let _collectionLogClearedAtS = null;
     // Monotonic per-session recency key for the collection log.  sim_time_s does
@@ -557,17 +559,24 @@
     }
 
     async function refresh() {
+      if (_refreshInFlight || document.hidden) return;
+      _refreshInFlight = true;
       try {
         const response = await fetch("/api/diagnostics", { cache: "no-store" });
         diagnostics = await response.json();
-        const sensorResponse = await fetch("/api/sensors", { cache: "no-store" });
-        sensors = await sensorResponse.json();
+        const activeView = document.querySelector("section.view.active")?.id;
+        if (SENSOR_VIEWS.has(activeView)) {
+          const sensorResponse = await fetch("/api/sensors", { cache: "no-store" });
+          sensors = await sensorResponse.json();
+        }
         render();
       } catch (err) {
         // Transient fetch failures — a fetch aborted by navigation, or the
         // server momentarily busy — must not break the 1 s polling loop or
         // raise an uncaught rejection. The next tick recovers.
         console.debug("refresh skipped:", err && err.message);
+      } finally {
+        _refreshInFlight = false;
       }
     }
     function render() {
@@ -669,7 +678,15 @@
       safe(renderStats);
       safe(renderCourtMap);
       safe(renderSensors);
-      safe(() => renderSurveyBoundary(robot.survey || {}));
+      safe(() => renderSurveyOperations(
+        diagnostics.court_survey_live || {},
+        diagnostics.court_boundary || {},
+        robot,
+      ));
+      safe(() => renderSurveyBoundary(
+        diagnostics.court_survey_live || {},
+        diagnostics.court_boundary || {},
+      ));
       // Persisted breadcrumb trail served by the backend (survives reloads/restarts).
       if (Array.isArray(diagnostics.robot_path)) robotPath = diagnostics.robot_path;
       safe(() => {
@@ -722,15 +739,136 @@
         if (activeView && activeView.id !== targetView && autoRouteFrom.has(activeView.id)) setView(targetView);
       }
     }
-    function renderSurveyBoundary(survey) {
+    function _surveyEventLabel(code) {
+      return String(code || "none").replace(/^phase_/, "").replaceAll("_", " ");
+    }
+    function renderSurveyOperations(live, boundary, robot) {
+      const timing = live.timing || boundary.timing || {};
+      const coverage = live.coverage || {};
+      const n = Number(coverage.n) || 0;
+      const i = Number(coverage.i) || 0;
+      const complete = live.result === "OK" || boundary.status === "OK" || boundary.completed === true;
+      const failed = live.result === "FAILED" || boundary.status === "FAILED";
+      const running = Boolean(live.running);
+      const state = failed ? "FAILED" : complete ? "COMPLETED" : running ? "RUNNING" : "IDLE";
+      const phase = live.state || timing.current_phase || (complete ? "done" : "waiting");
+      const progress = complete ? 100 : n > 0 ? Math.max(0, Math.min(100, Math.round(i / n * 100))) : 0;
+      const lastEvent = live.last_event || (complete ? "survey_completed" : "none");
+      const measuredSpeed = Number(robot.measured_speed_mps);
+      const motion = live.motion || {};
+      const cmdLinear = Number.isFinite(Number(motion.commanded_linear_m_s))
+        ? Number(motion.commanded_linear_m_s)
+        : Number(robot.cmd_linear_m_s || 0);
+      const cmdAngular = Number.isFinite(Number(motion.commanded_angular_rad_s))
+        ? Number(motion.commanded_angular_rad_s)
+        : Number(robot.cmd_angular_rad_s || 0);
+      const health = live.health || {};
+      const lidarHealth = health.lidar || (live.sensor_frame ? "healthy" : "waiting");
+      const visionHealth = health.vision || "unknown";
+      const overallHealthy = Boolean(robot.connected)
+        && !failed
+        && (complete || (lidarHealth === "healthy" && visionHealth === "healthy"));
+
+      setText("surveyOpState", state);
+      setText("surveyOpPhase", `${_surveyEventLabel(phase)} · ${fmt(timing.current_phase_s, "s")}`);
+      setText("surveyOpEvent", _surveyEventLabel(lastEvent));
+      setText("surveyOpEventAge", `elapsed ${fmt(timing.elapsed_s, "s")}`);
+      setText("surveyOpSpeed", `${Number.isFinite(measuredSpeed) ? measuredSpeed.toFixed(2) : "—"} m/s`);
+      setText("surveyOpCommand", `cmd ${cmdLinear.toFixed(2)} m/s · ${cmdAngular.toFixed(2)} rad/s`);
+      setText("surveyOpProgress", `${progress}%`);
+      setText("surveyOpPoints", `${live.map_point_count ?? boundary.occupancy?.point_count ?? 0} points · ${i}/${n || "—"}`);
+      setText("surveyOpHealth", overallHealthy ? "HEALTHY" : failed ? "FAILED" : "CHECK");
+      setText("surveyOpSensors", `LiDAR ${lidarHealth} · Vision ${visionHealth}`);
+
+      const format = live.court_format_estimate || boundary.court?.format_estimate || {};
+      const formatKnown = ["singles", "doubles"].includes(format.label);
+      const confidence = Number(format.confidence);
+      const modelDoubles = boundary.court?.is_doubles;
+      setText(
+        "surveyFormatStatus",
+        formatKnown
+          ? `— ${format.label} ${(confidence * 100).toFixed(0)}%`
+          : `— ${modelDoubles === false ? "singles" : "doubles"} model · camera unknown`,
+      );
+      setKv("surveyFormatKv", [
+        ["Camera estimate", formatKnown ? format.label : "unknown"],
+        ["Confidence", Number.isFinite(confidence) ? `${(confidence * 100).toFixed(0)}%` : "—"],
+        ["Corner evidence", format.evidence_count ?? 0],
+        ["Source", format.source || "camera_line_junctions"],
+        ["Navigation geometry", modelDoubles === false ? "singles" : "validated doubles"],
+      ]);
+
+      const events = Array.isArray(live.events) ? live.events.slice(-10).reverse() : [];
+      const timeline = document.getElementById("surveyEventTimeline");
+      setText("surveyEventCount", `${events.length} event${events.length === 1 ? "" : "s"}`);
+      if (timeline) {
+        timeline.replaceChildren();
+        if (!events.length) {
+          const empty = document.createElement("div");
+          empty.className = "terminal-empty";
+          empty.textContent = complete
+            ? "Completed with the previous telemetry contract; run again to capture the event timeline."
+            : "Waiting for survey events.";
+          timeline.appendChild(empty);
+        } else {
+          events.forEach(event => {
+            const row = document.createElement("div");
+            row.className = `survey-event ${event.level || "info"}`;
+            const dot = document.createElement("span");
+            dot.className = "survey-event-dot";
+            const body = document.createElement("div");
+            const title = document.createElement("strong");
+            title.textContent = _surveyEventLabel(event.code);
+            const detail = document.createElement("small");
+            detail.textContent = event.detail || event.state || "";
+            body.append(title, detail);
+            const time = document.createElement("time");
+            time.textContent = `+${Number(event.elapsed_s || 0).toFixed(1)}s`;
+            row.append(dot, body, time);
+            timeline.appendChild(row);
+          });
+        }
+      }
+
+      const runButton = document.getElementById("surveyRunButton");
+      const stopButton = document.getElementById("surveyStopButton");
+      if (runButton) runButton.disabled = running;
+      if (stopButton) stopButton.disabled = !running;
+      setText("surveyEngineeringDebug", JSON.stringify({
+        launch: diagnostics.court_survey_launch || {},
+        live: {
+          state: live.state,
+          result: live.result,
+          failure_reason: live.failure_reason,
+          age_s: live.age_s,
+          stale: live.stale,
+          health,
+          motion,
+          sensor_frame: live.sensor_frame,
+          front_range_m: live.front_range_m,
+          map_error: live.error,
+        },
+        robot: {
+          connected: robot.connected,
+          age_s: robot.age_s,
+          actual_mode: robot.actual_mode,
+          measured_speed_mps: robot.measured_speed_mps,
+          cmd_linear_m_s: robot.cmd_linear_m_s,
+          cmd_angular_rad_s: robot.cmd_angular_rad_s,
+        },
+      }, null, 2));
+    }
+    function renderSurveyBoundary(live, bounds) {
       const statusEl = document.getElementById("surveyBoundaryStatus");
       const kvEl = document.getElementById("surveyBoundaryKv");
       if (!statusEl || !kvEl) return;
-      const bounds = survey.bounds;
-      const inProgress = survey.state && survey.state !== "done";
-      const isComplete = bounds && (bounds.status === "SUCCESS" || bounds.survey_complete);
+      const inProgress = Boolean(live.running);
+      const isComplete = bounds && (
+        bounds.status === "SUCCESS" || bounds.status === "OK"
+        || bounds.survey_complete || bounds.completed
+      );
       if (isComplete) {
-        const cg = bounds.court_geometry || {};
+        const cg = bounds.court_geometry || bounds.court || {};
         const fg = canonicalFenceBounds(bounds);
         const w  = fg.west_x  != null ? fg.west_x.toFixed(2)  : "—";
         const e  = fg.east_x  != null ? fg.east_x.toFixed(2)  : "—";
@@ -738,24 +876,24 @@
         const n  = fg.north_y != null ? fg.north_y.toFixed(2) : "—";
         const len = cg.length_m != null ? cg.length_m.toFixed(2) : "—";
         const wid = cg.width_m  != null ? cg.width_m.toFixed(2)  : "—";
-        statusEl.textContent = `— SUCCESS · ${bounds.sample_count ?? "?"} samples`;
+        statusEl.textContent = `— SUCCESS · ${bounds.occupancy?.point_count ?? bounds.sample_count ?? "?"} points`;
         statusEl.style.color = "var(--accent)";
         setKv("surveyBoundaryKv", [
-          ["Court length (E-W)", `${len} m`],
-          ["Court width (N-S)", `${wid} m`],
-          ["West fence x",  `${w} m`],
-          ["East fence x",  `${e} m`],
-          ["South fence y", `${s} m`],
-          ["North fence y", `${n} m`],
+          ["Result", bounds.notice || "Survey completed and saved"],
+          ["Court template", `${len} × ${wid} m`],
+          ["Map artifact", bounds.map_artifact?.status || "unknown"],
+          ["Fence X", `${w} … ${e} m`],
+          ["Fence Y", `${s} … ${n} m`],
+          ["Elapsed", fmt(bounds.timing?.elapsed_s, "s")],
         ]);
       } else if (inProgress) {
-        statusEl.textContent = `— mapping · ${survey.sample_count ?? 0} samples`;
+        statusEl.textContent = `— mapping · ${live.map_point_count ?? 0} points`;
         statusEl.style.color = "var(--accent-2)";
         setKv("surveyBoundaryKv", [
-          ["State", survey.state || "—"],
-          ["Event", (survey.navigation || {}).last_event || "none"],
-          ["Distance", fmt((survey.navigation || {}).distance_traveled_m, "m")],
-          ["Samples collected", survey.sample_count ?? 0],
+          ["State", live.state || "—"],
+          ["Event", _surveyEventLabel(live.last_event)],
+          ["Front clearance", fmt(live.front_range_m, "m")],
+          ["Points collected", live.map_point_count ?? 0],
         ]);
       } else {
         statusEl.textContent = "no court map data";
@@ -2054,6 +2192,9 @@
     loadView("dashboard").finally(() => {
       refresh();
       setInterval(refresh, 1000);
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) refresh();
     });
     // Load vendor/session data at startup so sidebar status and command gating
     // work before the Vendors view is opened.

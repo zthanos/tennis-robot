@@ -20,6 +20,13 @@ cd "$SCRIPT_DIR"
 
 # Shared with the PC. DDS auto-discovers peers on the same domain + LAN.
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
+RUN_LOCK_FILE="/tmp/tennis_robot_pi_domain_${ROS_DOMAIN_ID}.lock"
+exec 9>"$RUN_LOCK_FILE"
+if ! flock -n 9; then
+    echo "ERROR: another run_pi.sh is already active for ROS_DOMAIN_ID=$ROS_DOMAIN_ID"
+    echo "Stop the existing Pi stack before starting a second brain instance."
+    exit 1
+fi
 # Pi has no saved posegraph, so build the map live from the PC's /scan.
 export SLAM_MODE="${SLAM_MODE:-mapping}"
 export WORKSPACE="$SCRIPT_DIR"

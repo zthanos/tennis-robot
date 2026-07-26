@@ -435,6 +435,96 @@
     .workspace-title h3 {
       margin: 0;
     }
+    .survey-ops-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .survey-op {
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.018);
+    }
+    .survey-op > span,
+    .survey-op > small {
+      display: block;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .survey-op > span {
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .survey-op > strong {
+      display: block;
+      overflow: hidden;
+      margin-bottom: 3px;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .survey-event-timeline {
+      display: grid;
+      gap: 0;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .survey-event {
+      display: grid;
+      grid-template-columns: 7px minmax(0, 1fr) auto;
+      gap: 9px;
+      align-items: start;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .survey-event:last-child { border-bottom: 0; }
+    .survey-event-dot {
+      width: 7px;
+      height: 7px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 0 3px rgba(87,166,255,0.10);
+    }
+    .survey-event.warning .survey-event-dot { background: var(--warn); }
+    .survey-event.error .survey-event-dot { background: var(--danger); }
+    .survey-event strong,
+    .survey-event small { display: block; }
+    .survey-event strong { color: var(--ink); font-size: 12px; }
+    .survey-event small { margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .survey-event time { color: var(--muted); font-size: 10px; white-space: nowrap; }
+    .survey-format-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+    .survey-debug-panel summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .survey-debug-panel pre {
+      max-height: 320px;
+      margin: 12px 0 0;
+      overflow: auto;
+      color: #b8c7d5;
+      font-size: 10px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
     .workspace-title h3 span,
     #surveyBoundaryStatus,
     #mapMissionStatus {
@@ -742,6 +832,7 @@
       background: #05080b;
     }
     @media (max-width: 1100px) {
+      .survey-ops-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .sensors-top { grid-template-columns: 1fr; }
       .workspace,
       .command-center {

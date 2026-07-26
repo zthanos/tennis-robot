@@ -103,6 +103,12 @@ def generate_launch_description():
     # crosses to the Pi. The real robot keeps perception on the Pi (camera is
     # local there), so this defaults off.
     _perception_on_pc = os.getenv("TENNIS_PERCEPTION_ON_PC", "false").lower() in {"1", "true", "yes"}
+    if _launch_sim and not _launch_brain:
+        _sensor_snapshot_mode = "publisher"
+    elif _launch_brain and not _launch_sim and _perception_on_pc:
+        _sensor_snapshot_mode = "receiver"
+    else:
+        _sensor_snapshot_mode = "local"
 
     # The URDF/SDF + GUI config are only needed by the sim side (spawn +
     # robot_state_publisher). On the Pi (sim off) they would fail — no xacro run.
@@ -474,11 +480,16 @@ def generate_launch_description():
     sensor_snapshots = Node(
         package="tennis_robot",
         executable="sensor_snapshot_node",
-        name="sensor_snapshot_node",
+        name=(
+            "sensor_snapshot_node"
+            if _sensor_snapshot_mode == "local"
+            else f"sensor_snapshot_{_sensor_snapshot_mode}"
+        ),
         output="screen",
         parameters=[{"use_sim_time": True}],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
+            "SENSOR_SNAPSHOT_MODE": _sensor_snapshot_mode,
             "ROBOT_SENSOR_FILE": os.getenv(
                 "ROBOT_SENSOR_FILE", f"{WORKSPACE}/runtime/robot_sensors.json"
             ),
@@ -527,12 +538,17 @@ def generate_launch_description():
     # ── Node groups by machine (WS3 distributed split) ─────────────────────
     # PC (sim) side: Gazebo bridge + IR/ball extractor + actuation + odometry
     # fusion. Pi (brain) side: perception + control. The file-IPC nodes
-    # (controller, command_bridge, sensor_snapshot) and the panel share the Pi
-    # filesystem, so they sit together on the Pi.
+    # controller/command_bridge and the panel share the Pi filesystem. In the
+    # distributed simulation, sensor snapshots are split: the PC encodes a
+    # low-rate JPEG preview next to the raw Gazebo camera, while the Pi receives
+    # only that compact preview. Raw RGB/depth therefore never cross the LAN.
     _sim_node_actions = [bridge, gz_extras, drive_actuator, *cmd_vel_relays,
                          collector_logic, twist_mux, ekf]
-    _brain_node_actions = [perception, controller, navigation,
-                           command_bridge, sensor_snapshots]
+    _brain_node_actions = [perception, controller, navigation, command_bridge]
+    if _sensor_snapshot_mode == "publisher":
+        _sim_node_actions.append(sensor_snapshots)
+    else:
+        _brain_node_actions.append(sensor_snapshots)
     # Move perception to the sim side (next to the camera) when requested — see
     # TENNIS_PERCEPTION_ON_PC above.
     if _perception_on_pc:
