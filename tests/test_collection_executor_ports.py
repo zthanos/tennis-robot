@@ -167,7 +167,84 @@ def test_gazebo_collector_adapter_maps_ports_without_inventing_faults():
     adapter.stop()
     assert adapter.stop_result().status is CollectorStopStatus.STOPPED
     adapter.force_disable()
-    assert collector.events == ["start", "stop", "stop"]
+    assert collector.events == ["start", "stop"]
+
+
+def test_gazebo_collector_adapter_drains_entry_until_confirmation():
+    collector = FakeCollectorInterface()
+    beams = {"entry": False, "confirmed": False}
+    now = [10.0]
+    adapter = GazeboCollectorAdapter(
+        collector,
+        entry_beam_provider=lambda: beams["entry"],
+        confirmed_beam_provider=lambda: beams["confirmed"],
+        minimum_drain_s=1.5,
+        maximum_drain_s=5.0,
+        clock_fn=lambda: now[0],
+    )
+
+    adapter.start()
+    beams["entry"] = True
+    assert adapter.active_fault() is None
+    beams["entry"] = False
+    adapter.stop()
+    assert adapter.stop_result().status is CollectorStopStatus.STOPPING
+
+    now[0] += 1.6
+    assert adapter.stop_result().status is CollectorStopStatus.STOPPING
+    beams["confirmed"] = True
+    assert adapter.stop_result().status is CollectorStopStatus.STOPPED
+    assert collector.events == ["start", "stop"]
+
+
+def test_gazebo_collector_adapter_drain_has_bounded_timeout():
+    collector = FakeCollectorInterface()
+    beams = {"entry": True, "confirmed": False}
+    now = [20.0]
+    adapter = GazeboCollectorAdapter(
+        collector,
+        entry_beam_provider=lambda: beams["entry"],
+        confirmed_beam_provider=lambda: beams["confirmed"],
+        minimum_drain_s=1.5,
+        maximum_drain_s=5.0,
+        clock_fn=lambda: now[0],
+    )
+
+    adapter.start()
+    adapter.active_fault()
+    adapter.stop()
+    now[0] += 5.1
+    assert adapter.stop_result().status is CollectorStopStatus.STOPPED
+    assert collector.events == ["start", "stop"]
+
+
+def test_gazebo_collector_adapter_requires_new_confirmation_crossing():
+    collector = FakeCollectorInterface()
+    beams = {"entry": False, "confirmed": True}
+    now = [30.0]
+    adapter = GazeboCollectorAdapter(
+        collector,
+        entry_beam_provider=lambda: beams["entry"],
+        confirmed_beam_provider=lambda: beams["confirmed"],
+        minimum_drain_s=1.5,
+        maximum_drain_s=5.0,
+        clock_fn=lambda: now[0],
+    )
+
+    adapter.start()
+    adapter.active_fault()
+    beams["entry"] = True
+    adapter.active_fault()
+    beams["entry"] = False
+    adapter.stop()
+    now[0] += 1.6
+    assert adapter.stop_result().status is CollectorStopStatus.STOPPING
+
+    beams["confirmed"] = False
+    adapter.stop_result()
+    beams["confirmed"] = True
+    assert adapter.stop_result().status is CollectorStopStatus.STOPPED
+    assert collector.events == ["start", "stop"]
 
 
 # ── 5. SafetyMonitor ─────────────────────────────────────────────────────────
@@ -391,3 +468,43 @@ def test_scan_session_driver_polled_before_start_raises():
     driver, _, _ = _driver(session, yaws=[0.0])
     with pytest.raises(ExecutorPortError):
         driver.result()
+
+
+def test_scan_session_driver_resets_rotation_for_follow_up_cycle():
+    session = FakeSnapshotSession(snapshot=_snapshot())
+    driver, cmd, _ = _driver(
+        session,
+        yaws=[
+            0.0, math.pi / 2, math.pi, -math.pi / 2,
+            0.0, math.pi / 2, math.pi, -math.pi / 2,
+        ],
+    )
+
+    driver.start()
+    first = [driver.result() for _ in range(4)]
+    driver.start()
+    second = [driver.result() for _ in range(4)]
+
+    assert first[-1].status is ScanSessionStatus.SNAPSHOT_READY
+    assert second[-1].status is ScanSessionStatus.SNAPSHOT_READY
+    assert [step for _, step in session.forwarded] == [
+        "scan-step-0", "scan-step-1", "scan-step-2", "scan-step-3",
+        "scan-step-0", "scan-step-1", "scan-step-2", "scan-step-3",
+    ]
+    assert cmd.count(pytest.approx(0.0)) == 2
+
+
+def test_scan_session_start_failure_is_typed_instead_of_escaping():
+    class BrokenStartSession(FakeSnapshotSession):
+        def start(self, now_s):
+            raise RuntimeError("already started")
+
+    driver, cmd, _ = _driver(BrokenStartSession(), yaws=[])
+
+    driver.start()
+    result = driver.result()
+
+    assert result.status is ScanSessionStatus.FAILED
+    assert result.reason is ExecutorReasonCode.SCAN_FAILED
+    assert driver.last_failure_detail == "RuntimeError('already started')"
+    assert cmd == [0.0]

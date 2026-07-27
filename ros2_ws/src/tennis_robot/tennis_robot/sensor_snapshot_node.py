@@ -39,6 +39,9 @@ PREVIEW_JPEG_QUALITY = int(os.getenv("SENSOR_SNAPSHOT_JPEG_QUALITY", "65"))
 LIDAR_FRONT_INDEX_RATIO = float(os.getenv("LIDAR_FRONT_INDEX_RATIO", "0.5"))
 LIDAR_FRONT_MIN_OBSTACLE_RANGE_M = float(os.getenv("LIDAR_FRONT_MIN_OBSTACLE_RANGE_M", "0.18"))
 IR_THRESHOLD = float(os.getenv("IR_INTAKE_TRIGGER_THRESHOLD", "500.0"))
+IR_CONFIRM_SYMMETRY_MAX_DELTA = float(
+    os.getenv("BEAM_SYMMETRY_MAX_DELTA", "200.0")
+)
 
 
 class SensorSnapshotNode(Node):
@@ -59,8 +62,20 @@ class SensorSnapshotNode(Node):
         self._depth: dict | None = None
         self._lidar: dict | None = None
         self._lidar_candidates: list[dict] = []
-        self._ir_left = 0.0
-        self._ir_right = 0.0
+        self._entry_ir_left = 0.0
+        self._entry_ir_right = 0.0
+        self._confirmed_ir_left = 0.0
+        self._confirmed_ir_right = 0.0
+        self._entry_left_available = False
+        self._entry_right_available = False
+        self._confirmed_left_available = False
+        self._confirmed_right_available = False
+        self._entry_broken = False
+        self._confirmed_broken = False
+        self._entry_crossing_count = 0
+        self._confirmed_crossing_count = 0
+        self._entry_last_crossing_at_s: float | None = None
+        self._confirmed_last_crossing_at_s: float | None = None
         self._last_write_s = 0.0
         self._front_range_m: float = math.inf
         self._survey_vision: dict = {}
@@ -88,8 +103,24 @@ class SensorSnapshotNode(Node):
         self.create_subscription(Image, "/camera/depth", self._on_depth, 1)
         self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
         self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
-        self.create_subscription(LaserScan, "/gz/ir_left/scan", self._on_ir_left, 10)
-        self.create_subscription(LaserScan, "/gz/ir_right/scan", self._on_ir_right, 10)
+        self.create_subscription(
+            LaserScan, "/gz/ir_left/scan", self._on_entry_ir_left, 10
+        )
+        self.create_subscription(
+            LaserScan, "/gz/ir_right/scan", self._on_entry_ir_right, 10
+        )
+        self.create_subscription(
+            LaserScan,
+            "/gz/basket_ir_left/scan",
+            self._on_confirmed_ir_left,
+            10,
+        )
+        self.create_subscription(
+            LaserScan,
+            "/gz/basket_ir_right/scan",
+            self._on_confirmed_ir_right,
+            10,
+        )
         self.create_timer(0.1, self._write_if_due)
         self.get_logger().info(
             f"sensor_snapshot_node started ({SNAPSHOT_MODE})"
@@ -319,11 +350,54 @@ class SensorSnapshotNode(Node):
             for cx, cy in extract_ball_candidates(ranges)
         ]
 
-    def _on_ir_left(self, msg: LaserScan) -> None:
-        self._ir_left = self._range_to_ir_value(msg.ranges[0] if msg.ranges else float("inf"))
+    def _on_entry_ir_left(self, msg: LaserScan) -> None:
+        self._entry_ir_left = self._range_to_ir_value(
+            msg.ranges[0] if msg.ranges else float("inf")
+        )
+        self._entry_left_available = True
+        self._update_ir_crossings()
 
-    def _on_ir_right(self, msg: LaserScan) -> None:
-        self._ir_right = self._range_to_ir_value(msg.ranges[0] if msg.ranges else float("inf"))
+    def _on_entry_ir_right(self, msg: LaserScan) -> None:
+        self._entry_ir_right = self._range_to_ir_value(
+            msg.ranges[0] if msg.ranges else float("inf")
+        )
+        self._entry_right_available = True
+        self._update_ir_crossings()
+
+    def _on_confirmed_ir_left(self, msg: LaserScan) -> None:
+        self._confirmed_ir_left = self._range_to_ir_value(
+            msg.ranges[0] if msg.ranges else float("inf")
+        )
+        self._confirmed_left_available = True
+        self._update_ir_crossings()
+
+    def _on_confirmed_ir_right(self, msg: LaserScan) -> None:
+        self._confirmed_ir_right = self._range_to_ir_value(
+            msg.ranges[0] if msg.ranges else float("inf")
+        )
+        self._confirmed_right_available = True
+        self._update_ir_crossings()
+
+    def _update_ir_crossings(self) -> None:
+        entry_broken = (
+            self._entry_ir_left > IR_THRESHOLD
+            or self._entry_ir_right > IR_THRESHOLD
+        )
+        confirmed_broken = (
+            self._confirmed_ir_left > IR_THRESHOLD
+            and self._confirmed_ir_right > IR_THRESHOLD
+            and abs(self._confirmed_ir_left - self._confirmed_ir_right)
+            <= IR_CONFIRM_SYMMETRY_MAX_DELTA
+        )
+        now_s = time.time()
+        if entry_broken and not self._entry_broken:
+            self._entry_crossing_count += 1
+            self._entry_last_crossing_at_s = now_s
+        if confirmed_broken and not self._confirmed_broken:
+            self._confirmed_crossing_count += 1
+            self._confirmed_last_crossing_at_s = now_s
+        self._entry_broken = entry_broken
+        self._confirmed_broken = confirmed_broken
 
     def _write_if_due(self) -> None:
         now = time.time()
@@ -335,18 +409,48 @@ class SensorSnapshotNode(Node):
             # The UI renders the scan from ranges_m. Do not send the legacy BMP
             # over DDS; it is typically ~170 kB while the numeric scan is ~7 kB.
             lidar = {key: value for key, value in lidar.items() if key != "data_url"}
+        entry_broken = self._entry_broken
+        confirmed_broken = self._confirmed_broken
+        entry_available = (
+            self._entry_left_available and self._entry_right_available
+        )
+        confirmed_available = (
+            self._confirmed_left_available and self._confirmed_right_available
+        )
         payload = {
             "front_camera": self._camera,
             "front_depth": self._depth,
             "front_lidar": lidar,
             "lidar_candidates": self._lidar_candidates,
             "ir_intake": {
-                "left": self._ir_left,
-                "right": self._ir_right,
+                "entry": {
+                    "broken": entry_broken,
+                    "available": entry_available,
+                    "left_raw": self._entry_ir_left,
+                    "right_raw": self._entry_ir_right,
+                    "crossing_count": self._entry_crossing_count,
+                    "last_crossing_at_s": self._entry_last_crossing_at_s,
+                },
+                "confirmed": {
+                    "broken": confirmed_broken,
+                    "available": confirmed_available,
+                    "left_raw": self._confirmed_ir_left,
+                    "right_raw": self._confirmed_ir_right,
+                    "symmetry_delta": abs(
+                        self._confirmed_ir_left - self._confirmed_ir_right
+                    ),
+                    "crossing_count": self._confirmed_crossing_count,
+                    "last_crossing_at_s": self._confirmed_last_crossing_at_s,
+                },
                 "threshold": IR_THRESHOLD,
-                "triggered": self._ir_left > IR_THRESHOLD or self._ir_right > IR_THRESHOLD,
-                "left_available": True,
-                "right_available": True,
+                "symmetry_max_delta": IR_CONFIRM_SYMMETRY_MAX_DELTA,
+                # Legacy aliases retained for older panels during rolling
+                # deployment. They describe the physical entry beam pair.
+                "left": self._entry_ir_left,
+                "right": self._entry_ir_right,
+                "triggered": entry_broken,
+                "left_available": self._entry_left_available,
+                "right_available": self._entry_right_available,
             },
         }
         if self._preview_pub is not None:

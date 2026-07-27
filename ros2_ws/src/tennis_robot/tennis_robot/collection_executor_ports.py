@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+import time
 
 from tennis_robot.collection_route_executor import (
     CollectorStartResult,
@@ -162,32 +163,92 @@ class GazeboCollectorAdapter:
     """Collector port over CollectorInterface for the Gazebo MVP.
 
     Gazebo has no collector health/jam/full/ready sensors, so start is reported
-    READY immediately, there is never an ``active_fault`` and stop is STOPPED
-    immediately.  This is deliberate — no invented faults.  Real hardware will
-    wire the driver's jam/full/beam/health signals into ``start_result`` and
-    ``active_fault`` in a later phase.
+    READY immediately and there is never an ``active_fault``.  A route stop
+    includes a bounded transfer drain: after ENTRY, the wheels keep running
+    until CONFIRMED or the maximum drain timeout.  Real hardware will wire the
+    driver's jam/full/health signals into ``start_result`` and ``active_fault``
+    in a later phase.
     """
 
-    def __init__(self, collector_interface) -> None:
+    def __init__(
+        self,
+        collector_interface,
+        *,
+        entry_beam_provider=None,
+        confirmed_beam_provider=None,
+        minimum_drain_s: float = 0.0,
+        maximum_drain_s: float = 0.0,
+        clock_fn=time.monotonic,
+    ) -> None:
+        if minimum_drain_s < 0.0 or maximum_drain_s < minimum_drain_s:
+            raise ValueError("collector drain bounds must satisfy 0 <= minimum <= maximum")
         self._collector = collector_interface
+        self._entry_beam_provider = entry_beam_provider or (lambda: False)
+        self._confirmed_beam_provider = confirmed_beam_provider or (lambda: False)
+        self._minimum_drain_s = float(minimum_drain_s)
+        self._maximum_drain_s = float(maximum_drain_s)
+        self._clock_fn = clock_fn
+        self._last_entry = False
+        self._last_confirmed = False
+        self._entry_pending = False
+        self._stop_requested_at_s: float | None = None
+        self._stopped = True
 
     def start(self) -> None:
+        self._last_entry = False
+        self._last_confirmed = False
+        self._entry_pending = False
+        self._stop_requested_at_s = None
+        self._stopped = False
         self._collector.start()
 
     def start_result(self) -> CollectorStartResult:
         return CollectorStartResult(CollectorStartStatus.READY)
 
     def active_fault(self) -> ExecutorReasonCode | None:
+        self._sample_beams()
         return None
 
     def stop(self) -> None:
-        self._collector.stop()
+        self._sample_beams()
+        if self._maximum_drain_s <= 0.0:
+            self._stop_now()
+            return
+        if self._stop_requested_at_s is None:
+            self._stop_requested_at_s = self._clock_fn()
 
     def stop_result(self) -> CollectorStopResult:
-        return CollectorStopResult(CollectorStopStatus.STOPPED)
+        if self._stopped:
+            return CollectorStopResult(CollectorStopStatus.STOPPED)
+        self._sample_beams()
+        if self._stop_requested_at_s is None:
+            return CollectorStopResult(CollectorStopStatus.STOPPING)
+        elapsed_s = max(0.0, self._clock_fn() - self._stop_requested_at_s)
+        minimum_elapsed = elapsed_s >= self._minimum_drain_s
+        drain_complete = minimum_elapsed and not self._entry_pending
+        drain_timed_out = elapsed_s >= self._maximum_drain_s
+        if drain_complete or drain_timed_out:
+            self._stop_now()
+            return CollectorStopResult(CollectorStopStatus.STOPPED)
+        return CollectorStopResult(CollectorStopStatus.STOPPING)
 
     def force_disable(self) -> None:
-        self._collector.stop()
+        self._stop_now()
+
+    def _sample_beams(self) -> None:
+        entry = bool(self._entry_beam_provider())
+        confirmed = bool(self._confirmed_beam_provider())
+        if entry and not self._last_entry:
+            self._entry_pending = True
+        if confirmed and not self._last_confirmed and self._entry_pending:
+            self._entry_pending = False
+        self._last_entry = entry
+        self._last_confirmed = confirmed
+
+    def _stop_now(self) -> None:
+        if not self._stopped:
+            self._collector.stop()
+        self._stopped = True
 
 
 # ── 5. SafetyMonitor (pure forward-sector logic + thin /scan wrapper) ─────────
@@ -366,6 +427,10 @@ class ScanRotationFsm:
             return step_id
         return None
 
+    def reset(self) -> None:
+        """Start a fresh rotation cycle with the same immutable scan geometry."""
+        self._captured = 0
+
 
 class ScanSessionDriver:
     """ScanSession port: rotate 360deg in steps, forward one detection frame per
@@ -427,9 +492,20 @@ class ScanSessionDriver:
         self._started_at_s = self._clock.now_s()
         self._terminal = None
         self.last_failure_detail = None
+        self._fsm.reset()
         start_session = getattr(self._session, "start", None)
-        if callable(start_session):
-            start_session(self._started_at_s)
+        try:
+            if callable(start_session):
+                start_session(self._started_at_s)
+        except Exception as exc:
+            code = getattr(getattr(exc, "code", None), "value", None)
+            self.last_failure_detail = f"{code}: {exc}" if code else repr(exc)
+            self._terminal = ScanSessionResult(
+                ScanSessionStatus.FAILED,
+                reason=ExecutorReasonCode.SCAN_FAILED,
+            )
+            self._cmd_vel(0.0)
+            return
         self._cmd_vel(self._angular_speed_rad_s)
 
     def result(self) -> ScanSessionResult:

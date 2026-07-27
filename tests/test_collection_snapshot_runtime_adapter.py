@@ -12,6 +12,7 @@ from tennis_robot.collection_route_types import (
     AcceptedSpatialObservation,
     CollectionRouteConfiguration,
     DomainValidationError,
+    Pose2D,
     SpatialObservationRejection,
 )
 from tennis_robot.collection_snapshot_runtime_adapter import (
@@ -207,3 +208,33 @@ def test_session_counts_valid_empty_heartbeat_as_scan_coverage():
     empty.detections = []
     session.forward_frame(empty, scan_step_id="step-01")
     assert session.finalize(now_s=2.0).balls == ()
+
+
+def test_session_rebuilds_snapshot_builder_for_follow_up_scan():
+    pose = {"value": SCAN_POSE}
+    session = CollectionSnapshotRuntimeSession(
+        scan_id="scan",
+        scan_timestamp_s=1.0,
+        robot_pose_at_scan=SCAN_POSE,
+        configuration_snapshot=default_configuration(),
+        expected_scan_step_ids=("step-01",),
+        court_half_boundary=default_court_half_boundary(),
+        tf_provider=TF(),
+        robot_pose_provider=lambda: pose["value"],
+    )
+    empty = frame()
+    empty.detections = []
+
+    session.start(1.0)
+    session.forward_frame(empty, scan_step_id="step-01")
+    first = session.finalize(now_s=2.0)
+
+    pose["value"] = Pose2D(SCAN_POSE.x_m + 1.0, SCAN_POSE.y_m, SCAN_POSE.yaw_rad)
+    session.start(3.0)
+    session.forward_frame(empty, scan_step_id="step-01")
+    second = session.finalize(now_s=4.0)
+
+    assert first.scan_id == "scan"
+    assert second.scan_id == "scan/run-2"
+    assert second.scan_timestamp == 3.0
+    assert second.robot_pose_at_scan == pose["value"]

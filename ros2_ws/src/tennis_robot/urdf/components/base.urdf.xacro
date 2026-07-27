@@ -28,7 +28,8 @@
     </inertial>
   </xacro:macro>
 
-  <xacro:macro name="tennis_robot_base" params="chassis_x chassis_y chassis_z base_link_height chassis_mass">
+  <xacro:macro name="tennis_robot_base"
+               params="chassis_x chassis_y chassis_z base_link_height chassis_mass entry_beam_x entry_beam_z entry_beam_width">
     <link name="base_footprint"/>
 
     <joint name="base_footprint_joint" type="fixed">
@@ -124,11 +125,12 @@
         <geometry><box size="0.18 0.26 0.12"/></geometry>
         <material name="anthracite"/>
       </visual>
-      <!-- Throat beam-line visual: matches ir_x/ir_z in tennis_robot.urdf.xacro
-           (nip jam detection, 40 mm above ground just behind the lip). -->
+      <!-- Entry beam-line visual. Its position and width are injected from the
+           same properties that place the two Gazebo rays, so diagnostics can
+           never drift away from the actual sensing geometry. -->
       <visual name="ir_beam_line_vis">
-        <origin xyz="0.575 0 -0.005" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="0.003" length="0.21"/></geometry>
+        <origin xyz="${entry_beam_x} 0 ${entry_beam_z}" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="0.003" length="${entry_beam_width}"/></geometry>
         <material name="ir_beam_red"/>
       </visual>
     </link>

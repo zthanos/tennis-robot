@@ -108,6 +108,10 @@ class CollectionExecutorHandles:
     hold_sender: object             # callable(*, plan_id, path_sha256, hold) -> None
     finalize_sender: object         # callable(*, plan_id, path_sha256, action_outcome) -> bool
     execution_plan_transformer: object  # callable(CollectionRoutePlan) -> CollectionRoutePlan
+    entry_beam_provider: object | None = None
+    confirmed_beam_provider: object | None = None
+    collector_minimum_drain_s: float = 0.0
+    collector_maximum_drain_s: float = 0.0
 
 
 class _PlanCollectionRoutePlanner:
@@ -143,7 +147,14 @@ def build_collection_route_executor(
     navigator = ScanPoseNavigatorAdapter(
         lane_navigator=handles.lane_navigator, scan_pose=config.scan_pose_xy_yaw
     )
-    collector = GazeboCollectorAdapter(handles.collector_interface)
+    collector = GazeboCollectorAdapter(
+        handles.collector_interface,
+        entry_beam_provider=handles.entry_beam_provider,
+        confirmed_beam_provider=handles.confirmed_beam_provider,
+        minimum_drain_s=handles.collector_minimum_drain_s,
+        maximum_drain_s=handles.collector_maximum_drain_s,
+        clock_fn=clock.now_s,
+    )
 
     safety_logic = ForwardSectorSafetyLogic(
         forward_half_angle_rad=config.safety_forward_half_angle_rad,

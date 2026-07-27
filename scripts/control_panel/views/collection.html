@@ -28,22 +28,22 @@
               <div id="collectionRunKv" class="kv"></div>
             </div>
             <div class="panel">
-              <h3>Basket Entry Beams <span id="collIrStatus">waiting</span></h3>
+              <h3>Intake Transfer <span id="collIrStatus">waiting</span></h3>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div id="collIrLeftPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">LEFT BEAM</div>
-                  <div id="collIrLeftValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">-</div>
-                  <div id="collIrLeftLast" style="margin-top:4px;font-size:12px;color:var(--muted);">No crossing seen</div>
+                <div id="collIrEntryPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">ENTRY SENSOR</div>
+                  <div id="collIrEntryValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">-</div>
+                  <div id="collIrEntryLast" style="margin-top:4px;font-size:12px;color:var(--muted);">No entry seen</div>
                   <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
-                    <div id="collIrLeftBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
+                    <div id="collIrEntryBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
                   </div>
                 </div>
-                <div id="collIrRightPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">RIGHT BEAM</div>
-                  <div id="collIrRightValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">-</div>
-                  <div id="collIrRightLast" style="margin-top:4px;font-size:12px;color:var(--muted);">No crossing seen</div>
+                <div id="collIrConfirmedPanel" style="padding:12px;border-radius:8px;border:1px solid var(--line);">
+                  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">CONFIRMED SENSOR</div>
+                  <div id="collIrConfirmedValue" style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;">-</div>
+                  <div id="collIrConfirmedLast" style="margin-top:4px;font-size:12px;color:var(--muted);">No confirmation seen</div>
                   <div style="margin-top:8px;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;">
-                    <div id="collIrRightBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
+                    <div id="collIrConfirmedBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.15s,background 0.15s;"></div>
                   </div>
                 </div>
               </div>

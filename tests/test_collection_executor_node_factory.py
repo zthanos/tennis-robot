@@ -196,7 +196,12 @@ def curved_plan():
 def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory):
     built, node, cache = factory
     assert built.build() is not None
-    assert all(getattr(built.handles, field.name) is not None for field in fields(built.handles))
+    optional_names = {"entry_beam_provider", "confirmed_beam_provider"}
+    assert all(
+        getattr(built.handles, field.name) is not None
+        for field in fields(built.handles)
+        if field.name not in optional_names
+    )
     callable_names = {"telemetry_sink", "scan_provider", "yaw_provider", "frame_provider", "cmd_vel",
                       "load_sender", "load_outcome_provider", "follow_path_sender",
                       "goal_status_provider", "state_provider", "hold_sender", "finalize_sender",
@@ -284,7 +289,10 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
             "active_crossing_progress_s", "measured_speed_mps",
             "lateral_error_m", "heading_error_rad",
         )
-    } | {"profile_verdict": vars(profile_verdict)}]
+    } | {
+        "observed_sim_time_s": 1.0,
+        "profile_verdict": vars(profile_verdict),
+    }]
 
 
 def test_load_sender_fills_real_context_message_field_for_field(factory):

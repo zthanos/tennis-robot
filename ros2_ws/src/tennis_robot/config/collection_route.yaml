@@ -25,7 +25,10 @@ safety:
   progress_window_m: 0.5
   max_parallel_heading_error_rad: 0.2
   collector_start_timeout_s: 2.0
-  collector_stop_timeout_s: 2.0
+  # The final ball may still be between the entry and confirmation beams when
+  # Nav2 reaches the terminal pose. Allow the bounded 1.5–5.0 s intake drain
+  # to finish before treating collector shutdown as faulty.
+  collector_stop_timeout_s: 6.0
   safety_pause_timeout_s: 10.0
 scan:
   # 0.6 (was 1.0): demanding a valid spatial observation at ALL 18 scan headings
@@ -72,8 +75,11 @@ shared_pass:
   max_shared_pass_candidates: 100
   minimum_mechanical_ball_spacing_m: 0.5
 follow_up:
-  enabled: false
-  max_total_runs: 1
+  # One bounded recovery pass: rescan after a clean first route so balls that
+  # were pushed, crossed without confirmation, or deferred by route conflicts
+  # are planned from their new observed positions.
+  enabled: true
+  max_total_runs: 2
 planning:
   default_execution_profile:
     nominal_speed_mps: 0.35

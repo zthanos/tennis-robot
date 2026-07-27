@@ -327,6 +327,9 @@ class _CollectionRosTransport:
                     "lateral_error_m", "heading_error_rad",
                 )
             }
+            sample["observed_sim_time_s"] = round(
+                self.node.get_clock().now().nanoseconds * 1e-9, 3
+            )
             verdict = message.profile_verdict
             sample["profile_verdict"] = {
                 name: getattr(verdict, name)
@@ -414,6 +417,9 @@ class CollectionExecutorNodeFactory:
                  lane_navigator, collector_interface, court_boundary_path: str | Path,
                  collection_route_config_path: str | Path,
                  calibration_artifact_path: str | Path, telemetry_sink,
+                 entry_beam_provider=None, confirmed_beam_provider=None,
+                 collector_minimum_drain_s: float = 0.0,
+                 collector_maximum_drain_s: float = 0.0,
                  ros_types: CollectionExecutorRosTypes | None = None) -> None:
         if not isinstance(cache, CollectionExecutorNodeCache):
             raise CollectionExecutorNodeFactoryError("cache must be CollectionExecutorNodeCache")
@@ -480,6 +486,10 @@ class CollectionExecutorNodeFactory:
             hold_sender=self.transport.hold_sender,
             finalize_sender=self.transport.finalize_sender,
             execution_plan_transformer=_ExecutionPlanTransformer(tf_buffer, self.ros),
+            entry_beam_provider=entry_beam_provider,
+            confirmed_beam_provider=confirmed_beam_provider,
+            collector_minimum_drain_s=collector_minimum_drain_s,
+            collector_maximum_drain_s=collector_maximum_drain_s,
         )
 
     def build(self):

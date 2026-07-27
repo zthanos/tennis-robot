@@ -174,14 +174,18 @@ class CollectionSnapshotRuntimeSession:
         robot_pose_provider=None,
         map_frame: str = "map",
     ) -> None:
-        self.builder = ScanSnapshotBuilder(
+        self._base_scan_id = scan_id
+        self._scan_generation = 1
+        self._started = False
+        self._robot_pose_at_scan = robot_pose_at_scan
+        self._configuration_snapshot = configuration_snapshot
+        self._expected_scan_step_ids = expected_scan_step_ids
+        self._court_half_boundary = court_half_boundary
+        self._map_frame = map_frame
+        self.builder = self._new_builder(
             scan_id=scan_id,
             scan_timestamp_s=scan_timestamp_s,
             robot_pose_at_scan=robot_pose_at_scan,
-            configuration_snapshot=configuration_snapshot,
-            expected_scan_step_ids=expected_scan_step_ids,
-            court_half_boundary=court_half_boundary,
-            map_frame=map_frame,
         )
         # Validation thresholds and localization covariance have a single
         # source of truth: the immutable configuration snapshot itself.
@@ -194,8 +198,34 @@ class CollectionSnapshotRuntimeSession:
             raise TypeError("robot_pose_provider must be callable")
         self._robot_pose_provider = robot_pose_provider
 
+    def _new_builder(
+        self, *, scan_id: str, scan_timestamp_s: float, robot_pose_at_scan: Pose2D
+    ) -> ScanSnapshotBuilder:
+        return ScanSnapshotBuilder(
+            scan_id=scan_id,
+            scan_timestamp_s=scan_timestamp_s,
+            robot_pose_at_scan=robot_pose_at_scan,
+            configuration_snapshot=self._configuration_snapshot,
+            expected_scan_step_ids=self._expected_scan_step_ids,
+            court_half_boundary=self._court_half_boundary,
+            map_frame=self._map_frame,
+        )
+
     def start(self, scan_timestamp_s: float) -> None:
+        if self._started:
+            self._scan_generation += 1
+            robot_pose = (
+                self._robot_pose_provider()
+                if self._robot_pose_provider is not None
+                else self._robot_pose_at_scan
+            )
+            self.builder = self._new_builder(
+                scan_id=f"{self._base_scan_id}/run-{self._scan_generation}",
+                scan_timestamp_s=scan_timestamp_s,
+                robot_pose_at_scan=robot_pose,
+            )
         self.builder.start(scan_timestamp_s)
+        self._started = True
 
     def forward_frame(self, frame, *, scan_step_id: str | None) -> None:
         self.adapter.forward(

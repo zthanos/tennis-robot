@@ -26,8 +26,8 @@
     let _navTestLog = [];
     let _lastServerCollectionEvents = [];
     const _basketBeamHistory = {
-      left: { triggered: false, lastCrossingAtMs: null },
-      right: { triggered: false, lastCrossingAtMs: null },
+      entry: { triggered: false, lastCrossingAtMs: null },
+      confirmed: { triggered: false, lastCrossingAtMs: null },
     };
     let lastSurveyDiscovery = null;
     let robotPath = [];
@@ -291,12 +291,17 @@
       }
       const speed = Number(robot?.measured_speed_mps ?? 0);
       const elapsed = r.elapsed_s;
+      const poseDrift = r.pose_drift_m;
+      const yawDrift = r.yaw_drift_rad;
       setKv("collectionRunKv", [
         ["Speed", `${speed.toFixed(2)} m/s`],
         ["Elapsed", elapsed != null ? `${Number(elapsed).toFixed(1)} s` : "-"],
         ["Basket retained", r.basket_retained ?? 0],
         ["Beam / truth (sim)", `${r.beam_credits ?? 0} / ${r.truth_retained ?? 0}`],
-        ["Route collected", r.route_collected ?? 0],
+        ["Target outcome", `${r.confirmed ?? 0} confirmed / ${r.crossed_unconfirmed ?? 0} crossed-no-ball`],
+        ["Unassigned intake", r.unassigned_confirmations ?? 0],
+        ["Pose drift", poseDrift != null ? `${Number(poseDrift).toFixed(3)} m` : "-"],
+        ["Yaw drift", yawDrift != null ? `${Number(yawDrift).toFixed(3)} rad` : "-"],
         ["Failed", r.failed ?? 0],
         ["Missing / skipped", `${r.missing ?? 0} / ${r.skipped ?? 0}`],
         ["Remaining", r.remaining ?? 0],
@@ -2114,16 +2119,26 @@
     }
     function renderCollectionIr(ir) {
       const threshold = ir?.threshold ?? 500;
-      const available = ir?.left_available || ir?.right_available;
+      const entry = ir?.entry || {
+        broken: !!ir?.triggered,
+        available: ir?.left_available || ir?.right_available,
+        left_raw: ir?.left,
+        right_raw: ir?.right,
+      };
+      const confirmed = ir?.confirmed || {
+        broken: false,
+        available: false,
+      };
+      const available = entry.available || confirmed.available;
       const statusEl = document.getElementById("collIrStatus");
       if (statusEl) statusEl.textContent = available ? "live" : "no signal";
-      function renderOne(side, valueId, lastId, barId, panelId, value, avail) {
+      function renderOne(stage, valueId, lastId, barId, panelId, signal) {
         const valEl = document.getElementById(valueId);
         const lastEl = document.getElementById(lastId);
         const barEl = document.getElementById(barId);
         const panelEl = document.getElementById(panelId);
         if (!valEl || !lastEl || !barEl || !panelEl) return;
-        if (!avail || value === null || value === undefined) {
+        if (!signal?.available) {
           valEl.textContent = "N/A";
           lastEl.textContent = "No sensor signal";
           barEl.style.width = "0%";
@@ -2131,32 +2146,52 @@
           panelEl.style.borderColor = "var(--line)";
           return;
         }
-        const triggered = value > threshold;
-        const history = _basketBeamHistory[side];
+        const triggered = !!signal.broken;
+        const history = _basketBeamHistory[stage];
+        const serverCrossingAtMs = Number(signal.last_crossing_at_s) * 1000;
+        if (Number.isFinite(serverCrossingAtMs) && serverCrossingAtMs > 0) {
+          history.lastCrossingAtMs = serverCrossingAtMs;
+        }
         if (triggered && !history.triggered) history.lastCrossingAtMs = Date.now();
         history.triggered = triggered;
-        valEl.textContent = triggered ? "BALL" : "CLEAR";
+        valEl.textContent = triggered
+          ? (stage === "confirmed" ? "CONFIRMED" : "BALL")
+          : "CLEAR";
         if (triggered) {
-          lastEl.textContent = "Crossing now";
+          lastEl.textContent = stage === "confirmed"
+            ? "Basket crossing now"
+            : "Intake entry now";
         } else if (history.lastCrossingAtMs !== null) {
           const elapsedS = Math.max(0, Math.round((Date.now() - history.lastCrossingAtMs) / 1000));
-          lastEl.textContent = `Last crossing ${elapsedS}s ago`;
+          lastEl.textContent = `Last ${stage} ${elapsedS}s ago`;
         } else {
           lastEl.textContent = "No crossing seen";
         }
-        valEl.title = `Raw sensor value ${Math.round(value)}; threshold ${Math.round(threshold)}`;
+        const raw = [signal.left_raw, signal.right_raw]
+          .filter(Number.isFinite)
+          .map(value => Math.round(value))
+          .join(" / ");
+        valEl.title = raw
+          ? `Raw pair ${raw}; threshold ${Math.round(threshold)}; crossings ${signal.crossing_count ?? 0}`
+          : `Threshold ${Math.round(threshold)}`;
         barEl.style.width = triggered ? "100%" : "0%";
         barEl.style.background = triggered ? "#2fd08f" : "rgba(145,162,178,0.45)";
         panelEl.style.borderColor = triggered ? "rgba(47,208,143,0.55)" : "var(--line)";
       }
-      renderOne("left", "collIrLeftValue", "collIrLeftLast", "collIrLeftBar", "collIrLeftPanel", ir?.left, ir?.left_available ?? (ir !== undefined));
-      renderOne("right", "collIrRightValue", "collIrRightLast", "collIrRightBar", "collIrRightPanel", ir?.right, ir?.right_available ?? (ir !== undefined));
+      renderOne("entry", "collIrEntryValue", "collIrEntryLast", "collIrEntryBar", "collIrEntryPanel", entry);
+      renderOne("confirmed", "collIrConfirmedValue", "collIrConfirmedLast", "collIrConfirmedBar", "collIrConfirmedPanel", confirmed);
       const badge = document.getElementById("collIrBadge");
       if (badge) {
-        const triggered = !!ir?.triggered;
-        badge.textContent = available ? (triggered ? "BALL CROSSING" : "ENTRY CLEAR") : "NO SENSOR SIGNAL";
-        badge.style.background = triggered ? "rgba(47,208,143,0.15)" : (available ? "rgba(255,255,255,0.04)" : "rgba(255,80,80,0.10)");
-        badge.style.color = triggered ? "#2fd08f" : (available ? "var(--muted)" : "#ff6060");
+        const active = !!entry.broken || !!confirmed.broken;
+        badge.textContent = !available
+          ? "NO SENSOR SIGNAL"
+          : confirmed.broken
+            ? "COLLECTION CONFIRMED"
+            : entry.broken
+              ? "BALL AT ENTRY — INTAKE ACTIVE"
+              : "INTAKE PATH CLEAR";
+        badge.style.background = active ? "rgba(47,208,143,0.15)" : (available ? "rgba(255,255,255,0.04)" : "rgba(255,80,80,0.10)");
+        badge.style.color = active ? "#2fd08f" : (available ? "var(--muted)" : "#ff6060");
       }
     }
     function renderCourtMap() {

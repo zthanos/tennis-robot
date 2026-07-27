@@ -134,18 +134,38 @@ def _node(monkeypatch):
         _collect_route_executor_factory=None,
         _collect_route_executor_events=[],
         _collect_route_executor_complete_reported=False,
+        _collect_route_confirmations=[],
+        _collect_route_run_history=[],
         _last_collect_route_summary={},
         _run_id="run",
+        collection_count=7,
+        _collect_route_run_start_count=5,
+        _credit_reconciler=SimpleNamespace(beam_count=2, truth_count=2),
+        _collect_route_collector_active=False,
         ball_map=SimpleNamespace(reset=lambda: None),
         get_logger=lambda: SimpleNamespace(info=lambda message: None),
         _runtime_seconds=lambda: 12.0,
         _declare_collection_route_parameters=lambda: None,
+        _sim_true_pose=None,
+        _pose_frame_offset=None,
+        _pose_frame_yaw_offset=None,
     )
     node._on_collection_executor_telemetry = MethodType(
         ControllerNode._on_collection_executor_telemetry, node
     )
     node._start_collection_route_executor = MethodType(
         ControllerNode._start_collection_route_executor, node
+    )
+    node._collect_route_elapsed_s = MethodType(
+        ControllerNode._collect_route_elapsed_s, node
+    )
+    node._pose_error_m = MethodType(ControllerNode._pose_error_m, node)
+    node._pose_yaw_error_rad = MethodType(ControllerNode._pose_yaw_error_rad, node)
+    node._build_collect_route_execution_outcomes = MethodType(
+        ControllerNode._build_collect_route_execution_outcomes, node
+    )
+    node._capture_collect_route_run = MethodType(
+        ControllerNode._capture_collect_route_run, node
     )
     return node
 
@@ -190,9 +210,185 @@ def test_executor_status_serializes_empty_plan_and_crossing_telemetry(monkeypatc
     assert status["segments"] == []
     assert status["crossings"] == []
     assert status["executed_crossing_telemetry"] == [{"active_ball_id": "ball-1"}]
+    assert status["route_collected"] == 2
+    assert status["beam_credits"] == 2
+    assert status["truth_retained"] == 2
+    assert status["basket_retained"] == 2
+    assert status["execution_outcomes"] == []
+    assert status["confirmations"] == []
+    assert status["unassigned_confirmations"] == 0
+    assert status["pose_drift_m"] is None
+    assert status["yaw_drift_rad"] is None
     assert status["perception_diagnostics"]["rejection_counts"] == {
         "calibration_out_of_domain": 1
     }
+
+
+def test_execution_outcomes_keep_planner_result_immutable_and_add_physical_status(monkeypatch):
+    node = _node(monkeypatch)
+    node._collect_route_confirmations = [
+        {"ball_id": "ball-a", "association": "active_crossing", "t_s": 4.2},
+        {"ball_id": None, "association": "unassigned", "t_s": 7.0},
+    ]
+    planner_results = [
+        {"ball_id": "ball-a", "status": "covered", "reason_code": "none"},
+        {"ball_id": "ball-b", "status": "covered", "reason_code": "none"},
+        {"ball_id": "ball-c", "status": "deferred", "reason_code": "route_conflict"},
+    ]
+    crossings = [
+        {
+            "active_ball_id": "ball-a",
+            "progress_s": 2.0,
+            "active_crossing_progress_s": 1.9,
+        },
+        {
+            "active_ball_id": "ball-b",
+            "progress_s": 3.0,
+            "active_crossing_progress_s": 2.9,
+        },
+    ]
+
+    outcomes = ControllerNode._build_collect_route_execution_outcomes(
+        node, planner_results, crossings
+    )
+
+    assert [item["execution_status"] for item in outcomes] == [
+        "confirmed",
+        "crossed_unconfirmed",
+        "deferred",
+    ]
+    assert planner_results[0] == {
+        "ball_id": "ball-a",
+        "status": "covered",
+        "reason_code": "none",
+    }
+
+
+def test_pose_drift_is_relative_to_collect_route_baseline(monkeypatch):
+    node = _node(monkeypatch)
+    node._sim_true_pose = (10.2, -3.0, 1.2)
+    node._robot_x, node._robot_y, node._robot_yaw = 2.0, 1.0, 0.2
+    node._pose_frame_offset = (8.0, -4.0)
+    node._pose_frame_yaw_offset = 1.0
+
+    assert ControllerNode._pose_error_m(node) == 0.2
+    assert ControllerNode._pose_yaw_error_rad(node) == 0.0
+
+
+def test_confirmation_uses_recent_crossing_after_controller_leaves_target(monkeypatch):
+    node = _node(monkeypatch)
+    node._collect_route_executor_factory = SimpleNamespace(
+        controller_state={
+            "plan_id": "plan",
+            "has_active_crossing": False,
+            "active_ball_id": "",
+        },
+        crossing_telemetry=[
+            {
+                "plan_id": "plan",
+                "active_ball_id": "ball-a",
+                "active_segment_id": "pass-1",
+                "observed_sim_time_s": 10.5,
+                "progress_s": 4.1,
+                "active_crossing_progress_s": 4.0,
+                "lateral_error_m": 0.02,
+            }
+        ],
+    )
+
+    context = ControllerNode._route_confirmation_context(node, 12.0)
+
+    assert context["association"] == "recent_crossing"
+    assert context["plan_id"] == "plan"
+    assert context["ball_id"] == "ball-a"
+    assert context["segment_id"] == "pass-1"
+
+
+def test_summary_keeps_completed_run_totals_while_follow_up_has_no_plan(monkeypatch):
+    node = _node(monkeypatch)
+    node._collect_route_executor = SimpleNamespace(
+        state=ExecutorState.NAVIGATING_TO_SCAN_POSE,
+        route_outcome=None,
+        plan=None,
+    )
+    node._collect_route_run_history = [
+        {
+            "plan_id": "first-plan",
+            "planned": 8,
+            "confirmed": 3,
+            "crossed_unconfirmed": 5,
+            "skipped": 3,
+            "execution_outcomes": [
+                {"ball_id": "ball-b", "execution_status": "crossed_unconfirmed"}
+            ],
+        }
+    ]
+
+    status = ControllerNode._build_collect_route_summary(node)
+
+    assert status["plan_id"] is None
+    assert status["planned"] == 8
+    assert status["confirmed"] == 3
+    assert status["crossed_unconfirmed"] == 5
+    assert status["missing"] == 5
+    assert status["skipped"] == 3
+    assert status["failed_ball_ids"] == ["ball-b"]
+    assert status["run_history"][0]["plan_id"] == "first-plan"
+
+
+def test_confirmed_beam_credit_requires_one_new_entry_edge(monkeypatch):
+    node = _node(monkeypatch)
+    node._entry_beam_previous = False
+    node._entry_beam_sequence = 0
+    node._last_credited_entry_sequence = 0
+
+    ControllerNode._on_intake_beam(node, SimpleNamespace(data=True))
+    ControllerNode._on_intake_beam(node, SimpleNamespace(data=True))
+
+    assert node._entry_beam_sequence == 1
+    assert ControllerNode._consume_entry_for_confirmation(node) is True
+    assert ControllerNode._consume_entry_for_confirmation(node) is False
+
+    ControllerNode._on_intake_beam(node, SimpleNamespace(data=False))
+    ControllerNode._on_intake_beam(node, SimpleNamespace(data=True))
+
+    assert node._entry_beam_sequence == 2
+    assert ControllerNode._consume_entry_for_confirmation(node) is True
+
+
+def test_completed_route_is_snapshotted_before_follow_up_clears_plan(monkeypatch):
+    node = _node(monkeypatch)
+    plan_data = {
+        "plan_id": "plan-1",
+        "scan_id": "scan-1",
+        "planning_status": "complete",
+        "ball_results": [
+            {"ball_id": "ball-a", "status": "covered", "reason_code": "none"}
+        ],
+    }
+    node._collect_route_executor = SimpleNamespace(
+        plan=SimpleNamespace(to_dict=lambda: plan_data)
+    )
+    node._collect_route_executor_factory = SimpleNamespace(
+        crossing_telemetry=[
+            {
+                "plan_id": "plan-1",
+                "active_ball_id": "ball-a",
+                "progress_s": 2.1,
+                "active_crossing_progress_s": 2.0,
+            }
+        ]
+    )
+    node._collect_route_confirmations = [
+        {"plan_id": "plan-1", "ball_id": "ball-a", "association": "active_crossing"}
+    ]
+
+    ControllerNode._capture_collect_route_run(node, "route_completed")
+    node._collect_route_executor.plan = None
+
+    assert node._collect_route_run_history[0]["plan_id"] == "plan-1"
+    assert node._collect_route_run_history[0]["confirmed"] == 1
+    assert node._collect_route_run_history[0]["route_outcome"] == "route_completed"
 
 
 def test_hands_off_apply_does_not_publish_collector_command(monkeypatch):
