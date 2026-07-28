@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, fields
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -33,6 +34,48 @@ from tennis_robot.perception_spatial_observation_adapter import TimestampedCamer
 
 class CollectionExecutorNodeFactoryError(ValueError):
     """A required node-side dependency or configuration value is invalid."""
+
+
+def _planner_audit_sink_from_env(node):
+    """Return an opt-in pre-execution snapshot/plan capture callback."""
+    audit_dir_value = os.getenv("COLLECTION_ROUTE_AUDIT_DIR", "").strip()
+    if not audit_dir_value:
+        return None
+    directory = Path(audit_dir_value)
+
+    def save(snapshot, plan) -> None:
+        safe_scan_id = "".join(
+            char if char.isalnum() or char in "-_." else "_"
+            for char in str(snapshot.scan_id)
+        )
+        target = directory / f"{safe_scan_id}.json"
+        temporary = directory / f".{safe_scan_id}.json.tmp"
+        try:
+            directory.mkdir(parents=True, exist_ok=True)
+            temporary.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "route_outcome": None,
+                        "snapshot": snapshot.to_dict(),
+                        "plan": plan.to_dict(),
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            os.replace(temporary, target)
+            node.get_logger().info(
+                f"collection route pre-execution audit saved: {target}"
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            node.get_logger().error(
+                f"collection route pre-execution audit write failed: {exc}"
+            )
+
+    return save
 
 
 _RUNTIME_PARAM_FIELDS = {
@@ -88,6 +131,7 @@ class CollectionExecutorRosTypes:
     CollectionPlannedCrossing: type
     CollectionControllerState: type
     LoadService: type
+    ResetService: type
     HoldService: type
     FinalizeService: type
     time_from_seconds: object
@@ -110,7 +154,7 @@ def load_ros_types() -> CollectionExecutorRosTypes:
     )
     from tennis_robot_msgs.srv import (
         FinalizeCollectionExecutionContext, LoadCollectionExecutionContext,
-        SetCollectionSafetyHold,
+        ResetCollectionExecutionContext, SetCollectionSafetyHold,
     )
     return CollectionExecutorRosTypes(
         Twist=Twist, Pose=Pose, PoseStamped=PoseStamped, Path=NavPath,
@@ -121,6 +165,7 @@ def load_ros_types() -> CollectionExecutorRosTypes:
         CollectionPlannedCrossing=CollectionPlannedCrossing,
         CollectionControllerState=CollectionControllerState,
         LoadService=LoadCollectionExecutionContext,
+        ResetService=ResetCollectionExecutionContext,
         HoldService=SetCollectionSafetyHold,
         FinalizeService=FinalizeCollectionExecutionContext,
         time_from_seconds=lambda seconds: Time(nanoseconds=round(seconds * 1e9)),
@@ -299,18 +344,25 @@ class _CollectionRosTransport:
         self.goal_checker_id = goal_checker_id
         base = f"/{controller_id}"
         self.load_client = node.create_client(ros.LoadService, base + "/load_collection_execution_context")
+        self.reset_client = node.create_client(
+            ros.ResetService, base + "/reset_collection_execution_context"
+        )
         self.hold_client = node.create_client(ros.HoldService, base + "/set_collection_safety_hold")
         self.finalize_client = node.create_client(ros.FinalizeService, base + "/finalize_collection_execution_context")
         self.action_client = ros.ActionClient(node, ros.FollowPath, "/follow_path")
         self.latest_state = None
         self.crossing_telemetry = []
         self.state_subscription = node.create_subscription(ros.CollectionControllerState, base + "/state", self._on_state, 10)
-        self.load_future = self.goal_future = self.goal_handle = self.result_future = None
+        self.load_future = self.reset_future = None
+        self._pending_load_context = None
+        self._load_count = 0
+        self.goal_future = self.goal_handle = self.result_future = None
 
     def wait_ready(self, timeout_sec: float) -> bool:
-        """Wait for all four real controller endpoints used by the handles."""
+        """Wait for every real controller endpoint used by the handles."""
         return (
             self.load_client.wait_for_service(timeout_sec=timeout_sec)
+            and self.reset_client.wait_for_service(timeout_sec=timeout_sec)
             and self.hold_client.wait_for_service(timeout_sec=timeout_sec)
             and self.finalize_client.wait_for_service(timeout_sec=timeout_sec)
             and self.action_client.wait_for_server(timeout_sec=timeout_sec)
@@ -345,14 +397,47 @@ class _CollectionRosTransport:
                 del self.crossing_telemetry[:-200]
 
     def load_sender(self, values):
+        self.latest_state = None
+        self.load_future = None
+        self._pending_load_context = values
+        if self._load_count:
+            self.reset_future = self.reset_client.call_async(
+                self.ros.ResetService.Request()
+            )
+            return
+        self._send_pending_load()
+
+    def _send_pending_load(self):
         request = self.ros.LoadService.Request()
-        request.context = execution_context_values_to_msg(values, self.ros)
+        request.context = execution_context_values_to_msg(
+            self._pending_load_context, self.ros
+        )
+        self._pending_load_context = None
         self.load_future = self.load_client.call_async(request)
 
     def load_outcome_provider(self):
+        if self.reset_future is not None:
+            if not self.reset_future.done():
+                return None
+            response = self.reset_future.result()
+            self.reset_future = None
+            if response is None or not response.accepted:
+                detail = getattr(response, "detail", "reset_rejected")
+                self.node.get_logger().error(
+                    f"collection controller reset rejected: {detail}"
+                )
+                return "rejected"
+            self._send_pending_load()
         if self.load_future is None or not self.load_future.done(): return None
         response = self.load_future.result()
-        return "accepted" if response is not None and response.accepted else "rejected"
+        if response is not None and response.accepted:
+            self._load_count += 1
+            return "accepted"
+        detail = getattr(response, "detail", "load_rejected")
+        self.node.get_logger().error(
+            f"collection execution context load rejected: {detail}"
+        )
+        return "rejected"
 
     def follow_path_sender(self, *, map_frame, poses, controller_id):
         self.goal_handle = self.result_future = None
@@ -486,6 +571,7 @@ class CollectionExecutorNodeFactory:
             hold_sender=self.transport.hold_sender,
             finalize_sender=self.transport.finalize_sender,
             execution_plan_transformer=_ExecutionPlanTransformer(tf_buffer, self.ros),
+            planner_audit_sink=_planner_audit_sink_from_env(node),
             entry_beam_provider=entry_beam_provider,
             confirmed_beam_provider=confirmed_beam_provider,
             collector_minimum_drain_s=collector_minimum_drain_s,

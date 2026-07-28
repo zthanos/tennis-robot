@@ -221,6 +221,34 @@ def test_depth_fusion_converts_optical_z_to_slant_range():
     assert down == pytest.approx(-5.0 * math.tan(elevation))
 
 
+def test_depth_fusion_rejects_minority_foreground_occluder():
+    detection = BallDetection(318, 238, 4, 4, confidence=0.8)
+    depth = np.full((480, 640), 8.0, dtype=np.float32)
+    # The 3x3 fusion ROI contains one foreground net strand (three pixels) and
+    # six ball pixels.  The old 20th-percentile-only estimator returned ~4.7 m
+    # and incorrectly moved the far-side ball in front of the net.
+    depth[239:242, 319] = 4.7
+    assert (
+        estimate_depth_ball_observation(
+            detection, depth, 640, 480, math.radians(69)
+        )
+        is None
+    )
+
+
+def test_depth_fusion_keeps_dominant_near_ball_against_far_background():
+    detection = BallDetection(318, 238, 4, 4, confidence=0.8)
+    depth = np.full((480, 640), 8.0, dtype=np.float32)
+    # Six of the nine central ROI pixels belong to the ball.  The median and
+    # foreground estimate agree, so farther background must not suppress it.
+    depth[239:242, 319:321] = 4.7
+    observation = estimate_depth_ball_observation(
+        detection, depth, 640, 480, math.radians(69)
+    )
+    assert observation is not None
+    assert observation.distance_m == pytest.approx(4.7)
+
+
 def test_camera_frame_position_conventions():
     # Ball 2 m away, 30 degrees to the left, level.
     right, down, forward = camera_frame_position(math.radians(30), 2.0, 0.0)

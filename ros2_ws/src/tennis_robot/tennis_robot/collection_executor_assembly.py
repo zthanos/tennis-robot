@@ -108,6 +108,7 @@ class CollectionExecutorHandles:
     hold_sender: object             # callable(*, plan_id, path_sha256, hold) -> None
     finalize_sender: object         # callable(*, plan_id, path_sha256, action_outcome) -> bool
     execution_plan_transformer: object  # callable(CollectionRoutePlan) -> CollectionRoutePlan
+    planner_audit_sink: object | None = None  # callable(snapshot, plan) -> None
     entry_beam_provider: object | None = None
     confirmed_beam_provider: object | None = None
     collector_minimum_drain_s: float = 0.0
@@ -121,15 +122,19 @@ class _PlanCollectionRoutePlanner:
     always matches the snapshot the executor produced.
     """
 
-    def __init__(self, court) -> None:
+    def __init__(self, court, audit_sink=None) -> None:
         self._court = court
+        self._audit_sink = audit_sink
 
     def plan(self, snapshot):
         from tennis_robot.collection_route_planner_v2 import plan_collection_route
 
-        return plan_collection_route(
+        plan = plan_collection_route(
             snapshot=snapshot, court=self._court, configuration=snapshot.configuration_snapshot
         ).plan
+        if self._audit_sink is not None:
+            self._audit_sink(snapshot, plan)
+        return plan
 
 
 def build_collection_route_executor(
@@ -182,7 +187,10 @@ def build_collection_route_executor(
         scan_timeout_s=config.scan_timeout_s,
     )
 
-    planner = _PlanCollectionRoutePlanner(build_court_model(config.court_boundary))
+    planner = _PlanCollectionRoutePlanner(
+        build_court_model(config.court_boundary),
+        audit_sink=handles.planner_audit_sink,
+    )
 
     path_follower = LiveCollectionPathFollower(
         controller_tuning=config.controller_tuning,

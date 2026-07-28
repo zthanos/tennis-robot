@@ -19,6 +19,7 @@ from tennis_robot.collection_execution_context_builder import ControllerTuning, 
 from tennis_robot.collection_executor_node_factory import (
     CollectionExecutorNodeCache, CollectionExecutorNodeFactory,
     CollectionExecutorNodeFactoryError, CollectionExecutorRosTypes,
+    _planner_audit_sink_from_env,
     scan_pose_from_court_model,
 )
 from tennis_robot.collection_route_planner_v2 import plan_collection_route
@@ -146,7 +147,7 @@ class ActionClient:
 
 ROS = CollectionExecutorRosTypes(
     Twist, Pose, PoseStamped, PathMsg, FollowPath, ActionClient, GoalStatus,
-    Context, Segment, Profile, Crossing, State, Load, Service, Service,
+    Context, Segment, Profile, Crossing, State, Load, Service, Service, Service,
     lambda seconds: seconds, lambda node, future, timeout_sec: None,
 )
 
@@ -196,7 +197,11 @@ def curved_plan():
 def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory):
     built, node, cache = factory
     assert built.build() is not None
-    optional_names = {"entry_beam_provider", "confirmed_beam_provider"}
+    optional_names = {
+        "entry_beam_provider",
+        "confirmed_beam_provider",
+        "planner_audit_sink",
+    }
     assert all(
         getattr(built.handles, field.name) is not None
         for field in fields(built.handles)
@@ -217,6 +222,7 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     assert node.publishers[0][1].messages[-1].angular.z == 0.75
     assert {topic for topic, _ in node.clients} == {
         "/CollectionFollowPath/load_collection_execution_context",
+        "/CollectionFollowPath/reset_collection_execution_context",
         "/CollectionFollowPath/set_collection_safety_hold",
         "/CollectionFollowPath/finalize_collection_execution_context",
     }
@@ -247,13 +253,13 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     assert len(goal.path.poses) == len(values.follow_path_poses)
     assert built.handles.goal_status_provider() == "rejected"
     built.handles.hold_sender(plan_id="plan", path_sha256="sha", hold=True)
-    assert vars(node.clients[1][1].requests[-1]) == {
+    assert vars(node.clients[2][1].requests[-1]) == {
         "plan_id": "plan", "path_sha256": "sha", "hold": True,
     }
     assert built.handles.finalize_sender(
         plan_id="plan", path_sha256="sha", action_outcome=0
     ) is True
-    assert vars(node.clients[2][1].requests[-1]) == {
+    assert vars(node.clients[3][1].requests[-1]) == {
         "plan_id": "plan", "path_sha256": "sha", "action_outcome": 0,
     }
     profile_verdict = SimpleNamespace(
@@ -338,6 +344,26 @@ def test_load_sender_fills_real_context_message_field_for_field(factory):
     assert built.handles.load_outcome_provider() == "accepted"
 
 
+def test_second_load_resets_consumed_controller_context_first(factory):
+    built, node, _ = factory
+    values = build_execution_context(
+        curved_plan(),
+        controller_tuning=ControllerTuning(1.0, 3.0, 10.0, 0.25, 0.05),
+        context_schema_version="collection-execution-context/v1",
+        context_activation_timeout_s=10.0,
+    )
+    built.handles.load_sender(values)
+    assert built.handles.load_outcome_provider() == "accepted"
+    assert len(node.clients[0][1].requests) == 1
+    assert len(node.clients[1][1].requests) == 0
+
+    built.handles.load_sender(values)
+    assert len(node.clients[1][1].requests) == 1
+    assert len(node.clients[0][1].requests) == 1
+    assert built.handles.load_outcome_provider() == "accepted"
+    assert len(node.clients[0][1].requests) == 2
+
+
 def test_scan_pose_is_service_line_center_on_robot_side_with_survey_axes():
     assert scan_pose_from_court_model(BOUNDARY, robot_pose=Pose2D(10.0, -5.0, 0.0)) == pytest.approx(
         (10.0, -4.4, math.pi / 2.0)
@@ -345,6 +371,40 @@ def test_scan_pose_is_service_line_center_on_robot_side_with_survey_axes():
     assert scan_pose_from_court_model(BOUNDARY, robot_pose=Pose2D(10.0, 9.0, 0.0)) == pytest.approx(
         (10.0, 8.4, -math.pi / 2.0)
     )
+
+
+def test_pre_execution_audit_sink_is_opt_in_and_atomic(monkeypatch, tmp_path):
+    messages = []
+    node = SimpleNamespace(
+        get_logger=lambda: SimpleNamespace(
+            info=messages.append,
+            error=messages.append,
+        )
+    )
+    monkeypatch.delenv("COLLECTION_ROUTE_AUDIT_DIR", raising=False)
+    assert _planner_audit_sink_from_env(node) is None
+
+    monkeypatch.setenv("COLLECTION_ROUTE_AUDIT_DIR", str(tmp_path))
+    sink = _planner_audit_sink_from_env(node)
+    snapshot = SimpleNamespace(
+        scan_id="scan/audit:1",
+        to_dict=lambda: {"scan_id": "scan/audit:1", "balls": []},
+    )
+    plan = SimpleNamespace(
+        to_dict=lambda: {
+            "plan_id": "plan-1",
+            "planning_status": "partial",
+        }
+    )
+
+    sink(snapshot, plan)
+
+    artifact = json.loads((tmp_path / "scan_audit_1.json").read_text())
+    assert artifact["route_outcome"] is None
+    assert artifact["snapshot"]["scan_id"] == "scan/audit:1"
+    assert artifact["plan"]["plan_id"] == "plan-1"
+    assert list(tmp_path.glob("*.tmp")) == []
+    assert messages and "pre-execution audit saved" in messages[-1]
 
 
 def test_missing_required_runtime_parameter_fails_loud(tmp_path):

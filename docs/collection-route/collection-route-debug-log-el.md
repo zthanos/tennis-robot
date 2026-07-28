@@ -1069,3 +1069,169 @@ Nav2 έφτανε `Managed nodes are active`, ο planner έβγαζε πλήρε
   root cause)· (β) collected-count telemetry δεν γράφεται στα runtime files
   (beam/plan reconciliation)· (γ) scan coverage / clean-court για fuller
   collection. Αυτά είναι το collect_route/mechanism refinement layer.
+
+## #35 — Regression audit: γιατί η αποστολή σταμάτησε πριν μαζέψει όλες τις μπάλες
+
+### Freeze
+
+- Σταμάτησαν καθαρά και τα δύο stacks (Pi brain και PC Gazebo). Δεν γίνεται άλλη
+  live αλλαγή ή tuning πριν απομονωθεί η μεταβλητή που άλλαξε τη συμπεριφορά.
+- Τελευταίο επιβεβαιωμένο καθαρό checkpoint: `1d3ba10`. Η καταγραφή WS5 αναφέρει
+  `scan → plan → execute → route completes` και `10/10 balls planned`, με ρητά
+  ανοιχτή ακόμη την ποιότητα φυσικής συλλογής.
+- Τρέχον committed checkpoint: `d76fdc9`. Το worktree έχει επιπλέον μη committed
+  αλλαγές και **δεν** αποτελεί νέο baseline.
+
+### Τι άλλαξε μετά το `1d3ba10`
+
+- Το `d76fdc9` δεν αλλάζει τον planner ή τον global solver. Οι μόνες
+  route-lifecycle ρυθμίσεις του είναι:
+  - `collector_stop_timeout_s: 2.0 → 6.0`,
+  - `follow_up.enabled: false → true`,
+  - `follow_up.max_total_runs: 1 → 2`.
+- Οι τρέχουσες μη committed αλλαγές επίσης δεν αλλάζουν planner/global-solver
+  source. Η μοναδική άμεση αλλαγή γεωμετρίας route είναι:
+  - `minimum_run_in_m: 1.0 → 1.9`,
+  - `default_execution_profile.required_run_in_m: 1.0 → 1.9`.
+- Οι υπόλοιπες μη committed αλλαγές αφορούν intake attribution/reset,
+  foreground-depth validation, terminal status/diagnostics και UI.
+
+### Τι έδειξαν τα live runs
+
+- Ένα προηγούμενο run με το τρέχον dirty worktree έδειξε στο UI
+  `confirmed 11 / planned 11`, route μήκους `70.9 m`. Άρα το dirty code/config
+  μπορεί να σχεδιάσει πολυ-στόχο route και δεν υπάρχει από μόνο του απόδειξη
+  ότι το run-in 1.9 κατέρρευσε τον planner σε έναν στόχο.
+- Το τελευταίο run **δεν** ξεκίνησε από pristine Gazebo state:
+  - robot start `(-0.630, -5.056)` αντί του αρχικού pose,
+  - είχαν προηγηθεί failed/completed routes χωρίς PC/Gazebo reset,
+  - μπάλες είχαν ήδη συλλεχθεί, μετακινηθεί ή σπρωχτεί.
+- Σε αυτό το contaminated state έγιναν δύο `partial` plans, από ένα executable
+  target το καθένα. Συλλέχθηκαν και retained δύο μπάλες (`ball_12`, `ball_17`).
+  Μετά το δεύτερο clean sub-route ο executor σταμάτησε σε
+  `incomplete_targets`, με `unresolved_targets=5`.
+
+### Offline A/B χωρίς κίνηση robot
+
+Ίδιο frozen synthetic/pristine snapshot: οι 12 μπάλες του αριστερού μισού από
+το Gazebo world, μετασχηματισμένες στο τρέχον survey map frame, ίδιο
+`court_boundary.json`, ίδιο start pose `(2.07, 0.00)`, ίδια covariance και όλο
+το υπόλοιπο configuration:
+
+| Μεταβλητή | Status | Covered | Deferred | Route length |
+|---|---:|---:|---:|---:|
+| run-in `1.0 m` | partial | 9/12 | 3 route_conflict | 41.58 m |
+| run-in `1.9 m` | partial | 9/12 | 3 route_conflict | 55.29 m |
+
+Συμπέρασμα A/B: το `1.0 → 1.9` αυξάνει σημαντικά το route length, αλλά **δεν**
+μείωσε την κάλυψη στο ίδιο καθαρό snapshot. Δεν τεκμηριώνεται ως η αλλαγή που
+έκανε το τελευταίο plan μονο-στόχο.
+
+### Pristine pre-execution capture και exact replay
+
+Προστέθηκε opt-in instrumentation στο planner boundary με
+`COLLECTION_ROUTE_AUDIT_DIR`. Είναι default-off και αποθηκεύει atomically το
+πλήρες immutable `ScanSnapshot` και `CollectionRoutePlan` αμέσως μετά το pure
+planning, πριν επιστραφεί το plan στον executor. Πέρασε `244` collection tests.
+
+Controlled capture:
+
+- καθαρό restart PC/Gazebo και Pi,
+- αρχικό world/robot state,
+- audit monitor οπλισμένο πριν το command,
+- μόνο navigation προς scan pose + 360 scan,
+- artifact γράφτηκε και `idle` στάλθηκε `0.13 s` αργότερα, πριν από FollowPath,
+- κανένα collection route δεν εκτελέστηκε.
+
+Frozen evidence:
+
+- artifact:
+  `runtime/route_audit/clean_current_20260728_1315/collection-scan-39264000000.json`,
+- ακριβές Pi court artifact:
+  `runtime/route_audit/clean_current_20260728_1315/court_boundary.json`,
+- snapshot: `10` confirmed balls,
+- current captured config (`run-in 1.9`): `partial`, search `complete`,
+  `6/10 covered`, `4 route_conflict`, route `46.112815 m`.
+
+Exact deterministic replay του **ίδιου snapshot και court artifact**:
+
+| Planner/config | Covered | Deferred | Route length |
+|---|---:|---:|---:|
+| current captured, run-in `1.9 m` | 6/10 | 4 route_conflict | 46.112815 m |
+| μόνο run-in `1.0 m` | 9/10 | 1 route_conflict | 63.471704 m |
+| ολόκληρο exact config από `d76fdc9` | 9/10 | 1 route_conflict | 63.471704 m |
+
+Τα `collection_route_planner_v2.py`, `collection_route_global_solver.py`,
+`collection_route_connector_graph.py` και `collection_route_shared_pass.py`
+είναι αμετάβλητα ως προς `d76fdc9`. Το exact-config replay αποκλείει τις
+follow-up/status/UI αλλαγές από το planning αποτέλεσμα.
+
+**Regression identified:** η μη committed αλλαγή
+`minimum_run_in_m: 1.0 → 1.9` μαζί με
+`default_execution_profile.required_run_in_m: 1.0 → 1.9` αυξάνει τις
+route-conflict απορρίψεις στο πραγματικό pristine snapshot από `1` σε `4` και
+ρίχνει την κάλυψη από `9/10` σε `6/10`. Αυτή είναι αποδεδειγμένα η αλλαγή που
+έσπασε την πολυ-στόχο ολοκλήρωση της διαδρομής. Το προηγούμενο synthetic A/B
+δεν την αποκάλυψε επειδή δεν αναπαρήγαγε την πραγματική scan geometry.
+
+### Δεύτερο pristine capture μετά το minimal revert
+
+Έγινε δεύτερο καθαρό PC/Gazebo + Pi start αφού επανήλθαν **μόνο** τα δύο
+run-in πεδία στο committed `1.0 m`. Το opt-in planner capture έγραψε:
+
+- artifact:
+  `runtime/route_audit/clean_reverted_20260728_1324/collection-scan-28672000000.json`,
+- snapshot: `10` confirmed balls,
+- live plan με run-in `1.0 m`: `partial`, search `complete`, `8/10 covered`,
+  `2 route_conflict`, route `40.795885 m`.
+
+Ο guard έστειλε `idle` `0.026 s` μετά την ανίχνευση του artifact. Ο Nav2
+πρόλαβε να δεχτεί το πρώτο goal, αλλά το status έμεινε σε `progress 0.0 m`,
+`speed 0.0 m/s`, χωρίς executed crossings ή retained balls. Επομένως δεν
+εκτελέστηκε ουσιαστική collection route και το capture παραμένει κατάλληλο για
+planner A/B.
+
+Exact replay του **ίδιου δεύτερου snapshot**, αλλάζοντας μόνο τα δύο run-in
+πεδία:
+
+| run-in | Covered | Deferred | Route length |
+|---|---:|---:|---:|
+| `1.0 m` | 8/10 | 2 route_conflict | 40.795885 m |
+| `1.9 m` | 5/10 | 5 route_conflict | 40.514663 m |
+
+Το δεύτερο ανεξάρτητο pristine scan επιβεβαιώνει το regression (`-3` επιλέξιμοι
+στόχοι) χωρίς να βασίζεται στην ακριβή γεωμετρία του πρώτου capture. Ταυτόχρονα
+δείχνει ότι το revert **δεν εγγυάται ακόμη 10/10**: επαναφέρει τη συμπεριφορά
+προς το τελευταίο baseline, αλλά παραμένουν `1–2` προϋπάρχοντα route conflicts
+ανάλογα με τη scan geometry. Άρα δεν χαρακτηρίζουμε ακόμη το end-to-end
+collection ως διορθωμένο.
+
+### Root-cause separation
+
+1. **Γιατί σταμάτησε η αποστολή:** άμεση και αποδεδειγμένη αιτία είναι το
+   bounded policy του `d76fdc9`, `max_total_runs=2`, σε συνδυασμό με δύο
+   `partial` plans. Μετά το δεύτερο route δεν επιτρέπεται τρίτο scan/run.
+2. **Γιατί παλιότερα έγραφε completed:** ο executor μετέτρεπε κάθε clean
+   sub-route completion σε mission `completed`, ακόμη και όταν το τελικό plan
+   ήταν partial. Το νέο `incomplete_targets` δεν έσπασε την κίνηση· αφαίρεσε το
+   false-positive completion label.
+3. **Γιατί μειώθηκε η κάλυψη σε partial plans:** στο pristine frozen snapshot
+   αποδόθηκε πλέον στην αύξηση run-in `1.0 → 1.9` (`9/10 → 6/10`). Το ακραίο
+   μονο-στόχο αποτέλεσμα του προηγούμενου contaminated run δεν αναπαράχθηκε
+   (`6/10` στο clean capture), άρα το υπόλοιπο της πτώσης ήταν state
+   contamination από προηγούμενες διαδρομές.
+4. **Το προηγούμενο `heading_error_exceeded` στα `-0.151 rad`:** είναι
+   πραγματικό tracking abort πάνω από το pass gate `0.150 rad`. Το μεγαλύτερο
+   run-in αλλάζει τη route geometry και ίσως εξέθεσε το οριακό gate, αλλά δεν
+   υπάρχει ακόμη controlled A/B που να αποδεικνύει αιτιότητα.
+
+### Επόμενο ασφαλές isolation
+
+1. Δεν αυξάνεται το `max_total_runs` και δεν χαλαρώνει κανένα tracking gate.
+2. Γίνεται μόνο το ελάχιστο revert των δύο run-in τιμών σε `1.0`.
+3. Επαναλαμβάνεται pre-execution-only capture σε pristine world. Acceptance:
+   ίδιο snapshot cardinality και επαναφορά τουλάχιστον `9/10 covered`, χωρίς
+   FollowPath.
+4. Μόνο μετά από αυτό εξετάζεται ένα controlled route execution. Η διάρκεια
+   λειτουργίας των intake τροχών παραμένει ανεξάρτητη collector concern και δεν
+   πρέπει να επιβληθεί μέσω planner approach geometry.

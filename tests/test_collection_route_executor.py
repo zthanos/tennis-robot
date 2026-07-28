@@ -12,6 +12,7 @@ from tennis_robot.collection_route_executor import (
     CollectorStopResult, CollectorStopStatus, ExecutorReasonCode, ExecutorState,
     NavigatorResult, NavigatorStatus, PathFollowerResult, PathFollowerStatus,
     SafetyResult, SafetyStatus, ScanSessionResult, ScanSessionStatus,
+    TelemetryEventCode,
 )
 from tennis_robot.collection_route_planner_v2 import CourtModel, plan_collection_route
 from tennis_robot.collection_route_types import (
@@ -107,7 +108,13 @@ def advance_to_execution(executor):
 
 def finish(executor):
     for _ in range(12):
-        if executor.state in {ExecutorState.COMPLETED, ExecutorState.COMPLETED_NO_TARGETS, ExecutorState.ABORTED_SCAN, ExecutorState.ABORTED_PLANNING}:
+        if executor.state in {
+            ExecutorState.COMPLETED,
+            ExecutorState.COMPLETED_NO_TARGETS,
+            ExecutorState.INCOMPLETE_TARGETS,
+            ExecutorState.ABORTED_SCAN,
+            ExecutorState.ABORTED_PLANNING,
+        }:
             return
         executor.tick()
 
@@ -206,6 +213,29 @@ def test_executable_partial_planning_timeout_runs_route():
     assert executor.plan is partial
 
 
+def test_partial_route_is_terminal_incomplete_not_completed():
+    snap = snapshot(balls=("a", "b"))
+    limited_configuration = replace(
+        snap.configuration_snapshot,
+        global_route_search=replace(
+            snap.configuration_snapshot.global_route_search,
+            max_search_expansions=1,
+        ),
+    )
+    snap = replace(snap, configuration_snapshot=limited_configuration)
+    partial = executable_plan(snap)
+    assert partial.planning_status is PlanningStatus.PARTIAL
+
+    executor, _ = make_executor(snap=snap, planner=Planner(partial))
+    advance_to_execution(executor)
+    executor.tick()
+    finish(executor)
+
+    assert executor.route_outcome is ExecutorState.ROUTE_COMPLETED
+    assert executor.state is ExecutorState.INCOMPLETE_TARGETS
+    assert executor.is_terminal
+
+
 def test_bounded_follow_up_enabled_disabled_and_limit():
     first = snapshot(follow_up=FollowUpConfiguration(True, 2), scan_id="first")
     second = snapshot(follow_up=FollowUpConfiguration(True, 2), scan_id="second")
@@ -239,7 +269,9 @@ def test_follow_up_requires_clean_route_completion():
     advance_to_execution(executor)
     finish(executor)
     assert executor.route_outcome is ExecutorState.ABORTED_SAFETY
-    assert executor.state is ExecutorState.COMPLETED
+    assert executor.state is ExecutorState.ABORTED_SAFETY
+    assert executor.terminal_reason is ExecutorReasonCode.SAFETY_TIMEOUT
+    assert executor.is_terminal
     assert executor.run_count == 1
     assert executor._navigator.starts == 1
 
@@ -259,6 +291,36 @@ def test_follow_up_requires_clean_route_completion():
     assert completed.route_outcome is ExecutorState.ROUTE_COMPLETED
     assert completed.run_count == 2
     assert completed._navigator.starts == 2
+
+
+def test_tracking_abort_remains_terminal_with_concrete_failure_detail():
+    snap = snapshot(follow_up=FollowUpConfiguration(True, 2))
+    detail = "heading_error_exceeded | head_err -0.151rad"
+    follower = Follower((
+        PathFollowerResult(
+            PathFollowerStatus.FAILED,
+            reason=ExecutorReasonCode.PATH_FAILED,
+            detail=detail,
+        ),
+    ))
+    executor, _ = make_executor(snap=snap, follower=follower)
+
+    advance_to_execution(executor)
+    executor.tick()
+    finish(executor)
+
+    assert executor.route_outcome is ExecutorState.ABORTED_TRACKING
+    assert executor.state is ExecutorState.ABORTED_TRACKING
+    assert executor.terminal_reason is ExecutorReasonCode.PATH_FAILED
+    assert executor.terminal_detail == detail
+    assert executor.is_terminal
+    outcome = next(
+        event
+        for event in executor._telemetry.events
+        if event.code is TelemetryEventCode.ROUTE_OUTCOME
+    )
+    assert outcome.reason is ExecutorReasonCode.PATH_FAILED
+    assert outcome.detail == detail
 
 
 def test_post_scan_events_do_not_replan_or_mutate_geometry():

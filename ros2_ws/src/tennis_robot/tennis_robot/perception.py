@@ -114,8 +114,18 @@ def estimate_depth_ball_observation(
     frame_height_px: int,
     camera_fov_rad: float,
     roi_scale: float = 0.55,
+    max_foreground_median_gap_m: float = 0.35,
 ) -> BallObservation | None:
-    """Estimate ball bearing/range from an RGB detection and aligned depth frame."""
+    """Estimate ball bearing/range from an RGB detection and aligned depth frame.
+
+    The lower percentile isolates a small ball from farther background pixels,
+    but it must not be allowed to select a minority foreground occluder.  A
+    tennis-net strand can cover only two or three pixels of the neural box and
+    otherwise relocate a far-side ball onto the near side of the net.  Require
+    the foreground estimate to agree with the ROI median before publishing a
+    spatial observation.  An ambiguous box remains a valid 2D detection; its
+    caller publishes it with ``has_spatial=False``.
+    """
 
     if depth_frame_m.size == 0:
         return None
@@ -131,6 +141,14 @@ def estimate_depth_ball_observation(
     # contains background pixels at large depth; the lower percentile picks the
     # near surface (ball face) rather than the background-contaminated median.
     optical_z_m = float(np.percentile(valid, 20) if valid.size >= 5 else np.min(valid))
+    median_z_m = float(np.median(valid))
+    if (
+        not math.isfinite(max_foreground_median_gap_m)
+        or max_foreground_median_gap_m <= 0.0
+    ):
+        raise ValueError("max_foreground_median_gap_m must be finite and > 0")
+    if median_z_m - optical_z_m > max_foreground_median_gap_m:
+        return None
     normalized_x = (detection.center_x - frame_width_px / 2) / (frame_width_px / 2)
     # Robot/navigation convention is +left / counter-clockwise. Image columns
     # grow to the right, so a detection right of centre has a negative bearing.

@@ -37,6 +37,7 @@ class ExecutorState(_StringEnum):
     EVALUATING_RESULTS = "evaluating_results"
     COMPLETED = "completed"
     COMPLETED_NO_TARGETS = "completed_no_targets"
+    INCOMPLETE_TARGETS = "incomplete_targets"
     ABORTED_SCAN = "aborted_scan"
     ABORTED_PLANNING = "aborted_planning"
     ABORTED_COLLECTOR = "aborted_collector"
@@ -245,6 +246,8 @@ class CollectionRouteExecutor:
         self.snapshot: ScanSnapshot | None = None
         self.plan: CollectionRoutePlan | None = None
         self.route_outcome: ExecutorState | None = None
+        self.terminal_reason: ExecutorReasonCode | None = None
+        self.terminal_detail: str | None = None
         self._collector_started_at_s: float | None = None
         self._collector_stopped_at_s: float | None = None
         self._s_before_pause: float | None = None
@@ -254,7 +257,10 @@ class CollectionRouteExecutor:
     def is_terminal(self) -> bool:
         return self.state in {
             ExecutorState.COMPLETED, ExecutorState.COMPLETED_NO_TARGETS,
+            ExecutorState.INCOMPLETE_TARGETS,
             ExecutorState.ABORTED_SCAN, ExecutorState.ABORTED_PLANNING,
+            ExecutorState.ABORTED_COLLECTOR, ExecutorState.ABORTED_SAFETY,
+            ExecutorState.ABORTED_TRACKING,
         }
 
     def start(self) -> None:
@@ -288,11 +294,18 @@ class CollectionRouteExecutor:
         elif self.state is ExecutorState.COLLECTOR_STOPPING:
             self._tick_collector_stop()
         elif self.state is ExecutorState.EVALUATING_RESULTS:
-            self._telemetry.emit(TelemetryEvent(TelemetryEventCode.ROUTE_OUTCOME, self.route_outcome or ExecutorState.COMPLETED))
+            self._telemetry.emit(
+                TelemetryEvent(
+                    TelemetryEventCode.ROUTE_OUTCOME,
+                    self.route_outcome or ExecutorState.COMPLETED,
+                    self.terminal_reason,
+                    self.terminal_detail,
+                )
+            )
             if self._can_follow_up():
                 self._begin_navigation()
             else:
-                self._transition(ExecutorState.COMPLETED)
+                self._transition(self._terminal_completion_state())
         return self.state
 
     def _begin_navigation(self) -> None:
@@ -302,12 +315,14 @@ class CollectionRouteExecutor:
         if configuration is not None:
             follow_up = configuration.follow_up
             if self.run_count >= follow_up.max_total_runs:
-                self._transition(ExecutorState.COMPLETED)
+                self._transition(self._terminal_completion_state())
                 return
         self.run_count += 1
         self.snapshot = None
         self.plan = None
         self.route_outcome = None
+        self.terminal_reason = None
+        self.terminal_detail = None
         self._navigator.start()
         self._transition(ExecutorState.NAVIGATING_TO_SCAN_POSE)
 
@@ -430,9 +445,35 @@ class CollectionRouteExecutor:
             and self.run_count < policy.max_total_runs
         )
 
+    def _terminal_completion_state(self) -> ExecutorState:
+        """Report mission completion separately from sub-route completion.
+
+        A clean FollowPath result only proves that the executable subset ended.
+        If the final immutable plan is partial, targets remain deferred or
+        unreachable and the collection mission must not be labelled completed.
+        """
+        if self.route_outcome in {
+            ExecutorState.ABORTED_COLLECTOR,
+            ExecutorState.ABORTED_SAFETY,
+            ExecutorState.ABORTED_TRACKING,
+        }:
+            return self.route_outcome
+        if (
+            self.route_outcome is ExecutorState.ROUTE_COMPLETED
+            and self.plan is not None
+            and self.plan.planning_status is PlanningStatus.PARTIAL
+        ):
+            return ExecutorState.INCOMPLETE_TARGETS
+        return ExecutorState.COMPLETED
+
     def _elapsed(self, started_at_s: float | None, timeout_s: float) -> bool:
         return started_at_s is not None and self._clock.now_s() - started_at_s >= timeout_s
 
     def _transition(self, state: ExecutorState, reason: ExecutorReasonCode | None = None, detail: str | None = None) -> None:
+        if state.value.startswith("aborted_"):
+            if reason is not None:
+                self.terminal_reason = reason
+            if detail is not None:
+                self.terminal_detail = detail
         self.state = state
         self._telemetry.emit(TelemetryEvent(TelemetryEventCode.STATE_CHANGED, state, reason, detail))

@@ -15,6 +15,9 @@ mechanical:
   minimum_turning_radius_m: 1.25
   maximum_curvature_per_m: 1.25
   minimum_entry_m: 0.2
+  # Keep approach geometry at the last full-route baseline. Increasing this
+  # to 1.9 m reduced pristine frozen-snapshot coverage from 9/10 to 6/10 by
+  # turning three otherwise selectable targets into route conflicts.
   minimum_run_in_m: 1.0
   minimum_run_out_m: 0.3
   minimum_mechanical_ball_spacing_m: 0.5

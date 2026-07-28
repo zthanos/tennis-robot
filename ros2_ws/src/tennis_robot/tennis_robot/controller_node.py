@@ -733,7 +733,19 @@ class ControllerNode(Node):
             and new_mode != previous_mode
             and self._nav2_lane is not None
         ):
-            self._record_collection_event("nav2_goal_cancel", reason=f"mode_exit:{new_mode}")
+            terminal_state = (
+                self._collect_route_executor.state.value
+                if previous_mode == "collect_route"
+                and self._collect_route_executor is not None
+                and self._collect_route_executor.is_terminal
+                else None
+            )
+            cancel_reason = (
+                f"terminal_cleanup:{terminal_state}"
+                if terminal_state is not None
+                else f"mode_exit:{new_mode}"
+            )
+            self._record_collection_event("nav2_goal_cancel", reason=cancel_reason)
             self._nav2_lane.reset()
         if previous_mode == "collect_route":
             terminal = bool(
@@ -1403,6 +1415,17 @@ class ControllerNode(Node):
                 detail = format_no_targets_diagnostic(
                     getattr(self, "_latest_perception_diagnostics", None)
                 )
+            elif state is ExecutorState.INCOMPLETE_TARGETS:
+                plan = self._collect_route_executor.plan
+                unresolved = (
+                    sum(
+                        result.status.value in {"deferred", "unreachable"}
+                        for result in plan.ball_results
+                    )
+                    if plan is not None
+                    else 0
+                )
+                detail = f" (unresolved_targets={unresolved})"
             self.get_logger().info(f"collect_route executor terminal: {state.value}{detail}")
             # Aggregated scan telemetry (rejection histogram + per-track step
             # counts) explains an empty/partial snapshot: cross-half rejections,
@@ -1512,6 +1535,7 @@ class ControllerNode(Node):
         plan_id = serialized["plan_id"]
         if any(item.get("plan_id") == plan_id for item in self._collect_route_run_history):
             return
+        self._write_collect_route_audit(executor, route_outcome)
         crossing_telemetry = (
             self._collect_route_executor_factory.crossing_telemetry
             if self._collect_route_executor_factory is not None
@@ -1547,6 +1571,49 @@ class ControllerNode(Node):
         }
         self._collect_route_run_history.append(record)
 
+    def _write_collect_route_audit(self, executor, route_outcome: str | None) -> None:
+        """Persist the immutable planner boundary only when explicitly enabled.
+
+        This is regression instrumentation, not a runtime data dependency.
+        With ``COLLECTION_ROUTE_AUDIT_DIR`` unset it performs no filesystem
+        access. Audit failures are diagnostic-only and cannot alter mission
+        state, planning, or execution.
+        """
+        audit_dir_value = os.getenv("COLLECTION_ROUTE_AUDIT_DIR", "").strip()
+        if not audit_dir_value:
+            return
+        snapshot = getattr(executor, "snapshot", None)
+        plan = getattr(executor, "plan", None)
+        if snapshot is None or plan is None:
+            self.get_logger().warning(
+                "collection route audit skipped: snapshot or plan unavailable"
+            )
+            return
+        try:
+            artifact = {
+                "schema_version": 1,
+                "run_id": self._run_id,
+                "route_outcome": route_outcome,
+                "snapshot": snapshot.to_dict(),
+                "plan": plan.to_dict(),
+            }
+            safe_scan_id = "".join(
+                char if char.isalnum() or char in "-_." else "_"
+                for char in str(snapshot.scan_id)
+            )
+            directory = Path(audit_dir_value)
+            directory.mkdir(parents=True, exist_ok=True)
+            target = directory / f"{safe_scan_id}.json"
+            temporary = directory / f".{safe_scan_id}.json.tmp"
+            temporary.write_text(
+                json.dumps(artifact, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            os.replace(temporary, target)
+            self.get_logger().info(f"collection route audit saved: {target}")
+        except (OSError, TypeError, ValueError) as exc:
+            self.get_logger().error(f"collection route audit write failed: {exc}")
+
     def _route_confirmation_context(self, now_s: float) -> dict:
         factory = self._collect_route_executor_factory
         state = (
@@ -1556,6 +1623,37 @@ class ControllerNode(Node):
         )
         candidate = dict(state) if isinstance(state, dict) else {}
         association = "active_crossing"
+        if not candidate.get("has_active_crossing") or not candidate.get("active_ball_id"):
+            # The intake mouth is ~0.876 m ahead of base_footprint, so ENTRY and
+            # CONFIRMED normally occur before the controller's base-centre
+            # crossing window. Associate that physical event with the nearest
+            # upcoming immutable crossing instead of reporting it unassigned.
+            progress = candidate.get("progress_s")
+            plan = (
+                getattr(self._collect_route_executor, "plan", None)
+                if self._collect_route_executor is not None
+                else None
+            )
+            upcoming = []
+            if isinstance(progress, (int, float)) and plan is not None:
+                for segment in plan.segments:
+                    for crossing in segment.planned_crossings:
+                        delta = float(crossing.progress_s) - float(progress)
+                        if -0.35 <= delta <= 1.20:
+                            upcoming.append((abs(delta - 0.45), delta, segment, crossing))
+            if upcoming:
+                _, _, segment, crossing = min(
+                    upcoming, key=lambda item: (item[0], item[1], item[3].ball_id)
+                )
+                candidate.update(
+                    {
+                        "has_active_crossing": True,
+                        "active_ball_id": crossing.ball_id,
+                        "active_segment_id": segment.id,
+                        "active_crossing_progress_s": crossing.progress_s,
+                    }
+                )
+                association = "intake_lead_crossing"
         if not candidate.get("has_active_crossing") or not candidate.get("active_ball_id"):
             candidate = {}
             samples = (
@@ -2331,6 +2429,12 @@ class ControllerNode(Node):
             ExecutorState.IDLE.value,
             ExecutorState.COMPLETED.value,
             ExecutorState.COMPLETED_NO_TARGETS.value,
+            ExecutorState.INCOMPLETE_TARGETS.value,
+            ExecutorState.ABORTED_SCAN.value,
+            ExecutorState.ABORTED_PLANNING.value,
+            ExecutorState.ABORTED_COLLECTOR.value,
+            ExecutorState.ABORTED_SAFETY.value,
+            ExecutorState.ABORTED_TRACKING.value,
         }
         if state in terminal:
             events = self._collect_route_executor_events
@@ -2361,6 +2465,12 @@ class ControllerNode(Node):
             "status": status or state,
             "state": state,
             "route_outcome": outcome,
+            "failure_reason": (
+                getattr(executor, "terminal_reason", None).value
+                if getattr(executor, "terminal_reason", None) is not None
+                else None
+            ),
+            "failure_detail": getattr(executor, "terminal_detail", None),
             "elapsed_s": self._collect_route_elapsed_s(state),
             "plan_id": None,
             "planning_status": None,
@@ -2376,6 +2486,7 @@ class ControllerNode(Node):
             "missing": 0,
             "skipped": 0,
             "remaining": 0,
+            "unresolved_targets": 0,
             "failed": 0,
             "failed_ball_ids": [],
             "active_ball_id": (
@@ -2441,6 +2552,11 @@ class ControllerNode(Node):
                 for item in covered
                 if item["execution_status"] == "crossed_unconfirmed"
             ]
+            unresolved_targets = [
+                item
+                for item in payload["execution_outcomes"]
+                if item["planner_status"] in {"deferred", "unreachable"}
+            ]
             payload.update(
                 {
                     "planned": len(covered),
@@ -2455,7 +2571,9 @@ class ControllerNode(Node):
                     ),
                     "remaining": sum(
                         item["execution_status"] == "planned" for item in covered
-                    ),
+                    )
+                    + len(unresolved_targets),
+                    "unresolved_targets": len(unresolved_targets),
                     "failed_ball_ids": [
                         item["ball_id"] for item in crossed_unconfirmed
                     ],

@@ -150,10 +150,12 @@
         beam_false_credit: "beam false credit",
         beam_missed_credit: "beam missed ball",
       };
-      const severityFor = type => (
+      const severityFor = (type, event = {}) => (
         type === "scan_blocked" || type === "lane_collect_timeout" || type === "lane_collect_gave_up"
           || type === "route_ball_missing" || type === "beam_false_credit" || type === "beam_missed_credit"
           || type === "nav2_unavailable" || type === "nav_test_out_of_bounds" || type === "nav_test_error"
+          || ((type === "route_executor_state_changed" || type === "route_executor_route_outcome")
+            && String(event.state || "").startsWith("aborted_"))
           ? "error"
           : type === "lane_collect_abort" || type === "nav_test_timeout"
             ? "warn"
@@ -226,6 +228,9 @@
             return `${ballText(event.ball_id)} | ${event.mission_phase || "-"} / ${event.behavior_state || "-"} | ${physical}`;
           }
           case "nav2_goal_cancel":
+            if (String(event.reason || "").startsWith("terminal_cleanup:")) {
+              return `Navigation cleanup after terminal mission state ${String(event.reason.split(":")[1] || event.route_outcome || "finished").replaceAll("_", " ")} | Not a route failure`;
+            }
             return `Navigation goal cancelled | ${String(event.reason || "requested").replaceAll("_", " ")}`;
           default:
             return Object.entries(event)
@@ -242,7 +247,7 @@
       };
       target.innerHTML = rows.map(event => {
         const type = event.type || "event";
-        const severity = severityFor(type);
+        const severity = severityFor(type, event);
         return `<div class="terminal-row">
           <span class="terminal-time">${escapeHtml(event.clock || fmt(event.t_s, "s"))}</span>
           <span class="terminal-type ${severity === "info" ? "" : severity}">${escapeHtml(labelFor[type] || type)}</span>
@@ -283,11 +288,21 @@
       if (!kv) return;
       const r = run || {};
       const hasRun = Number(r.planned || 0) > 0 || Number(r.basket_retained || 0) > 0;
+      const incomplete = r.status === "incomplete_targets" || r.state === "incomplete_targets";
+      const aborted = String(r.status || r.state || "").startsWith("aborted_");
+      const failureReason = String(r.failure_reason || r.route_outcome || "").replaceAll("_", " ");
+      const failureCause = String(r.failure_detail || "").split("|")[0].trim().replaceAll("_", " ");
       if (status) {
-        status.textContent = hasRun ? (r.status || "running") : "waiting";
-        status.style.color = Number(r.failed || 0) > 0
-          ? "var(--warn)"
-          : (hasRun ? "var(--accent)" : "var(--muted)");
+        status.textContent = aborted
+          ? `ABORTED · ${failureCause || failureReason || "route failed"}`
+          : (incomplete
+            ? `INCOMPLETE · ${r.unresolved_targets ?? r.remaining ?? 0} unresolved`
+            : (hasRun ? (r.status || "running") : "waiting"));
+        status.style.color = aborted
+          ? "var(--danger)"
+          : (incomplete || Number(r.failed || 0) > 0
+            ? "var(--warn)"
+            : (hasRun ? "var(--accent)" : "var(--muted)"));
       }
       const speed = Number(robot?.measured_speed_mps ?? 0);
       const elapsed = r.elapsed_s;
@@ -296,6 +311,9 @@
       setKv("collectionRunKv", [
         ["Speed", `${speed.toFixed(2)} m/s`],
         ["Elapsed", elapsed != null ? `${Number(elapsed).toFixed(1)} s` : "-"],
+        ["Route outcome", r.route_outcome ? String(r.route_outcome).replaceAll("_", " ") : "-"],
+        ["Stop reason", r.failure_reason ? String(r.failure_reason).replaceAll("_", " ") : "-"],
+        ["Failure detail", r.failure_detail || "-"],
         ["Basket retained", r.basket_retained ?? 0],
         ["Beam / truth (sim)", `${r.beam_credits ?? 0} / ${r.truth_retained ?? 0}`],
         ["Target outcome", `${r.confirmed ?? 0} confirmed / ${r.crossed_unconfirmed ?? 0} crossed-no-ball`],
@@ -304,7 +322,7 @@
         ["Yaw drift", yawDrift != null ? `${Number(yawDrift).toFixed(3)} rad` : "-"],
         ["Failed", r.failed ?? 0],
         ["Missing / skipped", `${r.missing ?? 0} / ${r.skipped ?? 0}`],
-        ["Remaining", r.remaining ?? 0],
+        ["Remaining / unresolved", `${r.remaining ?? 0} / ${r.unresolved_targets ?? 0}`],
         ["Active ball", r.active_ball_id ?? "-"],
         ["Failed ball IDs", (r.failed_ball_ids || []).join(", ") || "-"],
       ]);

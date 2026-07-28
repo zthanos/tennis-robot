@@ -482,6 +482,7 @@ def test_build_collection_route_executor_runs_full_fake_cycle_to_completed():
     for _ in range(60):
         executor.tick()
         if executor.state in (ExecutorState.COMPLETED, ExecutorState.COMPLETED_NO_TARGETS,
+                              ExecutorState.INCOMPLETE_TARGETS,
                               ExecutorState.ABORTED_SCAN, ExecutorState.ABORTED_PLANNING,
                               ExecutorState.ABORTED_COLLECTOR, ExecutorState.ABORTED_SAFETY,
                               ExecutorState.ABORTED_TRACKING):

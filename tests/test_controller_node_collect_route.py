@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 import sys
@@ -33,7 +34,7 @@ except ImportError:
     sys.modules["tennis_robot_msgs.msg"] = messages
 
 from tennis_robot.collection_executor_node_factory import CollectionExecutorNodeCache
-from tennis_robot.collection_route_executor import ExecutorState
+from tennis_robot.collection_route_executor import ExecutorReasonCode, ExecutorState
 from tennis_robot.collector import BaseCommand, CollectorCommand, CollectorState, ConceptACommand
 from tennis_robot.controller_node import ControllerNode
 
@@ -62,6 +63,8 @@ class FakeExecutor:
     def __init__(self):
         self.state = ExecutorState.COMPLETED_NO_TARGETS
         self.route_outcome = None
+        self.terminal_reason = None
+        self.terminal_detail = None
         self.plan = EmptyPlan()
         self.started = 0
         self.ticks = 0
@@ -167,6 +170,9 @@ def _node(monkeypatch):
     node._capture_collect_route_run = MethodType(
         ControllerNode._capture_collect_route_run, node
     )
+    node._write_collect_route_audit = MethodType(
+        ControllerNode._write_collect_route_audit, node
+    )
     return node
 
 
@@ -204,6 +210,8 @@ def test_executor_status_serializes_empty_plan_and_crossing_telemetry(monkeypatc
     assert status["state"] == "completed_no_targets"
     assert status["status"] == "completed_no_targets"
     assert status["route_outcome"] is None
+    assert status["failure_reason"] is None
+    assert status["failure_detail"] is None
     assert status["plan_id"] == "empty-plan"
     assert status["planning_status"] == "empty_no_balls"
     assert status["ball_results"] == []
@@ -222,6 +230,27 @@ def test_executor_status_serializes_empty_plan_and_crossing_telemetry(monkeypatc
     assert status["perception_diagnostics"]["rejection_counts"] == {
         "calibration_out_of_domain": 1
     }
+
+
+def test_aborted_summary_preserves_primary_failure_reason_and_detail(monkeypatch):
+    node = _node(monkeypatch)
+    node._collect_route_executor = SimpleNamespace(
+        state=ExecutorState.ABORTED_TRACKING,
+        route_outcome=ExecutorState.ABORTED_TRACKING,
+        terminal_reason=ExecutorReasonCode.PATH_FAILED,
+        terminal_detail=(
+            "heading_error_exceeded | progress 10.198m "
+            "lat_err 0.000m head_err -0.151rad"
+        ),
+        plan=None,
+    )
+
+    status = ControllerNode._build_collect_route_summary(node)
+
+    assert status["status"] == "aborted_tracking"
+    assert status["route_outcome"] == "aborted_tracking"
+    assert status["failure_reason"] == "path_failed"
+    assert status["failure_detail"].startswith("heading_error_exceeded")
 
 
 def test_execution_outcomes_keep_planner_result_immutable_and_add_physical_status(monkeypatch):
@@ -264,6 +293,39 @@ def test_execution_outcomes_keep_planner_result_immutable_and_add_physical_statu
     }
 
 
+def test_incomplete_summary_counts_unresolved_targets_as_remaining(monkeypatch):
+    node = _node(monkeypatch)
+    plan_data = {
+        "plan_id": "partial-plan",
+        "planning_status": "partial",
+        "ball_results": [
+            {"ball_id": "ball-a", "status": "covered", "reason_code": "selected"},
+            {"ball_id": "ball-b", "status": "deferred", "reason_code": "route_conflict"},
+            {"ball_id": "ball-c", "status": "unreachable", "reason_code": "turn_radius"},
+        ],
+        "segments": [],
+    }
+    node._collect_route_executor = SimpleNamespace(
+        state=ExecutorState.INCOMPLETE_TARGETS,
+        route_outcome=ExecutorState.ROUTE_COMPLETED,
+        plan=SimpleNamespace(to_dict=lambda: plan_data),
+    )
+    node._collect_route_executor_factory = SimpleNamespace(
+        crossing_telemetry=[],
+        controller_state=None,
+        snapshot_diagnostics={},
+    )
+
+    status = ControllerNode._build_collect_route_summary(node)
+
+    assert status["state"] == "incomplete_targets"
+    assert status["status"] == "incomplete_targets"
+    assert status["planned"] == 1
+    assert status["skipped"] == 2
+    assert status["unresolved_targets"] == 2
+    assert status["remaining"] == 3
+
+
 def test_pose_drift_is_relative_to_collect_route_baseline(monkeypatch):
     node = _node(monkeypatch)
     node._sim_true_pose = (10.2, -3.0, 1.2)
@@ -302,6 +364,34 @@ def test_confirmation_uses_recent_crossing_after_controller_leaves_target(monkey
     assert context["plan_id"] == "plan"
     assert context["ball_id"] == "ball-a"
     assert context["segment_id"] == "pass-1"
+
+
+def test_confirmation_associates_upcoming_crossing_at_physical_intake_lead(monkeypatch):
+    node = _node(monkeypatch)
+    crossing = SimpleNamespace(ball_id="ball-a", progress_s=5.0)
+    # Match the production RouteSegment contract: the identifier field is
+    # named ``id`` (not ``segment_id``).
+    segment = SimpleNamespace(id="pass-1", planned_crossings=(crossing,))
+    node._collect_route_executor = SimpleNamespace(
+        plan=SimpleNamespace(segments=(segment,))
+    )
+    node._collect_route_executor_factory = SimpleNamespace(
+        controller_state={
+            "plan_id": "plan",
+            "progress_s": 4.55,
+            "has_active_crossing": False,
+            "active_ball_id": "",
+        },
+        crossing_telemetry=[],
+    )
+
+    context = ControllerNode._route_confirmation_context(node, 12.0)
+
+    assert context["association"] == "intake_lead_crossing"
+    assert context["plan_id"] == "plan"
+    assert context["ball_id"] == "ball-a"
+    assert context["segment_id"] == "pass-1"
+    assert context["crossing_progress_s"] == 5.0
 
 
 def test_summary_keeps_completed_run_totals_while_follow_up_has_no_plan(monkeypatch):
@@ -389,6 +479,50 @@ def test_completed_route_is_snapshotted_before_follow_up_clears_plan(monkeypatch
     assert node._collect_route_run_history[0]["plan_id"] == "plan-1"
     assert node._collect_route_run_history[0]["confirmed"] == 1
     assert node._collect_route_run_history[0]["route_outcome"] == "route_completed"
+
+
+def test_optional_route_audit_persists_exact_snapshot_and_plan(
+    monkeypatch, tmp_path
+):
+    node = _node(monkeypatch)
+    monkeypatch.setenv("COLLECTION_ROUTE_AUDIT_DIR", str(tmp_path))
+    snapshot_data = {
+        "scan_id": "scan/audit:1",
+        "balls": [{"ball_id": "ball-a"}],
+    }
+    plan_data = {
+        "plan_id": "plan-1",
+        "scan_id": "scan/audit:1",
+        "planning_status": "partial",
+        "ball_results": [
+            {
+                "ball_id": "ball-a",
+                "status": "deferred",
+                "reason_code": "route_conflict",
+            }
+        ],
+    }
+    executor = SimpleNamespace(
+        snapshot=SimpleNamespace(
+            scan_id="scan/audit:1",
+            to_dict=lambda: snapshot_data,
+        ),
+        plan=SimpleNamespace(to_dict=lambda: plan_data),
+    )
+
+    ControllerNode._write_collect_route_audit(
+        node, executor, "route_completed"
+    )
+
+    artifact = json.loads((tmp_path / "scan_audit_1.json").read_text())
+    assert artifact == {
+        "schema_version": 1,
+        "run_id": "run",
+        "route_outcome": "route_completed",
+        "snapshot": snapshot_data,
+        "plan": plan_data,
+    }
+    assert list(tmp_path.glob("*.tmp")) == []
 
 
 def test_hands_off_apply_does_not_publish_collector_command(monkeypatch):
