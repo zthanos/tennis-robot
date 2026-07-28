@@ -1235,3 +1235,173 @@ collection ως διορθωμένο.
 4. Μόνο μετά από αυτό εξετάζεται ένα controlled route execution. Η διάρκεια
    λειτουργίας των intake τροχών παραμένει ανεξάρτητη collector concern και δεν
    πρέπει να επιβληθεί μέσω planner approach geometry.
+
+## #36 — (Φάση 0/1 opt-plan) Shadow adaptive-approach model + generator + offline replay
+
+- **Υπόθεση:** Πρώτη ασφαλής φάση του adaptive collection-route approach: να
+  εξεταστεί **offline** αν εναλλακτικά approach gates + capture-safe lateral
+  offsets δίνουν πληρέστερη/μικρότερη/ευκολότερη route, **χωρίς** να αλλάξει η
+  live `collect_route` ή το production tuning. Shadow-only.
+- **Αλλαγή (μόνο νέα αρχεία, κανένα υπάρχον tracked file δεν άλλαξε):**
+  - `collection_capture_geometry.py` — pure, immutable `CaptureGeometry` στο
+    `base_footprint` frame: πέντε capture planes (intake mouth `x≈0.876`, entry
+    beam `x=0.720`, roller nip `x=0.540`, confirmed beam `x=0.350`, retention
+    `x=0.420`). **Και τα πέντε είναι `CONFIGURED`** (δηλωμένα στο URDF/xacro/env,
+    ΟΧΙ physical measurement)· το `MEASURED` κρατιέται μόνο για τιμές με πραγματικό
+    measurement/trial artifact, που δεν υπάρχει ακόμη. Το
+    `required_pre_contact_straight_m` (και άρα το minimum alignment corridor)
+    είναι **explicit uncalibrated required input** (όχι κρυφό default) —
+    χρειάζεται intake trials. Validation + deterministic round-trip. Το URDF
+    comment `0.590` για το nip είναι documentation drift· η αληθινή injected τιμή
+    είναι `0.540` (`INTAKE_NIP_X_M` σε run_ubuntu.sh/compose/generator, όλα συνεπή).
+  - `collection_adaptive_approach.py` — pure bounded generator: για κάθε valid
+    3A heading κρατά το baseline candidate (πάντα) + bounded {gates}×{lateral
+    offsets}, με υποχρεωτικό ευθύ final alignment corridor (καμία καμπύλη μέσα
+    στο calibrated corridor), lateral ≤ `effective_capture_half_width_m`, ίδιο
+    run-out, και το ίδιο υπάρχον swept collision check. Deterministic Pareto
+    filter (connector-lower-bound, pass length, approach length, clearance,
+    capture margin) με per-heading/per-ball caps· baseline pinned· budget
+    exhaustion ≠ unreachable. `shadow_global_solve` τρέχει τα **υπάρχοντα**
+    graph/solver μόνο μέσω νέου API, με baseline-preserving bounding.
+  - `scripts/sim_debug/collection_route_adaptive_replay.py` — offline CLI:
+    audit artifact + court_boundary.json → machine-readable JSON (baseline vs
+    adaptive candidate totals, Pareto-pruned totals, connector rejection
+    histogram, coverage, deferred/unreachable reasons, length breakdown,
+    duration, passes, balls/pass, wall time, budget flags). Read-only.
+- **Frozen A/B (χωρίς κίνηση robot, χωρίς ωραιοποίηση):**
+  - `clean_reverted` (run-in 1.0): baseline **8/10, 40.796 m**· shadow adaptive
+    **8/10, 40.796 m** — **καμία βελτίωση**.
+  - `clean_current` (run-in 1.9): baseline **6/10, 46.113 m**· shadow adaptive
+    **6/10, 46.113 m** — **καμία βελτίωση**.
+  - `baseline_shadow_solve` == `plan_collection_route` **byte-identical** και
+    στα δύο· ο edge histogram ταιριάζει με το opt-plan (112.896 edges,
+    100.981 turning / 9.741 length / 2.174 accepted).
+  - Παρατήρηση: φλόμπασμα του adaptive pool μέσα στο υπάρχον
+    `_bounded_candidates` στο cap 200 **χωρίς** baseline preservation ρίχνει
+    coverage σε 1/10 (bounding artifact, όχι πραγματική adaptive συμπεριφορά) —
+    γι' αυτό το shadow solve διατηρεί ρητά τα baselines.
+- **Παρατήρηση (ΟΧΙ αιτιακό συμπέρασμα):** στα δύο frozen scans το shadow
+  adaptive δεν έδειξε βελτίωση coverage/length. **ΔΕΝ** εξάγεται συμπέρασμα ότι
+  τα approach gates αδυνατούν να λύσουν τα route_conflict ή ότι ο connector model
+  είναι η αποδεδειγμένη μοναδική αιτία: και στα δύο η adaptive σύγκριση είναι
+  **inconclusive** επειδή εξαντλήθηκαν candidate-generation/global-cap budgets ΚΑΙ
+  ο production planner εκθέτει μόνο **combined** budget status (δεν διαχωρίζεται
+  independent DFS/search exhaustion — βλ. Review fixes round 2). Οι raw A/B
+  αριθμοί κρατιούνται ως observation, χωριστά από αιτιότητα.
+
+### Review fixes (A–F, 2026-07-28)
+
+- **A — Physical ball positions σε adaptive shared passes:** νέος shadow-only
+  `generate_adaptive_shared_passes` στο `collection_adaptive_approach.py`.
+  Κρατά ΠΑΝΤΑ τα φυσικά `crossing_positions[0]` κάθε member· τα shifted
+  centrelines χρησιμοποιούνται μόνο ως **προτεινόμενα** centreline offsets· η
+  lateral feasibility ελέγχεται στις **φυσικές** θέσεις με το ατομικό
+  `effective_capture_half_width` κάθε member· ένα shared candidate ανά
+  combination στο centreline που μεγιστοποιεί το min capture margin· υπάρχον
+  swept collision check· μη-εκπροσωπήσιμα/ανέφικτα combinations απορρίπτονται με
+  ρητό reason (κανένα fabricated geometry). Η production `generate_shared_passes`
+  **δεν** άλλαξε· το `baseline_shadow_solve` την κρατά → baseline byte-identical.
+- **B — Calibration gate fail-loud:** το `generate_adaptive_candidates` κάνει
+  raise `AdaptiveApproachError` (με λίστα uncalibrated fields) σε uncalibrated
+  geometry· το `shadow_global_solve` έχει belt-and-braces guard. Το CLI αφαίρεσε
+  το σιωπηλό `required_pre_contact_m=0.0 + uncalibrated`: adaptive mode απαιτεί
+  ρητό calibrated/configured input, αλλιώς exit **2** με machine-readable error·
+  νέο `--baseline-only` mode εμφανίζει uncalibrated geometry χωρίς adaptive solve.
+- **C — Budget evidence:** το report ξεχωρίζει τα **independently known**
+  budgets (candidate-generation, shared-pass, global candidate cap) από το
+  **combined** production planner status (βλ. round 2 / Fix A). Νέα πεδία
+  `comparison_conclusive` / `comparison_limitations` / `comparison_conclusion`.
+  Η σύγκριση είναι conclusive μόνο όταν **κανένα** relevant budget δεν εξαντλήθηκε.
+  Η raw παρατήρηση είναι πλέον ανεξάρτητη structured ταξινόμηση
+  (`coverage_delta`, `length_delta_m`, `observed_result`): coverage πρώτα και,
+  μόνο σε ίσο coverage, length με deterministic epsilon `1e-6 m`. Το conclusion
+  παράγεται από αυτή την ταξινόμηση και, όταν είναι inconclusive, παραπέμπει στα
+  `comparison_limitations` χωρίς να εφευρίσκει αιτίες exhaustion.
+- **D — Candidate counters:** αντικαταστάθηκαν τα ασαφή πεδία με
+  `raw_baseline/raw_adaptive_extra/raw_candidate_count` και
+  `pareto_kept_baseline/adaptive/total` + `pareto_pruned_count`, με ελεγμένες
+  ακριβείς αριθμητικές ταυτότητες (`raw = baseline+extra`,
+  `kept_total = kept_b+kept_a`, `pruned = raw - kept_total`).
+- **E — Provenance:** entry beam & confirmed beam άλλαξαν `MEASURED→CONFIGURED`·
+  όλες οι repo τιμές είναι CONFIGURED (δηλωμένες, όχι μετρημένες).
+- **F — Docs:** αυτό το entry (καμία άλλη ιστορική εγγραφή δεν αγγίχτηκε).
+- **Uncalibrated / χρειάζεται φυσική επιβεβαίωση:** intake `required
+  pre-contact straight` (και άρα minimum alignment corridor) + επιλογή capture
+  reference plane (mouth/entry-beam/nip) — από intake trials, όχι από τον χάρτη.
+
+### Review fixes round 2 (A–D, 2026-07-28)
+
+- **A — Ειλικρινές search-exhaustion reporting:** ο production solver υπολογίζει
+  `planning_search_status = search_exhausted OR candidate_budget_exhausted`
+  (`collection_route_global_solver.py`), άρα δεν διαχωρίζεται DFS-search από
+  candidate-cap exhaustion. Το `ShadowSolveResult.search_status` **μετονομάστηκε**
+  σε `combined_planner_budget_status`. Το report εκθέτει πλέον
+  `search_exhaustion_independently_known=false`, `search_expansions=null` με note
+  ότι ο solver εκθέτει μόνο combined status. Το CLI **δεν** εκπέμπει πλέον
+  `adaptive_search_budget_exhausted`/`baseline_search_budget_exhausted`
+  (παραπλανητικά)· αντ' αυτού non-complete combined status → limitation
+  `*_combined_planner_budget_status_budget_exhausted`. Καμία αλλαγή/reimplementation
+  του production solver.
+- **B — Πραγματικός asymmetric-width regression test:** το παλιό test περνούσε
+  ένα covariance → ίδιο width. Νέα tests χτίζουν single-ball `FunnelPassCandidate`
+  με ρητά widths **0.02/0.05** (το default mechanical config κόβει το derived
+  width ~0.047, άρα δεν βγαίνει 0.05 από covariance): separation 0.06 →
+  **feasible/accepted** (physical positions preserved, κάθε ball εντός του δικού
+  του width)· separation 0.08 → **rejected `lateral_exceeds_capture`**. Χρειάστηκε
+  επίσης να προστεθεί στον generator η **width-aware feasibility-interval centre**
+  (Chebyshev center) ως centreline option: για ασύμμετρα widths το feasible
+  centreline είναι μετατοπισμένο από το physical midpoint, οπότε ο παλιός
+  midpoint-only έχανε feasible shared passes.
+- **C — Reproducible frozen replay:** το report περιλαμβάνει `analysis_inputs`
+  με ΟΛΕΣ τις algorithm-affecting παραμέτρους (gates, offsets, caps, capture
+  reference, pre-contact, provenance, shadow-solve flag, `maximum_candidate_count`,
+  `minimum_run_in_m`) + `assumptions` που δηλώνει ρητά ότι
+  `required_pre_contact_straight_m=0.0, provenance=configured` είναι **OFFLINE
+  ANALYSIS ASSUMPTION** για αυτές τις frozen συγκρίσεις — **ΟΧΙ** intake
+  measurement και **ΟΧΙ** production calibration· η πραγματική τιμή θέλει intake
+  trials. Τα paths μπαίνουν στο report μόνο για provenance (εκτός deterministic
+  comparison).
+
+#### Ακριβείς εντολές frozen replay (τα documented counters ισούνται με το JSON)
+
+```
+# clean_reverted (run-in 1.0):
+python3 scripts/sim_debug/collection_route_adaptive_replay.py \
+  --audit-artifact runtime/route_audit/clean_reverted_20260728_1324/collection-scan-28672000000.json \
+  --court-boundary runtime/route_audit/clean_reverted_20260728_1324/court_boundary.json \
+  --additional-gates 1.4,1.9 --lateral-offsets 0.0,0.02,-0.02 \
+  --max-per-heading 6 --max-per-ball 64 --capture-reference-plane intake_mouth_contact \
+  --required-pre-contact-m 0.0 --pre-contact-provenance configured --shadow-solve
+
+# clean_current (run-in 1.9):
+python3 scripts/sim_debug/collection_route_adaptive_replay.py \
+  --audit-artifact runtime/route_audit/clean_current_20260728_1315/collection-scan-39264000000.json \
+  --court-boundary runtime/route_audit/clean_current_20260728_1315/court_boundary.json \
+  --additional-gates 2.4,2.9 --lateral-offsets 0.0,0.02,-0.02 \
+  --max-per-heading 6 --max-per-ball 64 --capture-reference-plane intake_mouth_contact \
+  --required-pre-contact-m 0.0 --pre-contact-provenance configured --shadow-solve
+```
+
+| Artifact | baseline cov/len | adaptive cov/len | observed result | raw (b+e) | kept (b+a) | pruned | combined status | comparison |
+|---|---|---|---|---|---|---|---|---|
+| clean_reverted (1.0) | 8/10, 40.795885 m | 8/10, 40.795885 m | `unchanged` | 160+1235=1395 | 160+407=567 | 828 | baseline complete / adaptive budget_exhausted | inconclusive |
+| clean_current (1.9) | 6/10, 46.112815 m | 6/10, 46.112815 m | `unchanged` | 157+1100=1257 | 157+337=494 | 763 | baseline complete / adaptive budget_exhausted | inconclusive |
+
+`baseline_shadow_solve == plan_collection_route` byte-identical και στα δύο (edge
+histogram: 112.896 edges, 100.981 turning / 9.741 length / 2.174 accepted).
+Limitations (και στα δύο): `adaptive_candidate_generation_budget_exhausted`,
+`adaptive_global_candidate_cap_exhausted`,
+`adaptive_combined_planner_budget_status_budget_exhausted` (ΟΧΙ ανεξάρτητο
+search-exhaustion). `search_exhaustion_independently_known=false`. Και στα δύο
+`coverage_delta=0`, `length_delta_m=0.0`, `observed_result=unchanged`,
+`comparison_conclusive=false`. Μήνυμα: «No improvement was observed, but the
+comparison is inconclusive; see comparison_limitations. Raw observations are
+reported separately and no causal conclusion may be drawn.»
+
+- **Tests:** 58 νέα pure tests (τα απαιτούμενα reporting regressions + fail-loud uncalibrated,
+  exact-count invariants, adaptive shared-pass incl. asymmetric-width
+  feasible/infeasible, honest combined-status/no-independent-search-exhaustion,
+  conclusive-when-clean, analysis_inputs, CLI baseline-only/exit-2). Relevant
+  `tests/test_collection*.py` regression: **286 passed**. `git diff --check`
+  καθαρό.
+- **Status:** SHADOW/OFFLINE ΕΤΟΙΜΟ· καμία live αλλαγή· ΕΚΚΡΕΜΕΙ review.

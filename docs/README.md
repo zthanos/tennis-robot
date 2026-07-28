@@ -22,6 +22,7 @@ docs/
 - `collection-route-rules-el.md` - active specification for the continuous collection route.
 - `collection-route-design-el.md` - technical design.
 - `collection-route-implementation-plan-el.md` - phased implementation plan.
+- `collection-route-optimization-plan-el.md` - constraint register and measured plan for the shortest safe full route.
 - `collection-route-phase7-acceptance-plan-el.md` - Gazebo acceptance scenarios (S1-S8).
 - `collection-route-debug-log-el.md` - **running debug log** (every collect_route change lands here).
 - `collection-nav2-controller-{rules,design,implementation-plan}-el.md` - C++ CollectionFollowPath controller.
