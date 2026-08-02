@@ -34,6 +34,7 @@ setup(
             "sensor_snapshot_node = tennis_robot.sensor_snapshot_node:main",
             "drive_actuator_node = tennis_robot.drive_actuator_node:main",
             "cmd_vel_stamp_relay = tennis_robot.cmd_vel_stamp_relay:main",
+            "sim_clock_relay_node = tennis_robot.sim_clock_relay_node:main",
             "collector_logic_node = tennis_robot.collector_logic_node:main",
             "court_landmarks_node = tennis_robot.court_landmarks_node:main",
             "court_survey_mission_node = tennis_robot.court_survey_mission_node:main",

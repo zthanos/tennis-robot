@@ -22,6 +22,7 @@ struct TrackingExecutionProfile
   double min_speed_mps{};
   double max_speed_mps{};
   double nominal_speed_warning_tolerance_mps{};
+  double required_entry_m{};
   double required_run_in_m{};
   double required_run_out_m{};
   double max_curvature_per_m{};

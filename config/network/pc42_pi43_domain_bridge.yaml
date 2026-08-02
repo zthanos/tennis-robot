@@ -1,0 +1,59 @@
+# Explicit distributed-simulation transport boundary.
+#
+# PC simulation/perception runs in domain 42.  The Pi brain runs in domain 43.
+# A single domain_bridge process on the Pi is the only participant that joins
+# both domains.  Keep this list minimal: raw camera/depth, Gazebo contacts and
+# debug markers must never cross the LAN.
+name: tennis_pc42_pi43_bridge
+from_domain: 42
+to_domain: 43
+topics:
+  # PC -> Pi: simulation time and the stable sensor/perception contracts.
+  /clock:
+    type: rosgraph_msgs/msg/Clock
+  /scan:
+    type: sensor_msgs/msg/LaserScan
+  /odometry/filtered:
+    type: nav_msgs/msg/Odometry
+  /tf:
+    type: tf2_msgs/msg/TFMessage
+  /tf_static:
+    type: tf2_msgs/msg/TFMessage
+    qos:
+      reliability: reliable
+      durability: transient_local
+  /perception/ball_detections:
+    type: tennis_robot_msgs/msg/BallDetectionArray
+  /perception/diagnostics:
+    type: std_msgs/msg/String
+  /survey/vision:
+    type: std_msgs/msg/String
+  /ir/readings:
+    type: tennis_robot_msgs/msg/IrReadings
+  /collector/intake_beam_broken:
+    type: std_msgs/msg/Bool
+  /sim/balls:
+    type: std_msgs/msg/String
+  /sim/robot_true_pose:
+    type: std_msgs/msg/String
+  /telemetry/sensor_snapshot:
+    type: std_msgs/msg/String
+    qos:
+      reliability: best_effort
+
+  # Pi -> PC: actuator commands only.  `reversed` means domain 43 -> 42.
+  /cmd_vel_nav:
+    type: geometry_msgs/msg/TwistStamped
+    reversed: true
+  /cmd_vel_collection:
+    type: geometry_msgs/msg/Twist
+    reversed: true
+  /cmd_vel_teleop:
+    type: geometry_msgs/msg/Twist
+    reversed: true
+  /collector/cmd:
+    type: tennis_robot_msgs/msg/CollectorCmd
+    reversed: true
+  /ball/collected:
+    type: std_msgs/msg/String
+    reversed: true

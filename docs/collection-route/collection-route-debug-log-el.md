@@ -1405,3 +1405,66 @@ reported separately and no causal conclusion may be drawn.»
   `tests/test_collection*.py` regression: **286 passed**. `git diff --check`
   καθαρό.
 - **Status:** SHADOW/OFFLINE ΕΤΟΙΜΟ· καμία live αλλαγή· ΕΚΚΡΕΜΕΙ review.
+
+## #37 — Checkpoint πριν το σταδιακό PC+Pi qualification run (2026-08-02)
+
+**Context:** το platform/network στάδιο (ONNX thread pools, sensor QoS, 50 Hz
+sim-clock relay, UI snapshot rate limiting, shutdown lifecycle, symmetric domain
+isolation) τεκμηριώνεται πλήρως στο
+`docs/network/network-stabilization-plan-el.md`. Εδώ καταγράφονται **μόνο** οι
+αλλαγές που αγγίζουν τον collect_route μηχανισμό και μπαίνουν στο ίδιο
+checkpoint. **Καμία από αυτές δεν έχει ακόμη live επικύρωση** — το σταδιακό
+PC+Pi run (PC-only → +Pi → +UI → route → δεύτερο scan/route → clean shutdown)
+είναι το επόμενο βήμα.
+
+- **`context_already_consumed` στο 2ο run χωρίς restart.** Ο Nav2 controller
+  κρατά το execution-context lifecycle και επιβιώνει του executor: μετά από
+  terminal πηγαίνει `kConsumed` και μόνο `reset()` το επαναφέρει σε `kIdle`. Ένα
+  νέο route φτιάχνει νέο transport, οπότε οι τοπικοί counters δεν μπορούν να
+  ξέρουν ότι ο controller κρατά consumed context από προηγούμενο run. **Fix:**
+  το `load_sender` (`collection_executor_node_factory.py`) καλεί πάντα
+  `reset_collection_execution_context` **πριν** από κάθε load, και κάνει
+  fail-loud αν το reset απορριφθεί (το C++ `reset()` απορρίπτει σε
+  `kExecuting`/`kSafetyPaused`, άρα δεν μπορεί να σκοτώσει ενεργό run).
+- **Scan FSM: επιστροφή στο start yaw.** Το `ScanRotationFsm` θεωρούνταν
+  complete μόλις έπαιρνε το τελευταίο διακριτό sample, αφήνοντας το robot σε yaw
+  διαφορετικό από αυτό που παγώνει στο planner snapshot. Τώρα απαιτείται
+  επιστροφή στο `start_yaw` για να κλείσει η στροφή γεωμετρικά· η επιστροφή
+  **δεν** εκπέμπει διπλό sample.
+- **`EMPTY_NO_FEASIBLE_TARGETS` δεν είναι άδειο γήπεδο.** Ο executor το
+  αντιστοιχούσε σε `COMPLETED_NO_TARGETS`, δηλαδή ίδιο outcome με «καμία μπάλα».
+  Τώρα πηγαίνει σε `INCOMPLETE_TARGETS`: οι στόχοι παρατηρήθηκαν και
+  ταξινομήθηκαν αλλά κανένας δεν έχει εκτελέσιμη διαδρομή. Το UI εμφανίζει
+  ανάλυση planner blockers (`deferred`/`unreachable` ανά `reason_code`) αντί για
+  σκέτο «0 unresolved».
+- **Heading-error entry grace σε capture segments (C++ tracking core).** Ένα
+  connector μπορεί να παραδώσει σε ευθύ capture pass μικρό, παροδικό heading
+  error παρότι και οι δύο frozen διαδρομές είναι tangent-continuous. Το gate
+  χαλαρώνει **μόνο** μέσα στο ήδη ρυθμισμένο `required_entry_m` του segment και
+  **μόνο** πριν το πρώτο crossing (`min(progress_start + required_entry_m,
+  next_crossing - ε)`). Lateral tube, curvature, reverse και standalone-rotate
+  guards παραμένουν ενεργά σε όλο το διάστημα. Το `required_entry_m` προστέθηκε
+  στο `TrackingExecutionProfile` + `valid_profile` (ήταν ήδη στο wire contract,
+  απλώς δεν διαβαζόταν).
+- **Execution-truth telemetry (για το ανοιχτό spatial offset, #32/#35).** Το
+  route audit artifact και το `robot_status` κουβαλούν πλέον
+  `execution_frame_diagnostics` + `execution_truth_snapshot` (sim ball poses,
+  sim true pose, believed map pose, pose/yaw drift τη στιγμή της εκτέλεσης).
+  Καθαρά διαγνωστικά — δεν αγγίζουν plan ή geometry.
+- **Console BallMap: απόκρυψη φυσικά επιβεβαιωμένων μπαλών.** Operator-only
+  προβολή· το immutable snapshot και τα planner results μένουν ανέπαφα. Η
+  αντιστοίχιση απαιτεί κοντινή mapped μπάλα (`min(1.0,
+  max_merge_distance_m)`), ώστε ένα ασθενές association να μη σβήνει άσχετο
+  στόχο.
+- **Stale Jazzy test.** Το `test_collection_controller_server_isolated.launch.py`
+  άκουγε `Twist` στο `/cmd_vel` ενώ το `nav2_params.yaml` έχει
+  `enable_stamped_cmd_vel: true` (Jazzy) → ο harness δεν έπαιρνε ποτέ εντολές
+  και 3 tests έπεφταν. Fix: `TwistStamped` + unwrap σε `msg.twist`.
+- **Tests:** 471 pure pytest (459 + 12 console, χωριστά process λόγω του διπλού
+  `tennis_robot` package namespace) και 37 C++/launch tests με **2 failures**.
+  Και τα δύο ανήκουν στο ίδιο **pre-existing** stale test
+  (`test_collection_is_forward_only_and_survey_rpp_needs_no_context` + το
+  cascade στο tearDown του): με το robot ακριβώς στο terminal του 2-pose path, η
+  RPP κάνει `Resulting plan has 0 poses in it` πριν προλάβει ο goal checker.
+  Είναι υπόλειμμα της Humble→Jazzy μετάβασης, **όχι** regression αυτού του
+  checkpoint (το αρχείο δεν έχει αλλάξει από το `83f33af`).

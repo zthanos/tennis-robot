@@ -21,7 +21,11 @@ from tennis_robot.console.camera_service import CameraService  # noqa: E402
 from tennis_robot.console.config import ConsoleConfig  # noqa: E402
 from tennis_robot.console.path_service import PathService  # noqa: E402
 from tennis_robot.console.ros_service import NavPreflight  # noqa: E402
-from tennis_robot.console.server import ControlPanelHandler  # noqa: E402
+from tennis_robot.console.server import (  # noqa: E402
+    ControlPanelHandler,
+    _accepts_gzip,
+    encode_json_response,
+)
 from tennis_robot.console.survey_service import SurveyService  # noqa: E402
 
 
@@ -200,12 +204,47 @@ def test_build_diagnostics_and_db_import():
         db = _FakeDB()
         app = _make(root, _FakeRos(), db)
         _write_boundary(root, status="OK")
-        diag = app.build_diagnostics()
-        for key in ("generated_at", "command", "robot", "robot_path", "court_boundary",
+        diag = app.build_diagnostics(view="survey")
+        for key in ("generated_at", "transport", "command", "robot", "robot_path", "court_boundary",
                     "court_survey_live", "court_survey_launch", "obstacle_runs", "history", "stats"):
             assert key in diag
         # completed survey is imported tagged to the active court
         assert db.imported == [(1, 2)]
+
+
+def test_collection_diagnostics_excludes_only_survey_bulk_geometry():
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        app = _make(root, _FakeRos(), _FakeDB())
+        app.path.update({"x_m": 1.0, "y_m": 2.0})
+        (root / "runtime/court_survey_live.json").write_text(
+            json.dumps({
+                "updated_at": 1.0,
+                "running": False,
+                "state": "done",
+                "map_points": [{"x_m": 1.0, "y_m": 2.0}],
+                "navigation_points": [{"x_m": 3.0, "y_m": 4.0}],
+            }),
+            encoding="utf-8",
+        )
+        compact = app.build_diagnostics(view="collection")
+        survey = app.build_diagnostics(view="survey")
+        assert "robot_path" not in compact
+        assert "map_points" not in compact["court_survey_live"]
+        assert "navigation_points" not in compact["court_survey_live"]
+        assert compact["court_survey_live"]["state"] == "done"
+        assert survey["robot_path"]
+        assert survey["court_survey_live"]["map_points"]
+        assert survey["transport"]["survey_geometry_included"] is True
+
+
+def test_path_display_sample_preserves_endpoints_and_full_audit():
+    points = [{"x_m": float(index), "y_m": 0.0} for index in range(1000)]
+    sampled = PathService.display_sample(points, max_points=200)
+    assert len(sampled) == 200
+    assert sampled[0] == points[0]
+    assert sampled[-1] == points[-1]
+    assert points == [{"x_m": float(index), "y_m": 0.0} for index in range(1000)]
 
 
 def test_set_command_drives_survey_launch():
@@ -228,3 +267,18 @@ def test_nav_status_mapping():
     assert by_kind["preflight_timeout"] == HTTPStatus.SERVICE_UNAVAILABLE
     assert by_kind["not_ready"] == HTTPStatus.SERVICE_UNAVAILABLE
     assert by_kind["timeout"] == HTTPStatus.GATEWAY_TIMEOUT
+
+
+def test_json_transport_negotiates_gzip_without_changing_data():
+    data = {"path": [{"x_m": index / 10, "y_m": index / 20} for index in range(200)]}
+    compressed, encoding = encode_json_response(data, "br, gzip;q=1")
+    identity, identity_encoding = encode_json_response(data, "gzip;q=0")
+    assert encoding == "gzip"
+    assert identity_encoding is None
+    import gzip
+
+    assert json.loads(gzip.decompress(compressed)) == data
+    assert json.loads(identity) == data
+    assert len(compressed) < len(identity)
+    assert _accepts_gzip("br, gzip") is True
+    assert _accepts_gzip("gzip;q=0") is False

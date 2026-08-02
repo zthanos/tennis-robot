@@ -412,10 +412,10 @@
       min-width: 0;
     }
     .collection-workspace {
-      align-items: stretch;
+      align-items: start;
     }
     .collection-workspace .workspace-side {
-      grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto;
     }
     .collection-route-actions {
       display: grid;

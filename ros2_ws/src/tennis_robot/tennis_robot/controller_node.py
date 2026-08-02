@@ -247,6 +247,7 @@ class ControllerNode(Node):
         self._last_collect_route_summary: dict = {}
         self._collect_route_executor = None
         self._collect_route_executor_factory = None
+        self._collect_route_execution_truth_snapshot: dict = {}
         self._collect_route_executor_events: list[dict] = []
         self._collect_route_executor_complete_reported = False
         self._collection_executor_cache = CollectionExecutorNodeCache()
@@ -786,6 +787,7 @@ class ControllerNode(Node):
                 self._last_collect_route_summary = {}
                 self._collect_route_executor = None
                 self._collect_route_executor_factory = None
+                self._collect_route_execution_truth_snapshot = {}
                 self._collect_route_executor_events = []
                 self._collect_route_executor_complete_reported = False
                 self._credit_reconciler = CreditReconciler()
@@ -1385,6 +1387,7 @@ class ControllerNode(Node):
     def _collect_route_command_for_mode(self, mode: str) -> ConceptACommand:
         if self._on_mode_changed(mode):
             self.ball_map.reset()
+            self._collect_route_console_collected_positions = []
             self._collect_start_time = self._runtime_seconds()
             self._start_collection_route_executor()
 
@@ -1596,6 +1599,22 @@ class ControllerNode(Node):
                 "route_outcome": route_outcome,
                 "snapshot": snapshot.to_dict(),
                 "plan": plan.to_dict(),
+                "execution_frame_diagnostics": (
+                    getattr(
+                        self._collect_route_executor_factory,
+                        "execution_frame_diagnostics",
+                        {},
+                    )
+                    if self._collect_route_executor_factory is not None
+                    else {}
+                ),
+                "execution_truth_snapshot": dict(
+                    getattr(
+                        self,
+                        "_collect_route_execution_truth_snapshot",
+                        {},
+                    )
+                ),
             }
             safe_scan_id = "".join(
                 char if char.isalnum() or char in "-_." else "_"
@@ -1700,6 +1719,76 @@ class ControllerNode(Node):
         }
         self._collect_route_confirmations.append(confirmation)
         return confirmation
+
+    def _mark_route_confirmation_on_console_map(
+        self,
+        confirmation: dict,
+        now_s: float,
+    ) -> int | None:
+        """Hide a physically confirmed ball from the operator-only BallMap.
+
+        The immutable route snapshot and planner results remain untouched.  A
+        route-associated confirmation uses the exact snapshot target position;
+        an unassigned confirmation falls back to the CONFIRMED sensor plane in
+        front of the current base pose.  Both paths require a nearby mapped
+        ball, so a weak association cannot remove an unrelated map target.
+        """
+        target_x = target_y = None
+        route_ball_id = confirmation.get("ball_id")
+        snapshot = (
+            getattr(self._collect_route_executor, "snapshot", None)
+            if self._collect_route_executor is not None
+            else None
+        )
+        if route_ball_id and snapshot is not None:
+            target = next(
+                (
+                    ball
+                    for ball in snapshot.balls
+                    if ball.ball_id == route_ball_id
+                ),
+                None,
+            )
+            if target is not None:
+                target_x = float(target.position.x_m)
+                target_y = float(target.position.y_m)
+        if target_x is None or target_y is None:
+            confirmed_plane_x_m = 0.35
+            target_x = self._robot_x + confirmed_plane_x_m * math.cos(self._robot_yaw)
+            target_y = self._robot_y + confirmed_plane_x_m * math.sin(self._robot_yaw)
+
+        active = [
+            ball
+            for ball in self.ball_map.balls.values()
+            if ball.state not in {"collected", "collection_failed"}
+        ]
+        if not active:
+            return None
+        nearest = min(
+            active,
+            key=lambda ball: math.hypot(
+                ball.x_m - target_x,
+                ball.y_m - target_y,
+            ),
+        )
+        association_limit_m = min(
+            1.0,
+            float(self.ball_map.config.max_merge_distance_m),
+        )
+        if math.hypot(nearest.x_m - target_x, nearest.y_m - target_y) > association_limit_m:
+            return None
+        self.ball_map.set_state(nearest.id, "collected")
+        nearest.last_seen_s = now_s
+        positions = getattr(
+            self,
+            "_collect_route_console_collected_positions",
+            None,
+        )
+        if positions is None:
+            positions = []
+            self._collect_route_console_collected_positions = positions
+        positions.append((float(nearest.x_m), float(nearest.y_m)))
+        return nearest.id
 
     def _build_collect_route_execution_outcomes(
         self,
@@ -2104,6 +2193,11 @@ class ControllerNode(Node):
             if self.control_mode == "collect_route"
             else None
         )
+        if route_confirmation is not None:
+            self._mark_route_confirmation_on_console_map(
+                route_confirmation,
+                now_s,
+            )
         self._record_collection_event(
             "beam_collection_credit",
             ir_left=round(self._ir_left, 1),
@@ -2392,6 +2486,27 @@ class ControllerNode(Node):
                 and isinstance(track.get("x_m"), (int, float))
                 and isinstance(track.get("y_m"), (int, float))
             ]
+        collected_positions = getattr(
+            self,
+            "_collect_route_console_collected_positions",
+            (),
+        )
+        if collected_positions:
+            merge_distance_m = float(
+                getattr(self.ball_map.config, "merge_distance_m", 0.65)
+            )
+            balls = [
+                ball
+                for ball in balls
+                if not any(
+                    math.hypot(
+                        float(ball["x_m"]) - collected_x,
+                        float(ball["y_m"]) - collected_y,
+                    )
+                    <= merge_distance_m
+                    for collected_x, collected_y in collected_positions
+                )
+            ]
         confirmed = [b for b in balls if b["confirmed"] and b["side"] != "across_net"]
         metrics: dict[str, object] = {
             "balls_mapped": len(balls),
@@ -2460,6 +2575,63 @@ class ControllerNode(Node):
             if self._collect_route_executor_factory is not None
             else None
         )
+        execution_frame_diagnostics = (
+            getattr(
+                self._collect_route_executor_factory,
+                "execution_frame_diagnostics",
+                {},
+            )
+            if self._collect_route_executor_factory is not None
+            else {}
+        )
+        execution_truth_snapshot = getattr(
+            self, "_collect_route_execution_truth_snapshot", {}
+        )
+        if (
+            execution_frame_diagnostics
+            and not execution_truth_snapshot
+        ):
+            execution_truth_snapshot = {
+                "captured_at_s": self._runtime_seconds(),
+                "sim_balls_odom": [
+                    {
+                        key: ball[key]
+                        for key in ("def", "x", "y", "z")
+                        if key in ball
+                    }
+                    for ball in self._sim_balls
+                    if isinstance(ball, dict)
+                ],
+                "sim_robot_true_pose": (
+                    {
+                        "x_m": self._sim_true_pose[0],
+                        "y_m": self._sim_true_pose[1],
+                        "yaw_rad": self._sim_true_pose[2],
+                    }
+                    if self._sim_true_pose is not None
+                    else None
+                ),
+                "believed_robot_map_pose": {
+                    "x_m": self._robot_x,
+                    "y_m": self._robot_y,
+                    "yaw_rad": self._robot_yaw,
+                },
+                "pose_frame_offset": (
+                    {
+                        "x_m": self._pose_frame_offset[0],
+                        "y_m": self._pose_frame_offset[1],
+                        "yaw_rad": self._pose_frame_yaw_offset,
+                    }
+                    if self._pose_frame_offset is not None
+                    and self._pose_frame_yaw_offset is not None
+                    else None
+                ),
+                "pose_drift_m": self._pose_error_m(),
+                "yaw_drift_rad": self._pose_yaw_error_rad(),
+            }
+            self._collect_route_execution_truth_snapshot = (
+                execution_truth_snapshot
+            )
         payload = {
             "run_id": self._run_id,
             "status": status or state,
@@ -2512,6 +2684,8 @@ class ControllerNode(Node):
                 if self._collect_route_executor_factory is not None
                 else {}
             ),
+            "execution_frame_diagnostics": execution_frame_diagnostics,
+            "execution_truth_snapshot": dict(execution_truth_snapshot),
             # Physical intake evidence is deliberately separate from route
             # coverage. A pass can be geometrically covered without the ball
             # being transferred, and a retained ball must never be hidden

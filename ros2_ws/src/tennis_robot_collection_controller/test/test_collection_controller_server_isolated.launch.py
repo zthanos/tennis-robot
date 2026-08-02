@@ -7,7 +7,7 @@ import unittest
 from dataclasses import dataclass
 
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
+from geometry_msgs.msg import PoseStamped, TransformStamped, TwistStamped
 from launch import LaunchDescription
 from launch_ros.actions import Node
 import launch_testing
@@ -69,7 +69,9 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         cls.pose_x = 4.0
         cls.pose_timer = cls.node.create_timer(0.02, cls.publish_pose)
         cls.cmd = []
-        cls.node.create_subscription(Twist, '/cmd_vel', lambda msg: cls.cmd.append(msg), 10)
+        # nav2_params.yaml sets enable_stamped_cmd_vel (Jazzy): controller_server
+        # publishes TwistStamped.  Unwrap so the assertions stay velocity-only.
+        cls.node.create_subscription(TwistStamped, '/cmd_vel', lambda msg: cls.cmd.append(msg.twist), 10)
         cls.states = []
         cls.node.create_subscription(CollectionControllerState, '/CollectionFollowPath/state', lambda msg: cls.states.append(msg), 10)
         cls.load = cls.node.create_client(LoadCollectionExecutionContext, '/CollectionFollowPath/load_collection_execution_context')

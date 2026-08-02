@@ -39,6 +39,13 @@ export TENNIS_LAUNCH_BRAIN="${TENNIS_LAUNCH_BRAIN:-true}"
 # the scan. The all-in-one run keeps perception in the brain group (local anyway).
 if [ "$TENNIS_LAUNCH_BRAIN" = "false" ]; then
     export TENNIS_PERCEPTION_ON_PC="${TENNIS_PERCEPTION_ON_PC:-true}"
+    required_udp_rmem=4194304
+    actual_udp_rmem="$(sysctl -n net.core.rmem_default)"
+    if [ "$actual_udp_rmem" -lt "$required_udp_rmem" ]; then
+        echo "ERROR: distributed simulation requires net.core.rmem_default >= $required_udp_rmem"
+        echo "Install it with: sudo ./scripts/network/install_udp_buffer_profile.sh"
+        exit 1
+    fi
 fi
 
 # ROS builds and node entry points must use the SYSTEM Python. A uv-managed
@@ -79,8 +86,15 @@ fi
 pids=()
 cleanup() {
     trap - EXIT INT TERM
-    for pid in "${pids[@]}"; do kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; done
-    pkill -9 -f "gz sim" 2>/dev/null || true
+    for pid in "${pids[@]}"; do
+        kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+    done
+    # Gazebo may ignore TERM during renderer shutdown. Scope the fallback to
+    # launch-owned process groups; never use a host-wide `pkill gz sim`.
+    sleep 1
+    for pid in "${pids[@]}"; do
+        kill -KILL -- "-$pid" 2>/dev/null || true
+    done
 }
 trap cleanup EXIT INT TERM
 
@@ -88,7 +102,11 @@ if [ "$TENNIS_LAUNCH_BRAIN" = "false" ]; then
     # Distributed PC side: run ONLY the sim (Gazebo + robot abstraction). SLAM +
     # Nav2 + the control stack run on the Pi (run_pi.sh) and reach this over DDS.
     echo "[run_native] distributed PC mode — sim only (control stack on the Pi)"
-    exec ros2 launch tennis_robot sim.launch.py "headless:=${GAZEBO_HEADLESS}"
+    setsid ros2 launch tennis_robot sim.launch.py "headless:=${GAZEBO_HEADLESS}" &
+    sim_only_pid="$!"
+    pids+=("$sim_only_pid")
+    wait "$sim_only_pid"
+    exit $?
 fi
 
 setsid ros2 launch tennis_robot sim.launch.py "headless:=${GAZEBO_HEADLESS}" &

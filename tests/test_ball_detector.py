@@ -62,11 +62,24 @@ class _FakeSession:
         return [self._output]
 
 
+class _FakeSessionOptions:
+    def add_session_config_entry(self, _name, _value):
+        pass
+
+
+def _fake_ort(output):
+    return types.SimpleNamespace(
+        SessionOptions=_FakeSessionOptions,
+        ExecutionMode=types.SimpleNamespace(ORT_SEQUENTIAL="sequential"),
+        GraphOptimizationLevel=types.SimpleNamespace(ORT_ENABLE_ALL="all"),
+        InferenceSession=lambda *a, **k: _FakeSession(output),
+    )
+
+
 def _make_detector(monkeypatch, columns, **kwargs):
     """Build a YoloOnnxBallDetector backed by a fake onnxruntime session."""
     output = np.stack(_pad(columns), axis=1)[None]  # (1, 84, N)
-    fake_ort = types.SimpleNamespace(InferenceSession=lambda *a, **k: _FakeSession(output))
-    monkeypatch.setitem(sys.modules, "onnxruntime", fake_ort)
+    monkeypatch.setitem(sys.modules, "onnxruntime", _fake_ort(output))
     return bd.YoloOnnxBallDetector("dummy.onnx", **kwargs)
 
 
@@ -113,8 +126,7 @@ def test_detect_handles_transposed_output(monkeypatch):
     # Some exports give (1, N, 84) instead of (1, 84, N); detect must cope.
     cols = _pad([_yolo_column(320, 240, 30, 30, SPORTS_BALL, 0.8)])
     output = np.stack(cols, axis=0)[None]  # (1, N, 84)
-    fake_ort = types.SimpleNamespace(InferenceSession=lambda *a, **k: _FakeSession(output))
-    monkeypatch.setitem(sys.modules, "onnxruntime", fake_ort)
+    monkeypatch.setitem(sys.modules, "onnxruntime", _fake_ort(output))
     det = bd.YoloOnnxBallDetector("dummy.onnx", conf_threshold=0.35)
     out = det.detect(np.zeros((640, 640, 3), np.uint8))
     assert len(out) == 1

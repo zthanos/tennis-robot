@@ -61,6 +61,11 @@ class _FakeSession:
         return [self.output]
 
 
+class _FakeSessionOptions:
+    def add_session_config_entry(self, _name, _value):
+        pass
+
+
 def _detector(monkeypatch, columns, **kwargs):
     fillers = [
         np.zeros(6, dtype=np.float32)
@@ -68,6 +73,9 @@ def _detector(monkeypatch, columns, **kwargs):
     ]
     output = np.stack(list(columns) + fillers, axis=1)[None]
     fake_ort = types.SimpleNamespace(
+        SessionOptions=_FakeSessionOptions,
+        ExecutionMode=types.SimpleNamespace(ORT_SEQUENTIAL="sequential"),
+        GraphOptimizationLevel=types.SimpleNamespace(ORT_ENABLE_ALL="all"),
         InferenceSession=lambda *args, **kw: _FakeSession(output)
     )
     monkeypatch.setitem(sys.modules, "onnxruntime", fake_ort)

@@ -234,6 +234,14 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     execution_plan = built.handles.execution_plan_transformer(source_plan)
     assert execution_plan.map_frame == "odom"
     assert execution_plan.start_pose == source_plan.start_pose
+    diagnostics = built.execution_frame_diagnostics
+    assert diagnostics["plan_id"] == source_plan.plan_id
+    assert diagnostics["source_frame"] == "map"
+    assert diagnostics["target_frame"] == "odom"
+    assert diagnostics["source_crossings"]
+    assert len(diagnostics["source_crossings"]) == len(
+        diagnostics["execution_crossings"]
+    )
     cache.robot_x_m, cache.robot_y_m, cache.robot_yaw_rad = 11.0, -4.0, -0.3
     assert session._robot_pose_provider() == Pose2D(11.0, -4.0, -0.3)
 
@@ -309,6 +317,9 @@ def test_load_sender_fills_real_context_message_field_for_field(factory):
         context_activation_timeout_s=10.0,
     )
     built.handles.load_sender(values)
+    assert len(node.clients[1][1].requests) == 1
+    assert len(node.clients[0][1].requests) == 0
+    assert built.handles.load_outcome_provider() == "accepted"
     message = node.clients[0][1].requests[-1].context
     for name in ("context_schema_version", "plan_id", "path_sha256",
                  "context_activation_timeout_s", "terminal_progress_s",
@@ -341,10 +352,7 @@ def test_load_sender_fills_real_context_message_field_for_field(factory):
             {field.name: getattr(crossing, field.name) for field in fields(crossing)}
             for crossing in expected.planned_crossings
         ]
-    assert built.handles.load_outcome_provider() == "accepted"
-
-
-def test_second_load_resets_consumed_controller_context_first(factory):
+def test_every_load_resets_controller_context_first(factory):
     built, node, _ = factory
     values = build_execution_context(
         curved_plan(),
@@ -353,12 +361,13 @@ def test_second_load_resets_consumed_controller_context_first(factory):
         context_activation_timeout_s=10.0,
     )
     built.handles.load_sender(values)
+    assert len(node.clients[1][1].requests) == 1
+    assert len(node.clients[0][1].requests) == 0
     assert built.handles.load_outcome_provider() == "accepted"
     assert len(node.clients[0][1].requests) == 1
-    assert len(node.clients[1][1].requests) == 0
 
     built.handles.load_sender(values)
-    assert len(node.clients[1][1].requests) == 1
+    assert len(node.clients[1][1].requests) == 2
     assert len(node.clients[0][1].requests) == 1
     assert built.handles.load_outcome_provider() == "accepted"
     assert len(node.clients[0][1].requests) == 2
@@ -366,11 +375,44 @@ def test_second_load_resets_consumed_controller_context_first(factory):
 
 def test_scan_pose_is_service_line_center_on_robot_side_with_survey_axes():
     assert scan_pose_from_court_model(BOUNDARY, robot_pose=Pose2D(10.0, -5.0, 0.0)) == pytest.approx(
-        (10.0, -4.4, math.pi / 2.0)
+        (10.0, -4.4, -math.pi / 2.0)
     )
     assert scan_pose_from_court_model(BOUNDARY, robot_pose=Pose2D(10.0, 9.0, 0.0)) == pytest.approx(
-        (10.0, 8.4, -math.pi / 2.0)
+        (10.0, 8.4, math.pi / 2.0)
     )
+
+
+def test_scan_pose_yaw_gives_planner_a_start_edge_into_robot_side_half():
+    from tennis_robot.collection_court_model_builder import build_court_model
+
+    configuration = default_configuration()
+    scan_pose = Pose2D(*scan_pose_from_court_model(
+        BOUNDARY, robot_pose=Pose2D(10.0, -5.0, 0.0)
+    ))
+    snapshot = ScanSnapshot(
+        "scan-facing-robot-half",
+        1.0,
+        "map",
+        scan_pose,
+        (
+            SnapshotBall(
+                "ball",
+                Point2D(10.0, -6.3),
+                0.95,
+                PositionCovariance2D(1e-6, 0.0, 1e-6),
+            ),
+        ),
+        configuration,
+    )
+
+    plan = plan_collection_route(
+        snapshot=snapshot,
+        court=build_court_model(BOUNDARY),
+        configuration=configuration,
+    ).plan
+
+    assert plan.is_executable
+    assert plan.ball_results[0].status.value == "covered"
 
 
 def test_pre_execution_audit_sink_is_opt_in_and_atomic(monkeypatch, tmp_path):

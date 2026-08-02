@@ -26,13 +26,15 @@ bool valid_profile(const TrackingExecutionProfile & profile)
 {
   return finite(profile.nominal_speed_mps) && finite(profile.min_speed_mps) &&
     finite(profile.max_speed_mps) && finite(profile.nominal_speed_warning_tolerance_mps) &&
-    finite(profile.required_run_in_m) && finite(profile.required_run_out_m) &&
+    finite(profile.required_entry_m) && finite(profile.required_run_in_m) &&
+    finite(profile.required_run_out_m) &&
     finite(profile.max_curvature_per_m) && finite(profile.max_lateral_error_m) &&
     finite(profile.max_heading_error_rad) && profile.min_speed_mps > 0.0 &&
     profile.nominal_speed_mps >= profile.min_speed_mps &&
     profile.nominal_speed_mps <= profile.max_speed_mps &&
     profile.nominal_speed_warning_tolerance_mps >= 0.0 &&
-    profile.required_run_in_m >= 0.0 && profile.required_run_out_m >= 0.0 &&
+    profile.required_entry_m >= 0.0 && profile.required_run_in_m >= 0.0 &&
+    profile.required_run_out_m >= 0.0 &&
     profile.max_curvature_per_m > 0.0 && profile.max_lateral_error_m >= 0.0 &&
     profile.max_heading_error_rad >= 0.0 && !profile.allow_reversing &&
     !profile.allow_standalone_rotate;
@@ -159,7 +161,23 @@ TrackingResult CollectionTrackingCore::update(const TrackingInput & input)
   }
 
   const double path_heading_error = wrap_angle(tangent_at(projection.progress_s) - input.heading_rad);
-  if (std::abs(path_heading_error) > segment->profile.max_heading_error_rad + kEpsilon) {
+  // A connector may hand a straight capture pass a small, transient heading
+  // error even though both frozen paths are tangent-continuous.  Allow the
+  // already-configured entry distance to perform that alignment; the strict
+  // capture-grade gate resumes for the remainder of the run-in and is always
+  // active before the first crossing.  Lateral tube, curvature, reverse and
+  // standalone-rotation guards remain active throughout this entry interval.
+  const bool capture_segment = !segment->planned_crossings.empty();
+  const double heading_grace_end_s = capture_segment && next ?
+    std::min(
+      segment->progress_start_s + segment->profile.required_entry_m,
+      next->progress_s - kEpsilon) :
+    segment->progress_start_s;
+  const bool inside_heading_entry_grace =
+    capture_segment && projection.progress_s + kEpsilon < heading_grace_end_s;
+  if (!inside_heading_entry_grace &&
+    std::abs(path_heading_error) > segment->profile.max_heading_error_rad + kEpsilon)
+  {
     auto result = failure(TrackingFailureCode::kHeadingErrorExceeded, projection.progress_s);
     result.lateral_error_m = projection.lateral_error_m;
     result.heading_error_rad = path_heading_error;

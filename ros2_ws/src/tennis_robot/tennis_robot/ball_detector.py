@@ -35,6 +35,7 @@ from typing import Protocol, runtime_checkable
 import numpy as np
 
 from tennis_robot.perception import BallDetection
+from tennis_robot.onnx_runtime_config import create_cpu_inference_session
 
 # COCO class id 32 == "sports ball". A tennis ball is detected under this class
 # by stock YOLOv8/v11 weights. A custom single-class model would use id 0 — set
@@ -103,9 +104,10 @@ class YoloOnnxBallDetector:
         ):
             raise ValueError("zoom_tiles must contain finite normalized (x, y) centres")
 
-        self._session = ort.InferenceSession(
+        self._session = create_cpu_inference_session(
+            ort,
             model_path,
-            providers=providers or ["CPUExecutionProvider"],
+            providers=providers,
         )
         self._input_name = self._session.get_inputs()[0].name
         # Respect a fixed input H/W baked into the model if present.

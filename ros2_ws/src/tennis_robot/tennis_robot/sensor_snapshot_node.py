@@ -77,6 +77,11 @@ class SensorSnapshotNode(Node):
         self._entry_last_crossing_at_s: float | None = None
         self._confirmed_last_crossing_at_s: float | None = None
         self._last_write_s = 0.0
+        self._last_preview_process_s = {
+            "image": float("-inf"),
+            "depth": float("-inf"),
+            "scan": float("-inf"),
+        }
         self._front_range_m: float = math.inf
         self._survey_vision: dict = {}
 
@@ -99,10 +104,14 @@ class SensorSnapshotNode(Node):
                 String, PREVIEW_TOPIC, preview_qos
             )
 
-        self.create_subscription(Image, "/camera/image_raw", self._on_image, 1)
-        self.create_subscription(Image, "/camera/depth", self._on_depth, 1)
+        # These subscriptions feed the low-rate UI preview only. Keep the
+        # newest sensor sample and never backpressure the production streams.
+        self.create_subscription(
+            Image, "/camera/image_raw", self._on_image, preview_qos
+        )
+        self.create_subscription(Image, "/camera/depth", self._on_depth, preview_qos)
         self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
-        self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
+        self.create_subscription(LaserScan, "/scan", self._on_scan, preview_qos)
         self.create_subscription(
             LaserScan, "/gz/ir_left/scan", self._on_entry_ir_left, 10
         )
@@ -148,6 +157,8 @@ class SensorSnapshotNode(Node):
             self._survey_vision = {}
 
     def _on_image(self, msg: Image) -> None:
+        if not self._preview_processing_due("image"):
+            return
         frame = self._decode_color_image(msg)
         if frame is None:
             return
@@ -269,6 +280,8 @@ class SensorSnapshotNode(Node):
         return self._survey_state_cache
 
     def _on_depth(self, msg: Image) -> None:
+        if not self._preview_processing_due("depth"):
+            return
         depth = self._decode_depth_image(msg)
         if depth is None:
             return
@@ -305,6 +318,8 @@ class SensorSnapshotNode(Node):
         }
 
     def _on_scan(self, msg: LaserScan) -> None:
+        if not self._preview_processing_due("scan"):
+            return
         ranges = [float(r) for r in msg.ranges]
         if not ranges:
             return
@@ -349,6 +364,15 @@ class SensorSnapshotNode(Node):
             {"robot_x_m": cx, "robot_y_m": cy, "distance_m": math.hypot(cx, cy)}
             for cx, cy in extract_ball_candidates(ranges)
         ]
+
+    def _preview_processing_due(self, stream: str) -> bool:
+        """Rate-limit UI rendering while always selecting a fresh sample."""
+
+        now = time.monotonic()
+        if now - self._last_preview_process_s[stream] < WRITE_INTERVAL_S:
+            return False
+        self._last_preview_process_s[stream] = now
+        return True
 
     def _on_entry_ir_left(self, msg: LaserScan) -> None:
         self._entry_ir_left = self._range_to_ir_value(

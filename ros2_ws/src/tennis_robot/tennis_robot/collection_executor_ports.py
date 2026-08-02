@@ -386,10 +386,11 @@ class ScanRotationFsm:
     """Pure 360deg discrete rotation-step FSM.
 
     Steps are captured at yaw targets ``start + k*step_angle`` for
-    ``k = 0 .. step_count-1`` (a full turn).  ``observe(current_yaw)`` returns
-    the step id when the robot is within ``yaw_tolerance_rad`` of the next
-    uncaptured target, else ``None``.  Feed it a yaw sequence to drive it; it has
-    no ROS dependency and no cmd_vel logic.
+    ``k = 0 .. step_count-1``.  After the last distinct sample, the robot must
+    return to ``start`` before the FSM is complete.  This closes the full turn
+    geometrically and keeps the physical yaw equal to the yaw frozen into the
+    planner snapshot.  ``observe(current_yaw)`` returns the step id only for a
+    newly captured sample; the final return emits no duplicate sample.
     """
 
     def __init__(self, *, step_count: int, yaw_tolerance_rad: float, start_yaw_rad: float) -> None:
@@ -402,6 +403,7 @@ class ScanRotationFsm:
         self._start = _require_finite(start_yaw_rad, "start_yaw_rad")
         self._step_angle = _TWO_PI / step_count
         self._captured = 0
+        self._returned_to_start = False
 
     @property
     def expected_step_ids(self) -> tuple[str, ...]:
@@ -409,12 +411,14 @@ class ScanRotationFsm:
 
     @property
     def is_complete(self) -> bool:
-        return self._captured >= self._step_count
+        return self._captured >= self._step_count and self._returned_to_start
 
     @property
     def target_yaw_rad(self) -> float | None:
         if self.is_complete:
             return None
+        if self._captured >= self._step_count:
+            return _wrap_angle(self._start)
         return _wrap_angle(self._start + self._captured * self._step_angle)
 
     def observe(self, current_yaw_rad: float) -> str | None:
@@ -422,6 +426,9 @@ class ScanRotationFsm:
             return None
         current_yaw_rad = _require_finite(current_yaw_rad, "current_yaw_rad")
         if abs(_wrap_angle(current_yaw_rad - self.target_yaw_rad)) <= self._tolerance:
+            if self._captured >= self._step_count:
+                self._returned_to_start = True
+                return None
             step_id = f"scan-step-{self._captured}"
             self._captured += 1
             return step_id
@@ -430,6 +437,7 @@ class ScanRotationFsm:
     def reset(self) -> None:
         """Start a fresh rotation cycle with the same immutable scan geometry."""
         self._captured = 0
+        self._returned_to_start = False
 
 
 class ScanSessionDriver:

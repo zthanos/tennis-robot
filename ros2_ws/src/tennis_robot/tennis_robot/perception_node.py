@@ -40,6 +40,7 @@ import message_filters
 import numpy as np
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 
@@ -70,7 +71,7 @@ CAMERA_FOV_RAD = float(os.getenv("CAMERA_FOV_RAD", str(math.radians(60))))
 CAMERA_FRAME_ID = os.getenv("CAMERA_FRAME_ID", "camera_link_optical_frame")
 MAX_PUBLISHED_BALLS = int(os.getenv("PERCEPTION_MAX_BALLS", "8"))
 RGB_DEPTH_SYNC_SLOP_S = float(os.getenv("RGB_DEPTH_SYNC_SLOP_S", "0.05"))
-RGB_DEPTH_SYNC_QUEUE_SIZE = int(os.getenv("RGB_DEPTH_SYNC_QUEUE_SIZE", "10"))
+RGB_DEPTH_SYNC_QUEUE_SIZE = int(os.getenv("RGB_DEPTH_SYNC_QUEUE_SIZE", "3"))
 
 
 class PerceptionNode(Node):
@@ -98,11 +99,19 @@ class PerceptionNode(Node):
         self._spatial_targets_artifact_id = runtime.artifact_id
         self._spatial_targets_artifact_version = runtime.artifact_version
 
+        # Camera input is volatile sensor data: keep only the newest acquisition
+        # and never apply reliable-delivery backpressure to Gazebo.  Timestamp
+        # matching still happens below; no RGB frame is fused with stale depth.
+        camera_qos = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+        )
         self._rgb_sub = message_filters.Subscriber(
-            self, Image, "/camera/image_raw", qos_profile=1
+            self, Image, "/camera/image_raw", qos_profile=camera_qos
         )
         self._depth_sub = message_filters.Subscriber(
-            self, Image, "/camera/depth", qos_profile=1
+            self, Image, "/camera/depth", qos_profile=camera_qos
         )
         self._rgb_depth_sync = message_filters.ApproximateTimeSynchronizer(
             [self._rgb_sub, self._depth_sub],
@@ -124,6 +133,7 @@ class PerceptionNode(Node):
             f"perception_node started (detector={self._detector.name}, "
             f"fov={CAMERA_FOV_RAD:.3f} rad, "
             f"rgb_depth_slop={RGB_DEPTH_SYNC_SLOP_S:.3f}s, "
+            f"rgb_depth_queue={RGB_DEPTH_SYNC_QUEUE_SIZE}, "
             f"spatial_targets_healthy={self._spatial_targets_healthy}, "
             f"spatial_targets_health_reason={self._spatial_targets_health_reason}, "
             f"calibration_id={self._spatial_targets_artifact_id}, "

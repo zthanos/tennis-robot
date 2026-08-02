@@ -114,9 +114,10 @@ bool valid_load_context(const tennis_robot_msgs::msg::CollectionExecutionContext
 TrackingExecutionProfile to_tracking_profile(const tennis_robot_msgs::msg::CollectionExecutionProfile & profile)
 {
   return {profile.nominal_speed_mps, profile.min_speed_mps, profile.max_speed_mps,
-    profile.nominal_speed_warning_tolerance_mps, profile.required_run_in_m,
-    profile.required_run_out_m, profile.max_curvature_per_m, profile.max_lateral_error_m,
-    profile.max_heading_error_rad, profile.allow_reversing, profile.allow_standalone_rotate};
+    profile.nominal_speed_warning_tolerance_mps, profile.required_entry_m,
+    profile.required_run_in_m, profile.required_run_out_m, profile.max_curvature_per_m,
+    profile.max_lateral_error_m, profile.max_heading_error_rad, profile.allow_reversing,
+    profile.allow_standalone_rotate};
 }
 
 CollectionTrackingPlan make_tracking_plan(const tennis_robot_msgs::msg::CollectionExecutionContext & context,

@@ -355,6 +355,9 @@ def test_scan_rotation_fsm_captures_each_step_and_completes_360():
         assert ((fsm.target_yaw_rad - target + math.pi) % (2 * math.pi)) - math.pi == pytest.approx(0.0, abs=1e-6)
         captured.append(fsm.observe(target))
     assert captured == ["scan-step-0", "scan-step-1", "scan-step-2", "scan-step-3"]
+    assert not fsm.is_complete
+    assert fsm.target_yaw_rad == pytest.approx(0.0)
+    assert fsm.observe(0.0) is None
     assert fsm.is_complete
     assert fsm.target_yaw_rad is None
     assert fsm.observe(0.0) is None
@@ -424,15 +427,17 @@ def test_scan_session_driver_completes_and_returns_snapshot_ready():
     snapshot = _snapshot()
     session = FakeSnapshotSession(snapshot=snapshot)
     frame = N(detections=[])
-    driver, cmd, _ = _driver(session, yaws=[0.0, math.pi / 2, math.pi, -math.pi / 2], frame=frame)
+    driver, cmd, _ = _driver(
+        session, yaws=[0.0, math.pi / 2, math.pi, -math.pi / 2, 0.0], frame=frame
+    )
     driver.start()
     assert cmd[0] == pytest.approx(0.5)  # started rotating
     assert session.started_at == pytest.approx(0.0)
-    results = [driver.result() for _ in range(4)]
+    results = [driver.result() for _ in range(5)]
     statuses = [r.status for r in results]
-    assert statuses[:3] == [ScanSessionStatus.RUNNING] * 3
-    assert statuses[3] is ScanSessionStatus.SNAPSHOT_READY
-    assert results[3].snapshot is snapshot
+    assert statuses[:4] == [ScanSessionStatus.RUNNING] * 4
+    assert statuses[4] is ScanSessionStatus.SNAPSHOT_READY
+    assert results[4].snapshot is snapshot
     # One frame forwarded per captured step, in order.
     assert session.forwarded == [(frame, f"scan-step-{k}") for k in range(4)]
     assert cmd[-1] == pytest.approx(0.0)  # stopped at completion
@@ -442,11 +447,13 @@ def test_scan_session_driver_completes_and_returns_snapshot_ready():
 
 def test_scan_session_driver_finalize_failure_is_scan_failed():
     session = FakeSnapshotSession(fail=True)
-    driver, _, _ = _driver(session, yaws=[0.0, math.pi / 2, math.pi, -math.pi / 2])
+    driver, _, _ = _driver(
+        session, yaws=[0.0, math.pi / 2, math.pi, -math.pi / 2, 0.0]
+    )
     driver.start()
-    results = [driver.result() for _ in range(4)]
-    assert results[3].status is ScanSessionStatus.FAILED
-    assert results[3].reason is ExecutorReasonCode.SCAN_FAILED
+    results = [driver.result() for _ in range(5)]
+    assert results[4].status is ScanSessionStatus.FAILED
+    assert results[4].reason is ExecutorReasonCode.SCAN_FAILED
 
 
 def test_scan_session_driver_times_out_when_rotation_stalls():
@@ -475,15 +482,15 @@ def test_scan_session_driver_resets_rotation_for_follow_up_cycle():
     driver, cmd, _ = _driver(
         session,
         yaws=[
-            0.0, math.pi / 2, math.pi, -math.pi / 2,
-            0.0, math.pi / 2, math.pi, -math.pi / 2,
+            0.0, math.pi / 2, math.pi, -math.pi / 2, 0.0,
+            0.0, math.pi / 2, math.pi, -math.pi / 2, 0.0,
         ],
     )
 
     driver.start()
-    first = [driver.result() for _ in range(4)]
+    first = [driver.result() for _ in range(5)]
     driver.start()
-    second = [driver.result() for _ in range(4)]
+    second = [driver.result() for _ in range(5)]
 
     assert first[-1].status is ScanSessionStatus.SNAPSHOT_READY
     assert second[-1].status is ScanSessionStatus.SNAPSHOT_READY

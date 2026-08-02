@@ -202,7 +202,13 @@ def load_collection_route_source(path: str | Path) -> Mapping[str, Any]:
 def scan_pose_from_court_model(
     court_boundary: Mapping[str, Any], *, robot_pose: Pose2D
 ) -> tuple[float, float, float]:
-    """Return the centre of the service line on the robot's current net side."""
+    """Return the service-line centre, facing into the robot-side court half.
+
+    Collection targets on the selected half lie away from the net.  Facing the
+    net after the scan puts every target behind the non-holonomic robot and can
+    leave the connector graph with no valid start edge even though the target
+    passes themselves are feasible.
+    """
     build_court_model(court_boundary)  # reuse the Phase 6A schema/geometry gate
     if not isinstance(robot_pose, Pose2D):
         raise CollectionExecutorNodeFactoryError("robot_pose must be a Pose2D")
@@ -231,7 +237,7 @@ def scan_pose_from_court_model(
     return (
         cx + service_x * lx + center_line_y * wx,
         cy + service_x * ly + center_line_y * wy,
-        math.atan2(-service_x * ly, -service_x * lx),
+        math.atan2(service_x * ly, service_x * lx),
     )
 
 
@@ -313,9 +319,24 @@ class _ExecutionPlanTransformer:
 
     def __init__(self, tf_buffer, ros):
         self._buffer, self._ros = tf_buffer, ros
+        self.last_diagnostics: dict = {}
 
     def __call__(self, plan):
         if plan.map_frame == "odom":
+            self.last_diagnostics = {
+                "schema_version": 1,
+                "plan_id": plan.plan_id,
+                "source_frame": "odom",
+                "target_frame": "odom",
+                "identity": True,
+                "transform": {
+                    "x_m": 0.0,
+                    "y_m": 0.0,
+                    "yaw_rad": 0.0,
+                },
+                "source_crossings": _execution_crossings(plan),
+                "execution_crossings": _execution_crossings(plan),
+            }
             return plan
         transform = self._buffer.lookup_transform(
             "odom", plan.map_frame, self._ros.time_from_seconds(0.0)
@@ -326,16 +347,53 @@ class _ExecutionPlanTransformer:
             2.0 * (rotation.w * rotation.z + rotation.x * rotation.y),
             1.0 - 2.0 * (rotation.y * rotation.y + rotation.z * rotation.z),
         )
-        return transform_collection_plan(
-            plan,
-            RigidTransform2D(
-                target_frame="odom",
-                source_frame=plan.map_frame,
-                x_m=float(translation.x),
-                y_m=float(translation.y),
-                yaw_rad=yaw,
-            ),
+        rigid = RigidTransform2D(
+            target_frame="odom",
+            source_frame=plan.map_frame,
+            x_m=float(translation.x),
+            y_m=float(translation.y),
+            yaw_rad=yaw,
         )
+        transformed = transform_collection_plan(
+            plan,
+            rigid,
+        )
+        stamp = getattr(getattr(transform, "header", None), "stamp", None)
+        stamp_s = None
+        if stamp is not None:
+            stamp_s = float(stamp.sec) + float(stamp.nanosec) * 1e-9
+        self.last_diagnostics = {
+            "schema_version": 1,
+            "plan_id": plan.plan_id,
+            "source_frame": plan.map_frame,
+            "target_frame": transformed.map_frame,
+            "identity": False,
+            "transform_timestamp_s": stamp_s,
+            "transform": {
+                "x_m": rigid.x_m,
+                "y_m": rigid.y_m,
+                "yaw_rad": rigid.yaw_rad,
+            },
+            "source_crossings": _execution_crossings(plan),
+            "execution_crossings": _execution_crossings(transformed),
+        }
+        return transformed
+
+
+def _execution_crossings(plan) -> list[dict]:
+    """Return the immutable crossing geometry needed for frame auditing."""
+    return [
+        {
+            "ball_id": crossing.ball_id,
+            "segment_id": segment.id,
+            "x_m": crossing.position_xy.x_m,
+            "y_m": crossing.position_xy.y_m,
+            "heading_rad": crossing.heading_rad,
+            "progress_s": crossing.progress_s,
+        }
+        for segment in plan.segments
+        for crossing in segment.planned_crossings
+    ]
 
 
 class _CollectionRosTransport:
@@ -355,7 +413,6 @@ class _CollectionRosTransport:
         self.state_subscription = node.create_subscription(ros.CollectionControllerState, base + "/state", self._on_state, 10)
         self.load_future = self.reset_future = None
         self._pending_load_context = None
-        self._load_count = 0
         self.goal_future = self.goal_handle = self.result_future = None
 
     def wait_ready(self, timeout_sec: float) -> bool:
@@ -400,12 +457,15 @@ class _CollectionRosTransport:
         self.latest_state = None
         self.load_future = None
         self._pending_load_context = values
-        if self._load_count:
-            self.reset_future = self.reset_client.call_async(
-                self.ros.ResetService.Request()
-            )
-            return
-        self._send_pending_load()
+        # The Nav2 controller owns the context lifecycle and outlives this
+        # transport.  A new collection run creates a new transport instance,
+        # so local load counters cannot tell whether the controller still has
+        # a consumed context from an earlier run.  Reset is idempotent in both
+        # idle and consumed states; make it the explicit boundary before every
+        # context load.
+        self.reset_future = self.reset_client.call_async(
+            self.ros.ResetService.Request()
+        )
 
     def _send_pending_load(self):
         request = self.ros.LoadService.Request()
@@ -431,7 +491,6 @@ class _CollectionRosTransport:
         if self.load_future is None or not self.load_future.done(): return None
         response = self.load_future.result()
         if response is not None and response.accepted:
-            self._load_count += 1
             return "accepted"
         detail = getattr(response, "detail", "load_rejected")
         self.node.get_logger().error(
@@ -556,6 +615,9 @@ class CollectionExecutorNodeFactory:
 
         self.cmd_vel_publisher = publisher
         self.snapshot_session = snapshot_session
+        self.execution_plan_transformer = _ExecutionPlanTransformer(
+            tf_buffer, self.ros
+        )
         self.handles = CollectionExecutorHandles(
             telemetry_sink=telemetry_sink, lane_navigator=lane_navigator,
             collector_interface=collector_interface,
@@ -570,7 +632,7 @@ class CollectionExecutorNodeFactory:
             state_provider=self.transport.state_provider,
             hold_sender=self.transport.hold_sender,
             finalize_sender=self.transport.finalize_sender,
-            execution_plan_transformer=_ExecutionPlanTransformer(tf_buffer, self.ros),
+            execution_plan_transformer=self.execution_plan_transformer,
             planner_audit_sink=_planner_audit_sink_from_env(node),
             entry_beam_provider=entry_beam_provider,
             confirmed_beam_provider=confirmed_beam_provider,
@@ -598,6 +660,10 @@ class CollectionExecutorNodeFactory:
     @property
     def crossing_telemetry(self):
         return list(self.transport.crossing_telemetry)
+
+    @property
+    def execution_frame_diagnostics(self) -> dict:
+        return dict(self.execution_plan_transformer.last_diagnostics)
 
     @property
     def controller_state(self):

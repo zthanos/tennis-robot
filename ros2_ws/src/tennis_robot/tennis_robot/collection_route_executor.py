@@ -339,8 +339,13 @@ class CollectionRouteExecutor:
             self._transition(ExecutorState.ABORTED_PLANNING, ExecutorReasonCode.PLANNING_FAILED)
             return
         self.plan = plan
-        if plan.planning_status in {PlanningStatus.EMPTY_NO_BALLS, PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS}:
+        if plan.planning_status is PlanningStatus.EMPTY_NO_BALLS:
             self._transition(ExecutorState.COMPLETED_NO_TARGETS)
+        elif plan.planning_status is PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS:
+            # Targets were observed and classified, but none has an executable
+            # route.  This is not the same outcome as an empty court: callers
+            # must surface the unresolved targets and their planner blockers.
+            self._transition(ExecutorState.INCOMPLETE_TARGETS)
         elif not plan.is_executable:
             self._transition(ExecutorState.ABORTED_PLANNING, ExecutorReasonCode.PLANNING_FAILED)
         else:

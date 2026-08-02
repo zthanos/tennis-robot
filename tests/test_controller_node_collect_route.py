@@ -521,6 +521,8 @@ def test_optional_route_audit_persists_exact_snapshot_and_plan(
         "route_outcome": "route_completed",
         "snapshot": snapshot_data,
         "plan": plan_data,
+        "execution_frame_diagnostics": {},
+        "execution_truth_snapshot": {},
     }
     assert list(tmp_path.glob("*.tmp")) == []
 
@@ -558,3 +560,94 @@ def test_collection_map_surfaces_live_snapshot_tracks(monkeypatch):
     ]
     assert payload["metrics"]["balls_mapped"] == 2
     assert payload["metrics"]["balls_confirmed"] == 1
+
+
+def test_collection_map_hides_confirmed_positions_from_snapshot_fallback(monkeypatch):
+    node = _node(monkeypatch)
+    node._start_collection_route_executor()
+    node.control_mode = "collect_route"
+    node.active_mapped_target_id = None
+    node._collect_route_console_collected_positions = [(4.0, 2.0)]
+    node.ball_map = SimpleNamespace(
+        config=SimpleNamespace(
+            merge_distance_m=0.65,
+            supervised_fov_rad=1.204,
+            supervised_max_range_m=6.765,
+        ),
+        to_console_balls=lambda *args, **kwargs: [],
+    )
+
+    payload = ControllerNode._build_map_payload(node)
+
+    assert [(ball["x_m"], ball["y_m"]) for ball in payload["balls"]] == [
+        (3.0, 1.0),
+    ]
+    assert payload["metrics"]["balls_mapped"] == 1
+    assert payload["metrics"]["balls_confirmed"] == 0
+
+
+def test_route_confirmation_marks_associated_console_ball_collected(monkeypatch):
+    node = _node(monkeypatch)
+    mapped = SimpleNamespace(
+        id=7,
+        x_m=4.05,
+        y_m=1.98,
+        state="detected",
+        last_seen_s=1.0,
+    )
+    states = {}
+    node.ball_map = SimpleNamespace(
+        balls={7: mapped},
+        config=SimpleNamespace(max_merge_distance_m=1.6),
+        set_state=lambda ball_id, state: (
+            states.__setitem__(ball_id, state),
+            setattr(mapped, "state", state),
+        ),
+    )
+    node._collect_route_executor = SimpleNamespace(
+        snapshot=SimpleNamespace(
+            balls=(
+                SimpleNamespace(
+                    ball_id="scan/target-1",
+                    position=SimpleNamespace(x_m=4.0, y_m=2.0),
+                ),
+            )
+        )
+    )
+
+    marked = ControllerNode._mark_route_confirmation_on_console_map(
+        node,
+        {"ball_id": "scan/target-1"},
+        12.5,
+    )
+
+    assert marked == 7
+    assert states == {7: "collected"}
+    assert mapped.last_seen_s == 12.5
+    assert node._collect_route_console_collected_positions == [(4.05, 1.98)]
+
+
+def test_route_confirmation_does_not_hide_distant_console_ball(monkeypatch):
+    node = _node(monkeypatch)
+    mapped = SimpleNamespace(
+        id=8,
+        x_m=8.0,
+        y_m=4.0,
+        state="detected",
+        last_seen_s=1.0,
+    )
+    node.ball_map = SimpleNamespace(
+        balls={8: mapped},
+        config=SimpleNamespace(max_merge_distance_m=1.6),
+        set_state=lambda ball_id, state: setattr(mapped, "state", state),
+    )
+    node._collect_route_executor = SimpleNamespace(snapshot=SimpleNamespace(balls=()))
+
+    marked = ControllerNode._mark_route_confirmation_on_console_map(
+        node,
+        {"ball_id": None},
+        12.5,
+    )
+
+    assert marked is None
+    assert mapped.state == "detected"

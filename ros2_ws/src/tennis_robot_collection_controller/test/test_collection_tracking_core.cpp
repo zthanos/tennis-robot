@@ -13,7 +13,7 @@ namespace
 tc::TrackingExecutionProfile profile()
 {
   return tc::TrackingExecutionProfile{
-    1.0, 0.8, 1.2, 0.1, 1.0, 1.0, 2.0, 0.5, 1.0, false, false};
+    1.0, 0.8, 1.2, 0.1, 0.2, 1.0, 1.0, 2.0, 0.5, 1.0, false, false};
 }
 
 tc::CollectionTrackingPlan plan()
@@ -79,6 +79,23 @@ TEST(CollectionTrackingCore, HeadingGateUsesPathYawNotIntentionalLookaheadBearin
   tc::CollectionTrackingCore misaligned(curved);
   EXPECT_EQ(misaligned.update(input(0.0, 0.0, 0.2, 0.0)).failure,
     tc::TrackingFailureCode::kHeadingErrorExceeded);
+}
+
+TEST(CollectionTrackingCore, HeadingGateAllowsBoundedPassEntryGraceThenBecomesStrict)
+{
+  auto entry = plan();
+  entry.segments[0].profile.max_heading_error_rad = 0.15;
+  entry.segments[0].profile.required_entry_m = 0.2;
+
+  tc::CollectionTrackingCore inside_grace(entry);
+  const auto aligning = inside_grace.update(input(0.01, 0.0, -0.164, 1.0));
+  EXPECT_EQ(aligning.status, tc::TrackingStatus::kRunning);
+  EXPECT_EQ(aligning.failure, tc::TrackingFailureCode::kNone);
+
+  tc::CollectionTrackingCore after_grace(entry);
+  const auto still_misaligned = after_grace.update(input(0.21, 0.0, -0.164, 1.0));
+  EXPECT_EQ(still_misaligned.status, tc::TrackingStatus::kFailed);
+  EXPECT_EQ(still_misaligned.failure, tc::TrackingFailureCode::kHeadingErrorExceeded);
 }
 
 TEST(CollectionTrackingCore, CrossingSpeedBelowAndAboveBoundsAreHardFailures)
@@ -212,7 +229,7 @@ TEST(CollectionTrackingCore, SelfCrossingLoopDoesNotFalselyReportNonMonotonicPro
   }
   const double total = path.back().progress_s;
   const tc::TrackingExecutionProfile lenient{
-    1.0, 0.1, 5.0, 0.1, 0.0, 0.0, 100.0, 5.0, 3.14159, false, false};
+    1.0, 0.1, 5.0, 0.1, 0.0, 0.0, 0.0, 100.0, 5.0, 3.14159, false, false};
   const tc::CollectionTrackingPlan loop_plan{
     path, {{"loop", 0.0, total, lenient, {}}}, total,
     {1.0, 100.0, 10.0, 0.25, 0.05}};

@@ -349,6 +349,16 @@ def generate_launch_description():
         parameters=[{"config_file": BRIDGE_CONFIG}],
         output="screen",
     )
+    sim_clock_relay = Node(
+        package="tennis_robot",
+        executable="sim_clock_relay_node",
+        name="sim_clock_relay",
+        output="screen",
+        additional_env={
+            "PYTHONPATH": ROS_PYTHONPATH,
+            "SIM_CLOCK_PUBLISH_HZ": os.getenv("SIM_CLOCK_PUBLISH_HZ", "50"),
+        },
+    )
 
     # ── ROS 2 nodes (same as before — interface unchanged) ──────────────────
     # /odom remap: after the ros2_control migration odometry is published on
@@ -386,6 +396,17 @@ def generate_launch_description():
                 "BALL_CENTER_ZOOM_TILES", "0.30:0.333,0.50:0.333,0.70:0.333"
             ),
             "BALL_CLASS_IDS": os.getenv("BALL_CLASS_IDS", "32"),
+            # Bound both ONNX sessions. Without explicit pools, each session
+            # expands to the workstation CPU topology and can starve Gazebo.
+            "PERCEPTION_ONNX_INTRA_OP_THREADS": os.getenv(
+                "PERCEPTION_ONNX_INTRA_OP_THREADS", "4"
+            ),
+            "PERCEPTION_ONNX_INTER_OP_THREADS": os.getenv(
+                "PERCEPTION_ONNX_INTER_OP_THREADS", "1"
+            ),
+            "RGB_DEPTH_SYNC_QUEUE_SIZE": os.getenv(
+                "RGB_DEPTH_SYNC_QUEUE_SIZE", "3"
+            ),
             # Required neural court-scene semantics. Custom training uses
             # class 0=net and class 1=fence; no OpenCV runtime fallback.
             "COURT_SCENE_DETECTOR_BACKEND": os.getenv(
@@ -542,7 +563,7 @@ def generate_launch_description():
     # distributed simulation, sensor snapshots are split: the PC encodes a
     # low-rate JPEG preview next to the raw Gazebo camera, while the Pi receives
     # only that compact preview. Raw RGB/depth therefore never cross the LAN.
-    _sim_node_actions = [bridge, gz_extras, drive_actuator, *cmd_vel_relays,
+    _sim_node_actions = [bridge, sim_clock_relay, gz_extras, drive_actuator, *cmd_vel_relays,
                          collector_logic, twist_mux, ekf]
     _brain_node_actions = [perception, controller, navigation, command_bridge]
     if _sensor_snapshot_mode == "publisher":

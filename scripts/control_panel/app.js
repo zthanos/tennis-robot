@@ -288,15 +288,28 @@
       if (!kv) return;
       const r = run || {};
       const hasRun = Number(r.planned || 0) > 0 || Number(r.basket_retained || 0) > 0;
-      const incomplete = r.status === "incomplete_targets" || r.state === "incomplete_targets";
+      const noFeasibleTargets = r.planning_status === "empty_no_feasible_targets";
+      const incomplete = r.status === "incomplete_targets"
+        || r.state === "incomplete_targets"
+        || noFeasibleTargets;
       const aborted = String(r.status || r.state || "").startsWith("aborted_");
       const failureReason = String(r.failure_reason || r.route_outcome || "").replaceAll("_", " ");
       const failureCause = String(r.failure_detail || "").split("|")[0].trim().replaceAll("_", " ");
+      const plannerBlockers = (Array.isArray(r.ball_results) ? r.ball_results : [])
+        .filter(result => ["deferred", "unreachable"].includes(result.status))
+        .reduce((counts, result) => {
+          const reason = String(result.reason_code || "unknown").replaceAll("_", " ");
+          counts[reason] = (counts[reason] || 0) + 1;
+          return counts;
+        }, {});
+      const plannerBlockerText = Object.entries(plannerBlockers)
+        .map(([reason, count]) => `${count} ${reason}`)
+        .join(", ");
       if (status) {
         status.textContent = aborted
           ? `ABORTED · ${failureCause || failureReason || "route failed"}`
           : (incomplete
-            ? `INCOMPLETE · ${r.unresolved_targets ?? r.remaining ?? 0} unresolved`
+            ? `INCOMPLETE · ${plannerBlockerText || `${r.unresolved_targets ?? r.remaining ?? 0} unresolved`}`
             : (hasRun ? (r.status || "running") : "waiting"));
         status.style.color = aborted
           ? "var(--danger)"
@@ -323,6 +336,7 @@
         ["Failed", r.failed ?? 0],
         ["Missing / skipped", `${r.missing ?? 0} / ${r.skipped ?? 0}`],
         ["Remaining / unresolved", `${r.remaining ?? 0} / ${r.unresolved_targets ?? 0}`],
+        ["Planner blockers", plannerBlockerText || "-"],
         ["Active ball", r.active_ball_id ?? "-"],
         ["Failed ball IDs", (r.failed_ball_ids || []).join(", ") || "-"],
       ]);
@@ -585,9 +599,10 @@
       if (_refreshInFlight || document.hidden) return;
       _refreshInFlight = true;
       try {
-        const response = await fetch("/api/diagnostics", { cache: "no-store" });
-        diagnostics = await response.json();
         const activeView = document.querySelector("section.view.active")?.id;
+        const diagnosticsUrl = `/api/diagnostics?view=${encodeURIComponent(activeView || "dashboard")}`;
+        const response = await fetch(diagnosticsUrl, { cache: "no-store" });
+        diagnostics = await response.json();
         if (SENSOR_VIEWS.has(activeView)) {
           const sensorResponse = await fetch("/api/sensors", { cache: "no-store" });
           sensors = await sensorResponse.json();

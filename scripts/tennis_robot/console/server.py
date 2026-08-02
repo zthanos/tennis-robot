@@ -8,6 +8,7 @@ ConsoleServer), so there are no class-level singletons.
 
 from __future__ import annotations
 
+import gzip
 import json
 import math
 from http import HTTPStatus
@@ -16,6 +17,41 @@ from urllib.parse import parse_qs, urlparse
 
 from .app import ConsoleApp
 from .config import STATIC_CONTENT_TYPES
+
+
+_JSON_GZIP_MIN_BYTES = 1024
+
+
+def _accepts_gzip(header: str) -> bool:
+    """Return whether an HTTP Accept-Encoding value permits gzip."""
+
+    for item in header.lower().split(","):
+        fields = [field.strip() for field in item.split(";")]
+        if not fields or fields[0] not in {"gzip", "*"}:
+            continue
+        quality = 1.0
+        for parameter in fields[1:]:
+            if parameter.startswith("q="):
+                try:
+                    quality = float(parameter[2:])
+                except ValueError:
+                    quality = 0.0
+        if quality > 0.0:
+            return True
+    return False
+
+
+def encode_json_response(data: dict, accept_encoding: str) -> tuple[bytes, str | None]:
+    """Encode compact JSON and optionally gzip it for transport.
+
+    Compression changes only the HTTP representation; the decoded JSON
+    contract consumed by the UI is byte-for-byte equivalent as data.
+    """
+
+    payload = json.dumps(data, separators=(",", ":")).encode("utf-8")
+    if len(payload) >= _JSON_GZIP_MIN_BYTES and _accepts_gzip(accept_encoding):
+        return gzip.compress(payload, compresslevel=1), "gzip"
+    return payload, None
 
 
 class ConsoleServer(ThreadingHTTPServer):
@@ -65,7 +101,8 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
     # routing
     # ------------------------------------------------------------------
     def do_GET(self) -> None:
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
         if path in {"/", "/index.html"}:
             self._send_html(self._load_html())
             return
@@ -75,6 +112,10 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         if path == "/favicon.ico":
             self.send_response(HTTPStatus.NO_CONTENT)
             self.end_headers()
+            return
+        if path == "/api/diagnostics":
+            view = parse_qs(parsed.query).get("view", ["dashboard"])[0]
+            self._send_json(self.app.build_diagnostics(view=view))
             return
         name = self.GET_JSON_ROUTES.get(path)
         if name is not None:
@@ -215,10 +256,15 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
             pass
 
     def _send_json(self, data: dict, status: HTTPStatus = HTTPStatus.OK) -> None:
-        payload = json.dumps(data).encode("utf-8")
+        payload, content_encoding = encode_json_response(
+            data, self.headers.get("Accept-Encoding", "")
+        )
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Vary", "Accept-Encoding")
+        if content_encoding:
+            self.send_header("Content-Encoding", content_encoding)
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         try:

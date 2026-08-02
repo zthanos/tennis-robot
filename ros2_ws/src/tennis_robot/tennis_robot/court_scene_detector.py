@@ -20,6 +20,8 @@ from typing import Protocol, runtime_checkable
 
 import numpy as np
 
+from tennis_robot.onnx_runtime_config import create_cpu_inference_session
+
 from tennis_robot.ball_detector import _nms
 
 
@@ -108,9 +110,10 @@ class YoloOnnxCourtSceneDetector:
         ):
             raise ValueError("court-scene class map must contain exactly 'net' and 'fence'")
 
-        self._session = ort.InferenceSession(
+        self._session = create_cpu_inference_session(
+            ort,
             model_path,
-            providers=providers or ["CPUExecutionProvider"],
+            providers=providers,
         )
         self._input_name = self._session.get_inputs()[0].name
         shape = self._session.get_inputs()[0].shape

@@ -16,6 +16,7 @@ from tennis_robot.collection_route_executor import (
 )
 from tennis_robot.collection_route_planner_v2 import CourtModel, plan_collection_route
 from tennis_robot.collection_route_types import (
+    BallReasonCode, BallResult, BallStatus, CollectionRoutePlan,
     FollowUpConfiguration, Point2D, Pose2D, PositionCovariance2D,
     PlanningSearchStatus, PlanningStatus, ScanSnapshot, SnapshotBall,
 )
@@ -134,6 +135,39 @@ def test_scan_and_planning_terminal_states_and_planner_requires_snapshot():
     no_targets.start(); no_targets.tick(); no_targets.tick(); no_targets.tick()
     assert no_targets.state is ExecutorState.COMPLETED_NO_TARGETS
     assert no_targets._collector.start_calls == 0
+
+    unreachable = snapshot(balls=("blocked",))
+    no_feasible_plan = CollectionRoutePlan(
+        "no-feasible",
+        unreachable.scan_id,
+        "map",
+        unreachable.robot_pose_at_scan,
+        unreachable.robot_pose_at_scan,
+        0.0,
+        0.0,
+        PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS,
+        PlanningSearchStatus.COMPLETE,
+        (),
+        ("blocked",),
+        (
+            BallResult(
+                "blocked",
+                BallStatus.UNREACHABLE,
+                BallReasonCode.TURN_RADIUS,
+            ),
+        ),
+        unreachable.configuration_snapshot,
+    )
+    unresolved, _ = make_executor(
+        snap=unreachable,
+        planner=Planner(no_feasible_plan),
+    )
+    unresolved.start()
+    unresolved.tick()
+    unresolved.tick()
+    unresolved.tick()
+    assert unresolved.state is ExecutorState.INCOMPLETE_TARGETS
+    assert unresolved._collector.start_calls == 0
 
 
 def test_successful_route_and_frozen_plan_are_preserved():
