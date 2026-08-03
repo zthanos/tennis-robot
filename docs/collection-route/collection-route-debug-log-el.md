@@ -1773,3 +1773,46 @@ projection.progress_s + tol >= plan_.terminal_progress_s   // (α) μήκος τ
 **Πλατφόρμα:** σταθερή σε όλο το session — 0 node deaths, 0 UDP errors, clean
 shutdown, ο controller_node επιβίωσε μετά το fix του drive-observer buffer
 (f5cf8d6).
+
+## #42 — Πρώτο καθαρό route σε localization + πρώτο live off-route pass
+
+**Setup:** PC sim + Pi σε `SLAM_MODE=localization` πάνω στον `court_1785705204`,
+**χωρίς survey**, με το terminal instrumentation (#41) και το latch (ebfe91c).
+
+**Αποτέλεσμα — καθαρός τερματισμός για πρώτη φορά σε αυτή τη σειρά runs:**
+
+```
+  0.0    navigating_to_scan_pose
+  4.1    scanning
+ 23.2    planning              -> 10 στόχοι
+ 42.2    executing_route
+188.5    route_completed        <- ΚΑΘΑΡΟ, κανένα terminal_not_reached
+190.0    evaluating_results
+190.0    planning               <- ΑΠΕΥΘΕΙΑΣ, χωρίς navigating_to_scan_pose
+190.1    incomplete_targets
+```
+
+- **Το finalize έγινε δεκτό.** `route_completed`, `failure_detail: None`. Τα δύο
+  προηγούμενα runs (ίδιο setup, χωρίς latch) απέτυχαν και τα δύο με
+  `terminal_not_reached`. **Δεν είναι αποδεικτικό** — το φαινόμενο ήταν εξαρχής
+  διαλείπον — αλλά είναι η πρώτη επιτυχία μετά το latch.
+- **Το off-route pass λειτούργησε live.** Η μετάβαση `route_completed → planning`
+  **χωρίς** ενδιάμεσο `navigating_to_scan_pose` είναι δυνατή **μόνο** από το
+  `_begin_off_route_pass`. Δηλαδή το follow-up σχεδιάστηκε από τις μπάλες που
+  βρέθηκαν **οδηγώντας**, από την τρέχουσα θέση, χωρίς επιστροφή στο T και χωρίς
+  δεύτερο 360 — γλιτώνοντας το ταξίδι και τα ~90 s της σάρωσης.
+- **Τερματισμός `incomplete_targets` 0.06 s μετά:** ο planner δεν βρήκε
+  εκτελέσιμη διαδρομή για τους off-route στόχους (`EMPTY_NO_FEASIBLE_TARGETS →
+  INCOMPLETE_TARGETS`, #37). Σωστή συμπεριφορά: στόχοι υπήρχαν, διαδρομή όχι.
+- **4/10 retained**, `crossed_unconfirmed=0`, **`pose_drift_m = 0.319`** — το
+  χαμηλότερο που έχει μετρηθεί (0.427/0.429 mapping, 0.328/0.339 localization).
+
+**Ανοιχτό/ανεπιβεβαίωτο:** το info log `off-route discovery: N new target(s)`
+δεν εντοπίστηκε στο Pi log, παρότι η μετάβαση καταστάσεων αποδεικνύει ότι το
+μονοπάτι εκτελέστηκε. Πιθανό ζήτημα επιπέδου/ροής logging, όχι λογικής. Πριν
+δηλωθεί το χαρακτηριστικό «επιβεβαιωμένο», χρειάζεται run που να δείχνει τον
+**αριθμό** των off-route στόχων και, ιδανικά, ένα follow-up route που όντως
+εκτελείται.
+
+**Δεν έχει ακόμη επικυρωθεί:** δεύτερο *mission* (νέα εντολή `collect_route`)
+μετά από καθαρό τερματισμό — το τεστ που εξαρχής κίνησε το finalize fix.
