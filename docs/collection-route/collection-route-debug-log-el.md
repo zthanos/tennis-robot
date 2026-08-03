@@ -1468,3 +1468,111 @@ PC+Pi run (PC-only → +Pi → +UI → route → δεύτερο scan/route → c
   RPP κάνει `Resulting plan has 0 poses in it` πριν προλάβει ο goal checker.
   Είναι υπόλειμμα της Humble→Jazzy μετάβασης, **όχι** regression αυτού του
   checkpoint (το αρχείο δεν έχει αλλάξει από το `83f33af`).
+
+### Live distributed επικύρωση του #37 (2026-08-03)
+
+Σταδιακό PC+Pi run πάνω από **gigabit Ethernet** (και οι δύο μηχανές ενσύρματα·
+το PC έτρεχε προηγουμένως σε WiFi και όλο το DDS traffic μοιραζόταν airtime με
+το internet — αυτό εξηγεί γιατί ~3 Mbit/s application traffic έριχνε το internet
+από 330 σε 7.5 Mbps). Νέο Map Court από το Pi πρώτα, ώστε όλα τα δεδομένα να
+είναι στο τρέχον Pi slam frame (`OK`, 136.8 s, 1.500 occupancy points, 4
+obstacles, robot επέστρεψε στο start pose).
+
+- **Context lifecycle: ΕΠΙΚΥΡΩΘΗΚΕ.** Ένα `collect_route` mission έκανε scan →
+  plan(3) → execute → **δεύτερο scan** → plan(run-2) → execute → terminal, με
+  **δύο** διαδοχικά execution context loads. **0** `context_already_consumed`,
+  **0** reset rejections στο Pi log. Το `aborted_scan` του δεύτερου scan δεν
+  επανεμφανίστηκε.
+- **Φυσική συλλογή: 4/4 retained.** `basket_retained=4`, `confirmed=4`,
+  `beam_credits=4`, `crossed_unconfirmed=0`. Η επιβεβαίωση **δεν** είναι
+  κυκλική: το `/ball/collected` εκπέμπεται μόνο όταν ο
+  `_sim_retention_tracker` δει τη μπάλα στη ζώνη `bin` σε **robot-frame ground
+  truth** συντεταγμένες για το απαιτούμενο dwell (`controller_node.py:2248`),
+  ανεξάρτητα από το beam. Οι μπάλες `ball_04/05/06/13` έφυγαν από το `/sim/balls`
+  ως αποτέλεσμα αυτού, όχι ως αιτία του.
+- **Το spatial offset ΥΠΑΡΧΕΙ ακόμη και τώρα μετρήθηκε:** το νέο
+  `execution_truth_snapshot` έδωσε **`pose_drift_m = 0.429`**,
+  `yaw_drift_rad = 0.0245`, με `pose_frame_offset` x=-8.643 m. Τα per-crossing
+  `lateral_error_m ≈ 0` δείχνουν ότι το robot ακολουθεί **τέλεια το δικό του
+  μετατοπισμένο plan** — η ίδια υπογραφή «σωστό plan, μετατοπισμένη εκτέλεση»
+  των #32/#35, τώρα με αριθμό αντί για εντύπωση. Με capture corridor ~0.15 m,
+  drift 0.43 m σημαίνει ότι κάθε μπάλα εκτός των στοχευμένων προσπερνιέται.
+- **Τερματισμός `incomplete_targets` — σωστός.** Στο run-2 τρεις στόχοι
+  απορρίφθηκαν ως `unreachable / turn_radius` και ένας επιλέχθηκε. Δηλαδή στο
+  γήπεδο έμειναν μπάλες που ο planner δεν μπορούσε να φτάσει, όχι μπάλες που
+  χάθηκαν στην εκτέλεση.
+- **Δεν επικυρώθηκε ακόμη:** δεύτερο **mission** (νέα εντολή `collect_route`
+  μετά τον τερματισμό του πρώτου) — το run αυτό κάλυψε δύο scan/plan/execute
+  κύκλους **μέσα** στο ίδιο mission. Ο Gazebo έσκασε πριν προλάβουμε, σε
+  **GUI bug άσχετο με τη στοίβα μας**: `libSelectEntities.so` →
+  `SelectEntities::eventFilter` → `HandleEntitySelection` → `HighlightNode` →
+  `OgreVisual::LocalBoundingBox` → Ogre assert → abort, δηλαδή επιλογή
+  οντότητας στο viewport. Ο server έφυγε μαζί με το GUI (ίδιο launch entry).
+
+## #38 — Root cause των διαδοχικών routes: το finalize είναι fire-and-forget
+
+**Πλαίσιο:** δεύτερος σταδιακός PC+Pi κύκλος (2026-08-03), φρέσκο Map Court,
+`collect_route` mission. Πρώτος κύκλος route: plan 7, `route_completed`, 2
+retained. Δεύτερος κύκλος: scan OK, plan 12, και **20 ms** μετά την είσοδο σε
+`executing_route` → `aborted_tracking / path_failed`. Στο Pi log, μία γραμμή:
+
+```
+[controller_node] ERROR: collection controller reset rejected: invalid_lifecycle
+```
+
+**Αλυσίδα αιτιότητας (τεκμηριωμένη):**
+
+1. `collection_path_follower_port.py:279` — όταν το Nav2 goal πετύχει, ο κώδικας
+   **σκοπεύει** να ελέγξει το finalize:
+   `if not self._finalize(): return self._fail(PATH_FAILED, "collection
+   controller rejected terminal finalize")`.
+2. `collection_executor_node_factory.py:542` — το `finalize_sender` κάνει
+   `call_async(...)` και **`return True` ανεξαρτήτως απάντησης**. Άρα ο έλεγχος
+   του βήματος 1 είναι **νεκρός κώδικας**. Μπήκε ως workaround για το Jazzy
+   «Executor is already spinning» (το σχόλιο το δηλώνει)· στο Humble ο nested
+   spin περνούσε και ο έλεγχος **δούλευε**.
+3. `collection_execution_context_contract.cpp:142` — `finalize()` με
+   `action_outcome == SUCCEEDED` απαιτεί `terminal_ready`, αλλιώς
+   `kTerminalNotReached`. Το Nav2 δηλώνει επιτυχία μέσω goal checker
+   (`collection_goal_checker.xy_goal_tolerance: 0.30`), που **δεν ταυτίζεται**
+   με το `terminal_ready_` του collection controller. Όταν αποκλίνουν, το
+   finalize απορρίπτεται και το lifecycle **μένει `kExecuting`**.
+4. Ο executor δεν το μαθαίνει ποτέ· αναφέρει `route_completed` και πάει για
+   rescan. Ο controller έχει κολλήσει σε `kExecuting`.
+5. Το επόμενο route: reset-before-load → `invalid_lifecycle` (το `reset()`
+   σωστά απορρίπτει σε `kExecuting`) → το load δεν στέλνεται καν →
+   `path_failed`.
+
+**Γιατί είναι διαλείπον:** εξαρτάται αποκλειστικά από το αν είχε τεθεί το
+`terminal_ready` όταν ο goal checker δήλωσε επιτυχία. Στον κύκλο της ίδιας
+βραδιάς με 4/4 captures το finalize πέρασε και το δεύτερο load δούλεψε· εδώ όχι.
+
+**Σχέση με το #37:** το reset-before-load είναι σωστό αλλά θεραπεύει το σύμπτωμα
+μόνο όταν το προηγούμενο context έχει όντως τερματίσει. Το `context_already_
+consumed` (παλιό σύμπτωμα) και το `invalid_lifecycle` (νέο) είναι **δύο όψεις
+του ίδιου defect**: κανείς δεν ελέγχει την απάντηση του finalize.
+
+**Fix (ΔΕΝ έχει υλοποιηθεί):** να γίνει το finalize ack-aware όπως ήδη είναι το
+load/reset — δηλαδή future που ελέγχεται σε **επόμενες κλήσεις του timer**, όχι
+nested spin (`load_outcome_provider` είναι το υπάρχον πρότυπο). Σε απόρριψη:
+fail-loud, και είτε retry με `CANCELED` outcome είτε ρητό escalation, ώστε να
+μην αφήνεται ποτέ ο controller σε `kExecuting`.
+
+**Δευτερεύοντα ευρήματα του ίδιου κύκλου:**
+
+- Το `ros2 launch` **δεν** καταρρέει όταν πεθάνει ο Gazebo: έμειναν ζωντανά
+  launch + domain_bridge + perception_node με νεκρό sim.
+- Το Gazebo GUI κρασάρει σε **επιλογή οντότητας** στο viewport
+  (`libSelectEntities.so` → `HandleEntitySelection` → `HighlightNode` →
+  `OgreVisual::LocalBoundingBox` → Ogre assert). Άσχετο με τη στοίβα μας.
+- **Τα map frames δεν επαναλαμβάνονται μεταξύ restarts:** `survey_start_pose`
+  yaw ήταν 0.2662 rad στο ένα survey και 0.0062 στο επόμενο (~15° διαφορά).
+  Άρα επαναχρησιμοποίηση `court_boundary.json` μετά από restart σε **mapping**
+  mode είναι άκυρη. Ο σωστός δρόμος —και η απαίτηση «όχι survey κάθε φορά»—
+  είναι `SLAM_MODE=localization` πάνω στο σωσμένο `map_artifact`· ο μηχανισμός
+  **υπάρχει ήδη** (`run_pi.sh:10`, `slam_localization.launch.py`,
+  `slam_toolbox.yaml mode: mapping | localization`) και δεν έχει δοκιμαστεί
+  distributed. **ΕΠΟΜΕΝΟ ΤΕΣΤ.**
+- `pose_drift_m` = **0.427** σε αυτόν τον κύκλο (0.429 στον προηγούμενο):
+  σταθερό ~43 cm, με per-crossing `lateral_error_m ≈ 0`. Το spatial offset είναι
+  πλέον μετρήσιμο και επαναλήψιμο, όχι εντύπωση.
