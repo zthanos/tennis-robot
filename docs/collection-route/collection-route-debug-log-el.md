@@ -1612,3 +1612,52 @@ fail-loud, και είτε retry με `CANCELED` outcome είτε ρητό escal
   καθαρό.
 - **ΕΚΚΡΕΜΕΙ live επαλήθευση:** δύο συνεχόμενα routes χωρίς restart (βήμα 3 της
   συμφωνημένης σειράς). Το fix είναι επικυρωμένο μόνο σε pure tests.
+
+## #39 — Το stale Jazzy launch test: η RPP δεν μπορεί να ακολουθήσει με στατικό robot
+
+**Πλαίσιο:** το `test_collection_controller_server_isolated.launch.py` είχε 2
+failures (ένα test + το cascade στο tearDown του) από τη μετάβαση σε Jazzy. Το
+πρώτο μισό διορθώθηκε στο #37 (`TwistStamped` αντί `Twist`, γιατί το
+`nav2_params.yaml` έχει `enable_stamped_cmd_vel: true`). Έμενε το survey σκέλος
+του `test_collection_is_forward_only_and_survey_rpp_needs_no_context`, που
+abort-άριζε με `Resulting plan has 0 poses in it` (πηγή:
+`libnav2_regulated_pure_pursuit_controller.so`).
+
+**Τι αποκλείστηκε με μετρήσεις** (standalone launch probes με τον ίδιο
+controller_server και το ίδιο `nav2_params.yaml`):
+
+- **ΟΧΙ** το `use_sim_time` του nested `local_costmap`: τα logs του τυπώνουν
+  wall-clock timestamps, άρα δεν τρέχει σε sim time (η αρχική υπόθεση ήταν λάθος).
+- **ΟΧΙ** το προηγούμενο collection goal: αναπαράγεται σε test που στέλνει
+  **μόνο** το survey goal.
+- **ΟΧΙ** το per-pose `header.frame_id` ούτε τα `header.stamp`: δοκιμάστηκαν και
+  οι τέσσερις συνδυασμοί, όλοι αποτυγχάνουν εξίσου.
+- **ΝΑΙ** η θέση του robot ως προς το plan. Ντετερμινιστικό: με τον harness
+  παρκαρισμένο στο **τέρμα** (x=4.0, δηλαδή η τελευταία pose του plan) κάθε goal
+  σκάει με «0 poses»· με το ίδιο ακριβώς setup στην **αρχή** (x=0.0) τρέχουν όλα
+  κανονικά (60-80 εντολές ταχύτητας, κανένα σφάλμα). Η μόνη διαφορά μεταξύ των
+  δύο probes ήταν το αρχικό `cls.pose_x`.
+
+**Η ακριβής εσωτερική συνθήκη της RPP δεν καρφώθηκε.** Οι αριθμοί δεν κλείνουν
+με καμία εκδοχή του `max_robot_pose_search_dist` / `getCostmapMaxExtent()` που
+δοκιμάστηκε black-box (π.χ. στο sweep probe το x=4.0 **δούλευε** όταν το robot
+είχε ξεκινήσει από 0.0 και ανέβει σταδιακά). Καταγράφεται ως παρατήρηση, όχι ως
+εξήγηση.
+
+**Το πραγματικό πρόβλημα είναι η προδιαγραφή του test:** ο harness δημοσιεύει
+σταθερή pose και **δεν κινείται ποτέ**, ενώ η RPP κλαδεύει το plan καθώς το
+robot προχωρά. Το να της ζητάς να «φτάσει» σε goal που το robot ήδη κατέχει, με
+robot χωρίς δυναμική, δεν είναι σενάριο που έχει νόημα να επιβεβαιώνεται.
+
+**Fix:** το survey σκέλος τρέχει πλέον με το robot στην **αρχή** του plan και
+επιβεβαιώνει το συμβόλαιο που δηλώνει το ίδιο το όνομα του test — ότι το
+`FollowPath` (RPP) **δέχεται το goal και υπολογίζει εντολές χωρίς κανένα
+collection execution context** — και ότι δεν τερματίζει πρόωρα· μετά το ακυρώνει
+ρητά. Το `assertEqual(status, 4)` αφαιρέθηκε: απαιτούσε robot που κινείται.
+Η αντιδιαστολή με το `test_missing_context_and_hash_mismatch_do_not_fallback_to_rpp`
+(που επιβεβαιώνει ότι το **collection** controller ΑΠΟΡΡΙΠΤΕΙ χωρίς context)
+διατηρείται ακέραιη.
+
+**Αποτέλεσμα:** `37 tests, 0 errors, 0 failures, 2 skipped`, σταθερά σε **4
+διαδοχικές εκτελέσεις** (το bug ήταν χρονικά/κατάστασης εξαρτημένο, οπότε ένα
+πράσινο run δεν θα αρκούσε).

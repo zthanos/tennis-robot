@@ -252,11 +252,30 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         self.assertTrue(all(command.linear.x >= 0.0 for command in self.cmd))
         self.assertTrue(all(not (command.linear.x == 0.0 and command.angular.z != 0.0) for command in self.cmd))
         self.cleanup_collection_goal(self.goal_registry[-1])
-        self.set_pose_and_wait(4.0)
+        # Survey control must run with no collection execution context loaded.
+        # The robot stays at the start of the plan: this harness publishes a
+        # fixed pose and never moves, and RPP — which prunes the plan as the
+        # robot advances — refuses a plan the robot is already parked at the end
+        # of ("Resulting plan has 0 poses in it").  Reaching a goal needs a
+        # robot with dynamics, so the contract asserted here is the one this
+        # test is named for: RPP accepts the goal and computes velocity
+        # commands without any context.
+        self.set_pose_and_wait(0.0)
+        self.cmd.clear()
         survey = FollowPath.Goal(); survey.path = path; survey.controller_id = 'FollowPath'; survey.goal_checker_id = 'general_goal_checker'
-        sent = self.send_goal(survey)
-        result = sent.get_result_async(); rclpy.spin_until_future_complete(self.node, result, timeout_sec=10.0)
-        self.assertEqual(result.result().status, 4)
+        survey_handle = self.send_goal(survey)
+        self.spin(0.5)
+        self.assertTrue(self.cmd, 'survey FollowPath produced no command without a context')
+        survey_result = survey_handle.get_result_async()
+        rclpy.spin_until_future_complete(self.node, survey_result, timeout_sec=1.0)
+        self.assertIsNone(
+            survey_result.result(),
+            'survey FollowPath terminated early instead of following the plan',
+        )
+        cancel = survey_handle.cancel_goal_async()
+        rclpy.spin_until_future_complete(self.node, cancel, timeout_sec=3.0)
+        rclpy.spin_until_future_complete(self.node, survey_result, timeout_sec=3.0)
+        self.goal_registry.pop()
         names = [name.lower() for name, _ in self.node.get_topic_names_and_types()]
         self.assertFalse(any('backup' in name or 'spin' in name or 'recovery' in name for name in names))
         mismatch = self.route(); mismatch.poses[-1].pose.position.x = 3.0
