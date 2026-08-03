@@ -100,13 +100,26 @@ class DriveObservationBuffer:
         self.scan_id = scan_id
         self.accepted: list = []
         self.rejections: list = []
+        self.visited_steps: set[str] = set()
 
-    # ``ScanSnapshotBuilder.add`` interface -----------------------------------
+    # ── the interface CollectionSnapshotRuntimeAdapter.forward drives ────────
     def add(self, item) -> None:
         if isinstance(item, SpatialObservationRejection):
             self.rejections.append(item)
             return
         self.accepted.append(item)
+
+    def record_visited_step(self, scan_step_id: str) -> None:
+        """Accept the adapter's coverage heartbeat without acting on it.
+
+        For a 360 this marks a sector as observed even when every detection in
+        the frame was rejected.  A drive has no sectors to cover, and the built
+        snapshot's expected steps come from the accepted observations, so this
+        is recorded for diagnostics only and never widens the coverage
+        denominator.
+        """
+        if isinstance(scan_step_id, str) and scan_step_id:
+            self.visited_steps.add(scan_step_id)
 
     @property
     def observation_count(self) -> int:

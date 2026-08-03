@@ -161,3 +161,72 @@ def test_invalid_inputs_fail_loud():
         _build(buffer, now_s=float("nan"))
     with pytest.raises(DriveObservationError):
         _build(buffer, robot_pose=None)
+
+
+# ── contract with the real runtime adapter ───────────────────────────────────
+# The buffer stands in for a ScanSnapshotBuilder. Exercising it only through
+# direct .add() calls missed that the adapter also calls .record_visited_step(),
+# which killed controller_node on the first execution tick of a live route.
+
+from types import SimpleNamespace as N  # noqa: E402
+
+from tennis_robot.collection_snapshot_runtime_adapter import (  # noqa: E402
+    CollectionSnapshotRuntimeAdapter,
+)
+from tennis_robot.perception_covariance_calibration import (  # noqa: E402
+    PerceptionSpatialValidationConfig,
+)
+from tennis_robot.perception_spatial_observation_adapter import (  # noqa: E402
+    TimestampedCameraToMapTransform,
+)
+
+
+class _TF:
+    def at(self, timestamp_s, frame_id):
+        return TimestampedCameraToMapTransform(
+            timestamp_s, "map", frame_id, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0)
+        )
+
+
+def _live_frame():
+    stamp = N(sec=1, nanosec=0)
+    detection = N(
+        has_spatial=True,
+        matched_depth_stamp=stamp,
+        position_covariance=[0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1],
+        position_x=1.0,
+        position_y=2.0,
+        position_z=3.0,
+        confidence=0.9,
+    )
+    return N(
+        header=N(stamp=stamp, frame_id="camera_link_optical_frame"),
+        spatial_targets_healthy=True,
+        calibration_id="gazebo-range-depth-quality-diagonal-v1-20260719-v2",
+        configuration_id="gazebo-v2",
+        detections=[detection],
+    )
+
+
+def test_buffer_satisfies_everything_the_runtime_adapter_calls():
+    adapter = CollectionSnapshotRuntimeAdapter(
+        tf_provider=_TF(),
+        validation_config=PerceptionSpatialValidationConfig(1.0, 1.0, 1e-9, 0.01, 1.0),
+        localization_xy_covariance=default_configuration().gazebo_snapshot.localization_xy_covariance,
+    )
+    buffer = DriveObservationBuffer(scan_id="drive")
+    for step in ("drive-vp-0", "drive-vp-1"):
+        adapter.forward(
+            scan_id=buffer.scan_id, frame=_live_frame(), scan_step_id=step, builder=buffer
+        )
+    assert buffer.visited_steps == {"drive-vp-0", "drive-vp-1"}
+    assert buffer.observation_count == 2
+
+
+def test_coverage_heartbeat_alone_never_produces_a_target():
+    """A visited step with no accepted observation must not widen coverage."""
+    buffer = DriveObservationBuffer(scan_id="drive")
+    for step in ("drive-vp-0", "drive-vp-1", "drive-vp-2"):
+        buffer.record_visited_step(step)
+    assert buffer.visited_steps
+    assert _build(buffer) is None
