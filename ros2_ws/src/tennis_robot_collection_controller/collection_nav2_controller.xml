@@ -5,5 +5,10 @@
     base_class_type="nav2_core::Controller">
     <description>Frozen collection-route controller with exact execution-context binding.</description>
   </class>
+  <class
+    type="tennis_robot_collection_controller::CollectionProgressGoalChecker"
+    base_class_type="nav2_core::GoalChecker">
+    <description>Collection goal checker requiring controller-confirmed terminal route progress and pose proximity.</description>
+  </class>
 </library>
 </class_libraries>

@@ -58,14 +58,20 @@ controller_server:
       stateful: true
 
     collection_goal_checker:
-      plugin: "nav2_controller::SimpleGoalChecker"
+      plugin: "tennis_robot_collection_controller::CollectionProgressGoalChecker"
       # The collection controller stops at the context terminal progress. In
       # Gazebo the chassis can settle about 0.22 m beyond that projection after
       # the command reaches zero. The route includes a separate 0.5 m terminal
       # run-out, so 0.30 m closes the action without weakening lane navigation.
       xy_goal_tolerance: 0.30
       yaw_goal_tolerance: 3.14
-      stateful: true
+      # Euclidean proximity is not sufficient for loop routes: they can pass
+      # arbitrarily close to their endpoint at an earlier path position. The
+      # checker also consumes the collection controller's canonical progress
+      # heartbeat and requires its terminal condition.
+      progress_tolerance_m: 0.30
+      controller_state_topic: "CollectionFollowPath/state"
+      state_timeout_s: 0.50
 
     # Regulated Pure Pursuit — robust for differential drive.
     FollowPath:

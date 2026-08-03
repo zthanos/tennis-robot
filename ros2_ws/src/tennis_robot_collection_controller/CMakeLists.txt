@@ -23,7 +23,8 @@ ament_target_dependencies(collection_path_canonicalization nav_msgs)
 target_link_libraries(collection_path_canonicalization OpenSSL::Crypto)
 
 add_library(collection_nav2_controller SHARED
-  src/collection_nav2_controller.cpp)
+  src/collection_nav2_controller.cpp
+  src/collection_progress_goal_checker.cpp)
 target_compile_features(collection_nav2_controller PUBLIC cxx_std_17)
 target_include_directories(collection_nav2_controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -55,6 +56,12 @@ if(BUILD_TESTING)
   ament_add_gtest(test_collection_nav2_controller_plugin
     test/test_collection_nav2_controller_plugin.cpp)
   ament_target_dependencies(test_collection_nav2_controller_plugin nav2_core pluginlib)
+  ament_add_gtest(test_collection_progress_goal_checker
+    test/test_collection_progress_goal_checker.cpp
+    SKIP_LINKING_MAIN_LIBRARIES)
+  target_link_libraries(test_collection_progress_goal_checker collection_nav2_controller)
+  ament_target_dependencies(test_collection_progress_goal_checker
+    nav2_core rclcpp rclcpp_lifecycle tennis_robot_msgs)
   set_tests_properties(test_collection_nav2_controller_plugin PROPERTIES
     ENVIRONMENT
       "AMENT_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}:$ENV{AMENT_PREFIX_PATH};LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}")

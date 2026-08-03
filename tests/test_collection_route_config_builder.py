@@ -189,8 +189,18 @@ def test_runtime_yaml_reserves_tracking_curvature_margin():
     controller = nav2["controller_server"]["ros__parameters"]
     assert controller["odom_topic"] == "/odometry/filtered"
     assert "collection_goal_checker" in controller["goal_checker_plugins"]
-    assert controller["collection_goal_checker"]["xy_goal_tolerance"] >= 0.25
+    collection_checker = controller["collection_goal_checker"]
+    assert collection_checker["plugin"] == (
+        "tennis_robot_collection_controller::CollectionProgressGoalChecker"
+    )
+    assert collection_checker["xy_goal_tolerance"] >= 0.25
+    assert collection_checker["progress_tolerance_m"] > 0.0
+    assert collection_checker["controller_state_topic"] == "CollectionFollowPath/state"
+    assert collection_checker["state_timeout_s"] > 0.0
     executor = nav2["collection_route_executor"]["ros__parameters"]
+    assert collection_checker["progress_tolerance_m"] == executor[
+        "collection_controller_tuning.terminal_progress_tolerance_m"
+    ]
     assert executor["collection_controller_tuning.lookahead_distance_m"] >= 0.6
     assert executor["collection_route.goal_checker_id"] == "collection_goal_checker"
 

@@ -1872,3 +1872,38 @@ true, σωστά.
 - **Β (#44):** το χωνί απορρίπτει σωστές προσεγγίσεις — μηχανική γεωμετρία,
   το «μπάλα-στο-χωνί» του αρχικού πλάνου. Χρειάζεται μέτρηση ύψους χείλους
   έναντι τροχιάς μπάλας, όχι αλλαγή planner.
+
+## #45 — Progress-aware collection goal checker: υλοποιήθηκε
+
+Ο γενικός `nav2_controller::SimpleGoalChecker` αντικαταστάθηκε **μόνο** για τα
+collection FollowPath goals από νέο plugin
+`tennis_robot_collection_controller::CollectionProgressGoalChecker`. Το
+`general_goal_checker` των survey/navigation routes δεν άλλαξε.
+
+Ο Nav2 `GoalChecker` δεν λαμβάνει την path στο interface του. Αντί να
+ξαναϋπολογίζεται δεύτερο, δυνητικά διαφορετικό projection, το plugin καταναλώνει
+το ήδη canonical state του `CollectionNav2Controller` από
+`CollectionFollowPath/state`. Επιτυχία επιτρέπεται μόνο όταν ισχύουν **όλα**:
+
+- φρέσκο state heartbeat (`state_timeout_s: 0.50`), από lifecycle `EXECUTING`,
+  χωρίς typed failure και με δεσμευμένα `plan_id/path_sha256`·
+- `terminal_ready == true` από τον collection tracking core·
+- `progress_s + progress_tolerance_m >= terminal_progress_s`·
+- XY και yaw μέσα στις ανεξάρτητες goal tolerances.
+
+Το `reset()` αδειάζει το cached state, άρα terminal telemetry προηγούμενου goal
+δεν μπορεί να εγκρίνει το επόμενο. `SAFETY_PAUSED`, stale, malformed ή failed
+state απορρίπτονται fail-closed. Ειδικά στο #43, η εγγύτητα 0.299 m δεν αρκεί
+πλέον: το `29.211 + 0.30 < 57.626` κρατά το FollowPath ενεργό.
+
+**Tests:** νέο 5-case gtest καλύπτει midpoint proximity rejection, αληθινό
+terminal success, απαίτηση του controller terminal verdict, reset isolation και
+paused/failed rejection. Το plugin φορτώνεται μέσω pluginlib και μέσα σε
+πραγματικό isolated Jazzy `controller_server`. Native Jazzy build PASS, **7/7**
+CTest targets PASS (τα 2 fixture-dependent parity cases SKIP όπως προβλέπεται),
+**475** pure pytest + **12** console tests PASS, `git diff --check` καθαρό.
+
+**ΕΚΚΡΕΜΕΙ live:** ένα πλήρες localization collection mission. Acceptance:
+περνά το προηγούμενο midpoint χωρίς `Reached the goal!`, φτάνει terminal progress,
+το ack-aware finalize γίνεται accepted και εμφανίζονται οι υπόλοιπες 9–10
+προσεγγίσεις. Μόνο τότε αξιολογείται το ανεξάρτητο funnel-lip θέμα του #44.
