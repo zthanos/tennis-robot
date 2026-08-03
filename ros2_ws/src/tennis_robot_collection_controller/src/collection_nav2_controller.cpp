@@ -272,7 +272,15 @@ geometry_msgs::msg::TwistStamped CollectionNav2Controller::computeVelocityComman
   }
   const TrackingResult result = tracking_core_->update({pose.pose.position.x, pose.pose.position.y,
     yaw_from_quaternion(pose.pose.orientation), std::hypot(velocity.linear.x, velocity.linear.y), held});
-  last_core_result_ = result; has_last_core_result_ = true; terminal_ready_ = result.terminal_ready;
+  last_core_result_ = result; has_last_core_result_ = true;
+  // Latch: the tracking core reports terminal_ready only while the robot is
+  // physically within the terminal tolerance, but the chassis coasts past that
+  // point after the command reaches zero.  Nav2's goal checker then declares
+  // success from outside the window and finalize was rejected as
+  // terminal_not_reached even though the route had reached its terminal.  The
+  // flag answers "did this context reach its terminal", so once true it stays
+  // true until the next load/reset/terminal_failure clears it.
+  terminal_ready_ = terminal_ready_ || result.terminal_ready;
   publish_state(result, result.failure);
   if (result.status == TrackingStatus::kSafetyHold || result.status == TrackingStatus::kCompleted) { return zero_command(); }
   if (result.status == TrackingStatus::kFailed) {
