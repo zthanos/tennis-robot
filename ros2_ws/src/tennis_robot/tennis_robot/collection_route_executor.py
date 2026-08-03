@@ -232,7 +232,8 @@ class CollectionRouteExecutor:
     def __init__(self, *, navigator: ScanPoseNavigator, scan_session: ScanSession,
                  planner: PurePlanner, collector: Collector, path_follower: PathFollower,
                  safety_monitor: SafetyMonitor, telemetry: TelemetrySink,
-                 clock: MonotonicClock) -> None:
+                 clock: MonotonicClock, drive_observer=None) -> None:
+        self._drive_observer = drive_observer
         self._navigator = navigator
         self._scan_session = scan_session
         self._planner = planner
@@ -303,10 +304,43 @@ class CollectionRouteExecutor:
                 )
             )
             if self._can_follow_up():
-                self._begin_navigation()
+                # Prefer the balls actually seen while driving over repeating
+                # the same 360 from the same pose, which can only re-observe the
+                # same court.  Falling back keeps today's behaviour when the
+                # drive saw nothing new.
+                if not self._begin_off_route_pass():
+                    self._begin_navigation()
             else:
                 self._transition(self._terminal_completion_state())
         return self.state
+
+    def _begin_off_route_pass(self) -> bool:
+        """Plan the follow-up from off-route discoveries, in place of a rescan.
+
+        Consumes the same bounded follow-up budget as a rescan, so a mission
+        still runs at most ``follow_up.max_total_runs`` routes however many new
+        balls keep appearing.
+        """
+        if self._drive_observer is None or self.snapshot is None:
+            return False
+        if self.run_count >= self.snapshot.configuration_snapshot.follow_up.max_total_runs:
+            return False
+        known_positions = tuple(
+            (ball.position.x_m, ball.position.y_m) for ball in self.snapshot.balls
+        )
+        snapshot = self._drive_observer.result(known_positions=known_positions)
+        if snapshot is None or not snapshot.balls:
+            return False
+        self.run_count += 1
+        self.snapshot = snapshot
+        self.plan = None
+        self.route_outcome = None
+        self.terminal_reason = None
+        self.terminal_detail = None
+        # No navigation and no 360: the follow-up is planned from where the
+        # route ended, against targets already observed from two viewpoints.
+        self._transition(ExecutorState.PLANNING)
+        return True
 
     def _begin_navigation(self) -> None:
         configuration = self.snapshot.configuration_snapshot if self.snapshot is not None else self.plan.configuration_snapshot if self.plan is not None else None
@@ -358,12 +392,18 @@ class CollectionRouteExecutor:
         result = self._collector.start_result()
         if result.status is CollectorStartStatus.READY:
             self._path_follower.start(self.plan)
+            if self._drive_observer is not None:
+                self._drive_observer.start()
             self._transition(ExecutorState.EXECUTING_ROUTE)
         elif result.status is CollectorStartStatus.FAILED or self._elapsed(self._collector_started_at_s, self.plan.configuration_snapshot.safety.collector_start_timeout_s):
             self._abort_active_route(ExecutorState.ABORTED_COLLECTOR, result.reason or ExecutorReasonCode.COLLECTOR_START_TIMEOUT)
 
     def _tick_execution(self) -> None:
         assert self.plan is not None
+        if self._drive_observer is not None:
+            # Balls the 360 never confirmed are only ever seen from here.  This
+            # feeds a separate list; the frozen plan being executed is untouched.
+            self._drive_observer.observe()
         safety = self._safety_monitor.result()
         if safety.status is SafetyStatus.TIMEOUT:
             self._abort_active_route(ExecutorState.ABORTED_SAFETY, ExecutorReasonCode.SAFETY_TIMEOUT)

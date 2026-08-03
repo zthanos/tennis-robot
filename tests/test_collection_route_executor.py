@@ -365,3 +365,111 @@ def test_post_scan_events_do_not_replan_or_mutate_geometry():
     for _ in range(3): executor.tick()  # execution/pure telemetry has no perception input path
     assert len(planner.calls) == 1
     assert executor.plan.to_dict() == before
+
+
+# ── off-route discovery while driving ────────────────────────────────────────
+
+class DriveObserver:
+    """Fake of the off-route discovery port."""
+
+    def __init__(self, snapshots=(None,)):
+        self.snapshots = list(snapshots)
+        self.starts = 0
+        self.observes = 0
+        self.known_positions = []
+
+    def start(self):
+        self.starts += 1
+
+    def observe(self):
+        self.observes += 1
+
+    def result(self, *, known_positions):
+        self.known_positions.append(known_positions)
+        return self.snapshots.pop(0) if len(self.snapshots) > 1 else self.snapshots[0]
+
+
+def make_executor_with_observer(*, snap, observer, planner=None, follower=None):
+    return CollectionRouteExecutor(
+        navigator=Navigator((NavigatorResult(NavigatorStatus.SUCCEEDED),)),
+        scan_session=Session((ScanSessionResult(ScanSessionStatus.SNAPSHOT_READY, snap),)),
+        planner=planner or Planner(executable_plan(snap)),
+        collector=Collector(),
+        path_follower=follower or Follower((PathFollowerResult(PathFollowerStatus.COMPLETED),)),
+        safety_monitor=Safety((SafetyResult(SafetyStatus.CLEAR),)),
+        telemetry=Telemetry(),
+        clock=Clock(),
+        drive_observer=observer,
+    )
+
+
+def test_drive_observer_runs_only_while_the_route_executes():
+    snap = snapshot(follow_up=FollowUpConfiguration(False, 1))
+    observer = DriveObserver()
+    executor = make_executor_with_observer(snap=snap, observer=observer)
+    executor.start()
+    assert observer.starts == 0 and observer.observes == 0  # not during nav/scan/plan
+    for _ in range(4):
+        executor.tick()
+    assert executor.state is ExecutorState.EXECUTING_ROUTE
+    assert observer.starts == 1
+    executor.tick()
+    assert observer.observes >= 1
+
+
+def test_off_route_discoveries_replace_the_rescan():
+    """A follow-up plans from what was seen driving, with no return trip."""
+    snap = snapshot(follow_up=FollowUpConfiguration(True, 2))
+    discovered = snapshot(balls=("drive-ball",), follow_up=FollowUpConfiguration(True, 2), scan_id="drive")
+    observer = DriveObserver((discovered,))
+    executor = make_executor_with_observer(snap=snap, observer=observer)
+    advance_to_execution(executor)
+    executor.tick()  # completes the route
+    executor.tick()  # collector stopping
+    executor.tick()  # evaluating results -> off-route pass
+    assert executor.state is ExecutorState.PLANNING
+    assert executor.snapshot is discovered
+    assert executor.run_count == 2  # the first route already counted as run 1
+    # The finished route's own targets are excluded from the new list.
+    assert observer.known_positions[-1] == ((3.0, 0.0),)
+
+
+def test_without_off_route_discoveries_the_rescan_still_happens():
+    snap = snapshot(follow_up=FollowUpConfiguration(True, 2))
+    observer = DriveObserver((None,))
+    executor = make_executor_with_observer(snap=snap, observer=observer)
+    advance_to_execution(executor)
+    executor.tick()
+    executor.tick()
+    executor.tick()
+    assert executor.state is ExecutorState.NAVIGATING_TO_SCAN_POSE
+
+
+def test_off_route_pass_respects_the_follow_up_budget():
+    """One cycle only: a mission cannot chase new balls forever."""
+    snap = snapshot(follow_up=FollowUpConfiguration(True, 1))
+    discovered = snapshot(balls=("drive-ball",), follow_up=FollowUpConfiguration(True, 1), scan_id="drive")
+    observer = DriveObserver((discovered,))
+    executor = make_executor_with_observer(snap=snap, observer=observer)
+    advance_to_execution(executor)
+    executor.tick()
+    executor.tick()
+    executor.tick()
+    assert executor.state is not ExecutorState.PLANNING
+    assert executor.run_count == 1  # the budget was already spent by the first route
+
+
+def test_off_route_pass_never_follows_an_aborted_route():
+    snap = snapshot(follow_up=FollowUpConfiguration(True, 2))
+    discovered = snapshot(balls=("drive-ball",), follow_up=FollowUpConfiguration(True, 2), scan_id="drive")
+    observer = DriveObserver((discovered,))
+    executor = make_executor_with_observer(
+        snap=snap,
+        observer=observer,
+        follower=Follower((PathFollowerResult(
+            PathFollowerStatus.FAILED, reason=ExecutorReasonCode.PATH_FAILED),)),
+    )
+    advance_to_execution(executor)
+    finish(executor)
+    assert executor.state is ExecutorState.ABORTED_TRACKING
+    assert observer.known_positions == []  # never consulted after an abort

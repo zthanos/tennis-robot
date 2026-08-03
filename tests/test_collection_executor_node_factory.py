@@ -89,6 +89,8 @@ class Node:
             "collection_route.safety_max_scan_age_s": 0.5,
             "collection_route.controller_id": "CollectionFollowPath",
             "collection_route.goal_checker_id": "collection_goal_checker",
+            "collection_route.drive_viewpoint_spacing_m": 0.75,
+            "collection_route.drive_known_merge_radius_m": 0.50,
         }
         self.clients, self.publishers, self.subscriptions = [], [], []
     def get_parameter(self, name):

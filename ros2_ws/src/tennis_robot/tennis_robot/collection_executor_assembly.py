@@ -85,6 +85,8 @@ class CollectionExecutorConfig:
     safety_max_scan_age_s: float
     controller_id: str = DEFAULT_CONTROLLER_ID
     goal_checker_id: str = "collection_goal_checker"
+    drive_viewpoint_spacing_m: float = 0.75
+    drive_known_merge_radius_m: float = 0.50
 
 
 @dataclass(frozen=True)
@@ -114,6 +116,8 @@ class CollectionExecutorHandles:
     confirmed_beam_provider: object | None = None
     collector_minimum_drain_s: float = 0.0
     collector_maximum_drain_s: float = 0.0
+    # .start(), .observe(), .result(known_positions=...) -> ScanSnapshot | None
+    drive_observer: object | None = None
 
 
 class _PlanCollectionRoutePlanner:
@@ -217,6 +221,7 @@ def build_collection_route_executor(
         collector=collector,
         path_follower=path_follower,
         safety_monitor=safety_monitor,
+        drive_observer=handles.drive_observer,
         telemetry=telemetry,
         clock=clock,
     )

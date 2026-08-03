@@ -129,6 +129,14 @@ collection_route_executor:
     collection_route.safety_max_scan_age_s: 0.50
     collection_route.controller_id: "CollectionFollowPath"
     collection_route.goal_checker_id: "collection_goal_checker"
+    # Off-route discovery while driving a route. A "viewpoint" is the drive's
+    # equivalent of a scan heading, so the snapshot's two-distinct-steps rule
+    # requires a ball to be seen from two places 0.75 m apart before it is
+    # trusted — a metres-long baseline rather than a 20 deg one.
+    collection_route.drive_viewpoint_spacing_m: 0.75
+    # A discovery this close to a target the finished route already knew about
+    # is the same ball, not a new one.
+    collection_route.drive_known_merge_radius_m: 0.50
 
 local_costmap:
   local_costmap:

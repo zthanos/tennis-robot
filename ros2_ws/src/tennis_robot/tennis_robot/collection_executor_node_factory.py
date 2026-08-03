@@ -25,10 +25,20 @@ from tennis_robot.collection_executor_assembly import (
     CollectionExecutorConfig, CollectionExecutorHandles,
     build_collection_route_executor, read_controller_tuning,
 )
+from tennis_robot.collection_executor_ports import RosMonotonicClock
+from tennis_robot.collection_drive_observation import (
+    DriveObservationBuffer,
+    DriveObservationError,
+    DriveViewpointStepper,
+    build_drive_snapshot,
+)
 from tennis_robot.collection_route_config_builder import build_collection_route_configuration
 from tennis_robot.collection_route_types import Point2D, Pose2D
 from tennis_robot.collection_scan_snapshot import CourtHalfBoundary
-from tennis_robot.collection_snapshot_runtime_adapter import CollectionSnapshotRuntimeSession
+from tennis_robot.collection_snapshot_runtime_adapter import (
+    CollectionSnapshotRuntimeAdapter,
+    CollectionSnapshotRuntimeSession,
+)
 from tennis_robot.perception_spatial_observation_adapter import TimestampedCameraToMapTransform
 
 
@@ -92,6 +102,8 @@ _RUNTIME_PARAM_FIELDS = {
     "safety_max_scan_age_s": "collection_route.safety_max_scan_age_s",
     "controller_id": "collection_route.controller_id",
     "goal_checker_id": "collection_route.goal_checker_id",
+    "drive_viewpoint_spacing_m": "collection_route.drive_viewpoint_spacing_m",
+    "drive_known_merge_radius_m": "collection_route.drive_known_merge_radius_m",
 }
 
 _PROFILE_FIELDS = (
@@ -396,6 +408,98 @@ def _execution_crossings(plan) -> list[dict]:
     ]
 
 
+class _LiveDriveObserver:
+    """Collect off-route ball sightings while a route is being executed.
+
+    Runs alongside the frozen plan and never feeds into it: the result is only
+    consulted once the route has finished, to plan the follow-up pass from balls
+    the 360 never confirmed instead of repeating that 360 from the same pose.
+
+    Validation is the adapter's and the snapshot builder's, unchanged — see
+    :mod:`tennis_robot.collection_drive_observation`.
+    """
+
+    def __init__(
+        self, *, node, adapter, configuration_snapshot, court_half_boundary,
+        frame_provider, robot_pose_provider, clock, scan_id_prefix: str,
+        viewpoint_spacing_m: float, merge_radius_m: float, map_frame: str = "map",
+    ) -> None:
+        self._node = node
+        self._adapter = adapter
+        self._configuration_snapshot = configuration_snapshot
+        self._court_half_boundary = court_half_boundary
+        self._frame_provider = frame_provider
+        self._robot_pose_provider = robot_pose_provider
+        self._clock = clock
+        self._scan_id_prefix = scan_id_prefix
+        self._viewpoint_spacing_m = viewpoint_spacing_m
+        self._merge_radius_m = merge_radius_m
+        self._map_frame = map_frame
+        self._run = 0
+        self._buffer = None
+        self._stepper = None
+        self._last_frame = None
+
+    def start(self) -> None:
+        self._run += 1
+        self._buffer = DriveObservationBuffer(
+            scan_id=f"{self._scan_id_prefix}/drive-{self._run}"
+        )
+        self._stepper = DriveViewpointStepper(
+            viewpoint_spacing_m=self._viewpoint_spacing_m
+        )
+        self._last_frame = None
+
+    def observe(self) -> None:
+        if self._buffer is None:
+            return
+        frame = self._frame_provider()
+        # The cache holds the newest message; re-forwarding the same object
+        # every tick would stack duplicates onto one viewpoint.
+        if frame is None or frame is self._last_frame:
+            return
+        try:
+            pose = self._robot_pose_provider()
+        except CollectionExecutorNodeFactoryError:
+            return  # pose not available yet; skip this frame, never fail a route
+        self._last_frame = frame
+        step_id = self._stepper.observe_pose(pose.x_m, pose.y_m)
+        try:
+            self._adapter.forward(
+                scan_id=self._buffer.scan_id,
+                frame=frame,
+                scan_step_id=step_id,
+                builder=self._buffer,
+            )
+        except (TypeError, ValueError) as exc:
+            # Opportunistic discovery must never abort a healthy route.
+            self._node.get_logger().warning(f"drive observation dropped: {exc}")
+
+    def result(self, *, known_positions):
+        if self._buffer is None:
+            return None
+        try:
+            snapshot = build_drive_snapshot(
+                buffer=self._buffer,
+                configuration_snapshot=self._configuration_snapshot,
+                court_half_boundary=self._court_half_boundary,
+                robot_pose=self._robot_pose_provider(),
+                now_s=self._clock.now_s(),
+                map_frame=self._map_frame,
+                known_positions=known_positions,
+                merge_radius_m=self._merge_radius_m,
+            )
+        except (CollectionExecutorNodeFactoryError, DriveObservationError, ValueError) as exc:
+            self._node.get_logger().warning(f"off-route discovery unavailable: {exc}")
+            return None
+        if snapshot is not None:
+            self._node.get_logger().info(
+                f"off-route discovery: {len(snapshot.balls)} new target(s) from "
+                f"{self._buffer.observation_count} observations"
+            )
+        return snapshot
+
+
 class _CollectionRosTransport:
     def __init__(self, node, ros, *, controller_id: str, goal_checker_id: str):
         self.node, self.ros = node, ros
@@ -629,6 +733,25 @@ class CollectionExecutorNodeFactory:
 
         self.cmd_vel_publisher = publisher
         self.snapshot_session = snapshot_session
+        # Same validation stack as the 360, driven by travel instead of yaw.
+        self.drive_observer = _LiveDriveObserver(
+            node=node,
+            adapter=CollectionSnapshotRuntimeAdapter(
+                tf_provider=_TfProvider(tf_buffer, self.ros),
+                validation_config=configuration.perception_spatial_validation,
+                localization_xy_covariance=configuration.gazebo_snapshot.localization_xy_covariance,
+            ),
+            configuration_snapshot=configuration,
+            court_half_boundary=court_half_from_court_model(
+                court_boundary, robot_pose=robot_pose
+            ),
+            frame_provider=lambda: cache.latest_ball_detections,
+            robot_pose_provider=lambda: _robot_pose(cache),
+            clock=RosMonotonicClock(node),
+            scan_id_prefix=f"collection-scan-{now_ns}",
+            viewpoint_spacing_m=self.config.drive_viewpoint_spacing_m,
+            merge_radius_m=self.config.drive_known_merge_radius_m,
+        )
         self.execution_plan_transformer = _ExecutionPlanTransformer(
             tf_buffer, self.ros
         )
@@ -651,6 +774,7 @@ class CollectionExecutorNodeFactory:
             planner_audit_sink=_planner_audit_sink_from_env(node),
             entry_beam_provider=entry_beam_provider,
             confirmed_beam_provider=confirmed_beam_provider,
+            drive_observer=self.drive_observer,
             collector_minimum_drain_s=collector_minimum_drain_s,
             collector_maximum_drain_s=collector_maximum_drain_s,
         )
