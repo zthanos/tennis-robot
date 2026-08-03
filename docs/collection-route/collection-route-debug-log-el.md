@@ -1721,3 +1721,55 @@ snapshot του planner — καλούνταν αποκλειστικά μέσα
 - **ΕΚΚΡΕΜΕΙ live:** δεν έχει τρέξει distributed. Το επόμενο run θα δείξει πόσα
   βρίσκει πραγματικά η διαδρομή — και **δεν διορθώνει το offset των 43 cm**:
   βελτιώνει την **κάλυψη**, όχι την ακρίβεια.
+
+## #41 — Live: το ack-aware finalize αποκάλυψε σταθερό `terminal_not_reached`
+
+**Setup:** PC sim + Pi brain σε **`SLAM_MODE=localization`** πάνω στον σωσμένο
+χάρτη `court_1785705204`, **χωρίς νέο survey**. Δύο runs.
+
+**Τι ΕΠΙΒΕΒΑΙΩΘΗΚΕ:**
+
+- **Το «survey μία φορά ανά γήπεδο» δουλεύει.** Το boundary της προηγούμενης
+  συνεδρίας φορτώθηκε, το T υπολογίστηκε, το robot πλοηγήθηκε και σχεδίασε
+  **9 και 10 στόχους** — η καλύτερη κάλυψη μέχρι τώρα (έναντι 3 και 7 σε
+  mapping mode).
+- **Το localization μειώνει το offset:** `pose_drift_m` **0.328** και **0.339**,
+  έναντι 0.427/0.429 σε mapping mode. Περίπου −22%.
+- **Το ack-aware finalize (#38) δουλεύει όπως σχεδιάστηκε.** Και τα δύο runs
+  τερμάτισαν με `path_failed` και ρητό detail:
+  `collection controller rejected terminal finalize: terminal_not_reached (code 5)`.
+  Πριν το fix, αυτή η απόρριψη καταπινόταν και εμφανιζόταν **ένα route
+  αργότερα** ως `invalid_lifecycle`. Δεν είναι regression· είναι η διάγνωση.
+
+**Δύο λάθος υποθέσεις, καταγεγραμμένες ως λάθος:**
+
+1. *«Ο core απορρίπτει updates πέρα από το terminal»* — καταρρίφθηκε: το gtest
+   με pose πέρα από το τέλος πετά `collection_controller_profile_failure`, όχι
+   `terminal_not_reached`, άρα δεν είναι αυτό το μονοπάτι.
+2. *«Race λόγω ασυμμετρίας μανδάλωσης»* — το `collection_goal_checker` έχει
+   `stateful: true` ενώ ο controller ξαναϋπολόγιζε το `terminal_ready` σε κάθε
+   update. Μπήκε latch (`terminal_ready_ |= result.terminal_ready`, commit
+   ebfe91c) και το live run **ξανα-απέτυχε ίδια**. Άρα το `terminal_ready`
+   **δεν γίνεται ποτέ true**, δεν χάνεται. Το latch κρατήθηκε γιατί είναι σωστό
+   ανεξάρτητα (37 C++ tests πράσινα, το gate δεν χαλάρωσε), αλλά **δεν ήταν
+   αυτό το bug**.
+
+**Τι ΔΕΝ ξέρουμε ακόμη.** Η συνθήκη στο `collection_tracking_core.cpp:148` έχει
+**δύο** σκέλη και δεν ξέρουμε ποιο πέφτει:
+
+```cpp
+projection.progress_s + tol >= plan_.terminal_progress_s   // (α) μήκος τόξου
+&& terminal_distance_m <= tol                              // (β) ευκλείδεια
+```
+
+Με `tol = terminal_progress_tolerance_m = 0.30`.
+
+**Επόμενο βήμα: μέτρηση, όχι τρίτη υπόθεση.** Να δημοσιευτούν και τα δύο σκέλη
+στο `CollectionControllerState` (τελευταίο `progress_s` έναντι
+`terminal_progress_s`, και `terminal_distance_m`), ώστε **ένα** run να απαντήσει
+ποιο από τα δύο αποτυγχάνει και με πόσο. Χωρίς αυτό, κάθε επόμενη αλλαγή είναι
+τυφλή.
+
+**Πλατφόρμα:** σταθερή σε όλο το session — 0 node deaths, 0 UDP errors, clean
+shutdown, ο controller_node επιβίωσε μετά το fix του drive-observer buffer
+(f5cf8d6).
