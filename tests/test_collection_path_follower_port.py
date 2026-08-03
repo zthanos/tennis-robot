@@ -22,7 +22,9 @@ from tennis_robot.collection_executor_assembly import (
     read_controller_tuning,
 )
 from tennis_robot.collection_path_follower_port import (
+    DEFAULT_FINALIZE_ACK_TIMEOUT_S,
     FAILURE_SAFETY_RESUME_INVALID,
+    LIFECYCLE_CONSUMED,
     LIFECYCLE_EXECUTING,
     LIFECYCLE_FAILED,
     LIFECYCLE_SAFETY_PAUSED,
@@ -44,6 +46,9 @@ from tennis_robot.collection_route_types import (
     ScanSnapshot,
     SnapshotBall,
 )
+
+
+_UNSET = object()
 
 
 class Clock:
@@ -84,13 +89,28 @@ def _tuning():
 
 
 class Transport:
-    """Scriptable fake of the 7 ROS handles + records every call."""
+    """Scriptable fake of the 8 ROS handles + records every call."""
 
-    def __init__(self, *, load_outcome=None, goal_status="pending", state=None, finalize_accepted=True):
+    def __init__(
+        self,
+        *,
+        load_outcome=None,
+        goal_status="pending",
+        state=None,
+        finalize_accepted=True,
+        finalize_outcome=_UNSET,
+    ):
         self.load_outcome = load_outcome
         self.goal_status = goal_status
         self.state = state
         self._finalize_accepted = finalize_accepted
+        # By default the ack mirrors finalize_accepted and is available on the
+        # next tick; pass finalize_outcome=None to hold it pending forever.
+        self.finalize_outcome = (
+            (("accepted", None) if finalize_accepted else ("rejected", "terminal_not_reached"))
+            if finalize_outcome is _UNSET
+            else finalize_outcome
+        )
         self.loaded = []
         self.follow_paths = []
         self.holds = []
@@ -118,6 +138,9 @@ class Transport:
         self.finalizes.append((plan_id, path_sha256, action_outcome))
         return self._finalize_accepted
 
+    def finalize_outcome_provider(self):
+        return self.finalize_outcome
+
 
 def _follower(transport, clock=None):
     clock = clock or Clock()
@@ -132,6 +155,7 @@ def _follower(transport, clock=None):
         state_provider=transport.state_provider,
         hold_sender=transport.hold_sender,
         finalize_sender=transport.finalize_sender,
+        finalize_outcome_provider=transport.finalize_outcome_provider,
         execution_plan_transformer=lambda plan: plan,
         clock=clock,
     ), clock
@@ -301,8 +325,115 @@ def test_rejected_terminal_finalize_fails_instead_of_reporting_completion():
     result = follower.result()
     assert result.status is PathFollowerStatus.FAILED
     assert result.reason is ExecutorReasonCode.PATH_FAILED
-    assert result.detail == "collection controller rejected terminal finalize"
+    # The controller's own rejection reason is surfaced, not a generic label:
+    # terminal_not_reached and invalid_lifecycle need different responses.
+    assert result.detail == "terminal_not_reached"
     assert len(transport.finalizes) == 1
+    assert follower.finalize_accepted is False
+
+
+def test_pending_finalize_ack_keeps_running_and_does_not_resend():
+    """Silence is not success: the route stays RUNNING until the ack lands."""
+    transport = Transport(
+        load_outcome="accepted",
+        goal_status="succeeded",
+        state=None,
+        finalize_outcome=None,
+    )
+    follower, clock = _follower(transport)
+    follower.start(_curved_plan())
+    follower.result()  # send FollowPath
+    for _ in range(3):
+        clock.value += 0.5
+        result = follower.result()
+        assert result.status is PathFollowerStatus.RUNNING
+    assert len(transport.finalizes) == 1  # dispatched exactly once
+    assert follower.finalize_accepted is None
+
+
+def test_finalize_ack_timeout_fails_the_route():
+    transport = Transport(
+        load_outcome="accepted",
+        goal_status="succeeded",
+        state=None,
+        finalize_outcome=None,
+    )
+    follower, clock = _follower(transport)
+    follower.start(_curved_plan())
+    follower.result()
+    follower.result()
+    clock.value += DEFAULT_FINALIZE_ACK_TIMEOUT_S + 0.01
+    result = follower.result()
+    assert result.status is PathFollowerStatus.FAILED
+    assert result.reason is ExecutorReasonCode.PATH_FAILED
+    assert result.detail == "collection controller finalize ack timed out"
+    assert follower.finalize_accepted is False
+
+
+def test_accepted_finalize_that_leaves_context_executing_eventually_fails():
+    """An accepted ack is not enough — the context must be observably released.
+
+    This is the state that stranded the controller in kExecuting and made the
+    next route's reset-before-load fail with invalid_lifecycle.
+    """
+    executing = {
+        "lifecycle_state": LIFECYCLE_EXECUTING,
+        "progress_s": 1.0,
+        "lateral_error_m": 0.0,
+        "failure_reason": 0,
+    }
+    transport = Transport(
+        load_outcome="accepted",
+        goal_status="succeeded",
+        state=executing,
+        finalize_outcome=("accepted", None),
+    )
+    follower, clock = _follower(transport)
+    follower.start(_curved_plan())
+    follower.result()
+    assert follower.result().status is PathFollowerStatus.RUNNING  # ack seen, waiting
+    clock.value += DEFAULT_FINALIZE_ACK_TIMEOUT_S + 0.01
+    result = follower.result()
+    assert result.status is PathFollowerStatus.FAILED
+    assert result.reason is ExecutorReasonCode.PATH_FAILED
+    assert "still holds the context" in result.detail
+
+
+def test_accepted_finalize_completes_once_the_context_is_released():
+    executing = {
+        "lifecycle_state": LIFECYCLE_EXECUTING,
+        "progress_s": 1.0,
+        "lateral_error_m": 0.0,
+        "failure_reason": 0,
+    }
+    transport = Transport(
+        load_outcome="accepted",
+        goal_status="succeeded",
+        state=executing,
+        finalize_outcome=("accepted", None),
+    )
+    follower, clock = _follower(transport)
+    follower.start(_curved_plan())
+    follower.result()
+    assert follower.result().status is PathFollowerStatus.RUNNING
+    transport.state = {**executing, "lifecycle_state": LIFECYCLE_CONSUMED}
+    clock.value += 0.1
+    assert follower.result().status is PathFollowerStatus.COMPLETED
+    assert len(transport.finalizes) == 1
+
+
+def test_malformed_finalize_outcome_raises_instead_of_reading_as_success():
+    transport = Transport(
+        load_outcome="accepted",
+        goal_status="succeeded",
+        state=None,
+        finalize_outcome=("maybe", None),
+    )
+    follower, _ = _follower(transport)
+    follower.start(_curved_plan())
+    follower.result()
+    with pytest.raises(PathFollowerPortError):
+        follower.result()
 
 
 def test_finalize_only_on_terminal_never_mid_execution():
@@ -443,6 +574,7 @@ def _assembly_smoke_handles(plan):
         state_provider=transport.state_provider,
         hold_sender=transport.hold_sender,
         finalize_sender=transport.finalize_sender,
+        finalize_outcome_provider=transport.finalize_outcome_provider,
         execution_plan_transformer=lambda source: source,
     )
     return handles, transport, telemetry

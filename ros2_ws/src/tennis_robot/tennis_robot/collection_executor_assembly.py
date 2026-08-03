@@ -106,7 +106,8 @@ class CollectionExecutorHandles:
     goal_status_provider: object    # callable() -> str
     state_provider: object          # callable() -> dict | None
     hold_sender: object             # callable(*, plan_id, path_sha256, hold) -> None
-    finalize_sender: object         # callable(*, plan_id, path_sha256, action_outcome) -> bool
+    finalize_sender: object         # callable(*, plan_id, path_sha256, action_outcome) -> None
+    finalize_outcome_provider: object  # callable() -> None|("accepted"|"rejected", detail)
     execution_plan_transformer: object  # callable(CollectionRoutePlan) -> CollectionRoutePlan
     planner_audit_sink: object | None = None  # callable(snapshot, plan) -> None
     entry_beam_provider: object | None = None
@@ -203,6 +204,7 @@ def build_collection_route_executor(
         state_provider=handles.state_provider,
         hold_sender=handles.hold_sender,
         finalize_sender=handles.finalize_sender,
+        finalize_outcome_provider=handles.finalize_outcome_provider,
         execution_plan_transformer=handles.execution_plan_transformer,
         clock=clock,
         controller_id=config.controller_id,

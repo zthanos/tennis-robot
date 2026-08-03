@@ -411,7 +411,7 @@ class _CollectionRosTransport:
         self.latest_state = None
         self.crossing_telemetry = []
         self.state_subscription = node.create_subscription(ros.CollectionControllerState, base + "/state", self._on_state, 10)
-        self.load_future = self.reset_future = None
+        self.load_future = self.reset_future = self.finalize_future = None
         self._pending_load_context = None
         self.goal_future = self.goal_handle = self.result_future = None
 
@@ -456,6 +456,9 @@ class _CollectionRosTransport:
     def load_sender(self, values):
         self.latest_state = None
         self.load_future = None
+        # A finalize ack from the previous route must never be read as this
+        # route's answer.
+        self.finalize_future = None
         self._pending_load_context = values
         # The Nav2 controller owns the context lifecycle and outlives this
         # transport.  A new collection run creates a new transport instance,
@@ -542,16 +545,27 @@ class _CollectionRosTransport:
     def finalize_sender(self, *, plan_id, path_sha256, action_outcome):
         request = self.ros.FinalizeService.Request()
         request.plan_id, request.path_sha256, request.action_outcome = plan_id, path_sha256, action_outcome
-        # Fire-and-forget, exactly like hold_sender above. finalize_sender runs
-        # inside the controller_node timer callback, i.e. already on the
-        # single-threaded executor, so blocking here with
-        # spin_until_future_complete raises "Executor is already spinning" on
-        # Jazzy (Humble's rclpy tolerated the nested spin, which is why the
-        # route used to complete). The request is still delivered to the
-        # collection controller; the ack is not awaited — by the time finalize
-        # is sent the Nav2 goal has already reported success.
-        self.finalize_client.call_async(request)
+        # Dispatch only. finalize_sender runs inside the controller_node timer
+        # callback, i.e. already on the single-threaded executor, so blocking
+        # here with spin_until_future_complete raises "Executor is already
+        # spinning" on Jazzy. The response is read by finalize_outcome_provider
+        # on later ticks, the same pattern as load_sender/load_outcome_provider.
+        self.finalize_future = self.finalize_client.call_async(request)
         return True
+
+    def finalize_outcome_provider(self):
+        """Return None while pending, else ("accepted"|"rejected", detail)."""
+        if self.finalize_future is None or not self.finalize_future.done():
+            return None
+        response = self.finalize_future.result()
+        self.finalize_future = None
+        if response is not None and response.accepted:
+            return ("accepted", None)
+        detail = getattr(response, "detail", "") or "finalize_rejected"
+        code = getattr(response, "rejection_code", None)
+        detail = f"collection controller rejected terminal finalize: {detail} (code {code})"
+        self.node.get_logger().error(detail)
+        return ("rejected", detail)
 
 
 class CollectionExecutorNodeFactory:
@@ -632,6 +646,7 @@ class CollectionExecutorNodeFactory:
             state_provider=self.transport.state_provider,
             hold_sender=self.transport.hold_sender,
             finalize_sender=self.transport.finalize_sender,
+            finalize_outcome_provider=self.transport.finalize_outcome_provider,
             execution_plan_transformer=self.execution_plan_transformer,
             planner_audit_sink=_planner_audit_sink_from_env(node),
             entry_beam_provider=entry_beam_provider,

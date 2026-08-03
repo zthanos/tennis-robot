@@ -1576,3 +1576,39 @@ fail-loud, και είτε retry με `CANCELED` outcome είτε ρητό escal
 - `pose_drift_m` = **0.427** σε αυτόν τον κύκλο (0.429 στον προηγούμενο):
   σταθερό ~43 cm, με per-crossing `lateral_error_m ≈ 0`. Το spatial offset είναι
   πλέον μετρήσιμο και επαναλήψιμο, όχι εντύπωση.
+
+### #38 — Fix υλοποιήθηκε (2026-08-03)
+
+Το finalize έγινε **ack-driven**, με το πρότυπο του `load_outcome_provider`
+(future που ελέγχεται σε επόμενα timer ticks, **ποτέ** nested spin).
+
+- **Transport** (`collection_executor_node_factory.py`): το `finalize_sender`
+  κρατά πλέον το future (`self.finalize_future`)· νέο `finalize_outcome_provider`
+  επιστρέφει `None` όσο εκκρεμεί, αλλιώς `("accepted", None)` ή
+  `("rejected", detail)` με το `detail` και το `rejection_code` του controller,
+  και κάνει log το σφάλμα. Το `load_sender` μηδενίζει το `finalize_future`, ώστε
+  ack προηγούμενου route να μη διαβαστεί ποτέ ως απάντηση του τρέχοντος.
+- **Port** (`collection_path_follower_port.py`): νέα φάση `finalizing`. Το
+  `_tick_executing` δεν δηλώνει πια COMPLETED μόνο και μόνο επειδή το Nav2 είπε
+  `succeeded` — καλεί `_begin_finalize()` (αποστολή **ακριβώς μία φορά**) και
+  περνά στο `_tick_finalizing()`. Εκεί:
+  - ack εκκρεμές → παραμένει RUNNING με το τελευταίο παρατηρημένο progress·
+    πάνω από `finalize_ack_timeout_s` (default **5 s**) → FAILED
+    «finalize ack timed out».
+  - ack **rejected** → FAILED με το **πραγματικό rejection detail** του
+    controller (π.χ. `terminal_not_reached`), όχι γενικό label.
+  - ack **accepted** → **δεν αρκεί**: το lifecycle πρέπει να φύγει από
+    `EXECUTING`/`SAFETY_PAUSED` (δηλαδή ο controller να απελευθερώσει όντως το
+    context). Αν επιμείνει πέρα από το timeout → FAILED «still holds the
+    context». Ο έλεγχος είναι χρονικά ανεκτικός επίτηδες, γιατί το state
+    δημοσιεύεται ασύγχρονα μετά το ack — αυστηρός άμεσος έλεγχος θα έκανε race.
+  - malformed outcome → `PathFollowerPortError` (wiring error, όχι σιωπηλή
+    επιτυχία).
+- **Tests:** 5 νέα pure tests (pending ack κρατά RUNNING χωρίς επαναποστολή,
+  ack timeout, accepted-αλλά-κολλημένο context, accepted που ολοκληρώνεται μόλις
+  απελευθερωθεί, malformed outcome) + ενημέρωση του υπάρχοντος rejection test
+  ώστε να επιβεβαιώνει ότι περνά το rejection reason. **476 pure pytest**
+  (464 + 12 console σε χωριστή διεργασία), ROS build OK, `git diff --check`
+  καθαρό.
+- **ΕΚΚΡΕΜΕΙ live επαλήθευση:** δύο συνεχόμενα routes χωρίς restart (βήμα 3 της
+  συμφωνημένης σειράς). Το fix είναι επικυρωμένο μόνο σε pure tests.
