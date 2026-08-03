@@ -153,6 +153,7 @@ TrackingResult CollectionTrackingCore::update(const TrackingInput & input)
     TrackingResult result;
     result.status = TrackingStatus::kCompleted;
     result.terminal_ready = true;
+    result.terminal_distance_m = terminal_distance_m;
     result.progress_s = last_progress_s_;
     result.lateral_error_m = projection.lateral_error_m;
     result.remaining_run_in_m = remaining_run_in;
@@ -208,6 +209,7 @@ TrackingResult CollectionTrackingCore::update(const TrackingInput & input)
 
   TrackingResult result;
   result.status = TrackingStatus::kRunning;
+  result.terminal_distance_m = terminal_distance_m;
   result.command.linear_x_mps = segment->profile.nominal_speed_mps;
   result.command.angular_z_rad_s = angular_velocity;
   result.progress_s = projection.progress_s;

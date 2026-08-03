@@ -639,7 +639,8 @@ class _CollectionRosTransport:
             "plan_id", "path_sha256", "lifecycle_state", "progress_s",
             "active_segment_id", "has_active_crossing", "active_ball_id",
             "active_crossing_progress_s", "measured_speed_mps", "lateral_error_m",
-            "heading_error_rad", "profile_verdict", "failure_reason")}
+            "heading_error_rad", "profile_verdict", "failure_reason",
+            "terminal_progress_s", "terminal_distance_m", "terminal_ready")}
 
     def hold_sender(self, *, plan_id, path_sha256, hold):
         request = self.ros.HoldService.Request()

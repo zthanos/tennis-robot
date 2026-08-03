@@ -38,3 +38,9 @@ float64 lateral_error_m
 float64 heading_error_rad
 tennis_robot_msgs/CollectionProfileComplianceVerdict profile_verdict
 uint8 failure_reason
+# Terminal diagnosis: finalize is rejected as terminal_not_reached when either
+# half of the tracking core's terminal condition fails, and the rejection alone
+# does not say which. Publish both so one run identifies it.
+float64 terminal_progress_s
+float64 terminal_distance_m
+bool terminal_ready

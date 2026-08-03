@@ -286,6 +286,9 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
         "active_crossing_progress_s": 1.1, "measured_speed_mps": 0.8,
         "lateral_error_m": 0.01, "heading_error_rad": 0.02,
         "profile_verdict": profile_verdict, "failure_reason": 0,
+        # Terminal diagnosis published for terminal_not_reached triage.
+        "terminal_progress_s": 4.0, "terminal_distance_m": 0.12,
+        "terminal_ready": True,
     }
     node.subscriptions[0].callback(SimpleNamespace(**state_values))
     assert built.handles.state_provider() == state_values

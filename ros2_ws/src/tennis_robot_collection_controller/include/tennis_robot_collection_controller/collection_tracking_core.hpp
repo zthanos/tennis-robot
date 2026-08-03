@@ -136,6 +136,9 @@ struct TrackingResult
   double remaining_run_in_m{};
   double remaining_run_out_m{};
   bool terminal_ready{false};
+  // Diagnosis for terminal_not_reached: the Euclidean distance to the terminal
+  // point, the half of the terminal condition the progress figure cannot show.
+  double terminal_distance_m{-1.0};
   std::optional<CrossingMeasurement> crossing_measurement;
   TrackingFailureCode failure{TrackingFailureCode::kNone};
 };

@@ -385,7 +385,9 @@ class LiveCollectionPathFollower:
                 self.finalize_accepted = False
                 return self._fail(
                     ExecutorReasonCode.PATH_FAILED,
-                    detail or "collection controller rejected terminal finalize",
+                    self._terminal_diagnosis(
+                        detail or "collection controller rejected terminal finalize"
+                    ),
                 )
             self.finalize_accepted = True
             self._finalize_acked_at_s = self._clock.now_s()
@@ -407,6 +409,25 @@ class LiveCollectionPathFollower:
             return self._awaiting_finalize_running()
         self._terminal = PathFollowerResult(PathFollowerStatus.COMPLETED)
         return self._terminal
+
+    def _terminal_diagnosis(self, detail: str) -> str:
+        """Append both halves of the controller's terminal condition.
+
+        terminal_not_reached alone cannot say whether the arc-length progress or
+        the Euclidean distance to the terminal fell short, and guessing between
+        them has already cost two wrong fixes.
+        """
+        state = self._state_provider() or {}
+        progress_s = state.get("progress_s")
+        terminal_progress_s = state.get("terminal_progress_s")
+        terminal_distance_m = state.get("terminal_distance_m")
+        terminal_ready = state.get("terminal_ready")
+        if terminal_progress_s is None and terminal_distance_m is None:
+            return detail
+        return (
+            f"{detail} [progress_s={progress_s} terminal_progress_s={terminal_progress_s} "
+            f"terminal_distance_m={terminal_distance_m} terminal_ready={terminal_ready}]"
+        )
 
     def _awaiting_finalize_running(self) -> PathFollowerResult:
         """Keep reporting the last observed progress while the ack is pending."""

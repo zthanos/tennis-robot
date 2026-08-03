@@ -367,6 +367,9 @@ void CollectionNav2Controller::publish_state(const TrackingResult & result, cons
     last_core_result_.crossing_measurement->verdict.measured_speed_mps : 0.0 : 0.0;
   state.lateral_error_m = result.lateral_error_m; state.heading_error_rad = result.heading_error_rad;
   state.failure_reason = failure_code(failure);
+  state.terminal_progress_s = wire_context_->terminal_progress_s;
+  state.terminal_distance_m = result.terminal_distance_m;
+  state.terminal_ready = terminal_ready_;
   if (result.crossing_measurement) {
     state.has_active_crossing = true; state.active_ball_id = result.crossing_measurement->ball_id;
     state.active_crossing_progress_s = result.crossing_measurement->progress_s;
