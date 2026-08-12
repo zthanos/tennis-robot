@@ -55,10 +55,21 @@ feasibility:
   footprint_clearance_radius_m: 0.50
   tangent_activation_distance_m: 0.75
   max_parallel_heading_error_rad: 0.20
+  # Boundary recovery deliberately runs the centreline one configured funnel
+  # mouth half-width away from a net/fence ball.  The outer cheek then contacts
+  # the ball while the canonical 0.50 m swept-disk clearance still protects the
+  # chassis and the rest of the route.  Front cheek tips are at y=+/-0.205 m in
+  # the URDF; this is a contact experiment, not the nominal capture corridor.
+  boundary_recovery_contact_offset_m: 0.205
 connector:
   max_connector_length_m: 20.0
-  max_connector_arc_angle_rad: 1.5
-  max_connector_total_turn_rad: 3.0
+  # A second mission can begin with the chassis facing almost directly away
+  # from every target.  The former 1.5 rad per-arc cap prohibited the required
+  # forward U-turn even though the canonical 1.25 m radius, collision and
+  # self-intersection checks all accepted it.  Keep each CSC arc below pi while
+  # allowing the bounded two-arc manoeuvre.
+  max_connector_arc_angle_rad: 3.0
+  max_connector_total_turn_rad: 6.0
 global_route_search:
   # Coverage-first search ordering finds a full-coverage route within a few
   # expansions per ball; this budget adds margin for varied layouts while the

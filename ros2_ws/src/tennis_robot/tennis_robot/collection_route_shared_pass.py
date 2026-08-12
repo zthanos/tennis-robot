@@ -21,7 +21,14 @@ def generate_shared_passes(*, single_ball_candidates: tuple[FunnelPassCandidate,
         raise ValueError("single_ball_candidates must be FunnelPassCandidate tuple")
     if not isinstance(court, CourtModel) or not isinstance(configuration, CollectionRouteConfiguration):
         raise ValueError("court and configuration are required")
-    single = tuple(candidate for candidate in single_ball_candidates if len(candidate.covered_ball_ids) == 1)
+    # Boundary-recovery passes deliberately put one ball on the outer funnel
+    # cheek.  They must remain isolated contact experiments and are never
+    # merged into an ordinary multi-ball capture corridor.
+    single = tuple(
+        candidate
+        for candidate in single_ball_candidates
+        if len(candidate.covered_ball_ids) == 1 and not candidate.boundary_recovery
+    )
     by_heading: dict[float, list[FunnelPassCandidate]] = {}
     for candidate in single:
         by_heading.setdefault(candidate.heading_rad, []).append(candidate)

@@ -1907,3 +1907,37 @@ CTest targets PASS (τα 2 fixture-dependent parity cases SKIP όπως προβ
 περνά το προηγούμενο midpoint χωρίς `Reached the goal!`, φτάνει terminal progress,
 το ack-aware finalize γίνεται accepted και εμφανίζονται οι υπόλοιπες 9–10
 προσεγγίσεις. Μόνο τότε αξιολογείται το ανεξάρτητο funnel-lip θέμα του #44.
+
+## #46 — Δεύτερο mission: boundary-contact passes και forward U-turn
+
+**Live input (2026-08-03):** το δεύτερο `collect_route` ξεκίνησε και ολοκλήρωσε
+18/18 scan steps, επιβεβαιώνοντας τρεις στόχους στα `(6.064,-0.678)`,
+`(8.018,-0.690)`, `(8.086,1.744)`. Ο planner επέστρεψε
+`empty_no_feasible_targets`: έναν `turn_radius` και δύο `keepout`. Οι δύο
+τελευταίες μπάλες απείχαν αντίστοιχα **0.432 m** και **0.347 m** από τον
+surveyed άξονα του φιλέ, άρα κόπηκαν από το isotropic `0.50 m` keepout πριν
+παραχθεί tangent pass.
+
+**Boundary recovery:** για target που είναι έξω από το πραγματικό net/fence
+polygon αλλά μέσα μόνο στο inflated boundary keepout, το Phase 3A δοκιμάζει
+single-ball pass παράλληλο στο obstacle. Η centerline μετατοπίζεται προς το
+γήπεδο κατά `0.205 m`, την configured θέση του εξωτερικού funnel cheek στο
+στόμιο. Η μπάλα μένει στο πραγματικό planned crossing και επομένως το cheek
+προβλέπεται να την αγγίξει — ακριβώς το πείραμα «ξεκολλάει από φιλέ/φράχτη;».
+Δεν μειώθηκε το canonical clearance `0.50 m`: ολόκληρο το μετατοπισμένο pass,
+οι connectors και το terminal ελέγχονται όπως πριν. Πραγματική επικάλυψη με
+το net/fence, οποιοδήποτε bench/post/other keepout ή αποτυχία του μετατοπισμένου
+διαδρόμου παραμένει deterministic `keepout`. Contact candidates δεν μπαίνουν
+σε shared pass.
+
+**Turn blocker:** replay με τις ακριβείς τρεις θέσεις και start pose
+`(1.958,-0.067,3.1204)` έδειξε ότι η ακτίνα `1.25 m` δεν ήταν το πρόβλημα. Το
+παλιό `max_connector_arc_angle_rad=1.5` απαγόρευε το forward U-turn επειδή το
+robot άρχιζε σχεδόν αντίθετα από όλους τους στόχους. Με ίδια ακτίνα, CSC-only,
+continuous collision και self-intersection guards, bounded caps `3.0 rad` ανά
+arc / `6.0 rad` total δίνουν **FEASIBLE 3/3**, μήκος replay περίπου `25.15 m`.
+
+**Tests:** regression για τις ακριβείς live συντεταγμένες, too-close keepout,
+static-obstacle non-bypass, tangent-only contact και shared-pass isolation.
+`321` collection tests, `481` pure tests και `12` console tests PASS. Εκκρεμεί
+distributed Gazebo run για να κριθεί το πραγματικό contact του funnel.

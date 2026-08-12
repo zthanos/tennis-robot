@@ -57,6 +57,18 @@ def test_non_common_heading_tangent_constrained_candidates_are_not_shared():
     assert generate(configuration, single("a", 3.0), constrained).candidates == ()
 
 
+def test_boundary_contact_candidate_is_never_merged_into_shared_pass():
+    configuration = default_configuration()
+    point = Point2D(4.0, 0.2)
+    recovery = FunnelPassCandidate(
+        "b", ("b",), 0.0,
+        Pose2D(3.0, 0.0, 0.0), Point2D(4.0, 0.0), Pose2D(4.3, 0.0, 0.0),
+        0.205, (point,), True,
+    )
+
+    assert generate(configuration, single("a", 3.0), recovery).candidates == ()
+
+
 def test_deterministic_order_and_candidate_cap_budget_telemetry():
     base = default_configuration()
     configuration = replace(base, shared_pass=replace(base.shared_pass, max_shared_pass_candidates=2))

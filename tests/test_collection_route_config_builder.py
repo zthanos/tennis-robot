@@ -182,6 +182,9 @@ def test_runtime_yaml_reserves_tracking_curvature_margin():
     profile = source["planning"]["default_execution_profile"]
     assert profile["min_speed_mps"] <= profile["nominal_speed_mps"] <= 0.6
     assert profile["max_heading_error_rad"] <= 0.15
+    assert source["feasibility"]["boundary_recovery_contact_offset_m"] == 0.205
+    assert source["connector"]["max_connector_arc_angle_rad"] == 3.0
+    assert source["connector"]["max_connector_total_turn_rad"] == 6.0
 
     nav2 = yaml.safe_load(
         (REPOSITORY_ROOT / "ros2_ws/src/tennis_robot/config/nav2_params.yaml").read_text()

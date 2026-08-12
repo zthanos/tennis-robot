@@ -68,6 +68,7 @@ class FunnelPassCandidate:
     exit_pose: Pose2D
     effective_capture_half_width_m: float
     crossing_positions: tuple[Point2D, ...]
+    boundary_recovery: bool = False
 
     def __post_init__(self) -> None:
         if not self.ball_id or not isinstance(self.covered_ball_ids, tuple) or not self.covered_ball_ids:
@@ -78,6 +79,10 @@ class FunnelPassCandidate:
             raise PlannerInputError("covered ball IDs must be unique")
         if not isinstance(self.crossing_positions, tuple) or len(self.crossing_positions) != len(self.covered_ball_ids) or any(not isinstance(item, Point2D) for item in self.crossing_positions):
             raise PlannerInputError("candidate requires one Point2D crossing position per covered ball")
+        if not isinstance(self.boundary_recovery, bool):
+            raise PlannerInputError("boundary_recovery must be bool")
+        if self.boundary_recovery and len(self.covered_ball_ids) != 1:
+            raise PlannerInputError("boundary recovery is a single-ball contact pass")
 
 
 @dataclass(frozen=True)
@@ -256,6 +261,7 @@ def _merge_candidates(candidates: tuple[FunnelPassCandidate, ...]) -> tuple[Funn
             item.entry_pose.y_m,
             item.exit_pose.x_m,
             item.exit_pose.y_m,
+            item.boundary_recovery,
             item.ball_id,
         ),
     )
@@ -268,6 +274,7 @@ def _merge_candidates(candidates: tuple[FunnelPassCandidate, ...]) -> tuple[Funn
             candidate.entry_pose,
             candidate.crossing,
             candidate.exit_pose,
+            candidate.boundary_recovery,
         )
         if key not in seen:
             seen.add(key)
@@ -281,12 +288,33 @@ def _analyze_ball(ball, court: CourtModel, configuration: CollectionRouteConfigu
     clearance = feasibility.footprint_clearance_radius_m
     crossing = ball.position
 
-    if not _point_in_eroded_polygon(crossing, court.navigable_polygon, clearance):
+    # A ball physically outside the court or inside an obstacle cannot be
+    # recovered.  The less restrictive inflated-keepout check happens below:
+    # a net/fence ball may still admit a parallel contact pass whose robot
+    # centreline is shifted away from the boundary by the funnel-mouth offset.
+    if not _point_in_polygon(crossing, court.navigable_polygon):
         return PerBallFeasibility(ball.ball_id, (), BallReasonCode.KEEPOUT)
-    if any(_point_hits_inflated_polygon(crossing, obstacle.polygon, clearance) for obstacle in court.obstacles):
+    if any(_point_in_polygon(crossing, obstacle.polygon) for obstacle in court.obstacles):
         return PerBallFeasibility(ball.ball_id, (), BallReasonCode.KEEPOUT)
 
     tangent_headings = _active_tangent_headings(crossing, court, feasibility.tangent_activation_distance_m)
+    nominal_keepout = (
+        not _point_in_eroded_polygon(crossing, court.navigable_polygon, clearance)
+        or any(
+            _point_hits_inflated_polygon(crossing, obstacle.polygon, clearance)
+            for obstacle in court.obstacles
+        )
+    )
+    # Contact recovery is only for net/fence proximity.  A bench, post or
+    # arbitrary static obstacle remains a hard deterministic keepout even if a
+    # boundary tangent happens to be active nearby.
+    hard_static_keepout = any(
+        obstacle.kind not in {"net", "fence"}
+        and _point_hits_inflated_polygon(crossing, obstacle.polygon, clearance)
+        for obstacle in court.obstacles
+    )
+    if nominal_keepout and (not tangent_headings or hard_static_keepout):
+        return PerBallFeasibility(ball.ball_id, (), BallReasonCode.KEEPOUT)
     headings = _candidate_headings(feasibility.heading_sample_count, tangent_headings)
     tangent_valid = [
         heading
@@ -311,34 +339,56 @@ def _analyze_ball(ball, court: CourtModel, configuration: CollectionRouteConfigu
             corridor_collapsed = True
             continue
         direction = (math.cos(heading), math.sin(heading))
-        entry = Point2D(
-            crossing.x_m - mechanical.minimum_run_in_m * direction[0],
-            crossing.y_m - mechanical.minimum_run_in_m * direction[1],
-        )
-        exit_point = Point2D(
-            crossing.x_m + mechanical.minimum_run_out_m * direction[0],
-            crossing.y_m + mechanical.minimum_run_out_m * direction[1],
-        )
-        if not _segment_is_collision_free(entry, crossing, court, clearance):
-            entry_failed = True
-            continue
-        if not _segment_is_collision_free(crossing, exit_point, court, clearance):
-            exit_failed = True
-            continue
-        candidates.append(
-            FunnelPassCandidate(
-                ball.ball_id,
-                (ball.ball_id,),
-                heading,
-                Pose2D(entry.x_m, entry.y_m, heading),
-                crossing,
-                Pose2D(exit_point.x_m, exit_point.y_m, heading),
-                effective_width,
-                (crossing,),
+        normal = (-direction[1], direction[0])
+        if nominal_keepout:
+            # Try both sides deterministically.  Only the shift away from the
+            # active wall will survive the unchanged swept-disk collision test.
+            centre_offsets = (
+                -feasibility.boundary_recovery_contact_offset_m,
+                feasibility.boundary_recovery_contact_offset_m,
             )
-        )
+        else:
+            centre_offsets = (0.0,)
+        for centre_offset in centre_offsets:
+            crossing_centre = Point2D(
+                crossing.x_m + centre_offset * normal[0],
+                crossing.y_m + centre_offset * normal[1],
+            )
+            entry = Point2D(
+                crossing_centre.x_m - mechanical.minimum_run_in_m * direction[0],
+                crossing_centre.y_m - mechanical.minimum_run_in_m * direction[1],
+            )
+            exit_point = Point2D(
+                crossing_centre.x_m + mechanical.minimum_run_out_m * direction[0],
+                crossing_centre.y_m + mechanical.minimum_run_out_m * direction[1],
+            )
+            if not _segment_is_collision_free(entry, crossing_centre, court, clearance):
+                entry_failed = True
+                continue
+            if not _segment_is_collision_free(crossing_centre, exit_point, court, clearance):
+                exit_failed = True
+                continue
+            candidates.append(
+                FunnelPassCandidate(
+                    ball.ball_id,
+                    (ball.ball_id,),
+                    heading,
+                    Pose2D(entry.x_m, entry.y_m, heading),
+                    crossing_centre,
+                    Pose2D(exit_point.x_m, exit_point.y_m, heading),
+                    (
+                        feasibility.boundary_recovery_contact_offset_m
+                        if nominal_keepout
+                        else effective_width
+                    ),
+                    (crossing,),
+                    nominal_keepout,
+                )
+            )
     if candidates:
         return PerBallFeasibility(ball.ball_id, tuple(candidates), None)
+    if nominal_keepout:
+        return PerBallFeasibility(ball.ball_id, (), BallReasonCode.KEEPOUT)
     # Report the earliest blocking geometric stage; a pure corridor collapse
     # (no entry/exit geometry failure) is no_candidate_found, not no_entry.
     if entry_failed:

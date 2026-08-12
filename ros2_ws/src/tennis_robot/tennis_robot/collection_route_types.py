@@ -428,6 +428,7 @@ class FeasibilityConfiguration:
     footprint_clearance_radius_m: float
     tangent_activation_distance_m: float
     max_parallel_heading_error_rad: float
+    boundary_recovery_contact_offset_m: float
 
     def __post_init__(self) -> None:
         if isinstance(self.heading_sample_count, bool) or not isinstance(self.heading_sample_count, int) or self.heading_sample_count <= 0:
@@ -439,10 +440,13 @@ class FeasibilityConfiguration:
             "footprint_clearance_radius_m",
             "tangent_activation_distance_m",
             "max_parallel_heading_error_rad",
+            "boundary_recovery_contact_offset_m",
         ):
             _finite(getattr(self, name), name, minimum=0.0)
         if self.footprint_clearance_radius_m <= 0.0:
             raise DomainValidationError("footprint_clearance_radius_m must be positive")
+        if self.boundary_recovery_contact_offset_m <= 0.0:
+            raise DomainValidationError("boundary_recovery_contact_offset_m must be positive")
 
     def to_dict(self) -> dict[str, Any]:
         return {name: getattr(self, name) for name in self.__dataclass_fields__}
