@@ -58,7 +58,7 @@ def configuration() -> CollectionRouteConfiguration:
         SafetyConfiguration(0.1, 0.15, 0.2, 0.5, 0.2, 2.0, 2.0, 10.0),
         ScanConfiguration(1.0, 20.0, 2),
         FeasibilityConfiguration(16, 2.0, 0.04, 0.05, 0.50, 0.75, 0.20, 0.205),
-        ConnectorConfiguration(20.0, 1.5, 3.0),
+        ConnectorConfiguration(20.0, 1.5, 3.0, (1.0,), 2.5),
         GlobalRouteSearchConfiguration(1000, 0.5, 1.0, 0.8, 0.2, 1.0, 1.0, 1.0, 1.0, 1.0),
         SharedPassConfiguration(3, 100, 0.5),
         FollowUpConfiguration(False, 1),
@@ -197,8 +197,14 @@ def test_geometry_profile_and_segment_contracts_are_strict():
         PositionCovariance2D(1e-4, 1e-3, 1e-4)
     with pytest.raises(DomainValidationError):
         ExecutionProfile(1.0, 1.1, 1.5, 0.1, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.1, 0.1, False, False)
+    # A connector may collect when it carries matching crossings, but a terminal
+    # connector is pure transit and a connector claiming balls without crossings
+    # is still malformed.
+    assert segment("connector", RouteSegmentType.CONNECTOR, 0.0, 1.0, ("ball_1",)).covered_ball_ids == ("ball_1",)
     with pytest.raises(DomainValidationError):
-        segment("connector", RouteSegmentType.CONNECTOR, 0.0, 1.0, ("ball_1",))
+        segment("terminal", RouteSegmentType.TERMINAL_CONNECTOR, 0.0, 1.0, ("ball_1",))
+    with pytest.raises(DomainValidationError):
+        RouteSegment("connector", RouteSegmentType.CONNECTOR, path(0.0, 1.0), 0.0, 1.0, profile(), ("ball_1",), ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0))
 
 
 def test_plan_requires_contiguous_progress_terminal_and_matching_snapshot():

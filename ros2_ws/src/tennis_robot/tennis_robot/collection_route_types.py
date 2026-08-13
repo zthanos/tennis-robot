@@ -462,20 +462,44 @@ class ConnectorConfiguration:
     max_connector_length_m: float
     max_connector_arc_angle_rad: float
     max_connector_total_turn_rad: float
+    # Multipliers on minimum_turning_radius_m used to generate additional, gentler
+    # CSC candidates.  The tight minimum radius is the only geometry the planner
+    # used to produce, and an arc that tight cannot host a capture, so every ball
+    # needed its own straight pass.  A multiplier of 1.0 reproduces the original
+    # single-radius graph and must always be present.
+    sweep_radius_multipliers: tuple[float, ...]
+    # A path portion may carry a crossing only where its local turn radius is at
+    # least this.  Derived from the pure-pursuit heading lead (~lookahead/2R),
+    # which has to stay inside the capture-grade heading gate.
+    capture_minimum_turn_radius_m: float
 
     def __post_init__(self) -> None:
-        for name in self.__dataclass_fields__:
+        for name in ("max_connector_length_m", "max_connector_arc_angle_rad", "max_connector_total_turn_rad", "capture_minimum_turn_radius_m"):
             _finite(getattr(self, name), name, minimum=0.0)
             if getattr(self, name) <= 0.0:
                 raise DomainValidationError(f"{name} must be positive")
+        if not isinstance(self.sweep_radius_multipliers, tuple) or not self.sweep_radius_multipliers:
+            raise DomainValidationError("sweep_radius_multipliers must be a non-empty tuple")
+        for value in self.sweep_radius_multipliers:
+            _finite(value, "sweep_radius_multiplier", minimum=1.0)
+            if value < 1.0:
+                raise DomainValidationError("sweep_radius_multiplier must be at least 1.0")
+        if len(set(self.sweep_radius_multipliers)) != len(self.sweep_radius_multipliers):
+            raise DomainValidationError("sweep_radius_multipliers must be unique")
+        if 1.0 not in self.sweep_radius_multipliers:
+            raise DomainValidationError("sweep_radius_multipliers must include the minimum radius (1.0)")
 
     def to_dict(self) -> dict[str, Any]:
-        return {name: getattr(self, name) for name in self.__dataclass_fields__}
+        data = {name: getattr(self, name) for name in self.__dataclass_fields__}
+        data["sweep_radius_multipliers"] = list(self.sweep_radius_multipliers)
+        return data
 
     @classmethod
     def from_dict(cls: type[_T], data: Mapping[str, Any]) -> _T:
         _fields(data, set(cls.__dataclass_fields__), "ConnectorConfiguration")
-        return cls(**data)
+        values = dict(data)
+        values["sweep_radius_multipliers"] = tuple(values["sweep_radius_multipliers"])
+        return cls(**values)
 
 
 @dataclass(frozen=True)
@@ -690,19 +714,27 @@ class RouteSegment:
         _tuple_of_strings(self.covered_ball_ids, "covered_ball_ids"); _unique(self.covered_ball_ids, "covered_ball_ids")
         if not isinstance(self.planned_crossings, tuple) or any(not isinstance(item, PlannedCrossing) for item in self.planned_crossings):
             raise DomainValidationError("planned_crossings must be tuple of PlannedCrossing")
-        if self.type is RouteSegmentType.FUNNEL_PASS:
-            if not self.covered_ball_ids or self.execution_profile.min_speed_mps <= 0: raise DomainValidationError("funnel pass requires covered balls and positive min speed")
+        # A connector may collect too: where its geometry is gentle enough for the
+        # funnel, sweeping a ball in transit saves a whole dedicated pass. Both
+        # collecting kinds obey identical crossing structure; only the terminal
+        # connector stays pure transit.
+        if self.type in (RouteSegmentType.FUNNEL_PASS, RouteSegmentType.CONNECTOR) and (self.covered_ball_ids or self.planned_crossings):
+            if self.type is RouteSegmentType.FUNNEL_PASS and not self.covered_ball_ids: raise DomainValidationError("funnel pass requires covered balls")
+            if self.execution_profile.min_speed_mps <= 0: raise DomainValidationError("collecting segment requires positive min speed")
             crossing_ids = tuple(item.ball_id for item in self.planned_crossings)
             if crossing_ids != self.covered_ball_ids:
                 raise DomainValidationError("planned crossings must exactly match covered ball IDs in order")
             previous_progress = self.progress_start_m
             for crossing in self.planned_crossings:
                 if not self.progress_start_m < crossing.progress_s < self.progress_end_m:
-                    raise DomainValidationError("planned crossing must be inside funnel-pass progress interval")
+                    raise DomainValidationError("planned crossing must be inside the segment progress interval")
                 if crossing.progress_s <= previous_progress:
                     raise DomainValidationError("planned crossings must have strictly increasing progress")
                 previous_progress = crossing.progress_s
-        elif self.covered_ball_ids or self.planned_crossings: raise DomainValidationError("only funnel passes may have covered balls or planned crossings")
+        elif self.type is RouteSegmentType.FUNNEL_PASS:
+            raise DomainValidationError("funnel pass requires covered balls and positive min speed")
+        elif self.covered_ball_ids or self.planned_crossings:
+            raise DomainValidationError("terminal connectors may not have covered balls or planned crossings")
         if self.execution_profile.allow_reversing or self.execution_profile.allow_standalone_rotate: raise DomainValidationError("collection segments cannot reverse or rotate standalone")
     def to_dict(self) -> dict[str, Any]: return {"id": self.id, "type": self.type.value, "path": self.path.to_dict(), "progress_start_m": self.progress_start_m, "progress_end_m": self.progress_end_m, "execution_profile": self.execution_profile.to_dict(), "covered_ball_ids": list(self.covered_ball_ids), "obstacle_constraint": self.obstacle_constraint.to_dict(), "planned_crossings": [item.to_dict() for item in self.planned_crossings]}
     @classmethod

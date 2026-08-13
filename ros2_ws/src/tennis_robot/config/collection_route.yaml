@@ -70,6 +70,16 @@ connector:
   # allowing the bounded two-arc manoeuvre.
   max_connector_arc_angle_rad: 3.0
   max_connector_total_turn_rad: 6.0
+  # Connectors used to be generated only at the 1.25 m minimum turning radius, so
+  # 76% of the route was motion that could never collect: an arc that tight has a
+  # pure-pursuit heading lead near 0.24 rad, well past the capture gate.  Adding
+  # gentler radii lets the search choose a sweeping curve that takes balls on the
+  # way instead of a tight hop between dedicated straight passes.  1.0 must stay
+  # so the original tight geometry remains available.
+  sweep_radius_multipliers: [1.0, 3.0, 6.0]
+  # lookahead/(2R) is the pure-pursuit heading lead; with a 0.6 m lookahead and the
+  # 0.15 rad capture gate this needs R > 2.0 m.  2.5 m keeps margin.
+  capture_minimum_turn_radius_m: 2.5
 global_route_search:
   # Coverage-first search ordering finds a full-coverage route within a few
   # expansions per ball; this budget adds margin for varied layouts while the

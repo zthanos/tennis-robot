@@ -63,7 +63,9 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
             accumulated = reachable_balls[node_id]
             before = len(accumulated)
             for edge in node_edges:
-                accumulated |= reachable_balls[edge.target_node_id]
+                # Balls swept in transit count towards reachable coverage, or the
+                # bound would prune branches that collect on the way.
+                accumulated |= reachable_balls[edge.target_node_id] | set(edge.swept_ball_ids)
             if len(accumulated) != before:
                 changed = True
 
@@ -89,6 +91,7 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
         expanded_nodes.add(current_node_id)
         candidate = by_node[current_node_id]
         current_covered = {ball_id for node_id in node_ids for ball_id in by_node[node_id].covered_ball_ids}
+        current_covered |= {ball_id for edge in edges for ball_id in edge.swept_ball_ids}
         search = configuration.global_route_search
         connector_length = sum(edge.path.length_m for edge in edges)
         connector_turn = sum(edge.path.total_turn_rad for edge in edges)
@@ -115,14 +118,20 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
         # Explore high-new-coverage, then cheaper, then stable-id edges first so a
         # strong incumbent is found early and the coverage bound prunes hard.
         def order_key(edge: ConnectorEdge):
-            new_balls = len(set(by_node[edge.target_node_id].covered_ball_ids) - current_covered)
-            return (-new_balls, edge.path.length_m, edge.edge_id)
+            gained = set(by_node[edge.target_node_id].covered_ball_ids) | set(edge.swept_ball_ids)
+            return (-len(gained - current_covered), edge.path.length_m, edge.edge_id)
         for edge in sorted(outgoing.get(current_node_id, ()), key=order_key):
             if edge.target_node_id in node_ids:
                 continue
-            if current_covered & set(by_node[edge.target_node_id].covered_ball_ids):
+            swept = set(edge.swept_ball_ids)
+            # A ball may be covered exactly once in a plan, so an edge that sweeps
+            # something already collected, or that duplicates its own target's
+            # coverage, is not a usable extension.
+            if current_covered & swept:
                 continue
-            if best is not None and len(current_covered | reachable_balls[edge.target_node_id]) < len(best.covered_ball_ids):
+            if (current_covered | swept) & set(by_node[edge.target_node_id].covered_ball_ids):
+                continue
+            if best is not None and len(current_covered | swept | reachable_balls[edge.target_node_id]) < len(best.covered_ball_ids):
                 continue
             dfs(edge.target_node_id, node_ids + (edge.target_node_id,), edges + (edge,))
 
@@ -152,6 +161,10 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
         for node_id in best.node_ids
         for ball_id in by_node[node_id].covered_ball_ids
     }
+    # Balls taken in transit are attributed to the connector that swept them.
+    for index, edge in enumerate(best.edges):
+        for ball_id in edge.swept_ball_ids:
+            selected_passes[ball_id] = f"connector-{2 * index}"
     return _plan_from_route(snapshot, configuration, best, status, search_status, _ball_results(snapshot, feasibility, best.covered_ball_ids, exhausted, expanded_nodes, by_node, graph, court, configuration, selected_passes), by_node)
 
 
@@ -279,7 +292,22 @@ def _connector_execution_profile(configuration):
 
 def _connector_segment(segment_id, edge, progress, configuration):
     path = Path2D(tuple(PathPoint(pose) for pose in edge.path.poses))
-    return RouteSegment(segment_id, RouteSegmentType.CONNECTOR, path, progress, progress + edge.path.length_m, _connector_execution_profile(configuration), (), ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0))
+    # Edge-local crossing progress is chord-based while the segment span uses the
+    # arc length, and arc >= chord, so rebasing keeps every crossing inside the
+    # segment with at least the required run-out behind it.
+    crossings = tuple(
+        replace(crossing, progress_s=progress + crossing.progress_s)
+        for crossing in edge.swept_crossings
+    )
+    # A connector that collects is capture motion for that stretch, so it has to
+    # hold the capture-grade heading gate rather than the loose transit one. The
+    # sweep detector only admits crossings on portions gentle enough to pass it.
+    profile = (
+        configuration.planning.default_execution_profile
+        if crossings
+        else _connector_execution_profile(configuration)
+    )
+    return RouteSegment(segment_id, RouteSegmentType.CONNECTOR, path, progress, progress + edge.path.length_m, profile, edge.swept_ball_ids, ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0), crossings)
 
 
 def _pass_segment(segment_id, candidate, progress, configuration, snapshot):
