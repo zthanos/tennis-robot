@@ -1941,3 +1941,56 @@ arc / `6.0 rad` total δίνουν **FEASIBLE 3/3**, μήκος replay περί�
 static-obstacle non-bypass, tangent-only contact και shared-pass isolation.
 `321` collection tests, `481` pure tests και `12` console tests PASS. Εκκρεμεί
 distributed Gazebo run για να κριθεί το πραγματικό contact του funnel.
+
+## #47 — Live acceptance του #45: πρώτο `route_completed` με πραγματικές συλλογές
+
+**Setup (2026-08-12):** PC = Gazebo GUI μόνο (`TENNIS_LAUNCH_BRAIN=false
+./run_native.sh`, `ROS_DOMAIN_ID=42`), Pi = brain σε
+`SLAM_MODE=localization` πάνω στο αποθηκευμένο `court_1785705204.posegraph`
+και στο `court_boundary.json` του **ίδιου** survey. Trigger `collect_route`
+από το panel του Pi. Ο Pi ξαναχτίστηκε ώστε να έχει τον planner του #46 (το
+colcon install αντιγράφει, δεν κάνει symlink — χωρίς rebuild ο κόμβος τρέχει
+το παλιό `collection_route_planner_v2.py`).
+
+**Run 1 — το acceptance του #45 πέρασε.** `navigating_to_scan_pose 705.8 →
+scanning 710.0 → planning 729.1 → executing_route 838.4 → **route_completed**
+992.7`. 9/9 στόχοι planned, `planning_status: feasible`, καμία περικοπή στο
+midpoint, κανένα tracking abort σε 154 s εκτέλεσης. Το ack-aware finalize
+πέρασε και ο executor μπήκε μόνος του σε δεύτερο run. Αυτό ήταν ακριβώς το
+εκκρεμές acceptance του #45.
+
+**Πρώτες πραγματικές συλλογές distributed:** `confirmed 3` (targets 4, 7, 8),
+`basket_retained 4`, `beam_credits 3`. Τα confirmations ήρθαν με
+`lateral_error` `0.013 / 0.024 / 0.009 m` και `heading_error` κάτω από
+`0.025 rad` — ο διάδρομος πέφτει **πάνω** στη μπάλα. Το spatial offset του
+#32/#15 δεν είναι πια ο περιοριστικός παράγοντας σε localization
+(`pose_drift_m 0.042` τρέχον, `0.343` στο execution snapshot).
+
+**Το #44 απομονώθηκε ποσοτικά.** Τέσσερις στόχοι (1, 2, 6, 9) έμειναν
+`execution_status: executing` με **15-16 crossing samples** και **0
+confirmations**: το robot διέσχισε κανονικά τον διάδρομό τους και η μπάλα
+δεν μπήκε. Δεν είναι πλάνο, δεν είναι tracking, δεν είναι frame — είναι
+**γεωμετρία χείλους**, όπως το είδε ο χρήστης στο #44. Δύο ακόμα (3, 5)
+έμειναν `planned` με `crossing_samples 0` παρόλο που το route ολοκληρώθηκε·
+θέλει ξεχωριστό κοίταγμα ποιο segment τα κάλυπτε. Επίσης `basket_retained 4`
+έναντι `beam_credits 3`: μία μπάλα μπήκε χωρίς beam confirmation (ανοιχτό
+basket-beam reconciliation).
+
+**Run 2 — νέα αστοχία, οριακό heading gate σε pass.** Το follow-up run
+σχεδίασε από το off-route scan `.../drive-1` (μηχανισμός #40), 9 planned /
+2 skipped, `planning_status: partial`, και σταμάτησε 21 s μετά την εκκίνηση:
+`route_outcome: aborted_tracking`, `failure_reason 15 = heading_error_exceeded`,
+segment `pass:...drive-1/target-11:12`, `progress 7.432 m`,
+`lateral_error 0.023 m`, `heading_error -0.153 rad`. Το capture-grade gate
+είναι `max_heading_error_rad: 0.15`, άρα η υπέρβαση είναι **0.003 rad**. Με
+lateral error 2.3 cm το robot ήταν πάνω στη διαδρομή — πρόκειται για
+pure-pursuit ταλάντωση heading στο ίδιο μοτίβο με #29 και τον curvature spike
+του #34, αυτή τη φορά σε **pass** segment όπου το gate είναι σκόπιμα σφιχτό
+για ακρίβεια capture. Δεν άλλαξε τιμή σε αυτό το session: η επιλογή είναι
+είτε χαλάρωση του gate (κινδυνεύει η ακρίβεια που μόλις επιβεβαιώθηκε στα
+0.009-0.024 m) είτε φιλτράρισμα/υστέρηση του heading error αντί για στιγμιαίο
+hard gate.
+
+**Το #46 δεν δοκιμάστηκε live:** καμία μπάλα αυτού του layout δεν ήταν μέσα
+στο inflated net/fence keepout, οπότε δεν παρήχθη boundary-recovery candidate.
+Παραμένει εκκρεμές acceptance.
