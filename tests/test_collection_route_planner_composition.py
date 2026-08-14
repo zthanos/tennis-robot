@@ -99,14 +99,25 @@ def test_budget_exhaustion_returns_executable_partial_plan():
 
 def test_declared_candidate_cap_bounds_graph_and_reports_unexamined_target():
     base = default_configuration()
-    configuration = replace(base, planning=replace(base.planning, maximum_candidate_count=1))
-    plan = plan_collection_route(
-        snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 8.0, 3.0)),
-        court=court(), configuration=configuration,
-    ).plan
-    assert plan.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
-    assert plan.planning_status is PlanningStatus.PARTIAL
-    assert any(result.reason_code is BallReasonCode.PLANNING_BUDGET for result in plan.ball_results)
+
+    def plan_with_cap(cap):
+        configuration = replace(base, planning=replace(base.planning, maximum_candidate_count=cap))
+        return plan_collection_route(
+            # Three targets no single line can hold, so a starved cap must leave
+            # one of them out.
+            snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 8.0, 3.0), ("c", -1.0, -5.0)),
+            court=court(), configuration=configuration,
+        ).plan
+
+    starved = plan_with_cap(1)
+    assert starved.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
+    assert starved.planning_status is PlanningStatus.PARTIAL
+    # The unexamined target is deferred on budget, never called unreachable.
+    deferred = {result.ball_id: result.reason_code for result in starved.ball_results}
+    assert deferred["c"] is BallReasonCode.PLANNING_BUDGET
+    # One candidate is enough to cover two balls now that a candidate is a line
+    # rather than a single-ball pass.
+    assert {result.ball_id for result in starved.ball_results if result.status is BallStatus.COVERED} == {"a", "b"}
 
 
 def test_no_valid_terminal_route_returns_non_executable_planning_timeout():

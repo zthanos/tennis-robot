@@ -161,6 +161,7 @@ def plan_collection_route(*, snapshot: ScanSnapshot, court: CourtModel, configur
         if len(candidate.covered_ball_ids) == 1
     )
     shared = generate_shared_passes(
+        snapshot=snapshot,
         single_ball_candidates=single_candidates,
         court=court,
         configuration=configuration,
@@ -436,6 +437,9 @@ def _effective_capture_half_width(ball, heading: float, configuration: Collectio
 
 
 def _candidate_headings(sample_count: int, tangent_headings: tuple[float, ...]) -> tuple[float, ...]:
+    # Only isolated balls rely on this grid now: multi-ball passes come from the
+    # lines the balls themselves define (collection_route_shared_pass), not from
+    # sampled headings that happen to line up.
     headings = [2.0 * math.pi * index / sample_count for index in range(sample_count)]
     headings.extend(tangent_headings)
     return tuple(sorted({_normalize_heading(heading) for heading in headings}))

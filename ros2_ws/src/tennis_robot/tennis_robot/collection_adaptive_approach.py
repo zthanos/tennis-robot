@@ -905,7 +905,7 @@ def _solve_over_single_candidates(
         shared_rejections = shared.rejections
     else:
         shared = generate_shared_passes(
-            single_ball_candidates=all_singles, court=court, configuration=configuration
+            snapshot=snapshot, single_ball_candidates=all_singles, court=court, configuration=configuration
         )
         shared_rejections = ()
     pool = _merge_candidates(all_singles + shared.candidates)
