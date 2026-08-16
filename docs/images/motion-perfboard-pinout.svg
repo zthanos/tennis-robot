@@ -9,7 +9,7 @@
 <rect x="300" y="34" width="12" height="12" rx="3" fill="#1D9E75"/><text class="lg" x="316" y="44">encoder</text>
 <rect x="395" y="34" width="12" height="12" rx="3" fill="#7F77DD"/><text class="lg" x="411" y="44">I2C</text>
 <rect x="455" y="34" width="12" height="12" rx="3" fill="#888780"/><text class="lg" x="471" y="44">user</text>
-<rect class="card" x="40" y="90" width="200" height="252" rx="8"/>
+<rect class="card" x="40" y="90" width="200" height="270" rx="8"/>
 <rect class="tb" x="40" y="90" width="200" height="26" rx="8"/>
 <rect class="tb" x="40" y="103" width="200" height="13"/>
 <text class="ti" x="52" y="108">J1 · Arduino Mega</text>
@@ -29,14 +29,16 @@
 <text class="pn" x="70" y="242">D32 · START_ARM</text>
 <circle cx="58" cy="256" r="4" fill="#888780"/>
 <text class="pn" x="70" y="260">D33 · ESTOP_STATUS</text>
-<circle cx="58" cy="274" r="4" fill="#7F77DD"/>
-<text class="pn" x="70" y="278">D20 · I2C_SDA</text>
+<circle cx="58" cy="274" r="4" fill="#888780"/>
+<text class="pn" x="70" y="278">D34 · ARMED_LED</text>
 <circle cx="58" cy="292" r="4" fill="#7F77DD"/>
-<text class="pn" x="70" y="296">D21 · I2C_SCL</text>
-<circle cx="58" cy="310" r="4" fill="#E24B4A"/>
-<text class="pn" x="70" y="314">5V · LOGIC_5V</text>
-<circle cx="58" cy="328" r="4" fill="#2C2C2A"/>
-<text class="pn" x="70" y="332">GND · LOGIC_GND</text>
+<text class="pn" x="70" y="296">D20 · I2C_SDA</text>
+<circle cx="58" cy="310" r="4" fill="#7F77DD"/>
+<text class="pn" x="70" y="314">D21 · I2C_SCL</text>
+<circle cx="58" cy="328" r="4" fill="#E24B4A"/>
+<text class="pn" x="70" y="332">5V · LOGIC_5V</text>
+<circle cx="58" cy="346" r="4" fill="#2C2C2A"/>
+<text class="pn" x="70" y="350">GND · LOGIC_GND</text>
 <rect class="card" x="255" y="90" width="190" height="144" rx="8"/>
 <rect class="tb" x="255" y="90" width="190" height="26" rx="8"/>
 <rect class="tb" x="255" y="103" width="190" height="13"/>
@@ -93,7 +95,7 @@
 <text class="pn" x="490" y="170">A · D2/D3/D18/D19</text>
 <circle cx="478" cy="184" r="4" fill="#1D9E75"/>
 <text class="pn" x="490" y="188">B · D22–D25</text>
-<rect class="card" x="460" y="210" width="180" height="108" rx="8"/>
+<rect class="card" x="460" y="210" width="180" height="144" rx="8"/>
 <rect class="tb" x="460" y="210" width="180" height="26" rx="8"/>
 <rect class="tb" x="460" y="223" width="180" height="13"/>
 <text class="ti" x="472" y="228">J8 · user controls</text>
@@ -105,11 +107,15 @@
 <text class="pn" x="490" y="290">ESTOP_STAT · D33</text>
 <circle cx="478" cy="304" r="4" fill="#2C2C2A"/>
 <text class="pn" x="490" y="308">GND</text>
-<rect class="card" x="460" y="330" width="180" height="118" rx="8"/>
-<rect class="tb" x="460" y="330" width="180" height="26" rx="8"/><rect class="tb" x="460" y="343" width="180" height="13"/>
-<text class="ti" x="472" y="348">Rails (board-wide bus)</text>
-<circle cx="478" cy="370" r="4" fill="#E24B4A"/><text class="pn" x="490" y="374">5V rail — top bus</text>
-<circle cx="478" cy="388" r="4" fill="#2C2C2A"/><text class="pn" x="490" y="392">GND rail — bottom bus</text>
-<circle cx="478" cy="406" r="4" fill="#E24B4A"/><text class="pn" x="490" y="410">όλα VCC/5V → 5V rail</text>
-<circle cx="478" cy="424" r="4" fill="#2C2C2A"/><text class="pn" x="490" y="428">όλα GND → GND rail</text>
+<circle cx="478" cy="322" r="4" fill="#888780"/>
+<text class="pn" x="490" y="326">ARMED_LED · D34</text>
+<circle cx="478" cy="340" r="4" fill="#2C2C2A"/>
+<text class="pn" x="490" y="344">GND</text>
+<rect class="card" x="460" y="366" width="180" height="118" rx="8"/>
+<rect class="tb" x="460" y="366" width="180" height="26" rx="8"/><rect class="tb" x="460" y="379" width="180" height="13"/>
+<text class="ti" x="472" y="384">Rails (board-wide bus)</text>
+<circle cx="478" cy="406" r="4" fill="#E24B4A"/><text class="pn" x="490" y="410">5V rail — top bus</text>
+<circle cx="478" cy="424" r="4" fill="#2C2C2A"/><text class="pn" x="490" y="428">GND rail — bottom bus</text>
+<circle cx="478" cy="442" r="4" fill="#E24B4A"/><text class="pn" x="490" y="446">όλα VCC/5V → 5V rail</text>
+<circle cx="478" cy="460" r="4" fill="#2C2C2A"/><text class="pn" x="490" y="464">όλα GND → GND rail</text>
 </svg>

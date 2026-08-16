@@ -14,6 +14,8 @@
  *   - PWM ramp (slew-rate limit) toward target -> avoids current spikes that
  *     would trip the battery BMS during skid-steer turns.
  *   - E-stop status (active-low, optional aux contact) forces DISARM.
+ *   - The local START/ARM button can arm the drivers, but never starts motion;
+ *     a fresh host M command is still required.
  *
  * SERIAL PROTOCOL  (115200 baud, '\n'-terminated ASCII lines)
  *   Host -> Mega:
@@ -50,12 +52,14 @@ const uint8_t ENC_RR_A = 19, ENC_RR_B = 25;
 // ---- Safety / user inputs (active-low, INPUT_PULLUP) ----------------------
 const uint8_t START_ARM_PIN    = 32;  // optional arm button
 const uint8_t ESTOP_STATUS_PIN = 33;  // optional E-stop aux contact
+const uint8_t ARMED_LED_PIN    = 34;  // optional LED, through a series resistor
 
 // ---- Tuning ---------------------------------------------------------------
 const unsigned long BAUD          = 115200;
 const unsigned long CMD_TIMEOUT_MS = 300;   // no heartbeat -> stop
 const unsigned long CONTROL_MS     = 10;    // control loop period
 const unsigned long TELEM_MS       = 100;   // telemetry period
+const unsigned long BUTTON_DEBOUNCE_MS = 40;
 const float  RAMP_PER_TICK = 0.02f;         // duty step per CONTROL_MS (~0.5s 0->full)
 const float  DEADBAND      = 0.02f;         // below this, treat as zero
 
@@ -66,6 +70,8 @@ State state = DISARMED;
 float targetLeft = 0.0f, targetRight = 0.0f;   // requested [-1,1]
 float curLeft = 0.0f, curRight = 0.0f;         // ramped actual [-1,1]
 unsigned long lastCmdMs = 0, lastControlMs = 0, lastTelemMs = 0;
+bool startButtonRaw = HIGH, startButtonStable = HIGH;
+unsigned long startButtonChangedMs = 0;
 
 volatile long encLF = 0, encLR = 0, encRF = 0, encRR = 0;
 
@@ -84,6 +90,10 @@ bool estopTripped() { return digitalRead(ESTOP_STATUS_PIN) == LOW; }
 void setDriverEnable(bool en) {
   digitalWrite(LEFT_EN,  en ? HIGH : LOW);
   digitalWrite(RIGHT_EN, en ? HIGH : LOW);
+}
+
+void updateArmedLed() {
+  digitalWrite(ARMED_LED_PIN, state == ARMED ? HIGH : LOW);
 }
 
 void applySide(uint8_t rpwm, uint8_t lpwm, float duty) {
@@ -110,6 +120,7 @@ void doDisarm(const char* reason) {
   stopOutputs();
   setDriverEnable(false);
   state = (estopTripped() ? ESTOPPED : DISARMED);
+  updateArmedLed();
   Serial.print(F("OK DISARM "));
   Serial.println(reason);
 }
@@ -119,8 +130,23 @@ void doArm() {
   stopOutputs();
   setDriverEnable(true);
   state = ARMED;
+  updateArmedLed();
   lastCmdMs = millis();   // grace period for first heartbeat
   Serial.println(F("OK ARM"));
+}
+
+void pollStartButton(unsigned long now) {
+  bool raw = digitalRead(START_ARM_PIN);
+  if (raw != startButtonRaw) {
+    startButtonRaw = raw;
+    startButtonChangedMs = now;
+  }
+  if (raw != startButtonStable && now - startButtonChangedMs >= BUTTON_DEBOUNCE_MS) {
+    startButtonStable = raw;
+    if (startButtonStable == LOW && state == DISARMED) {
+      doArm();
+    }
+  }
 }
 
 float clampUnit(float v) { return v < -1.0f ? -1.0f : (v > 1.0f ? 1.0f : v); }
@@ -199,6 +225,7 @@ void setup() {
 
   pinMode(START_ARM_PIN, INPUT_PULLUP);
   pinMode(ESTOP_STATUS_PIN, INPUT_PULLUP);
+  pinMode(ARMED_LED_PIN, OUTPUT);
 
   attachInterrupt(digitalPinToInterrupt(ENC_LF_A), isrLF, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_LR_A), isrLR, RISING);
@@ -209,6 +236,7 @@ void setup() {
   setDriverEnable(false);
   stopOutputs();
   state = DISARMED;
+  updateArmedLed();
   Serial.println(F("READY motion_mega DISARMED"));
 }
 
@@ -216,6 +244,7 @@ void loop() {
   pollSerial();
 
   unsigned long now = millis();
+  pollStartButton(now);
 
   // E-stop has absolute priority.
   if (estopTripped() && state != ESTOPPED) {
@@ -225,6 +254,7 @@ void loop() {
   // Recover from ESTOPPED to DISARMED once contact clears (still needs ARM).
   if (state == ESTOPPED && !estopTripped()) {
     state = DISARMED;
+    updateArmedLed();
   }
 
   // Control loop: timeout + ramp + output.
@@ -232,9 +262,9 @@ void loop() {
     lastControlMs = now;
 
     if (state == ARMED) {
-      // Command timeout -> coast target to zero (stay armed).
+      // Command timeout -> immediate zero output (stay armed).
       if (now - lastCmdMs > CMD_TIMEOUT_MS) {
-        targetLeft = targetRight = 0.0f;
+        stopOutputs();
       }
       curLeft  = rampToward(curLeft,  targetLeft);
       curRight = rampToward(curRight, targetRight);

@@ -11,8 +11,8 @@ docs/
   perception/         OAK-D perception + measurement-covariance calibration
     covariance/       Gazebo covariance calibration reports (c2 / c2-v2 / c2-v3)
   survey/             court knowledge model + LiDAR court survey (v2) + SLAM
-  mechanism/          intake / funnel / basket / Concept-A build + intake debug log
-  hardware/           BOM, wiring, cut lists, purchase lists, dual-boot, sensor contract
+  mechanism/          active dual-wheel intake / funnel / basket + intake debug log
+  hardware/           active 4WD layout, BOM, wiring, purchase lists, sensor contract
   process/            architecture guide, delivery contract, validation, board, telemetry
   images/             diagrams referenced by the build plans
   archive/  research/  superseded notes and broad exploratory research (background only)
@@ -43,10 +43,10 @@ docs/
 ## mechanism/
 - `intake-debug-log-el.md` - **running debug log** for the intake/collector mechanism.
 - `dual-wheel-intake-design-el.md`, `intake-concept-decision-el.md`, `intake-bench-sweep-report-el.md`.
-- `basket-bin-redesign-spec-el.md`, `concept-a-funnel-lift-wheel-plan.md`.
+- `basket-bin-redesign-spec-el.md`.
 
 ## hardware/
-- Purchase/build: `prototype-purchase-list-el.md`, `hardware-bom-el.md`, `ordered-parts.md`, `plywood-cut-list.md`.
+- Purchase/build: `chassis-layout-4wd-dual-intake-el.md`, `prototype-purchase-list-el.md`, `hardware-bom-el.md`, `ordered-parts.md`.
 - Wiring/setup: `motion-perfboard-wiring-el.md`, `ros2-control-migration-el.md`, `ubuntu-dual-boot-handoff.md`.
 - Contracts: `sensor-topic-contract-el.md`, `hardware-glossary.md`.
 - `../arduino/collector/` - Arduino bring-up sketches (collector motor, encoder, IR beam).

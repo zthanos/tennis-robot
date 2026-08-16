@@ -42,10 +42,13 @@ state: `0`=DISARMED `1`=ARMED `2`=ESTOP · estop: `1`=tripped `0`=ok
 
 - Boots **DISARMED** (drivers off, duty 0).
 - `ARM` refused while E-stop tripped; a trip mid-run forces DISARM.
-- **Command timeout** (`CMD_TIMEOUT_MS`, 300 ms): no heartbeat → duty ramps to 0
-  (stays armed). The host script streams `M`/`PING` at 20 Hz.
+- **Command timeout** (`CMD_TIMEOUT_MS`, 300 ms): no heartbeat → duty goes to 0
+  immediately (stays armed). The host script streams `M`/`PING` at 20 Hz.
 - **PWM ramp** (`RAMP_PER_TICK`): ~0.5 s from 0→full, limiting current spikes
   that would otherwise trip the battery BMS in skid-steer turns.
+- The physical START button arms from DISARMED after debounce. It does not move
+  the motors by itself; movement still needs fresh `M left right` commands.
+- The optional armed LED is driven by D34 through a suitable series resistor.
 
 ## Pin map
 
@@ -57,7 +60,7 @@ Matches `docs/hardware/motion-perfboard-wiring-el.md §4`:
 | RIGHT_RPWM / LPWM / EN | D9 / D10 / D31 |
 | Encoders A (interrupt) | LF=D2, LR=D3, RF=D18, RR=D19 |
 | Encoders B | LF=D22, LR=D23, RF=D24, RR=D25 |
-| START_ARM / ESTOP_STATUS | D32 / D33 (active-low, pullup) |
+| START_ARM / ESTOP_STATUS / ARMED_LED | D32 / D33 / D34 |
 | IMU I2C (not used in v1) | SDA=D20, SCL=D21 |
 
 ## Notes / next steps

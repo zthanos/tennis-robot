@@ -2,13 +2,13 @@
 
 > Δεν χρησιμοποιείται ως specification ή οδηγός υλοποίησης. Περιγράφει το
 > παλαιό μοντέλο Nav2 goal και fine capture ανά μπάλα. Το ενεργό specification
-> είναι το [Ενεργός οδηγός συνεχούς διαδρομής](../collection-route-rules-el.md).
+> είναι ο [Ενεργός οδηγός συνεχούς διαδρομής](../collection-route/collection-route-rules-el.md).
 
 # Collect Route — γρήγορο μάζεμα με 360° scan, route planning και Nav2
 
 Σχεδίαση και as-built τεκμηρίωση του mode `collect_route` (issue #10). Υλοποιεί
 το «Collection Planning» layer του
-[architecture-implementation-guide-el.md](architecture-implementation-guide-el.md)
+[architecture-implementation-guide-el.md](../process/architecture-implementation-guide-el.md)
 πάνω στον επικυρωμένο μηχανισμό dual-wheel intake (PR #9) και συνδέεται με το
 per-ball FSM του
 [collection-state-machine-plan-el.md](collection-state-machine-plan-el.md).
@@ -110,13 +110,14 @@ IDLE → SCAN_ROTATE → PLAN → [NAV_TO_BALL ⇄ FINE_APPROACH → SETTLE]* �
   προσπαθειών.
 
 Το γεωμετρικό όριο που δικαιολογεί το corridor: το funnel συγχωρεί πλευρικό
-σφάλμα ±80 mm ([concept-a-funnel-lift-wheel-plan.md](concept-a-funnel-lift-wheel-plan.md)).
+σφάλμα ±80 mm (ιστορική παραδοχή στο
+[Concept A plan](mechanical/concept-a-funnel-lift-wheel-plan.md)).
 
 ## 5. Court knowledge model
 
 `CourtModel.from_boundary_file(runtime/court_boundary.json)` (schema
 `court_knowledge_model/v2`, βλ.
-[court-survey-v2-spec-el.md](court-survey-v2-spec-el.md)):
+[court-survey-v2-spec-el.md](../survey/court-survey-v2-spec-el.md)):
 
 - fence: τα 4 corners (map frame) ως πολύγωνο· ερωτήματα απόστασης ανά ακμή.
 - net: το segment των δύο posts (fallback: center ± span/2 × axis_width).
