@@ -25,7 +25,7 @@ about 3-5 mm per cut. Dimensions below are finished part dimensions.
 
 ## Base Top View
 
-![Base layout plan](images/base-layout-plan.svg)
+![Historical 2WD/caster base layout](images/base-layout-plan-2wd-casters.svg)
 
 Historical CAD reference: commit `de75682`, path
 `cad/3d-printable-base/base_mounting_plate.scad`.

@@ -17,6 +17,8 @@ edit a number here without re-validating in the Gazebo bench.
 | `params.scad` | Every dimension, with spec/log citations |
 | `lib.scad` | Mesh-panel / wall / handle primitives (40 mm grid, 4 mm wire, 6 mm frame) |
 | `bin.scad` | The removable weldment: floor, walls, tray, chute, guards, lip, flange, handles |
+| `print-segments.scad` | Flat, tiled basket parts sized for a 220 x 220 mm print bed |
+| `export-segment-stls.sh` | Batch export of all unique printable segment STLs |
 | `hood.scad` | Chassis-mounted entry hood: inclined mesh roof + side cheeks + mounts |
 | `chassis_context.scad` | Reference-only plate w/ real opening, battery, IR pair, scale balls |
 | `assembly.scad` | Everything together; `-D 'explode=160'` lifts the bin out |
@@ -26,7 +28,36 @@ edit a number here without re-validating in the Gazebo bench.
 ```bash
 docker compose run --rm openscad openscad -o out.png cad/basket-bin-v2/assembly.scad
 docker compose run --rm openscad openscad -o bin.stl --export-format binstl cad/basket-bin-v2/bin.scad
+./cad/basket-bin-v2/export-segment-stls.sh
 ```
+
+## Segmented 3D-print version (220 x 220 mm bed)
+
+`print-segments.scad` turns the weldment into framed tiles instead of slicing
+through mesh wires. Print the quantities below, then join adjacent 6 mm
+perimeter frames with UV-resistant zip ties. For a stiffer connection, place a
+`joiner_plate` across the seam and use zip ties through its holes, or clamp a
+pair of plates with M4 bolts.
+
+| STL | Quantity | Nominal footprint (mm) |
+| --- | ---: | ---: |
+| `floor_tile.stl` | 4 | 200 x 140 |
+| `management_tray_tile.stl` | 2 | 140.4 x 140 |
+| `side_wall_tile.stl` | 8 | 200 x 112.5 |
+| `rear_wall_tile.stl` | 4 | 140 x 112.5 |
+| `receiving_chute_tile.stl` | 1 | 50.2 x 180 |
+| `side_flange_segment.stl` | 4 | 200 x 22 |
+| `rear_flange_segment.stl` | 2 | 172 x 22 |
+| `corner_guard.stl` | 2 | 50 x 20 |
+| `center_lip.stl` | 1 | 180 x 10 |
+| `carry_handle.stl` | 2 | 128 x 35 |
+| `drop_strut.stl` | 4 | 10 x 6 |
+| `joiner_plate.stl` | 24 recommended | 32 x 16 |
+
+The tiling adds perimeter frames at every seam, so the printed version is
+slightly heavier than `bin.scad` but keeps every mesh opening at or below the
+validated 40 mm pitch. Use PETG or ASA for a court prototype; PLA is suitable
+only for indoor fit checks. The hood remains a separate chassis-mounted part.
 
 ## Deliberate deviations from the sim model
 

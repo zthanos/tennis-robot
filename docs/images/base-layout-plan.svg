@@ -1,209 +1,87 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980" role="img">
+  <title>Current 4WD chassis and dual-wheel intake layout</title>
+  <desc>Current mechanical baseline: level 920 by 580 millimetre chassis, four 170 by 80 millimetre driven wheels with two per side and no casters, dual vertical-axis intake wheels, central removable basket, battery, electronics, lidar and OAK-D.</desc>
   <defs>
-    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#2368a8"/>
-    </marker>
-    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#2f7d46"/>
-    </marker>
-    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#b33939"/>
-    </marker>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#237a49"/></marker>
+    <marker id="dim-arrow" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto-start-reverse"><path d="M0,0 L0,6 L6,3 z" fill="#2463a3"/></marker>
     <style>
-      .bg { fill: #f5f4ef; }
-      .title { font-family: Arial, sans-serif; font-size: 38px; font-weight: 700; fill: #151515; }
-      .subtitle { font-family: Arial, sans-serif; font-size: 21px; fill: #333; }
-      .panel { fill: #fffefa; stroke: #242424; stroke-width: 2; rx: 12; }
-      .panel-title { font-family: Arial, sans-serif; font-size: 25px; font-weight: 700; fill: #111; }
-      .label { font-family: Arial, sans-serif; font-size: 21px; fill: #111; }
-      .small { font-family: Arial, sans-serif; font-size: 17px; fill: #222; }
-      .tiny { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
-      .base { fill: #cfd7dd; stroke: #1d1d1d; stroke-width: 3; }
-      .wood { fill: #bb8b55; stroke: #1d1d1d; stroke-width: 3; }
-      .rail { fill: #24292f; stroke: #111; stroke-width: 3; }
-      .collector { fill: #f0b23d; stroke: #1d1d1d; stroke-width: 3; }
-      .electronics { fill: #9aa2a8; stroke: #1d1d1d; stroke-width: 3; }
-      .battery { fill: #5b6268; stroke: #1d1d1d; stroke-width: 3; }
-      .launcher { fill: #b180c9; stroke: #1d1d1d; stroke-width: 3; }
-      .caster { fill: #1f2328; stroke: #111; stroke-width: 3; }
-      .motor { fill: #424951; stroke: #111; stroke-width: 3; }
-      .slot { fill: #f8f8f8; stroke: #1d1d1d; stroke-width: 2; }
-      .bolt { fill: #444; stroke: #111; stroke-width: 2; }
-      .foot { fill: #6a7f68; stroke: #1d1d1d; stroke-width: 3; }
-      .zone { fill-opacity: 0.25; stroke-width: 2; stroke-dasharray: 8 7; }
-      .dim { stroke: #2368a8; stroke-width: 2; fill: none; marker-start: url(#arrow-blue); marker-end: url(#arrow-blue); }
-      .flow { stroke: #2f7d46; stroke-width: 7; fill: none; marker-end: url(#arrow-green); }
-      .adjust { stroke: #b33939; stroke-width: 5; fill: none; stroke-dasharray: 9 8; marker-end: url(#arrow-red); }
-      .note { fill: #fff; stroke: #c7c0b5; stroke-width: 2; rx: 10; }
-      .centerline { stroke: #555; stroke-width: 2; stroke-dasharray: 12 9; }
+      .bg{fill:#f5f4ef}.panel{fill:#fffefa;stroke:#c9c5bc;stroke-width:2}.title{font-family:Arial,sans-serif;font-size:36px;font-weight:700;fill:#171717}.subtitle{font-family:Arial,sans-serif;font-size:19px;fill:#3c3c3a}.h{font-family:Arial,sans-serif;font-size:24px;font-weight:700;fill:#171717}.label{font-family:Arial,sans-serif;font-size:17px;font-weight:700;fill:#202020}.small{font-family:Arial,sans-serif;font-size:15px;fill:#343432}.tiny{font-family:Arial,sans-serif;font-size:13px;fill:#454542}.chassis{fill:#c7d0d6;stroke:#20252a;stroke-width:3}.wheel{fill:#171a1e;stroke:#050607;stroke-width:3}.hub{fill:#b58b42;stroke:#4e3a19;stroke-width:2}.motor{fill:#68737c;stroke:#252b30;stroke-width:2}.basket{fill:#75bd8c;fill-opacity:.65;stroke:#216a3a;stroke-width:3}.battery{fill:#555e66;stroke:#22282d;stroke-width:2}.electronics{fill:#8ab6d6;stroke:#28597b;stroke-width:2}.intake{fill:#ecb341;stroke:#76520c;stroke-width:3}.funnel{fill:#f4d889;fill-opacity:.72;stroke:#9b6f17;stroke-width:3}.sensor{fill:#7d6db2;stroke:#3d3269;stroke-width:2}.center{stroke:#696966;stroke-width:1.5;stroke-dasharray:9 7}.dim{stroke:#2463a3;stroke-width:2;marker-start:url(#dim-arrow);marker-end:url(#dim-arrow)}.flow{stroke:#237a49;stroke-width:5;fill:none;marker-end:url(#arrow)}.note{fill:#f3f1e9;stroke:#bab5aa;stroke-width:1.5}.danger{fill:#fff1e8;stroke:#c15e25;stroke-width:2}.rail{fill:#dbe0e3;stroke:#5c646b;stroke-width:2}
     </style>
   </defs>
+  <rect width="1600" height="980" class="bg"/>
+  <text x="48" y="58" class="title">Τρέχουσα μηχανολογική αρχιτεκτονική</text>
+  <text x="50" y="91" class="subtitle">4WD skid-steer · δύο κινητήριοι τροχοί ανά πλευρά · χωρίς casters · dual-wheel side-pinch intake · basket v2.1</text>
 
-  <rect width="1600" height="1050" class="bg"/>
-  <text x="50" y="68" class="title">Σχέδιο βάσης και τοποθέτηση modules</text>
-  <text x="52" y="105" class="subtitle">Πρώτο layout για ξύλινη ή modular printable βάση: τροχοί, caster, collector, electronics, μπαταρία, handle και launcher zone</text>
+  <rect x="35" y="120" width="990" height="655" rx="12" class="panel"/>
+  <text x="65" y="160" class="h">Κάτοψη — robot +x προς τα εμπρός</text>
+  <!-- scale 0.65 px/mm, chassis 920 x 580 -->
+  <g transform="translate(140,225)">
+    <rect x="0" y="0" width="598" height="377" rx="10" class="chassis"/>
+    <line x1="-35" y1="188.5" x2="805" y2="188.5" class="center"/>
+    <text x="12" y="181" class="tiny">centreline y=0</text>
+    <text x="273" y="370" class="tiny">level chassis plate 920 × 580 mm</text>
 
-  <rect x="40" y="135" width="925" height="610" class="panel"/>
-  <rect x="1005" y="135" width="555" height="610" class="panel"/>
-  <rect x="40" y="780" width="1520" height="225" class="panel"/>
+    <!-- four drive wheels: axle x ±330 mm, wheel y ±350 mm -->
+    <rect x="30" y="-65" width="111" height="52" rx="18" class="wheel"/><circle cx="85.5" cy="-39" r="13" class="hub"/>
+    <rect x="458" y="-65" width="111" height="52" rx="18" class="wheel"/><circle cx="513.5" cy="-39" r="13" class="hub"/>
+    <rect x="30" y="390" width="111" height="52" rx="18" class="wheel"/><circle cx="85.5" cy="416" r="13" class="hub"/>
+    <rect x="458" y="390" width="111" height="52" rx="18" class="wheel"/><circle cx="513.5" cy="416" r="13" class="hub"/>
+    <rect x="55" y="-9" width="61" height="28" rx="6" class="motor"/><rect x="483" y="-9" width="61" height="28" rx="6" class="motor"/>
+    <rect x="55" y="358" width="61" height="28" rx="6" class="motor"/><rect x="483" y="358" width="61" height="28" rx="6" class="motor"/>
+    <text x="17" y="42" class="small">rear-left 170×80</text><text x="447" y="42" class="small">front-left 170×80</text>
+    <text x="17" y="466" class="small">rear-right 170×80</text><text x="445" y="466" class="small">front-right 170×80</text>
 
-  <!-- Main top layout -->
-  <text x="75" y="182" class="panel-title">Κάτοψη βάσης: προτεινόμενο footprint</text>
-  <g transform="translate(118,220)">
-    <!-- scale: 1 mm = 0.9 px, base 760x430 => 684x387 -->
-    <rect x="0" y="0" width="684" height="387" class="wood" rx="16"/>
-    <line x1="0" y1="193.5" x2="684" y2="193.5" class="centerline"/>
-    <text x="284" y="189" class="tiny">κεντρικός άξονας</text>
+    <rect x="152" y="128" width="108" height="128" rx="8" class="battery"/>
+    <text x="173" y="184" class="label" fill="#fff">Battery</text><text x="166" y="207" class="tiny" fill="#fff">low / central</text>
+    <rect x="45" y="88" width="92" height="72" rx="8" class="electronics"/>
+    <text x="58" y="118" class="small">Mega +</text><text x="53" y="139" class="small">perfboard</text>
+    <rect x="45" y="220" width="92" height="72" rx="8" class="electronics"/>
+    <text x="58" y="250" class="small">BTS7960</text><text x="58" y="271" class="small">×2 + relay</text>
 
-    <!-- zones -->
-    <rect x="360" y="38" width="300" height="311" fill="#f0b23d" class="zone" stroke="#c78100" rx="10"/>
-    <text x="444" y="60" class="tiny">front collector zone</text>
-    <rect x="130" y="88" width="250" height="210" fill="#9aa2a8" class="zone" stroke="#5e6770" rx="10"/>
-    <text x="185" y="112" class="tiny">electronics + battery low</text>
-    <rect x="415" y="112" width="205" height="170" fill="#b180c9" class="zone" stroke="#7c4793" rx="10"/>
-    <text x="450" y="305" class="tiny">future launcher / feed gate</text>
+    <!-- basket interior x 20..420 mm, y ±140 mm -->
+    <rect x="312" y="97.5" width="260" height="182" rx="8" class="basket"/>
+    <text x="368" y="178" class="label">Basket v2.1</text><text x="354" y="201" class="small">removable · 400 × 280</text>
+    <rect x="546" y="130" width="58" height="117" rx="5" class="rail"/><text x="548" y="260" class="tiny">entry hood</text>
 
-    <!-- collector -->
-    <path d="M370 105 L684 28 L684 359 L370 282 Z" class="collector"/>
-    <path d="M370 105 L470 148 L470 238 L370 282 Z" fill="#f8d27a" stroke="#1d1d1d" stroke-width="3"/>
-    <text x="494" y="197" class="label">collector</text>
-    <path d="M680 90 C600 120, 540 155, 475 193" class="flow"/>
+    <!-- dual vertical-axis intake wheels and funnel -->
+    <path d="M598 55 L790 112 L790 265 L598 322 Z" class="funnel"/><text x="650" y="78" class="small">funnel cheeks</text>
+    <g transform="rotate(35 650 131)"><rect x="611" y="111" width="78" height="40" rx="18" class="intake"/></g>
+    <g transform="rotate(-35 650 246)"><rect x="611" y="226" width="78" height="40" rx="18" class="intake"/></g>
+    <circle cx="650" cy="131" r="9" class="hub"/><circle cx="650" cy="246" r="9" class="hub"/>
+    <text x="675" y="133" class="small">left intake wheel</text><text x="675" y="250" class="small">right intake wheel</text>
+    <path d="M810 188 C755 188 704 188 646 188 C620 188 594 188 566 188" class="flow"/>
+    <text x="694" y="179" class="tiny">ball capture → basket</text>
 
-    <!-- hopper / launcher channel -->
-    <rect x="285" y="117" width="145" height="150" class="electronics" rx="9"/>
-    <text x="309" y="198" class="small">hopper</text>
-    <rect x="423" y="165" width="150" height="58" class="launcher" rx="8"/>
-    <text x="445" y="200" class="tiny">feed/launcher</text>
+    <circle cx="26" cy="188" r="18" class="sensor"/><text x="5" y="218" class="tiny">RPLIDAR mast</text>
+    <rect x="565" y="45" width="26" height="72" rx="5" class="sensor"/><text x="548" y="36" class="tiny">OAK-D</text>
 
-    <!-- battery and electronics -->
-    <rect x="150" y="132" width="180" height="124" class="battery" rx="8"/>
-    <text x="184" y="184" class="small" fill="#fff">battery</text>
-    <text x="177" y="210" class="tiny" fill="#fff">low + central</text>
-    <rect x="105" y="53" width="150" height="74" class="electronics" rx="8"/>
-    <text x="132" y="97" class="tiny">controller</text>
-    <rect x="105" y="260" width="150" height="74" class="electronics" rx="8"/>
-    <text x="136" y="303" class="tiny">drivers</text>
-
-    <!-- motor pods and wheels -->
-    <rect x="90" y="-34" width="135" height="58" class="motor" rx="8"/>
-    <rect x="90" y="363" width="135" height="58" class="motor" rx="8"/>
-    <circle cx="153" cy="-68" r="43" class="caster"/>
-    <circle cx="153" cy="455" r="43" class="caster"/>
-    <text x="72" y="-44" class="tiny">left motor pod</text>
-    <text x="68" y="444" class="tiny">right motor pod</text>
-    <line x1="153" y1="-68" x2="153" y2="455" class="dim"/>
-    <text x="166" y="-6" class="tiny">wheel track</text>
-
-    <!-- outboard front caster mounts -->
-    <rect x="570" y="-58" width="83" height="70" class="base" rx="8"/>
-    <rect x="570" y="375" width="83" height="70" class="base" rx="8"/>
-    <circle cx="612" cy="-23" r="28" class="caster"/>
-    <circle cx="612" cy="410" r="28" class="caster"/>
-    <text x="548" y="-70" class="tiny">outboard front caster</text>
-    <text x="548" y="463" class="tiny">outboard front caster</text>
-
-    <!-- stabilizer feet -->
-    <rect x="610" y="130" width="58" height="31" class="foot" rx="8"/>
-    <rect x="610" y="226" width="58" height="31" class="foot" rx="8"/>
-    <text x="528" y="150" class="tiny">stabilizer</text>
-    <text x="528" y="246" class="tiny">stabilizer</text>
-
-    <!-- handle sockets -->
-    <rect x="22" y="58" width="70" height="40" class="collector" rx="7"/>
-    <rect x="22" y="289" width="70" height="40" class="collector" rx="7"/>
-    <line x1="58" y1="78" x2="58" y2="309" stroke="#f0b23d" stroke-width="8"/>
-    <text x="12" y="44" class="tiny">handle sockets</text>
-
-    <!-- slots on base -->
-    <g>
-      <rect x="382" y="84" width="44" height="13" class="slot" rx="7"/>
-      <rect x="560" y="46" width="44" height="13" class="slot" rx="7"/>
-      <rect x="382" y="290" width="44" height="13" class="slot" rx="7"/>
-      <rect x="560" y="328" width="44" height="13" class="slot" rx="7"/>
-      <circle cx="404" cy="91" r="5" class="bolt"/>
-      <circle cx="582" cy="53" r="5" class="bolt"/>
-      <circle cx="404" cy="297" r="5" class="bolt"/>
-      <circle cx="582" cy="335" r="5" class="bolt"/>
-    </g>
-
-    <!-- dimensions -->
-    <line x1="0" y1="-115" x2="684" y2="-115" class="dim"/>
-    <text x="294" y="-130" class="small">760 mm</text>
-    <line x1="718" y1="0" x2="718" y2="387" class="dim"/>
-    <text x="729" y="200" class="small">430 mm</text>
-    <line x1="153" y1="420" x2="612" y2="420" class="dim"/>
-    <text x="315" y="441" class="tiny">front-back support span</text>
+    <line x1="0" y1="500" x2="598" y2="500" class="dim"/><text x="270" y="525" class="small">920 mm chassis</text>
+    <line x1="-72" y1="0" x2="-72" y2="377" class="dim"/><text x="-118" y="198" transform="rotate(-90 -118 198)" class="small">580 mm chassis</text>
+    <line x1="85.5" y1="65" x2="513.5" y2="65" class="dim"/><text x="272" y="58" class="tiny">660 mm wheelbase</text>
   </g>
 
-  <text x="78" y="704" class="small">Προτεραιότητα: μπαταρία χαμηλά και κοντά στο κέντρο, collector μπροστά, driven wheels πίσω/πλάγια, casters μπροστά για σταθερή είσοδο στη μπάλα.</text>
-
-  <!-- Side elevation -->
-  <text x="1040" y="182" class="panel-title">Πλάγια εικόνα: ύψη και κέντρο βάρους</text>
-  <g transform="translate(1058,265)">
-    <path d="M0 330 L455 330 L455 365 L0 365 Z" fill="#87a96b" opacity="0.45"/>
-    <path d="M35 232 L425 260 L425 294 L35 266 Z" class="wood"/>
-    <circle cx="105" cy="324" r="55" class="caster"/>
-    <circle cx="375" cy="324" r="28" class="caster"/>
-    <rect x="65" y="190" width="100" height="65" class="motor" rx="7"/>
-    <rect x="148" y="210" width="150" height="48" class="battery" rx="7"/>
-    <rect x="184" y="145" width="96" height="52" class="electronics" rx="7"/>
-    <path d="M275 246 L420 203 L420 246 Z" class="collector"/>
-    <circle cx="335" cy="178" r="35" class="caster"/>
-    <rect x="310" y="105" width="115" height="72" class="electronics" rx="8"/>
-    <text x="174" y="241" class="tiny" fill="#fff">battery low</text>
-    <text x="310" y="259" class="tiny">low intake lip</text>
-    <text x="12" y="178" class="tiny">Pitched body: large rear wheels + smaller front casters.</text>
-    <path d="M220 236 L220 280" class="adjust"/>
-    <text x="12" y="130" class="small">Κέντρο βάρους μέσα στο wheelbase.</text>
-    <text x="12" y="154" class="tiny">Μην ανεβάσουμε μπαταρία/launcher πριν δοκιμαστεί η συλλογή.</text>
-    <line x1="105" y1="392" x2="375" y2="392" class="dim"/>
-    <text x="174" y="415" class="tiny">wheelbase / caster support</text>
+  <rect x="1050" y="120" width="515" height="655" rx="12" class="panel"/>
+  <text x="1080" y="160" class="h">Πλάγια όψη και επίπεδα</text>
+  <g transform="translate(1090,225)">
+    <rect x="0" y="410" width="435" height="24" fill="#c8a27b" opacity=".55"/>
+    <rect x="25" y="355" width="350" height="14" class="chassis"/>
+    <circle cx="80" cy="355" r="55" class="wheel"/><circle cx="80" cy="355" r="14" class="hub"/>
+    <circle cx="322" cy="355" r="55" class="wheel"/><circle cx="322" cy="355" r="14" class="hub"/>
+    <rect x="135" y="252" width="142" height="103" rx="5" class="basket"/>
+    <path d="M277 330 L390 330 L425 365 L322 365 Z" class="funnel"/><ellipse cx="375" cy="340" rx="31" ry="22" class="intake"/>
+    <rect x="102" y="292" width="62" height="63" rx="5" class="battery"/>
+    <line x1="45" y1="355" x2="45" y2="95" stroke="#4f5660" stroke-width="7"/><ellipse cx="45" cy="94" rx="28" ry="9" class="sensor"/>
+    <rect x="325" y="122" width="42" height="22" rx="5" class="sensor"/><line x1="346" y1="144" x2="346" y2="245" stroke="#4f5660" stroke-width="6"/>
+    <text x="4" y="70" class="small">LiDAR scan plane ≈498 mm</text><text x="284" y="110" class="small">OAK-D ≈443 mm</text>
+    <text x="142" y="240" class="small">basket wall top 250 mm</text>
+    <text x="20" y="452" class="small">Όλοι οι drive τροχοί: ίδιος άξονας z=85 mm — επίπεδο σασί</text>
+    <text x="20" y="477" class="small">Χωρίς caster και χωρίς pitched chassis</text>
   </g>
 
-  <rect x="1038" y="620" width="220" height="62" class="note"/>
-  <text x="1058" y="646" class="small">Driven wheels</text>
-  <text x="1058" y="669" class="tiny">190 mm dia, direct hub</text>
-  <rect x="1275" y="620" width="220" height="62" class="note"/>
-  <text x="1295" y="646" class="small">Front casters</text>
-  <text x="1295" y="669" class="tiny">85 mm, swivel, bought part</text>
-  <rect x="1038" y="697" width="220" height="62" class="note"/>
-  <text x="1058" y="723" class="small">Stabilizers</text>
-  <text x="1058" y="746" class="tiny">touch during launch tests</text>
-  <rect x="1275" y="697" width="220" height="62" class="note"/>
-  <text x="1295" y="723" class="small">Service access</text>
-  <text x="1295" y="746" class="tiny">collector wheel removable</text>
-
-  <!-- Build notes -->
-  <text x="75" y="827" class="panel-title">Προτεινόμενη σειρά τρυπήματος / τοποθέτησης</text>
-  <g transform="translate(80,860)">
-    <rect x="0" y="0" width="205" height="90" class="note"/>
-    <text x="18" y="31" class="small">1. Χαράζουμε άξονα</text>
-    <text x="18" y="58" class="tiny">κέντρο βάσης και μπροστινή γραμμή collector</text>
-    <path d="M210 45 L252 45" class="flow"/>
-
-    <rect x="260" y="0" width="205" height="90" class="note"/>
-    <text x="278" y="31" class="small">2. Βάζουμε τροχούς</text>
-    <text x="278" y="58" class="tiny">motor pods συμμετρικά, ίδιο shaft ύψος</text>
-    <path d="M470 45 L512 45" class="flow"/>
-
-    <rect x="520" y="0" width="205" height="90" class="note"/>
-    <text x="538" y="31" class="small">3. Βάζουμε caster</text>
-    <text x="538" y="58" class="tiny">ίδιο ύψος στήριξης, ελεύθερο swivel</text>
-    <path d="M730 45 L772 45" class="flow"/>
-
-    <rect x="780" y="0" width="205" height="90" class="note"/>
-    <text x="798" y="31" class="small">4. Δοκιμή κύλισης</text>
-    <text x="798" y="58" class="tiny">χωρίς collector, χωρίς launcher</text>
-    <path d="M990 45 L1032 45" class="flow"/>
-
-    <rect x="1040" y="0" width="205" height="90" class="note"/>
-    <text x="1058" y="31" class="small">5. Collector + βάρος</text>
-    <text x="1058" y="58" class="tiny">ρυθμίζουμε lip, balance, καλώδια</text>
-    <path d="M1250 45 L1292 45" class="flow"/>
-
-    <rect x="1300" y="0" width="165" height="90" class="note"/>
-    <text x="1318" y="31" class="small">6. Launcher later</text>
-    <text x="1318" y="58" class="tiny">μόνο αφού μαζεύει μπάλες</text>
-  </g>
-  <text x="80" y="982" class="small">Καλό πρώτο υλικό: 9-12 mm sealed plywood για γρήγορες αλλαγές. Μετά μεταφέρουμε τις τελικές τρύπες σε printed base tiles.</text>
+  <rect x="35" y="800" width="1530" height="145" rx="12" class="panel"/>
+  <text x="65" y="840" class="h">Κατασκευαστική baseline</text>
+  <rect x="65" y="862" width="345" height="58" rx="8" class="note"/><text x="82" y="886" class="label">Drive</text><text x="82" y="908" class="small">4× FIT0403, δύο παράλληλα ανά BTS7960</text>
+  <rect x="430" y="862" width="345" height="58" rx="8" class="note"/><text x="447" y="886" class="label">Intake</text><text x="447" y="908" class="small">2× ανεξάρτητα μοτέρ, αντίθετη περιστροφή</text>
+  <rect x="795" y="862" width="345" height="58" rx="8" class="note"/><text x="812" y="886" class="label">Storage</text><text x="812" y="908" class="small">βυθισμένο αφαιρούμενο basket v2.1</text>
+  <rect x="1160" y="862" width="375" height="58" rx="8" class="danger"/><text x="1177" y="886" class="label">Πριν το τρύπημα</text><text x="1177" y="908" class="small">επιβεβαίωση πραγματικών motor mounts και clearances</text>
 </svg>

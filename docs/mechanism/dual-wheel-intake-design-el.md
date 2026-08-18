@@ -9,6 +9,28 @@ dual-wheel intake που αντικαθιστά το single top-roller concept. 
 `docs/mechanism/intake-concept-decision-el.md` και στο
 `docs/mechanism/intake-bench-sweep-report-el.md`.
 
+## Τρέχουσα as-built baseline (2026-08-16)
+
+Η αρχική nominal γεωμετρία παρακάτω παραμένει ως design rationale και sweep
+history. Η ενεργή default γεωμετρία του generated robot είναι:
+
+```text
+δύο ανεξάρτητα intake motors, ένα ανά wheel
+wheel radius       0.060 m
+wheel height       0.080 m
+gap                0.056 m
+nip x               0.540 m
+wheel tilt          35 deg
+carriage travel     0.008 m προς τα έξω
+max angular speed  26.3 rad/s
+effort limit        1.77 N·m
+```
+
+Πηγή εκτέλεσης είναι το
+`ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro` και τα `INTAKE_WHEEL_*`
+arguments του generator. Το συνολικό ενεργό layout φαίνεται στο
+`docs/hardware/chassis-layout-4wd-dual-intake-el.md`.
+
 ## Αποφάσεις χρήστη (2026-07-10)
 
 ```text

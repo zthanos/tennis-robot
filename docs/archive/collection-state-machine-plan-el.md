@@ -2,7 +2,7 @@
 
 > Δεν χρησιμοποιείται ως specification ή οδηγός υλοποίησης για `collect_route`.
 > Περιγράφει το παλαιό per-ball flow. Το ενεργό specification είναι το
-> [Ενεργός οδηγός συνεχούς διαδρομής](../collection-route-rules-el.md).
+> [Ενεργός οδηγός συνεχούς διαδρομής](../collection-route/collection-route-rules-el.md).
 
 # Tennis Robot Collection State Machine Plan
 
@@ -193,7 +193,8 @@ stored_ball_count = 17
 ```
 
 Για το πρώτο physical MVP, προτιμάται IR break-beam στο throat ή στο hopper
-entry, όπως περιγράφεται στο `docs/mechanism/concept-a-funnel-lift-wheel-plan.md`.
+entry, όπως περιγραφόταν στο ιστορικό
+`docs/archive/mechanical/concept-a-funnel-lift-wheel-plan.md`.
 
 ### DoD
 
