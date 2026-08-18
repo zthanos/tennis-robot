@@ -165,7 +165,13 @@
       const net = cb.net, toMap = makeToMap(net);
       const L = (cb.court && cb.court.lines_court_frame) || {};
       const ext = cb.fence.extents_court_frame || {};
-      const sl = L.sidelines_y || [-5.485, 5.485];
+      const formatEstimate = live.court_format_estimate || cb.court?.format_estimate || {};
+      const cameraFormatAccepted = ["singles", "doubles"].includes(formatEstimate.label)
+        && Number(formatEstimate.confidence) >= 0.55;
+      const displayFormat = cameraFormatAccepted
+        ? formatEstimate.label
+        : (cb.court?.is_doubles === false ? "singles" : "doubles");
+      const sl = displayFormat === "singles" ? [-4.115, 4.115] : [-5.485, 5.485];
       const bl = L.baselines_x || [-11.885, 11.885];
       const drawCourtLine = (x1, y1, x2, y2) => {
         const a = toMap(x1, y1), b = toMap(x2, y2);
@@ -188,6 +194,7 @@
 
       // ---- run-off distance arrows (orange) ----
       const D = cb.distances_to_fence_m || {};
+      const sideRunoffAdjustment = displayFormat === "singles" && cb.court?.is_doubles !== false ? 1.37 : 0;
       ctx.font = "11px system-ui";
       const arrow = (cxp, cyp, fxp, fyp, label) => {
         const a = toMap(cxp, cyp), b = toMap(fxp, fyp);
@@ -199,8 +206,8 @@
       };
       if (Number.isFinite(ext.x_near)) arrow(bl[0], 0, ext.x_near, 0, D.near_baseline);
       if (Number.isFinite(ext.x_far)) arrow(bl[1], 0, ext.x_far, 0, D.far_baseline);
-      if (Number.isFinite(ext.y_left)) arrow(0, sl[0], 0, ext.y_left, D.left_sideline);
-      if (Number.isFinite(ext.y_right)) arrow(0, sl[1], 0, ext.y_right, D.right_sideline);
+      if (Number.isFinite(ext.y_left)) arrow(0, sl[0], 0, ext.y_left, Number(D.left_sideline) + sideRunoffAdjustment);
+      if (Number.isFinite(ext.y_right)) arrow(0, sl[1], 0, ext.y_right, Number(D.right_sideline) + sideRunoffAdjustment);
 
       // ---- net line (blue, thick) + posts ----
       if (Array.isArray(net.posts) && net.posts.length === 2) {
@@ -287,6 +294,16 @@
         : (Number.isFinite(phaseDurations[currentPhase]) ? phaseDurations[currentPhase] : null);
       if (hasModel) {
         const c = cb.court || {}, net = cb.net, D2 = cb.distances_to_fence_m || {};
+        const formatEstimate = live.court_format_estimate || c.format_estimate || {};
+        const cameraFormatAccepted = ["singles", "doubles"].includes(formatEstimate.label)
+          && Number(formatEstimate.confidence) >= 0.55;
+        const displayFormat = cameraFormatAccepted
+          ? formatEstimate.label
+          : (c.is_doubles === false ? "singles" : "doubles");
+        const displayWidth = displayFormat === "singles" ? 8.23 : 10.97;
+        const formatSource = cameraFormatAccepted
+          ? `camera ${(Number(formatEstimate.confidence) * 100).toFixed(0)}%`
+          : "validated model";
         const obsRows = (cb.obstacles || []).map((o, i) =>
           `<tr><td>#${o.id != null ? o.id : i + 1}</td><td>${o.class || "obstacle"}</td>` +
           `<td>${o.size_m ? f2(o.size_m.w) + "×" + f2(o.size_m.h) + " m" : "—"}</td>` +
@@ -295,7 +312,7 @@
           `<div><span>Survey</span><strong>${lifecycleText}</strong></div>` +
           `<div><span>Elapsed</span><strong>${fs(timing.elapsed_s)}</strong></div>` +
           `<div><span>Phase</span><strong>${currentPhase} ${fs(currentPhaseS)}</strong></div>` +
-          `<div><span>Court</span><strong>${f2(c.length_m)} × ${f2(c.width_m)} m · ${c.is_doubles ? "doubles" : "singles"}</strong></div>` +
+          `<div><span>Court overlay</span><strong>${f2(c.length_m)} × ${f2(displayWidth)} m · ${displayFormat} · ${formatSource}</strong></div>` +
           `<div><span>Net centre (map)</span><strong>${f2(net.center.x_m)}, ${f2(net.center.y_m)} · span ${f2(net.span_m, "m")}</strong></div>` +
           `<div><span>Run-off N/F</span><strong>${f2(D2.near_baseline, "m")} / ${f2(D2.far_baseline, "m")}</strong></div>` +
           `<div><span>Run-off L/R</span><strong>${f2(D2.left_sideline, "m")} / ${f2(D2.right_sideline, "m")}</strong></div>` +

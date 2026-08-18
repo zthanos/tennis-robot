@@ -85,6 +85,8 @@ class CollectionExecutorConfig:
     safety_max_scan_age_s: float
     controller_id: str = DEFAULT_CONTROLLER_ID
     goal_checker_id: str = "collection_goal_checker"
+    drive_viewpoint_spacing_m: float = 0.75
+    drive_known_merge_radius_m: float = 0.50
 
 
 @dataclass(frozen=True)
@@ -106,7 +108,19 @@ class CollectionExecutorHandles:
     goal_status_provider: object    # callable() -> str
     state_provider: object          # callable() -> dict | None
     hold_sender: object             # callable(*, plan_id, path_sha256, hold) -> None
-    finalize_sender: object         # callable(*, plan_id, path_sha256, action_outcome) -> bool
+    finalize_sender: object         # callable(*, plan_id, path_sha256, action_outcome) -> None
+    finalize_outcome_provider: object  # callable() -> None|("accepted"|"rejected", detail)
+    execution_plan_transformer: object  # callable(CollectionRoutePlan) -> CollectionRoutePlan
+    planner_audit_sink: object | None = None  # callable(snapshot, plan) -> None
+    entry_beam_provider: object | None = None
+    confirmed_beam_provider: object | None = None
+    collector_minimum_drain_s: float = 0.0
+    collector_maximum_drain_s: float = 0.0
+    # .start(), .observe(), .result(known_positions=...) -> ScanSnapshot | None
+    drive_observer: object | None = None
+    # Phase 9 execution trace: .start(plan) / .finish().  Absent unless
+    # COLLECTION_EXECUTION_TRACE_DIR asks for it.
+    execution_trace: object | None = None
 
 
 class _PlanCollectionRoutePlanner:
@@ -116,15 +130,19 @@ class _PlanCollectionRoutePlanner:
     always matches the snapshot the executor produced.
     """
 
-    def __init__(self, court) -> None:
+    def __init__(self, court, audit_sink=None) -> None:
         self._court = court
+        self._audit_sink = audit_sink
 
     def plan(self, snapshot):
         from tennis_robot.collection_route_planner_v2 import plan_collection_route
 
-        return plan_collection_route(
+        plan = plan_collection_route(
             snapshot=snapshot, court=self._court, configuration=snapshot.configuration_snapshot
         ).plan
+        if self._audit_sink is not None:
+            self._audit_sink(snapshot, plan)
+        return plan
 
 
 def build_collection_route_executor(
@@ -142,7 +160,14 @@ def build_collection_route_executor(
     navigator = ScanPoseNavigatorAdapter(
         lane_navigator=handles.lane_navigator, scan_pose=config.scan_pose_xy_yaw
     )
-    collector = GazeboCollectorAdapter(handles.collector_interface)
+    collector = GazeboCollectorAdapter(
+        handles.collector_interface,
+        entry_beam_provider=handles.entry_beam_provider,
+        confirmed_beam_provider=handles.confirmed_beam_provider,
+        minimum_drain_s=handles.collector_minimum_drain_s,
+        maximum_drain_s=handles.collector_maximum_drain_s,
+        clock_fn=clock.now_s,
+    )
 
     safety_logic = ForwardSectorSafetyLogic(
         forward_half_angle_rad=config.safety_forward_half_angle_rad,
@@ -170,7 +195,10 @@ def build_collection_route_executor(
         scan_timeout_s=config.scan_timeout_s,
     )
 
-    planner = _PlanCollectionRoutePlanner(build_court_model(config.court_boundary))
+    planner = _PlanCollectionRoutePlanner(
+        build_court_model(config.court_boundary),
+        audit_sink=handles.planner_audit_sink,
+    )
 
     path_follower = LiveCollectionPathFollower(
         controller_tuning=config.controller_tuning,
@@ -183,6 +211,8 @@ def build_collection_route_executor(
         state_provider=handles.state_provider,
         hold_sender=handles.hold_sender,
         finalize_sender=handles.finalize_sender,
+        finalize_outcome_provider=handles.finalize_outcome_provider,
+        execution_plan_transformer=handles.execution_plan_transformer,
         clock=clock,
         controller_id=config.controller_id,
     )
@@ -194,6 +224,8 @@ def build_collection_route_executor(
         collector=collector,
         path_follower=path_follower,
         safety_monitor=safety_monitor,
+        drive_observer=handles.drive_observer,
+        execution_trace=handles.execution_trace,
         telemetry=telemetry,
         clock=clock,
     )

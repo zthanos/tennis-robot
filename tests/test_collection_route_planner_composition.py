@@ -43,8 +43,12 @@ def test_one_free_ball_and_multiple_ball_connector_route():
     assert one.planning_status is PlanningStatus.FEASIBLE
     assert one.ball_results[0].status is BallStatus.COVERED
     multi = plan_collection_route(snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 5.0, 0.4)), court=court(), configuration=configuration).plan
-    assert len([segment for segment in multi.segments if segment.type.value == "funnel_pass"]) >= 2
     assert any(segment.type.value == "connector" for segment in multi.segments)
+    # Both balls are collected, but a ball the connector already sweeps no longer
+    # needs a dedicated straight pass, so coverage is counted across segments.
+    covered = tuple(ball for segment in multi.segments for ball in segment.covered_ball_ids)
+    assert sorted(covered) == ["a", "b"]
+    assert all(result.status is BallStatus.COVERED for result in multi.ball_results)
 
 
 def test_connector_segments_relax_heading_gate_while_passes_keep_default():
@@ -61,7 +65,10 @@ def test_connector_segments_relax_heading_gate_while_passes_keep_default():
     assert any(s.type.value == "connector" for s in connectors) and passes
     for s in plan.segments:
         if s.type.value == "connector":
-            assert s.execution_profile.max_heading_error_rad == connector_gate
+            # Transit relaxes the gate; a connector that collects is capture
+            # motion for that stretch and holds the capture-grade gate instead.
+            expected = default_gate if s.planned_crossings else connector_gate
+            assert s.execution_profile.max_heading_error_rad == expected
         elif s.type.value == "funnel_pass":
             assert s.execution_profile.max_heading_error_rad == default_gate
 
@@ -81,25 +88,39 @@ def test_keepout_is_unreachable_and_mixed_result_is_partial():
     assert {result.ball_id: result.reason_code for result in plan.ball_results}["b"] is BallReasonCode.KEEPOUT
 
 
-def test_budget_exhaustion_returns_executable_partial_plan():
+def test_budget_exhaustion_returns_executable_plan():
+    # One expansion is enough to close a route, because every node offers itself
+    # as a finished route the moment it is created.  What the budget may not do
+    # is return nothing.
     base = default_configuration()
     configuration = replace(base, global_route_search=replace(base.global_route_search, max_search_expansions=1))
     plan = plan_collection_route(snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 5.0, 0.4)), court=court(), configuration=configuration).plan
-    assert plan.planning_status is PlanningStatus.PARTIAL
-    assert plan.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
     assert plan.is_executable
+    assert plan.segments
+    assert any(result.status is BallStatus.COVERED for result in plan.ball_results)
 
 
 def test_declared_candidate_cap_bounds_graph_and_reports_unexamined_target():
     base = default_configuration()
-    configuration = replace(base, planning=replace(base.planning, maximum_candidate_count=1))
-    plan = plan_collection_route(
-        snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 8.0, 3.0)),
-        court=court(), configuration=configuration,
-    ).plan
-    assert plan.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
-    assert plan.planning_status is PlanningStatus.PARTIAL
-    assert any(result.reason_code is BallReasonCode.PLANNING_BUDGET for result in plan.ball_results)
+
+    def plan_with_cap(cap):
+        configuration = replace(base, planning=replace(base.planning, maximum_candidate_count=cap))
+        return plan_collection_route(
+            # Three targets no single line can hold, so a starved cap must leave
+            # one of them out.
+            snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 8.0, 3.0), ("c", -1.0, -5.0)),
+            court=court(), configuration=configuration,
+        ).plan
+
+    starved = plan_with_cap(1)
+    assert starved.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
+    assert starved.planning_status is PlanningStatus.PARTIAL
+    # The unexamined target is deferred on budget, never called unreachable.
+    deferred = {result.ball_id: result.reason_code for result in starved.ball_results}
+    assert deferred["c"] is BallReasonCode.PLANNING_BUDGET
+    # One candidate is enough to cover two balls now that a candidate is a line
+    # rather than a single-ball pass.
+    assert {result.ball_id for result in starved.ball_results if result.status is BallStatus.COVERED} == {"a", "b"}
 
 
 def test_no_valid_terminal_route_returns_non_executable_planning_timeout():

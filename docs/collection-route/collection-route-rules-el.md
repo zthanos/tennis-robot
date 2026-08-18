@@ -362,9 +362,27 @@ net/fence segment. Αν η ball απέχει από uninflated net/fence boundar
 Για crossing `p` και direction `u(h)`, `entry = p - minimum_run_in_m*u` και
 `exit = p + minimum_run_out_m*u`. Failure στο entry ή στο full entry→crossing
 segment είναι `no_entry`; αντίστοιχο failure στο exit/crossing→exit είναι
-`no_exit`. Ball μέσα σε inflated keepout είναι `keepout`. Το `turn_radius`
-δεν εκδίδεται στο Phase 3A: isolated straight pass έχει zero curvature και
-connector feasibility αξιολογείται στο Phase 3B.
+`no_exit`.
+
+Μπάλα μέσα στο *uninflated* obstacle polygon ή έξω από το navigable polygon
+είναι πάντα `keepout`. Για μπάλα που βρίσκεται μόνο μέσα στο **inflated**
+keepout φιλέ/φράχτη επιτρέπεται ένα ειδικό single-ball boundary-recovery
+candidate:
+
+- heading αυστηρά παράλληλο στο ενεργό net/fence tangent,
+- centerline μετατοπισμένη κατά το explicit
+  `boundary_recovery_contact_offset_m` προς την ελεύθερη πλευρά,
+- η πραγματική ball θέση παραμένει στο `planned_crossing`, ώστε το εξωτερικό
+  cheek του funnel να την αγγίξει/μετακινήσει,
+- entry→crossing→exit, connectors και terminal εξακολουθούν να περνούν τον
+  ίδιο canonical swept-disk έλεγχο `footprint_clearance_radius_m`,
+- bench/post/other keepouts δεν παρακάμπτονται και boundary-recovery candidates
+  δεν συγχωνεύονται ποτέ σε shared pass.
+
+Αν καμία από τις δύο πλευρικές μετατοπίσεις δεν δώσει πλήρως collision-free
+διάδρομο, το αποτέλεσμα παραμένει `keepout`. Το `turn_radius` δεν εκδίδεται στο
+Phase 3A: isolated straight pass έχει zero curvature και connector feasibility
+αξιολογείται στο Phase 3B.
 
 ### Deterministic Phase 3B1 connector contract
 

@@ -11,7 +11,12 @@ cd "$SCRIPT_DIR"
 
 ROS_DISTRO_TARGET="${ROS_DISTRO_TARGET:-jazzy}"
 ROS_SETUP="/opt/ros/$ROS_DISTRO_TARGET/setup.bash"
-WORKSPACE_SETUP="$SCRIPT_DIR/ros2_ws/install/setup.bash"
+if [ -r "$SCRIPT_DIR/ros2_ws/install_jazzy/setup.bash" ]; then
+    ROS2_INSTALL="$SCRIPT_DIR/ros2_ws/install_jazzy"
+else
+    ROS2_INSTALL="$SCRIPT_DIR/ros2_ws/install"
+fi
+WORKSPACE_SETUP="$ROS2_INSTALL/setup.bash"
 
 if [ ! -r "$ROS_SETUP" ]; then
     echo "ERROR: ROS setup not found: $ROS_SETUP" >&2
@@ -28,7 +33,7 @@ source "$WORKSPACE_SETUP"
 set -u
 
 export WORKSPACE="$SCRIPT_DIR"
-export ROS2_INSTALL="$SCRIPT_DIR/ros2_ws/install"
+export ROS2_INSTALL
 export GZ_SIM_RESOURCE_PATH="$SCRIPT_DIR/gazebo/models:$SCRIPT_DIR/ros2_ws/src"
 export ROBOT_COMMAND_FILE="$SCRIPT_DIR/runtime/robot_command.json"
 export ROBOT_STATUS_FILE="$SCRIPT_DIR/runtime/robot_status.json"

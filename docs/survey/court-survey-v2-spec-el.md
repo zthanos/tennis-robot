@@ -21,9 +21,12 @@
 
 - **LiDAR-first.** Ό,τι είναι κάθετο (φράχτες, δίχτυ, στύλοι, εμπόδια) και κάθε
   απόσταση **μετριέται από το 360° LiDAR**. Η κάμερα OAK-D χρησιμοποιείται στη Φάση 1
-  **μόνο για την επιβεβαίωση του φιλέ** (net classification που σκανδαλίζει το net
-  lock μέσω `/survey/vision`)· η θέση/απόσταση του φιλέ έρχεται από το LiDAR. Καμία
-  γεωμετρία δεν προκύπτει από την κάμερα.
+  **μόνο για τη neural επιβεβαίωση του φιλέ** (custom ONNX `net/fence`
+  classification που σκανδαλίζει το net lock μέσω `/survey/vision`)· η
+  θέση/απόσταση του φιλέ έρχεται από το LiDAR. Η semantic detection και το depth
+  προέρχονται από το ίδιο timestamp-matched RGB/depth pair, επιβεβαιώνονται σε
+  διαδοχικά frames και λήγουν όταν σταματήσει το heartbeat. Καμία γεωμετρία δεν
+  προκύπτει από την κάμερα και δεν υπάρχει OpenCV semantic fallback.
 - **Μέτρηση από τον χάρτη, όχι από στιγμιαία pose.** Οι αποστάσεις είναι διαφορές
   παγκόσμιων θέσεων στον συσσωρευμένο occupancy χάρτη.
 - **Standard διαστάσεις για τις γραμμές.** Οι γραμμές (αόρατες στο LiDAR) προκύπτουν
@@ -74,9 +77,10 @@ TF map→<scan frame>─┘            │  → court_survey_live.json (live poi
 States: `INIT → FIND_NET → COVERAGE → DONE/FAILED`.
 
 - **FIND_NET:** οδήγηση μπροστά μέχρι το δίχτυ· το **net lock** σκανδαλίζεται από την
-  OAK-D net classification και παίρνει την απόσταση/θέση του φιλέ από το μπροστινό
-  LiDAR range → ορίζει το court frame (origin = net center, +x' = robot→net, +y' =
-  κατά μήκος του διχτιού).
+  επιβεβαιωμένη OAK-D neural net classification (`obstacle_source =
+  neural_court_scene`, confidence gate, heartbeat age ≤ 1 s) και παίρνει την
+  απόσταση/θέση του φιλέ από το μπροστινό LiDAR range → ορίζει το court frame
+  (origin = net center, +x' = robot→net, +y' = κατά μήκος του διχτιού).
 - **Deterministic drive-to-waypoint** (closed-loop στο SLAM pose) — **όχι Nav2**, που
   αποδείχθηκε ασταθές run-to-run. 8 waypoints στο court frame:
   1. `(-deep, 0)` βαθιά κοντινό μισό → πυκνός κοντινός φράχτης

@@ -16,13 +16,18 @@ bt_navigator:
     default_server_timeout: 20
     navigators: ["navigate_to_pose", "navigate_through_poses"]
     navigate_to_pose:
-      plugin: "nav2_bt_navigator/NavigateToPoseNavigator"
+      plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
     navigate_through_poses:
-      plugin: "nav2_bt_navigator/NavigateThroughPosesNavigator"
+      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
 
 controller_server:
   ros__parameters:
     use_sim_time: true
+    # Publish TwistStamped on cmd_vel (remapped to /cmd_vel_nav). twist_mux runs
+    # in stamped mode on Jazzy, so a plain Twist here (the Nav2 default) is a
+    # type mismatch the DDS graph silently drops — the robot never moves under
+    # Nav2 even though the planner keeps handing paths to the controller.
+    enable_stamped_cmd_vel: true
     # The raw Gazebo /odom bridge does not carry the fused body velocity used
     # by the collection profile checks.  Keep pose and speed feedback on the
     # same filtered odometry stream as the rest of the navigation stack.
@@ -53,14 +58,20 @@ controller_server:
       stateful: true
 
     collection_goal_checker:
-      plugin: "nav2_controller::SimpleGoalChecker"
+      plugin: "tennis_robot_collection_controller::CollectionProgressGoalChecker"
       # The collection controller stops at the context terminal progress. In
       # Gazebo the chassis can settle about 0.22 m beyond that projection after
       # the command reaches zero. The route includes a separate 0.5 m terminal
       # run-out, so 0.30 m closes the action without weakening lane navigation.
       xy_goal_tolerance: 0.30
       yaw_goal_tolerance: 3.14
-      stateful: true
+      # Euclidean proximity is not sufficient for loop routes: they can pass
+      # arbitrarily close to their endpoint at an earlier path position. The
+      # checker also consumes the collection controller's canonical progress
+      # heartbeat and requires its terminal condition.
+      progress_tolerance_m: 0.30
+      controller_state_topic: "CollectionFollowPath/state"
+      state_timeout_s: 0.50
 
     # Regulated Pure Pursuit — robust for differential drive.
     FollowPath:
@@ -104,7 +115,7 @@ collection_route_executor:
     collection_controller_tuning.max_angular_velocity_rad_s: 3.0
     collection_controller_tuning.progress_projection_window_m: 10.0
     collection_controller_tuning.crossing_speed_window_m: 0.25
-    collection_controller_tuning.terminal_progress_tolerance_m: 0.05
+    collection_controller_tuning.terminal_progress_tolerance_m: 0.30
     # Phase 6D.3 node-side executor configuration. Every value is required by
     # CollectionExecutorNodeFactory; there are deliberately no code defaults.
     collection_route.context_schema_version: "collection-execution-context/v1"
@@ -124,6 +135,14 @@ collection_route_executor:
     collection_route.safety_max_scan_age_s: 0.50
     collection_route.controller_id: "CollectionFollowPath"
     collection_route.goal_checker_id: "collection_goal_checker"
+    # Off-route discovery while driving a route. A "viewpoint" is the drive's
+    # equivalent of a scan heading, so the snapshot's two-distinct-steps rule
+    # requires a ball to be seen from two places 0.75 m apart before it is
+    # trusted — a metres-long baseline rather than a 20 deg one.
+    collection_route.drive_viewpoint_spacing_m: 0.75
+    # A discovery this close to a target the finished route already knew about
+    # is the same ball, not a new one.
+    collection_route.drive_known_merge_radius_m: 0.50
 
 local_costmap:
   local_costmap:
@@ -203,7 +222,8 @@ planner_server:
       # SLAM costmaps.  NavFn Dijkstra produces "Failed to create a plan from
       # potential" errors when the gradient field can't be extracted — Smac avoids
       # this by using a proper A* search with a valid path guarantee.
-      plugin: "nav2_smac_planner/SmacPlanner2D"
+      # Humble's pluginlib export uses the slash-qualified class name.
+      plugin: "nav2_smac_planner::SmacPlanner2D"
       tolerance: 0.5
       allow_unknown: true
       max_iterations: 1000000
@@ -218,6 +238,9 @@ planner_server:
 behavior_server:
   ros__parameters:
     use_sim_time: true
+    # Recovery behaviors (spin/backup/drive_on_heading) publish cmd_vel too —
+    # same stamped-mux requirement as controller_server above.
+    enable_stamped_cmd_vel: true
     local_costmap_topic: local_costmap/costmap_raw
     global_costmap_topic: global_costmap/costmap_raw
     local_frame: odom
@@ -226,13 +249,13 @@ behavior_server:
     transform_tolerance: 0.2
     behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
     spin:
-      plugin: "nav2_behaviors/Spin"
+      plugin: "nav2_behaviors::Spin"
     backup:
-      plugin: "nav2_behaviors/BackUp"
+      plugin: "nav2_behaviors::BackUp"
     drive_on_heading:
-      plugin: "nav2_behaviors/DriveOnHeading"
+      plugin: "nav2_behaviors::DriveOnHeading"
     wait:
-      plugin: "nav2_behaviors/Wait"
+      plugin: "nav2_behaviors::Wait"
     simulate_ahead_time: 2.0
     # Slow spin: less wheel slip → odom more accurate → SLAM drift reduced.
     # At 0.25 rad/s, 90° takes ~6s (Spin behavior does closed-loop with odom).

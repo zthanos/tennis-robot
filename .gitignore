@@ -22,6 +22,9 @@ ros2_ws/src/tennis_robot/*.egg-info/
 models/*.onnx
 models/*.pt
 /yolov8n.pt
+/datasets/court_scene/images/
+/datasets/court_scene/labels/
+/runs/
 /robotics-stack-install.log
 ros2_ws/build_docker/
 ros2_ws/install_docker/
@@ -36,3 +39,7 @@ ros2_ws/build_smoke/
 ros2_ws/install_smoke/
 ros2_ws/build_verify/
 ros2_ws/install_verify/
+ros2_ws/build_jazzy/
+ros2_ws/install_jazzy/
+ros2_ws/log_jazzy/
+/log/

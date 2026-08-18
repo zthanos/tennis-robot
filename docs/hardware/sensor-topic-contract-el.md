@@ -12,6 +12,7 @@
 | `/camera/image_raw` | `sensor_msgs/Image` (rgb8) | `camera_link` | gz `/gz/camera` → bridge | DepthAI/OAK-D driver |
 | `/camera/depth` | `sensor_msgs/Image` (32FC1) | `camera_link` | gz `/gz/depth` → bridge | DepthAI/OAK-D driver |
 | `/perception/ball_detections` | `tennis_robot_msgs/BallDetectionArray` | `camera_link_optical_frame` | simulated OAK-D neural pipeline | OAK-D DepthAI adapter |
+| `/survey/vision` | `std_msgs/String` (JSON heartbeat) | camera acquisition | neural `net/fence` + matched depth | ίδιο neural model / OAK-D RGBD |
 | `/odom` | `nav_msgs/Odometry` | `odom`→`base_link` | `diff_drive_controller` | `diff_drive_controller` |
 | `/ir/readings` | `tennis_robot_msgs/IrReadings` | `base_link` | `gazebo_extras_node` (από `/gz/ir_*`) | IR GPIO node |
 
@@ -35,6 +36,12 @@ REAL:  rplidar / DepthAI driver →             /scan, /camera/*   (ίδια ο�
 3. **Message type/encoding** — `LaserScan`, `Image rgb8`, depth `Image 32FC1` σε **μέτρα**
    (το OAK-D βγάζει συχνά `16UC1` σε mm — χρειάζεται μετατροπή σε `32FC1` m).
 4. **`use_sim_time`** — `true` στο sim, `false`/unset στο real.
+
+Το perception node επεξεργάζεται **ένα timestamp-matched RGB/depth pair** και
+τρέχει δύο υποχρεωτικά ONNX models: το tiny-ball detector και το court-scene
+`net/fence` detector. Το `/survey/vision` δημοσιεύει `obstacle_source =
+neural_court_scene`, confidence, bbox, bearing και depth. Δεν υπάρχει classical
+net/fence runtime fallback· απουσία ή invalid model αποτυγχάνει στο startup.
 
 ## Frame tree (κοινό)
 

@@ -4,11 +4,15 @@ version = "0.1.0"
 description = "Webots/Python starter simulation for a tennis ball collecting robot."
 requires-python = ">=3.12"
 dependencies = [
-    "numpy>=1.26",
+    # numpy pinned <2 and OpenCV <5: perception (cv2.HoughLinesP shape, numpy ABI)
+    # is written and tested against the 4.x/1.x line. A fresh Pi install pulled
+    # opencv 5.0 / numpy 2.5 and crashed in detect_court_line ("too many indices
+    # for array"). Keep the majors matched to the tested PC versions.
+    "numpy>=1.26,<2",
     "opentelemetry-api>=1.34",
     "opentelemetry-exporter-otlp-proto-http>=1.34",
     "opentelemetry-sdk>=1.34",
-    "opencv-python-headless>=4.9",
+    "opencv-python-headless>=4.9,<5",
     "duckdb>=1.5.3",
     "matplotlib>=3.10.9",
     "onnxruntime>=1.20",

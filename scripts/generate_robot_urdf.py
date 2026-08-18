@@ -468,7 +468,7 @@ def main() -> int:
     xacro_exe = shutil.which(args.xacro_command)
     if xacro_exe is None:
         print(
-            "xacro executable not found. Install ros-humble-xacro or source a ROS "
+            "xacro executable not found. Install ros-jazzy-xacro or source a ROS "
             "environment that provides xacro.",
             file=sys.stderr,
         )

@@ -134,9 +134,9 @@
        ground = -0.005 in base_link) just AHEAD of the intake wheels: the
        wheel cylinders span x = nip_x ± Rw = 0.53..0.65, so a beam inside
        that band would stare at the wheels and read permanently broken.
-       At x=0.670 it fires when the ball centre is ~57 mm before first wheel
-       contact (ball-centre x≈0.613). Collection confirmation is the BASKET
-       beam pair below — see gazebo_extras_node.py. -->
+       At x=0.720 it fires before first wheel contact, leaving time to start
+       or maintain the rollers. Collection confirmation is the BASKET beam
+       pair below — see gazebo_extras_node.py. -->
   <xacro:property name="ir_x" value="0.720"/>
   <xacro:property name="ir_y" value="0.105"/>
   <xacro:property name="ir_z" value="-0.005"/>
@@ -159,7 +159,10 @@
       chassis_y="${chassis_y}"
       chassis_z="${chassis_z}"
       base_link_height="${base_link_height}"
-      chassis_mass="${chassis_mass}"/>
+      chassis_mass="${chassis_mass}"
+      entry_beam_x="${ir_x}"
+      entry_beam_z="${ir_z}"
+      entry_beam_width="${2.0 * ir_y}"/>
 
   <!-- Motors are fixed to the chassis top. Each shaft shares its x/z centre
        with the corresponding wheel joint; only y differs along the shaft. -->

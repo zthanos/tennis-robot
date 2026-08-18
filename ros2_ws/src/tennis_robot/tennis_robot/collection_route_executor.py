@@ -37,6 +37,7 @@ class ExecutorState(_StringEnum):
     EVALUATING_RESULTS = "evaluating_results"
     COMPLETED = "completed"
     COMPLETED_NO_TARGETS = "completed_no_targets"
+    INCOMPLETE_TARGETS = "incomplete_targets"
     ABORTED_SCAN = "aborted_scan"
     ABORTED_PLANNING = "aborted_planning"
     ABORTED_COLLECTOR = "aborted_collector"
@@ -225,13 +226,61 @@ class MonotonicClock(Protocol):
     def now_s(self) -> float: ...
 
 
+_TERMINAL_STATES = frozenset({
+    ExecutorState.COMPLETED, ExecutorState.COMPLETED_NO_TARGETS,
+    ExecutorState.INCOMPLETE_TARGETS,
+    ExecutorState.ABORTED_SCAN, ExecutorState.ABORTED_PLANNING,
+    ExecutorState.ABORTED_COLLECTOR, ExecutorState.ABORTED_SAFETY,
+    ExecutorState.ABORTED_TRACKING,
+})
+
+# A session can execute several routes: a finished route passes through
+# ROUTE_COMPLETED and the executor re-scans, so the session only reaches a
+# terminal state once, at the very end.  Flushing the trace on terminal states
+# alone therefore keeps the *last* route of a session and silently discards
+# every earlier one.  ROUTE_COMPLETED is a flush point for that reason only --
+# it is deliberately not a terminal state, and `is_terminal` is unchanged.
+_TRACE_FLUSH_STATES = _TERMINAL_STATES | {ExecutorState.ROUTE_COMPLETED}
+
+# Tracking failures a follow-up may legitimately continue from.  Measured in
+# debug logs #83/#84: a localization re-anchoring leaves the robot outside the
+# corridor with the next ball too close to re-enter, so *that* pass is lost --
+# but the rest of the route is untouched, and 42% of planned crossings were
+# being discarded with it.  The follow-up replans the remainder from the current
+# pose under the planner's own safety proof, so nothing is inherited from the
+# abandoned corridor.  Every other failure stays terminal.
+_SKIPPABLE_TRACKING_DETAILS = ("trajectory_tube_exceeded", "heading_error_exceeded")
+
+
+def _is_skippable_tracking_abort(
+    outcome: ExecutorState | None,
+    reason: ExecutorReasonCode | None,
+    detail: str | None,
+) -> bool:
+    """True only for a path-following failure of the classified kind.
+
+    Deliberately narrow: `SAFETY_RESUME_INVALID` also ends in ABORTED_TRACKING
+    and must stay terminal, so the reason code is checked as well as the state.
+    """
+    if outcome is not ExecutorState.ABORTED_TRACKING:
+        return False
+    if reason is not ExecutorReasonCode.PATH_FAILED:
+        return False
+    return any(label in (detail or "") for label in _SKIPPABLE_TRACKING_DETAILS)
+
+
 class CollectionRouteExecutor:
     """Deterministic, polling pure executor with no hidden retry/fallback path."""
 
     def __init__(self, *, navigator: ScanPoseNavigator, scan_session: ScanSession,
                  planner: PurePlanner, collector: Collector, path_follower: PathFollower,
                  safety_monitor: SafetyMonitor, telemetry: TelemetrySink,
-                 clock: MonotonicClock) -> None:
+                 clock: MonotonicClock, drive_observer=None, execution_trace=None) -> None:
+        self._drive_observer = drive_observer
+        # Optional Phase 9 recorder: .start(plan) / .finish().  It observes an
+        # executed route and must never influence one, so every call into it is
+        # guarded and its failures are swallowed.
+        self._execution_trace = execution_trace
         self._navigator = navigator
         self._scan_session = scan_session
         self._planner = planner
@@ -245,6 +294,8 @@ class CollectionRouteExecutor:
         self.snapshot: ScanSnapshot | None = None
         self.plan: CollectionRoutePlan | None = None
         self.route_outcome: ExecutorState | None = None
+        self.terminal_reason: ExecutorReasonCode | None = None
+        self.terminal_detail: str | None = None
         self._collector_started_at_s: float | None = None
         self._collector_stopped_at_s: float | None = None
         self._s_before_pause: float | None = None
@@ -252,10 +303,7 @@ class CollectionRouteExecutor:
 
     @property
     def is_terminal(self) -> bool:
-        return self.state in {
-            ExecutorState.COMPLETED, ExecutorState.COMPLETED_NO_TARGETS,
-            ExecutorState.ABORTED_SCAN, ExecutorState.ABORTED_PLANNING,
-        }
+        return self.state in _TERMINAL_STATES
 
     def start(self) -> None:
         if self.state is not ExecutorState.IDLE:
@@ -288,12 +336,52 @@ class CollectionRouteExecutor:
         elif self.state is ExecutorState.COLLECTOR_STOPPING:
             self._tick_collector_stop()
         elif self.state is ExecutorState.EVALUATING_RESULTS:
-            self._telemetry.emit(TelemetryEvent(TelemetryEventCode.ROUTE_OUTCOME, self.route_outcome or ExecutorState.COMPLETED))
+            self._telemetry.emit(
+                TelemetryEvent(
+                    TelemetryEventCode.ROUTE_OUTCOME,
+                    self.route_outcome or ExecutorState.COMPLETED,
+                    self.terminal_reason,
+                    self.terminal_detail,
+                )
+            )
             if self._can_follow_up():
-                self._begin_navigation()
+                # Prefer the balls actually seen while driving over repeating
+                # the same 360 from the same pose, which can only re-observe the
+                # same court.  Falling back keeps today's behaviour when the
+                # drive saw nothing new.
+                if not self._begin_off_route_pass():
+                    self._begin_navigation()
             else:
-                self._transition(ExecutorState.COMPLETED)
+                self._transition(self._terminal_completion_state())
         return self.state
+
+    def _begin_off_route_pass(self) -> bool:
+        """Plan the follow-up from off-route discoveries, in place of a rescan.
+
+        Consumes the same bounded follow-up budget as a rescan, so a mission
+        still runs at most ``follow_up.max_total_runs`` routes however many new
+        balls keep appearing.
+        """
+        if self._drive_observer is None or self.snapshot is None:
+            return False
+        if self.run_count >= self.snapshot.configuration_snapshot.follow_up.max_total_runs:
+            return False
+        known_positions = tuple(
+            (ball.position.x_m, ball.position.y_m) for ball in self.snapshot.balls
+        )
+        snapshot = self._drive_observer.result(known_positions=known_positions)
+        if snapshot is None or not snapshot.balls:
+            return False
+        self.run_count += 1
+        self.snapshot = snapshot
+        self.plan = None
+        self.route_outcome = None
+        self.terminal_reason = None
+        self.terminal_detail = None
+        # No navigation and no 360: the follow-up is planned from where the
+        # route ended, against targets already observed from two viewpoints.
+        self._transition(ExecutorState.PLANNING)
+        return True
 
     def _begin_navigation(self) -> None:
         configuration = self.snapshot.configuration_snapshot if self.snapshot is not None else self.plan.configuration_snapshot if self.plan is not None else None
@@ -302,12 +390,14 @@ class CollectionRouteExecutor:
         if configuration is not None:
             follow_up = configuration.follow_up
             if self.run_count >= follow_up.max_total_runs:
-                self._transition(ExecutorState.COMPLETED)
+                self._transition(self._terminal_completion_state())
                 return
         self.run_count += 1
         self.snapshot = None
         self.plan = None
         self.route_outcome = None
+        self.terminal_reason = None
+        self.terminal_detail = None
         self._navigator.start()
         self._transition(ExecutorState.NAVIGATING_TO_SCAN_POSE)
 
@@ -324,8 +414,13 @@ class CollectionRouteExecutor:
             self._transition(ExecutorState.ABORTED_PLANNING, ExecutorReasonCode.PLANNING_FAILED)
             return
         self.plan = plan
-        if plan.planning_status in {PlanningStatus.EMPTY_NO_BALLS, PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS}:
+        if plan.planning_status is PlanningStatus.EMPTY_NO_BALLS:
             self._transition(ExecutorState.COMPLETED_NO_TARGETS)
+        elif plan.planning_status is PlanningStatus.EMPTY_NO_FEASIBLE_TARGETS:
+            # Targets were observed and classified, but none has an executable
+            # route.  This is not the same outcome as an empty court: callers
+            # must surface the unresolved targets and their planner blockers.
+            self._transition(ExecutorState.INCOMPLETE_TARGETS)
         elif not plan.is_executable:
             self._transition(ExecutorState.ABORTED_PLANNING, ExecutorReasonCode.PLANNING_FAILED)
         else:
@@ -338,12 +433,22 @@ class CollectionRouteExecutor:
         result = self._collector.start_result()
         if result.status is CollectorStartStatus.READY:
             self._path_follower.start(self.plan)
+            if self._drive_observer is not None:
+                self._drive_observer.start()
+            # The trace covers *executed* behaviour, so it starts here -- when
+            # the plan becomes the route the follower is driving -- and not at
+            # planning, which produced a plan that might never be executed.
+            self._begin_execution_trace()
             self._transition(ExecutorState.EXECUTING_ROUTE)
         elif result.status is CollectorStartStatus.FAILED or self._elapsed(self._collector_started_at_s, self.plan.configuration_snapshot.safety.collector_start_timeout_s):
             self._abort_active_route(ExecutorState.ABORTED_COLLECTOR, result.reason or ExecutorReasonCode.COLLECTOR_START_TIMEOUT)
 
     def _tick_execution(self) -> None:
         assert self.plan is not None
+        if self._drive_observer is not None:
+            # Balls the 360 never confirmed are only ever seen from here.  This
+            # feeds a separate list; the frozen plan being executed is untouched.
+            self._drive_observer.observe()
         safety = self._safety_monitor.result()
         if safety.status is SafetyStatus.TIMEOUT:
             self._abort_active_route(ExecutorState.ABORTED_SAFETY, ExecutorReasonCode.SAFETY_TIMEOUT)
@@ -420,19 +525,80 @@ class CollectionRouteExecutor:
 
     def _can_follow_up(self) -> bool:
         assert self.plan is not None
-        # A follow-up run is "collect more balls in further passes", not a
-        # retry: it is allowed only after a clean route completion, never after
-        # a safety/tracking/collector abort of the active route.
+        # A follow-up run is "collect the balls this route did not", not a
+        # retry of the same corridor.  It follows a clean completion, and also a
+        # classified tracking abort -- the one case where the current pass is
+        # unrecoverable but the remaining targets are not (debug log #84).  The
+        # run budget is unchanged and remains the only guard against
+        # abort -> rescan -> abort cycling.
         policy = self.plan.configuration_snapshot.follow_up
-        return (
-            self.route_outcome is ExecutorState.ROUTE_COMPLETED
-            and policy.enabled
-            and self.run_count < policy.max_total_runs
+        if not policy.enabled or self.run_count >= policy.max_total_runs:
+            return False
+        if self.route_outcome is ExecutorState.ROUTE_COMPLETED:
+            return True
+        return _is_skippable_tracking_abort(
+            self.route_outcome, self.terminal_reason, self.terminal_detail
         )
+
+    def _terminal_completion_state(self) -> ExecutorState:
+        """Report mission completion separately from sub-route completion.
+
+        A clean FollowPath result only proves that the executable subset ended.
+        If the final immutable plan is partial, targets remain deferred or
+        unreachable and the collection mission must not be labelled completed.
+        """
+        if self.route_outcome in {
+            ExecutorState.ABORTED_COLLECTOR,
+            ExecutorState.ABORTED_SAFETY,
+            ExecutorState.ABORTED_TRACKING,
+        }:
+            return self.route_outcome
+        if (
+            self.route_outcome is ExecutorState.ROUTE_COMPLETED
+            and self.plan is not None
+            and self.plan.planning_status is PlanningStatus.PARTIAL
+        ):
+            return ExecutorState.INCOMPLETE_TARGETS
+        return ExecutorState.COMPLETED
 
     def _elapsed(self, started_at_s: float | None, timeout_s: float) -> bool:
         return started_at_s is not None and self._clock.now_s() - started_at_s >= timeout_s
 
     def _transition(self, state: ExecutorState, reason: ExecutorReasonCode | None = None, detail: str | None = None) -> None:
+        if state.value.startswith("aborted_"):
+            if reason is not None:
+                self.terminal_reason = reason
+            if detail is not None:
+                self.terminal_detail = detail
         self.state = state
+        # Every ending passes through here -- a route finishing, completion,
+        # abort, no-targets, incomplete -- so this is the one place that
+        # guarantees a started trace is written.  An aborted route is the
+        # evidence most worth keeping, so persistence is deliberately not
+        # conditional on success.
+        if state in _TRACE_FLUSH_STATES:
+            self._end_execution_trace()
         self._telemetry.emit(TelemetryEvent(TelemetryEventCode.STATE_CHANGED, state, reason, detail))
+
+    def _begin_execution_trace(self) -> None:
+        if self._execution_trace is None or self.plan is None:
+            return
+        try:
+            self._execution_trace.start(self.plan)
+        except Exception:  # noqa: BLE001 - instrumentation may not abort a route
+            pass
+
+    def _end_execution_trace(self) -> None:
+        """Write whatever was recorded.  Safe to call more than once.
+
+        A route can pass through a terminal state twice: an abort transitions to
+        its outcome and then continues into collector shutdown before ending
+        again.  ``finish()`` is idempotent, and the guard here keeps the second
+        call from re-writing a file that no longer has a recorder behind it.
+        """
+        if self._execution_trace is None:
+            return
+        try:
+            self._execution_trace.finish()
+        except Exception:  # noqa: BLE001 - instrumentation may not abort a route
+            pass

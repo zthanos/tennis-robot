@@ -91,8 +91,30 @@ def generate_gazebo_gui_config():
 
 
 def generate_launch_description():
-    generate_robot_urdf()
-    generate_gazebo_gui_config()
+    # Distributed split (WS3). TENNIS_LAUNCH_SIM brings up Gazebo + the robot
+    # abstraction (PC side); TENNIS_LAUNCH_BRAIN brings up the control/perception
+    # stack (Pi side). Both default true → single-machine all-in-one (run_native).
+    _launch_sim = os.getenv("TENNIS_LAUNCH_SIM", "true").lower() in {"1", "true", "yes"}
+    _launch_brain = os.getenv("TENNIS_LAUNCH_BRAIN", "true").lower() in {"1", "true", "yes"}
+    # In the distributed sim, streaming raw RGB/depth PC->Pi plus TF timing
+    # starves the scan (perception can't place detections before their TF ages
+    # out of the buffer). TENNIS_PERCEPTION_ON_PC runs perception on the sim side
+    # next to the Gazebo camera, so only the lightweight BallDetectionArray
+    # crosses to the Pi. The real robot keeps perception on the Pi (camera is
+    # local there), so this defaults off.
+    _perception_on_pc = os.getenv("TENNIS_PERCEPTION_ON_PC", "false").lower() in {"1", "true", "yes"}
+    if _launch_sim and not _launch_brain:
+        _sensor_snapshot_mode = "publisher"
+    elif _launch_brain and not _launch_sim and _perception_on_pc:
+        _sensor_snapshot_mode = "receiver"
+    else:
+        _sensor_snapshot_mode = "local"
+
+    # The URDF/SDF + GUI config are only needed by the sim side (spawn +
+    # robot_state_publisher). On the Pi (sim off) they would fail — no xacro run.
+    if _launch_sim:
+        generate_robot_urdf()
+        generate_gazebo_gui_config()
     bench_minimal = os.getenv("SIM_BENCH_MINIMAL", "false").lower() in {
         "1",
         "true",
@@ -117,8 +139,20 @@ def generate_launch_description():
     # Tell Gazebo where the gz_ros2_control system plugin lives. Sourcing the
     # workspace does NOT reliably set this, so Gazebo fails to load the plugin
     # ("Could not find shared library") and exits before controllers can spawn.
-    _gz_plugin_path = f"{ROS2_INSTALL}/gz_ros2_control/lib:" + os.environ.get(
-        "GZ_SIM_SYSTEM_PLUGIN_PATH", ""
+    # Cover both layouts: the container/source build puts the plugin under
+    # {ROS2_INSTALL}/gz_ros2_control/lib; a native Jazzy apt install ships
+    # libgz_ros2_control-system.so in each ROS prefix's lib/ (AMENT_PREFIX_PATH).
+    _ament_lib_dirs = [
+        f"{prefix}/lib"
+        for prefix in os.environ.get("AMENT_PREFIX_PATH", "").split(":")
+        if prefix
+    ]
+    _gz_plugin_path = ":".join(
+        filter(
+            None,
+            [f"{ROS2_INSTALL}/gz_ros2_control/lib", *_ament_lib_dirs,
+             os.environ.get("GZ_SIM_SYSTEM_PLUGIN_PATH", "")],
+        )
     )
     _gz_resource_path = ":".join(
         filter(
@@ -184,16 +218,20 @@ def generate_launch_description():
     # gz_ros2_control plugin reads robot_description from it to start the
     # controller_manager. It also publishes TF from /joint_states (now fed by
     # joint_state_broadcaster instead of the old gz JointStatePublisher plugin).
-    with open(ROBOT_URDF, "r", encoding="utf-8") as _f:
-        _robot_description = _f.read()
-
-    robot_state_publisher = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        name="robot_state_publisher",
-        output="screen",
-        parameters=[{"robot_description": _robot_description, "use_sim_time": True}],
-    )
+    # robot_state_publisher lives on the sim side: it reads the generated URDF
+    # and publishes robot_description + the base_footprint->base_link TF. On the
+    # Pi (sim off) the URDF is never generated, so skip it there.
+    robot_state_publisher = None
+    if _launch_sim:
+        with open(ROBOT_URDF, "r", encoding="utf-8") as _f:
+            _robot_description = _f.read()
+        robot_state_publisher = Node(
+            package="robot_state_publisher",
+            executable="robot_state_publisher",
+            name="robot_state_publisher",
+            output="screen",
+            parameters=[{"robot_description": _robot_description, "use_sim_time": True}],
+        )
 
     def _spawner(controller):
         return Node(
@@ -311,6 +349,16 @@ def generate_launch_description():
         parameters=[{"config_file": BRIDGE_CONFIG}],
         output="screen",
     )
+    sim_clock_relay = Node(
+        package="tennis_robot",
+        executable="sim_clock_relay_node",
+        name="sim_clock_relay",
+        output="screen",
+        additional_env={
+            "PYTHONPATH": ROS_PYTHONPATH,
+            "SIM_CLOCK_PUBLISH_HZ": os.getenv("SIM_CLOCK_PUBLISH_HZ", "50"),
+        },
+    )
 
     # ── ROS 2 nodes (same as before — interface unchanged) ──────────────────
     # /odom remap: after the ros2_control migration odometry is published on
@@ -330,6 +378,7 @@ def generate_launch_description():
         executable="perception_node",
         name="perception_node",
         output="screen",
+        parameters=[{"use_sim_time": True}],
         remappings=[_odom_remap],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
@@ -347,6 +396,35 @@ def generate_launch_description():
                 "BALL_CENTER_ZOOM_TILES", "0.30:0.333,0.50:0.333,0.70:0.333"
             ),
             "BALL_CLASS_IDS": os.getenv("BALL_CLASS_IDS", "32"),
+            # Bound both ONNX sessions. Without explicit pools, each session
+            # expands to the workstation CPU topology and can starve Gazebo.
+            "PERCEPTION_ONNX_INTRA_OP_THREADS": os.getenv(
+                "PERCEPTION_ONNX_INTRA_OP_THREADS", "4"
+            ),
+            "PERCEPTION_ONNX_INTER_OP_THREADS": os.getenv(
+                "PERCEPTION_ONNX_INTER_OP_THREADS", "1"
+            ),
+            "RGB_DEPTH_SYNC_QUEUE_SIZE": os.getenv(
+                "RGB_DEPTH_SYNC_QUEUE_SIZE", "3"
+            ),
+            # Required neural court-scene semantics. Custom training uses
+            # class 0=net and class 1=fence; no OpenCV runtime fallback.
+            "COURT_SCENE_DETECTOR_BACKEND": os.getenv(
+                "COURT_SCENE_DETECTOR_BACKEND", "yolo_onnx"
+            ),
+            "COURT_SCENE_MODEL_PATH": os.getenv(
+                "COURT_SCENE_MODEL_PATH",
+                f"{WORKSPACE}/models/court_scene_yolov8n.onnx",
+            ),
+            "COURT_SCENE_CLASS_MAP": os.getenv(
+                "COURT_SCENE_CLASS_MAP", "0:net,1:fence"
+            ),
+            "COURT_SCENE_CONF_THRESHOLD": os.getenv(
+                "COURT_SCENE_CONF_THRESHOLD", "0.45"
+            ),
+            "COURT_SCENE_CONFIRM_FRAMES": os.getenv(
+                "COURT_SCENE_CONFIRM_FRAMES", "3"
+            ),
             "CAMERA_FRAME_ID": "camera_link_optical_frame",
             # C2 v3 activation: reviewed evidence covers 1.02..6.77 m.
             "PERCEPTION_CALIBRATION_PLATFORM": "gazebo",
@@ -392,6 +470,7 @@ def generate_launch_description():
         executable="navigation_node",
         name="navigation_node",
         output="screen",
+        parameters=[{"use_sim_time": True}],
         # Route the legacy /cmd_vel (used by the web control-panel D-pad via
         # controller_node) through twist_mux instead of the removed gz plugin.
         remappings=[("/cmd_vel", "/cmd_vel_teleop"), _odom_remap],
@@ -402,6 +481,7 @@ def generate_launch_description():
         executable="command_bridge_node",
         name="command_bridge_node",
         output="screen",
+        parameters=[{"use_sim_time": True}],
         additional_env={
             "ROBOT_COMMAND_FILE": os.getenv(
                 "ROBOT_COMMAND_FILE", f"{WORKSPACE}/runtime/robot_command.json"
@@ -421,10 +501,16 @@ def generate_launch_description():
     sensor_snapshots = Node(
         package="tennis_robot",
         executable="sensor_snapshot_node",
-        name="sensor_snapshot_node",
+        name=(
+            "sensor_snapshot_node"
+            if _sensor_snapshot_mode == "local"
+            else f"sensor_snapshot_{_sensor_snapshot_mode}"
+        ),
         output="screen",
+        parameters=[{"use_sim_time": True}],
         additional_env={
             "PYTHONPATH": ROS_PYTHONPATH,
+            "SENSOR_SNAPSHOT_MODE": _sensor_snapshot_mode,
             "ROBOT_SENSOR_FILE": os.getenv(
                 "ROBOT_SENSOR_FILE", f"{WORKSPACE}/runtime/robot_sensors.json"
             ),
@@ -470,56 +556,63 @@ def generate_launch_description():
         parameters=[EKF_CONFIG, {"use_sim_time": True}],
     )
 
-    # Delay ROS nodes until Gazebo + bridge are up
+    # ── Node groups by machine (WS3 distributed split) ─────────────────────
+    # PC (sim) side: Gazebo bridge + IR/ball extractor + actuation + odometry
+    # fusion. Pi (brain) side: perception + control. The file-IPC nodes
+    # controller/command_bridge and the panel share the Pi filesystem. In the
+    # distributed simulation, sensor snapshots are split: the PC encodes a
+    # low-rate JPEG preview next to the raw Gazebo camera, while the Pi receives
+    # only that compact preview. Raw RGB/depth therefore never cross the LAN.
+    _sim_node_actions = [bridge, sim_clock_relay, gz_extras, drive_actuator, *cmd_vel_relays,
+                         collector_logic, twist_mux, ekf]
+    _brain_node_actions = [perception, controller, navigation, command_bridge]
+    if _sensor_snapshot_mode == "publisher":
+        _sim_node_actions.append(sensor_snapshots)
+    else:
+        _brain_node_actions.append(sensor_snapshots)
+    # Move perception to the sim side (next to the camera) when requested — see
+    # TENNIS_PERCEPTION_ON_PC above.
+    if _perception_on_pc:
+        _brain_node_actions.remove(perception)
+        _sim_node_actions.append(perception)
+
+    # Delay ROS nodes until Gazebo + bridge are up (all-in-one), or until DDS
+    # discovery of the PC sensors has settled (Pi brain).
     if bench_minimal:
         delayed_node_actions = [bridge, gz_extras]
     else:
-        delayed_node_actions = [
-            bridge, perception, controller, navigation,
-            command_bridge, gz_extras, sensor_snapshots, drive_actuator,
-            *cmd_vel_relays, collector_logic, twist_mux,
-            ekf,
-        ]
-
+        delayed_node_actions = []
+        if _launch_sim:
+            delayed_node_actions += _sim_node_actions
+        if _launch_brain:
+            delayed_node_actions += _brain_node_actions
     delayed_nodes = TimerAction(period=4.0, actions=delayed_node_actions)
 
-    delayed_spawn = TimerAction(
-        period=1.0,
-        actions=[spawn_robot],
-    )
-
-    # Spawn controllers sequentially. Jazzy's spawner serializes operations
-    # with a shared lock; launching all spawners at once makes repeated fresh
-    # simulations intermittently exhaust the lock timeout.
-    delayed_controllers = TimerAction(
-        period=6.0,
-        actions=[jsb_spawner],
-    )
-    controller_chain = [
-        RegisterEventHandler(
-            OnProcessExit(target_action=jsb_spawner, on_exit=[diff_drive_spawner])
-        ),
-        RegisterEventHandler(
-            OnProcessExit(target_action=diff_drive_spawner, on_exit=[intake_wheel_spawner])
-        ),
-    ]
-    if enable_assist:
-        controller_chain.append(
+    actions = [headless_arg]
+    if _launch_sim:
+        delayed_spawn = TimerAction(period=1.0, actions=[spawn_robot])
+        # Spawn controllers sequentially. Jazzy's spawner serializes operations
+        # with a shared lock; launching all spawners at once makes repeated fresh
+        # simulations intermittently exhaust the lock timeout.
+        delayed_controllers = TimerAction(period=6.0, actions=[jsb_spawner])
+        controller_chain = [
             RegisterEventHandler(
-                OnProcessExit(target_action=intake_wheel_spawner, on_exit=[assist_wheel_spawner])
+                OnProcessExit(target_action=jsb_spawner, on_exit=[diff_drive_spawner])
+            ),
+            RegisterEventHandler(
+                OnProcessExit(target_action=diff_drive_spawner, on_exit=[intake_wheel_spawner])
+            ),
+        ]
+        if enable_assist:
+            controller_chain.append(
+                RegisterEventHandler(
+                    OnProcessExit(target_action=intake_wheel_spawner, on_exit=[assist_wheel_spawner])
+                )
             )
-        )
+        actions += [gz_full, gz_headless, robot_state_publisher,
+                    delayed_spawn, delayed_controllers, *controller_chain]
 
-    actions = [
-        headless_arg,
-        gz_full,
-        gz_headless,
-        robot_state_publisher,
-        delayed_spawn,
-        delayed_nodes,
-        delayed_controllers,
-        *controller_chain,
-    ]
-    if not skip_control_panel:
-        actions.insert(5, control_panel)
+    actions.append(delayed_nodes)
+    if _launch_brain and not skip_control_panel:
+        actions.append(control_panel)
     return LaunchDescription(actions)

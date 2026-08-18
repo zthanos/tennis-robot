@@ -33,6 +33,25 @@ class PathService:
         with self._lock:
             return self._read_unlocked()
 
+    @staticmethod
+    def display_sample(
+        points: list[dict[str, float]], max_points: int = 200
+    ) -> list[dict[str, float]]:
+        """Return a deterministic, endpoint-preserving canvas projection.
+
+        The persisted/full audit remains available from ``/api/path``.  A
+        browser canvas does not benefit from retransmitting all 2,000 points
+        every second, especially when many are sub-pixel at the rendered zoom.
+        """
+
+        if max_points < 2:
+            raise ValueError("max_points must be >= 2")
+        if len(points) <= max_points:
+            return list(points)
+        last = len(points) - 1
+        indexes = [round(index * last / (max_points - 1)) for index in range(max_points)]
+        return [points[index] for index in indexes]
+
     def update(self, pose: dict[str, object]) -> None:
         x_m = self._as_float(pose.get("x_m"))
         y_m = self._as_float(pose.get("y_m"))

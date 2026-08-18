@@ -22,6 +22,11 @@ POSITION_TOLERANCE_M = 1e-6
 ANGLE_TOLERANCE_RAD = 1e-6
 PROGRESS_TOLERANCE_M = 1e-6
 
+# Bumped from collection-route/v1 when the cluster heuristics replaced block
+# routing.  Archived v1 payloads are read through
+# ``collection_route_schema_migration``; this loader stays strict.
+CONFIGURATION_SCHEMA_VERSION = "collection-route/v2"
+
 _T = TypeVar("_T")
 
 
@@ -41,6 +46,21 @@ class BallStatus(_StringEnum):
 
 
 class BallReasonCode(_StringEnum):
+    """Why a snapshot ball ended where it did.
+
+    The codes divide into three kinds, and the distinction is epistemic rather
+    than cosmetic.  ``SELECTED`` states the ball is in the route.  The geometric
+    codes state a failure that was *established*: candidate generation found no
+    pass at all (``KEEPOUT``/``NO_ENTRY``/``NO_EXIT``/``NO_CANDIDATE_FOUND``/
+    ``MECHANICAL_SPACING``), or the bounded proof pass showed every one of the
+    ball's candidates fails for one specific reason (``TURN_RADIUS``,
+    ``CONNECTOR_CLEARANCE``, ``NO_TERMINAL``).  ``ROUTE_CONFLICT`` states a
+    complete search had the ball available and chose against it.
+    ``PLANNING_BUDGET`` states only that planning stopped before feasibility
+    could be established -- it is the honest answer whenever the evidence is
+    incomplete, and it must never be replaced by a geometric guess.
+    """
+
     SELECTED = "selected"
     ROUTE_CONFLICT = "route_conflict"
     PLANNING_BUDGET = "planning_budget"
@@ -50,6 +70,13 @@ class BallReasonCode(_StringEnum):
     NO_ENTRY = "no_entry"
     NO_EXIT = "no_exit"
     MECHANICAL_SPACING = "mechanical_spacing"
+    # Every candidate of this ball was reachable only through connectors that
+    # collide with the court or an obstacle -- a clearance failure, distinct
+    # from the turning-geometry failure above.
+    CONNECTOR_CLEARANCE = "connector_clearance"
+    # No candidate of this ball admits the mandatory terminal run-out, so no
+    # route can end after collecting it.
+    NO_TERMINAL = "no_terminal"
 
 
 class PlanningStatus(_StringEnum):
@@ -65,6 +92,20 @@ class PlanningSearchStatus(_StringEnum):
     COMPLETE = "complete"
     BUDGET_EXHAUSTED = "budget_exhausted"
     FAILED = "failed"
+
+
+class SuccessorBatchPolicy(_StringEnum):
+    """How many successors one visit to a search state evaluates.
+
+    ``fixed`` uses ``successor_batch_size`` verbatim and exists so tests and
+    investigations can pin the pacing.  ``adaptive`` derives it from the number
+    of admitted candidates, which is the only quantity it may look at.  Neither
+    changes which successors exist, their order, or anything the search decides
+    with them.
+    """
+
+    FIXED = "fixed"
+    ADAPTIVE = "adaptive"
 
 
 class RouteSegmentType(_StringEnum):
@@ -428,6 +469,7 @@ class FeasibilityConfiguration:
     footprint_clearance_radius_m: float
     tangent_activation_distance_m: float
     max_parallel_heading_error_rad: float
+    boundary_recovery_contact_offset_m: float
 
     def __post_init__(self) -> None:
         if isinstance(self.heading_sample_count, bool) or not isinstance(self.heading_sample_count, int) or self.heading_sample_count <= 0:
@@ -439,10 +481,13 @@ class FeasibilityConfiguration:
             "footprint_clearance_radius_m",
             "tangent_activation_distance_m",
             "max_parallel_heading_error_rad",
+            "boundary_recovery_contact_offset_m",
         ):
             _finite(getattr(self, name), name, minimum=0.0)
         if self.footprint_clearance_radius_m <= 0.0:
             raise DomainValidationError("footprint_clearance_radius_m must be positive")
+        if self.boundary_recovery_contact_offset_m <= 0.0:
+            raise DomainValidationError("boundary_recovery_contact_offset_m must be positive")
 
     def to_dict(self) -> dict[str, Any]:
         return {name: getattr(self, name) for name in self.__dataclass_fields__}
@@ -458,19 +503,88 @@ class ConnectorConfiguration:
     max_connector_length_m: float
     max_connector_arc_angle_rad: float
     max_connector_total_turn_rad: float
+    # Multipliers on minimum_turning_radius_m used to generate additional, gentler
+    # CSC candidates.  The tight minimum radius is the only geometry the planner
+    # used to produce, and an arc that tight cannot host a capture, so every ball
+    # needed its own straight pass.  A multiplier of 1.0 reproduces the original
+    # single-radius graph and must always be present.
+    sweep_radius_multipliers: tuple[float, ...]
+    # A path portion may carry a crossing only where its local turn radius is at
+    # least this.  Derived from the pure-pursuit heading lead (~lookahead/2R),
+    # which has to stay inside the capture-grade heading gate.
+    capture_minimum_turn_radius_m: float
 
     def __post_init__(self) -> None:
-        for name in self.__dataclass_fields__:
+        for name in ("max_connector_length_m", "max_connector_arc_angle_rad", "max_connector_total_turn_rad", "capture_minimum_turn_radius_m"):
             _finite(getattr(self, name), name, minimum=0.0)
             if getattr(self, name) <= 0.0:
                 raise DomainValidationError(f"{name} must be positive")
+        if not isinstance(self.sweep_radius_multipliers, tuple) or not self.sweep_radius_multipliers:
+            raise DomainValidationError("sweep_radius_multipliers must be a non-empty tuple")
+        for value in self.sweep_radius_multipliers:
+            _finite(value, "sweep_radius_multiplier", minimum=1.0)
+            if value < 1.0:
+                raise DomainValidationError("sweep_radius_multiplier must be at least 1.0")
+        if len(set(self.sweep_radius_multipliers)) != len(self.sweep_radius_multipliers):
+            raise DomainValidationError("sweep_radius_multipliers must be unique")
+        if 1.0 not in self.sweep_radius_multipliers:
+            raise DomainValidationError("sweep_radius_multipliers must include the minimum radius (1.0)")
+
+    def to_dict(self) -> dict[str, Any]:
+        data = {name: getattr(self, name) for name in self.__dataclass_fields__}
+        data["sweep_radius_multipliers"] = list(self.sweep_radius_multipliers)
+        return data
+
+    @classmethod
+    def from_dict(cls: type[_T], data: Mapping[str, Any]) -> _T:
+        _fields(data, set(cls.__dataclass_fields__), "ConnectorConfiguration")
+        values = dict(data)
+        values["sweep_radius_multipliers"] = tuple(values["sweep_radius_multipliers"])
+        return cls(**values)
+
+
+@dataclass(frozen=True)
+class ClusterHeuristicsConfiguration:
+    """Bounds for the clustering *heuristic*, which never decides feasibility.
+
+    Balls on a court cluster, and that structure is worth exploiting -- but only
+    to decide what the router looks at first and which multi-pass shortcuts are
+    worth precomputing.  Its predecessor made clusters atomic routing units,
+    which deleted executable routes outright (debug log #57): a tight cluster
+    whose internal connectors fail lost every one of its balls.
+
+    So these values may change how quickly a good route is found and never which
+    routes exist.  ``cluster_threshold_m`` decides which balls seed a shared
+    macro; ``maximum_clusters`` bounds how many seeds there are;
+    ``maximum_macro_passes``/``maximum_macro_chains`` bound how long and how
+    numerous the precomputed shortcuts may be.  Every pass a macro contains
+    stays individually available to the search.
+    """
+
+    cluster_threshold_m: float
+    maximum_clusters: int
+    maximum_macro_passes: int
+    maximum_macro_chains: int
+
+    def __post_init__(self) -> None:
+        _finite(self.cluster_threshold_m, "cluster_threshold_m", minimum=0.0)
+        if self.cluster_threshold_m <= 0.0:
+            raise DomainValidationError("cluster_threshold_m must be positive")
+        for name, minimum in (
+            ("maximum_clusters", 1),
+            ("maximum_macro_passes", 2),
+            ("maximum_macro_chains", 0),
+        ):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+                raise DomainValidationError(f"{name} must be an int >= {minimum}")
 
     def to_dict(self) -> dict[str, Any]:
         return {name: getattr(self, name) for name in self.__dataclass_fields__}
 
     @classmethod
     def from_dict(cls: type[_T], data: Mapping[str, Any]) -> _T:
-        _fields(data, set(cls.__dataclass_fields__), "ConnectorConfiguration")
+        _fields(data, set(cls.__dataclass_fields__), "ClusterHeuristicsConfiguration")
         return cls(**data)
 
 
@@ -486,10 +600,22 @@ class GlobalRouteSearchConfiguration:
     weight_curvature: float
     weight_energy: float
     weight_pass_count: float
+    # How many successors one visit to a state evaluates before the state goes
+    # back on the frontier.  Purely a pacing knob: the state keeps its place and
+    # its remaining successors, so nothing is ever discarded, but the search can
+    # follow a promising child instead of first linking the parent against every
+    # candidate on the court.  A value at or above the candidate count restores
+    # the all-at-once behaviour.  Read only when the policy below is ``fixed``.
+    successor_batch_size: int = 4
+    successor_batch_policy: SuccessorBatchPolicy = SuccessorBatchPolicy.ADAPTIVE
 
     def __post_init__(self) -> None:
         if isinstance(self.max_search_expansions, bool) or not isinstance(self.max_search_expansions, int) or self.max_search_expansions <= 0:
             raise DomainValidationError("max_search_expansions must be positive int")
+        if isinstance(self.successor_batch_size, bool) or not isinstance(self.successor_batch_size, int) or self.successor_batch_size <= 0:
+            raise DomainValidationError("successor_batch_size must be positive int")
+        if not isinstance(self.successor_batch_policy, SuccessorBatchPolicy):
+            raise DomainValidationError("successor_batch_policy must be a SuccessorBatchPolicy")
         for name in ("terminal_run_out_m", "connector_nominal_speed_m_s", "crossing_nominal_speed_m_s"):
             _finite(getattr(self, name), name, minimum=0.0)
             if getattr(self, name) <= 0.0:
@@ -500,12 +626,18 @@ class GlobalRouteSearchConfiguration:
             raise DomainValidationError("at least one global route search weight must be positive")
 
     def to_dict(self) -> dict[str, Any]:
-        return {name: getattr(self, name) for name in self.__dataclass_fields__}
+        data = {name: getattr(self, name) for name in self.__dataclass_fields__}
+        data["successor_batch_policy"] = self.successor_batch_policy.value
+        return data
 
     @classmethod
     def from_dict(cls: type[_T], data: Mapping[str, Any]) -> _T:
         _fields(data, set(cls.__dataclass_fields__), "GlobalRouteSearchConfiguration")
-        return cls(**data)
+        values = dict(data)
+        values["successor_batch_policy"] = _enum(
+            values["successor_batch_policy"], SuccessorBatchPolicy, "successor_batch_policy"
+        )
+        return cls(**values)
 
 
 @dataclass(frozen=True)
@@ -580,12 +712,12 @@ class PlanningConfiguration:
 
 @dataclass(frozen=True)
 class CollectionRouteConfiguration:
-    schema_version: str; mechanical: MechanicalConfiguration; safety: SafetyConfiguration; scan: ScanConfiguration; feasibility: FeasibilityConfiguration; connector: ConnectorConfiguration; global_route_search: GlobalRouteSearchConfiguration; shared_pass: SharedPassConfiguration; follow_up: FollowUpConfiguration; planning: PlanningConfiguration; gazebo_snapshot: GazeboSnapshotConfiguration; perception_spatial_validation: PerceptionSpatialValidationConfig; calibration_artifact: CalibrationArtifact
+    schema_version: str; mechanical: MechanicalConfiguration; safety: SafetyConfiguration; scan: ScanConfiguration; feasibility: FeasibilityConfiguration; connector: ConnectorConfiguration; cluster_heuristics: ClusterHeuristicsConfiguration; global_route_search: GlobalRouteSearchConfiguration; shared_pass: SharedPassConfiguration; follow_up: FollowUpConfiguration; planning: PlanningConfiguration; gazebo_snapshot: GazeboSnapshotConfiguration; perception_spatial_validation: PerceptionSpatialValidationConfig; calibration_artifact: CalibrationArtifact
     def __post_init__(self) -> None:
         _non_empty(self.schema_version, "schema_version")
-        for name, typ in (("mechanical", MechanicalConfiguration), ("safety", SafetyConfiguration), ("scan", ScanConfiguration), ("feasibility", FeasibilityConfiguration), ("connector", ConnectorConfiguration), ("global_route_search", GlobalRouteSearchConfiguration), ("shared_pass", SharedPassConfiguration), ("follow_up", FollowUpConfiguration), ("planning", PlanningConfiguration), ("gazebo_snapshot", GazeboSnapshotConfiguration), ("perception_spatial_validation", PerceptionSpatialValidationConfig), ("calibration_artifact", CalibrationArtifact)):
+        for name, typ in (("mechanical", MechanicalConfiguration), ("safety", SafetyConfiguration), ("scan", ScanConfiguration), ("feasibility", FeasibilityConfiguration), ("connector", ConnectorConfiguration), ("cluster_heuristics", ClusterHeuristicsConfiguration), ("global_route_search", GlobalRouteSearchConfiguration), ("shared_pass", SharedPassConfiguration), ("follow_up", FollowUpConfiguration), ("planning", PlanningConfiguration), ("gazebo_snapshot", GazeboSnapshotConfiguration), ("perception_spatial_validation", PerceptionSpatialValidationConfig), ("calibration_artifact", CalibrationArtifact)):
             if not isinstance(getattr(self, name), typ): raise DomainValidationError(f"{name} must be {typ.__name__}")
-    def to_dict(self) -> dict[str, Any]: return {"schema_version": self.schema_version, "mechanical": self.mechanical.to_dict(), "safety": self.safety.to_dict(), "scan": self.scan.to_dict(), "feasibility": self.feasibility.to_dict(), "connector": self.connector.to_dict(), "global_route_search": self.global_route_search.to_dict(), "shared_pass": self.shared_pass.to_dict(), "follow_up": self.follow_up.to_dict(), "planning": self.planning.to_dict(), "gazebo_snapshot": self.gazebo_snapshot.to_dict(), "perception_spatial_validation": self.perception_spatial_validation.to_dict(), "calibration_artifact": self.calibration_artifact.to_dict()}
+    def to_dict(self) -> dict[str, Any]: return {"schema_version": self.schema_version, "mechanical": self.mechanical.to_dict(), "safety": self.safety.to_dict(), "scan": self.scan.to_dict(), "feasibility": self.feasibility.to_dict(), "connector": self.connector.to_dict(), "cluster_heuristics": self.cluster_heuristics.to_dict(), "global_route_search": self.global_route_search.to_dict(), "shared_pass": self.shared_pass.to_dict(), "follow_up": self.follow_up.to_dict(), "planning": self.planning.to_dict(), "gazebo_snapshot": self.gazebo_snapshot.to_dict(), "perception_spatial_validation": self.perception_spatial_validation.to_dict(), "calibration_artifact": self.calibration_artifact.to_dict()}
     @classmethod
     def from_dict(cls: type[_T], data: Mapping[str, Any]) -> _T:
         _fields(data, set(cls.__dataclass_fields__), "CollectionRouteConfiguration")
@@ -594,7 +726,7 @@ class CollectionRouteConfiguration:
             calibration_artifact = CalibrationArtifact.from_dict(data["calibration_artifact"])
         except CalibrationError as exc:
             raise DomainValidationError(str(exc)) from exc
-        return cls(data["schema_version"], MechanicalConfiguration.from_dict(data["mechanical"]), SafetyConfiguration.from_dict(data["safety"]), ScanConfiguration.from_dict(data["scan"]), FeasibilityConfiguration.from_dict(data["feasibility"]), ConnectorConfiguration.from_dict(data["connector"]), GlobalRouteSearchConfiguration.from_dict(data["global_route_search"]), SharedPassConfiguration.from_dict(data["shared_pass"]), FollowUpConfiguration.from_dict(data["follow_up"]), PlanningConfiguration.from_dict(data["planning"]), GazeboSnapshotConfiguration.from_dict(data["gazebo_snapshot"]), perception_spatial_validation, calibration_artifact)
+        return cls(data["schema_version"], MechanicalConfiguration.from_dict(data["mechanical"]), SafetyConfiguration.from_dict(data["safety"]), ScanConfiguration.from_dict(data["scan"]), FeasibilityConfiguration.from_dict(data["feasibility"]), ConnectorConfiguration.from_dict(data["connector"]), ClusterHeuristicsConfiguration.from_dict(data["cluster_heuristics"]), GlobalRouteSearchConfiguration.from_dict(data["global_route_search"]), SharedPassConfiguration.from_dict(data["shared_pass"]), FollowUpConfiguration.from_dict(data["follow_up"]), PlanningConfiguration.from_dict(data["planning"]), GazeboSnapshotConfiguration.from_dict(data["gazebo_snapshot"]), perception_spatial_validation, calibration_artifact)
 
 
 @dataclass(frozen=True)
@@ -686,19 +818,27 @@ class RouteSegment:
         _tuple_of_strings(self.covered_ball_ids, "covered_ball_ids"); _unique(self.covered_ball_ids, "covered_ball_ids")
         if not isinstance(self.planned_crossings, tuple) or any(not isinstance(item, PlannedCrossing) for item in self.planned_crossings):
             raise DomainValidationError("planned_crossings must be tuple of PlannedCrossing")
-        if self.type is RouteSegmentType.FUNNEL_PASS:
-            if not self.covered_ball_ids or self.execution_profile.min_speed_mps <= 0: raise DomainValidationError("funnel pass requires covered balls and positive min speed")
+        # A connector may collect too: where its geometry is gentle enough for the
+        # funnel, sweeping a ball in transit saves a whole dedicated pass. Both
+        # collecting kinds obey identical crossing structure; only the terminal
+        # connector stays pure transit.
+        if self.type in (RouteSegmentType.FUNNEL_PASS, RouteSegmentType.CONNECTOR) and (self.covered_ball_ids or self.planned_crossings):
+            if self.type is RouteSegmentType.FUNNEL_PASS and not self.covered_ball_ids: raise DomainValidationError("funnel pass requires covered balls")
+            if self.execution_profile.min_speed_mps <= 0: raise DomainValidationError("collecting segment requires positive min speed")
             crossing_ids = tuple(item.ball_id for item in self.planned_crossings)
             if crossing_ids != self.covered_ball_ids:
                 raise DomainValidationError("planned crossings must exactly match covered ball IDs in order")
             previous_progress = self.progress_start_m
             for crossing in self.planned_crossings:
                 if not self.progress_start_m < crossing.progress_s < self.progress_end_m:
-                    raise DomainValidationError("planned crossing must be inside funnel-pass progress interval")
+                    raise DomainValidationError("planned crossing must be inside the segment progress interval")
                 if crossing.progress_s <= previous_progress:
                     raise DomainValidationError("planned crossings must have strictly increasing progress")
                 previous_progress = crossing.progress_s
-        elif self.covered_ball_ids or self.planned_crossings: raise DomainValidationError("only funnel passes may have covered balls or planned crossings")
+        elif self.type is RouteSegmentType.FUNNEL_PASS:
+            raise DomainValidationError("funnel pass requires covered balls and positive min speed")
+        elif self.covered_ball_ids or self.planned_crossings:
+            raise DomainValidationError("terminal connectors may not have covered balls or planned crossings")
         if self.execution_profile.allow_reversing or self.execution_profile.allow_standalone_rotate: raise DomainValidationError("collection segments cannot reverse or rotate standalone")
     def to_dict(self) -> dict[str, Any]: return {"id": self.id, "type": self.type.value, "path": self.path.to_dict(), "progress_start_m": self.progress_start_m, "progress_end_m": self.progress_end_m, "execution_profile": self.execution_profile.to_dict(), "covered_ball_ids": list(self.covered_ball_ids), "obstacle_constraint": self.obstacle_constraint.to_dict(), "planned_crossings": [item.to_dict() for item in self.planned_crossings]}
     @classmethod

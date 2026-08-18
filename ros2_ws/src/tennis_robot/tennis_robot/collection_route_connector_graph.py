@@ -10,8 +10,19 @@ from dataclasses import dataclass
 from enum import Enum
 import math
 
-from tennis_robot.collection_route_planner_v2 import CourtModel, FunnelPassCandidate, _segment_is_collision_free
-from tennis_robot.collection_route_types import CollectionRouteConfiguration, Pose2D, ScanSnapshot
+from tennis_robot.collection_route_planner_v2 import (
+    CourtModel,
+    FunnelPassCandidate,
+    _effective_capture_half_width,
+    _segment_is_collision_free,
+)
+from tennis_robot.collection_route_types import (
+    CollectionRouteConfiguration,
+    PlannedCrossing,
+    Point2D,
+    Pose2D,
+    ScanSnapshot,
+)
 
 
 _CSC_MODES = ("LSL", "RSR", "LSR", "RSL")
@@ -50,12 +61,29 @@ class ConnectorEdge:
     maximum_curvature_per_m: float | None
     collision_free: bool
     rejection: ConnectorRejectionCode | None
+    # Balls the connector itself sweeps through the funnel on a portion gentle
+    # enough to capture on.  Transit motion that collects is what lets the search
+    # drop a dedicated straight pass for those balls.
+    swept_crossings: tuple[PlannedCrossing, ...] = ()
 
     def __post_init__(self) -> None:
         if self.rejection is None and (self.path is None or not self.collision_free):
             raise ValueError("accepted edge must have collision-free path")
         if self.rejection is not None and self.collision_free:
             raise ValueError("rejected edge cannot report collision-free")
+        if not isinstance(self.swept_crossings, tuple) or any(
+            not isinstance(item, PlannedCrossing) for item in self.swept_crossings
+        ):
+            raise ValueError("swept_crossings must be a tuple of PlannedCrossing")
+        if self.rejection is not None and self.swept_crossings:
+            raise ValueError("rejected edge cannot sweep balls")
+        progresses = [crossing.progress_s for crossing in self.swept_crossings]
+        if any(later <= earlier for earlier, later in zip(progresses, progresses[1:])):
+            raise ValueError("swept crossings must be strictly increasing in progress")
+
+    @property
+    def swept_ball_ids(self) -> tuple[str, ...]:
+        return tuple(crossing.ball_id for crossing in self.swept_crossings)
 
 
 @dataclass(frozen=True)
@@ -86,26 +114,213 @@ def build_directed_candidate_graph(
     ordered_candidates = tuple(sorted(candidates, key=lambda item: (item.ball_id, item.heading_rad, item.entry_pose.x_m, item.entry_pose.y_m, item.exit_pose.x_m, item.exit_pose.y_m, item.covered_ball_ids)))
     pass_nodes = tuple((f"pass:{candidate.ball_id}:{index}", candidate) for index, candidate in enumerate(ordered_candidates))
     edges: list[ConnectorEdge] = []
+    # Only balls that survived per-ball feasibility may be swept in transit. A
+    # ball with no pass candidate is keepout or otherwise unreachable, and
+    # driving a connector through it is precisely what must not happen.
+    eligible = {ball_id for candidate in ordered_candidates for ball_id in candidate.covered_ball_ids}
+    balls = tuple(ball for ball in snapshot.balls if ball.ball_id in eligible)
     for node_id, candidate in pass_nodes:
-        edges.extend(_connector_edges("start", snapshot.robot_pose_at_scan, node_id, candidate.entry_pose, court, configuration))
+        edges.extend(_connector_edges("start", snapshot.robot_pose_at_scan, node_id, candidate.entry_pose, court, configuration, balls))
     for source_id, source in pass_nodes:
         for target_id, target in pass_nodes:
             if source_id == target_id:
                 continue
-            edges.extend(_connector_edges(source_id, source.exit_pose, target_id, target.entry_pose, court, configuration))
+            edges.extend(_connector_edges(source_id, source.exit_pose, target_id, target.entry_pose, court, configuration, balls))
     return DirectedCandidateGraph(pass_nodes, tuple(edges))
 
 
-def _connector_edges(source_id, source_pose, target_id, target_pose, court, configuration):
+def _path_intervals(poses):
+    """(start_progress, length, local_turn_radius) per densified path interval."""
+    intervals = []
+    progress = 0.0
+    for first, second in zip(poses, poses[1:]):
+        length = math.hypot(second.x_m - first.x_m, second.y_m - first.y_m)
+        if length <= _EPSILON:
+            continue
+        turn = abs(_wrap_angle(second.yaw_rad - first.yaw_rad))
+        radius = length / turn if turn > _EPSILON else math.inf
+        intervals.append((progress, length, radius, first, second))
+        progress += length
+    return intervals, progress
+
+
+def _window_is_capture_grade(intervals, start_m, end_m, minimum_radius):
+    """Is every interval overlapping [start_m, end_m] gentle enough to capture on?"""
+    if start_m < -_EPSILON or end_m <= start_m:
+        return False
+    covered_to = start_m
+    for begin, length, radius, _, _ in intervals:
+        finish = begin + length
+        if finish <= start_m + _EPSILON or begin >= end_m - _EPSILON:
+            continue
+        if radius + _EPSILON < minimum_radius:
+            return False
+        covered_to = max(covered_to, finish)
+    return covered_to + _EPSILON >= end_m
+
+
+def swept_crossings_for_path(path, balls, configuration):
+    """Balls the funnel would swallow while the robot drives this connector.
+
+    A ball qualifies only where the connector is gentle enough that the
+    pure-pursuit heading lead stays inside the capture gate, and only when the
+    whole run-in/run-out window around it is equally gentle and still inside
+    this connector -- the tracking core requires the run-out to fit within the
+    segment that owns the crossing.
+    """
+    mechanical = configuration.mechanical
+    minimum_radius = configuration.connector.capture_minimum_turn_radius_m
+    run_in, run_out = mechanical.minimum_run_in_m, mechanical.minimum_run_out_m
+    intervals, total = _path_intervals(path.poses)
+    if not intervals:
+        return ()
+
+    found: dict[str, tuple[float, PlannedCrossing]] = {}
+    for begin, length, radius, first, second in intervals:
+        if radius + _EPSILON < minimum_radius:
+            continue
+        dx, dy = second.x_m - first.x_m, second.y_m - first.y_m
+        squared = dx * dx + dy * dy
+        if squared <= _EPSILON:
+            continue
+        for ball in balls:
+            offset_x = ball.position.x_m - first.x_m
+            offset_y = ball.position.y_m - first.y_m
+            ratio = (offset_x * dx + offset_y * dy) / squared
+            if ratio < 0.0 or ratio > 1.0:
+                continue
+            lateral = abs(offset_x * (-dy) + offset_y * dx) / math.sqrt(squared)
+            heading = first.yaw_rad + ratio * _wrap_angle(second.yaw_rad - first.yaw_rad)
+            if lateral > _effective_capture_half_width(ball, heading, configuration):
+                continue
+            progress = begin + ratio * length
+            if not _window_is_capture_grade(
+                intervals, progress - run_in, min(progress + run_out, total), minimum_radius
+            ):
+                continue
+            if progress - run_in < -_EPSILON or total - progress + _EPSILON < run_out:
+                continue
+            existing = found.get(ball.ball_id)
+            if existing is None or lateral < existing[0]:
+                found[ball.ball_id] = (
+                    lateral,
+                    PlannedCrossing(
+                        ball.ball_id,
+                        Point2D(ball.position.x_m, ball.position.y_m),
+                        progress,
+                        _wrap_angle(heading),
+                        lateral,
+                    ),
+                )
+    ordered = sorted((item[1] for item in found.values()), key=lambda crossing: crossing.progress_s)
+    # The tracking core rejects non-increasing crossing progress outright.
+    deduped: list[PlannedCrossing] = []
+    for crossing in ordered:
+        if deduped and crossing.progress_s <= deduped[-1].progress_s + _EPSILON:
+            continue
+        deduped.append(crossing)
+    return tuple(deduped)
+
+
+def _wrap_angle(value: float) -> float:
+    return math.atan2(math.sin(value), math.cos(value))
+
+
+@dataclass(frozen=True)
+class ConnectorAttempt:
+    """The outcome of linking one ordered pose pair, evidence included.
+
+    A bare ``None`` for "no connector" throws away *why*, and the reason is what
+    separates a proven turning-geometry failure from an unexplored one when a
+    ball's outcome has to be explained (debug log #57, finding 8).  Every
+    rejection the CSC family produced is kept.
+    """
+
+    edge: ConnectorEdge | None
+    rejections: tuple[ConnectorRejectionCode, ...]
+
+    @property
+    def feasible(self) -> bool:
+        return self.edge is not None
+
+    @property
+    def sole_rejection(self) -> ConnectorRejectionCode | None:
+        """The single reason every alternative failed, when they agree."""
+        distinct = set(self.rejections)
+        return distinct.pop() if len(distinct) == 1 else None
+
+
+def link_poses(
+    *,
+    source_id: str,
+    source_pose: Pose2D,
+    target_id: str,
+    target_pose: Pose2D,
+    court: CourtModel,
+    configuration: CollectionRouteConfiguration,
+    balls,
+) -> ConnectorAttempt:
+    """Shortest accepted CSC between two poses, with the rejections it saw.
+
+    ``balls`` is required rather than defaulted: a connector sweeps the balls it
+    drives over, and a caller that forgets to pass them silently plans to run a
+    ball down and then collect it again later, which is how connector collection
+    was lost once already.  Pass ``()`` only where sweeping is genuinely not
+    wanted.
+    """
+    edges = _connector_edges(
+        source_id, source_pose, target_id, target_pose, court, configuration, balls
+    )
+    accepted = [edge for edge in edges if edge.rejection is None and edge.path is not None]
+    if accepted:
+        return ConnectorAttempt(min(accepted, key=lambda edge: (edge.path.length_m, edge.edge_id)), ())
+    return ConnectorAttempt(None, tuple(edge.rejection for edge in edges if edge.rejection is not None))
+
+
+def best_connector(*, source_id: str, source_pose: Pose2D, target_id: str, target_pose: Pose2D, court: CourtModel, configuration: CollectionRouteConfiguration, balls=()) -> ConnectorEdge | None:
+    """Shortest accepted CSC between two poses, or None if none is feasible."""
+    return link_poses(
+        source_id=source_id, source_pose=source_pose, target_id=target_id,
+        target_pose=target_pose, court=court, configuration=configuration, balls=balls,
+    ).edge
+
+
+def _exceeds_length_bound(source_pose, target_pose, configuration) -> bool:
+    """Is the straight-line distance already longer than a connector may be?
+
+    Any path between two poses is at least as long as the straight line between
+    them, so a pair further apart than ``max_connector_length_m`` cannot be
+    linked by any connector of any mode or radius.  Checking that first skips
+    the Dubins solve for pairs whose verdict is already settled -- on the real
+    scan, 46% of all alternatives were rejected on length after being computed.
+    """
+    span = math.hypot(target_pose.x_m - source_pose.x_m, target_pose.y_m - source_pose.y_m)
+    return span > configuration.connector.max_connector_length_m + _EPSILON
+
+
+def _connector_edges(source_id, source_pose, target_id, target_pose, court, configuration, balls=()):
+    minimum = configuration.mechanical.minimum_turning_radius_m
+    if _exceeds_length_bound(source_pose, target_pose, configuration):
+        # Every alternative would come back LENGTH_REJECTED; report that once
+        # rather than deriving it twelve times.  Callers read the set of causes,
+        # never how many times each was produced.
+        return (
+            ConnectorEdge(
+                f"{source_id}->{target_id}:length-bound", source_id, target_id, None, None,
+                False, ConnectorRejectionCode.LENGTH_REJECTED,
+            ),
+        )
     return tuple(
-        _build_edge(source_id, source_pose, target_id, target_pose, mode, court, configuration)
+        _build_edge(source_id, source_pose, target_id, target_pose, mode, minimum * multiplier, multiplier, court, configuration, balls)
+        for multiplier in configuration.connector.sweep_radius_multipliers
         for mode in _CSC_MODES
     )
 
 
-def _build_edge(source_id, source, target_id, target, mode, court, configuration):
-    edge_id = f"{source_id}->{target_id}:{mode}"
-    radius = configuration.mechanical.minimum_turning_radius_m
+def _build_edge(source_id, source, target_id, target, mode, radius, multiplier, court, configuration, balls=()):
+    # The tight minimum-radius geometry keeps its original id so a single-radius
+    # configuration produces a byte-identical graph.
+    edge_id = f"{source_id}->{target_id}:{mode}" if multiplier == 1.0 else f"{source_id}->{target_id}:{mode}:x{multiplier:g}"
     normalized = _dubins_parameters(source, target, radius, mode)
     if normalized is None:
         return ConnectorEdge(edge_id, source_id, target_id, None, None, False, ConnectorRejectionCode.TURNING_CONSTRAINT_REJECTED)
@@ -132,7 +347,7 @@ def _build_edge(source_id, source, target_id, target, mode, court, configuration
         return ConnectorEdge(edge_id, source_id, target_id, None, None, False, ConnectorRejectionCode.TURNING_CONSTRAINT_REJECTED)
     if not _path_is_collision_free(path, court, configuration.feasibility.footprint_clearance_radius_m, radius):
         return ConnectorEdge(edge_id, source_id, target_id, path, 1.0 / radius, False, ConnectorRejectionCode.COLLISION_REJECTED)
-    return ConnectorEdge(edge_id, source_id, target_id, path, 1.0 / radius, True, None)
+    return ConnectorEdge(edge_id, source_id, target_id, path, 1.0 / radius, True, None, swept_crossings_for_path(path, balls, configuration))
 
 
 def _dubins_parameters(start: Pose2D, target: Pose2D, radius: float, mode: str):

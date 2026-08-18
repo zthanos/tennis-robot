@@ -7,7 +7,7 @@ import unittest
 from dataclasses import dataclass
 
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
+from geometry_msgs.msg import PoseStamped, TransformStamped, TwistStamped
 from launch import LaunchDescription
 from launch_ros.actions import Node
 import launch_testing
@@ -69,7 +69,9 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         cls.pose_x = 4.0
         cls.pose_timer = cls.node.create_timer(0.02, cls.publish_pose)
         cls.cmd = []
-        cls.node.create_subscription(Twist, '/cmd_vel', lambda msg: cls.cmd.append(msg), 10)
+        # nav2_params.yaml sets enable_stamped_cmd_vel (Jazzy): controller_server
+        # publishes TwistStamped.  Unwrap so the assertions stay velocity-only.
+        cls.node.create_subscription(TwistStamped, '/cmd_vel', lambda msg: cls.cmd.append(msg.twist), 10)
         cls.states = []
         cls.node.create_subscription(CollectionControllerState, '/CollectionFollowPath/state', lambda msg: cls.states.append(msg), 10)
         cls.load = cls.node.create_client(LoadCollectionExecutionContext, '/CollectionFollowPath/load_collection_execution_context')
@@ -209,7 +211,7 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         self.set_pose(4.0)
         path = self.route(); load = LoadCollectionExecutionContext.Request(); load.context = self.context(path)
         self.assertTrue(self.call(self.load, load).accepted)
-        goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'
+        goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'; goal.goal_checker_id = 'collection_goal_checker'
         sent = self.send_goal(goal)
         result = sent.get_result_async(); rclpy.spin_until_future_complete(self.node, result, timeout_sec=10.0)
         self.assertEqual(result.result().status, 4)  # action succeeded at terminal pose
@@ -219,7 +221,7 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
 
     def test_missing_context_and_hash_mismatch_do_not_fallback_to_rpp(self):
         self.set_pose(4.0)
-        path = self.route(); goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'
+        path = self.route(); goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'; goal.goal_checker_id = 'collection_goal_checker'
         sent = self.send_goal(goal)
         result = sent.get_result_async(); rclpy.spin_until_future_complete(self.node, result, timeout_sec=10.0)
         self.assertNotEqual(result.result().status, 4)
@@ -228,7 +230,7 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         self.set_pose_and_wait(0.0); self.cmd.clear(); self.states.clear()
         path = self.route(); load = LoadCollectionExecutionContext.Request(); load.context = self.context(path)
         self.assertTrue(self.call(self.load, load).accepted)
-        goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'
+        goal = FollowPath.Goal(); goal.path = path; goal.controller_id = 'CollectionFollowPath'; goal.goal_checker_id = 'collection_goal_checker'
         sent = self.send_goal(goal); self.spin()
         self.wait_for_state(CollectionControllerState.EXECUTING, digest=path_hash(path))
         hold = SetCollectionSafetyHold.Request(); hold.plan_id = 'c3-plan'; hold.path_sha256 = path_hash(path); hold.hold = True
@@ -244,17 +246,36 @@ class TestCollectionControllerServerIsolation(unittest.TestCase):
         self.set_pose_and_wait(0.0); self.cmd.clear()
         path = self.route(); load = LoadCollectionExecutionContext.Request(); load.context = self.context(path)
         self.assertTrue(self.call(self.load, load).accepted)
-        collection = FollowPath.Goal(); collection.path = path; collection.controller_id = 'CollectionFollowPath'
+        collection = FollowPath.Goal(); collection.path = path; collection.controller_id = 'CollectionFollowPath'; collection.goal_checker_id = 'collection_goal_checker'
         sent = self.send_goal(collection); self.spin()
         self.assertTrue(self.cmd)
         self.assertTrue(all(command.linear.x >= 0.0 for command in self.cmd))
         self.assertTrue(all(not (command.linear.x == 0.0 and command.angular.z != 0.0) for command in self.cmd))
         self.cleanup_collection_goal(self.goal_registry[-1])
-        self.set_pose_and_wait(4.0)
-        survey = FollowPath.Goal(); survey.path = path; survey.controller_id = 'FollowPath'
-        sent = self.send_goal(survey)
-        result = sent.get_result_async(); rclpy.spin_until_future_complete(self.node, result, timeout_sec=10.0)
-        self.assertEqual(result.result().status, 4)
+        # Survey control must run with no collection execution context loaded.
+        # The robot stays at the start of the plan: this harness publishes a
+        # fixed pose and never moves, and RPP — which prunes the plan as the
+        # robot advances — refuses a plan the robot is already parked at the end
+        # of ("Resulting plan has 0 poses in it").  Reaching a goal needs a
+        # robot with dynamics, so the contract asserted here is the one this
+        # test is named for: RPP accepts the goal and computes velocity
+        # commands without any context.
+        self.set_pose_and_wait(0.0)
+        self.cmd.clear()
+        survey = FollowPath.Goal(); survey.path = path; survey.controller_id = 'FollowPath'; survey.goal_checker_id = 'general_goal_checker'
+        survey_handle = self.send_goal(survey)
+        self.spin(0.5)
+        self.assertTrue(self.cmd, 'survey FollowPath produced no command without a context')
+        survey_result = survey_handle.get_result_async()
+        rclpy.spin_until_future_complete(self.node, survey_result, timeout_sec=1.0)
+        self.assertIsNone(
+            survey_result.result(),
+            'survey FollowPath terminated early instead of following the plan',
+        )
+        cancel = survey_handle.cancel_goal_async()
+        rclpy.spin_until_future_complete(self.node, cancel, timeout_sec=3.0)
+        rclpy.spin_until_future_complete(self.node, survey_result, timeout_sec=3.0)
+        self.goal_registry.pop()
         names = [name.lower() for name, _ in self.node.get_topic_names_and_types()]
         self.assertFalse(any('backup' in name or 'spin' in name or 'recovery' in name for name in names))
         mismatch = self.route(); mismatch.poses[-1].pose.position.x = 3.0

@@ -40,11 +40,19 @@ import message_filters
 import numpy as np
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 
 from tennis_robot.ball_detector import load_ball_detector
+from tennis_robot.court_scene_detector import (
+    SemanticConfirmation,
+    fuse_court_scene_detections,
+    load_court_scene_detector,
+    select_primary_observation,
+)
 from tennis_robot.perception import (
+    ObstacleDetection,
     build_survey_vision,
     camera_frame_position,
     estimate_depth_ball_observation,
@@ -63,7 +71,7 @@ CAMERA_FOV_RAD = float(os.getenv("CAMERA_FOV_RAD", str(math.radians(60))))
 CAMERA_FRAME_ID = os.getenv("CAMERA_FRAME_ID", "camera_link_optical_frame")
 MAX_PUBLISHED_BALLS = int(os.getenv("PERCEPTION_MAX_BALLS", "8"))
 RGB_DEPTH_SYNC_SLOP_S = float(os.getenv("RGB_DEPTH_SYNC_SLOP_S", "0.05"))
-RGB_DEPTH_SYNC_QUEUE_SIZE = int(os.getenv("RGB_DEPTH_SYNC_QUEUE_SIZE", "10"))
+RGB_DEPTH_SYNC_QUEUE_SIZE = int(os.getenv("RGB_DEPTH_SYNC_QUEUE_SIZE", "3"))
 
 
 class PerceptionNode(Node):
@@ -72,6 +80,12 @@ class PerceptionNode(Node):
 
         # Primary perception: neural detector emulating the OAK-D on-device AI.
         self._detector = load_ball_detector(logger=self.get_logger())
+        self._court_scene_detector = load_court_scene_detector(
+            logger=self.get_logger()
+        )
+        self._court_scene_confirmation = SemanticConfirmation(
+            int(os.getenv("COURT_SCENE_CONFIRM_FRAMES", "3"))
+        )
         runtime = load_spatial_calibration_runtime(
             os.getenv("PERCEPTION_COVARIANCE_CALIBRATION_ARTIFACT"),
             expected_platform=os.getenv("PERCEPTION_CALIBRATION_PLATFORM", "oak_d"),
@@ -85,11 +99,19 @@ class PerceptionNode(Node):
         self._spatial_targets_artifact_id = runtime.artifact_id
         self._spatial_targets_artifact_version = runtime.artifact_version
 
+        # Camera input is volatile sensor data: keep only the newest acquisition
+        # and never apply reliable-delivery backpressure to Gazebo.  Timestamp
+        # matching still happens below; no RGB frame is fused with stale depth.
+        camera_qos = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+        )
         self._rgb_sub = message_filters.Subscriber(
-            self, Image, "/camera/image_raw", qos_profile=1
+            self, Image, "/camera/image_raw", qos_profile=camera_qos
         )
         self._depth_sub = message_filters.Subscriber(
-            self, Image, "/camera/depth", qos_profile=1
+            self, Image, "/camera/depth", qos_profile=camera_qos
         )
         self._rgb_depth_sync = message_filters.ApproximateTimeSynchronizer(
             [self._rgb_sub, self._depth_sub],
@@ -111,6 +133,7 @@ class PerceptionNode(Node):
             f"perception_node started (detector={self._detector.name}, "
             f"fov={CAMERA_FOV_RAD:.3f} rad, "
             f"rgb_depth_slop={RGB_DEPTH_SYNC_SLOP_S:.3f}s, "
+            f"rgb_depth_queue={RGB_DEPTH_SYNC_QUEUE_SIZE}, "
             f"spatial_targets_healthy={self._spatial_targets_healthy}, "
             f"spatial_targets_health_reason={self._spatial_targets_health_reason}, "
             f"calibration_id={self._spatial_targets_artifact_id}, "
@@ -137,7 +160,19 @@ class PerceptionNode(Node):
 
         self._publish_detection_array(fused, image_msg.header.stamp, depth_msg.header.stamp)
         self._publish_spatial_diagnostics(fused, image_msg.header.stamp)
-        self._publish_survey_vision(frame, depth)
+        court_scene_detections = self._court_scene_detector.detect(frame)
+        court_scene_observations = fuse_court_scene_detections(
+            court_scene_detections,
+            depth,
+            image_msg.width,
+            image_msg.height,
+            CAMERA_FOV_RAD,
+            depth_min_m=DEPTH_MIN_RANGE,
+            depth_max_m=DEPTH_MAX_RANGE,
+        )
+        self._publish_survey_vision(
+            frame, depth, court_scene_observations, image_msg.header.stamp
+        )
 
     # -- decoding -----------------------------------------------------------
     def _decode_image(self, msg: Image) -> np.ndarray | None:
@@ -277,9 +312,37 @@ class PerceptionNode(Node):
         message.data = json.dumps(payload, sort_keys=True)
         self._pub_diagnostics.publish(message)
 
-    def _publish_survey_vision(self, frame: np.ndarray, depth: np.ndarray) -> None:
-        sv = build_survey_vision(frame, depth, DEPTH_MIN_RANGE, DEPTH_MAX_RANGE)
+    def _publish_survey_vision(
+        self, frame: np.ndarray, depth: np.ndarray, observations: list, stamp
+    ) -> None:
+        primary = select_primary_observation(observations, frame.shape[1])
+        candidate_label = (
+            primary.detection.label if primary is not None else None
+        )
+        confirmed_label = self._court_scene_confirmation.update(candidate_label)
+        neural_obstacle = (
+            ObstacleDetection(
+                confirmed_label,
+                primary.detection.confidence,
+            )
+            if primary is not None and confirmed_label is not None
+            else None
+        )
+        # Court line/junction geometry remains available to legacy survey
+        # consumers, but net/fence semantics come exclusively from the neural
+        # model. There is no classical obstacle-classification fallback.
+        sv = build_survey_vision(
+            frame,
+            depth,
+            DEPTH_MIN_RANGE,
+            DEPTH_MAX_RANGE,
+            obstacle=neural_obstacle,
+            use_classical_obstacle_detection=False,
+        )
         payload = {
+            "stamp_s": float(stamp.sec) + float(stamp.nanosec) * 1e-9,
+            "image_width": int(frame.shape[1]),
+            "image_height": int(frame.shape[0]),
             "line_detected": sv.line_detected,
             "line_offset_m": sv.line_offset_m,
             "line_heading_error_rad": sv.line_heading_error_rad,
@@ -291,6 +354,34 @@ class PerceptionNode(Node):
             "right_m": sv.right_m,
             "valid_count": sv.valid_count,
             "obstacle_class": sv.obstacle_class,
+            "obstacle_source": "neural_court_scene",
+            "obstacle_candidate_class": candidate_label,
+            "obstacle_confidence": (
+                primary.detection.confidence if primary is not None else 0.0
+            ),
+            "obstacle_distance_m": (
+                primary.distance_m if primary is not None else None
+            ),
+            "obstacle_bearing_rad": (
+                primary.bearing_rad if primary is not None else None
+            ),
+            "court_scene_detections": [
+                {
+                    "class_id": observation.detection.class_id,
+                    "label": observation.detection.label,
+                    "confidence": observation.detection.confidence,
+                    "bbox": {
+                        "x": observation.detection.x,
+                        "y": observation.detection.y,
+                        "width": observation.detection.width,
+                        "height": observation.detection.height,
+                    },
+                    "distance_m": observation.distance_m,
+                    "bearing_rad": observation.bearing_rad,
+                    "valid_depth_count": observation.valid_depth_count,
+                }
+                for observation in observations
+            ],
             "junction_type": sv.junction_type,
             "junction_distance_m": sv.junction_distance_m,
             "junction_bearing_rad": sv.junction_bearing_rad,

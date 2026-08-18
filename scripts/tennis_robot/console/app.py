@@ -183,7 +183,14 @@ class ConsoleApp:
     # ------------------------------------------------------------------
     # diagnostics (assembles everything for the dashboard)
     # ------------------------------------------------------------------
-    def build_diagnostics(self) -> dict[str, object]:
+    def build_diagnostics(self, view: str | None = None) -> dict[str, object]:
+        """Build the live UI document with view-scoped bulk geometry.
+
+        The 1 Hz core status is shared by every view.  The persisted 2,000-point
+        robot trail and live survey point clouds are useful only to the Survey
+        workspace; repeating them in Collection/Diagnostics created large TCP
+        bursts on the mesh.  Survey still receives the complete data.
+        """
         history = self.command_store.read_history(200)
         by_mode = Counter(str(row.get("mode", "unknown")) for row in history)
         latest_by_mode: dict[str, dict[str, object]] = {}
@@ -205,13 +212,25 @@ class ConsoleApp:
             })
 
         launch_status = self.ros.survey_status()
-        return {
+        live_survey = self.survey.read_live_survey(launch_status)
+        include_survey_geometry = view == "survey"
+        if not include_survey_geometry:
+            live_survey = {
+                key: value
+                for key, value in live_survey.items()
+                if key not in {"map_points", "navigation_points"}
+            }
+        diagnostics = {
             "generated_at": time.time(),
+            "transport": {
+                "profile": "view_scoped/v1",
+                "view": view or "dashboard",
+                "survey_geometry_included": include_survey_geometry,
+            },
             "command": self.command_store.read().to_mapping(),
             "robot": robot_status,
-            "robot_path": self.path.read(),
             "court_boundary": self._diag_court_boundary(),
-            "court_survey_live": self.survey.read_live_survey(launch_status),
+            "court_survey_live": live_survey,
             "court_survey_launch": launch_status,
             "obstacle_runs": self.db.obstacle_runs(20),
             "history": history[-50:],
@@ -221,6 +240,15 @@ class ConsoleApp:
                 "latest_by_mode": latest_by_mode,
             },
         }
+        if include_survey_geometry:
+            full_path = self.path.read()
+            diagnostics["robot_path"] = self.path.display_sample(full_path)
+            diagnostics["robot_path_meta"] = {
+                "total_points": len(full_path),
+                "display_points": len(diagnostics["robot_path"]),
+                "full_endpoint": "/api/path",
+            }
+        return diagnostics
 
     def _diag_court_boundary(self) -> dict | None:
         """Read the persisted boundary and, when a survey has completed, import

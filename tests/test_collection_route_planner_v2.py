@@ -15,11 +15,13 @@ from tennis_robot.collection_route_planner_v2 import (
     PlannerInputError,
     PolygonObstacle,
     analyze_snapshot,
+    plan_collection_route,
 )
 from tennis_robot.collection_route_types import (
     BallReasonCode,
     DomainValidationError,
     Point2D,
+    Pose2D,
     PositionCovariance2D,
     ScanSnapshot,
     SnapshotBall,
@@ -66,6 +68,33 @@ def horizontal_boundary(kind="net"):
     return obstacle(f"{kind}-near", kind, (-4.0, 0.65), (4.0, 0.65), (4.0, 0.75), (-4.0, 0.75))
 
 
+def live_second_run_case(config):
+    model = CourtModel(
+        polygon(
+            (-8.861, -8.729), (25.188, -8.490),
+            (25.065, 8.910), (-8.984, 8.670),
+        ),
+        (
+            # Exact 40 mm net wall built from the surveyed post endpoints.
+            obstacle(
+                "net-live", "net",
+                (8.425, 5.707), (8.505, -5.593),
+                (8.465, -5.593), (8.385, 5.707),
+            ),
+        ),
+    )
+    snapshot = ScanSnapshot(
+        "scan-live-second-run", FAKE_TIME_S, "map", Pose2D(1.958, -0.067, 3.1204),
+        (
+            SnapshotBall("turn", Point2D(6.064, -0.678), 0.95, PositionCovariance2D(0.0000645, 0.0, 0.0000645)),
+            SnapshotBall("net-a", Point2D(8.018, -0.690), 0.95, PositionCovariance2D(0.0002695, 0.0, 0.0002695)),
+            SnapshotBall("net-b", Point2D(8.086, 1.744), 0.95, PositionCovariance2D(0.0002180, 0.0, 0.0002180)),
+        ),
+        config,
+    )
+    return snapshot, model
+
+
 def test_free_ball_returns_all_feasible_straight_candidates_with_positive_corridor():
     config = configuration()
     feasibility = result(config, court())
@@ -81,6 +110,95 @@ def test_ball_inside_inflated_keepout_is_deterministically_unreachable():
     feasibility = result(configuration(), model)
     assert feasibility.candidates == ()
     assert feasibility.unreachable_reason is BallReasonCode.KEEPOUT
+
+
+def test_net_keepout_ball_gets_parallel_boundary_contact_passes():
+    config = configuration()
+    # The ball is 0.35 m from the net: inside the ordinary 0.50 m keepout.
+    # Moving the route centreline one 0.205 m funnel-mouth half-width away
+    # leaves the complete pass outside that same unchanged 0.50 m keepout.
+    net = obstacle(
+        "net-contact", "net",
+        (-4.0, 0.35), (4.0, 0.35), (4.0, 0.39), (-4.0, 0.39),
+    )
+    feasibility = result(config, court(net))
+
+    assert feasibility.reachable
+    assert feasibility.unreachable_reason is None
+    assert feasibility.candidates
+    assert all(candidate.boundary_recovery for candidate in feasibility.candidates)
+    assert all(abs(math.sin(candidate.heading_rad)) < 1e-9 for candidate in feasibility.candidates)
+    assert all(candidate.crossing_positions == (Point2D(0.0, 0.0),) for candidate in feasibility.candidates)
+    assert all(candidate.crossing.y_m == pytest.approx(-0.205) for candidate in feasibility.candidates)
+
+
+def test_boundary_contact_pass_does_not_relax_the_canonical_keepout():
+    config = configuration()
+    # Even the full contact offset cannot put the centreline outside the
+    # canonical 0.50 m swept disk, so the target remains unreachable.
+    net = obstacle(
+        "net-too-close", "net",
+        (-4.0, 0.15), (4.0, 0.15), (4.0, 0.19), (-4.0, 0.19),
+    )
+    feasibility = result(config, court(net))
+
+    assert feasibility.candidates == ()
+    assert feasibility.unreachable_reason is BallReasonCode.KEEPOUT
+
+
+def test_boundary_recovery_never_bypasses_an_unrelated_static_keepout():
+    config = configuration()
+    net = obstacle(
+        "net-contact", "net",
+        (-4.0, 0.35), (4.0, 0.35), (4.0, 0.39), (-4.0, 0.39),
+    )
+    bench = obstacle(
+        "bench-near", "bench",
+        (0.30, -0.10), (0.40, -0.10), (0.40, 0.10), (0.30, 0.10),
+    )
+    feasibility = result(config, court(net, bench))
+
+    assert feasibility.candidates == ()
+    assert feasibility.unreachable_reason is BallReasonCode.KEEPOUT
+
+
+def test_live_second_run_net_targets_receive_boundary_recovery_candidates():
+    """Regression for the 2026-08-03 distributed localization run."""
+    config = configuration()
+    snapshot, model = live_second_run_case(config)
+
+    by_id = {item.ball_id: item for item in analyze_snapshot(snapshot, model, config)}
+    assert by_id["turn"].reachable
+    assert by_id["net-a"].reachable
+    assert by_id["net-b"].reachable
+    assert all(candidate.boundary_recovery for candidate in by_id["net-a"].candidates)
+    assert all(candidate.boundary_recovery for candidate in by_id["net-b"].candidates)
+
+
+def test_live_second_run_geometry_has_full_forward_only_route_with_u_turn_cap():
+    """The exact start/targets need a safe forward U-turn, not a smaller radius."""
+    base = configuration()
+    config = replace(
+        base,
+        mechanical=replace(base.mechanical, minimum_turning_radius_m=1.25),
+        connector=replace(
+            base.connector,
+            max_connector_arc_angle_rad=3.0,
+            max_connector_total_turn_rad=6.0,
+        ),
+        planning=replace(base.planning, maximum_candidate_count=200),
+        global_route_search=replace(base.global_route_search, max_search_expansions=3000),
+    )
+    snapshot, model = live_second_run_case(config)
+
+    plan = plan_collection_route(
+        snapshot=snapshot, court=model, configuration=config
+    ).plan
+    assert plan.planning_status.value == "feasible"
+    assert {item.ball_id for item in plan.ball_results if item.status.value == "covered"} == {
+        "turn", "net-a", "net-b",
+    }
+    assert all(item.reason_code is not BallReasonCode.TURN_RADIUS for item in plan.ball_results)
 
 
 def test_entry_segment_collision_is_no_entry():

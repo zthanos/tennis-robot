@@ -19,6 +19,7 @@ from tennis_robot.collection_execution_context_builder import ControllerTuning, 
 from tennis_robot.collection_executor_node_factory import (
     CollectionExecutorNodeCache, CollectionExecutorNodeFactory,
     CollectionExecutorNodeFactoryError, CollectionExecutorRosTypes,
+    _planner_audit_sink_from_env,
     scan_pose_from_court_model,
 )
 from tennis_robot.collection_route_planner_v2 import plan_collection_route
@@ -88,12 +89,20 @@ class Node:
             "collection_route.safety_max_scan_age_s": 0.5,
             "collection_route.controller_id": "CollectionFollowPath",
             "collection_route.goal_checker_id": "collection_goal_checker",
+            "collection_route.drive_viewpoint_spacing_m": 0.75,
+            "collection_route.drive_known_merge_radius_m": 0.50,
         }
         self.clients, self.publishers, self.subscriptions = [], [], []
     def get_parameter(self, name):
         if name not in self.params: raise KeyError(name)
         return SimpleNamespace(value=self.params[name])
     def get_clock(self): return SimpleNamespace(now=lambda: ClockNow())
+    # A real rclpy Node always has one; the fake needs it too or code that logs
+    # at construction is untestable here for the wrong reason.
+    def get_logger(self):
+        return SimpleNamespace(
+            info=lambda *_: None, warning=lambda *_: None, error=lambda *_: None
+        )
     def create_client(self, service_type, topic):
         client = Client(); self.clients.append((topic, client)); return client
     def create_publisher(self, message_type, topic, qos):
@@ -146,7 +155,7 @@ class ActionClient:
 
 ROS = CollectionExecutorRosTypes(
     Twist, Pose, PoseStamped, PathMsg, FollowPath, ActionClient, GoalStatus,
-    Context, Segment, Profile, Crossing, State, Load, Service, Service,
+    Context, Segment, Profile, Crossing, State, Load, Service, Service, Service,
     lambda seconds: seconds, lambda node, future, timeout_sec: None,
 )
 
@@ -196,10 +205,23 @@ def curved_plan():
 def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory):
     built, node, cache = factory
     assert built.build() is not None
-    assert all(getattr(built.handles, field.name) is not None for field in fields(built.handles))
+    optional_names = {
+        "entry_beam_provider",
+        "confirmed_beam_provider",
+        "planner_audit_sink",
+        # Env-gated like planner_audit_sink: absent unless
+        # COLLECTION_EXECUTION_TRACE_DIR asks for a trace.
+        "execution_trace",
+    }
+    assert all(
+        getattr(built.handles, field.name) is not None
+        for field in fields(built.handles)
+        if field.name not in optional_names
+    )
     callable_names = {"telemetry_sink", "scan_provider", "yaw_provider", "frame_provider", "cmd_vel",
                       "load_sender", "load_outcome_provider", "follow_path_sender",
-                      "goal_status_provider", "state_provider", "hold_sender", "finalize_sender"}
+                      "goal_status_provider", "state_provider", "hold_sender", "finalize_sender",
+                      "execution_plan_transformer"}
     assert all(callable(getattr(built.handles, name)) for name in callable_names)
     assert built.handles.scan_provider() == "scan"
     assert built.handles.yaw_provider() == 0.2
@@ -211,6 +233,7 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     assert node.publishers[0][1].messages[-1].angular.z == 0.75
     assert {topic for topic, _ in node.clients} == {
         "/CollectionFollowPath/load_collection_execution_context",
+        "/CollectionFollowPath/reset_collection_execution_context",
         "/CollectionFollowPath/set_collection_safety_hold",
         "/CollectionFollowPath/finalize_collection_execution_context",
     }
@@ -218,6 +241,20 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     session = built.handles.scan_snapshot_session
     assert callable(session.forward_frame) and callable(session.finalize)
     assert session.builder.robot_pose_at_scan == Pose2D(*built.config.scan_pose_xy_yaw)
+    # The route is executed in the frame it was planned in: the balls are in
+    # `map`, and an odom-frozen corridor slides off them as localization
+    # corrects (debug log #72).
+    source_plan = curved_plan()
+    execution_plan = built.handles.execution_plan_transformer(source_plan)
+    assert execution_plan.map_frame == "map"
+    assert execution_plan is source_plan
+    diagnostics = built.execution_frame_diagnostics
+    assert diagnostics["plan_id"] == source_plan.plan_id
+    assert diagnostics["source_frame"] == "map"
+    assert diagnostics["target_frame"] == "map"
+    assert diagnostics["execution_frame_policy"] == "map_anchored"
+    assert diagnostics["source_crossings"]
+    assert diagnostics["source_crossings"] == diagnostics["execution_crossings"]
     cache.robot_x_m, cache.robot_y_m, cache.robot_yaw_rad = 11.0, -4.0, -0.3
     assert session._robot_pose_provider() == Pose2D(11.0, -4.0, -0.3)
 
@@ -237,13 +274,13 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     assert len(goal.path.poses) == len(values.follow_path_poses)
     assert built.handles.goal_status_provider() == "rejected"
     built.handles.hold_sender(plan_id="plan", path_sha256="sha", hold=True)
-    assert vars(node.clients[1][1].requests[-1]) == {
+    assert vars(node.clients[2][1].requests[-1]) == {
         "plan_id": "plan", "path_sha256": "sha", "hold": True,
     }
     assert built.handles.finalize_sender(
         plan_id="plan", path_sha256="sha", action_outcome=0
     ) is True
-    assert vars(node.clients[2][1].requests[-1]) == {
+    assert vars(node.clients[3][1].requests[-1]) == {
         "plan_id": "plan", "path_sha256": "sha", "action_outcome": 0,
     }
     profile_verdict = SimpleNamespace(
@@ -260,6 +297,9 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
         "active_crossing_progress_s": 1.1, "measured_speed_mps": 0.8,
         "lateral_error_m": 0.01, "heading_error_rad": 0.02,
         "profile_verdict": profile_verdict, "failure_reason": 0,
+        # Terminal diagnosis published for terminal_not_reached triage.
+        "terminal_progress_s": 4.0, "terminal_distance_m": 0.12,
+        "terminal_ready": True,
     }
     node.subscriptions[0].callback(SimpleNamespace(**state_values))
     assert built.handles.state_provider() == state_values
@@ -279,7 +319,10 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
             "active_crossing_progress_s", "measured_speed_mps",
             "lateral_error_m", "heading_error_rad",
         )
-    } | {"profile_verdict": vars(profile_verdict)}]
+    } | {
+        "observed_sim_time_s": 1.0,
+        "profile_verdict": vars(profile_verdict),
+    }]
 
 
 def test_load_sender_fills_real_context_message_field_for_field(factory):
@@ -290,6 +333,9 @@ def test_load_sender_fills_real_context_message_field_for_field(factory):
         context_activation_timeout_s=10.0,
     )
     built.handles.load_sender(values)
+    assert len(node.clients[1][1].requests) == 1
+    assert len(node.clients[0][1].requests) == 0
+    assert built.handles.load_outcome_provider() == "accepted"
     message = node.clients[0][1].requests[-1].context
     for name in ("context_schema_version", "plan_id", "path_sha256",
                  "context_activation_timeout_s", "terminal_progress_s",
@@ -322,16 +368,101 @@ def test_load_sender_fills_real_context_message_field_for_field(factory):
             {field.name: getattr(crossing, field.name) for field in fields(crossing)}
             for crossing in expected.planned_crossings
         ]
+def test_every_load_resets_controller_context_first(factory):
+    built, node, _ = factory
+    values = build_execution_context(
+        curved_plan(),
+        controller_tuning=ControllerTuning(1.0, 3.0, 10.0, 0.25, 0.05),
+        context_schema_version="collection-execution-context/v1",
+        context_activation_timeout_s=10.0,
+    )
+    built.handles.load_sender(values)
+    assert len(node.clients[1][1].requests) == 1
+    assert len(node.clients[0][1].requests) == 0
     assert built.handles.load_outcome_provider() == "accepted"
+    assert len(node.clients[0][1].requests) == 1
+
+    built.handles.load_sender(values)
+    assert len(node.clients[1][1].requests) == 2
+    assert len(node.clients[0][1].requests) == 1
+    assert built.handles.load_outcome_provider() == "accepted"
+    assert len(node.clients[0][1].requests) == 2
 
 
 def test_scan_pose_is_service_line_center_on_robot_side_with_survey_axes():
     assert scan_pose_from_court_model(BOUNDARY, robot_pose=Pose2D(10.0, -5.0, 0.0)) == pytest.approx(
-        (10.0, -4.4, math.pi / 2.0)
+        (10.0, -4.4, -math.pi / 2.0)
     )
     assert scan_pose_from_court_model(BOUNDARY, robot_pose=Pose2D(10.0, 9.0, 0.0)) == pytest.approx(
-        (10.0, 8.4, -math.pi / 2.0)
+        (10.0, 8.4, math.pi / 2.0)
     )
+
+
+def test_scan_pose_yaw_gives_planner_a_start_edge_into_robot_side_half():
+    from tennis_robot.collection_court_model_builder import build_court_model
+
+    configuration = default_configuration()
+    scan_pose = Pose2D(*scan_pose_from_court_model(
+        BOUNDARY, robot_pose=Pose2D(10.0, -5.0, 0.0)
+    ))
+    snapshot = ScanSnapshot(
+        "scan-facing-robot-half",
+        1.0,
+        "map",
+        scan_pose,
+        (
+            SnapshotBall(
+                "ball",
+                Point2D(10.0, -6.3),
+                0.95,
+                PositionCovariance2D(1e-6, 0.0, 1e-6),
+            ),
+        ),
+        configuration,
+    )
+
+    plan = plan_collection_route(
+        snapshot=snapshot,
+        court=build_court_model(BOUNDARY),
+        configuration=configuration,
+    ).plan
+
+    assert plan.is_executable
+    assert plan.ball_results[0].status.value == "covered"
+
+
+def test_pre_execution_audit_sink_is_opt_in_and_atomic(monkeypatch, tmp_path):
+    messages = []
+    node = SimpleNamespace(
+        get_logger=lambda: SimpleNamespace(
+            info=messages.append,
+            error=messages.append,
+        )
+    )
+    monkeypatch.delenv("COLLECTION_ROUTE_AUDIT_DIR", raising=False)
+    assert _planner_audit_sink_from_env(node) is None
+
+    monkeypatch.setenv("COLLECTION_ROUTE_AUDIT_DIR", str(tmp_path))
+    sink = _planner_audit_sink_from_env(node)
+    snapshot = SimpleNamespace(
+        scan_id="scan/audit:1",
+        to_dict=lambda: {"scan_id": "scan/audit:1", "balls": []},
+    )
+    plan = SimpleNamespace(
+        to_dict=lambda: {
+            "plan_id": "plan-1",
+            "planning_status": "partial",
+        }
+    )
+
+    sink(snapshot, plan)
+
+    artifact = json.loads((tmp_path / "scan_audit_1.json").read_text())
+    assert artifact["route_outcome"] is None
+    assert artifact["snapshot"]["scan_id"] == "scan/audit:1"
+    assert artifact["plan"]["plan_id"] == "plan-1"
+    assert list(tmp_path.glob("*.tmp")) == []
+    assert messages and "pre-execution audit saved" in messages[-1]
 
 
 def test_missing_required_runtime_parameter_fails_loud(tmp_path):

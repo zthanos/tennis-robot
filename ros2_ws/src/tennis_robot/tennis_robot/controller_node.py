@@ -112,6 +112,12 @@ SIM_COLLECTION_CONFIRM_SOURCE = os.getenv(
 # ball is one collection, not two (run 10 double-counted every crossing).
 BEAM_REARM_QUIET_S = _env_float("BEAM_REARM_QUIET_S", 0.6)
 BEAM_SYMMETRY_MAX_DELTA = _env_float("BEAM_SYMMETRY_MAX_DELTA", 200.0)
+COLLECTION_ROUTE_MINIMUM_DRAIN_S = _env_float(
+    "COLLECTION_ROUTE_MINIMUM_DRAIN_S", 1.5
+)
+COLLECTION_ROUTE_MAXIMUM_DRAIN_S = _env_float(
+    "COLLECTION_ROUTE_MAXIMUM_DRAIN_S", 5.0
+)
 NET_X_M = 0.0
 NET_SIDE_CLEARANCE_M = 0.25
 COURT_MAX_X_M = 11.885
@@ -233,7 +239,7 @@ class ControllerNode(Node):
         self._collection_event_log = Path(
             os.getenv(
                 "COLLECTION_EVENT_LOG_FILE",
-                "/workspace/runtime/collection_events.jsonl",
+                str(Path(os.getenv("TENNIS_ROBOT_ROOT", "/workspace")) / "runtime" / "collection_events.jsonl"),
             )
         )
         self._run_id = f"{int(self.started_at)}-{os.getpid()}"
@@ -241,6 +247,7 @@ class ControllerNode(Node):
         self._last_collect_route_summary: dict = {}
         self._collect_route_executor = None
         self._collect_route_executor_factory = None
+        self._collect_route_execution_truth_snapshot: dict = {}
         self._collect_route_executor_events: list[dict] = []
         self._collect_route_executor_complete_reported = False
         self._collection_executor_cache = CollectionExecutorNodeCache()
@@ -250,7 +257,10 @@ class ControllerNode(Node):
         self._collect_route_last_block_event_s: float = 0.0
         self._sim_true_pose: tuple[float, float, float] | None = None
         self._pose_frame_offset: tuple[float, float] | None = None
+        self._pose_frame_yaw_offset: float | None = None
         self._last_pose_divergence_event_s: float = 0.0
+        self._collect_route_confirmations: list[dict] = []
+        self._collect_route_run_history: list[dict] = []
 
         # ── cached topic values ────────────────────────────────────────────────
         self._latest_obs = BallObservationInput(visible=False, source="startup")
@@ -274,6 +284,11 @@ class ControllerNode(Node):
         self._ir_left = 0.0
         self._ir_right = 0.0
         self._intake_beam_broken = False
+        self._entry_beam_previous = False
+        self._entry_beam_sequence = 0
+        self._last_credited_entry_sequence = 0
+        self._confirmed_beam_broken = False
+        self._collect_route_collector_active = False
         self._intake_roller_latched = False
         self._control_command_mode = "idle"
         self._control_command_source = "startup"
@@ -485,9 +500,25 @@ class ControllerNode(Node):
     def _on_ir(self, msg: IrReadings) -> None:
         self._ir_left = msg.left
         self._ir_right = msg.right
+        self._confirmed_beam_broken = (
+            self._ir_left > IR_INTAKE_TRIGGER_THRESHOLD
+            and self._ir_right > IR_INTAKE_TRIGGER_THRESHOLD
+            and abs(self._ir_left - self._ir_right) <= BEAM_SYMMETRY_MAX_DELTA
+        )
 
     def _on_intake_beam(self, msg: Bool) -> None:
-        self._intake_beam_broken = msg.data
+        broken = bool(msg.data)
+        if broken and not self._entry_beam_previous:
+            self._entry_beam_sequence += 1
+        self._entry_beam_previous = broken
+        self._intake_beam_broken = broken
+
+    def _consume_entry_for_confirmation(self) -> bool:
+        """Allow one confirmed-basket credit for each physical intake entry."""
+        if self._entry_beam_sequence <= self._last_credited_entry_sequence:
+            return False
+        self._last_credited_entry_sequence = self._entry_beam_sequence
+        return True
 
     def _on_command(self, msg: RobotCommand) -> None:
         self._control_command_mode = msg.mode
@@ -519,6 +550,18 @@ class ControllerNode(Node):
         return round(
             math.hypot(dx - self._pose_frame_offset[0], dy - self._pose_frame_offset[1]),
             3,
+        )
+
+    def _pose_yaw_error_rad(self) -> float | None:
+        if self._sim_true_pose is None or self._pose_frame_yaw_offset is None:
+            return None
+        raw_error = self._sim_true_pose[2] - self._robot_yaw
+        return round(
+            math.atan2(
+                math.sin(raw_error - self._pose_frame_yaw_offset),
+                math.cos(raw_error - self._pose_frame_yaw_offset),
+            ),
+            4,
         )
 
     def _on_sim_balls(self, msg: String) -> None:
@@ -624,19 +667,23 @@ class ControllerNode(Node):
             command = self._collector_command_for_mode(effective_mode, control_observation)
 
         if effective_mode == "collect_route":
-            # Collection outcome belongs exclusively to executor plan results
-            # and crossing telemetry.  Ground truth may still animate/referee
-            # retained sim balls, but it cannot credit or mutate the route.
-            self.collection_confirmed = False
-            if self._sim_balls_seen:
-                self._sim_retention_step(credit=False)
+            # Route success remains owned exclusively by the executor plan and
+            # crossing telemetry. Independently account for the physical
+            # CONFIRMED beam while the route collector is running so production
+            # telemetry reports what actually entered the basket. This does not
+            # mutate route planning results or mark mapped targets collected.
+            sensor_command = ConceptACommand(
+                state=command.state,
+                base=BaseCommand(0.0, 0.0),
+                collector=CollectorCommand(
+                    self.behavior.config.lift_wheel_speed,
+                    self._collect_route_collector_active,
+                ),
+            )
+            self.collection_confirmed = self._check_collection(sensor_command)
         else:
             self.collection_confirmed = self._check_collection(command)
-        if (
-            effective_mode != "collect_route"
-            and self._sim_balls_seen
-            and SIM_COLLECTION_CONFIRM_SOURCE != "truth"
-        ):
+        if self._sim_balls_seen and SIM_COLLECTION_CONFIRM_SOURCE != "truth":
             reconcile = self._credit_reconciler.poll(now)
             if reconcile is not None:
                 self._record_collection_event(
@@ -687,7 +734,19 @@ class ControllerNode(Node):
             and new_mode != previous_mode
             and self._nav2_lane is not None
         ):
-            self._record_collection_event("nav2_goal_cancel", reason=f"mode_exit:{new_mode}")
+            terminal_state = (
+                self._collect_route_executor.state.value
+                if previous_mode == "collect_route"
+                and self._collect_route_executor is not None
+                and self._collect_route_executor.is_terminal
+                else None
+            )
+            cancel_reason = (
+                f"terminal_cleanup:{terminal_state}"
+                if terminal_state is not None
+                else f"mode_exit:{new_mode}"
+            )
+            self._record_collection_event("nav2_goal_cancel", reason=cancel_reason)
             self._nav2_lane.reset()
         if previous_mode == "collect_route":
             terminal = bool(
@@ -728,9 +787,25 @@ class ControllerNode(Node):
                 self._last_collect_route_summary = {}
                 self._collect_route_executor = None
                 self._collect_route_executor_factory = None
+                self._collect_route_execution_truth_snapshot = {}
                 self._collect_route_executor_events = []
                 self._collect_route_executor_complete_reported = False
                 self._credit_reconciler = CreditReconciler()
+                self._collect_route_confirmations = []
+                self._collect_route_run_history = []
+                self._last_credited_entry_sequence = self._entry_beam_sequence
+                if self._sim_true_pose is not None:
+                    self._pose_frame_offset = (
+                        self._sim_true_pose[0] - self._robot_x,
+                        self._sim_true_pose[1] - self._robot_y,
+                    )
+                    self._pose_frame_yaw_offset = math.atan2(
+                        math.sin(self._sim_true_pose[2] - self._robot_yaw),
+                        math.cos(self._sim_true_pose[2] - self._robot_yaw),
+                    )
+                else:
+                    self._pose_frame_offset = None
+                    self._pose_frame_yaw_offset = None
             self._record_collection_event("mode_enter", requested=self._control_command_mode)
         return True
 
@@ -1312,6 +1387,7 @@ class ControllerNode(Node):
     def _collect_route_command_for_mode(self, mode: str) -> ConceptACommand:
         if self._on_mode_changed(mode):
             self.ball_map.reset()
+            self._collect_route_console_collected_positions = []
             self._collect_start_time = self._runtime_seconds()
             self._start_collection_route_executor()
 
@@ -1342,6 +1418,17 @@ class ControllerNode(Node):
                 detail = format_no_targets_diagnostic(
                     getattr(self, "_latest_perception_diagnostics", None)
                 )
+            elif state is ExecutorState.INCOMPLETE_TARGETS:
+                plan = self._collect_route_executor.plan
+                unresolved = (
+                    sum(
+                        result.status.value in {"deferred", "unreachable"}
+                        for result in plan.ball_results
+                    )
+                    if plan is not None
+                    else 0
+                )
+                detail = f" (unresolved_targets={unresolved})"
             self.get_logger().info(f"collect_route executor terminal: {state.value}{detail}")
             # Aggregated scan telemetry (rejection histogram + per-track step
             # counts) explains an empty/partial snapshot: cross-half rejections,
@@ -1382,13 +1469,15 @@ class ControllerNode(Node):
         self._collection_executor_cache.robot_yaw_rad = self._robot_yaw
 
         def publish_collector_speed(speed_rad_s: float) -> None:
+            self._collect_route_collector_active = abs(speed_rad_s) > 1e-9
             message = CollectorCmd()
             message.lift_wheel_speed = float(speed_rad_s)
-            message.intake_enabled = abs(speed_rad_s) > 1e-9
+            message.intake_enabled = self._collect_route_collector_active
             self._pub_collector.publish(message)
 
         collector_interface = CollectorInterface(
-            GazeboCollectorDriver(publish_collector_speed)
+            GazeboCollectorDriver(publish_collector_speed),
+            default_speed=ConceptAConfig.from_env().lift_wheel_speed,
         )
         factory = self.collection_executor_factory_type(
             node=self,
@@ -1400,6 +1489,10 @@ class ControllerNode(Node):
             collection_route_config_path=config_dir / "collection_route.yaml",
             calibration_artifact_path=calibration_path,
             telemetry_sink=self._on_collection_executor_telemetry,
+            entry_beam_provider=lambda: self._intake_beam_broken,
+            confirmed_beam_provider=lambda: self._confirmed_beam_broken,
+            collector_minimum_drain_s=COLLECTION_ROUTE_MINIMUM_DRAIN_S,
+            collector_maximum_drain_s=COLLECTION_ROUTE_MAXIMUM_DRAIN_S,
         )
         executor = factory.build()
         executor.start()
@@ -1433,6 +1526,337 @@ class ControllerNode(Node):
         serialized.setdefault("sim_time_s", round(now, 3))
         self._collect_route_executor_events.append(serialized)
         del self._collect_route_executor_events[:-100]
+        if serialized.get("code") == "route_outcome":
+            self._capture_collect_route_run(serialized.get("state"))
+
+    def _capture_collect_route_run(self, route_outcome: str | None) -> None:
+        executor = self._collect_route_executor
+        plan = executor.plan if executor is not None else None
+        if plan is None:
+            return
+        serialized = plan.to_dict()
+        plan_id = serialized["plan_id"]
+        if any(item.get("plan_id") == plan_id for item in self._collect_route_run_history):
+            return
+        self._write_collect_route_audit(executor, route_outcome)
+        crossing_telemetry = (
+            self._collect_route_executor_factory.crossing_telemetry
+            if self._collect_route_executor_factory is not None
+            else []
+        )
+        outcomes = self._build_collect_route_execution_outcomes(
+            serialized["ball_results"], crossing_telemetry, plan_id
+        )
+        covered = [item for item in outcomes if item["planner_status"] == "covered"]
+        record = {
+            "run_number": len(self._collect_route_run_history) + 1,
+            "plan_id": plan_id,
+            "scan_id": serialized.get("scan_id"),
+            "planning_status": serialized["planning_status"],
+            "route_outcome": route_outcome,
+            "ball_results": serialized["ball_results"],
+            "execution_outcomes": outcomes,
+            "planned": len(covered),
+            "confirmed": sum(
+                item["execution_status"] == "confirmed" for item in covered
+            ),
+            "crossed_unconfirmed": sum(
+                item["execution_status"] == "crossed_unconfirmed"
+                for item in covered
+            ),
+            "skipped": sum(
+                item["planner_status"] in {"deferred", "unreachable"}
+                for item in outcomes
+            ),
+            "route_collected_at_end": max(
+                0, self.collection_count - self._collect_route_run_start_count
+            ),
+        }
+        self._collect_route_run_history.append(record)
+
+    def _write_collect_route_audit(self, executor, route_outcome: str | None) -> None:
+        """Persist the immutable planner boundary only when explicitly enabled.
+
+        This is regression instrumentation, not a runtime data dependency.
+        With ``COLLECTION_ROUTE_AUDIT_DIR`` unset it performs no filesystem
+        access. Audit failures are diagnostic-only and cannot alter mission
+        state, planning, or execution.
+        """
+        audit_dir_value = os.getenv("COLLECTION_ROUTE_AUDIT_DIR", "").strip()
+        if not audit_dir_value:
+            return
+        snapshot = getattr(executor, "snapshot", None)
+        plan = getattr(executor, "plan", None)
+        if snapshot is None or plan is None:
+            self.get_logger().warning(
+                "collection route audit skipped: snapshot or plan unavailable"
+            )
+            return
+        try:
+            artifact = {
+                "schema_version": 1,
+                "run_id": self._run_id,
+                "route_outcome": route_outcome,
+                "snapshot": snapshot.to_dict(),
+                "plan": plan.to_dict(),
+                "execution_frame_diagnostics": (
+                    getattr(
+                        self._collect_route_executor_factory,
+                        "execution_frame_diagnostics",
+                        {},
+                    )
+                    if self._collect_route_executor_factory is not None
+                    else {}
+                ),
+                "execution_truth_snapshot": dict(
+                    getattr(
+                        self,
+                        "_collect_route_execution_truth_snapshot",
+                        {},
+                    )
+                ),
+            }
+            safe_scan_id = "".join(
+                char if char.isalnum() or char in "-_." else "_"
+                for char in str(snapshot.scan_id)
+            )
+            directory = Path(audit_dir_value)
+            directory.mkdir(parents=True, exist_ok=True)
+            target = directory / f"{safe_scan_id}.json"
+            temporary = directory / f".{safe_scan_id}.json.tmp"
+            temporary.write_text(
+                json.dumps(artifact, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            os.replace(temporary, target)
+            self.get_logger().info(f"collection route audit saved: {target}")
+        except (OSError, TypeError, ValueError) as exc:
+            self.get_logger().error(f"collection route audit write failed: {exc}")
+
+    def _route_confirmation_context(self, now_s: float) -> dict:
+        factory = self._collect_route_executor_factory
+        state = (
+            getattr(factory, "controller_state", None)
+            if factory is not None
+            else None
+        )
+        candidate = dict(state) if isinstance(state, dict) else {}
+        association = "active_crossing"
+        if not candidate.get("has_active_crossing") or not candidate.get("active_ball_id"):
+            # The intake mouth is ~0.876 m ahead of base_footprint, so ENTRY and
+            # CONFIRMED normally occur before the controller's base-centre
+            # crossing window. Associate that physical event with the nearest
+            # upcoming immutable crossing instead of reporting it unassigned.
+            progress = candidate.get("progress_s")
+            plan = (
+                getattr(self._collect_route_executor, "plan", None)
+                if self._collect_route_executor is not None
+                else None
+            )
+            upcoming = []
+            if isinstance(progress, (int, float)) and plan is not None:
+                for segment in plan.segments:
+                    for crossing in segment.planned_crossings:
+                        delta = float(crossing.progress_s) - float(progress)
+                        if -0.35 <= delta <= 1.20:
+                            upcoming.append((abs(delta - 0.45), delta, segment, crossing))
+            if upcoming:
+                _, _, segment, crossing = min(
+                    upcoming, key=lambda item: (item[0], item[1], item[3].ball_id)
+                )
+                candidate.update(
+                    {
+                        "has_active_crossing": True,
+                        "active_ball_id": crossing.ball_id,
+                        "active_segment_id": segment.id,
+                        "active_crossing_progress_s": crossing.progress_s,
+                    }
+                )
+                association = "intake_lead_crossing"
+        if not candidate.get("has_active_crossing") or not candidate.get("active_ball_id"):
+            candidate = {}
+            samples = (
+                getattr(factory, "crossing_telemetry", [])
+                if factory is not None
+                else []
+            )
+            for sample in reversed(samples):
+                observed_at = sample.get("observed_sim_time_s")
+                if (
+                    observed_at is not None
+                    and 0.0 <= now_s - float(observed_at) <= 3.0
+                    and sample.get("active_ball_id")
+                ):
+                    candidate = dict(sample)
+                    association = "recent_crossing"
+                    break
+        if not candidate:
+            return {"association": "unassigned", "ball_id": None}
+        return {
+            "association": association,
+            "plan_id": candidate.get("plan_id"),
+            "ball_id": candidate.get("active_ball_id"),
+            "segment_id": candidate.get("active_segment_id"),
+            "progress_s": candidate.get("progress_s"),
+            "crossing_progress_s": candidate.get("active_crossing_progress_s"),
+            "measured_speed_mps": candidate.get("measured_speed_mps"),
+            "lateral_error_m": candidate.get("lateral_error_m"),
+            "heading_error_rad": candidate.get("heading_error_rad"),
+        }
+
+    def _record_route_confirmation(self, now_s: float) -> dict:
+        context = self._route_confirmation_context(now_s)
+        started_at = self._collection_event_started_at
+        confirmation = {
+            "confirmation_id": len(self._collect_route_confirmations) + 1,
+            "t_s": (
+                round(max(0.0, now_s - started_at), 3)
+                if started_at is not None
+                else None
+            ),
+            "sim_time_s": round(now_s, 3),
+            **context,
+        }
+        self._collect_route_confirmations.append(confirmation)
+        # The Phase 9 trace records the *attributed* confirmation, not the raw
+        # beam: this is the first place the association with a ball exists, so
+        # it is where the evidence is captured rather than re-derived offline.
+        factory = self._collect_route_executor_factory
+        capture = getattr(factory, "trace_capture", None) if factory is not None else None
+        if capture is not None:
+            try:
+                capture.record_confirmation(confirmation)
+            except Exception:  # noqa: BLE001 - instrumentation may not disturb a route
+                pass
+        return confirmation
+
+    def _mark_route_confirmation_on_console_map(
+        self,
+        confirmation: dict,
+        now_s: float,
+    ) -> int | None:
+        """Hide a physically confirmed ball from the operator-only BallMap.
+
+        The immutable route snapshot and planner results remain untouched.  A
+        route-associated confirmation uses the exact snapshot target position;
+        an unassigned confirmation falls back to the CONFIRMED sensor plane in
+        front of the current base pose.  Both paths require a nearby mapped
+        ball, so a weak association cannot remove an unrelated map target.
+        """
+        target_x = target_y = None
+        route_ball_id = confirmation.get("ball_id")
+        snapshot = (
+            getattr(self._collect_route_executor, "snapshot", None)
+            if self._collect_route_executor is not None
+            else None
+        )
+        if route_ball_id and snapshot is not None:
+            target = next(
+                (
+                    ball
+                    for ball in snapshot.balls
+                    if ball.ball_id == route_ball_id
+                ),
+                None,
+            )
+            if target is not None:
+                target_x = float(target.position.x_m)
+                target_y = float(target.position.y_m)
+        if target_x is None or target_y is None:
+            confirmed_plane_x_m = 0.35
+            target_x = self._robot_x + confirmed_plane_x_m * math.cos(self._robot_yaw)
+            target_y = self._robot_y + confirmed_plane_x_m * math.sin(self._robot_yaw)
+
+        active = [
+            ball
+            for ball in self.ball_map.balls.values()
+            if ball.state not in {"collected", "collection_failed"}
+        ]
+        if not active:
+            return None
+        nearest = min(
+            active,
+            key=lambda ball: math.hypot(
+                ball.x_m - target_x,
+                ball.y_m - target_y,
+            ),
+        )
+        association_limit_m = min(
+            1.0,
+            float(self.ball_map.config.max_merge_distance_m),
+        )
+        if math.hypot(nearest.x_m - target_x, nearest.y_m - target_y) > association_limit_m:
+            return None
+        self.ball_map.set_state(nearest.id, "collected")
+        nearest.last_seen_s = now_s
+        positions = getattr(
+            self,
+            "_collect_route_console_collected_positions",
+            None,
+        )
+        if positions is None:
+            positions = []
+            self._collect_route_console_collected_positions = positions
+        positions.append((float(nearest.x_m), float(nearest.y_m)))
+        return nearest.id
+
+    def _build_collect_route_execution_outcomes(
+        self,
+        planner_results: list[dict],
+        crossing_samples: list[dict],
+        plan_id: str | None = None,
+    ) -> list[dict]:
+        confirmations_by_ball: dict[str, list[dict]] = {}
+        for confirmation in self._collect_route_confirmations:
+            if plan_id is not None and confirmation.get("plan_id") not in {None, plan_id}:
+                continue
+            ball_id = confirmation.get("ball_id")
+            if ball_id:
+                confirmations_by_ball.setdefault(str(ball_id), []).append(confirmation)
+        crossings_by_ball: dict[str, list[dict]] = {}
+        for sample in crossing_samples:
+            if plan_id is not None and sample.get("plan_id") not in {None, plan_id}:
+                continue
+            ball_id = sample.get("active_ball_id")
+            if ball_id:
+                crossings_by_ball.setdefault(str(ball_id), []).append(sample)
+
+        outcomes = []
+        for planner_result in planner_results:
+            ball_id = str(planner_result.get("ball_id"))
+            planner_status = planner_result.get("status")
+            confirmations = confirmations_by_ball.get(ball_id, [])
+            crossings = crossings_by_ball.get(ball_id, [])
+            completed_crossings = [
+                sample
+                for sample in crossings
+                if isinstance(sample.get("progress_s"), (int, float))
+                and isinstance(sample.get("active_crossing_progress_s"), (int, float))
+                and sample["progress_s"] >= sample["active_crossing_progress_s"]
+            ]
+            if confirmations:
+                execution_status = "confirmed"
+            elif completed_crossings:
+                execution_status = "crossed_unconfirmed"
+            elif crossings:
+                execution_status = "executing"
+            elif planner_status == "covered":
+                execution_status = "planned"
+            else:
+                execution_status = planner_status
+            outcomes.append(
+                {
+                    "ball_id": ball_id,
+                    "planner_status": planner_status,
+                    "planner_reason": planner_result.get("reason_code"),
+                    "execution_status": execution_status,
+                    "crossing_samples": len(crossings),
+                    "crossing_completed": bool(completed_crossings),
+                    "confirmation_count": len(confirmations),
+                    "last_confirmation": confirmations[-1] if confirmations else None,
+                }
+            )
+        return outcomes
 
     def _record_collection_event(self, event_type: str, **fields: object) -> None:
         now = self._runtime_seconds()
@@ -1762,13 +2186,33 @@ class ControllerNode(Node):
         if now_s < self._beam_rearm_at_s:
             # Same physical crossing still settling: re-latch without a count.
             return True
+        if not self._consume_entry_for_confirmation():
+            self._record_collection_event(
+                "confirmed_beam_rejected",
+                reason="no_new_entry_sequence",
+                entry_sequence=self._entry_beam_sequence,
+                ir_left=round(self._ir_left, 1),
+                ir_right=round(self._ir_right, 1),
+            )
+            return True
         self.collection_count += 1
         if self._sim_balls_seen:
             self._credit_reconciler.on_beam_credit(now_s)
+        route_confirmation = (
+            self._record_route_confirmation(now_s)
+            if self.control_mode == "collect_route"
+            else None
+        )
+        if route_confirmation is not None:
+            self._mark_route_confirmation_on_console_map(
+                route_confirmation,
+                now_s,
+            )
         self._record_collection_event(
             "beam_collection_credit",
             ir_left=round(self._ir_left, 1),
             ir_right=round(self._ir_right, 1),
+            route_confirmation=route_confirmation,
         )
         return True
 
@@ -2052,6 +2496,27 @@ class ControllerNode(Node):
                 and isinstance(track.get("x_m"), (int, float))
                 and isinstance(track.get("y_m"), (int, float))
             ]
+        collected_positions = getattr(
+            self,
+            "_collect_route_console_collected_positions",
+            (),
+        )
+        if collected_positions:
+            merge_distance_m = float(
+                getattr(self.ball_map.config, "merge_distance_m", 0.65)
+            )
+            balls = [
+                ball
+                for ball in balls
+                if not any(
+                    math.hypot(
+                        float(ball["x_m"]) - collected_x,
+                        float(ball["y_m"]) - collected_y,
+                    )
+                    <= merge_distance_m
+                    for collected_x, collected_y in collected_positions
+                )
+            ]
         confirmed = [b for b in balls if b["confirmed"] and b["side"] != "across_net"]
         metrics: dict[str, object] = {
             "balls_mapped": len(balls),
@@ -2089,6 +2554,12 @@ class ControllerNode(Node):
             ExecutorState.IDLE.value,
             ExecutorState.COMPLETED.value,
             ExecutorState.COMPLETED_NO_TARGETS.value,
+            ExecutorState.INCOMPLETE_TARGETS.value,
+            ExecutorState.ABORTED_SCAN.value,
+            ExecutorState.ABORTED_PLANNING.value,
+            ExecutorState.ABORTED_COLLECTOR.value,
+            ExecutorState.ABORTED_SAFETY.value,
+            ExecutorState.ABORTED_TRACKING.value,
         }
         if state in terminal:
             events = self._collect_route_executor_events
@@ -2104,27 +2575,116 @@ class ControllerNode(Node):
             if executor is not None and executor.route_outcome is not None
             else None
         )
+        crossing_telemetry = (
+            self._collect_route_executor_factory.crossing_telemetry
+            if self._collect_route_executor_factory is not None
+            else []
+        )
+        controller_state = (
+            getattr(self._collect_route_executor_factory, "controller_state", None)
+            if self._collect_route_executor_factory is not None
+            else None
+        )
+        execution_frame_diagnostics = (
+            getattr(
+                self._collect_route_executor_factory,
+                "execution_frame_diagnostics",
+                {},
+            )
+            if self._collect_route_executor_factory is not None
+            else {}
+        )
+        execution_truth_snapshot = getattr(
+            self, "_collect_route_execution_truth_snapshot", {}
+        )
+        if (
+            execution_frame_diagnostics
+            and not execution_truth_snapshot
+        ):
+            execution_truth_snapshot = {
+                "captured_at_s": self._runtime_seconds(),
+                "sim_balls_odom": [
+                    {
+                        key: ball[key]
+                        for key in ("def", "x", "y", "z")
+                        if key in ball
+                    }
+                    for ball in self._sim_balls
+                    if isinstance(ball, dict)
+                ],
+                "sim_robot_true_pose": (
+                    {
+                        "x_m": self._sim_true_pose[0],
+                        "y_m": self._sim_true_pose[1],
+                        "yaw_rad": self._sim_true_pose[2],
+                    }
+                    if self._sim_true_pose is not None
+                    else None
+                ),
+                "believed_robot_map_pose": {
+                    "x_m": self._robot_x,
+                    "y_m": self._robot_y,
+                    "yaw_rad": self._robot_yaw,
+                },
+                "pose_frame_offset": (
+                    {
+                        "x_m": self._pose_frame_offset[0],
+                        "y_m": self._pose_frame_offset[1],
+                        "yaw_rad": self._pose_frame_yaw_offset,
+                    }
+                    if self._pose_frame_offset is not None
+                    and self._pose_frame_yaw_offset is not None
+                    else None
+                ),
+                "pose_drift_m": self._pose_error_m(),
+                "yaw_drift_rad": self._pose_yaw_error_rad(),
+            }
+            self._collect_route_execution_truth_snapshot = (
+                execution_truth_snapshot
+            )
         payload = {
             "run_id": self._run_id,
             "status": status or state,
             "state": state,
             "route_outcome": outcome,
+            "failure_reason": (
+                getattr(executor, "terminal_reason", None).value
+                if getattr(executor, "terminal_reason", None) is not None
+                else None
+            ),
+            "failure_detail": getattr(executor, "terminal_detail", None),
             "elapsed_s": self._collect_route_elapsed_s(state),
             "plan_id": None,
             "planning_status": None,
             "ball_results": [],
             "segments": [],
             "crossings": [],
-            "executed_crossing_telemetry": (
-                self._collect_route_executor_factory.crossing_telemetry
-                if self._collect_route_executor_factory is not None
-                else []
-            ),
-            "controller_state": (
-                getattr(self._collect_route_executor_factory, "controller_state", None)
-                if self._collect_route_executor_factory is not None
+            "executed_crossing_telemetry": crossing_telemetry,
+            "execution_outcomes": [],
+            "run_history": list(self._collect_route_run_history),
+            "planned": 0,
+            "confirmed": 0,
+            "crossed_unconfirmed": 0,
+            "missing": 0,
+            "skipped": 0,
+            "remaining": 0,
+            "unresolved_targets": 0,
+            "failed": 0,
+            "failed_ball_ids": [],
+            "active_ball_id": (
+                controller_state.get("active_ball_id")
+                if isinstance(controller_state, dict)
+                and controller_state.get("has_active_crossing")
                 else None
             ),
+            "confirmations": list(self._collect_route_confirmations),
+            "unassigned_confirmations": sum(
+                confirmation.get("association") == "unassigned"
+                for confirmation in self._collect_route_confirmations
+            ),
+            "pose_drift_m": self._pose_error_m(),
+            "yaw_drift_rad": self._pose_yaw_error_rad(),
+            "controller_state": controller_state,
             "executor_events": list(self._collect_route_executor_events),
             "perception_diagnostics": dict(
                 getattr(self, "_latest_perception_diagnostics", {})
@@ -2134,6 +2694,18 @@ class ControllerNode(Node):
                 if self._collect_route_executor_factory is not None
                 else {}
             ),
+            "execution_frame_diagnostics": execution_frame_diagnostics,
+            "execution_truth_snapshot": dict(execution_truth_snapshot),
+            # Physical intake evidence is deliberately separate from route
+            # coverage. A pass can be geometrically covered without the ball
+            # being transferred, and a retained ball must never be hidden
+            # behind a successful navigation outcome.
+            "route_collected": max(
+                0, self.collection_count - self._collect_route_run_start_count
+            ),
+            "beam_credits": self._credit_reconciler.beam_count,
+            "truth_retained": self._credit_reconciler.truth_count,
+            "basket_retained": self._credit_reconciler.truth_count,
         }
         plan = executor.plan if executor is not None else None
         if plan is not None:
@@ -2149,6 +2721,91 @@ class ControllerNode(Node):
                         for segment in serialized["segments"]
                         for crossing in segment["planned_crossings"]
                     ],
+                }
+            )
+            payload["execution_outcomes"] = self._build_collect_route_execution_outcomes(
+                serialized["ball_results"], crossing_telemetry, serialized["plan_id"]
+            )
+            covered = [
+                item
+                for item in payload["execution_outcomes"]
+                if item["planner_status"] == "covered"
+            ]
+            crossed_unconfirmed = [
+                item
+                for item in covered
+                if item["execution_status"] == "crossed_unconfirmed"
+            ]
+            unresolved_targets = [
+                item
+                for item in payload["execution_outcomes"]
+                if item["planner_status"] in {"deferred", "unreachable"}
+            ]
+            payload.update(
+                {
+                    "planned": len(covered),
+                    "confirmed": sum(
+                        item["execution_status"] == "confirmed" for item in covered
+                    ),
+                    "crossed_unconfirmed": len(crossed_unconfirmed),
+                    "missing": len(crossed_unconfirmed),
+                    "skipped": sum(
+                        item["planner_status"] in {"deferred", "unreachable"}
+                        for item in payload["execution_outcomes"]
+                    ),
+                    "remaining": sum(
+                        item["execution_status"] == "planned" for item in covered
+                    )
+                    + len(unresolved_targets),
+                    "unresolved_targets": len(unresolved_targets),
+                    "failed_ball_ids": [
+                        item["ball_id"] for item in crossed_unconfirmed
+                    ],
+                }
+            )
+        completed_plan_ids = {
+            item.get("plan_id") for item in self._collect_route_run_history
+        }
+        current_plan_is_new = (
+            payload.get("plan_id") is not None
+            and payload["plan_id"] not in completed_plan_ids
+        )
+        history_planned = sum(
+            int(item.get("planned", 0)) for item in self._collect_route_run_history
+        )
+        history_confirmed = sum(
+            int(item.get("confirmed", 0)) for item in self._collect_route_run_history
+        )
+        history_crossed = sum(
+            int(item.get("crossed_unconfirmed", 0))
+            for item in self._collect_route_run_history
+        )
+        history_skipped = sum(
+            int(item.get("skipped", 0)) for item in self._collect_route_run_history
+        )
+        if self._collect_route_run_history:
+            current_planned = payload["planned"] if current_plan_is_new else 0
+            current_confirmed = payload["confirmed"] if current_plan_is_new else 0
+            current_crossed = (
+                payload["crossed_unconfirmed"] if current_plan_is_new else 0
+            )
+            current_skipped = payload["skipped"] if current_plan_is_new else 0
+            payload.update(
+                {
+                    "planned": history_planned + current_planned,
+                    "confirmed": history_confirmed + current_confirmed,
+                    "crossed_unconfirmed": history_crossed + current_crossed,
+                    "missing": history_crossed + current_crossed,
+                    "skipped": history_skipped + current_skipped,
+                    "failed_ball_ids": [
+                        item["ball_id"]
+                        for run in self._collect_route_run_history
+                        for item in run.get("execution_outcomes", [])
+                        if item.get("execution_status") == "crossed_unconfirmed"
+                    ]
+                    + (
+                        payload["failed_ball_ids"] if current_plan_is_new else []
+                    ),
                 }
             )
         return payload
@@ -2199,6 +2856,7 @@ class ControllerNode(Node):
             ),
             "collection_run": self._collect_route_summary_for_status(),
             "pose_error_m": self._pose_error_m(),
+            "pose_yaw_error_rad": self._pose_yaw_error_rad(),
             "collection_truth": self._collection_truth(command),
             "collection_events": list(self._collection_events),
             "collection_nav2": {

@@ -109,9 +109,13 @@ protected:
     ASSERT_TRUE(call<trm::srv::LoadCollectionExecutionContext>(load_, request)->accepted); controller_->setPlan(path());
   }
 
-  geometry_msgs::msg::PoseStamped pose(const double x, const double y = 0.0) const
+  /// A pose in the frame the route is planned in.  The frame is explicit
+  /// because the controller now refuses to compare coordinates without one.
+  geometry_msgs::msg::PoseStamped pose(const double x, const double y = 0.0,
+    const std::string & frame_id = "map") const
   {
-    geometry_msgs::msg::PoseStamped pose; pose.pose.position.x = x; pose.pose.position.y = y; pose.pose.orientation.w = 1.0; return pose;
+    geometry_msgs::msg::PoseStamped pose; pose.header.frame_id = frame_id;
+    pose.pose.position.x = x; pose.pose.position.y = y; pose.pose.orientation.w = 1.0; return pose;
   }
 
   void spin() { for (int index = 0; index < 5; ++index) { executor_.spin_some(); } }
@@ -209,4 +213,52 @@ int main(int argc, char ** argv)
   const int result = RUN_ALL_TESTS();
   rclcpp::shutdown();
   return result;
+}
+
+
+// ── frame contract (Phase 12) ───────────────────────────────────────────────
+//
+// The route is executed in the frame it was planned in.  A pose from a
+// different frame must stop the route, not be compared as bare numbers: that
+// silent comparison is precisely the defect of debug log #72, where a map route
+// was tracked against an odom pose and the corridor slid off the balls.
+
+TEST_F(CollectionNav2ControllerRuntimeTest, APoseFromAnotherFrameIsRefusedRatherThanCompared)
+{
+  load_and_set_plan();
+  geometry_msgs::msg::Twist velocity; velocity.linear.x = 1.0;
+  // No TF buffer is configured, so odom→map cannot be resolved; the controller
+  // must fail loudly instead of treating the odom numbers as map numbers.
+  EXPECT_THROW(
+    controller_->computeVelocityCommands(pose(1.0, 0.0, "odom"), velocity, nullptr),
+    std::runtime_error);
+}
+
+TEST_F(CollectionNav2ControllerRuntimeTest, AnUnnamedPoseFrameIsNotTreatedAsAgreement)
+{
+  load_and_set_plan();
+  geometry_msgs::msg::Twist velocity; velocity.linear.x = 1.0;
+  EXPECT_THROW(
+    controller_->computeVelocityCommands(pose(1.0, 0.0, ""), velocity, nullptr),
+    std::runtime_error);
+}
+
+TEST_F(CollectionNav2ControllerRuntimeTest, TelemetryReportsBothSidesInThePlanFrame)
+{
+  load_and_set_plan();
+  geometry_msgs::msg::Twist velocity; velocity.linear.x = 1.0;
+  const auto command = controller_->computeVelocityCommands(pose(1.0), velocity, nullptr);
+  spin();
+  ASSERT_FALSE(telemetry_.empty());
+  const auto & state = telemetry_.back();
+  EXPECT_EQ(state.tracker_pose_frame_id, "map");
+  EXPECT_EQ(state.tracker_path_frame_id, "map");
+  EXPECT_TRUE(state.tracker_has_reference);
+  // The pose reached the core untouched: same frame in, same numbers through.
+  EXPECT_DOUBLE_EQ(state.tracker_pose_x_m, 1.0);
+  EXPECT_DOUBLE_EQ(state.tracker_pose_y_m, 0.0);
+  // The command contract is unchanged by the frame correction.
+  EXPECT_DOUBLE_EQ(state.commanded_linear_mps, command.twist.linear.x);
+  EXPECT_DOUBLE_EQ(state.commanded_angular_rad_s, command.twist.angular.z);
+  EXPECT_EQ(command.header.frame_id, "base_link");
 }

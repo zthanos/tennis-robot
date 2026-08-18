@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+import time
 
 from tennis_robot.collection_route_executor import (
     CollectorStartResult,
@@ -162,32 +163,92 @@ class GazeboCollectorAdapter:
     """Collector port over CollectorInterface for the Gazebo MVP.
 
     Gazebo has no collector health/jam/full/ready sensors, so start is reported
-    READY immediately, there is never an ``active_fault`` and stop is STOPPED
-    immediately.  This is deliberate — no invented faults.  Real hardware will
-    wire the driver's jam/full/beam/health signals into ``start_result`` and
-    ``active_fault`` in a later phase.
+    READY immediately and there is never an ``active_fault``.  A route stop
+    includes a bounded transfer drain: after ENTRY, the wheels keep running
+    until CONFIRMED or the maximum drain timeout.  Real hardware will wire the
+    driver's jam/full/health signals into ``start_result`` and ``active_fault``
+    in a later phase.
     """
 
-    def __init__(self, collector_interface) -> None:
+    def __init__(
+        self,
+        collector_interface,
+        *,
+        entry_beam_provider=None,
+        confirmed_beam_provider=None,
+        minimum_drain_s: float = 0.0,
+        maximum_drain_s: float = 0.0,
+        clock_fn=time.monotonic,
+    ) -> None:
+        if minimum_drain_s < 0.0 or maximum_drain_s < minimum_drain_s:
+            raise ValueError("collector drain bounds must satisfy 0 <= minimum <= maximum")
         self._collector = collector_interface
+        self._entry_beam_provider = entry_beam_provider or (lambda: False)
+        self._confirmed_beam_provider = confirmed_beam_provider or (lambda: False)
+        self._minimum_drain_s = float(minimum_drain_s)
+        self._maximum_drain_s = float(maximum_drain_s)
+        self._clock_fn = clock_fn
+        self._last_entry = False
+        self._last_confirmed = False
+        self._entry_pending = False
+        self._stop_requested_at_s: float | None = None
+        self._stopped = True
 
     def start(self) -> None:
+        self._last_entry = False
+        self._last_confirmed = False
+        self._entry_pending = False
+        self._stop_requested_at_s = None
+        self._stopped = False
         self._collector.start()
 
     def start_result(self) -> CollectorStartResult:
         return CollectorStartResult(CollectorStartStatus.READY)
 
     def active_fault(self) -> ExecutorReasonCode | None:
+        self._sample_beams()
         return None
 
     def stop(self) -> None:
-        self._collector.stop()
+        self._sample_beams()
+        if self._maximum_drain_s <= 0.0:
+            self._stop_now()
+            return
+        if self._stop_requested_at_s is None:
+            self._stop_requested_at_s = self._clock_fn()
 
     def stop_result(self) -> CollectorStopResult:
-        return CollectorStopResult(CollectorStopStatus.STOPPED)
+        if self._stopped:
+            return CollectorStopResult(CollectorStopStatus.STOPPED)
+        self._sample_beams()
+        if self._stop_requested_at_s is None:
+            return CollectorStopResult(CollectorStopStatus.STOPPING)
+        elapsed_s = max(0.0, self._clock_fn() - self._stop_requested_at_s)
+        minimum_elapsed = elapsed_s >= self._minimum_drain_s
+        drain_complete = minimum_elapsed and not self._entry_pending
+        drain_timed_out = elapsed_s >= self._maximum_drain_s
+        if drain_complete or drain_timed_out:
+            self._stop_now()
+            return CollectorStopResult(CollectorStopStatus.STOPPED)
+        return CollectorStopResult(CollectorStopStatus.STOPPING)
 
     def force_disable(self) -> None:
-        self._collector.stop()
+        self._stop_now()
+
+    def _sample_beams(self) -> None:
+        entry = bool(self._entry_beam_provider())
+        confirmed = bool(self._confirmed_beam_provider())
+        if entry and not self._last_entry:
+            self._entry_pending = True
+        if confirmed and not self._last_confirmed and self._entry_pending:
+            self._entry_pending = False
+        self._last_entry = entry
+        self._last_confirmed = confirmed
+
+    def _stop_now(self) -> None:
+        if not self._stopped:
+            self._collector.stop()
+        self._stopped = True
 
 
 # ── 5. SafetyMonitor (pure forward-sector logic + thin /scan wrapper) ─────────
@@ -325,10 +386,11 @@ class ScanRotationFsm:
     """Pure 360deg discrete rotation-step FSM.
 
     Steps are captured at yaw targets ``start + k*step_angle`` for
-    ``k = 0 .. step_count-1`` (a full turn).  ``observe(current_yaw)`` returns
-    the step id when the robot is within ``yaw_tolerance_rad`` of the next
-    uncaptured target, else ``None``.  Feed it a yaw sequence to drive it; it has
-    no ROS dependency and no cmd_vel logic.
+    ``k = 0 .. step_count-1``.  After the last distinct sample, the robot must
+    return to ``start`` before the FSM is complete.  This closes the full turn
+    geometrically and keeps the physical yaw equal to the yaw frozen into the
+    planner snapshot.  ``observe(current_yaw)`` returns the step id only for a
+    newly captured sample; the final return emits no duplicate sample.
     """
 
     def __init__(self, *, step_count: int, yaw_tolerance_rad: float, start_yaw_rad: float) -> None:
@@ -341,6 +403,7 @@ class ScanRotationFsm:
         self._start = _require_finite(start_yaw_rad, "start_yaw_rad")
         self._step_angle = _TWO_PI / step_count
         self._captured = 0
+        self._returned_to_start = False
 
     @property
     def expected_step_ids(self) -> tuple[str, ...]:
@@ -348,12 +411,14 @@ class ScanRotationFsm:
 
     @property
     def is_complete(self) -> bool:
-        return self._captured >= self._step_count
+        return self._captured >= self._step_count and self._returned_to_start
 
     @property
     def target_yaw_rad(self) -> float | None:
         if self.is_complete:
             return None
+        if self._captured >= self._step_count:
+            return _wrap_angle(self._start)
         return _wrap_angle(self._start + self._captured * self._step_angle)
 
     def observe(self, current_yaw_rad: float) -> str | None:
@@ -361,10 +426,18 @@ class ScanRotationFsm:
             return None
         current_yaw_rad = _require_finite(current_yaw_rad, "current_yaw_rad")
         if abs(_wrap_angle(current_yaw_rad - self.target_yaw_rad)) <= self._tolerance:
+            if self._captured >= self._step_count:
+                self._returned_to_start = True
+                return None
             step_id = f"scan-step-{self._captured}"
             self._captured += 1
             return step_id
         return None
+
+    def reset(self) -> None:
+        """Start a fresh rotation cycle with the same immutable scan geometry."""
+        self._captured = 0
+        self._returned_to_start = False
 
 
 class ScanSessionDriver:
@@ -427,9 +500,20 @@ class ScanSessionDriver:
         self._started_at_s = self._clock.now_s()
         self._terminal = None
         self.last_failure_detail = None
+        self._fsm.reset()
         start_session = getattr(self._session, "start", None)
-        if callable(start_session):
-            start_session(self._started_at_s)
+        try:
+            if callable(start_session):
+                start_session(self._started_at_s)
+        except Exception as exc:
+            code = getattr(getattr(exc, "code", None), "value", None)
+            self.last_failure_detail = f"{code}: {exc}" if code else repr(exc)
+            self._terminal = ScanSessionResult(
+                ScanSessionStatus.FAILED,
+                reason=ExecutorReasonCode.SCAN_FAILED,
+            )
+            self._cmd_vel(0.0)
+            return
         self._cmd_vel(self._angular_speed_rad_s)
 
     def result(self) -> ScanSessionResult:

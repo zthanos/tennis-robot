@@ -62,11 +62,24 @@ class _FakeSession:
         return [self._output]
 
 
+class _FakeSessionOptions:
+    def add_session_config_entry(self, _name, _value):
+        pass
+
+
+def _fake_ort(output):
+    return types.SimpleNamespace(
+        SessionOptions=_FakeSessionOptions,
+        ExecutionMode=types.SimpleNamespace(ORT_SEQUENTIAL="sequential"),
+        GraphOptimizationLevel=types.SimpleNamespace(ORT_ENABLE_ALL="all"),
+        InferenceSession=lambda *a, **k: _FakeSession(output),
+    )
+
+
 def _make_detector(monkeypatch, columns, **kwargs):
     """Build a YoloOnnxBallDetector backed by a fake onnxruntime session."""
     output = np.stack(_pad(columns), axis=1)[None]  # (1, 84, N)
-    fake_ort = types.SimpleNamespace(InferenceSession=lambda *a, **k: _FakeSession(output))
-    monkeypatch.setitem(sys.modules, "onnxruntime", fake_ort)
+    monkeypatch.setitem(sys.modules, "onnxruntime", _fake_ort(output))
     return bd.YoloOnnxBallDetector("dummy.onnx", **kwargs)
 
 
@@ -113,8 +126,7 @@ def test_detect_handles_transposed_output(monkeypatch):
     # Some exports give (1, N, 84) instead of (1, 84, N); detect must cope.
     cols = _pad([_yolo_column(320, 240, 30, 30, SPORTS_BALL, 0.8)])
     output = np.stack(cols, axis=0)[None]  # (1, N, 84)
-    fake_ort = types.SimpleNamespace(InferenceSession=lambda *a, **k: _FakeSession(output))
-    monkeypatch.setitem(sys.modules, "onnxruntime", fake_ort)
+    monkeypatch.setitem(sys.modules, "onnxruntime", _fake_ort(output))
     det = bd.YoloOnnxBallDetector("dummy.onnx", conf_threshold=0.35)
     out = det.detect(np.zeros((640, 640, 3), np.uint8))
     assert len(out) == 1
@@ -219,6 +231,34 @@ def test_depth_fusion_converts_optical_z_to_slant_range():
     assert forward == pytest.approx(5.0)
     assert right == pytest.approx(-5.0 * math.tan(obs.bearing_rad))
     assert down == pytest.approx(-5.0 * math.tan(elevation))
+
+
+def test_depth_fusion_rejects_minority_foreground_occluder():
+    detection = BallDetection(318, 238, 4, 4, confidence=0.8)
+    depth = np.full((480, 640), 8.0, dtype=np.float32)
+    # The 3x3 fusion ROI contains one foreground net strand (three pixels) and
+    # six ball pixels.  The old 20th-percentile-only estimator returned ~4.7 m
+    # and incorrectly moved the far-side ball in front of the net.
+    depth[239:242, 319] = 4.7
+    assert (
+        estimate_depth_ball_observation(
+            detection, depth, 640, 480, math.radians(69)
+        )
+        is None
+    )
+
+
+def test_depth_fusion_keeps_dominant_near_ball_against_far_background():
+    detection = BallDetection(318, 238, 4, 4, confidence=0.8)
+    depth = np.full((480, 640), 8.0, dtype=np.float32)
+    # Six of the nine central ROI pixels belong to the ball.  The median and
+    # foreground estimate agree, so farther background must not suppress it.
+    depth[239:242, 319:321] = 4.7
+    observation = estimate_depth_ball_observation(
+        detection, depth, 640, 480, math.radians(69)
+    )
+    assert observation is not None
+    assert observation.distance_m == pytest.approx(4.7)
 
 
 def test_camera_frame_position_conventions():

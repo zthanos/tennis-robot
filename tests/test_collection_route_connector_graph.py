@@ -20,11 +20,12 @@ from tennis_robot.collection_route_connector_graph import (
     _dubins_parameters,
     _materialize_path,
     _path_is_collision_free,
+    _path_intervals,
     _self_intersects,
     build_directed_candidate_graph,
 )
 from tennis_robot.collection_route_planner_v2 import CourtModel, FunnelPassCandidate, PolygonObstacle
-from tennis_robot.collection_route_types import Point2D, Pose2D, ScanSnapshot
+from tennis_robot.collection_route_types import Point2D, PositionCovariance2D, Pose2D, ScanSnapshot, SnapshotBall
 
 
 def polygon(*coordinates):
@@ -211,7 +212,7 @@ def test_analytic_gate_is_byte_identical_to_materialize_first_reference():
             if source is target:
                 continue
             for mode in _CSC_MODES:
-                gated = _build_edge("s", source, "t", target, mode, model, configuration)
+                gated = _build_edge("s", source, "t", target, mode, configuration.mechanical.minimum_turning_radius_m, 1.0, model, configuration)
                 reference = _reference_build_edge("s", source, "t", target, mode, model, configuration)
                 assert gated.rejection is reference.rejection
                 assert gated.collision_free == reference.collision_free
@@ -235,3 +236,129 @@ def test_graph_is_directed_from_start_and_between_distinct_passes_only():
     assert any(edge.source_node_id == "pass:a:0" and edge.target_node_id == "pass:b:1" for edge in built.edges)
     assert any(edge.source_node_id == "pass:b:1" and edge.target_node_id == "pass:a:0" for edge in built.edges)
     assert not any(edge.source_node_id == edge.target_node_id for edge in built.edges)
+
+
+def _sweep_snapshot(configuration, *balls, start=Pose2D(0.0, 0.0, 0.0)):
+    return ScanSnapshot(
+        "scan-sweep", FAKE_TIME_S, "map", start,
+        tuple(
+            SnapshotBall(ball_id, Point2D(x, y), 0.9, PositionCovariance2D(1e-8, 0.0, 1e-8))
+            for ball_id, x, y in balls
+        ),
+        configuration,
+    )
+
+
+def test_connector_sweeps_a_ball_lying_on_its_straight_run():
+    configuration = default_configuration()
+    # The start connector runs straight along y=0 towards the pass entry, so a
+    # ball parked on that line is taken in transit.
+    target = candidate("a", Pose2D(8.0, 0.0, 0.0), Pose2D(9.0, 0.0, 0.0))
+    # "free" is feasible in its own right; the point is that the route can take
+    # it in transit instead of spending a dedicated pass on it.
+    free = candidate("free", Pose2D(2.0, 0.0, 0.0), Pose2D(4.0, 0.0, 0.0))
+    built = build_directed_candidate_graph(
+        snapshot=_sweep_snapshot(configuration, ("a", 8.5, 0.0), ("free", 3.0, 0.0)),
+        candidates=(target, free), court=court(), configuration=configuration,
+    )
+    start_edge = next(
+        edge for edge in built.edges
+        if edge.source_node_id == "start" and edge.collision_free and edge.swept_ball_ids
+    )
+    assert start_edge.swept_ball_ids == ("free",)
+    crossing = start_edge.swept_crossings[0]
+    assert crossing.ball_id == "free"
+    assert crossing.progress_s >= configuration.mechanical.minimum_run_in_m
+    assert start_edge.path.length_m - crossing.progress_s >= configuration.mechanical.minimum_run_out_m
+
+
+def test_ball_beside_the_corridor_is_not_swept():
+    configuration = default_configuration()
+    target = candidate("a", Pose2D(8.0, 0.0, 0.0), Pose2D(9.0, 0.0, 0.0))
+    aside = candidate("aside", Pose2D(2.0, 1.5, 0.0), Pose2D(4.0, 1.5, 0.0))
+    built = build_directed_candidate_graph(
+        snapshot=_sweep_snapshot(configuration, ("a", 8.5, 0.0), ("aside", 3.0, 1.5)),
+        candidates=(target, aside), court=court(), configuration=configuration,
+    )
+    assert all("aside" not in edge.swept_ball_ids for edge in built.edges)
+
+
+def test_tight_arc_portion_cannot_host_a_crossing():
+    configuration = default_configuration()
+    minimum = configuration.mechanical.minimum_turning_radius_m
+    turning = candidate("turn", Pose2D(1.0, 1.0, math.pi / 2), Pose2D(1.0, 2.0, math.pi / 2))
+    built = build_directed_candidate_graph(
+        snapshot=_sweep_snapshot(configuration, ("turn", 1.0, 1.5), ("arc", minimum, 0.0)),
+        candidates=(turning,), court=court(), configuration=configuration,
+    )
+    # Whatever the search does with the geometry, no crossing may be attached on
+    # a portion tighter than the capture radius.
+    for edge in built.edges:
+        if not edge.collision_free:
+            continue
+        intervals, _ = _path_intervals(edge.path.poses)
+        for crossing in edge.swept_crossings:
+            hosting = [
+                radius for begin, length, radius, _, _ in intervals
+                if begin <= crossing.progress_s <= begin + length
+            ]
+            assert all(radius + 1e-9 >= configuration.connector.capture_minimum_turn_radius_m for radius in hosting)
+
+
+def test_unreachable_ball_is_never_swept_in_transit():
+    configuration = default_configuration()
+    target = candidate("a", Pose2D(8.0, 0.0, 0.0), Pose2D(9.0, 0.0, 0.0))
+    # "keepout" has no pass candidate, so per-ball feasibility rejected it and a
+    # connector must not drive through it.
+    built = build_directed_candidate_graph(
+        snapshot=_sweep_snapshot(configuration, ("a", 8.5, 0.0), ("keepout", 3.0, 0.0)),
+        candidates=(target,), court=court(), configuration=configuration,
+    )
+    assert all("keepout" not in edge.swept_ball_ids for edge in built.edges)
+
+
+def test_gentler_radius_multipliers_add_distinct_edges():
+    base = default_configuration()
+    multi = replace(base, connector=replace(base.connector, sweep_radius_multipliers=(1.0, 4.0)))
+    target = candidate("a", Pose2D(8.0, 0.0, 0.0), Pose2D(9.0, 0.0, 0.0))
+    single_graph = graph(base, (target,))
+    multi_graph = build_directed_candidate_graph(
+        snapshot=snapshot(multi), candidates=(target,), court=court(), configuration=multi,
+    )
+    assert len(multi_graph.edges) == 2 * len(single_graph.edges)
+    curvatures = {edge.maximum_curvature_per_m for edge in multi_graph.edges if edge.maximum_curvature_per_m}
+    assert len(curvatures) == 2
+    # The tight geometry keeps its original identity so single-radius graphs are
+    # reproduced byte-for-byte.
+    assert {edge.edge_id for edge in single_graph.edges} <= {edge.edge_id for edge in multi_graph.edges}
+
+
+def test_link_poses_reports_the_rejection_that_blocked_every_alternative():
+    from tennis_robot.collection_route_connector_graph import (
+        ConnectorRejectionCode,
+        link_poses,
+    )
+
+    configuration = default_configuration()
+    court = CourtModel(
+        tuple(Point2D(x, y) for x, y in ((-20.0, -20.0), (20.0, -20.0), (20.0, 20.0), (-20.0, 20.0))),
+        (),
+    )
+    # Facing away at close range: no CSC of any generated radius fits, and the
+    # analytic gate rejects them all on turning geometry.
+    blocked = link_poses(
+        source_id="a", source_pose=Pose2D(0.0, 0.0, 0.0),
+        target_id="b", target_pose=Pose2D(0.2, 0.0, math.pi),
+        court=court, configuration=configuration, balls=(),
+    )
+    assert not blocked.feasible
+    assert blocked.rejections
+    assert blocked.sole_rejection is ConnectorRejectionCode.TURNING_CONSTRAINT_REJECTED
+
+    linked = link_poses(
+        source_id="a", source_pose=Pose2D(0.0, 0.0, 0.0),
+        target_id="b", target_pose=Pose2D(8.0, 0.0, 0.0),
+        court=court, configuration=configuration, balls=(),
+    )
+    assert linked.feasible and linked.rejections == ()
+    assert linked.sole_rejection is None

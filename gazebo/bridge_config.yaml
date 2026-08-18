@@ -5,7 +5,9 @@
 # Simulation clock — REQUIRED for use_sim_time nodes (slam_toolbox, Nav2).
 # Without it, sim time never starts and TF (map->odom) is never published.
 - gz_topic_name: /clock
-  ros_topic_name: /clock
+  # Keep the 500 Hz physics clock local to one relay. The relay publishes the
+  # ROS /clock contract at 50 Hz before it reaches the distributed boundary.
+  ros_topic_name: /clock_raw
   gz_type_name: gz.msgs.Clock
   ros_type_name: rosgraph_msgs/msg/Clock
   direction: GZ_TO_ROS

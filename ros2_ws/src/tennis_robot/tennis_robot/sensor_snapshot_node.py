@@ -6,6 +6,8 @@ robot_sensors.json payload shape that the existing UI already renders.
 
 from __future__ import annotations
 
+import json
+import base64
 import math
 import os
 import struct
@@ -14,91 +16,225 @@ import time
 import cv2
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import Image, LaserScan
+from std_msgs.msg import String
 
 from tennis_robot.control_bus import RobotSensorStore
 from tennis_robot.debug_display import bgra_bmp_data_url
 from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
-from tennis_robot.perception import detect_obstacle_class, build_survey_vision
 
-_STATUS_FILE = os.getenv("ROBOT_STATUS_FILE", "/workspace/runtime/robot_status.json")
+_STATUS_FILE = os.getenv(
+    "ROBOT_STATUS_FILE",
+    os.path.join(os.getenv("TENNIS_ROBOT_ROOT", "/workspace"), "runtime", "robot_status.json"),
+)
 
 WRITE_INTERVAL_S = float(os.getenv("SENSOR_SNAPSHOT_INTERVAL_S", "1.0"))
+SNAPSHOT_MODE = os.getenv("SENSOR_SNAPSHOT_MODE", "local").strip().lower()
+PREVIEW_TOPIC = os.getenv("SENSOR_SNAPSHOT_PREVIEW_TOPIC", "/telemetry/sensor_snapshot")
+PREVIEW_WIDTH = int(os.getenv("SENSOR_SNAPSHOT_PREVIEW_WIDTH", "320"))
+PREVIEW_JPEG_QUALITY = int(os.getenv("SENSOR_SNAPSHOT_JPEG_QUALITY", "65"))
 LIDAR_FRONT_INDEX_RATIO = float(os.getenv("LIDAR_FRONT_INDEX_RATIO", "0.5"))
 LIDAR_FRONT_MIN_OBSTACLE_RANGE_M = float(os.getenv("LIDAR_FRONT_MIN_OBSTACLE_RANGE_M", "0.18"))
 IR_THRESHOLD = float(os.getenv("IR_INTAKE_TRIGGER_THRESHOLD", "500.0"))
+IR_CONFIRM_SYMMETRY_MAX_DELTA = float(
+    os.getenv("BEAM_SYMMETRY_MAX_DELTA", "200.0")
+)
 
 
 class SensorSnapshotNode(Node):
     def __init__(self) -> None:
-        super().__init__("sensor_snapshot_node")
+        if SNAPSHOT_MODE not in {"local", "publisher", "receiver"}:
+            raise RuntimeError(
+                f"invalid SENSOR_SNAPSHOT_MODE={SNAPSHOT_MODE!r}; "
+                "use local, publisher, or receiver"
+            )
+        node_name = (
+            "sensor_snapshot_node"
+            if SNAPSHOT_MODE == "local"
+            else f"sensor_snapshot_{SNAPSHOT_MODE}"
+        )
+        super().__init__(node_name)
         self._sensor_store = RobotSensorStore.from_env()
         self._camera: dict | None = None
         self._depth: dict | None = None
         self._lidar: dict | None = None
         self._lidar_candidates: list[dict] = []
-        self._ir_left = 0.0
-        self._ir_right = 0.0
+        self._entry_ir_left = 0.0
+        self._entry_ir_right = 0.0
+        self._confirmed_ir_left = 0.0
+        self._confirmed_ir_right = 0.0
+        self._entry_left_available = False
+        self._entry_right_available = False
+        self._confirmed_left_available = False
+        self._confirmed_right_available = False
+        self._entry_broken = False
+        self._confirmed_broken = False
+        self._entry_crossing_count = 0
+        self._confirmed_crossing_count = 0
+        self._entry_last_crossing_at_s: float | None = None
+        self._confirmed_last_crossing_at_s: float | None = None
         self._last_write_s = 0.0
+        self._last_preview_process_s = {
+            "image": float("-inf"),
+            "depth": float("-inf"),
+            "scan": float("-inf"),
+        }
         self._front_range_m: float = math.inf
+        self._survey_vision: dict = {}
 
-        self.create_subscription(Image, "/camera/image_raw", self._on_image, 1)
-        self.create_subscription(Image, "/camera/depth", self._on_depth, 1)
-        self.create_subscription(LaserScan, "/scan", self._on_scan, 1)
-        self.create_subscription(LaserScan, "/gz/ir_left/scan", self._on_ir_left, 10)
-        self.create_subscription(LaserScan, "/gz/ir_right/scan", self._on_ir_right, 10)
+        preview_qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
+        self._preview_pub = None
+        if SNAPSHOT_MODE == "receiver":
+            self.create_subscription(
+                String, PREVIEW_TOPIC, self._on_preview, preview_qos
+            )
+            self.get_logger().info(
+                f"sensor_snapshot_node started (receiver: {PREVIEW_TOPIC})"
+            )
+            return
+        if SNAPSHOT_MODE == "publisher":
+            self._preview_pub = self.create_publisher(
+                String, PREVIEW_TOPIC, preview_qos
+            )
+
+        # These subscriptions feed the low-rate UI preview only. Keep the
+        # newest sensor sample and never backpressure the production streams.
+        self.create_subscription(
+            Image, "/camera/image_raw", self._on_image, preview_qos
+        )
+        self.create_subscription(Image, "/camera/depth", self._on_depth, preview_qos)
+        self.create_subscription(String, "/survey/vision", self._on_survey_vision, 1)
+        self.create_subscription(LaserScan, "/scan", self._on_scan, preview_qos)
+        self.create_subscription(
+            LaserScan, "/gz/ir_left/scan", self._on_entry_ir_left, 10
+        )
+        self.create_subscription(
+            LaserScan, "/gz/ir_right/scan", self._on_entry_ir_right, 10
+        )
+        self.create_subscription(
+            LaserScan,
+            "/gz/basket_ir_left/scan",
+            self._on_confirmed_ir_left,
+            10,
+        )
+        self.create_subscription(
+            LaserScan,
+            "/gz/basket_ir_right/scan",
+            self._on_confirmed_ir_right,
+            10,
+        )
         self.create_timer(0.1, self._write_if_due)
-        self.get_logger().info("sensor_snapshot_node started")
+        self.get_logger().info(
+            f"sensor_snapshot_node started ({SNAPSHOT_MODE})"
+        )
+
+    def _on_preview(self, msg: String) -> None:
+        try:
+            payload = json.loads(msg.data)
+        except (json.JSONDecodeError, TypeError):
+            return
+        if not isinstance(payload, dict) or payload.get("schema") != "sensor_preview/v1":
+            return
+        payload.pop("schema", None)
+        payload["transport"] = {
+            "mode": "compressed_dds_preview",
+            "topic": PREVIEW_TOPIC,
+            "received_at": time.time(),
+        }
+        self._sensor_store.write(payload)
+
+    def _on_survey_vision(self, msg: String) -> None:
+        try:
+            self._survey_vision = json.loads(msg.data)
+        except (json.JSONDecodeError, TypeError):
+            self._survey_vision = {}
 
     def _on_image(self, msg: Image) -> None:
+        if not self._preview_processing_due("image"):
+            return
         frame = self._decode_color_image(msg)
         if frame is None:
             return
         height, width = frame.shape[:2]
-        preview_width = min(width, 960)
+        preview_width = min(width, max(160, PREVIEW_WIDTH))
         preview_height = max(1, round(height * preview_width / max(1, width)))
         if preview_width != width:
             frame = cv2.resize(frame, (preview_width, preview_height), interpolation=cv2.INTER_AREA)
             height, width = frame.shape[:2]
         self._draw_recognition_overlay(frame)
-        bgra = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
         self._camera = {
             "width": int(width),
             "height": int(height),
             "native_width": int(msg.width),
             "native_height": int(msg.height),
-            "format": "bgra-bmp",
-            "data_url": bgra_bmp_data_url(bgra.tobytes(), int(width), int(height)),
+            "format": "jpeg",
+            "data_url": self._jpeg_data_url(frame),
         }
 
     def _draw_recognition_overlay(self, frame: np.ndarray) -> None:
         h, w = frame.shape[:2]
-        roi_y0, roi_y1 = int(h * 0.06), int(h * 0.74)
-        roi_x0, roi_x1 = int(w * 0.05), int(w * 0.95)
-
-        # ── obstacle detection (net / fence) ─────────────────────────────────
-        detection = detect_obstacle_class(frame)
-        if detection is not None:
-            label = detection.label
+        vision = self._survey_vision
+        source_width = max(1, int(vision.get("image_width") or w))
+        source_height = max(1, int(vision.get("image_height") or h))
+        scale_x = w / source_width
+        scale_y = h / source_height
+        detections = vision.get("court_scene_detections") or []
+        for detection in detections:
+            bbox = detection.get("bbox") or {}
+            label = str(detection.get("label") or "")
             color = (80, 220, 255) if label == "net" else (0, 210, 120)
-            cv2.rectangle(frame, (roi_x0, roi_y0), (roi_x1, roi_y1), color, 2)
-            dist_str = f"{self._front_range_m:.2f}m" if math.isfinite(self._front_range_m) else "—"
-            text = f"{label}  {dist_str}  {detection.confidence:.0%}"
-            cv2.rectangle(frame, (roi_x0, max(0, roi_y0 - 22)),
-                          (roi_x0 + len(text) * 9, roi_y0), color, -1)
-            cv2.putText(frame, text, (roi_x0 + 4, max(14, roi_y0 - 6)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.50, (0, 0, 0), 1, cv2.LINE_AA)
-        else:
-            cv2.rectangle(frame, (roi_x0, roi_y0), (roi_x1, roi_y1), (60, 60, 60), 1)
+            x0 = int(float(bbox.get("x") or 0) * scale_x)
+            y0 = int(float(bbox.get("y") or 0) * scale_y)
+            x1 = x0 + int(float(bbox.get("width") or 0) * scale_x)
+            y1 = y0 + int(float(bbox.get("height") or 0) * scale_y)
+            cv2.rectangle(frame, (x0, y0), (x1, y1), color, 2)
+            confidence = float(detection.get("confidence") or 0.0)
+            distance = detection.get("distance_m")
+            distance_text = f"{float(distance):.2f}m" if distance is not None else "—"
+            cv2.putText(
+                frame,
+                f"{label} {distance_text} {confidence:.0%}",
+                (x0 + 4, max(16, y0 - 6)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.50,
+                color,
+                1,
+                cv2.LINE_AA,
+            )
 
-        # ── court line / baseline detection ──────────────────────────────────
-        sv = build_survey_vision(frame)
-        if sv.line_detected:
+        confirmed = vision.get("obstacle_class")
+        candidate = vision.get("obstacle_candidate_class")
+        semantic_text = (
+            f"neural:{confirmed}"
+            if confirmed
+            else f"neural candidate:{candidate or 'none'}"
+        )
+        cv2.putText(
+            frame,
+            semantic_text,
+            (8, 38),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.42,
+            (80, 220, 255),
+            1,
+            cv2.LINE_AA,
+        )
+
+        # ── court line / baseline telemetry from the perception node ─────────
+        if bool(vision.get("line_detected")):
             line_y = int(h * 0.82)
+            roi_x0, roi_x1 = int(w * 0.05), int(w * 0.95)
             cv2.line(frame, (roi_x0, line_y), (roi_x1, line_y), (255, 255, 100), 2)
-            offset_str = f"{sv.line_offset_m:.2f}m" if sv.line_offset_m is not None else "?"
-            conf_str = f"{sv.line_confidence:.0%}"
+            line_offset = vision.get("line_offset_m")
+            offset_str = f"{float(line_offset):.2f}m" if line_offset is not None else "?"
+            conf_str = f"{float(vision.get('line_confidence') or 0.0):.0%}"
             cv2.putText(frame, f"baseline  off={offset_str}  {conf_str}",
                         (roi_x0+ 4, line_y - 6),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.44, (255, 255, 100), 1, cv2.LINE_AA)
@@ -144,6 +280,8 @@ class SensorSnapshotNode(Node):
         return self._survey_state_cache
 
     def _on_depth(self, msg: Image) -> None:
+        if not self._preview_processing_due("depth"):
+            return
         depth = self._decode_depth_image(msg)
         if depth is None:
             return
@@ -154,20 +292,34 @@ class SensorSnapshotNode(Node):
         clipped = np.where(np.isfinite(depth) & (depth > 0), depth, max_range)
         normalized = np.clip((clipped - min_range) / span, 0.0, 1.0)
         intensity = ((1.0 - normalized) * 255).astype(np.uint8)
-        bgra = np.dstack((intensity, intensity, intensity, np.full_like(intensity, 255)))
+        preview_width = min(intensity.shape[1], max(160, PREVIEW_WIDTH))
+        preview_height = max(
+            1, round(intensity.shape[0] * preview_width / max(1, intensity.shape[1]))
+        )
+        if preview_width != intensity.shape[1]:
+            intensity = cv2.resize(
+                intensity,
+                (preview_width, preview_height),
+                interpolation=cv2.INTER_AREA,
+            )
+        bgr = cv2.cvtColor(intensity, cv2.COLOR_GRAY2BGR)
         height, width = depth.shape[:2]
         self._depth = {
-            "width": int(width),
-            "height": int(height),
-            "format": "depth-bmp",
+            "width": int(preview_width),
+            "height": int(preview_height),
+            "native_width": int(width),
+            "native_height": int(height),
+            "format": "depth-jpeg",
             "min_range_m": min_range,
             "max_range_m": max_range,
             "valid_count": int(valid.size),
             "median_range_m": None if valid.size == 0 else float(np.median(valid)),
-            "data_url": bgra_bmp_data_url(bgra.tobytes(), int(width), int(height)),
+            "data_url": self._jpeg_data_url(bgr),
         }
 
     def _on_scan(self, msg: LaserScan) -> None:
+        if not self._preview_processing_due("scan"):
+            return
         ranges = [float(r) for r in msg.ranges]
         if not ranges:
             return
@@ -213,31 +365,140 @@ class SensorSnapshotNode(Node):
             for cx, cy in extract_ball_candidates(ranges)
         ]
 
-    def _on_ir_left(self, msg: LaserScan) -> None:
-        self._ir_left = self._range_to_ir_value(msg.ranges[0] if msg.ranges else float("inf"))
+    def _preview_processing_due(self, stream: str) -> bool:
+        """Rate-limit UI rendering while always selecting a fresh sample."""
 
-    def _on_ir_right(self, msg: LaserScan) -> None:
-        self._ir_right = self._range_to_ir_value(msg.ranges[0] if msg.ranges else float("inf"))
+        now = time.monotonic()
+        if now - self._last_preview_process_s[stream] < WRITE_INTERVAL_S:
+            return False
+        self._last_preview_process_s[stream] = now
+        return True
+
+    def _on_entry_ir_left(self, msg: LaserScan) -> None:
+        self._entry_ir_left = self._range_to_ir_value(
+            msg.ranges[0] if msg.ranges else float("inf")
+        )
+        self._entry_left_available = True
+        self._update_ir_crossings()
+
+    def _on_entry_ir_right(self, msg: LaserScan) -> None:
+        self._entry_ir_right = self._range_to_ir_value(
+            msg.ranges[0] if msg.ranges else float("inf")
+        )
+        self._entry_right_available = True
+        self._update_ir_crossings()
+
+    def _on_confirmed_ir_left(self, msg: LaserScan) -> None:
+        self._confirmed_ir_left = self._range_to_ir_value(
+            msg.ranges[0] if msg.ranges else float("inf")
+        )
+        self._confirmed_left_available = True
+        self._update_ir_crossings()
+
+    def _on_confirmed_ir_right(self, msg: LaserScan) -> None:
+        self._confirmed_ir_right = self._range_to_ir_value(
+            msg.ranges[0] if msg.ranges else float("inf")
+        )
+        self._confirmed_right_available = True
+        self._update_ir_crossings()
+
+    def _update_ir_crossings(self) -> None:
+        entry_broken = (
+            self._entry_ir_left > IR_THRESHOLD
+            or self._entry_ir_right > IR_THRESHOLD
+        )
+        confirmed_broken = (
+            self._confirmed_ir_left > IR_THRESHOLD
+            and self._confirmed_ir_right > IR_THRESHOLD
+            and abs(self._confirmed_ir_left - self._confirmed_ir_right)
+            <= IR_CONFIRM_SYMMETRY_MAX_DELTA
+        )
+        now_s = time.time()
+        if entry_broken and not self._entry_broken:
+            self._entry_crossing_count += 1
+            self._entry_last_crossing_at_s = now_s
+        if confirmed_broken and not self._confirmed_broken:
+            self._confirmed_crossing_count += 1
+            self._confirmed_last_crossing_at_s = now_s
+        self._entry_broken = entry_broken
+        self._confirmed_broken = confirmed_broken
 
     def _write_if_due(self) -> None:
         now = time.time()
         if now - self._last_write_s < WRITE_INTERVAL_S:
             return
         self._last_write_s = now
-        self._sensor_store.write({
+        lidar = self._lidar
+        if self._preview_pub is not None and isinstance(lidar, dict):
+            # The UI renders the scan from ranges_m. Do not send the legacy BMP
+            # over DDS; it is typically ~170 kB while the numeric scan is ~7 kB.
+            lidar = {key: value for key, value in lidar.items() if key != "data_url"}
+        entry_broken = self._entry_broken
+        confirmed_broken = self._confirmed_broken
+        entry_available = (
+            self._entry_left_available and self._entry_right_available
+        )
+        confirmed_available = (
+            self._confirmed_left_available and self._confirmed_right_available
+        )
+        payload = {
             "front_camera": self._camera,
             "front_depth": self._depth,
-            "front_lidar": self._lidar,
+            "front_lidar": lidar,
             "lidar_candidates": self._lidar_candidates,
             "ir_intake": {
-                "left": self._ir_left,
-                "right": self._ir_right,
+                "entry": {
+                    "broken": entry_broken,
+                    "available": entry_available,
+                    "left_raw": self._entry_ir_left,
+                    "right_raw": self._entry_ir_right,
+                    "crossing_count": self._entry_crossing_count,
+                    "last_crossing_at_s": self._entry_last_crossing_at_s,
+                },
+                "confirmed": {
+                    "broken": confirmed_broken,
+                    "available": confirmed_available,
+                    "left_raw": self._confirmed_ir_left,
+                    "right_raw": self._confirmed_ir_right,
+                    "symmetry_delta": abs(
+                        self._confirmed_ir_left - self._confirmed_ir_right
+                    ),
+                    "crossing_count": self._confirmed_crossing_count,
+                    "last_crossing_at_s": self._confirmed_last_crossing_at_s,
+                },
                 "threshold": IR_THRESHOLD,
-                "triggered": self._ir_left > IR_THRESHOLD or self._ir_right > IR_THRESHOLD,
-                "left_available": True,
-                "right_available": True,
+                "symmetry_max_delta": IR_CONFIRM_SYMMETRY_MAX_DELTA,
+                # Legacy aliases retained for older panels during rolling
+                # deployment. They describe the physical entry beam pair.
+                "left": self._entry_ir_left,
+                "right": self._entry_ir_right,
+                "triggered": entry_broken,
+                "left_available": self._entry_left_available,
+                "right_available": self._entry_right_available,
             },
-        })
+        }
+        if self._preview_pub is not None:
+            payload["schema"] = "sensor_preview/v1"
+            payload["published_at"] = now
+            message = String()
+            message.data = json.dumps(payload, separators=(",", ":"))
+            self._preview_pub.publish(message)
+        else:
+            payload["transport"] = {"mode": "local"}
+            self._sensor_store.write(payload)
+
+    @staticmethod
+    def _jpeg_data_url(frame: np.ndarray) -> str:
+        quality = max(35, min(90, PREVIEW_JPEG_QUALITY))
+        ok, encoded = cv2.imencode(
+            ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality]
+        )
+        if not ok:
+            return ""
+        return (
+            "data:image/jpeg;base64,"
+            + base64.b64encode(encoded.tobytes()).decode("ascii")
+        )
 
     def _decode_color_image(self, msg: Image) -> np.ndarray | None:
         arr = np.frombuffer(bytes(msg.data), dtype=np.uint8)
@@ -276,9 +537,12 @@ def main(args=None) -> None:
     node = SensorSnapshotNode()
     try:
         rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

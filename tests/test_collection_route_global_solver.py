@@ -99,7 +99,7 @@ def test_collision_rejected_start_edges_yield_planning_timeout_not_no_feasible_t
     graph = DirectedCandidateGraph(
         full.pass_nodes,
         tuple(
-            replace(edge, path=None, maximum_curvature_per_m=None, collision_free=False, rejection=ConnectorRejectionCode.COLLISION_REJECTED)
+            replace(edge, path=None, maximum_curvature_per_m=None, collision_free=False, rejection=ConnectorRejectionCode.COLLISION_REJECTED, swept_crossings=())
             if edge.source_node_id == "start" else edge
             for edge in full.edges
         ),
@@ -136,7 +136,15 @@ def test_terminal_extension_rejection_invalidates_route():
 
 def test_budget_exhaustion_returns_partial_plan_and_planning_budget_deferral():
     base = default_configuration()
-    configuration = replace(base, global_route_search=replace(base.global_route_search, max_search_expansions=1))
+    # These fixture balls sit on the straight start connector, so leaving the
+    # capture corridor open would collect them in transit and the route would be
+    # complete rather than partial.  Collapsing the corridor keeps the assertion
+    # about budget exhaustion, which is what this test is named for.
+    configuration = replace(
+        base,
+        global_route_search=replace(base.global_route_search, max_search_expansions=1),
+        feasibility=replace(base.feasibility, capture_safety_margin_m=1.0),
+    )
     first = candidate("a", ("ball-a",), 4.0)
     second = candidate("b", ("ball-b",), 8.0)
     plan = solve(configuration, ("ball-a", "ball-b"), (first, second))

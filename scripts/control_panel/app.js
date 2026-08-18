@@ -13,6 +13,8 @@
     };
     let diagnostics = { command: {}, robot: {}, history: [], stats: {} };
     let sensors = {};
+    let _refreshInFlight = false;
+    const SENSOR_VIEWS = new Set(["survey", "collection", "sensors"]);
     let _lastCollectionEvents = [];
     let _collectionLogClearedAtS = null;
     // Monotonic per-session recency key for the collection log.  sim_time_s does
@@ -24,8 +26,8 @@
     let _navTestLog = [];
     let _lastServerCollectionEvents = [];
     const _basketBeamHistory = {
-      left: { triggered: false, lastCrossingAtMs: null },
-      right: { triggered: false, lastCrossingAtMs: null },
+      entry: { triggered: false, lastCrossingAtMs: null },
+      confirmed: { triggered: false, lastCrossingAtMs: null },
     };
     let lastSurveyDiscovery = null;
     let robotPath = [];
@@ -148,10 +150,12 @@
         beam_false_credit: "beam false credit",
         beam_missed_credit: "beam missed ball",
       };
-      const severityFor = type => (
+      const severityFor = (type, event = {}) => (
         type === "scan_blocked" || type === "lane_collect_timeout" || type === "lane_collect_gave_up"
           || type === "route_ball_missing" || type === "beam_false_credit" || type === "beam_missed_credit"
           || type === "nav2_unavailable" || type === "nav_test_out_of_bounds" || type === "nav_test_error"
+          || ((type === "route_executor_state_changed" || type === "route_executor_route_outcome")
+            && String(event.state || "").startsWith("aborted_"))
           ? "error"
           : type === "lane_collect_abort" || type === "nav_test_timeout"
             ? "warn"
@@ -224,6 +228,9 @@
             return `${ballText(event.ball_id)} | ${event.mission_phase || "-"} / ${event.behavior_state || "-"} | ${physical}`;
           }
           case "nav2_goal_cancel":
+            if (String(event.reason || "").startsWith("terminal_cleanup:")) {
+              return `Navigation cleanup after terminal mission state ${String(event.reason.split(":")[1] || event.route_outcome || "finished").replaceAll("_", " ")} | Not a route failure`;
+            }
             return `Navigation goal cancelled | ${String(event.reason || "requested").replaceAll("_", " ")}`;
           default:
             return Object.entries(event)
@@ -240,7 +247,7 @@
       };
       target.innerHTML = rows.map(event => {
         const type = event.type || "event";
-        const severity = severityFor(type);
+        const severity = severityFor(type, event);
         return `<div class="terminal-row">
           <span class="terminal-time">${escapeHtml(event.clock || fmt(event.t_s, "s"))}</span>
           <span class="terminal-type ${severity === "info" ? "" : severity}">${escapeHtml(labelFor[type] || type)}</span>
@@ -281,23 +288,55 @@
       if (!kv) return;
       const r = run || {};
       const hasRun = Number(r.planned || 0) > 0 || Number(r.basket_retained || 0) > 0;
+      const noFeasibleTargets = r.planning_status === "empty_no_feasible_targets";
+      const incomplete = r.status === "incomplete_targets"
+        || r.state === "incomplete_targets"
+        || noFeasibleTargets;
+      const aborted = String(r.status || r.state || "").startsWith("aborted_");
+      const failureReason = String(r.failure_reason || r.route_outcome || "").replaceAll("_", " ");
+      const failureCause = String(r.failure_detail || "").split("|")[0].trim().replaceAll("_", " ");
+      const plannerBlockers = (Array.isArray(r.ball_results) ? r.ball_results : [])
+        .filter(result => ["deferred", "unreachable"].includes(result.status))
+        .reduce((counts, result) => {
+          const reason = String(result.reason_code || "unknown").replaceAll("_", " ");
+          counts[reason] = (counts[reason] || 0) + 1;
+          return counts;
+        }, {});
+      const plannerBlockerText = Object.entries(plannerBlockers)
+        .map(([reason, count]) => `${count} ${reason}`)
+        .join(", ");
       if (status) {
-        status.textContent = hasRun ? (r.status || "running") : "waiting";
-        status.style.color = Number(r.failed || 0) > 0
-          ? "var(--warn)"
-          : (hasRun ? "var(--accent)" : "var(--muted)");
+        status.textContent = aborted
+          ? `ABORTED · ${failureCause || failureReason || "route failed"}`
+          : (incomplete
+            ? `INCOMPLETE · ${plannerBlockerText || `${r.unresolved_targets ?? r.remaining ?? 0} unresolved`}`
+            : (hasRun ? (r.status || "running") : "waiting"));
+        status.style.color = aborted
+          ? "var(--danger)"
+          : (incomplete || Number(r.failed || 0) > 0
+            ? "var(--warn)"
+            : (hasRun ? "var(--accent)" : "var(--muted)"));
       }
       const speed = Number(robot?.measured_speed_mps ?? 0);
       const elapsed = r.elapsed_s;
+      const poseDrift = r.pose_drift_m;
+      const yawDrift = r.yaw_drift_rad;
       setKv("collectionRunKv", [
         ["Speed", `${speed.toFixed(2)} m/s`],
         ["Elapsed", elapsed != null ? `${Number(elapsed).toFixed(1)} s` : "-"],
+        ["Route outcome", r.route_outcome ? String(r.route_outcome).replaceAll("_", " ") : "-"],
+        ["Stop reason", r.failure_reason ? String(r.failure_reason).replaceAll("_", " ") : "-"],
+        ["Failure detail", r.failure_detail || "-"],
         ["Basket retained", r.basket_retained ?? 0],
         ["Beam / truth (sim)", `${r.beam_credits ?? 0} / ${r.truth_retained ?? 0}`],
-        ["Route collected", r.route_collected ?? 0],
+        ["Target outcome", `${r.confirmed ?? 0} confirmed / ${r.crossed_unconfirmed ?? 0} crossed-no-ball`],
+        ["Unassigned intake", r.unassigned_confirmations ?? 0],
+        ["Pose drift", poseDrift != null ? `${Number(poseDrift).toFixed(3)} m` : "-"],
+        ["Yaw drift", yawDrift != null ? `${Number(yawDrift).toFixed(3)} rad` : "-"],
         ["Failed", r.failed ?? 0],
         ["Missing / skipped", `${r.missing ?? 0} / ${r.skipped ?? 0}`],
-        ["Remaining", r.remaining ?? 0],
+        ["Remaining / unresolved", `${r.remaining ?? 0} / ${r.unresolved_targets ?? 0}`],
+        ["Planner blockers", plannerBlockerText || "-"],
         ["Active ball", r.active_ball_id ?? "-"],
         ["Failed ball IDs", (r.failed_ball_ids || []).join(", ") || "-"],
       ]);
@@ -344,6 +383,9 @@
     document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 
     let _wcInterval = null;
+    let _wcRequestInFlight = false;
+    let _wcVisibleFrameId = "wcFrame";
+    let _wcFrameSerial = 0;
     function startWebcam() {
       if (_wcInterval) return;
       refreshWebcam();
@@ -353,26 +395,42 @@
       if (_wcInterval) { clearInterval(_wcInterval); _wcInterval = null; }
     }
     async function refreshWebcam() {
+      if (_wcRequestInFlight) return;
+      _wcRequestInFlight = true;
       try {
         const res = await fetch("/api/webcam/frame", { cache: "no-store" });
         renderWebcam(await res.json());
-      } catch (_) {}
+      } catch (_) {
+      } finally {
+        _wcRequestInFlight = false;
+      }
     }
     function renderWebcam(data) {
-      const img = document.getElementById("wcFrame");
+      const current = document.getElementById(_wcVisibleFrameId);
+      const nextId = _wcVisibleFrameId === "wcFrame" ? "wcFrameNext" : "wcFrame";
+      const next = document.getElementById(nextId);
       const empty = document.getElementById("wcEmpty");
       const status = document.getElementById("wcStatus");
       if (!data.available) {
-        img.style.display = "none";
+        _wcFrameSerial += 1;
+        current.style.display = "none";
+        next.style.display = "none";
         empty.style.display = "";
         empty.textContent = data.error || "webcam unavailable";
         status.textContent = "— unavailable";
         status.style.color = "var(--danger)";
         return;
       }
-      img.src = data.data_url;
-      img.style.display = "block";
-      empty.style.display = "none";
+      const serial = ++_wcFrameSerial;
+      next.onload = () => {
+        if (serial !== _wcFrameSerial) return;
+        next.style.display = "block";
+        current.style.display = "none";
+        empty.style.display = "none";
+        _wcVisibleFrameId = nextId;
+        next.onload = null;
+      };
+      next.src = data.data_url;
       if (data.detected) {
         status.textContent = "— ball detected";
         status.style.color = "var(--accent)";
@@ -464,29 +522,32 @@
     }
 
     // Wired after the Control view partial is injected (see loadView).
+    // The command buttons are type="button" (never form-submit): a D-pad that
+    // drives the robot must not navigate the page.  Held D-pad directions use
+    // pointer events (press-and-hold); momentary/mission commands use click.
     VIEW_INIT.control = function () {
       document.querySelectorAll("#commandForm .command").forEach(btn => {
-        if (!DPAD_MODES.has(btn.value)) return;
-        btn.addEventListener("pointerdown", e => {
-          e.preventDefault();
-          if (_dpadTimer !== null) return;
-          btn.setPointerCapture(e.pointerId);
-          _sendRawCommand(btn.value);
-          _dpadTimer = setInterval(() => _sendRawCommand(btn.value), 120);
-        });
-        btn.addEventListener("pointerup", () => _stopDpad());
-        btn.addEventListener("pointercancel", () => _stopDpad());
-      });
-
-      const commandForm = document.getElementById("commandForm");
-      if (commandForm) commandForm.addEventListener("submit", async event => {
-        event.preventDefault();
-        const mode = event.submitter?.value;
-        if (!mode || DPAD_MODES.has(mode)) return;
-        await _sendRawCommand(mode);
-        const nextView = routeForMode(mode);
-        if (nextView) setView(nextView);
-        await refresh();
+        if (DPAD_MODES.has(btn.value)) {
+          btn.addEventListener("pointerdown", e => {
+            e.preventDefault();
+            if (_dpadTimer !== null) return;
+            btn.setPointerCapture(e.pointerId);
+            _sendRawCommand(btn.value);
+            _dpadTimer = setInterval(() => _sendRawCommand(btn.value), 120);
+          });
+          btn.addEventListener("pointerup", () => _stopDpad());
+          btn.addEventListener("pointercancel", () => _stopDpad());
+        } else {
+          // turn_180, map_court, collect_route, idle — momentary commands.
+          btn.addEventListener("click", async () => {
+            const mode = btn.value;
+            if (!mode) return;
+            await _sendRawCommand(mode);
+            const nextView = routeForMode(mode);
+            if (nextView) setView(nextView);
+            await refresh();
+          });
+        }
       });
       updateCommandButtons();
     };
@@ -535,11 +596,26 @@
     }
 
     async function refresh() {
-      const response = await fetch("/api/diagnostics", { cache: "no-store" });
-      diagnostics = await response.json();
-      const sensorResponse = await fetch("/api/sensors", { cache: "no-store" });
-      sensors = await sensorResponse.json();
-      render();
+      if (_refreshInFlight || document.hidden) return;
+      _refreshInFlight = true;
+      try {
+        const activeView = document.querySelector("section.view.active")?.id;
+        const diagnosticsUrl = `/api/diagnostics?view=${encodeURIComponent(activeView || "dashboard")}`;
+        const response = await fetch(diagnosticsUrl, { cache: "no-store" });
+        diagnostics = await response.json();
+        if (SENSOR_VIEWS.has(activeView)) {
+          const sensorResponse = await fetch("/api/sensors", { cache: "no-store" });
+          sensors = await sensorResponse.json();
+        }
+        render();
+      } catch (err) {
+        // Transient fetch failures — a fetch aborted by navigation, or the
+        // server momentarily busy — must not break the 1 s polling loop or
+        // raise an uncaught rejection. The next tick recovers.
+        console.debug("refresh skipped:", err && err.message);
+      } finally {
+        _refreshInFlight = false;
+      }
     }
     function render() {
       const command = diagnostics.command || {};
@@ -640,7 +716,15 @@
       safe(renderStats);
       safe(renderCourtMap);
       safe(renderSensors);
-      safe(() => renderSurveyBoundary(robot.survey || {}));
+      safe(() => renderSurveyOperations(
+        diagnostics.court_survey_live || {},
+        diagnostics.court_boundary || {},
+        robot,
+      ));
+      safe(() => renderSurveyBoundary(
+        diagnostics.court_survey_live || {},
+        diagnostics.court_boundary || {},
+      ));
       // Persisted breadcrumb trail served by the backend (survives reloads/restarts).
       if (Array.isArray(diagnostics.robot_path)) robotPath = diagnostics.robot_path;
       safe(() => {
@@ -677,7 +761,14 @@
       // Auto-navigate to the mission workspace while survey/collection is active.
       const mapMission = robot.map_mission || {};
       const liveSurvey = diagnostics.court_survey_live || {};
-      const surveyActive = liveSurvey.running || (survey.state && !["idle", "done", "complete", "completed"].includes(String(survey.state)));
+      // Only treat the survey as active from the LIVE heartbeat, or from a
+      // non-terminal survey.state *while the robot is genuinely in a survey
+      // mode*. A crashed/aborted survey leaves survey.state stuck at a
+      // mid-value (e.g. "net_standoff") forever; without the mode guard that
+      // stale value would perpetually auto-route the user off the Control view.
+      const inSurveyMode = ["map_court", "map_left_side"].includes(robot.actual_mode);
+      const surveyActive = Boolean(liveSurvey.running) || (inSurveyMode && survey.state
+        && !["idle", "done", "complete", "completed"].includes(String(survey.state)));
       const collectionActive = (mapMission.active && !mapMission.complete) || (collectionScan.active && !collectionScan.complete);
       if (collectionActive || surveyActive) {
         const activeView = document.querySelector("section.view.active");
@@ -686,15 +777,136 @@
         if (activeView && activeView.id !== targetView && autoRouteFrom.has(activeView.id)) setView(targetView);
       }
     }
-    function renderSurveyBoundary(survey) {
+    function _surveyEventLabel(code) {
+      return String(code || "none").replace(/^phase_/, "").replaceAll("_", " ");
+    }
+    function renderSurveyOperations(live, boundary, robot) {
+      const timing = live.timing || boundary.timing || {};
+      const coverage = live.coverage || {};
+      const n = Number(coverage.n) || 0;
+      const i = Number(coverage.i) || 0;
+      const complete = live.result === "OK" || boundary.status === "OK" || boundary.completed === true;
+      const failed = live.result === "FAILED" || boundary.status === "FAILED";
+      const running = Boolean(live.running);
+      const state = failed ? "FAILED" : complete ? "COMPLETED" : running ? "RUNNING" : "IDLE";
+      const phase = live.state || timing.current_phase || (complete ? "done" : "waiting");
+      const progress = complete ? 100 : n > 0 ? Math.max(0, Math.min(100, Math.round(i / n * 100))) : 0;
+      const lastEvent = live.last_event || (complete ? "survey_completed" : "none");
+      const measuredSpeed = Number(robot.measured_speed_mps);
+      const motion = live.motion || {};
+      const cmdLinear = Number.isFinite(Number(motion.commanded_linear_m_s))
+        ? Number(motion.commanded_linear_m_s)
+        : Number(robot.cmd_linear_m_s || 0);
+      const cmdAngular = Number.isFinite(Number(motion.commanded_angular_rad_s))
+        ? Number(motion.commanded_angular_rad_s)
+        : Number(robot.cmd_angular_rad_s || 0);
+      const health = live.health || {};
+      const lidarHealth = health.lidar || (live.sensor_frame ? "healthy" : "waiting");
+      const visionHealth = health.vision || "unknown";
+      const overallHealthy = Boolean(robot.connected)
+        && !failed
+        && (complete || (lidarHealth === "healthy" && visionHealth === "healthy"));
+
+      setText("surveyOpState", state);
+      setText("surveyOpPhase", `${_surveyEventLabel(phase)} · ${fmt(timing.current_phase_s, "s")}`);
+      setText("surveyOpEvent", _surveyEventLabel(lastEvent));
+      setText("surveyOpEventAge", `elapsed ${fmt(timing.elapsed_s, "s")}`);
+      setText("surveyOpSpeed", `${Number.isFinite(measuredSpeed) ? measuredSpeed.toFixed(2) : "—"} m/s`);
+      setText("surveyOpCommand", `cmd ${cmdLinear.toFixed(2)} m/s · ${cmdAngular.toFixed(2)} rad/s`);
+      setText("surveyOpProgress", `${progress}%`);
+      setText("surveyOpPoints", `${live.map_point_count ?? boundary.occupancy?.point_count ?? 0} points · ${i}/${n || "—"}`);
+      setText("surveyOpHealth", overallHealthy ? "HEALTHY" : failed ? "FAILED" : "CHECK");
+      setText("surveyOpSensors", `LiDAR ${lidarHealth} · Vision ${visionHealth}`);
+
+      const format = live.court_format_estimate || boundary.court?.format_estimate || {};
+      const formatKnown = ["singles", "doubles"].includes(format.label);
+      const confidence = Number(format.confidence);
+      const modelDoubles = boundary.court?.is_doubles;
+      setText(
+        "surveyFormatStatus",
+        formatKnown
+          ? `— ${format.label} ${(confidence * 100).toFixed(0)}%`
+          : `— ${modelDoubles === false ? "singles" : "doubles"} model · camera unknown`,
+      );
+      setKv("surveyFormatKv", [
+        ["Camera estimate", formatKnown ? format.label : "unknown"],
+        ["Confidence", Number.isFinite(confidence) ? `${(confidence * 100).toFixed(0)}%` : "—"],
+        ["Corner evidence", format.evidence_count ?? 0],
+        ["Source", format.source || "camera_line_junctions"],
+        ["Navigation geometry", modelDoubles === false ? "singles" : "validated doubles"],
+      ]);
+
+      const events = Array.isArray(live.events) ? live.events.slice(-10).reverse() : [];
+      const timeline = document.getElementById("surveyEventTimeline");
+      setText("surveyEventCount", `${events.length} event${events.length === 1 ? "" : "s"}`);
+      if (timeline) {
+        timeline.replaceChildren();
+        if (!events.length) {
+          const empty = document.createElement("div");
+          empty.className = "terminal-empty";
+          empty.textContent = complete
+            ? "Completed with the previous telemetry contract; run again to capture the event timeline."
+            : "Waiting for survey events.";
+          timeline.appendChild(empty);
+        } else {
+          events.forEach(event => {
+            const row = document.createElement("div");
+            row.className = `survey-event ${event.level || "info"}`;
+            const dot = document.createElement("span");
+            dot.className = "survey-event-dot";
+            const body = document.createElement("div");
+            const title = document.createElement("strong");
+            title.textContent = _surveyEventLabel(event.code);
+            const detail = document.createElement("small");
+            detail.textContent = event.detail || event.state || "";
+            body.append(title, detail);
+            const time = document.createElement("time");
+            time.textContent = `+${Number(event.elapsed_s || 0).toFixed(1)}s`;
+            row.append(dot, body, time);
+            timeline.appendChild(row);
+          });
+        }
+      }
+
+      const runButton = document.getElementById("surveyRunButton");
+      const stopButton = document.getElementById("surveyStopButton");
+      if (runButton) runButton.disabled = running;
+      if (stopButton) stopButton.disabled = !running;
+      setText("surveyEngineeringDebug", JSON.stringify({
+        launch: diagnostics.court_survey_launch || {},
+        live: {
+          state: live.state,
+          result: live.result,
+          failure_reason: live.failure_reason,
+          age_s: live.age_s,
+          stale: live.stale,
+          health,
+          motion,
+          sensor_frame: live.sensor_frame,
+          front_range_m: live.front_range_m,
+          map_error: live.error,
+        },
+        robot: {
+          connected: robot.connected,
+          age_s: robot.age_s,
+          actual_mode: robot.actual_mode,
+          measured_speed_mps: robot.measured_speed_mps,
+          cmd_linear_m_s: robot.cmd_linear_m_s,
+          cmd_angular_rad_s: robot.cmd_angular_rad_s,
+        },
+      }, null, 2));
+    }
+    function renderSurveyBoundary(live, bounds) {
       const statusEl = document.getElementById("surveyBoundaryStatus");
       const kvEl = document.getElementById("surveyBoundaryKv");
       if (!statusEl || !kvEl) return;
-      const bounds = survey.bounds;
-      const inProgress = survey.state && survey.state !== "done";
-      const isComplete = bounds && (bounds.status === "SUCCESS" || bounds.survey_complete);
+      const inProgress = Boolean(live.running);
+      const isComplete = bounds && (
+        bounds.status === "SUCCESS" || bounds.status === "OK"
+        || bounds.survey_complete || bounds.completed
+      );
       if (isComplete) {
-        const cg = bounds.court_geometry || {};
+        const cg = bounds.court_geometry || bounds.court || {};
         const fg = canonicalFenceBounds(bounds);
         const w  = fg.west_x  != null ? fg.west_x.toFixed(2)  : "—";
         const e  = fg.east_x  != null ? fg.east_x.toFixed(2)  : "—";
@@ -702,24 +914,24 @@
         const n  = fg.north_y != null ? fg.north_y.toFixed(2) : "—";
         const len = cg.length_m != null ? cg.length_m.toFixed(2) : "—";
         const wid = cg.width_m  != null ? cg.width_m.toFixed(2)  : "—";
-        statusEl.textContent = `— SUCCESS · ${bounds.sample_count ?? "?"} samples`;
+        statusEl.textContent = `— SUCCESS · ${bounds.occupancy?.point_count ?? bounds.sample_count ?? "?"} points`;
         statusEl.style.color = "var(--accent)";
         setKv("surveyBoundaryKv", [
-          ["Court length (E-W)", `${len} m`],
-          ["Court width (N-S)", `${wid} m`],
-          ["West fence x",  `${w} m`],
-          ["East fence x",  `${e} m`],
-          ["South fence y", `${s} m`],
-          ["North fence y", `${n} m`],
+          ["Result", bounds.notice || "Survey completed and saved"],
+          ["Court template", `${len} × ${wid} m`],
+          ["Map artifact", bounds.map_artifact?.status || "unknown"],
+          ["Fence X", `${w} … ${e} m`],
+          ["Fence Y", `${s} … ${n} m`],
+          ["Elapsed", fmt(bounds.timing?.elapsed_s, "s")],
         ]);
       } else if (inProgress) {
-        statusEl.textContent = `— mapping · ${survey.sample_count ?? 0} samples`;
+        statusEl.textContent = `— mapping · ${live.map_point_count ?? 0} points`;
         statusEl.style.color = "var(--accent-2)";
         setKv("surveyBoundaryKv", [
-          ["State", survey.state || "—"],
-          ["Event", (survey.navigation || {}).last_event || "none"],
-          ["Distance", fmt((survey.navigation || {}).distance_traveled_m, "m")],
-          ["Samples collected", survey.sample_count ?? 0],
+          ["State", live.state || "—"],
+          ["Event", _surveyEventLabel(live.last_event)],
+          ["Front clearance", fmt(live.front_range_m, "m")],
+          ["Points collected", live.map_point_count ?? 0],
         ]);
       } else {
         statusEl.textContent = "no court map data";
@@ -1695,13 +1907,47 @@
     function renderSensor(id, sensor) {
       const target = document.getElementById(id);
       if (!target) return;
+      target.className = "sensor-frame";
+      let frames = Array.from(target.querySelectorAll("img[data-sensor-frame]"));
+      let placeholder = target.querySelector(".sensor-frame-placeholder");
+      if (frames.length !== 2 || !placeholder) {
+        target.replaceChildren();
+        frames = [0, 1].map(index => {
+          const image = document.createElement("img");
+          image.dataset.sensorFrame = String(index);
+          image.alt = id;
+          image.className = "sensor-frame-image";
+          target.appendChild(image);
+          return image;
+        });
+        placeholder = document.createElement("span");
+        placeholder.className = "sensor-frame-placeholder";
+        target.appendChild(placeholder);
+        target.dataset.activeFrame = "-1";
+        target.dataset.frameSerial = "0";
+      }
       if (!sensor || !sensor.data_url) {
-        target.className = "sensor-empty";
-        target.textContent = "not available";
+        target.dataset.frameSerial = String(Number(target.dataset.frameSerial || 0) + 1);
+        frames.forEach(image => image.classList.remove("active"));
+        target.dataset.activeFrame = "-1";
+        placeholder.hidden = false;
+        placeholder.textContent = "not available";
         return;
       }
-      target.className = "";
-      target.innerHTML = `<img src="${sensor.data_url}" alt="${id}">`;
+      const activeIndex = Number(target.dataset.activeFrame || -1);
+      const nextIndex = activeIndex === 0 ? 1 : 0;
+      const next = frames[nextIndex];
+      const serial = Number(target.dataset.frameSerial || 0) + 1;
+      target.dataset.frameSerial = String(serial);
+      next.onload = () => {
+        if (Number(target.dataset.frameSerial) !== serial) return;
+        next.classList.add("active");
+        if (activeIndex >= 0) frames[activeIndex].classList.remove("active");
+        placeholder.hidden = true;
+        target.dataset.activeFrame = String(nextIndex);
+        next.onload = null;
+      };
+      next.src = sensor.data_url;
     }
     function renderLidarSensor(id, sensor) {
       const target = document.getElementById(id);
@@ -1906,16 +2152,26 @@
     }
     function renderCollectionIr(ir) {
       const threshold = ir?.threshold ?? 500;
-      const available = ir?.left_available || ir?.right_available;
+      const entry = ir?.entry || {
+        broken: !!ir?.triggered,
+        available: ir?.left_available || ir?.right_available,
+        left_raw: ir?.left,
+        right_raw: ir?.right,
+      };
+      const confirmed = ir?.confirmed || {
+        broken: false,
+        available: false,
+      };
+      const available = entry.available || confirmed.available;
       const statusEl = document.getElementById("collIrStatus");
       if (statusEl) statusEl.textContent = available ? "live" : "no signal";
-      function renderOne(side, valueId, lastId, barId, panelId, value, avail) {
+      function renderOne(stage, valueId, lastId, barId, panelId, signal) {
         const valEl = document.getElementById(valueId);
         const lastEl = document.getElementById(lastId);
         const barEl = document.getElementById(barId);
         const panelEl = document.getElementById(panelId);
         if (!valEl || !lastEl || !barEl || !panelEl) return;
-        if (!avail || value === null || value === undefined) {
+        if (!signal?.available) {
           valEl.textContent = "N/A";
           lastEl.textContent = "No sensor signal";
           barEl.style.width = "0%";
@@ -1923,32 +2179,52 @@
           panelEl.style.borderColor = "var(--line)";
           return;
         }
-        const triggered = value > threshold;
-        const history = _basketBeamHistory[side];
+        const triggered = !!signal.broken;
+        const history = _basketBeamHistory[stage];
+        const serverCrossingAtMs = Number(signal.last_crossing_at_s) * 1000;
+        if (Number.isFinite(serverCrossingAtMs) && serverCrossingAtMs > 0) {
+          history.lastCrossingAtMs = serverCrossingAtMs;
+        }
         if (triggered && !history.triggered) history.lastCrossingAtMs = Date.now();
         history.triggered = triggered;
-        valEl.textContent = triggered ? "BALL" : "CLEAR";
+        valEl.textContent = triggered
+          ? (stage === "confirmed" ? "CONFIRMED" : "BALL")
+          : "CLEAR";
         if (triggered) {
-          lastEl.textContent = "Crossing now";
+          lastEl.textContent = stage === "confirmed"
+            ? "Basket crossing now"
+            : "Intake entry now";
         } else if (history.lastCrossingAtMs !== null) {
           const elapsedS = Math.max(0, Math.round((Date.now() - history.lastCrossingAtMs) / 1000));
-          lastEl.textContent = `Last crossing ${elapsedS}s ago`;
+          lastEl.textContent = `Last ${stage} ${elapsedS}s ago`;
         } else {
           lastEl.textContent = "No crossing seen";
         }
-        valEl.title = `Raw sensor value ${Math.round(value)}; threshold ${Math.round(threshold)}`;
+        const raw = [signal.left_raw, signal.right_raw]
+          .filter(Number.isFinite)
+          .map(value => Math.round(value))
+          .join(" / ");
+        valEl.title = raw
+          ? `Raw pair ${raw}; threshold ${Math.round(threshold)}; crossings ${signal.crossing_count ?? 0}`
+          : `Threshold ${Math.round(threshold)}`;
         barEl.style.width = triggered ? "100%" : "0%";
         barEl.style.background = triggered ? "#2fd08f" : "rgba(145,162,178,0.45)";
         panelEl.style.borderColor = triggered ? "rgba(47,208,143,0.55)" : "var(--line)";
       }
-      renderOne("left", "collIrLeftValue", "collIrLeftLast", "collIrLeftBar", "collIrLeftPanel", ir?.left, ir?.left_available ?? (ir !== undefined));
-      renderOne("right", "collIrRightValue", "collIrRightLast", "collIrRightBar", "collIrRightPanel", ir?.right, ir?.right_available ?? (ir !== undefined));
+      renderOne("entry", "collIrEntryValue", "collIrEntryLast", "collIrEntryBar", "collIrEntryPanel", entry);
+      renderOne("confirmed", "collIrConfirmedValue", "collIrConfirmedLast", "collIrConfirmedBar", "collIrConfirmedPanel", confirmed);
       const badge = document.getElementById("collIrBadge");
       if (badge) {
-        const triggered = !!ir?.triggered;
-        badge.textContent = available ? (triggered ? "BALL CROSSING" : "ENTRY CLEAR") : "NO SENSOR SIGNAL";
-        badge.style.background = triggered ? "rgba(47,208,143,0.15)" : (available ? "rgba(255,255,255,0.04)" : "rgba(255,80,80,0.10)");
-        badge.style.color = triggered ? "#2fd08f" : (available ? "var(--muted)" : "#ff6060");
+        const active = !!entry.broken || !!confirmed.broken;
+        badge.textContent = !available
+          ? "NO SENSOR SIGNAL"
+          : confirmed.broken
+            ? "COLLECTION CONFIRMED"
+            : entry.broken
+              ? "BALL AT ENTRY — INTAKE ACTIVE"
+              : "INTAKE PATH CLEAR";
+        badge.style.background = active ? "rgba(47,208,143,0.15)" : (available ? "rgba(255,255,255,0.04)" : "rgba(255,80,80,0.10)");
+        badge.style.color = active ? "#2fd08f" : (available ? "var(--muted)" : "#ff6060");
       }
     }
     function renderCourtMap() {
@@ -1984,6 +2260,9 @@
     loadView("dashboard").finally(() => {
       refresh();
       setInterval(refresh, 1000);
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) refresh();
     });
     // Load vendor/session data at startup so sidebar status and command gating
     // work before the Vendors view is opened.

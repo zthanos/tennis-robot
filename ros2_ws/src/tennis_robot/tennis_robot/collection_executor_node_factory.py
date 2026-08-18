@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, fields
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -20,15 +21,68 @@ from tennis_robot.collection_executor_assembly import (
     CollectionExecutorConfig, CollectionExecutorHandles,
     build_collection_route_executor, read_controller_tuning,
 )
+from tennis_robot.collection_execution_recorder import capture_from_env
+from tennis_robot.collection_executor_ports import RosMonotonicClock
+from tennis_robot.collection_drive_observation import (
+    DriveObservationBuffer,
+    DriveObservationError,
+    DriveViewpointStepper,
+    build_drive_snapshot,
+)
 from tennis_robot.collection_route_config_builder import build_collection_route_configuration
 from tennis_robot.collection_route_types import Point2D, Pose2D
 from tennis_robot.collection_scan_snapshot import CourtHalfBoundary
-from tennis_robot.collection_snapshot_runtime_adapter import CollectionSnapshotRuntimeSession
+from tennis_robot.collection_snapshot_runtime_adapter import (
+    CollectionSnapshotRuntimeAdapter,
+    CollectionSnapshotRuntimeSession,
+)
 from tennis_robot.perception_spatial_observation_adapter import TimestampedCameraToMapTransform
 
 
 class CollectionExecutorNodeFactoryError(ValueError):
     """A required node-side dependency or configuration value is invalid."""
+
+
+def _planner_audit_sink_from_env(node):
+    """Return an opt-in pre-execution snapshot/plan capture callback."""
+    audit_dir_value = os.getenv("COLLECTION_ROUTE_AUDIT_DIR", "").strip()
+    if not audit_dir_value:
+        return None
+    directory = Path(audit_dir_value)
+
+    def save(snapshot, plan) -> None:
+        safe_scan_id = "".join(
+            char if char.isalnum() or char in "-_." else "_"
+            for char in str(snapshot.scan_id)
+        )
+        target = directory / f"{safe_scan_id}.json"
+        temporary = directory / f".{safe_scan_id}.json.tmp"
+        try:
+            directory.mkdir(parents=True, exist_ok=True)
+            temporary.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "route_outcome": None,
+                        "snapshot": snapshot.to_dict(),
+                        "plan": plan.to_dict(),
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            os.replace(temporary, target)
+            node.get_logger().info(
+                f"collection route pre-execution audit saved: {target}"
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            node.get_logger().error(
+                f"collection route pre-execution audit write failed: {exc}"
+            )
+
+    return save
 
 
 _RUNTIME_PARAM_FIELDS = {
@@ -45,6 +99,8 @@ _RUNTIME_PARAM_FIELDS = {
     "safety_max_scan_age_s": "collection_route.safety_max_scan_age_s",
     "controller_id": "collection_route.controller_id",
     "goal_checker_id": "collection_route.goal_checker_id",
+    "drive_viewpoint_spacing_m": "collection_route.drive_viewpoint_spacing_m",
+    "drive_known_merge_radius_m": "collection_route.drive_known_merge_radius_m",
 }
 
 _PROFILE_FIELDS = (
@@ -84,6 +140,7 @@ class CollectionExecutorRosTypes:
     CollectionPlannedCrossing: type
     CollectionControllerState: type
     LoadService: type
+    ResetService: type
     HoldService: type
     FinalizeService: type
     time_from_seconds: object
@@ -106,7 +163,7 @@ def load_ros_types() -> CollectionExecutorRosTypes:
     )
     from tennis_robot_msgs.srv import (
         FinalizeCollectionExecutionContext, LoadCollectionExecutionContext,
-        SetCollectionSafetyHold,
+        ResetCollectionExecutionContext, SetCollectionSafetyHold,
     )
     return CollectionExecutorRosTypes(
         Twist=Twist, Pose=Pose, PoseStamped=PoseStamped, Path=NavPath,
@@ -117,6 +174,7 @@ def load_ros_types() -> CollectionExecutorRosTypes:
         CollectionPlannedCrossing=CollectionPlannedCrossing,
         CollectionControllerState=CollectionControllerState,
         LoadService=LoadCollectionExecutionContext,
+        ResetService=ResetCollectionExecutionContext,
         HoldService=SetCollectionSafetyHold,
         FinalizeService=FinalizeCollectionExecutionContext,
         time_from_seconds=lambda seconds: Time(nanoseconds=round(seconds * 1e9)),
@@ -153,7 +211,13 @@ def load_collection_route_source(path: str | Path) -> Mapping[str, Any]:
 def scan_pose_from_court_model(
     court_boundary: Mapping[str, Any], *, robot_pose: Pose2D
 ) -> tuple[float, float, float]:
-    """Return the centre of the service line on the robot's current net side."""
+    """Return the service-line centre, facing into the robot-side court half.
+
+    Collection targets on the selected half lie away from the net.  Facing the
+    net after the scan puts every target behind the non-holonomic robot and can
+    leave the connector graph with no valid start edge even though the target
+    passes themselves are feasible.
+    """
     build_court_model(court_boundary)  # reuse the Phase 6A schema/geometry gate
     if not isinstance(robot_pose, Pose2D):
         raise CollectionExecutorNodeFactoryError("robot_pose must be a Pose2D")
@@ -182,7 +246,7 @@ def scan_pose_from_court_model(
     return (
         cx + service_x * lx + center_line_y * wx,
         cy + service_x * ly + center_line_y * wy,
-        math.atan2(-service_x * ly, -service_x * lx),
+        math.atan2(service_x * ly, service_x * lx),
     )
 
 
@@ -259,24 +323,202 @@ class _TfProvider:
         )
 
 
+class _ExecutionFrameContract:
+    """Keep the route in the frame it was planned in, and say so out loud.
+
+    This used to freeze ``map→odom`` once and hand the controller an odom copy of
+    the route.  The tracker then followed that copy accurately while the map
+    frame kept moving underneath it, so the corridor slid away from the balls --
+    which stay in ``map`` -- by the accumulated localization correction: 0.13 to
+    0.44 m measured live, against a 0.205 m funnel half-width (debug log #72).
+
+    The route is therefore left in ``map`` and the controller brings its pose
+    into that frame on every update.  The plan is returned unchanged: geometry,
+    segment ids, progress semantics, crossings and plan id are all untouched --
+    this is a frame-of-execution correction, not a replan.  The transform that
+    is no longer applied is still *reported*, because the size of the correction
+    at execution start is exactly the error the old path baked in.
+    """
+
+    def __init__(self, tf_buffer, ros):
+        self._buffer, self._ros = tf_buffer, ros
+        self.last_diagnostics: dict = {}
+
+    def __call__(self, plan):
+        crossings = _execution_crossings(plan)
+        diagnostics = {
+            "schema_version": 2,
+            "plan_id": plan.plan_id,
+            "source_frame": plan.map_frame,
+            "target_frame": plan.map_frame,
+            "identity": True,
+            "execution_frame_policy": "map_anchored",
+            "source_crossings": crossings,
+            "execution_crossings": crossings,
+        }
+        # Observability only: the map→odom that the previous implementation would
+        # have frozen here, so a run still records how much correction it started
+        # with and how much it accumulated afterwards.
+        try:
+            transform = self._buffer.lookup_transform(
+                "odom", plan.map_frame, self._ros.time_from_seconds(0.0)
+            )
+        except Exception:  # noqa: BLE001 - a missing transform must not stop a route
+            diagnostics["observed_map_to_odom"] = None
+        else:
+            translation = transform.transform.translation
+            rotation = transform.transform.rotation
+            stamp = getattr(getattr(transform, "header", None), "stamp", None)
+            diagnostics["observed_map_to_odom"] = {
+                "x_m": float(translation.x),
+                "y_m": float(translation.y),
+                "yaw_rad": math.atan2(
+                    2.0 * (rotation.w * rotation.z + rotation.x * rotation.y),
+                    1.0 - 2.0 * (rotation.y * rotation.y + rotation.z * rotation.z),
+                ),
+                "timestamp_s": None if stamp is None
+                else float(stamp.sec) + float(stamp.nanosec) * 1e-9,
+            }
+        self.last_diagnostics = diagnostics
+        return plan
+
+
+def _execution_crossings(plan) -> list[dict]:
+    """Return the immutable crossing geometry needed for frame auditing."""
+    return [
+        {
+            "ball_id": crossing.ball_id,
+            "segment_id": segment.id,
+            "x_m": crossing.position_xy.x_m,
+            "y_m": crossing.position_xy.y_m,
+            "heading_rad": crossing.heading_rad,
+            "progress_s": crossing.progress_s,
+        }
+        for segment in plan.segments
+        for crossing in segment.planned_crossings
+    ]
+
+
+class _LiveDriveObserver:
+    """Collect off-route ball sightings while a route is being executed.
+
+    Runs alongside the frozen plan and never feeds into it: the result is only
+    consulted once the route has finished, to plan the follow-up pass from balls
+    the 360 never confirmed instead of repeating that 360 from the same pose.
+
+    Validation is the adapter's and the snapshot builder's, unchanged — see
+    :mod:`tennis_robot.collection_drive_observation`.
+    """
+
+    def __init__(
+        self, *, node, adapter, configuration_snapshot, court_half_boundary,
+        frame_provider, robot_pose_provider, clock, scan_id_prefix: str,
+        viewpoint_spacing_m: float, merge_radius_m: float, map_frame: str = "map",
+    ) -> None:
+        self._node = node
+        self._adapter = adapter
+        self._configuration_snapshot = configuration_snapshot
+        self._court_half_boundary = court_half_boundary
+        self._frame_provider = frame_provider
+        self._robot_pose_provider = robot_pose_provider
+        self._clock = clock
+        self._scan_id_prefix = scan_id_prefix
+        self._viewpoint_spacing_m = viewpoint_spacing_m
+        self._merge_radius_m = merge_radius_m
+        self._map_frame = map_frame
+        self._run = 0
+        self._buffer = None
+        self._stepper = None
+        self._last_frame = None
+
+    def start(self) -> None:
+        self._run += 1
+        self._buffer = DriveObservationBuffer(
+            scan_id=f"{self._scan_id_prefix}/drive-{self._run}"
+        )
+        self._stepper = DriveViewpointStepper(
+            viewpoint_spacing_m=self._viewpoint_spacing_m
+        )
+        self._last_frame = None
+
+    def observe(self) -> None:
+        if self._buffer is None:
+            return
+        frame = self._frame_provider()
+        # The cache holds the newest message; re-forwarding the same object
+        # every tick would stack duplicates onto one viewpoint.
+        if frame is None or frame is self._last_frame:
+            return
+        try:
+            pose = self._robot_pose_provider()
+        except CollectionExecutorNodeFactoryError:
+            return  # pose not available yet; skip this frame, never fail a route
+        self._last_frame = frame
+        step_id = self._stepper.observe_pose(pose.x_m, pose.y_m)
+        try:
+            self._adapter.forward(
+                scan_id=self._buffer.scan_id,
+                frame=frame,
+                scan_step_id=step_id,
+                builder=self._buffer,
+            )
+        except (TypeError, ValueError) as exc:
+            # Opportunistic discovery must never abort a healthy route.
+            self._node.get_logger().warning(f"drive observation dropped: {exc}")
+
+    def result(self, *, known_positions):
+        if self._buffer is None:
+            return None
+        try:
+            snapshot = build_drive_snapshot(
+                buffer=self._buffer,
+                configuration_snapshot=self._configuration_snapshot,
+                court_half_boundary=self._court_half_boundary,
+                robot_pose=self._robot_pose_provider(),
+                now_s=self._clock.now_s(),
+                map_frame=self._map_frame,
+                known_positions=known_positions,
+                merge_radius_m=self._merge_radius_m,
+            )
+        except (CollectionExecutorNodeFactoryError, DriveObservationError, ValueError) as exc:
+            self._node.get_logger().warning(f"off-route discovery unavailable: {exc}")
+            return None
+        if snapshot is not None:
+            self._node.get_logger().info(
+                f"off-route discovery: {len(snapshot.balls)} new target(s) from "
+                f"{self._buffer.observation_count} observations"
+            )
+        return snapshot
+
+
 class _CollectionRosTransport:
     def __init__(self, node, ros, *, controller_id: str, goal_checker_id: str):
         self.node, self.ros = node, ros
         self.goal_checker_id = goal_checker_id
         base = f"/{controller_id}"
         self.load_client = node.create_client(ros.LoadService, base + "/load_collection_execution_context")
+        self.reset_client = node.create_client(
+            ros.ResetService, base + "/reset_collection_execution_context"
+        )
         self.hold_client = node.create_client(ros.HoldService, base + "/set_collection_safety_hold")
         self.finalize_client = node.create_client(ros.FinalizeService, base + "/finalize_collection_execution_context")
         self.action_client = ros.ActionClient(node, ros.FollowPath, "/follow_path")
         self.latest_state = None
         self.crossing_telemetry = []
+        # Optional Phase 9 execution trace, fed from the state callback that
+        # already exists: enabling it adds no subscription and no timer.
+        self.trace_capture = None
+        self.trace_pose_provider = None
         self.state_subscription = node.create_subscription(ros.CollectionControllerState, base + "/state", self._on_state, 10)
-        self.load_future = self.goal_future = self.goal_handle = self.result_future = None
+        self.load_future = self.reset_future = self.finalize_future = None
+        self._pending_load_context = None
+        self.goal_future = self.goal_handle = self.result_future = None
 
     def wait_ready(self, timeout_sec: float) -> bool:
-        """Wait for all four real controller endpoints used by the handles."""
+        """Wait for every real controller endpoint used by the handles."""
         return (
             self.load_client.wait_for_service(timeout_sec=timeout_sec)
+            and self.reset_client.wait_for_service(timeout_sec=timeout_sec)
             and self.hold_client.wait_for_service(timeout_sec=timeout_sec)
             and self.finalize_client.wait_for_service(timeout_sec=timeout_sec)
             and self.action_client.wait_for_server(timeout_sec=timeout_sec)
@@ -284,6 +526,7 @@ class _CollectionRosTransport:
 
     def _on_state(self, message):
         self.latest_state = message
+        self._record_trace(message)
         if bool(getattr(message, "has_active_crossing", False)):
             sample = {
                 name: getattr(message, name)
@@ -293,6 +536,9 @@ class _CollectionRosTransport:
                     "lateral_error_m", "heading_error_rad",
                 )
             }
+            sample["observed_sim_time_s"] = round(
+                self.node.get_clock().now().nanoseconds * 1e-9, 3
+            )
             verdict = message.profile_verdict
             sample["profile_verdict"] = {
                 name: getattr(verdict, name)
@@ -307,15 +553,64 @@ class _CollectionRosTransport:
                 # allowing a long controller run to grow robot_status forever.
                 del self.crossing_telemetry[:-200]
 
+    def _record_trace(self, message) -> None:
+        """Feed the execution trace, and never let it disturb execution."""
+        capture = self.trace_capture
+        if capture is None or not capture.active:
+            return
+        try:
+            pose = self.trace_pose_provider() if self.trace_pose_provider else None
+            capture.record_state(pose=pose, state=message)
+        except Exception as exc:  # noqa: BLE001 - instrumentation may not abort a route
+            self.node.get_logger().warning(f"execution trace sample dropped: {exc}")
+
     def load_sender(self, values):
+        self.latest_state = None
+        self.load_future = None
+        # A finalize ack from the previous route must never be read as this
+        # route's answer.
+        self.finalize_future = None
+        self._pending_load_context = values
+        # The Nav2 controller owns the context lifecycle and outlives this
+        # transport.  A new collection run creates a new transport instance,
+        # so local load counters cannot tell whether the controller still has
+        # a consumed context from an earlier run.  Reset is idempotent in both
+        # idle and consumed states; make it the explicit boundary before every
+        # context load.
+        self.reset_future = self.reset_client.call_async(
+            self.ros.ResetService.Request()
+        )
+
+    def _send_pending_load(self):
         request = self.ros.LoadService.Request()
-        request.context = execution_context_values_to_msg(values, self.ros)
+        request.context = execution_context_values_to_msg(
+            self._pending_load_context, self.ros
+        )
+        self._pending_load_context = None
         self.load_future = self.load_client.call_async(request)
 
     def load_outcome_provider(self):
+        if self.reset_future is not None:
+            if not self.reset_future.done():
+                return None
+            response = self.reset_future.result()
+            self.reset_future = None
+            if response is None or not response.accepted:
+                detail = getattr(response, "detail", "reset_rejected")
+                self.node.get_logger().error(
+                    f"collection controller reset rejected: {detail}"
+                )
+                return "rejected"
+            self._send_pending_load()
         if self.load_future is None or not self.load_future.done(): return None
         response = self.load_future.result()
-        return "accepted" if response is not None and response.accepted else "rejected"
+        if response is not None and response.accepted:
+            return "accepted"
+        detail = getattr(response, "detail", "load_rejected")
+        self.node.get_logger().error(
+            f"collection execution context load rejected: {detail}"
+        )
+        return "rejected"
 
     def follow_path_sender(self, *, map_frame, poses, controller_id):
         self.goal_handle = self.result_future = None
@@ -351,7 +646,8 @@ class _CollectionRosTransport:
             "plan_id", "path_sha256", "lifecycle_state", "progress_s",
             "active_segment_id", "has_active_crossing", "active_ball_id",
             "active_crossing_progress_s", "measured_speed_mps", "lateral_error_m",
-            "heading_error_rad", "profile_verdict", "failure_reason")}
+            "heading_error_rad", "profile_verdict", "failure_reason",
+            "terminal_progress_s", "terminal_distance_m", "terminal_ready")}
 
     def hold_sender(self, *, plan_id, path_sha256, hold):
         request = self.ros.HoldService.Request()
@@ -361,10 +657,27 @@ class _CollectionRosTransport:
     def finalize_sender(self, *, plan_id, path_sha256, action_outcome):
         request = self.ros.FinalizeService.Request()
         request.plan_id, request.path_sha256, request.action_outcome = plan_id, path_sha256, action_outcome
-        future = self.finalize_client.call_async(request)
-        self.ros.spin_until_future_complete(self.node, future, timeout_sec=5.0)
-        response = future.result() if future.done() else None
-        return bool(response is not None and response.accepted)
+        # Dispatch only. finalize_sender runs inside the controller_node timer
+        # callback, i.e. already on the single-threaded executor, so blocking
+        # here with spin_until_future_complete raises "Executor is already
+        # spinning" on Jazzy. The response is read by finalize_outcome_provider
+        # on later ticks, the same pattern as load_sender/load_outcome_provider.
+        self.finalize_future = self.finalize_client.call_async(request)
+        return True
+
+    def finalize_outcome_provider(self):
+        """Return None while pending, else ("accepted"|"rejected", detail)."""
+        if self.finalize_future is None or not self.finalize_future.done():
+            return None
+        response = self.finalize_future.result()
+        self.finalize_future = None
+        if response is not None and response.accepted:
+            return ("accepted", None)
+        detail = getattr(response, "detail", "") or "finalize_rejected"
+        code = getattr(response, "rejection_code", None)
+        detail = f"collection controller rejected terminal finalize: {detail} (code {code})"
+        self.node.get_logger().error(detail)
+        return ("rejected", detail)
 
 
 class CollectionExecutorNodeFactory:
@@ -374,6 +687,9 @@ class CollectionExecutorNodeFactory:
                  lane_navigator, collector_interface, court_boundary_path: str | Path,
                  collection_route_config_path: str | Path,
                  calibration_artifact_path: str | Path, telemetry_sink,
+                 entry_beam_provider=None, confirmed_beam_provider=None,
+                 collector_minimum_drain_s: float = 0.0,
+                 collector_maximum_drain_s: float = 0.0,
                  ros_types: CollectionExecutorRosTypes | None = None) -> None:
         if not isinstance(cache, CollectionExecutorNodeCache):
             raise CollectionExecutorNodeFactoryError("cache must be CollectionExecutorNodeCache")
@@ -411,6 +727,14 @@ class CollectionExecutorNodeFactory:
             controller_id=self.config.controller_id,
             goal_checker_id=self.config.goal_checker_id,
         )
+        self.trace_capture = capture_from_env(
+            run_id=f"collection-run-{now_ns}",
+            clock_fn=lambda: node.get_clock().now().nanoseconds * 1e-9,
+            logger=node.get_logger(),
+        )
+        if self.trace_capture is not None:
+            self.transport.trace_capture = self.trace_capture
+            self.transport.trace_pose_provider = lambda: _robot_pose(cache)
         # Scan rotation owns twist_mux's collection input (priority 70).  The
         # FollowPath controller publishes on /cmd_vel_nav (priority 50).  Once
         # scan rotation stops publishing, the collection input expires after
@@ -425,6 +749,28 @@ class CollectionExecutorNodeFactory:
 
         self.cmd_vel_publisher = publisher
         self.snapshot_session = snapshot_session
+        # Same validation stack as the 360, driven by travel instead of yaw.
+        self.drive_observer = _LiveDriveObserver(
+            node=node,
+            adapter=CollectionSnapshotRuntimeAdapter(
+                tf_provider=_TfProvider(tf_buffer, self.ros),
+                validation_config=configuration.perception_spatial_validation,
+                localization_xy_covariance=configuration.gazebo_snapshot.localization_xy_covariance,
+            ),
+            configuration_snapshot=configuration,
+            court_half_boundary=court_half_from_court_model(
+                court_boundary, robot_pose=robot_pose
+            ),
+            frame_provider=lambda: cache.latest_ball_detections,
+            robot_pose_provider=lambda: _robot_pose(cache),
+            clock=RosMonotonicClock(node),
+            scan_id_prefix=f"collection-scan-{now_ns}",
+            viewpoint_spacing_m=self.config.drive_viewpoint_spacing_m,
+            merge_radius_m=self.config.drive_known_merge_radius_m,
+        )
+        self.execution_plan_transformer = _ExecutionFrameContract(
+            tf_buffer, self.ros
+        )
         self.handles = CollectionExecutorHandles(
             telemetry_sink=telemetry_sink, lane_navigator=lane_navigator,
             collector_interface=collector_interface,
@@ -439,6 +785,15 @@ class CollectionExecutorNodeFactory:
             state_provider=self.transport.state_provider,
             hold_sender=self.transport.hold_sender,
             finalize_sender=self.transport.finalize_sender,
+            finalize_outcome_provider=self.transport.finalize_outcome_provider,
+            execution_plan_transformer=self.execution_plan_transformer,
+            planner_audit_sink=_planner_audit_sink_from_env(node),
+            entry_beam_provider=entry_beam_provider,
+            confirmed_beam_provider=confirmed_beam_provider,
+            drive_observer=self.drive_observer,
+            execution_trace=self.trace_capture,
+            collector_minimum_drain_s=collector_minimum_drain_s,
+            collector_maximum_drain_s=collector_maximum_drain_s,
         )
 
     def build(self):
@@ -461,6 +816,10 @@ class CollectionExecutorNodeFactory:
     @property
     def crossing_telemetry(self):
         return list(self.transport.crossing_telemetry)
+
+    @property
+    def execution_frame_diagnostics(self) -> dict:
+        return dict(self.execution_plan_transformer.last_diagnostics)
 
     @property
     def controller_state(self):

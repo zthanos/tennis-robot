@@ -4,6 +4,13 @@
               <h3>Native Live Survey Map <span id="surveyDiscoveryStatus">waiting for points</span></h3>
               <button type="button" onclick="clearSurveyPath()" class="secondary-action">Clear path</button>
             </div>
+            <div class="survey-ops-grid" aria-label="Survey live status">
+              <div class="survey-op"><span>Mission</span><strong id="surveyOpState">IDLE</strong><small id="surveyOpPhase">waiting</small></div>
+              <div class="survey-op"><span>Last event</span><strong id="surveyOpEvent">none</strong><small id="surveyOpEventAge">—</small></div>
+              <div class="survey-op"><span>Speed</span><strong id="surveyOpSpeed">0.00 m/s</strong><small id="surveyOpCommand">cmd 0.00 m/s</small></div>
+              <div class="survey-op"><span>Coverage</span><strong id="surveyOpProgress">0%</strong><small id="surveyOpPoints">0 points</small></div>
+              <div class="survey-op"><span>System</span><strong id="surveyOpHealth">WAITING</strong><small id="surveyOpSensors">LiDAR — · Vision —</small></div>
+            </div>
             <div id="surveyLifecycle" class="survey-lifecycle">
               <div class="survey-step" data-step="started"><span></span><strong>Started</strong></div>
               <div class="survey-step" data-step="running"><span></span><strong>Running</strong></div>
@@ -20,15 +27,30 @@
               <div id="sensorsCameraView" class="sensor-empty">waiting for image</div>
             </div>
             <div id="surveyBoundaryPanel" class="panel">
-              <h3>Court Map Boundary <span id="surveyBoundaryStatus">no court map data</span></h3>
+              <h3>Mission Result <span id="surveyBoundaryStatus">no court map data</span></h3>
               <div id="surveyBoundaryKv" class="kv"></div>
+            </div>
+            <div class="panel">
+              <h3>Court Format <span id="surveyFormatStatus">— unknown</span></h3>
+              <div id="surveyFormatKv" class="kv"></div>
+              <p class="survey-format-note">Camera estimate changes this presentation overlay only. Navigation remains on the validated survey geometry.</p>
+            </div>
+            <div class="panel">
+              <h3>Event Timeline <span id="surveyEventCount">0 events</span></h3>
+              <div id="surveyEventTimeline" class="survey-event-timeline">
+                <div class="terminal-empty">Waiting for survey events.</div>
+              </div>
             </div>
             <div class="panel">
               <h3>Controls</h3>
               <div class="mission-actions">
-                <button class="command" type="button" data-command-mode="map_court">Run Survey</button>
-                <button class="command" type="button" data-command-mode="idle" value="idle">Stop Survey</button>
+                <button id="surveyRunButton" class="command" type="button" data-command-mode="map_court">Run Survey</button>
+                <button id="surveyStopButton" class="command" type="button" data-command-mode="idle" value="idle">Stop Survey</button>
               </div>
             </div>
+            <details class="panel survey-debug-panel">
+              <summary>Engineering diagnostics</summary>
+              <pre id="surveyEngineeringDebug">No diagnostics yet.</pre>
+            </details>
           </div>
         </div>

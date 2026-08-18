@@ -12,21 +12,29 @@ New implementation work should start from `docs/process/architecture-implementat
 
 ## Commands
 
-> **Platform: development happens on native Linux (Ubuntu).** The entry point is
-> `./run_ubuntu.sh` (Gazebo GUI + RViz with native Intel/AMD DRI acceleration;
-> `UBUNTU_GPU=false ./run_ubuntu.sh` for software rendering). The legacy `run.sh`
-> and the "From WSL shell" `docker compose` invocations below remain the WSL 2
-> path and are kept only for reference — prefer `run_ubuntu.sh` here. `uv run`
-> commands run directly in the Linux shell (the `powershell` fences below are
-> historical).
+> **Canonical runtime: native Ubuntu 24.04 + ROS 2 Jazzy.** The entry point is
+> `./run_native.sh` (Gazebo GUI + full stack; `GAZEBO_HEADLESS=true` for no GUI,
+> `BUILD=true` to colcon-build first). This is the supported runtime for the
+> simulation, Nav2, collection-route execution, perception, Phase 9/10
+> validation and the robot software.
+>
+> **Docker + ROS 2 Humble is obsolete.** `run_ubuntu.sh`, `run.sh` and the
+> `docker compose` invocations below are legacy and refuse to start without
+> `ALLOW_OBSOLETE_HUMBLE_DOCKER=true`. Nav2 cannot come up there — the Nav2
+> parameters carry Jazzy plugin names, so `planner_server` fails to configure
+> and every route hangs before moving (debug log #65). Do not add Humble
+> compatibility or distro-aware Nav2 configuration. `uv run` commands run
+> directly in the Linux shell (the `powershell` fences below are historical).
 
 ### Run the simulation (Gazebo)
 
 ```bash
-# Native Ubuntu (preferred):
-./run_ubuntu.sh
-# Software-rendering fallback:
-UBUNTU_GPU=false ./run_ubuntu.sh
+# Canonical: native Ubuntu 24.04 + ROS 2 Jazzy
+./run_native.sh
+# Rebuild the workspace first (required after touching ros2_ws sources):
+BUILD=true ./run_native.sh
+# Headless:
+GAZEBO_HEADLESS=true ./run_native.sh
 
 # Legacy WSL 2 path (reference only):
 docker compose --profile gazebo up gazebo

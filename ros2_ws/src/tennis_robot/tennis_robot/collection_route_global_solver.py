@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 import hashlib
 import math
 
 from tennis_robot.collection_route_connector_graph import ConnectorEdge, DirectedCandidateGraph
+from tennis_robot.collection_route_plan_builder import (
+    connector_execution_profile,
+    connector_segment,
+    pass_segment,
+)
 from tennis_robot.collection_route_planner_v2 import CourtModel, FunnelPassCandidate, PerBallFeasibility, _segment_is_collision_free
 from tennis_robot.collection_route_types import (
     BallReasonCode, BallResult, BallStatus, CollectionRouteConfiguration,
@@ -63,7 +68,9 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
             accumulated = reachable_balls[node_id]
             before = len(accumulated)
             for edge in node_edges:
-                accumulated |= reachable_balls[edge.target_node_id]
+                # Balls swept in transit count towards reachable coverage, or the
+                # bound would prune branches that collect on the way.
+                accumulated |= reachable_balls[edge.target_node_id] | set(edge.swept_ball_ids)
             if len(accumulated) != before:
                 changed = True
 
@@ -89,6 +96,7 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
         expanded_nodes.add(current_node_id)
         candidate = by_node[current_node_id]
         current_covered = {ball_id for node_id in node_ids for ball_id in by_node[node_id].covered_ball_ids}
+        current_covered |= {ball_id for edge in edges for ball_id in edge.swept_ball_ids}
         search = configuration.global_route_search
         connector_length = sum(edge.path.length_m for edge in edges)
         connector_turn = sum(edge.path.total_turn_rad for edge in edges)
@@ -115,14 +123,20 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
         # Explore high-new-coverage, then cheaper, then stable-id edges first so a
         # strong incumbent is found early and the coverage bound prunes hard.
         def order_key(edge: ConnectorEdge):
-            new_balls = len(set(by_node[edge.target_node_id].covered_ball_ids) - current_covered)
-            return (-new_balls, edge.path.length_m, edge.edge_id)
+            gained = set(by_node[edge.target_node_id].covered_ball_ids) | set(edge.swept_ball_ids)
+            return (-len(gained - current_covered), edge.path.length_m, edge.edge_id)
         for edge in sorted(outgoing.get(current_node_id, ()), key=order_key):
             if edge.target_node_id in node_ids:
                 continue
-            if current_covered & set(by_node[edge.target_node_id].covered_ball_ids):
+            swept = set(edge.swept_ball_ids)
+            # A ball may be covered exactly once in a plan, so an edge that sweeps
+            # something already collected, or that duplicates its own target's
+            # coverage, is not a usable extension.
+            if current_covered & swept:
                 continue
-            if best is not None and len(current_covered | reachable_balls[edge.target_node_id]) < len(best.covered_ball_ids):
+            if (current_covered | swept) & set(by_node[edge.target_node_id].covered_ball_ids):
+                continue
+            if best is not None and len(current_covered | swept | reachable_balls[edge.target_node_id]) < len(best.covered_ball_ids):
                 continue
             dfs(edge.target_node_id, node_ids + (edge.target_node_id,), edges + (edge,))
 
@@ -152,6 +166,10 @@ def solve_global_route(*, snapshot: ScanSnapshot, feasibility: tuple[PerBallFeas
         for node_id in best.node_ids
         for ball_id in by_node[node_id].covered_ball_ids
     }
+    # Balls taken in transit are attributed to the connector that swept them.
+    for index, edge in enumerate(best.edges):
+        for ball_id in edge.swept_ball_ids:
+            selected_passes[ball_id] = f"connector-{2 * index}"
     return _plan_from_route(snapshot, configuration, best, status, search_status, _ball_results(snapshot, feasibility, best.covered_ball_ids, exhausted, expanded_nodes, by_node, graph, court, configuration, selected_passes), by_node)
 
 
@@ -265,41 +283,15 @@ def _plan_from_route(snapshot, configuration, route, status, search_status, resu
 
 
 def _connector_execution_profile(configuration):
-    """Default profile with the connector-specific (looser) heading hard gate.
-
-    Connectors are transit, not capture: pure-pursuit steering leads the path
-    tangent on their curves, so the capture-grade heading gate would self-abort.
-    Every other profile bound (speed, curvature, lateral tube) is unchanged.
-    """
-    return replace(
-        configuration.planning.default_execution_profile,
-        max_heading_error_rad=configuration.planning.connector_max_heading_error_rad,
-    )
+    return connector_execution_profile(configuration)
 
 
 def _connector_segment(segment_id, edge, progress, configuration):
-    path = Path2D(tuple(PathPoint(pose) for pose in edge.path.poses))
-    return RouteSegment(segment_id, RouteSegmentType.CONNECTOR, path, progress, progress + edge.path.length_m, _connector_execution_profile(configuration), (), ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0))
+    return connector_segment(segment_id, edge, progress, configuration)
 
 
 def _pass_segment(segment_id, candidate, progress, configuration, snapshot):
-    length = _pass_length(candidate, configuration)
-    direction = (math.cos(candidate.heading_rad), math.sin(candidate.heading_rad))
-    normal = (-direction[1], direction[0])
-    crossings = []
-    for ball_id, position in zip(candidate.covered_ball_ids, candidate.crossing_positions):
-        dx = position.x_m - candidate.entry_pose.x_m
-        dy = position.y_m - candidate.entry_pose.y_m
-        along = dx * direction[0] + dy * direction[1]
-        lateral = dx * normal[0] + dy * normal[1]
-        centreline_position = Point2D(
-            candidate.entry_pose.x_m + along * direction[0],
-            candidate.entry_pose.y_m + along * direction[1],
-        )
-        crossings.append(PlannedCrossing(ball_id, centreline_position, progress + along, candidate.heading_rad, lateral))
-    crossings = tuple(crossings)
-    path = Path2D((PathPoint(candidate.entry_pose),) + tuple(PathPoint(Pose2D(item.position_xy.x_m, item.position_xy.y_m, item.heading_rad)) for item in crossings) + (PathPoint(candidate.exit_pose),))
-    return RouteSegment(segment_id, RouteSegmentType.FUNNEL_PASS, path, progress, progress + length, configuration.planning.default_execution_profile, candidate.covered_ball_ids, ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0), crossings)
+    return pass_segment(segment_id, candidate, progress, configuration)
 
 
 def _empty_plan(snapshot, configuration, status, search_status, results):

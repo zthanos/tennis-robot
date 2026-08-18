@@ -9,6 +9,8 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(tennis_robot_msgs REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 add_library(collection_path_canonicalization
   src/collection_path_canonicalization.cpp
@@ -23,13 +25,14 @@ ament_target_dependencies(collection_path_canonicalization nav_msgs)
 target_link_libraries(collection_path_canonicalization OpenSSL::Crypto)
 
 add_library(collection_nav2_controller SHARED
-  src/collection_nav2_controller.cpp)
+  src/collection_nav2_controller.cpp
+  src/collection_progress_goal_checker.cpp)
 target_compile_features(collection_nav2_controller PUBLIC cxx_std_17)
 target_include_directories(collection_nav2_controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(collection_nav2_controller
-  nav2_core pluginlib rclcpp rclcpp_lifecycle tennis_robot_msgs)
+  nav2_core pluginlib rclcpp rclcpp_lifecycle tennis_robot_msgs tf2 tf2_ros)
 target_link_libraries(collection_nav2_controller collection_path_canonicalization)
 pluginlib_export_plugin_description_file(nav2_core collection_nav2_controller.xml)
 
@@ -55,6 +58,12 @@ if(BUILD_TESTING)
   ament_add_gtest(test_collection_nav2_controller_plugin
     test/test_collection_nav2_controller_plugin.cpp)
   ament_target_dependencies(test_collection_nav2_controller_plugin nav2_core pluginlib)
+  ament_add_gtest(test_collection_progress_goal_checker
+    test/test_collection_progress_goal_checker.cpp
+    SKIP_LINKING_MAIN_LIBRARIES)
+  target_link_libraries(test_collection_progress_goal_checker collection_nav2_controller)
+  ament_target_dependencies(test_collection_progress_goal_checker
+    nav2_core rclcpp rclcpp_lifecycle tennis_robot_msgs)
   set_tests_properties(test_collection_nav2_controller_plugin PROPERTIES
     ENVIRONMENT
       "AMENT_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}:$ENV{AMENT_PREFIX_PATH};LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}")

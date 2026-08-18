@@ -54,11 +54,23 @@ try:
         extract_court_knowledge_model, CourtExtractionError, CourtSpec,
     )
     from tennis_robot.court_coverage import vantage_points, is_recoverable_failure
+    from tennis_robot.court_format import (
+        CameraCornerEvidence,
+        add_distinct_corner,
+        camera_corner_to_map,
+        estimate_court_format,
+    )
 except ModuleNotFoundError:  # running from source tree
     from court_extraction import (
         extract_court_knowledge_model, CourtExtractionError, CourtSpec,
     )
     from court_coverage import vantage_points, is_recoverable_failure
+    from court_format import (
+        CameraCornerEvidence,
+        add_distinct_corner,
+        camera_corner_to_map,
+        estimate_court_format,
+    )
 
 
 PROJECT_ROOT = Path(os.getenv("TENNIS_ROBOT_ROOT", "/workspace"))
@@ -74,6 +86,11 @@ DWELL_S = float(os.getenv("COURT_SURVEY_VANTAGE_DWELL_S", "2.0"))
 GOAL_TIMEOUT_S = float(os.getenv("COURT_SURVEY_GOAL_TIMEOUT_S", "90.0"))
 FIND_NET_TIMEOUT_S = float(os.getenv("COURT_SURVEY_FIND_NET_TIMEOUT_S", "60.0"))
 NET_MIN_CONF = float(os.getenv("COURT_SURVEY_LANDMARK_MIN_CONF", "0.25"))
+VISION_MAX_AGE_S = float(os.getenv("COURT_SURVEY_VISION_MAX_AGE_S", "1.0"))
+CAMERA_X_M = float(os.getenv("PERCEPTION_CAMERA_X_M", "0.535"))
+FORMAT_MIN_CORNER_CONF = float(
+    os.getenv("COURT_SURVEY_FORMAT_MIN_CORNER_CONF", "0.35")
+)
 
 # Live occupancy map (identical to the proven v1 accumulation).
 MAP_VOXEL_M = float(os.getenv("COURT_SURVEY_MAP_VOXEL_M", "0.10"))
@@ -133,6 +150,12 @@ class CourtSurveyV2Node(Node):
         self._scan_angle_inc = 2.0 * math.pi / 360.0
         self._last_scan_points: list[tuple[float, float, float]] = []
         self._vision: dict = {}
+        self._vision_received_at: float | None = None
+        self._camera_corner_evidence: list[CameraCornerEvidence] = []
+        self._events: list[dict] = []
+        self._last_event = "initializing"
+        self._cmd_linear_m_s = 0.0
+        self._cmd_angular_rad_s = 0.0
 
         # occupancy map
         self._map_voxels: dict[tuple[int, int], tuple[float, float]] = {}
@@ -174,14 +197,45 @@ class CourtSurveyV2Node(Node):
         self.create_subscription(LaserScan, "/scan", self._scan_cb, qos)
         self.create_subscription(String, "/survey/vision", self._vision_cb, 10)
         self.create_timer(0.2, self._step)
+        self._record_event("survey_node_started", "Waiting for pose and sensors")
         self.get_logger().info("court_survey_v2 node started (LiDAR occupancy mapping)")
 
     # ── sensors ──────────────────────────────────────────────────────────────
     def _vision_cb(self, msg: String) -> None:
         try:
             self._vision = json.loads(msg.data)
+            self._vision_received_at = self._now()
+            self._capture_camera_corner(self._vision)
         except (json.JSONDecodeError, TypeError):
             self._vision = {}
+            self._vision_received_at = None
+
+    def _capture_camera_corner(self, vision: dict) -> None:
+        if not self._pose_valid or str(vision.get("junction_type") or "") != "L":
+            return
+        confidence = float(vision.get("junction_confidence") or 0.0)
+        distance = vision.get("junction_distance_m")
+        bearing = vision.get("junction_bearing_rad")
+        if confidence < FORMAT_MIN_CORNER_CONF:
+            return
+        projected = camera_corner_to_map(
+            robot_x_m=self._robot_x,
+            robot_y_m=self._robot_y,
+            robot_yaw_rad=self._robot_yaw,
+            bearing_rad=bearing,
+            distance_m=distance,
+            camera_x_m=CAMERA_X_M,
+        )
+        if projected is None:
+            return
+        add_distinct_corner(
+            self._camera_corner_evidence,
+            CameraCornerEvidence(
+                projected.map_x_m,
+                projected.map_y_m,
+                confidence,
+            ),
+        )
 
     def _scan_cb(self, msg: LaserScan) -> None:
         self._scan_frame_id = msg.header.frame_id
@@ -255,6 +309,11 @@ class CourtSurveyV2Node(Node):
         return [{"x_m": round(px, 3), "y_m": round(py, 3)} for px, py in pts]
 
     def _write_live(self) -> None:
+        vision_age_s = (
+            None
+            if self._vision_received_at is None
+            else max(0.0, self._now() - self._vision_received_at)
+        )
         payload = {
             "updated_at": time.time(),
             "running": self._state not in (V2State.DONE, V2State.FAILED),
@@ -264,6 +323,8 @@ class CourtSurveyV2Node(Node):
             "failure_reason": self._failure_reason,
             "coverage": {"i": self._vantage_i, "n": len(self._vantages)},
             "timing": self._timing_snapshot(),
+            "last_event": self._last_event,
+            "events": self._events[-24:],
             "error": self._map_error, "sensor_frame": self._scan_frame_id or None,
             "front_range_m": None if math.isinf(self._front_range_m) else round(self._front_range_m, 3),
             "robot": {"x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
@@ -271,6 +332,22 @@ class CourtSurveyV2Node(Node):
             "map_points": self._map_points(), "map_point_count": len(self._map_voxels),
             "net": self._locked_net, "survey_start_pose": self._survey_start_pose,
             "navigation_points": [],
+            "motion": {
+                "commanded_linear_m_s": round(self._cmd_linear_m_s, 3),
+                "commanded_angular_rad_s": round(self._cmd_angular_rad_s, 3),
+            },
+            "health": {
+                "pose": "healthy" if self._pose_valid else "waiting",
+                "lidar": "healthy" if self._scan_frame_id and not self._map_error else "waiting",
+                "vision": (
+                    "healthy"
+                    if vision_age_s is not None and vision_age_s <= VISION_MAX_AGE_S
+                    else "stale"
+                ),
+                "vision_age_s": None if vision_age_s is None else round(vision_age_s, 2),
+                "map": "healthy" if self._map_error is None else "waiting",
+            },
+            "court_format_estimate": self._court_format_estimate(),
         }
         try:
             tmp = COURT_SURVEY_LIVE_FILE.with_suffix(".json.tmp")
@@ -283,8 +360,31 @@ class CourtSurveyV2Node(Node):
     def _now(self) -> float:
         return self.get_clock().now().nanoseconds / 1e9
 
+    def _record_event(
+        self, code: str, detail: str = "", level: str = "info",
+    ) -> None:
+        self._last_event = code
+        elapsed_s = (
+            0.0
+            if self._survey_started_at is None
+            else max(0.0, self._now() - self._survey_started_at)
+        )
+        event = {
+            "code": code,
+            "detail": detail,
+            "level": level,
+            "elapsed_s": round(elapsed_s, 1),
+            "state": self._state.value,
+        }
+        if self._events and self._events[-1] == event:
+            return
+        self._events.append(event)
+        if len(self._events) > 64:
+            del self._events[:-64]
+
     def _enter(self, state: V2State) -> None:
         now = self._now()
+        previous = self._state
         if self._phase_started_at is not None:
             elapsed = max(0.0, now - self._phase_started_at)
             key = self._state.value
@@ -293,6 +393,11 @@ class CourtSurveyV2Node(Node):
         self._state = state
         self._entered_at = now
         self._phase_started_at = now
+        self._record_event(
+            f"phase_{state.value}",
+            f"{previous.value} → {state.value}",
+            "error" if state == V2State.FAILED else "info",
+        )
 
     def _timing_snapshot(self) -> dict:
         now = self._now()
@@ -316,6 +421,8 @@ class CourtSurveyV2Node(Node):
         return self._now() - self._entered_at > limit_s
 
     def _drive(self, lin: float, ang: float = 0.0) -> None:
+        self._cmd_linear_m_s = float(lin)
+        self._cmd_angular_rad_s = float(ang)
         tw = Twist()
         tw.linear.x = lin
         tw.angular.z = ang
@@ -329,6 +436,7 @@ class CourtSurveyV2Node(Node):
         self.get_logger().error(f"survey FAILED: {reason}")
         self._stop()
         self._enter(V2State.FAILED)
+        self._record_event("survey_failed", reason, "error")
         self._write_result(status="FAILED")
         self._write_live()
         self._final_live_written = True
@@ -336,13 +444,25 @@ class CourtSurveyV2Node(Node):
     # ── net locking → court frame ────────────────────────────────────────────
     def _try_lock_net(self) -> bool:
         v = self._vision or {}
+        if (
+            self._vision_received_at is None
+            or self._now() - self._vision_received_at > VISION_MAX_AGE_S
+        ):
+            return False
         cls = str(v.get("obstacle_class") or "")
-        conf = float(v.get("line_confidence") or 0.0)
-        net_seen = ("net" in cls.lower())
+        source = str(v.get("obstacle_source") or "")
+        conf = float(v.get("obstacle_confidence") or 0.0)
+        net_seen = cls.lower() == "net"
         d = self._front_range_m
         # accept lock when a net is classified ahead and we are at/near standoff,
         # using the accurate front LiDAR range as the net distance.
-        if net_seen and math.isfinite(d) and d <= NET_STANDOFF_M + 1.0:
+        if (
+            net_seen
+            and source == "neural_court_scene"
+            and conf >= NET_MIN_CONF
+            and math.isfinite(d)
+            and d <= NET_STANDOFF_M + 1.0
+        ):
             hx, hy = math.cos(self._robot_yaw), math.sin(self._robot_yaw)
             self._locked_net = {
                 "map_x_m": round(self._robot_x + hx * d, 3),
@@ -350,11 +470,17 @@ class CourtSurveyV2Node(Node):
                 "robot_x_m": round(self._robot_x, 3),
                 "robot_y_m": round(self._robot_y, 3),
                 "robot_yaw_rad": round(self._robot_yaw, 4),
-                "range_m": round(d, 3), "confidence": conf, "source": "lidar+vision",
+                "range_m": round(d, 3),
+                "confidence": conf,
+                "source": "lidar+neural_court_scene",
             }
             self.get_logger().info(
                 f"net locked at map=({self._locked_net['map_x_m']},"
                 f"{self._locked_net['map_y_m']}) range={d:.2f}m")
+            self._record_event(
+                "net_locked",
+                f"{d:.2f} m · confidence {conf:.2f}",
+            )
             return True
         return False
 
@@ -407,7 +533,43 @@ class CourtSurveyV2Node(Node):
             tw.linear.x = DRIVE_SPEED
             tw.angular.z = max(-0.4, min(0.4, yaw_err))
         self._cmd_pub.publish(tw)
+        self._cmd_linear_m_s = float(tw.linear.x)
+        self._cmd_angular_rad_s = float(tw.angular.z)
         return False
+
+    def _court_format_estimate(self) -> dict:
+        if self._locked_net is None:
+            return {
+                "label": "unknown",
+                "confidence": 0.0,
+                "source": "camera_line_junctions",
+                "evidence_count": 0,
+                "scores": {"singles": 0.0, "doubles": 0.0},
+                "affects_navigation": False,
+            }
+        try:
+            frame = _build_frame(self._locked_net)
+        except CourtExtractionError:
+            return {
+                "label": "unknown",
+                "confidence": 0.0,
+                "source": "camera_line_junctions",
+                "evidence_count": 0,
+                "scores": {"singles": 0.0, "doubles": 0.0},
+                "affects_navigation": False,
+            }
+        return estimate_court_format(
+            self._camera_corner_evidence,
+            net_center_x_m=frame.cx,
+            net_center_y_m=frame.cy,
+            length_axis_x=frame.ux,
+            length_axis_y=frame.uy,
+            width_axis_x=frame.vx,
+            width_axis_y=frame.vy,
+            court_half_length_m=self._spec.half_length_m,
+            singles_half_width_m=self._spec.width_singles_m / 2.0,
+            doubles_half_width_m=self._spec.width_doubles_m / 2.0,
+        )
 
     # ── extraction ───────────────────────────────────────────────────────────
     def _try_measure(self) -> None:
@@ -424,8 +586,13 @@ class CourtSurveyV2Node(Node):
                 self._fail(e.reason)  # genuine structural failure, never measured → stop
             return
         self._last_model = model
+        model["court"]["format_estimate"] = self._court_format_estimate()
         if not self._measured:
             self._measured = True
+            self._record_event(
+                "court_model_locked",
+                f"{len(self._map_voxels)} map points",
+            )
             self.get_logger().info(
                 f"survey measurable (model locked): doubles={model['court']['is_doubles']} "
                 f"dist={model['distances_to_fence_m']} obstacles={len(model['obstacles'])}; "
@@ -478,6 +645,7 @@ class CourtSurveyV2Node(Node):
             self._finalize_done(map_error="slam_save_services_not_ready")
             return
         self.get_logger().info(f"saving slam map -> {base}.*")
+        self._record_event("map_save_started", base)
         self._saving_started = self._now()
         self._enter(V2State.SAVING_MAP)
 
@@ -509,6 +677,7 @@ class CourtSurveyV2Node(Node):
     def _finalize_done(self, map_error: str | None = None) -> None:
         model = self._last_model
         if model is not None:
+            model["court"]["format_estimate"] = self._court_format_estimate()
             model["map_artifact"] = self._build_map_artifact(map_error)
             model["completed"] = True
             model["survey_start_pose"] = self._survey_start_pose
@@ -520,6 +689,11 @@ class CourtSurveyV2Node(Node):
                 f"obstacles={len(model['obstacles'])} map={model['map_artifact'].get('status')} "
                 "(robot returned to start)")
         self._enter(V2State.DONE)
+        if model is not None:
+            self._record_event(
+                "survey_completed",
+                f"{len(self._map_voxels)} points · map {model['map_artifact'].get('status')}",
+            )
         self._write_live()
         self._final_live_written = True
 
@@ -540,6 +714,7 @@ class CourtSurveyV2Node(Node):
                 return
             if self._survey_start_pose is None:
                 self._survey_started_at = self._now()
+                self._record_event("survey_started", "Start pose captured")
                 self._survey_start_pose = {
                     "x_m": round(self._robot_x, 3), "y_m": round(self._robot_y, 3),
                     "yaw_rad": round(self._robot_yaw, 4),
@@ -608,11 +783,20 @@ class CourtSurveyV2Node(Node):
                     return
                 self._dwell_until = 0.0
                 self._wp_started = 0.0
+                self._record_event(
+                    "coverage_waypoint_reached",
+                    f"{self._vantage_i + 1}/{len(self._vantages)} · {target.get('label', 'waypoint')}",
+                )
                 self._vantage_i += 1
             elif self._now() - self._wp_started > WAYPOINT_TIMEOUT_S:
                 self.get_logger().warning(
                     f"waypoint {self._vantage_i} (court_x={target.get('court_x')}) timed out; advancing")
                 self._stop()
+                self._record_event(
+                    "coverage_waypoint_timeout",
+                    f"{self._vantage_i + 1}/{len(self._vantages)}",
+                    "warning",
+                )
                 self._wp_started = 0.0
                 self._vantage_i += 1
             return
