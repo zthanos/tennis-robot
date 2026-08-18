@@ -41,7 +41,7 @@ The important decision is to keep collection and throwing modular. The first mac
 
 ### Base Layout Plan
 
-![Base layout plan](images/base-layout-plan.svg)
+![Historical 2WD/caster base layout](images/base-layout-plan-2wd-casters.svg)
 
 Historical CAD source: commit `de75682`, path
 `cad/3d-printable-base/base_mounting_plate.scad`.
@@ -49,7 +49,7 @@ Historical CAD source: commit `de75682`, path
 Plywood cutting instructions:
 
 ```text
-docs/hardware/plywood-cut-list.md
+docs/archive/mechanical/plywood-cut-list-760x430.md
 ```
 
 Physical-store purchase checklist:

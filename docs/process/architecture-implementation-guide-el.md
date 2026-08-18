@@ -21,9 +21,9 @@ documents και όχι από την τρέχουσα μορφή του Webots 
 - `docs/survey/court-knowledge-model-specification.md`
 - `docs/archive/collection-state-machine-plan-el.md` (ιστορικό, μη ενεργό)
 - `docs/collection-route/mission-dashboard-plan-el.md`
-- `docs/mechanism/concept-a-funnel-lift-wheel-plan.md`
+- `docs/mechanism/dual-wheel-intake-design-el.md`
 - `docs/hardware/prototype-purchase-list-el.md`
-- `docs/hardware/plywood-cut-list.md`
+- `docs/hardware/chassis-layout-4wd-dual-intake-el.md`
 
 ## 2. Implementation Principle
 
@@ -49,8 +49,8 @@ documents και όχι από την τρέχουσα μορφή του Webots 
 
 Το simulated robot πρέπει να περιλαμβάνει:
 
-- differential-drive mobile base,
-- front collector placeholder με wide intake/funnel geometry,
+- 4WD skid-steer mobile base, δύο drive wheels ανά πλευρά και χωρίς casters,
+- front dual-wheel side-pinch intake με funnel/ramp geometry,
 - simulated intake zone,
 - low 360-degree LiDAR στα 25-35 cm,
 - OAK-D approximation στα 40-60 cm με ελαφριά κλίση προς τα κάτω,

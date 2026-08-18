@@ -20,7 +20,7 @@ motors. This CAD folder exists to inspect the packaging of the earlier
 Render:
 
 ```bash
-docker compose run --rm openscad openscad -o /tmp/single-motor-geared-intake.png cad/single-motor-geared-intake/assembly.scad
+docker compose run --rm openscad openscad -o /tmp/single-motor-geared-intake.png cad/archive/single-motor-geared-intake/assembly.scad
 ```
 
 Useful preview toggles inside `assembly.scad`:

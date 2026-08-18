@@ -12,6 +12,25 @@ prototype του tennis robot.
 - MPU6050 IMU για yaw-rate/acceleration diagnostics μέσω I2C
 - κοινό logic ground, 5V encoder rail και καθαρά control signals
 
+## 0. Τι Είναι Πρακτικά Η Πλακέτα
+
+Η σωστή ιδέα είναι **carrier / breakout perfboard**, όχι power board. Το Mega
+μένει αφαιρούμενο και η πλακέτα προσφέρει υποδοχές για drivers, encoders, IMU και
+κουμπιά.
+
+Με την υπάρχουσα perfboard 80x120 mm προτείνεται:
+
+- το Mega να στερεωθεί με M3 αποστάτες πάνω από την πλακέτα ή δίπλα της,
+- το J1 να συνδεθεί στα Mega pins με κοντό, αριθμημένο harness,
+- να μη συγκολληθεί το Mega απευθείας στην perfboard,
+- να μείνει προσβάσιμο το USB και το reset,
+- να υπάρχουν θηλυκά headers/βύσματα ώστε drivers και αισθητήρες να αλλάζουν.
+
+Τα headers του Mega δεν σχηματίζουν απλό ορθογώνιο πλέγμα perfboard. Για να
+κουμπώνει σαν Arduino shield χρειάζονται σωστά τοποθετημένα long male/stackable
+headers και ακριβές template. Για το πρώτο prototype το ξεχωριστό J1 harness
+είναι πιο εύκολο στην κατασκευή και επισκευή.
+
 ## Διαγράμματα
 
 Επισκόπηση συστήματος (power domain εκτός perfboard vs logic domain):
@@ -40,10 +59,9 @@ common GND reference
 
 ```text
 Battery +
-  -> main fuse
-  -> emergency stop
-  -> main switch
-  -> motor power relay/contact or manual armed feed
+  -> main motor fuse
+  -> automotive relay contact 30
+relay contact 87
   -> power distribution / terminal block
   -> BTS7960 B+ terminals
 
@@ -59,14 +77,13 @@ Battery -
 
 Η πρώτη κίνηση του robot πρέπει να έχει φυσική ασφάλεια, όχι μόνο software stop.
 
-### High-current motor power chain
+### High-current motor power chain με το υπάρχον E-stop 10A
 
 ```text
 Battery +
   -> main motor fuse, 20A αρχικά
-  -> emergency stop, normally-closed, latching
-  -> main power switch
-  -> optional motor-power relay/contactor
+  -> automotive relay contact 30
+automotive relay contact 87 (όχι 87a)
   -> distribution block
   -> Left BTS7960 B+
   -> Right BTS7960 B+
@@ -76,6 +93,25 @@ Battery -
   -> Left BTS7960 B-
   -> Right BTS7960 B-
 ```
+
+Το E-stop `39-00013660` είναι 10A, ενώ η motor fuse είναι 20A. Άρα **δεν**
+περνάμε το ρεύμα των μοτέρ από το E-stop. Το NC contact του οδηγεί μόνο το πηνίο
+ενός relay αυτοκινήτου 12V/40A:
+
+```text
+Electronics fused +12V
+  -> main toggle switch
+  -> E-stop NC contact
+  -> relay coil 86
+relay coil 85
+  -> Battery GND
+```
+
+Έτσι, πάτημα E-stop ανοίγει το NC, πέφτει το relay και το contact 30-87 κόβει
+φυσικά το +12V προς τα δύο `B+`. Αν η βάση του relay έχει ενσωματωμένη δίοδο,
+τηρείται υποχρεωτικά η πολικότητα 86=+12V και 85=GND. Μην χρησιμοποιήσεις το
+87a. Προαιρετικά βάλε flyback diode παράλληλα στο πηνίο (κάθοδος στο 86,
+άνοδος στο 85) αν δεν υπάρχει ήδη.
 
 Προτεινόμενες αρχικές ασφάλειες:
 
@@ -122,12 +158,17 @@ Power on
   -> Arduino boots DISARMED
   -> BTS7960 enables LOW
   -> user presses START/ARM
-  -> Arduino checks command timeout + encoder sanity
+  -> Arduino checks that E-stop status is clear
   -> Arduino enables BTS7960
+  -> motors remain stopped until a fresh host command arrives
 
-E-stop pressed or command timeout
+E-stop pressed
   -> Arduino disables BTS7960
   -> motor power is also cut by E-stop chain
+
+Command timeout
+  -> Arduino writes zero PWM immediately
+  -> driver remains armed, but a fresh command is required for motion
 ```
 
 Προτεινόμενο start button wiring:
@@ -150,9 +191,12 @@ HIGH = not pressed
 LOW  = pressed
 ```
 
+Το firmware κάνει debounce και οπλίζει μόνο από `DISARMED`. Το κουμπί δεν
+ξεκινά κίνηση μόνο του και δεν αντικαθιστά το USB serial heartbeat.
+
 ### Optional E-stop status input
 
-Αν το E-stop έχει δεύτερο βοηθητικό contact, διάβασέ το στο Arduino:
+Χρησιμοποίησε το δεύτερο, NO contact του 1NO+1NC E-stop για status:
 
 | E-stop auxiliary contact | Arduino Mega | Σκοπός |
 |---|---|---|
@@ -161,6 +205,10 @@ LOW  = pressed
 
 Αυτό είναι μόνο telemetry/status. Δεν αντικαθιστά το φυσικό κόψιμο του 12V motor
 power.
+
+Σε αυτό το wiring το NO κλείνει όταν πατηθεί το E-stop, άρα το D33 γίνεται LOW
+και σημαίνει `TRIPPED`. Πριν κολλήσεις, επιβεβαίωσε με continuity tester ποιο
+ζεύγος είναι NC και ποιο NO, γιατί οι αριθμοί ακροδεκτών διαφέρουν ανά μοντέλο.
 
 ## 3. System Topology
 
@@ -266,6 +314,7 @@ module απαιτήσει ξεχωριστό έλεγχο, κρατάμε χώρ
 |---|---|---|
 | D32 | `START_ARM` | Start/arm button, active-low with `INPUT_PULLUP` |
 | D33 | `ESTOP_STATUS` | Optional E-stop auxiliary status, active-low with `INPUT_PULLUP` |
+| D34 | `ARMED_LED` | LED ένδειξης armed, output μέσω αντίστασης 470Ω |
 
 ### MPU6050 IMU / I2C
 
@@ -301,10 +350,11 @@ module απαιτήσει ξεχωριστό έλεγχο, κρατάμε χώρ
 | 6 | `RIGHT_EN` | Mega D31 |
 | 7 | `START_ARM` | Mega D32 |
 | 8 | `ESTOP_STATUS` | Mega D33, optional |
-| 9 | `I2C_SDA` | Mega D20 / SDA |
-| 10 | `I2C_SCL` | Mega D21 / SCL |
-| 11 | `LOGIC_5V` | Mega 5V |
-| 12 | `LOGIC_GND` | Mega GND |
+| 9 | `ARMED_LED` | Mega D34 |
+| 10 | `I2C_SDA` | Mega D20 / SDA |
+| 11 | `I2C_SCL` | Mega D21 / SCL |
+| 12 | `LOGIC_5V` | Mega 5V |
+| 13 | `LOGIC_GND` | Mega GND |
 
 ### Header J2 - Left BTS7960 Logic
 
@@ -350,6 +400,12 @@ module απαιτήσει ξεχωριστό έλεγχο, κρατάμε χώρ
 | 2 | `LOGIC_GND` | Start/arm button side B |
 | 3 | `ESTOP_STATUS` | Optional E-stop auxiliary side A |
 | 4 | `LOGIC_GND` | Optional E-stop auxiliary side B |
+| 5 | `ARMED_LED` | Άνοδος LED μέσω αντίστασης 470Ω |
+| 6 | `LOGIC_GND` | Κάθοδος LED |
+
+Αν το φωτιζόμενο κουμπί έχει ενσωματωμένη αντίσταση για **12V**, μην οδηγήσεις
+το LED του απευθείας από D34· χρησιμοποίησε ξεχωριστό 5V LED ή transistor driver
+σύμφωνα με το datasheet του κουμπιού.
 
 ### Header J9 - MPU6050 IMU
 
@@ -371,7 +427,7 @@ module απαιτήσει ξεχωριστό έλεγχο, κρατάμε χώρ
 
 | Left BTS7960 terminal | Σύνδεση |
 |---|---|
-| `B+` | +12V μετά από fuse/E-stop/switch |
+| `B+` | +12V από distribution block, μετά από fuse και relay contact 87 |
 | `B-` | Battery GND / power ground |
 | `M+` | Left front motor lead A + left rear motor lead A |
 | `M-` | Left front motor lead B + left rear motor lead B |
@@ -380,7 +436,7 @@ module απαιτήσει ξεχωριστό έλεγχο, κρατάμε χώρ
 
 | Right BTS7960 terminal | Σύνδεση |
 |---|---|
-| `B+` | +12V μετά από fuse/E-stop/switch |
+| `B+` | +12V από distribution block, μετά από fuse και relay contact 87 |
 | `B-` | Battery GND / power ground |
 | `M+` | Right front motor lead A + right rear motor lead A |
 | `M-` | Right front motor lead B + right rear motor lead B |
@@ -426,14 +482,35 @@ Arduino Mega 5V -> perfboard LOGIC_5V / ENC_5V
 Πρακτική διάταξη:
 
 ```text
-[J1 Arduino Mega header]      [J2 Left BTS7960 logic]   [J3 Right BTS7960 logic]
+[J1 harness προς Mega]        [J2 Left BTS7960 logic]   [J3 Right BTS7960 logic]
 
 [J4 LF encoder] [J5 LR encoder] [J6 RF encoder] [J7 RR encoder]
+
+[J8 controls/LED]             [J9 MPU6050]
 
 5V rail along top
 GND rail along bottom
 Signal wires short and labelled
 ```
+
+### Σειρά κατασκευής
+
+1. Βάλε προσωρινά όλα τα headers και το Mega για να ελέγξεις χώρο, USB και reset.
+2. Σημάδεψε Pin 1 σε J1-J9 και γράψε `5V`, `GND`, `A`, `B`, `RPWM`, `LPWM` πάνω
+   και κάτω από την πλακέτα.
+3. Κόλλησε πρώτα μόνο τις δύο logic μπάρες 5V/GND. Δεν συνδέονται ποτέ με +12V.
+4. Κόλλησε J1, J2, J3 και έλεγξε κάθε σύνδεση με continuity tester.
+5. Κόλλησε J4-J7, μετά J8/J9, ελέγχοντας ότι δεν υπάρχει short 5V-GND.
+6. Πρόσθεσε 100nF κεραμικό κοντά σε κάθε encoder header μεταξύ 5V-GND και
+   100-470µF electrolytic στην είσοδο της logic rail, με σωστή πολικότητα.
+7. Στερέωσε τα καλώδια με strain relief. Τα encoder A/B να περνούν μακριά από
+   τα M+/M- και, όπου γίνεται, συνεστραμμένα με GND.
+8. Σύνδεσε το J1 harness pin-προς-pin και κάνε δεύτερο continuity check πριν
+   μπει USB ή μπαταρία.
+
+Μην τροφοδοτείς ταυτόχρονα το Mega από USB και από εξωτερικό 5V στο pin `5V`.
+Στο πρώτο bring-up τροφοδότησέ το μόνο από USB· το 5V του Mega τροφοδοτεί τη
+μικρή logic rail (BTS7960 logic + encoders), όχι Pi, relay ή μοτέρ.
 
 Πρότεινε χρώματα:
 
@@ -456,9 +533,11 @@ Signal wires short and labelled
 3. Επιβεβαίωσε ότι δεν υπάρχει 12V πάνω στην perfboard.
 4. Επιβεβαίωσε ότι κάθε encoder παίρνει 5V και GND στη σωστή πολικότητα.
 5. Επιβεβαίωσε ότι το MPU6050 VCC ταιριάζει με το module: 5V tolerant ή 3.3V only.
-6. Επιβεβαίωσε ότι το E-stop κόβει το +12V στα BTS7960 `B+`.
+6. Χωρίς Mega συνδεδεμένο, επιβεβαίωσε ότι το E-stop ρίχνει το relay και κόβει
+   το +12V και στα δύο BTS7960 `B+`.
 7. Επιβεβαίωσε ότι το main fuse είναι κοντά στη μπαταρία.
-8. Επιβεβαίωσε ότι το start button διαβάζεται `HIGH` idle και `LOW` pressed.
+8. Επιβεβαίωσε ότι START είναι `HIGH` idle/`LOW` pressed και ESTOP_STATUS είναι
+   `HIGH` released/`LOW` pressed.
 9. Σήκωσε `LEFT_EN` / `RIGHT_EN` μόνο από software, όχι με μόνιμο jumper στο 5V.
 10. Δοκίμασε πρώτα encoder hand test, γυρίζοντας κάθε τροχό με το χέρι.
 11. Δοκίμασε MPU6050 I2C scan και stationary gyro bias check.

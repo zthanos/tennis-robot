@@ -144,12 +144,14 @@ Specs επιβεβαιωμένα (DFRobot FIT0403):
 προβλέψιμο έλεγχο σε ταχύτητα/στροφή.
 ```
 
-Σημείωση CAD redesign:
+Κατάσταση CAD/layout redesign:
 
 ```text
-Το CAD πρέπει να ενημερωθεί από 2WD + front casters σε 4WD skid-steer:
-δύο αριστεροί και δύο δεξιοί κινητήριοι τροχοί, με αντίστοιχα motor pods και
-χώρο για 4 drivers / καλωδίωση / ασφάλειες.
+Το ενεργό layout ενημερώθηκε σε 4WD skid-steer: δύο αριστεροί και δύο δεξιοί
+κινητήριοι τροχοί, με αντίστοιχα motor pods και χώρο για drivers, relay,
+καλωδίωση και ασφάλειες. Βλ.
+`docs/hardware/chassis-layout-4wd-dual-intake-el.md`. Το manufacturing CAD και
+οι τελικές οπές περιμένουν μέτρηση των πραγματικών mounts.
 ```
 
 ## 3. Motor Drivers Και Τροφοδοσία Κίνησης
@@ -226,43 +228,45 @@ dual-channel DC motor drivers ή 4 ποιοτικούς single-channel drivers �
 | Qty | Υλικό | Περιγραφή |
 |---:|---|---|
 | 1 set | PETG/ASA print ή πλαστικό φύλλο 2-3 mm | Funnel side plates και intake guides |
-| 1 | πλαστικό/plywood plate | Adjustable back plate |
-| 1 | διάφανο πλαστικό φύλλο 2-3 mm | Hopper/bin, για να βλέπουμε τις μπάλες |
-| 1 set | μικρές γωνίες ή brackets | Για ρυθμιζόμενη σύνδεση funnel/back plate |
+| 2 | compliant side carriages | Πλευρική διαδρομή 8 mm για τους intake wheels |
+| 1 | wire-mesh removable basket | Basket v2.1, εσωτερικό 400×280 mm |
+| 1 set | μικρές γωνίες ή brackets | Ρυθμιζόμενη σύνδεση funnel/intake carriages |
 
 Διαστάσεις στόχοι:
 
 | Χαρακτηριστικό | Στόχος |
 |---|---|
-| Funnel mouth width | 220-300 mm |
-| Throat width | 75-85 mm |
-| Bottom lip height | 5-12 mm από το έδαφος |
-| Hopper capacity | 3-6 μπάλες |
+| Funnel mouth width | Να συμφωνεί με το ενεργό URDF/funnel geometry |
+| Intake gap | 56 mm nominal, sweep-able |
+| Intake wheel radius / height | 60 / 80 mm |
+| Basket interior | 400×280 mm, στόχος ~50 μπάλες |
 
-### Wide Intake Roller / Cylinder
+### Dual Intake Wheels
 
 Ζητάμε:
 
 ```text
-1 τεμάχιο wide compliant rubber/PU/TPU roller/cylinder, μήκος 240-300 mm, διάμετρος 60-90 mm
+2 τεμάχια compliant rubber/PU/TPU wheels, ακτίνα 60 mm και ύψος 80 mm,
+ένα αριστερά και ένα δεξιά του intake corridor
 ```
 
 Χαρακτηριστικά:
 
 | Χαρακτηριστικό | Στόχος |
 |---|---|
-| Διάμετρος | 60-90 mm |
-| Πλάτος / μήκος κυλίνδρου | 240-300 mm ενεργό πλάτος συλλογής |
+| Διάμετρος | 120 mm nominal |
+| Ύψος ενεργής επιφάνειας | 80 mm |
 | Υλικό | μαλακό rubber/PU/TPU, όχι σκληρό πλαστικό |
-| Άξονας | μακρύς άξονας με στήριξη/ρουλεμάν και στις δύο πλευρές |
-| Θέση στο σασί | όσο πιο μπροστά γίνεται, ώστε ο κύλινδρος να πιάνει τη μπάλα πριν τη σπρώξει η βάση |
+| Άξονας | κατακόρυφος, ανεξάρτητος ανά wheel |
+| Στήριξη | πλευρικά ενδοτική, travel 8 mm προς τα έξω |
+| Θέση | nominal nip x=540 mm, gap 56 mm, tilt 35° |
 
-### Collector Motor
+### Intake Motors
 
 Ζητάμε:
 
 ```text
-1 τεμάχιο DC gear motor 12V για intake roller
+2 πανομοιότυπα DC gear motors 12V, ένα ανά intake wheel
 ```
 
 Χαρακτηριστικά:
@@ -270,15 +274,17 @@ dual-channel DC motor drivers ή 4 ποιοτικούς single-channel drivers �
 | Χαρακτηριστικό | Στόχος |
 |---|---|
 | Τάση | 12 V DC |
-| Ταχύτητα | περίπου 100-300 RPM |
-| Torque | αρκετό για να πιέζει/σηκώνει μπάλα tennis |
+| Ταχύτητα | GB37Y3530-12V-251R, περίπου 251 RPM no-load |
+| Torque | 1.77 N·m stall nominal |
 | Gearbox | μεταλλικό |
-| Encoder | προαιρετικό για collector |
+| Encoder | Hall encoder, απαραίτητο για jam diagnostics |
 
 Για collector motor driver:
 
 ```text
-1 μικρός H-bridge driver ή 1 BTS7960 αν πάρουμε ίδιο driver παντού.
+Driver με δύο πραγματικά ανεξάρτητα κανάλια ή δύο κατάλληλοι drivers, ώστε οι
+τροχοί να περιστρέφονται αντίθετα. Το SparkFun TB6612 του collector πρέπει να
+επαληθευτεί ως προς το πραγματικό ρεύμα των δύο μοτέρ πριν χρησιμοποιηθεί.
 ```
 
 ## 5. Ασφάλεια Και Ηλεκτρικά
