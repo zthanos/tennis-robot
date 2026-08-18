@@ -1,12 +1,32 @@
 #!/usr/bin/env bash
-# Native Ubuntu Docker bring-up. The existing run.sh remains the WSL 2 path.
+# OBSOLETE — Docker/ROS 2 Humble bring-up.  The supported runtime is native
+# Ubuntu 24.04 + ROS 2 Jazzy: use ./run_native.sh.
 #
-# Gazebo GUI + RViz with native Intel/AMD DRI acceleration:
-#   ./run_ubuntu.sh
-#
-# Software rendering fallback:
-#   UBUNTU_GPU=false ./run_ubuntu.sh
+# This path is kept for historical reference only and is known broken for
+# anything that navigates: config/nav2_params.yaml declares the Jazzy plugin
+# name "nav2_smac_planner::SmacPlanner2D", which Humble's pluginlib does not
+# export, so planner_server fails to configure, Nav2 bringup aborts, and every
+# collect_route hangs in navigating_to_scan_pose while the robot never receives
+# a velocity command (debug log #65).  That failure looks like a slow simulator
+# and cost a full validation session, which is why this now refuses to start.
 set -euo pipefail
+
+if [ "${ALLOW_OBSOLETE_HUMBLE_DOCKER:-false}" != "true" ]; then
+    cat >&2 <<'OBSOLETE'
+run_ubuntu.sh is OBSOLETE (Docker + ROS 2 Humble).
+
+  Supported runtime:  native Ubuntu 24.04 + ROS 2 Jazzy
+  Use instead:        ./run_native.sh
+
+Nav2 cannot start here: the Nav2 parameters use Jazzy plugin names, so
+planner_server fails to configure and nothing ever drives the robot.  Do not
+"fix" that by adding Humble compatibility -- the container is legacy.
+
+To run it anyway (CAD/OpenSCAD profiles, archaeology):
+  ALLOW_OBSOLETE_HUMBLE_DOCKER=true ./run_ubuntu.sh
+OBSOLETE
+    exit 2
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"

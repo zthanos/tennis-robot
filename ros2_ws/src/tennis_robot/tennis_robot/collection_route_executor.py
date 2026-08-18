@@ -226,14 +226,61 @@ class MonotonicClock(Protocol):
     def now_s(self) -> float: ...
 
 
+_TERMINAL_STATES = frozenset({
+    ExecutorState.COMPLETED, ExecutorState.COMPLETED_NO_TARGETS,
+    ExecutorState.INCOMPLETE_TARGETS,
+    ExecutorState.ABORTED_SCAN, ExecutorState.ABORTED_PLANNING,
+    ExecutorState.ABORTED_COLLECTOR, ExecutorState.ABORTED_SAFETY,
+    ExecutorState.ABORTED_TRACKING,
+})
+
+# A session can execute several routes: a finished route passes through
+# ROUTE_COMPLETED and the executor re-scans, so the session only reaches a
+# terminal state once, at the very end.  Flushing the trace on terminal states
+# alone therefore keeps the *last* route of a session and silently discards
+# every earlier one.  ROUTE_COMPLETED is a flush point for that reason only --
+# it is deliberately not a terminal state, and `is_terminal` is unchanged.
+_TRACE_FLUSH_STATES = _TERMINAL_STATES | {ExecutorState.ROUTE_COMPLETED}
+
+# Tracking failures a follow-up may legitimately continue from.  Measured in
+# debug logs #83/#84: a localization re-anchoring leaves the robot outside the
+# corridor with the next ball too close to re-enter, so *that* pass is lost --
+# but the rest of the route is untouched, and 42% of planned crossings were
+# being discarded with it.  The follow-up replans the remainder from the current
+# pose under the planner's own safety proof, so nothing is inherited from the
+# abandoned corridor.  Every other failure stays terminal.
+_SKIPPABLE_TRACKING_DETAILS = ("trajectory_tube_exceeded", "heading_error_exceeded")
+
+
+def _is_skippable_tracking_abort(
+    outcome: ExecutorState | None,
+    reason: ExecutorReasonCode | None,
+    detail: str | None,
+) -> bool:
+    """True only for a path-following failure of the classified kind.
+
+    Deliberately narrow: `SAFETY_RESUME_INVALID` also ends in ABORTED_TRACKING
+    and must stay terminal, so the reason code is checked as well as the state.
+    """
+    if outcome is not ExecutorState.ABORTED_TRACKING:
+        return False
+    if reason is not ExecutorReasonCode.PATH_FAILED:
+        return False
+    return any(label in (detail or "") for label in _SKIPPABLE_TRACKING_DETAILS)
+
+
 class CollectionRouteExecutor:
     """Deterministic, polling pure executor with no hidden retry/fallback path."""
 
     def __init__(self, *, navigator: ScanPoseNavigator, scan_session: ScanSession,
                  planner: PurePlanner, collector: Collector, path_follower: PathFollower,
                  safety_monitor: SafetyMonitor, telemetry: TelemetrySink,
-                 clock: MonotonicClock, drive_observer=None) -> None:
+                 clock: MonotonicClock, drive_observer=None, execution_trace=None) -> None:
         self._drive_observer = drive_observer
+        # Optional Phase 9 recorder: .start(plan) / .finish().  It observes an
+        # executed route and must never influence one, so every call into it is
+        # guarded and its failures are swallowed.
+        self._execution_trace = execution_trace
         self._navigator = navigator
         self._scan_session = scan_session
         self._planner = planner
@@ -256,13 +303,7 @@ class CollectionRouteExecutor:
 
     @property
     def is_terminal(self) -> bool:
-        return self.state in {
-            ExecutorState.COMPLETED, ExecutorState.COMPLETED_NO_TARGETS,
-            ExecutorState.INCOMPLETE_TARGETS,
-            ExecutorState.ABORTED_SCAN, ExecutorState.ABORTED_PLANNING,
-            ExecutorState.ABORTED_COLLECTOR, ExecutorState.ABORTED_SAFETY,
-            ExecutorState.ABORTED_TRACKING,
-        }
+        return self.state in _TERMINAL_STATES
 
     def start(self) -> None:
         if self.state is not ExecutorState.IDLE:
@@ -394,6 +435,10 @@ class CollectionRouteExecutor:
             self._path_follower.start(self.plan)
             if self._drive_observer is not None:
                 self._drive_observer.start()
+            # The trace covers *executed* behaviour, so it starts here -- when
+            # the plan becomes the route the follower is driving -- and not at
+            # planning, which produced a plan that might never be executed.
+            self._begin_execution_trace()
             self._transition(ExecutorState.EXECUTING_ROUTE)
         elif result.status is CollectorStartStatus.FAILED or self._elapsed(self._collector_started_at_s, self.plan.configuration_snapshot.safety.collector_start_timeout_s):
             self._abort_active_route(ExecutorState.ABORTED_COLLECTOR, result.reason or ExecutorReasonCode.COLLECTOR_START_TIMEOUT)
@@ -480,14 +525,19 @@ class CollectionRouteExecutor:
 
     def _can_follow_up(self) -> bool:
         assert self.plan is not None
-        # A follow-up run is "collect more balls in further passes", not a
-        # retry: it is allowed only after a clean route completion, never after
-        # a safety/tracking/collector abort of the active route.
+        # A follow-up run is "collect the balls this route did not", not a
+        # retry of the same corridor.  It follows a clean completion, and also a
+        # classified tracking abort -- the one case where the current pass is
+        # unrecoverable but the remaining targets are not (debug log #84).  The
+        # run budget is unchanged and remains the only guard against
+        # abort -> rescan -> abort cycling.
         policy = self.plan.configuration_snapshot.follow_up
-        return (
-            self.route_outcome is ExecutorState.ROUTE_COMPLETED
-            and policy.enabled
-            and self.run_count < policy.max_total_runs
+        if not policy.enabled or self.run_count >= policy.max_total_runs:
+            return False
+        if self.route_outcome is ExecutorState.ROUTE_COMPLETED:
+            return True
+        return _is_skippable_tracking_abort(
+            self.route_outcome, self.terminal_reason, self.terminal_detail
         )
 
     def _terminal_completion_state(self) -> ExecutorState:
@@ -521,4 +571,34 @@ class CollectionRouteExecutor:
             if detail is not None:
                 self.terminal_detail = detail
         self.state = state
+        # Every ending passes through here -- a route finishing, completion,
+        # abort, no-targets, incomplete -- so this is the one place that
+        # guarantees a started trace is written.  An aborted route is the
+        # evidence most worth keeping, so persistence is deliberately not
+        # conditional on success.
+        if state in _TRACE_FLUSH_STATES:
+            self._end_execution_trace()
         self._telemetry.emit(TelemetryEvent(TelemetryEventCode.STATE_CHANGED, state, reason, detail))
+
+    def _begin_execution_trace(self) -> None:
+        if self._execution_trace is None or self.plan is None:
+            return
+        try:
+            self._execution_trace.start(self.plan)
+        except Exception:  # noqa: BLE001 - instrumentation may not abort a route
+            pass
+
+    def _end_execution_trace(self) -> None:
+        """Write whatever was recorded.  Safe to call more than once.
+
+        A route can pass through a terminal state twice: an abort transitions to
+        its outcome and then continues into collector shutdown before ending
+        again.  ``finish()`` is idempotent, and the guard here keeps the second
+        call from re-writing a file that no longer has a recorder behind it.
+        """
+        if self._execution_trace is None:
+            return
+        try:
+            self._execution_trace.finish()
+        except Exception:  # noqa: BLE001 - instrumentation may not abort a route
+            pass

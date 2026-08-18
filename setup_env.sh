@@ -11,11 +11,11 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-source /opt/ros/humble/setup.bash
-if [ -f "$SCRIPT_DIR/ros2_ws/install/setup.bash" ]; then
-    source "$SCRIPT_DIR/ros2_ws/install/setup.bash"
+source /opt/ros/jazzy/setup.bash
+if [ -f "$SCRIPT_DIR/ros2_ws/install_jazzy/setup.bash" ]; then
+    source "$SCRIPT_DIR/ros2_ws/install_jazzy/setup.bash"
 else
-    echo "WARNING: ros2_ws/install not found — run 'colcon build' in ros2_ws first."
+    echo "WARNING: ros2_ws/install_jazzy not found — run 'BUILD=true ./run_native.sh' first."
 fi
 
 export ROS_DOMAIN_ID=42

@@ -44,3 +44,59 @@ uint8 failure_reason
 float64 terminal_progress_s
 float64 terminal_distance_m
 bool terminal_ready
+
+# ── Frame diagnosis (Phase 11) — diagnostic only, nothing here feeds control ──
+# The tracking core takes bare coordinate pairs and trusts the caller to supply
+# pose and path in one frame; it cannot check that itself.  These fields publish
+# the two geometric objects each reported lateral_error_m was actually computed
+# from, together with the frame and stamp each arrived in, so the comparison can
+# be reproduced offline instead of inferred from topic names.
+string tracker_pose_frame_id      # header.frame_id of the pose Nav2 supplied
+float64 tracker_pose_stamp_s      # header.stamp of that pose
+float64 tracker_pose_x_m          # the x handed to the core, verbatim
+float64 tracker_pose_y_m
+float64 tracker_pose_yaw_rad
+float64 tracker_update_stamp_s    # when the core computed this result
+string tracker_path_frame_id      # header.frame_id of the path given to setPlan
+float64 tracker_path_stamp_s
+bool tracker_has_reference        # false when no projection was produced
+float64 tracker_reference_x_m     # the path point lateral_error_m measured to
+float64 tracker_reference_y_m
+float64 tracker_reference_yaw_rad # path tangent there
+float64 tracker_transform_stamp_s  # stamp of the transform used to reach the plan frame
+float64 tracker_transform_age_s    # how old that transform was when it was used
+bool tracker_transform_was_latest  # true when the pose-stamp lookup extrapolated
+float64 commanded_linear_mps       # the command actually returned this update
+float64 commanded_angular_rad_s
+float64 tracker_lookahead_x_m          # pure-pursuit target point actually used
+float64 tracker_lookahead_y_m
+float64 tracker_lookahead_distance_m   # straight-line distance to it
+float64 tracker_commanded_curvature_per_m
+# Failure evidence (Phase 15).  lateral_error_m / heading_error_rad above are the
+# values the core actually computed, including on the update that trips a gate;
+# tracker_has_geometry distinguishes "measured" from "never computed" so an
+# absent value is never read as a zero one.
+bool tracker_has_geometry
+float64 tracker_previous_progress_s        # progress the core held before this update
+float64 tracker_raw_projection_progress_s  # unbounded nearest-point projection
+bool tracker_has_raw_projection
+# Re-anchoring detection (Phase 16).  A discontinuous revision of the estimated
+# map pose looks identical to the robot leaving the corridor unless the step is
+# checked against what the robot could physically have travelled.  When the step
+# is impossible the tube verdict is deferred for exactly one update -- these
+# fields make that explicit, so a log line showing lateral 0.31 m cannot be
+# mistaken for either normal tracking or a real excursion.
+float64 tracker_pose_step_m
+float64 tracker_pose_step_yaw_rad
+float64 tracker_elapsed_s
+float64 tracker_plausible_step_bound_m
+bool tracker_reanchoring_detected
+bool tracker_tube_verdict_deferred
+# Progress-projection continuity (Phase 17A).  The regression check consults the
+# raw nearest point on the whole route; on a route that returns near itself that
+# can be metres behind without the robot having moved.  These expose the
+# reachable neighbourhood the raw candidate had to lie in, and whether a nearer
+# but unreachable candidate was rejected -- so a constrained projection is
+# visible rather than looking like an ordinary one.
+float64 tracker_projection_reach_m
+bool tracker_raw_projection_constrained

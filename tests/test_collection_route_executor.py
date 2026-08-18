@@ -4,6 +4,8 @@ from dataclasses import replace
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ros2_ws", "src", "tennis_robot"))
 
 from collection_route_fixtures import default_configuration
@@ -14,7 +16,7 @@ from tennis_robot.collection_route_executor import (
     SafetyResult, SafetyStatus, ScanSessionResult, ScanSessionStatus,
     TelemetryEventCode,
 )
-from tennis_robot.collection_route_planner_v2 import CourtModel, plan_collection_route
+from tennis_robot.collection_route_planner_v2 import CourtModel, PolygonObstacle, plan_collection_route
 from tennis_robot.collection_route_types import (
     BallReasonCode, BallResult, BallStatus, CollectionRoutePlan,
     FollowUpConfiguration, Point2D, Pose2D, PositionCovariance2D,
@@ -78,8 +80,34 @@ class Telemetry:
     def emit(self, event): self.events.append(event)
 
 
-def court():
-    return CourtModel((Point2D(-20.0, -20.0), Point2D(20.0, -20.0), Point2D(20.0, 20.0), Point2D(-20.0, 20.0)), ())
+def court(*obstacles):
+    return CourtModel((Point2D(-20.0, -20.0), Point2D(20.0, -20.0), Point2D(20.0, 20.0), Point2D(-20.0, 20.0)), tuple(obstacles))
+
+
+def partial_snapshot_and_plan(scan_id="scan"):
+    """A snapshot whose second ball is walled in, so the plan is truly partial.
+
+    Budget starvation no longer produces a partial plan -- the router closes a
+    route on its first expansion and keeps the best one it has -- so a partial
+    result has to come from geometry, which is what it should have meant.
+    """
+    config = replace(default_configuration(), follow_up=FollowUpConfiguration(False, 1))
+    snap = ScanSnapshot(
+        scan_id, 100.0, "map", Pose2D(0.0, 0.0, 0.0),
+        (
+            SnapshotBall("a", Point2D(3.0, 0.0), 0.9, PositionCovariance2D(1e-4, 0.0, 1e-4)),
+            SnapshotBall("b", Point2D(12.0, 0.0), 0.9, PositionCovariance2D(1e-4, 0.0, 1e-4)),
+        ),
+        config,
+    )
+    bench = PolygonObstacle(
+        "bench", "bench",
+        (Point2D(11.6, -0.4), Point2D(12.4, -0.4), Point2D(12.4, 0.4), Point2D(11.6, 0.4)),
+    )
+    plan = plan_collection_route(
+        snapshot=snap, court=court(bench), configuration=config
+    ).plan
+    return snap, plan
 
 
 def snapshot(*, balls=("ball",), follow_up=FollowUpConfiguration(False, 1), scan_id="scan"):
@@ -232,32 +260,16 @@ def test_safety_timeout_and_follower_failure_are_distinct_terminal_outcomes():
 def test_executable_partial_planning_timeout_runs_route():
     # A planner's executable PARTIAL result—including budget exhaustion—uses the
     # same frozen execution path and is not confused with non-executable timeout.
-    snap = snapshot(balls=("a", "b"))
-    limited_configuration = replace(
-        snap.configuration_snapshot,
-        global_route_search=replace(snap.configuration_snapshot.global_route_search, max_search_expansions=1),
-    )
-    snap = replace(snap, configuration_snapshot=limited_configuration)
-    partial = executable_plan(snap)
+    snap, partial = partial_snapshot_and_plan()
     assert partial.is_executable
     assert partial.planning_status is PlanningStatus.PARTIAL
-    assert partial.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
     executor, _ = make_executor(snap=snap, planner=Planner(partial))
     advance_to_execution(executor)
     assert executor.plan is partial
 
 
 def test_partial_route_is_terminal_incomplete_not_completed():
-    snap = snapshot(balls=("a", "b"))
-    limited_configuration = replace(
-        snap.configuration_snapshot,
-        global_route_search=replace(
-            snap.configuration_snapshot.global_route_search,
-            max_search_expansions=1,
-        ),
-    )
-    snap = replace(snap, configuration_snapshot=limited_configuration)
-    partial = executable_plan(snap)
+    snap, partial = partial_snapshot_and_plan()
     assert partial.planning_status is PlanningStatus.PARTIAL
 
     executor, _ = make_executor(snap=snap, planner=Planner(partial))
@@ -473,3 +485,51 @@ def test_off_route_pass_never_follows_an_aborted_route():
     finish(executor)
     assert executor.state is ExecutorState.ABORTED_TRACKING
     assert observer.known_positions == []  # never consulted after an abort
+
+
+# ── follow-up after a classified tracking abort (Phase 20B) ─────────────────
+#
+# A localization re-anchoring can leave the robot outside the corridor with the
+# next ball too close to re-enter, so that pass is genuinely lost.  The rest of
+# the route is not, and 42% of planned crossings were being discarded with it
+# (debug log #84).  The existing follow-up already replans the remainder from
+# the current pose under the planner's own safety proof; these tests pin exactly
+# which failures may reach it.
+
+def _abort_detail(label):
+    return f"{label} | seg pass-0 progress 21.5m lat_err 0.310m head_err 0.010rad"
+
+
+@pytest.mark.parametrize("label", ["trajectory_tube_exceeded", "heading_error_exceeded"])
+def test_a_classified_tracking_abort_is_eligible_for_follow_up(label):
+    from tennis_robot.collection_route_executor import _is_skippable_tracking_abort
+    assert _is_skippable_tracking_abort(
+        ExecutorState.ABORTED_TRACKING, ExecutorReasonCode.PATH_FAILED, _abort_detail(label))
+
+
+def test_a_safety_resume_failure_is_not_eligible_even_though_it_aborts_tracking():
+    # SAFETY_RESUME_INVALID also ends in ABORTED_TRACKING; it must stay terminal.
+    from tennis_robot.collection_route_executor import _is_skippable_tracking_abort
+    assert not _is_skippable_tracking_abort(
+        ExecutorState.ABORTED_TRACKING, ExecutorReasonCode.SAFETY_RESUME_INVALID, None)
+
+
+@pytest.mark.parametrize("outcome,reason", [
+    (ExecutorState.ABORTED_SAFETY, ExecutorReasonCode.SAFETY_TIMEOUT),
+    (ExecutorState.ABORTED_COLLECTOR, ExecutorReasonCode.COLLECTOR_JAM),
+    (ExecutorState.ABORTED_SCAN, ExecutorReasonCode.SCAN_FAILED),
+    (ExecutorState.ABORTED_PLANNING, ExecutorReasonCode.PLANNING_FAILED),
+    (ExecutorState.ABORTED_SCAN, ExecutorReasonCode.NAVIGATION_FAILED),
+])
+def test_mission_critical_aborts_are_never_eligible(outcome, reason):
+    from tennis_robot.collection_route_executor import _is_skippable_tracking_abort
+    assert not _is_skippable_tracking_abort(outcome, reason, _abort_detail("whatever"))
+
+
+def test_an_unrecognised_tracking_detail_is_not_eligible():
+    from tennis_robot.collection_route_executor import _is_skippable_tracking_abort
+    assert not _is_skippable_tracking_abort(
+        ExecutorState.ABORTED_TRACKING, ExecutorReasonCode.PATH_FAILED,
+        _abort_detail("curvature_exceeded"))
+    assert not _is_skippable_tracking_abort(
+        ExecutorState.ABORTED_TRACKING, ExecutorReasonCode.PATH_FAILED, None)

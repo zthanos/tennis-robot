@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 import hashlib
 import math
 
 from tennis_robot.collection_route_connector_graph import ConnectorEdge, DirectedCandidateGraph
+from tennis_robot.collection_route_plan_builder import (
+    connector_execution_profile,
+    connector_segment,
+    pass_segment,
+)
 from tennis_robot.collection_route_planner_v2 import CourtModel, FunnelPassCandidate, PerBallFeasibility, _segment_is_collision_free
 from tennis_robot.collection_route_types import (
     BallReasonCode, BallResult, BallStatus, CollectionRouteConfiguration,
@@ -278,56 +283,15 @@ def _plan_from_route(snapshot, configuration, route, status, search_status, resu
 
 
 def _connector_execution_profile(configuration):
-    """Default profile with the connector-specific (looser) heading hard gate.
-
-    Connectors are transit, not capture: pure-pursuit steering leads the path
-    tangent on their curves, so the capture-grade heading gate would self-abort.
-    Every other profile bound (speed, curvature, lateral tube) is unchanged.
-    """
-    return replace(
-        configuration.planning.default_execution_profile,
-        max_heading_error_rad=configuration.planning.connector_max_heading_error_rad,
-    )
+    return connector_execution_profile(configuration)
 
 
 def _connector_segment(segment_id, edge, progress, configuration):
-    path = Path2D(tuple(PathPoint(pose) for pose in edge.path.poses))
-    # Edge-local crossing progress is chord-based while the segment span uses the
-    # arc length, and arc >= chord, so rebasing keeps every crossing inside the
-    # segment with at least the required run-out behind it.
-    crossings = tuple(
-        replace(crossing, progress_s=progress + crossing.progress_s)
-        for crossing in edge.swept_crossings
-    )
-    # A connector that collects is capture motion for that stretch, so it has to
-    # hold the capture-grade heading gate rather than the loose transit one. The
-    # sweep detector only admits crossings on portions gentle enough to pass it.
-    profile = (
-        configuration.planning.default_execution_profile
-        if crossings
-        else _connector_execution_profile(configuration)
-    )
-    return RouteSegment(segment_id, RouteSegmentType.CONNECTOR, path, progress, progress + edge.path.length_m, profile, edge.swept_ball_ids, ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0), crossings)
+    return connector_segment(segment_id, edge, progress, configuration)
 
 
 def _pass_segment(segment_id, candidate, progress, configuration, snapshot):
-    length = _pass_length(candidate, configuration)
-    direction = (math.cos(candidate.heading_rad), math.sin(candidate.heading_rad))
-    normal = (-direction[1], direction[0])
-    crossings = []
-    for ball_id, position in zip(candidate.covered_ball_ids, candidate.crossing_positions):
-        dx = position.x_m - candidate.entry_pose.x_m
-        dy = position.y_m - candidate.entry_pose.y_m
-        along = dx * direction[0] + dy * direction[1]
-        lateral = dx * normal[0] + dy * normal[1]
-        centreline_position = Point2D(
-            candidate.entry_pose.x_m + along * direction[0],
-            candidate.entry_pose.y_m + along * direction[1],
-        )
-        crossings.append(PlannedCrossing(ball_id, centreline_position, progress + along, candidate.heading_rad, lateral))
-    crossings = tuple(crossings)
-    path = Path2D((PathPoint(candidate.entry_pose),) + tuple(PathPoint(Pose2D(item.position_xy.x_m, item.position_xy.y_m, item.heading_rad)) for item in crossings) + (PathPoint(candidate.exit_pose),))
-    return RouteSegment(segment_id, RouteSegmentType.FUNNEL_PASS, path, progress, progress + length, configuration.planning.default_execution_profile, candidate.covered_ball_ids, ObstacleConstraint(ObstacleConstraintKind.NONE, (), 0.0), crossings)
+    return pass_segment(segment_id, candidate, progress, configuration)
 
 
 def _empty_plan(snapshot, configuration, status, search_status, results):

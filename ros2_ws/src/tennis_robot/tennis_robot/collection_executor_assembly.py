@@ -118,6 +118,9 @@ class CollectionExecutorHandles:
     collector_maximum_drain_s: float = 0.0
     # .start(), .observe(), .result(known_positions=...) -> ScanSnapshot | None
     drive_observer: object | None = None
+    # Phase 9 execution trace: .start(plan) / .finish().  Absent unless
+    # COLLECTION_EXECUTION_TRACE_DIR asks for it.
+    execution_trace: object | None = None
 
 
 class _PlanCollectionRoutePlanner:
@@ -222,6 +225,7 @@ def build_collection_route_executor(
         path_follower=path_follower,
         safety_monitor=safety_monitor,
         drive_observer=handles.drive_observer,
+        execution_trace=handles.execution_trace,
         telemetry=telemetry,
         clock=clock,
     )

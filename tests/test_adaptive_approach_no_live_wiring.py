@@ -17,16 +17,23 @@ from pathlib import Path
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 _PACKAGE_DIR = _REPOSITORY_ROOT / "ros2_ws" / "src" / "tennis_robot" / "tennis_robot"
 
-# Modules the adaptive shadow code must NEVER be imported *into*.
+# Modules that must NEVER be imported into live code.  The execution evaluator
+# joins them because it reasons with the *physical* capture planes -- wider than
+# the corridor the planner allows itself -- and using those to plan would
+# quietly widen the planner's own assumptions.  Recording is separate and does
+# stay live: collection_execution_trace and collection_execution_recorder carry
+# no geometry at all.
 _ADAPTIVE_MODULES = {
     "collection_adaptive_approach",
     "collection_capture_geometry",
+    "collection_execution_evaluator",
 }
 # The only source files (outside tests / scripts) allowed to import them: the
-# shadow modules themselves.
+# offline modules themselves.
 _ALLOWED_SOURCE_FILES = {
     "collection_adaptive_approach.py",
     "collection_capture_geometry.py",
+    "collection_execution_evaluator.py",
 }
 
 

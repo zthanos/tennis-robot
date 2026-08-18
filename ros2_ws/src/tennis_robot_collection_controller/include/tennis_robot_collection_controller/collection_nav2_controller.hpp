@@ -55,6 +55,12 @@ private:
   void handle_finalize(const std::shared_ptr<FinalizeService::Request> request,
                        std::shared_ptr<FinalizeService::Response> response);
   geometry_msgs::msg::TwistStamped zero_command() const;
+  /// Pose expressed in the active plan's frame, or a thrown execution failure.
+  ///
+  /// The frame contract is enforced here, at the ROS boundary: a pose and a
+  /// path in different frames are never handed to the core as bare numbers.
+  geometry_msgs::msg::PoseStamped pose_in_plan_frame(
+    const geometry_msgs::msg::PoseStamped & pose);
   void publish_state(const TrackingResult & result, TrackingFailureCode failure);
   void publish_lifecycle_state();
   void consume_with_failure(TrackingFailureCode failure, const TrackingResult & result);
@@ -69,6 +75,27 @@ private:
   bool has_last_core_result_{false};
   bool terminal_ready_{false};
   bool active_{false};
+  // Frame diagnosis (Phase 11).  The tracking core takes bare coordinates, so
+  // the frame each side arrived in exists only here, at the ROS boundary: the
+  // pose header Nav2 hands to computeVelocityCommands and the path header
+  // handed to setPlan.  Both are recorded verbatim and republished; nothing
+  // reads them for control.
+  std::string last_pose_frame_id_;
+  double last_pose_stamp_s_{0.0};
+  double last_pose_x_m_{0.0};
+  double last_pose_y_m_{0.0};
+  double last_pose_yaw_rad_{0.0};
+  double last_update_stamp_s_{0.0};
+  std::string plan_frame_id_;
+  double plan_stamp_s_{0.0};
+  // The route is executed in the frame it was planned in (`map`).  Nav2 hands
+  // this plugin a pose in the local costmap frame (`odom`), so the adapter --
+  // this class, not the pure core -- transforms it into the plan frame on every
+  // update.  Holding the buffer is the whole reason the parameter exists.
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  double last_transform_stamp_s_{0.0};
+  double last_transform_age_s_{0.0};
+  bool last_transform_was_latest_{false};
   rclcpp::Publisher<tennis_robot_msgs::msg::CollectionControllerState>::SharedPtr state_publisher_;
   rclcpp::Service<LoadService>::SharedPtr load_service_;
   rclcpp::Service<ResetService>::SharedPtr reset_service_;

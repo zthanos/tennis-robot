@@ -9,6 +9,8 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(tennis_robot_msgs REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 add_library(collection_path_canonicalization
   src/collection_path_canonicalization.cpp
@@ -30,7 +32,7 @@ target_include_directories(collection_nav2_controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(collection_nav2_controller
-  nav2_core pluginlib rclcpp rclcpp_lifecycle tennis_robot_msgs)
+  nav2_core pluginlib rclcpp rclcpp_lifecycle tennis_robot_msgs tf2 tf2_ros)
 target_link_libraries(collection_nav2_controller collection_path_canonicalization)
 pluginlib_export_plugin_description_file(nav2_core collection_nav2_controller.xml)
 

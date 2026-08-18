@@ -1718,6 +1718,16 @@ class ControllerNode(Node):
             **context,
         }
         self._collect_route_confirmations.append(confirmation)
+        # The Phase 9 trace records the *attributed* confirmation, not the raw
+        # beam: this is the first place the association with a ball exists, so
+        # it is where the evidence is captured rather than re-derived offline.
+        factory = self._collect_route_executor_factory
+        capture = getattr(factory, "trace_capture", None) if factory is not None else None
+        if capture is not None:
+            try:
+                capture.record_confirmation(confirmation)
+            except Exception:  # noqa: BLE001 - instrumentation may not disturb a route
+                pass
         return confirmation
 
     def _mark_route_confirmation_on_console_map(

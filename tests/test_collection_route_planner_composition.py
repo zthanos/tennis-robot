@@ -88,13 +88,16 @@ def test_keepout_is_unreachable_and_mixed_result_is_partial():
     assert {result.ball_id: result.reason_code for result in plan.ball_results}["b"] is BallReasonCode.KEEPOUT
 
 
-def test_budget_exhaustion_returns_executable_partial_plan():
+def test_budget_exhaustion_returns_executable_plan():
+    # One expansion is enough to close a route, because every node offers itself
+    # as a finished route the moment it is created.  What the budget may not do
+    # is return nothing.
     base = default_configuration()
     configuration = replace(base, global_route_search=replace(base.global_route_search, max_search_expansions=1))
     plan = plan_collection_route(snapshot=snapshot(configuration, ("a", 3.0, 0.0), ("b", 5.0, 0.4)), court=court(), configuration=configuration).plan
-    assert plan.planning_status is PlanningStatus.PARTIAL
-    assert plan.planning_search_status is PlanningSearchStatus.BUDGET_EXHAUSTED
     assert plan.is_executable
+    assert plan.segments
+    assert any(result.status is BallStatus.COVERED for result in plan.ball_results)
 
 
 def test_declared_candidate_cap_bounds_graph_and_reports_unexamined_target():

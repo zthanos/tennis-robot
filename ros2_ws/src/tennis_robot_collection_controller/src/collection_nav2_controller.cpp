@@ -6,6 +6,8 @@
 #include <utility>
 
 #include <nlohmann/json.hpp>
+#include <tf2/exceptions.hpp>
+#include <tf2/time.hpp>
 #include "pluginlib/class_list_macros.hpp"
 #include "tennis_robot_collection_controller/collection_path_canonicalization.hpp"
 
@@ -207,11 +209,12 @@ std::uint8_t failure_code(const TrackingFailureCode code)
 
 void CollectionNav2Controller::configure(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent, std::string name,
-  std::shared_ptr<tf2_ros::Buffer>, std::shared_ptr<nav2_costmap_2d::Costmap2DROS>)
+  std::shared_ptr<tf2_ros::Buffer> tf, std::shared_ptr<nav2_costmap_2d::Costmap2DROS>)
 {
   std::lock_guard<std::mutex> lock(mutex_);
   node_ = parent.lock();
   if (!node_) { throw std::runtime_error("collection controller parent node expired"); }
+  tf_buffer_ = std::move(tf);
   name_ = std::move(name);
   context_ = std::make_unique<CollectionExecutionContextContract>(kContextSchemaVersion);
   state_publisher_ = node_->create_publisher<tennis_robot_msgs::msg::CollectionControllerState>(name_ + "/state", 10);
@@ -228,7 +231,7 @@ void CollectionNav2Controller::configure(
 void CollectionNav2Controller::cleanup()
 {
   std::lock_guard<std::mutex> lock(mutex_);
-  active_ = false; tracking_core_.reset(); wire_context_.reset(); state_publisher_.reset();
+  active_ = false; tracking_core_.reset(); wire_context_.reset(); state_publisher_.reset(); tf_buffer_.reset();
   load_service_.reset(); reset_service_.reset(); hold_service_.reset(); finalize_service_.reset();
   context_.reset(); node_.reset(); name_.clear(); has_last_core_result_ = false; terminal_ready_ = false;
 }
@@ -242,6 +245,11 @@ void CollectionNav2Controller::setPlan(const nav_msgs::msg::Path & path)
   if (!active_ || !context_ || !wire_context_) { throw std::runtime_error("collection_controller_no_executing_context"); }
   const auto transition = context_->begin_matching_follow_path(collection_path_sha256_v1(path), node_->now().seconds());
   if (!transition.accepted) { throw std::runtime_error("collection_controller_path_context_failure"); }
+  // Recorded verbatim, never defaulted: the frame the route arrived in is one
+  // half of the contract the tracking core cannot check for itself.
+  plan_frame_id_ = path.header.frame_id;
+  plan_stamp_s_ = static_cast<double>(path.header.stamp.sec) +
+    static_cast<double>(path.header.stamp.nanosec) * 1e-9;
   try {
     tracking_core_ = std::make_unique<CollectionTrackingCore>(make_tracking_plan(*wire_context_, path));
     has_last_core_result_ = false; terminal_ready_ = false;
@@ -261,6 +269,66 @@ void CollectionNav2Controller::setPlan(const nav_msgs::msg::Path & path)
   }
 }
 
+geometry_msgs::msg::PoseStamped CollectionNav2Controller::pose_in_plan_frame(
+  const geometry_msgs::msg::PoseStamped & pose)
+{
+  if (plan_frame_id_.empty() || pose.header.frame_id.empty()) {
+    // An unnamed frame is not agreement.  Debug log #72: the whole defect was
+    // possible because nothing ever asserted which frame either side was in.
+    throw std::runtime_error("collection_controller_frame_contract_unnamed");
+  }
+  if (pose.header.frame_id == plan_frame_id_) {
+    last_transform_stamp_s_ = static_cast<double>(pose.header.stamp.sec) +
+      static_cast<double>(pose.header.stamp.nanosec) * 1e-9;
+    last_transform_age_s_ = 0.0;
+    last_transform_was_latest_ = false;
+    return pose;
+  }
+  if (!tf_buffer_) { throw std::runtime_error("collection_controller_frame_contract_no_tf"); }
+  geometry_msgs::msg::TransformStamped transform;
+  // The pose's own stamp first, so the correction applied is the one that was
+  // valid when the pose was measured rather than an arbitrary latest.  A few
+  // milliseconds of extrapolation is normal at 20 Hz and falls back to the
+  // latest transform -- recorded as such, never silently.
+  try {
+    transform = tf_buffer_->lookupTransform(
+      plan_frame_id_, pose.header.frame_id, rclcpp::Time(pose.header.stamp),
+      rclcpp::Duration::from_seconds(0.05));
+    last_transform_was_latest_ = false;
+  } catch (const tf2::ExtrapolationException &) {
+    try {
+      transform = tf_buffer_->lookupTransform(plan_frame_id_, pose.header.frame_id, tf2::TimePointZero);
+      last_transform_was_latest_ = true;
+    } catch (const tf2::TransformException & error) {
+      throw std::runtime_error(
+        std::string("collection_controller_frame_transform_failed: ") + error.what());
+    }
+  } catch (const tf2::TransformException & error) {
+    // A missing or disconnected frame is a configuration failure, not something
+    // to work around: comparing the coordinates anyway is exactly the bug.
+    throw std::runtime_error(
+      std::string("collection_controller_frame_transform_failed: ") + error.what());
+  }
+  const double transform_yaw = yaw_from_quaternion(transform.transform.rotation);
+  const double cos_yaw = std::cos(transform_yaw);
+  const double sin_yaw = std::sin(transform_yaw);
+  geometry_msgs::msg::PoseStamped transformed = pose;
+  transformed.header.frame_id = plan_frame_id_;
+  transformed.pose.position.x = transform.transform.translation.x +
+    cos_yaw * pose.pose.position.x - sin_yaw * pose.pose.position.y;
+  transformed.pose.position.y = transform.transform.translation.y +
+    sin_yaw * pose.pose.position.x + cos_yaw * pose.pose.position.y;
+  const double yaw = transform_yaw + yaw_from_quaternion(pose.pose.orientation);
+  transformed.pose.orientation.x = 0.0;
+  transformed.pose.orientation.y = 0.0;
+  transformed.pose.orientation.z = std::sin(yaw * 0.5);
+  transformed.pose.orientation.w = std::cos(yaw * 0.5);
+  last_transform_stamp_s_ = static_cast<double>(transform.header.stamp.sec) +
+    static_cast<double>(transform.header.stamp.nanosec) * 1e-9;
+  last_transform_age_s_ = node_->now().seconds() - last_transform_stamp_s_;
+  return transformed;
+}
+
 geometry_msgs::msg::TwistStamped CollectionNav2Controller::computeVelocityCommands(
   const geometry_msgs::msg::PoseStamped & pose, const geometry_msgs::msg::Twist & velocity, nav2_core::GoalChecker *)
 {
@@ -270,8 +338,27 @@ geometry_msgs::msg::TwistStamped CollectionNav2Controller::computeVelocityComman
   if (!held && context_->lifecycle() != ContextLifecycle::kExecuting) {
     throw std::runtime_error("collection_controller_no_executing_context");
   }
-  const TrackingResult result = tracking_core_->update({pose.pose.position.x, pose.pose.position.y,
-    yaw_from_quaternion(pose.pose.orientation), std::hypot(velocity.linear.x, velocity.linear.y), held});
+  // The route is tracked in the frame it was planned in; the pose arrives in the
+  // local costmap frame and is brought into that frame here (debug log #72).
+  const geometry_msgs::msg::PoseStamped tracking_pose = pose_in_plan_frame(pose);
+  // Frame diagnosis (Phase 11): these are the exact numbers handed to the core,
+  // captured after the transform and before the call, so the published
+  // diagnostic cannot drift from the values the reported errors came from.
+  last_pose_frame_id_ = tracking_pose.header.frame_id;
+  const double previous_pose_stamp_s = last_pose_stamp_s_;
+  last_pose_stamp_s_ = static_cast<double>(tracking_pose.header.stamp.sec) +
+    static_cast<double>(tracking_pose.header.stamp.nanosec) * 1e-9;
+  // Elapsed time between pose measurements, which is what the re-anchoring test
+  // needs; zero on the first update means "unknown" and makes no claim.
+  const double elapsed_s = previous_pose_stamp_s > 0.0 &&
+    last_pose_stamp_s_ > previous_pose_stamp_s ?
+    last_pose_stamp_s_ - previous_pose_stamp_s : 0.0;
+  last_pose_x_m_ = tracking_pose.pose.position.x;
+  last_pose_y_m_ = tracking_pose.pose.position.y;
+  last_pose_yaw_rad_ = yaw_from_quaternion(tracking_pose.pose.orientation);
+  last_update_stamp_s_ = node_->now().seconds();
+  const TrackingResult result = tracking_core_->update({last_pose_x_m_, last_pose_y_m_,
+    last_pose_yaw_rad_, std::hypot(velocity.linear.x, velocity.linear.y), held, elapsed_s});
   last_core_result_ = result; has_last_core_result_ = true;
   // Latch: the tracking core reports terminal_ready only while the robot is
   // physically within the terminal tolerance, but the chassis coasts past that
@@ -386,6 +473,43 @@ void CollectionNav2Controller::publish_state(const TrackingResult & result, cons
       state.active_segment_id = segment.segment_id; break;
     }
   }
+  // The two geometric objects this update's lateral_error_m was computed from,
+  // each with the frame it arrived in.  Published, not reconstructed.
+  state.tracker_pose_frame_id = last_pose_frame_id_;
+  state.tracker_pose_stamp_s = last_pose_stamp_s_;
+  state.tracker_pose_x_m = last_pose_x_m_;
+  state.tracker_pose_y_m = last_pose_y_m_;
+  state.tracker_pose_yaw_rad = last_pose_yaw_rad_;
+  state.tracker_update_stamp_s = last_update_stamp_s_;
+  state.tracker_path_frame_id = plan_frame_id_;
+  state.tracker_path_stamp_s = plan_stamp_s_;
+  state.tracker_has_reference = result.has_reference;
+  state.tracker_reference_x_m = result.reference_x_m;
+  state.tracker_reference_y_m = result.reference_y_m;
+  state.tracker_reference_yaw_rad = result.reference_heading_rad;
+  state.tracker_transform_stamp_s = last_transform_stamp_s_;
+  state.tracker_transform_age_s = last_transform_age_s_;
+  state.tracker_transform_was_latest = last_transform_was_latest_;
+  // Straight from this result, not from a member: publish_state runs before the
+  // command is formed, so a cached value would always be one cycle stale.
+  state.tracker_has_geometry = result.has_geometry;
+  state.tracker_pose_step_m = result.pose_step_m;
+  state.tracker_pose_step_yaw_rad = result.pose_step_yaw_rad;
+  state.tracker_elapsed_s = result.elapsed_s;
+  state.tracker_plausible_step_bound_m = result.plausible_step_bound_m;
+  state.tracker_reanchoring_detected = result.reanchoring_detected;
+  state.tracker_tube_verdict_deferred = result.tube_verdict_deferred;
+  state.tracker_previous_progress_s = result.previous_progress_s;
+  state.tracker_raw_projection_progress_s = result.raw_projection_progress_s;
+  state.tracker_has_raw_projection = result.has_raw_projection;
+  state.tracker_projection_reach_m = result.projection_reach_m;
+  state.tracker_raw_projection_constrained = result.raw_projection_constrained;
+  state.tracker_lookahead_x_m = result.lookahead_x_m;
+  state.tracker_lookahead_y_m = result.lookahead_y_m;
+  state.tracker_lookahead_distance_m = result.lookahead_distance_m;
+  state.tracker_commanded_curvature_per_m = result.commanded_curvature_per_m;
+  state.commanded_linear_mps = result.command.linear_x_mps;
+  state.commanded_angular_rad_s = result.command.angular_z_rad_s;
   state_publisher_->publish(state);
 }
 

@@ -134,23 +134,40 @@ class PlannerResult:
     """
     plan: CollectionRoutePlan
     shared_pass_candidate_budget_exhausted: bool
+    search_expansions: int = 0
+    search_complete: bool = True
+    wall_clock_truncated: bool = False
+    macro_successors_queued: int = 0
+    state_pops: int = 0
+    state_resumptions: int = 0
+    successor_batch_size: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, CollectionRoutePlan):
             raise PlannerInputError("PlannerResult requires a CollectionRoutePlan")
-        if not isinstance(self.shared_pass_candidate_budget_exhausted, bool):
-            raise PlannerInputError("shared_pass_candidate_budget_exhausted must be bool")
+        for name in ("shared_pass_candidate_budget_exhausted", "search_complete", "wall_clock_truncated"):
+            if not isinstance(getattr(self, name), bool):
+                raise PlannerInputError(f"{name} must be bool")
+        for name in ("search_expansions", "macro_successors_queued", "state_pops",
+                     "state_resumptions", "successor_batch_size"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise PlannerInputError(f"{name} must be a non-negative int")
 
 
 def plan_collection_route(*, snapshot: ScanSnapshot, court: CourtModel, configuration: CollectionRouteConfiguration) -> PlannerResult:
-    """Compose the pure Phase 3A→3C→3B1→3B2 planner pipeline.
+    """Compose the pure planner pipeline: feasibility, passes, bounded search.
+
+    Candidate generation discovers the collection passes the balls admit -- one
+    per ball plus every line several balls share -- and the router searches over
+    those passes directly.  Clustering informs what the router looks at first
+    and which multi-pass shortcuts are precomputed; it never decides which
+    routes exist.
 
     This is intentionally the sole planner orchestration API.  It imports the
     lower-level pure layers lazily to keep their geometry contracts acyclic.
-    Returns a ``PlannerResult`` wrapping the frozen plan and planner telemetry.
     """
-    from tennis_robot.collection_route_connector_graph import build_directed_candidate_graph
-    from tennis_robot.collection_route_global_solver import solve_global_route
+    from tennis_robot.collection_route_router import solve_route
     from tennis_robot.collection_route_shared_pass import generate_shared_passes
 
     individual = analyze_snapshot(snapshot, court, configuration)
@@ -166,25 +183,29 @@ def plan_collection_route(*, snapshot: ScanSnapshot, court: CourtModel, configur
         court=court,
         configuration=configuration,
     )
-    candidates = _merge_candidates(single_candidates + shared.candidates)
-    candidates, candidate_budget_exhausted = _bounded_candidates(
-        snapshot, candidates, configuration.planning.maximum_candidate_count
+    generated = _merge_candidates(single_candidates + shared.candidates)
+    candidates, _ = _bounded_candidates(
+        snapshot, generated, configuration.planning.maximum_candidate_count
     )
-    graph = build_directed_candidate_graph(
+    outcome = solve_route(
         snapshot=snapshot,
+        feasibility=individual,
         candidates=candidates,
         court=court,
         configuration=configuration,
+        starved_ball_ids=starved_ball_ids(generated, candidates),
     )
-    plan = solve_global_route(
-        snapshot=snapshot,
-        feasibility=individual,
-        graph=graph,
-        court=court,
-        configuration=configuration,
-        candidate_budget_exhausted=candidate_budget_exhausted,
+    return PlannerResult(
+        outcome.plan,
+        shared.candidate_budget_exhausted,
+        outcome.expansions,
+        outcome.search_complete,
+        outcome.wall_clock_truncated,
+        outcome.macro_successors_queued,
+        outcome.state_pops,
+        outcome.state_resumptions,
+        outcome.batch_size,
     )
-    return PlannerResult(plan, shared.candidate_budget_exhausted)
 
 
 def _bounded_candidates(
@@ -192,12 +213,14 @@ def _bounded_candidates(
     candidates: tuple[FunnelPassCandidate, ...],
     limit: int,
 ) -> tuple[tuple[FunnelPassCandidate, ...], bool]:
-    """Apply the declared graph-node budget before O(N²) edge generation.
+    """Apply the declared candidate budget deterministically.
 
-    Greedy set coverage gives every target a deterministic chance to enter the
-    graph (and naturally prefers useful shared passes).  Remaining slots add
-    the closest alternatives.  This keeps graph construction bounded without
-    silently treating an unexamined target as geometrically unreachable.
+    Greedy set coverage gives every target a chance to enter the search (and
+    naturally prefers useful shared passes); remaining slots add alternatives
+    round-robin.  The cap bounds work; it must never be the reason a reachable
+    ball has nothing to be reached by, so ``_starved_ball_ids`` reports which
+    balls lost candidates to it and the router treats those as unresolved
+    search rather than as geometry.
     """
     if len(candidates) <= limit:
         return candidates, False
@@ -249,6 +272,30 @@ def _bounded_candidates(
         for ball_id in item.covered_ball_ids:
             coverage_counts[ball_id] += 1
     return tuple(selected), True
+
+
+def starved_ball_ids(
+    generated: tuple[FunnelPassCandidate, ...],
+    admitted: tuple[FunnelPassCandidate, ...],
+) -> frozenset[str]:
+    """Balls that had a candidate before the cap and fewer (or none) after.
+
+    A ball whose alternatives were trimmed may still be collectable through
+    what survived, but the planner can no longer *prove* anything about the
+    trimmed geometry, so the ball's outcome stays search-limited rather than
+    geometric if it ends up uncovered.
+    """
+    def counts(items):
+        totals: dict[str, int] = {}
+        for candidate in items:
+            for ball_id in candidate.covered_ball_ids:
+                totals[ball_id] = totals.get(ball_id, 0) + 1
+        return totals
+
+    before, after = counts(generated), counts(admitted)
+    return frozenset(
+        ball_id for ball_id, total in before.items() if after.get(ball_id, 0) < total
+    )
 
 
 def _merge_candidates(candidates: tuple[FunnelPassCandidate, ...]) -> tuple[FunnelPassCandidate, ...]:
@@ -471,18 +518,135 @@ def _satisfies_tangent_constraints(
     )
 
 
+@dataclass(frozen=True)
+class _PolygonGeometry:
+    """Derived, reusable facts about one polygon.
+
+    Rebuilding edge pairs on every distance query dominated planning time: the
+    real-scan profile spent 83% of the run inside collision checking, with 1.5M
+    calls each re-zipping the same handful of vertices.  None of this changes a
+    verdict; it is the same geometry, computed once.
+    """
+
+    edges: tuple[tuple[Point2D, Point2D], ...]
+    min_x: float
+    min_y: float
+    max_x: float
+    max_y: float
+    # Inward unit half-planes (nx, ny, offset), present only when the polygon is
+    # convex.  A point is at least ``c`` inside the polygon exactly when
+    # nx*x + ny*y + offset >= c holds for every one of them, which turns four
+    # separate boundary queries into one loop with no square roots.
+    half_planes: tuple[tuple[float, float, float], ...] | None
+
+
+@dataclass(frozen=True)
+class _CourtGeometry:
+    navigable: _PolygonGeometry
+    obstacles: tuple[_PolygonGeometry, ...]
+
+
+def _polygon_geometry(polygon: tuple[Point2D, ...]) -> _PolygonGeometry:
+    edges = _polygon_edges(polygon)
+    xs = [point.x_m for point in polygon]
+    ys = [point.y_m for point in polygon]
+    return _PolygonGeometry(
+        edges, min(xs), min(ys), max(xs), max(ys), _inward_half_planes(polygon, edges)
+    )
+
+
+def _inward_half_planes(polygon, edges):
+    """Unit inward half-planes, or None when the polygon is not convex."""
+    area2 = sum(
+        start.x_m * end.y_m - end.x_m * start.y_m for start, end in edges
+    )
+    if abs(area2) <= _EPSILON:
+        return None
+    orientation = 1.0 if area2 > 0.0 else -1.0
+    planes = []
+    for start, end in edges:
+        dx, dy = end.x_m - start.x_m, end.y_m - start.y_m
+        length = math.hypot(dx, dy)
+        if length <= _EPSILON:
+            return None
+        # Inward normal for this winding; convexity is confirmed below by
+        # checking every vertex lies on the inward side of every edge.
+        normal_x, normal_y = -orientation * dy / length, orientation * dx / length
+        planes.append((normal_x, normal_y, -(normal_x * start.x_m + normal_y * start.y_m)))
+    for normal_x, normal_y, offset in planes:
+        for point in polygon:
+            if normal_x * point.x_m + normal_y * point.y_m + offset < -_EPSILON:
+                return None
+    return tuple(planes)
+
+
+def _court_geometry(court: CourtModel) -> _CourtGeometry:
+    """Memoized derived geometry for a court.
+
+    Stored on the (frozen) court as a plain attribute rather than a field, so it
+    takes no part in equality or hashing and cannot change what a court *is*.
+    """
+    derived = getattr(court, "_derived_geometry", None)
+    if derived is None:
+        derived = _CourtGeometry(
+            _polygon_geometry(court.navigable_polygon),
+            tuple(_polygon_geometry(obstacle.polygon) for obstacle in court.obstacles),
+        )
+        object.__setattr__(court, "_derived_geometry", derived)
+    return derived
+
+
 def _segment_is_collision_free(
     start: Point2D, end: Point2D, court: CourtModel, clearance: float
 ) -> bool:
-    if not _point_in_eroded_polygon(start, court.navigable_polygon, clearance):
-        return False
-    if not _point_in_eroded_polygon(end, court.navigable_polygon, clearance):
-        return False
-    if _segment_crosses_polygon_boundary(start, end, court.navigable_polygon):
-        return False
-    if _segment_polygon_distance(start, end, court.navigable_polygon) <= clearance + _EPSILON:
-        return False
-    for obstacle in court.obstacles:
+    """Is the swept disk of radius ``clearance`` along this segment free?
+
+    Identical verdicts to the straightforward formulation below it; the extra
+    machinery only avoids exact work whose outcome is already determined:
+
+        inside navigable polygon, both endpoints, with clearance
+        segment does not cross the navigable boundary
+        segment stays clearance away from the navigable boundary
+        segment does not hit any obstacle inflated by clearance
+    """
+    geometry = _court_geometry(court)
+    navigable = geometry.navigable
+    planes = navigable.half_planes
+    if planes is not None:
+        # Convex court: a segment is clearance-inside exactly when both of its
+        # endpoints are, so one half-plane sweep settles containment, boundary
+        # crossing and boundary distance together.
+        limit = clearance + _EPSILON
+        for normal_x, normal_y, offset in planes:
+            if normal_x * start.x_m + normal_y * start.y_m + offset <= limit:
+                return False
+            if normal_x * end.x_m + normal_y * end.y_m + offset <= limit:
+                return False
+    else:
+        if not _point_in_eroded_polygon(start, court.navigable_polygon, clearance):
+            return False
+        if not _point_in_eroded_polygon(end, court.navigable_polygon, clearance):
+            return False
+        if _segment_crosses_polygon_boundary(start, end, court.navigable_polygon):
+            return False
+        if _segment_polygon_distance(start, end, court.navigable_polygon) <= clearance + _EPSILON:
+            return False
+
+    if not geometry.obstacles:
+        return True
+    low_x, high_x = (start.x_m, end.x_m) if start.x_m <= end.x_m else (end.x_m, start.x_m)
+    low_y, high_y = (start.y_m, end.y_m) if start.y_m <= end.y_m else (end.y_m, start.y_m)
+    reach = clearance + _EPSILON
+    for bounds, obstacle in zip(geometry.obstacles, court.obstacles):
+        # A segment whose clearance envelope misses the obstacle's bounding box
+        # cannot be within clearance of the obstacle itself.
+        if (
+            high_x + reach < bounds.min_x
+            or low_x - reach > bounds.max_x
+            or high_y + reach < bounds.min_y
+            or low_y - reach > bounds.max_y
+        ):
+            continue
         if _segment_hits_inflated_polygon(start, end, obstacle.polygon, clearance):
             return False
     return True

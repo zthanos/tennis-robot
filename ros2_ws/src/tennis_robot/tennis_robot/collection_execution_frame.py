@@ -1,10 +1,14 @@
-"""Rigidly freeze a planned collection route into its execution frame.
+"""Rigidly express a planned collection route in another planar frame.
 
-The planner works in the surveyed ``map`` frame.  Nav2's controller server,
-however, supplies robot poses in the local costmap frame (``odom`` in this
-project).  The collection controller intentionally has no TF dependency, so
-the complete immutable plan must be expressed in that same frame before its
-execution context and path hash are built.
+Once used to freeze the whole route into ``odom`` before execution.  That is no
+longer done: the route stays in the surveyed ``map`` frame it was planned in,
+because the balls are in ``map`` too and an odom-frozen corridor slides away
+from them by the accumulated localization correction -- 0.13 to 0.44 m measured
+live against a 0.205 m funnel half-width (debug log #72).  The collection
+controller now brings its pose into the plan frame instead.
+
+The transform itself is exact and is kept: it is what the regression tests use
+to model the old behaviour and prove the new one no longer drifts.
 """
 
 from __future__ import annotations

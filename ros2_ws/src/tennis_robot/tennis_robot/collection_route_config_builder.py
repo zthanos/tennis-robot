@@ -12,6 +12,7 @@ from typing import Any
 
 from tennis_robot.collection_route_types import (
     CollectionRouteConfiguration,
+    ClusterHeuristicsConfiguration,
     ConnectorConfiguration,
     DomainValidationError,
     FeasibilityConfiguration,
@@ -41,6 +42,7 @@ _GROUP_TYPES = {
     "scan": ScanConfiguration,
     "feasibility": FeasibilityConfiguration,
     "connector": ConnectorConfiguration,
+    "cluster_heuristics": ClusterHeuristicsConfiguration,
     "global_route_search": GlobalRouteSearchConfiguration,
     "shared_pass": SharedPassConfiguration,
     "follow_up": FollowUpConfiguration,

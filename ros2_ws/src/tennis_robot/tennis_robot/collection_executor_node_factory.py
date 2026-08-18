@@ -17,14 +17,11 @@ from typing import Any, Mapping
 
 from tennis_robot.collection_court_model_builder import build_court_model
 from tennis_robot.collection_execution_context_builder import CollectionExecutionContextValues
-from tennis_robot.collection_execution_frame import (
-    RigidTransform2D,
-    transform_collection_plan,
-)
 from tennis_robot.collection_executor_assembly import (
     CollectionExecutorConfig, CollectionExecutorHandles,
     build_collection_route_executor, read_controller_tuning,
 )
+from tennis_robot.collection_execution_recorder import capture_from_env
 from tennis_robot.collection_executor_ports import RosMonotonicClock
 from tennis_robot.collection_drive_observation import (
     DriveObservationBuffer,
@@ -326,70 +323,64 @@ class _TfProvider:
         )
 
 
-class _ExecutionPlanTransformer:
-    """Freeze map→odom once, immediately before FollowPath context creation."""
+class _ExecutionFrameContract:
+    """Keep the route in the frame it was planned in, and say so out loud.
+
+    This used to freeze ``map→odom`` once and hand the controller an odom copy of
+    the route.  The tracker then followed that copy accurately while the map
+    frame kept moving underneath it, so the corridor slid away from the balls --
+    which stay in ``map`` -- by the accumulated localization correction: 0.13 to
+    0.44 m measured live, against a 0.205 m funnel half-width (debug log #72).
+
+    The route is therefore left in ``map`` and the controller brings its pose
+    into that frame on every update.  The plan is returned unchanged: geometry,
+    segment ids, progress semantics, crossings and plan id are all untouched --
+    this is a frame-of-execution correction, not a replan.  The transform that
+    is no longer applied is still *reported*, because the size of the correction
+    at execution start is exactly the error the old path baked in.
+    """
 
     def __init__(self, tf_buffer, ros):
         self._buffer, self._ros = tf_buffer, ros
         self.last_diagnostics: dict = {}
 
     def __call__(self, plan):
-        if plan.map_frame == "odom":
-            self.last_diagnostics = {
-                "schema_version": 1,
-                "plan_id": plan.plan_id,
-                "source_frame": "odom",
-                "target_frame": "odom",
-                "identity": True,
-                "transform": {
-                    "x_m": 0.0,
-                    "y_m": 0.0,
-                    "yaw_rad": 0.0,
-                },
-                "source_crossings": _execution_crossings(plan),
-                "execution_crossings": _execution_crossings(plan),
-            }
-            return plan
-        transform = self._buffer.lookup_transform(
-            "odom", plan.map_frame, self._ros.time_from_seconds(0.0)
-        )
-        translation = transform.transform.translation
-        rotation = transform.transform.rotation
-        yaw = math.atan2(
-            2.0 * (rotation.w * rotation.z + rotation.x * rotation.y),
-            1.0 - 2.0 * (rotation.y * rotation.y + rotation.z * rotation.z),
-        )
-        rigid = RigidTransform2D(
-            target_frame="odom",
-            source_frame=plan.map_frame,
-            x_m=float(translation.x),
-            y_m=float(translation.y),
-            yaw_rad=yaw,
-        )
-        transformed = transform_collection_plan(
-            plan,
-            rigid,
-        )
-        stamp = getattr(getattr(transform, "header", None), "stamp", None)
-        stamp_s = None
-        if stamp is not None:
-            stamp_s = float(stamp.sec) + float(stamp.nanosec) * 1e-9
-        self.last_diagnostics = {
-            "schema_version": 1,
+        crossings = _execution_crossings(plan)
+        diagnostics = {
+            "schema_version": 2,
             "plan_id": plan.plan_id,
             "source_frame": plan.map_frame,
-            "target_frame": transformed.map_frame,
-            "identity": False,
-            "transform_timestamp_s": stamp_s,
-            "transform": {
-                "x_m": rigid.x_m,
-                "y_m": rigid.y_m,
-                "yaw_rad": rigid.yaw_rad,
-            },
-            "source_crossings": _execution_crossings(plan),
-            "execution_crossings": _execution_crossings(transformed),
+            "target_frame": plan.map_frame,
+            "identity": True,
+            "execution_frame_policy": "map_anchored",
+            "source_crossings": crossings,
+            "execution_crossings": crossings,
         }
-        return transformed
+        # Observability only: the map→odom that the previous implementation would
+        # have frozen here, so a run still records how much correction it started
+        # with and how much it accumulated afterwards.
+        try:
+            transform = self._buffer.lookup_transform(
+                "odom", plan.map_frame, self._ros.time_from_seconds(0.0)
+            )
+        except Exception:  # noqa: BLE001 - a missing transform must not stop a route
+            diagnostics["observed_map_to_odom"] = None
+        else:
+            translation = transform.transform.translation
+            rotation = transform.transform.rotation
+            stamp = getattr(getattr(transform, "header", None), "stamp", None)
+            diagnostics["observed_map_to_odom"] = {
+                "x_m": float(translation.x),
+                "y_m": float(translation.y),
+                "yaw_rad": math.atan2(
+                    2.0 * (rotation.w * rotation.z + rotation.x * rotation.y),
+                    1.0 - 2.0 * (rotation.y * rotation.y + rotation.z * rotation.z),
+                ),
+                "timestamp_s": None if stamp is None
+                else float(stamp.sec) + float(stamp.nanosec) * 1e-9,
+            }
+        self.last_diagnostics = diagnostics
+        return plan
 
 
 def _execution_crossings(plan) -> list[dict]:
@@ -514,6 +505,10 @@ class _CollectionRosTransport:
         self.action_client = ros.ActionClient(node, ros.FollowPath, "/follow_path")
         self.latest_state = None
         self.crossing_telemetry = []
+        # Optional Phase 9 execution trace, fed from the state callback that
+        # already exists: enabling it adds no subscription and no timer.
+        self.trace_capture = None
+        self.trace_pose_provider = None
         self.state_subscription = node.create_subscription(ros.CollectionControllerState, base + "/state", self._on_state, 10)
         self.load_future = self.reset_future = self.finalize_future = None
         self._pending_load_context = None
@@ -531,6 +526,7 @@ class _CollectionRosTransport:
 
     def _on_state(self, message):
         self.latest_state = message
+        self._record_trace(message)
         if bool(getattr(message, "has_active_crossing", False)):
             sample = {
                 name: getattr(message, name)
@@ -556,6 +552,17 @@ class _CollectionRosTransport:
                 # Bounded status telemetry: enough for debugging a route without
                 # allowing a long controller run to grow robot_status forever.
                 del self.crossing_telemetry[:-200]
+
+    def _record_trace(self, message) -> None:
+        """Feed the execution trace, and never let it disturb execution."""
+        capture = self.trace_capture
+        if capture is None or not capture.active:
+            return
+        try:
+            pose = self.trace_pose_provider() if self.trace_pose_provider else None
+            capture.record_state(pose=pose, state=message)
+        except Exception as exc:  # noqa: BLE001 - instrumentation may not abort a route
+            self.node.get_logger().warning(f"execution trace sample dropped: {exc}")
 
     def load_sender(self, values):
         self.latest_state = None
@@ -720,6 +727,14 @@ class CollectionExecutorNodeFactory:
             controller_id=self.config.controller_id,
             goal_checker_id=self.config.goal_checker_id,
         )
+        self.trace_capture = capture_from_env(
+            run_id=f"collection-run-{now_ns}",
+            clock_fn=lambda: node.get_clock().now().nanoseconds * 1e-9,
+            logger=node.get_logger(),
+        )
+        if self.trace_capture is not None:
+            self.transport.trace_capture = self.trace_capture
+            self.transport.trace_pose_provider = lambda: _robot_pose(cache)
         # Scan rotation owns twist_mux's collection input (priority 70).  The
         # FollowPath controller publishes on /cmd_vel_nav (priority 50).  Once
         # scan rotation stops publishing, the collection input expires after
@@ -753,7 +768,7 @@ class CollectionExecutorNodeFactory:
             viewpoint_spacing_m=self.config.drive_viewpoint_spacing_m,
             merge_radius_m=self.config.drive_known_merge_radius_m,
         )
-        self.execution_plan_transformer = _ExecutionPlanTransformer(
+        self.execution_plan_transformer = _ExecutionFrameContract(
             tf_buffer, self.ros
         )
         self.handles = CollectionExecutorHandles(
@@ -776,6 +791,7 @@ class CollectionExecutorNodeFactory:
             entry_beam_provider=entry_beam_provider,
             confirmed_beam_provider=confirmed_beam_provider,
             drive_observer=self.drive_observer,
+            execution_trace=self.trace_capture,
             collector_minimum_drain_s=collector_minimum_drain_s,
             collector_maximum_drain_s=collector_maximum_drain_s,
         )

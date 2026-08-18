@@ -97,6 +97,12 @@ class Node:
         if name not in self.params: raise KeyError(name)
         return SimpleNamespace(value=self.params[name])
     def get_clock(self): return SimpleNamespace(now=lambda: ClockNow())
+    # A real rclpy Node always has one; the fake needs it too or code that logs
+    # at construction is untestable here for the wrong reason.
+    def get_logger(self):
+        return SimpleNamespace(
+            info=lambda *_: None, warning=lambda *_: None, error=lambda *_: None
+        )
     def create_client(self, service_type, topic):
         client = Client(); self.clients.append((topic, client)); return client
     def create_publisher(self, message_type, topic, qos):
@@ -203,6 +209,9 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
         "entry_beam_provider",
         "confirmed_beam_provider",
         "planner_audit_sink",
+        # Env-gated like planner_audit_sink: absent unless
+        # COLLECTION_EXECUTION_TRACE_DIR asks for a trace.
+        "execution_trace",
     }
     assert all(
         getattr(built.handles, field.name) is not None
@@ -232,18 +241,20 @@ def test_factory_constructs_every_assembly_handle_with_live_cache_shapes(factory
     session = built.handles.scan_snapshot_session
     assert callable(session.forward_frame) and callable(session.finalize)
     assert session.builder.robot_pose_at_scan == Pose2D(*built.config.scan_pose_xy_yaw)
+    # The route is executed in the frame it was planned in: the balls are in
+    # `map`, and an odom-frozen corridor slides off them as localization
+    # corrects (debug log #72).
     source_plan = curved_plan()
     execution_plan = built.handles.execution_plan_transformer(source_plan)
-    assert execution_plan.map_frame == "odom"
-    assert execution_plan.start_pose == source_plan.start_pose
+    assert execution_plan.map_frame == "map"
+    assert execution_plan is source_plan
     diagnostics = built.execution_frame_diagnostics
     assert diagnostics["plan_id"] == source_plan.plan_id
     assert diagnostics["source_frame"] == "map"
-    assert diagnostics["target_frame"] == "odom"
+    assert diagnostics["target_frame"] == "map"
+    assert diagnostics["execution_frame_policy"] == "map_anchored"
     assert diagnostics["source_crossings"]
-    assert len(diagnostics["source_crossings"]) == len(
-        diagnostics["execution_crossings"]
-    )
+    assert diagnostics["source_crossings"] == diagnostics["execution_crossings"]
     cache.robot_x_m, cache.robot_y_m, cache.robot_yaw_rad = 11.0, -4.0, -0.3
     assert session._robot_pose_provider() == Pose2D(11.0, -4.0, -0.3)
 

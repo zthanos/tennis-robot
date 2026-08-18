@@ -1,6 +1,6 @@
 # Explicit Gazebo MVP runtime source for CollectionRouteConfiguration.
 # calibration_artifact is intentionally absent: the caller supplies its path.
-schema_version: collection-route/v1
+schema_version: collection-route/v2
 mechanical:
   capture_half_width_m: 0.17
   ball_radius_m: 0.033
@@ -80,11 +80,27 @@ connector:
   # lookahead/(2R) is the pure-pursuit heading lead; with a 0.6 m lookahead and the
   # 0.15 rad capture gate this needs R > 2.0 m.  2.5 m keeps margin.
   capture_minimum_turn_radius_m: 2.5
+cluster_heuristics:
+  # Clustering guides the router; it never decides what is reachable.  Balls
+  # within this distance seed the precomputed multi-pass shortcuts (macros) the
+  # search may take in one expansion, and bias which successor is expanded
+  # first.  Every pass inside a macro stays individually available, so any
+  # interleaving of clusters remains reachable.
+  cluster_threshold_m: 2.5
+  maximum_clusters: 6
+  maximum_macro_passes: 4
+  # 0 disables macros entirely without changing which routes exist.
+  maximum_macro_chains: 24
 global_route_search:
-  # Coverage-first search ordering finds a full-coverage route within a few
-  # expansions per ball; this budget adds margin for varied layouts while the
-  # solve stays well under ~0.1 s at the raised candidate cap.
-  max_search_expansions: 3000
+  # Expansions are the deterministic budget; maximum_planning_time_s is the
+  # safety net behind it.  One expansion is one successor *evaluation*, so the
+  # budget buys the same amount of work whatever the pacing below does with it --
+  # which is why this reads 600k where the identical behaviour read 150k while
+  # the unit was state visits (150k visits x batch 4).  It costs ~3 s on the
+  # recorded scan and returns 45.0 m / 14.1 rad.  On slower hardware the wall
+  # clock takes over, which costs run-to-run reproducibility but never
+  # correctness: the incumbent is whatever was best when time ran out.
+  max_search_expansions: 600000
   terminal_run_out_m: 0.5
   connector_nominal_speed_m_s: 0.35
   crossing_nominal_speed_m_s: 0.35
@@ -94,6 +110,16 @@ global_route_search:
   weight_curvature: 1.0
   weight_energy: 1.0
   weight_pass_count: 1.0
+  # How many successors one visit to a state evaluates before the state returns
+  # to the frontier holding the rest.  Nothing is ever discarded; only the pacing
+  # changes.  "fixed" uses successor_batch_size verbatim.  "adaptive" derives it
+  # from the admitted candidate count; it is implemented and tested but NOT
+  # enabled, because at equal work seven layouts of 194-200 candidates each
+  # preferred a different batch (4, 16, 64 and ALL) and one of them was
+  # non-monotone in it, so candidate count does not predict a useful batch
+  # (debug log #61).
+  successor_batch_policy: fixed
+  successor_batch_size: 4
 shared_pass:
   max_shared_pass_balls: 3
   max_shared_pass_candidates: 100
@@ -112,7 +138,18 @@ planning:
     nominal_speed_warning_tolerance_mps: 0.1
     max_acceleration_mps2: 1.0
     max_deceleration_mps2: 1.0
-    required_entry_m: 0.2
+    # 0.8 (was 0.2): the heading-alignment allowance at the entry of a capture
+    # segment.  A pass entered from a connector starts with 0.30-0.32 rad of
+    # heading error and is still at 0.19-0.24 rad after 0.2 m, so the
+    # capture-grade gate fired before the controller could align and aborted
+    # every route (debug log #74).  Passes that survived reached 0.02-0.04 rad
+    # by 0.5 m, so 0.8 m is sufficient with margin -- and it still ends before
+    # the first crossing, which the planner keeps 1.0 m (required_run_in_m)
+    # beyond the segment start.  The capture gate itself (max_heading_error_rad
+    # 0.15) is unchanged: this moves when it starts applying, not how strict it
+    # is.  Transit connectors are unaffected -- the allowance only exists on
+    # segments that carry crossings.
+    required_entry_m: 0.8
     required_run_in_m: 1.0
     required_run_out_m: 0.3
     # 2.5 (was 1.25): on a connector→crossing transition the pure-pursuit
@@ -123,11 +160,26 @@ planning:
     # (curvature ~0) so the looser limit doesn't affect capture accuracy, and at
     # 0.35 m/s even 2.5 1/m is 0.875 rad/s — well under max_angular_velocity 3.0.
     max_curvature_per_m: 2.5
-    max_lateral_error_m: 0.1
+    # 0.2 (was 0.1): the inner controller gate on cross-track, enforced per
+    # sample by the C++ tracking core.  Once execution became map-anchored
+    # (#72) this stopped measuring "deviation from a corridor that drifts with
+    # the robot" and started measuring the true map-frame error: connectors
+    # legitimately reach 0.13 m p90 / 0.21 m max while turning, so 0.10 m
+    # aborted 24.6% of samples including straight passes (#74).  At 0.20 m only
+    # 0.1% of measured samples exceed it, all on connectors, and it matches the
+    # outer executor contract (safety.trajectory_tube_radius_m) which already
+    # sat at 0.20 m.  Capture accuracy is unaffected and far tighter: the
+    # straight-pass core measures 0.009 m median, 0.043 m max.
+    max_lateral_error_m: 0.2
     max_heading_error_rad: 0.15
     allow_reversing: false
     allow_standalone_rotate: false
-  maximum_planning_time_s: 1.0
+  # Safety net behind max_search_expansions, not the primary budget: it sits
+  # above the ~3.0 s that budget costs on the recorded scan so a run on this
+  # hardware ends deterministically at the expansion count rather than at a
+  # clock read.  A slower machine will hit this instead and get the best route
+  # found by then.
+  maximum_planning_time_s: 4.0
   # Raised from 48: the analytic edge-generation gate makes the O(N^2) connector
   # graph cheap enough (~0.5 s at 200 nodes) to keep the candidate variety needed
   # for a full-coverage forward-only route.  At 48 the graph lacked the heading

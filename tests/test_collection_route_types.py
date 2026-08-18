@@ -15,6 +15,8 @@ from tennis_robot.collection_route_types import (
     BallResult,
     BallStatus,
     CollectionRouteConfiguration,
+    CONFIGURATION_SCHEMA_VERSION,
+    ClusterHeuristicsConfiguration,
     ConnectorConfiguration,
     CollectionRoutePlan,
     DomainValidationError,
@@ -53,13 +55,14 @@ def profile() -> ExecutionProfile:
 
 def configuration() -> CollectionRouteConfiguration:
     return CollectionRouteConfiguration(
-        "collection-route/v1",
+        CONFIGURATION_SCHEMA_VERSION,
         MechanicalConfiguration(0.17, 0.033, 0.8, 0.6, 0.4, 0.34, 0.05, 0.8, 1.25, 0.2, 1.0, 0.3, 0.2),
         SafetyConfiguration(0.1, 0.15, 0.2, 0.5, 0.2, 2.0, 2.0, 10.0),
         ScanConfiguration(1.0, 20.0, 2),
         FeasibilityConfiguration(16, 2.0, 0.04, 0.05, 0.50, 0.75, 0.20, 0.205),
         ConnectorConfiguration(20.0, 1.5, 3.0, (1.0,), 2.5),
-        GlobalRouteSearchConfiguration(1000, 0.5, 1.0, 0.8, 0.2, 1.0, 1.0, 1.0, 1.0, 1.0),
+        ClusterHeuristicsConfiguration(2.5, 6, 4, 24),
+        GlobalRouteSearchConfiguration(1000, 0.5, 1.0, 0.8, 0.2, 1.0, 1.0, 1.0, 1.0, 1.0, 4),
         SharedPassConfiguration(3, 100, 0.5),
         FollowUpConfiguration(False, 1),
         PlanningConfiguration(profile(), 1.0, 20, 1.0, 1.0, 1.0, 1.0, 1.0),

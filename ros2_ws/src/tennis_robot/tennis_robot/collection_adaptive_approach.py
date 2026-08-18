@@ -889,10 +889,11 @@ def _solve_over_single_candidates(
     use_adaptive_shared: bool,
 ) -> ShadowSolveResult:
     from tennis_robot.collection_route_connector_graph import build_directed_candidate_graph
-    from tennis_robot.collection_route_global_solver import solve_global_route
+    from tennis_robot.collection_route_router import solve_route
     from tennis_robot.collection_route_planner_v2 import (
         _bounded_candidates,
         _merge_candidates,
+        starved_ball_ids,
     )
     from tennis_robot.collection_route_shared_pass import generate_shared_passes
 
@@ -932,14 +933,18 @@ def _solve_over_single_candidates(
         court=court,
         configuration=configuration,
     )
-    plan = solve_global_route(
+    # The shadow baseline has to reproduce production byte for byte, so it uses
+    # the same router.  The candidate graph is still built because its node and
+    # edge statistics are what this tool reports on, even though the router
+    # links poses on demand instead of consuming a prebuilt graph.
+    plan = solve_route(
         snapshot=snapshot,
         feasibility=individual,
-        graph=graph,
+        candidates=bounded,
         court=court,
         configuration=configuration,
-        candidate_budget_exhausted=cap_exhausted,
-    )
+        starved_ball_ids=starved_ball_ids(pool, bounded),
+    ).plan
     histogram: dict[str, int] = {}
     for edge in graph.edges:
         key = edge.rejection.value if edge.rejection is not None else "accepted"

@@ -331,3 +331,34 @@ def test_gentler_radius_multipliers_add_distinct_edges():
     # The tight geometry keeps its original identity so single-radius graphs are
     # reproduced byte-for-byte.
     assert {edge.edge_id for edge in single_graph.edges} <= {edge.edge_id for edge in multi_graph.edges}
+
+
+def test_link_poses_reports_the_rejection_that_blocked_every_alternative():
+    from tennis_robot.collection_route_connector_graph import (
+        ConnectorRejectionCode,
+        link_poses,
+    )
+
+    configuration = default_configuration()
+    court = CourtModel(
+        tuple(Point2D(x, y) for x, y in ((-20.0, -20.0), (20.0, -20.0), (20.0, 20.0), (-20.0, 20.0))),
+        (),
+    )
+    # Facing away at close range: no CSC of any generated radius fits, and the
+    # analytic gate rejects them all on turning geometry.
+    blocked = link_poses(
+        source_id="a", source_pose=Pose2D(0.0, 0.0, 0.0),
+        target_id="b", target_pose=Pose2D(0.2, 0.0, math.pi),
+        court=court, configuration=configuration, balls=(),
+    )
+    assert not blocked.feasible
+    assert blocked.rejections
+    assert blocked.sole_rejection is ConnectorRejectionCode.TURNING_CONSTRAINT_REJECTED
+
+    linked = link_poses(
+        source_id="a", source_pose=Pose2D(0.0, 0.0, 0.0),
+        target_id="b", target_pose=Pose2D(8.0, 0.0, 0.0),
+        court=court, configuration=configuration, balls=(),
+    )
+    assert linked.feasible and linked.rejections == ()
+    assert linked.sole_rejection is None

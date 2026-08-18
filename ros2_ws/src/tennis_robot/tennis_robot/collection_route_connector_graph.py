@@ -226,8 +226,90 @@ def _wrap_angle(value: float) -> float:
     return math.atan2(math.sin(value), math.cos(value))
 
 
+@dataclass(frozen=True)
+class ConnectorAttempt:
+    """The outcome of linking one ordered pose pair, evidence included.
+
+    A bare ``None`` for "no connector" throws away *why*, and the reason is what
+    separates a proven turning-geometry failure from an unexplored one when a
+    ball's outcome has to be explained (debug log #57, finding 8).  Every
+    rejection the CSC family produced is kept.
+    """
+
+    edge: ConnectorEdge | None
+    rejections: tuple[ConnectorRejectionCode, ...]
+
+    @property
+    def feasible(self) -> bool:
+        return self.edge is not None
+
+    @property
+    def sole_rejection(self) -> ConnectorRejectionCode | None:
+        """The single reason every alternative failed, when they agree."""
+        distinct = set(self.rejections)
+        return distinct.pop() if len(distinct) == 1 else None
+
+
+def link_poses(
+    *,
+    source_id: str,
+    source_pose: Pose2D,
+    target_id: str,
+    target_pose: Pose2D,
+    court: CourtModel,
+    configuration: CollectionRouteConfiguration,
+    balls,
+) -> ConnectorAttempt:
+    """Shortest accepted CSC between two poses, with the rejections it saw.
+
+    ``balls`` is required rather than defaulted: a connector sweeps the balls it
+    drives over, and a caller that forgets to pass them silently plans to run a
+    ball down and then collect it again later, which is how connector collection
+    was lost once already.  Pass ``()`` only where sweeping is genuinely not
+    wanted.
+    """
+    edges = _connector_edges(
+        source_id, source_pose, target_id, target_pose, court, configuration, balls
+    )
+    accepted = [edge for edge in edges if edge.rejection is None and edge.path is not None]
+    if accepted:
+        return ConnectorAttempt(min(accepted, key=lambda edge: (edge.path.length_m, edge.edge_id)), ())
+    return ConnectorAttempt(None, tuple(edge.rejection for edge in edges if edge.rejection is not None))
+
+
+def best_connector(*, source_id: str, source_pose: Pose2D, target_id: str, target_pose: Pose2D, court: CourtModel, configuration: CollectionRouteConfiguration, balls=()) -> ConnectorEdge | None:
+    """Shortest accepted CSC between two poses, or None if none is feasible."""
+    return link_poses(
+        source_id=source_id, source_pose=source_pose, target_id=target_id,
+        target_pose=target_pose, court=court, configuration=configuration, balls=balls,
+    ).edge
+
+
+def _exceeds_length_bound(source_pose, target_pose, configuration) -> bool:
+    """Is the straight-line distance already longer than a connector may be?
+
+    Any path between two poses is at least as long as the straight line between
+    them, so a pair further apart than ``max_connector_length_m`` cannot be
+    linked by any connector of any mode or radius.  Checking that first skips
+    the Dubins solve for pairs whose verdict is already settled -- on the real
+    scan, 46% of all alternatives were rejected on length after being computed.
+    """
+    span = math.hypot(target_pose.x_m - source_pose.x_m, target_pose.y_m - source_pose.y_m)
+    return span > configuration.connector.max_connector_length_m + _EPSILON
+
+
 def _connector_edges(source_id, source_pose, target_id, target_pose, court, configuration, balls=()):
     minimum = configuration.mechanical.minimum_turning_radius_m
+    if _exceeds_length_bound(source_pose, target_pose, configuration):
+        # Every alternative would come back LENGTH_REJECTED; report that once
+        # rather than deriving it twelve times.  Callers read the set of causes,
+        # never how many times each was produced.
+        return (
+            ConnectorEdge(
+                f"{source_id}->{target_id}:length-bound", source_id, target_id, None, None,
+                False, ConnectorRejectionCode.LENGTH_REJECTED,
+            ),
+        )
     return tuple(
         _build_edge(source_id, source_pose, target_id, target_pose, mode, minimum * multiplier, multiplier, court, configuration, balls)
         for multiplier in configuration.connector.sweep_radius_multipliers
