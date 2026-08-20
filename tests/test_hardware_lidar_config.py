@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -27,6 +28,22 @@ def test_lidar_dependency_is_source_pinned() -> None:
     importer = (ROOT / "scripts/import_lidar_dependencies.sh").read_text()
     assert f'PIN="{PIN}"' in importer
     assert "refusing to overwrite" in importer
+    assert "sllidar_ros2-clean-shutdown.patch" in importer
+    assert "PATCHED_SOURCE_SHA256=" in importer
+
+    patch_path = ROOT / "ros2_ws/patches/sllidar_ros2-clean-shutdown.patch"
+    shutdown_patch = patch_path.read_text()
+    assert "delete drv;" in shutdown_patch
+    assert "drv = nullptr;" in shutdown_patch
+    assert "delete _channel;" in shutdown_patch
+    assert "_channel = nullptr;" in shutdown_patch
+    subprocess.run(
+        ["git", "apply", "--numstat", str(patch_path)],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_hardware_lidar_config_is_canonical_and_uses_system_time() -> None:
@@ -55,6 +72,7 @@ def test_minimal_hardware_launch_has_scan_snapshot_and_bench_tf_contract() -> No
 
     assert 'remappings=[("scan", "/scan")]' in source
     assert '"use_sim_time": False' in source
+    assert 'sigterm_timeout="10"' in source
     assert '"--frame-id", "base_link"' in source
     assert '"--child-frame-id", "lidar_link"' in source
     assert '"publish_temporary_bench_tf"' in source

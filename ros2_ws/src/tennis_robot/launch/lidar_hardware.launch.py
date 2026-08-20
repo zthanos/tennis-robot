@@ -21,6 +21,10 @@ def generate_launch_description() -> LaunchDescription:
         executable="sllidar_node",
         name="sllidar_node",
         output="screen",
+        # The pinned SDK performs synchronous serial/thread cleanup after
+        # SIGINT. Native C1 measurements take about 6--7 seconds, so allow the
+        # process to finish before launch escalates from SIGINT to SIGTERM.
+        sigterm_timeout="10",
         parameters=[
             config_file,
             {

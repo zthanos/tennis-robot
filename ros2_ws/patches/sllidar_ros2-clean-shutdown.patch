@@ -1,0 +1,14 @@
+diff --git a/src/sllidar_node.cpp b/src/sllidar_node.cpp
+--- a/src/sllidar_node.cpp
++++ b/src/sllidar_node.cpp
+@@ -435,6 +435,9 @@ public:
+         // done!
+         drv->setMotorSpeed(0);
+         drv->stop();
+         RCLCPP_INFO(this->get_logger(),"Stop motor");
++        delete drv;
++        drv = nullptr;
++        delete _channel;
++        _channel = nullptr;
+-
+         return 0;

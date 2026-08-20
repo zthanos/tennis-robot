@@ -1,7 +1,7 @@
 # Real LiDAR bring-up on Raspberry Pi
 
-Status: **hardware implementation and bench interface checks complete; assisted
-office movement/distance observations pending**. This document records evidence
+Status: **hardware implementation and office interface validation complete**.
+This document records evidence
 for the LiDAR hardware interface milestone. It is not evidence for SLAM,
 navigation, localisation, or outdoor/court performance.
 
@@ -184,11 +184,14 @@ non-root access are now evidenced.
 The official [`Slamtec/sllidar_ros2`](https://github.com/Slamtec/sllidar_ros2)
 driver is source-pinned to commit
 `34300099fadfc772965962dec837bf436706188f` in `ros2_ws/lidar.repos`.
-`scripts/import_lidar_dependencies.sh` restores that exact clean checkout under
-`ros2_ws/src/sllidar_ros2`, verifies `HEAD`, and refuses to overwrite local
-changes. The imported checkout plus `build_jazzy`, `install_jazzy`, and
-`log_jazzy` are gitignored; arbitrary upstream or generated artifacts are not
-vendored.
+`scripts/import_lidar_dependencies.sh` restores that exact checkout under
+`ros2_ws/src/sllidar_ros2`, verifies `HEAD`, and applies the minimal
+repository-managed `ros2_ws/patches/sllidar_ros2-clean-shutdown.patch`. The
+patch releases the SDK driver and caller-owned channel on the successful exit
+path. The importer verifies the resulting source SHA-256 and refuses staged or
+unexpected local changes. The imported checkout plus `build_jazzy`,
+`install_jazzy`, and `log_jazzy` are gitignored; arbitrary upstream or generated
+artifacts are not vendored.
 
 On native Ubuntu 24.04 ARM64 with ROS 2 Jazzy:
 
@@ -269,12 +272,23 @@ The canonical ROS interface is `/scan`, `sensor_msgs/msg/LaserScan`, frame
 
 ### Clean start/stop evidence
 
-Three launches reached health `OK`. Two explicit `Ctrl-C` shutdowns stopped the
-motor and all three launch processes (`sllidar_node`, temporary TF publisher,
-and sensor snapshot node) cleanly. After resetting ROS CLI discovery for domain
-77, `ros2 topic info /scan` returned `Unknown topic` and process inspection found
-no `sllidar_node` or hardware launch process. The Control Panel changed from
-`LIVE` to `STALE` and continued aging the last message after shutdown.
+Repeated launches reached health `OK`. During the assisted office runs, the
+unmodified pinned upstream exit path stopped the motor but exceeded launch's
+default five-second SIGINT grace period, causing launch to escalate to SIGTERM.
+No process or stale publisher remained, but the escalation did not satisfy the
+strict clean-stop gate.
+
+Source inspection showed that the successful upstream path did not release the
+SDK driver or caller-owned channel. The repository patch adds that cleanup, and
+the LiDAR process receives a node-specific ten-second `sigterm_timeout` because
+native SDK cleanup consistently takes about 6--7 seconds. After rebuilding on
+the Pi, two consecutive `Ctrl-C` runs stopped the motor and all three launch
+processes (`sllidar_node`, temporary TF publisher, and sensor snapshot node)
+without an error, SIGTERM escalation, or forced kill. After each run, resetting
+ROS CLI discovery made `ros2 topic info /scan` return `Unknown topic`, and
+process inspection found no `sllidar_node` or hardware launch process. The
+Control Panel changed from `LIVE` to `STALE` and continued aging the last
+message after shutdown.
 
 ## L4 — Hardware versus simulation contract classification
 
@@ -344,40 +358,51 @@ samples and 429--436 finite returns. Stable sectors stayed within roughly
 person or small object could have moved. Continuous publication and a stable
 static room outline are confirmed.
 
-The following still require a person physically present at the sensor and are
-not inferred from software output:
+An assisted run used a chair with a 30 cm broad wooden target across its thin
+legs. The clearest controlled observations were:
 
-- move a chair/large object closer and farther and confirm the corresponding
-  polar return changes distance;
-- move it around the sensor and confirm the return changes bearing in the
-  expected direction;
-- compare several tape/estimated physical distances with reported ranges.
+- Near the initial physical forward line, a target measured at approximately
+  `1.37 m` produced `1.359..1.400 m`, median `1.373 m`, over `14.5 deg`.
+- After moving the target around the sensor, the corresponding broad return
+  moved to `+89.9..+103.4 deg`; at an estimated `1.30 m` it measured median
+  `1.313 m` over `13.5 deg`.
+- Moving that same side target closer to approximately `0.80 m` moved the return
+  to median `0.784 m` and increased its angular width to `23.0 deg`. A 30 cm
+  target at 0.80 m nominally spans about `21.2 deg`, so both range and apparent
+  width changed coherently.
 
-An assisted attempt on 2026-08-19 was deliberately discarded: the physical
-setup changed across captures, so the apparent near/far/left clusters cannot be
-treated as object-only evidence. No implementation defect was established and
-no code change resulted. The LiDAR launch was stopped, `/scan` disappeared, and
-the Raspberry Pi was shut down safely. The next attempt must begin with the
-robot, LiDAR, and broad test object secured in fixed, measured positions.
+These observations close the communication-level stationary, bearing-change,
+near/far, and approximate-distance checks. Later verbal viewpoints around the
+housing arrow were ambiguous and are deliberately not used to claim a final
+angle offset or extrinsic. The temporary identity TF proves connectivity only.
+Final mount geometry, marked front/left/right calibration, controlled lighting
+characterization, and slow robot-motion validation are deferred to GitHub issue
+`#16` after the permanent mount exists.
 
-Until those observations are recorded, this gate remains incomplete.
+The side observations occurred in a brighter balcony area, but position and
+lighting were not varied independently. They are therefore not a controlled
+sunlight test and do not change the explicit `NOT TESTED` classification below.
 
 ## Tests and results
 
-- Native Pi Jazzy/ARM64 build: 2 packages passed (`sllidar_ros2`,
-  `tennis_robot`); upstream driver warnings only.
+- Native Pi Jazzy/ARM64 build: the patched `sllidar_ros2` and updated
+  `tennis_robot` package passed; upstream SDK warnings only. The tested patched
+  source matched repository SHA-256
+  `133df72431aec2bec0f450a7fbf43780f47a1aa1539b60c1b694c4a461d82dd6`.
 - Pi focused tests: 14 passed, 1 skipped (Node.js-only UI transform test skipped
   on the Pi when Node is unavailable).
 - Development-host focused tests: 15 passed, covering launch/config parsing,
   dependency pin, probe protocol, metadata/liveness, and UI transformation.
 - JavaScript syntax checks and `git diff --check` pass.
-- Live lifecycle, TF, QoS/rate, system time, Control Panel LIVE/STALE, and stale
-  publisher checks pass.
+- After merging the Field Wi-Fi mainline change, the combined focused set is 41
+  passing tests. Live lifecycle, TF, QoS/rate, system time, Control Panel
+  LIVE/STALE, clean SIGINT shutdown, and stale-publisher checks pass.
 
 ## Files changed
 
 - `.gitignore`
 - `ros2_ws/lidar.repos`
+- `ros2_ws/patches/sllidar_ros2-clean-shutdown.patch`
 - `scripts/import_lidar_dependencies.sh`
 - `scripts/setup_pi.sh`
 - `scripts/probe_slamtec_lidar.py`
@@ -419,10 +444,12 @@ was changed.
 
 ## Current milestone classification
 
-`LIDAR_HARDWARE_INTERFACE_NOT_READY`
+`LIDAR_HARDWARE_INTERFACE_READY`
 
-Reason: all repository, build, launch, canonical interface, TF bench, lifecycle,
-comparison, and Control Panel gates pass, but the required assisted chair
-movement/bearing and approximate physical-distance office observations have not
-yet been performed. Do not promote to `LIDAR_HARDWARE_INTERFACE_READY` until
-those physical observations are recorded.
+Reason: repository reproducibility, native ARM64 build, canonical `/scan`,
+system time, frame connectivity, simulation-contract comparison, source-agnostic
+Control Panel diagnostics, stationary scans, object bearing/range movement,
+approximate physical distances, clean shutdown, and stale-publisher gates pass.
+This classification does not include final mounting/extrinsic calibration,
+controlled lighting, robot-motion validation, outdoor/court sensing, SLAM,
+localization, Nav2, or driven obstacle avoidance.
