@@ -180,6 +180,11 @@ Then open:
 http://127.0.0.1:8081
 ```
 
+Στο Raspberry Pi το κύριο ROS launch εκθέτει το operator console στο LAN. Για
+αυτόνομο, WPA2/WPA3-protected Wi-Fi στο γήπεδο χωρίς router ή Internet, δες το
+[Field Wi-Fi AP provisioning](docs/network/field-wifi-ap.md). Με τις default
+ρυθμίσεις το τηλέφωνο ανοίγει `http://10.42.0.1:8081`.
+
 The console has navigation for:
 
 - **Dashboard**: requested mode, actual controller state, ball detection, collected count, and latest command stream.

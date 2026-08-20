@@ -65,6 +65,23 @@ SRC
     fi
 }
 
+# Optional field-network provisioning. NetworkManager's shared IPv4 mode uses
+# the distro's dnsmasq-base helper for DHCP/DNS; this is a recommended Ubuntu
+# NetworkManager package, not a separately configured dnsmasq service. The
+# password stays in a root-owned file outside Git.
+if [ "${INSTALL_FIELD_WIFI:-false}" = "true" ]; then
+    FIELD_WIFI_CONFIG="${FIELD_WIFI_CONFIG:-/etc/tennis-robot/field-wifi.env}"
+    if ! command -v dnsmasq >/dev/null 2>&1; then
+        echo "[setup_pi] apt: NetworkManager shared-mode DHCP/DNS helper…"
+        _apt_prepare
+        _ensure_noble_updates
+        sudo -E apt-get update
+        sudo -E apt-get install -y dnsmasq-base
+    fi
+    echo "[setup_pi] provisioning persistent field Wi-Fi AP from $FIELD_WIFI_CONFIG…"
+    sudo "$SCRIPT_DIR/scripts/network/install_field_wifi_ap.sh" --config "$FIELD_WIFI_CONFIG"
+fi
+
 # ── 0. (optional) ROS 2 Jazzy apt repo + ros-base ────────────────────────────
 if [ "${INSTALL_ROS:-false}" = "true" ] && [ ! -d /opt/ros/jazzy ]; then
     echo "[setup_pi] adding ROS 2 Jazzy apt repo + ros-base…"
@@ -145,12 +162,20 @@ echo "[setup_pi] colcon build (robot packages + pinned sllidar_ros2)…"
     --build-base build_jazzy --install-base install_jazzy \
     --packages-select sllidar_ros2 tennis_robot_msgs tennis_robot_collection_controller tennis_robot )
 
+if [ "${INSTALL_PI_CONSOLE_SERVICE:-false}" = "true" ]; then
+    echo "[setup_pi] installing boot-persistent operator console…"
+    sudo TENNIS_ROBOT_ROOT="$SCRIPT_DIR" \
+        TENNIS_ROBOT_SERVICE_USER="${TENNIS_ROBOT_SERVICE_USER:-$(id -un)}" \
+        "$SCRIPT_DIR/scripts/install_pi_console_service.sh"
+fi
+
 echo
 echo "[setup_pi] ✅ done. Verify:"
 echo "    source /opt/ros/jazzy/setup.bash && source $WS/install_jazzy/setup.bash"
 echo "    python3 -c 'import onnxruntime, duckdb, cv2; print(\"py deps OK\")'"
 echo "    ros2 pkg prefix tennis_robot_collection_controller   # plugin package present"
 echo "    ros2 pkg prefix sllidar_ros2                          # pinned LiDAR driver"
+echo "    ./scripts/network/field_wifi_status.sh                # field AP state (if provisioned)"
 echo
 echo "  Next (WS3): set a shared ROS_DOMAIN_ID on PC + Pi, start the PC sim, and"
 echo "  bring up the Pi control nodes with use_sim_time:=true. See"
