@@ -1,0 +1,21 @@
+[Unit]
+Description=Tennis Robot operator web console
+Documentation=file://@ROOT@/docs/network/field-wifi-ap.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@GROUP@
+WorkingDirectory=@ROOT@
+Environment=PYTHONPATH=@ROOT@/scripts
+Environment=TENNIS_ROBOT_ROOT=@ROOT@
+ExecStart=/usr/bin/python3 @ROOT@/scripts/control_panel.py --host 0.0.0.0 --port 8081 --db-file @ROOT@/runtime/tennis_robot_gazebo.db
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
