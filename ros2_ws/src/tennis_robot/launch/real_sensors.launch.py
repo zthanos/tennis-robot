@@ -18,13 +18,27 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+
+
+STABLE_LIDAR_DEVICE = (
+    "/dev/serial/by-id/"
+    "usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_Controller_"
+    "3c21860b3b70f01184b98a301045c30f-if00-port0"
+)
 
 
 def generate_launch_description():
     serial_port = LaunchConfiguration("lidar_serial_port")
+    lidar_config = (
+        get_package_share_directory("tennis_robot")
+        + "/config/hardware_lidar.yaml"
+    )
 
     args = [
-        DeclareLaunchArgument("lidar_serial_port", default_value="/dev/ttyUSB0"),
+        DeclareLaunchArgument(
+            "lidar_serial_port", default_value=STABLE_LIDAR_DEVICE
+        ),
     ]
 
     # ── RPLiDAR ───────────────────────────────────────────────────────────────
@@ -34,12 +48,10 @@ def generate_launch_description():
         executable="sllidar_node",
         name="rplidar",
         output="screen",
-        parameters=[{
-            "serial_port": serial_port,
-            "serial_baudrate": 460800,   # RPLIDAR C1
-            "frame_id": "lidar_link",    # MUST match the URDF link
-            "scan_mode": "Standard",
-        }],
+        parameters=[
+            lidar_config,
+            {"serial_port": serial_port, "use_sim_time": False},
+        ],
         remappings=[("scan", "/scan")],
     )
 

@@ -94,7 +94,7 @@ if [ "${BUILD_ONLY:-false}" != "true" ]; then
     _ensure_noble_updates
     sudo -E apt-get update
     sudo -E apt-get install -y \
-        ros-dev-tools python3-colcon-common-extensions python3-rosdep \
+        ros-dev-tools python3-colcon-common-extensions python3-rosdep python3-vcstool \
         build-essential cmake libssl-dev \
         ros-jazzy-navigation2 ros-jazzy-nav2-bringup \
         ros-jazzy-slam-toolbox \
@@ -104,6 +104,10 @@ if [ "${BUILD_ONLY:-false}" != "true" ]; then
         ros-jazzy-tf2-ros ros-jazzy-tf2-tools \
         ros-jazzy-xacro \
         ros-jazzy-rmw-fastrtps-cpp
+
+    # The official Slamtec driver is source-pinned in ros2_ws/lidar.repos.
+    # Import it only after vcstool is available and before rosdep scans src/.
+    "$SCRIPT_DIR/scripts/import_lidar_dependencies.sh"
 
     # ── 2. rosdep for anything the manifests still need (skip the sim keys) ──
     echo "[setup_pi] rosdep…"
@@ -127,21 +131,26 @@ ros2_controllers teleop_twist_keyboard explore_lite" || \
     # detect_court_line (cv2.HoughLinesP shape changed). Match the PC versions.
     python3 -m pip install --user --break-system-packages \
         "numpy>=1.26,<2" "opencv-python-headless>=4.9,<5" "duckdb>=1.5.3" "onnxruntime>=1.20"
+else
+    # BUILD_ONLY still restores the external source checkout from the manifest;
+    # vcstool must already be installed by an earlier full setup.
+    "$SCRIPT_DIR/scripts/import_lidar_dependencies.sh"
 fi
 
-# ── 4. Build the three workspace packages (control side only) ────────────────
-echo "[setup_pi] colcon build (tennis_robot_msgs, _collection_controller, tennis_robot)…"
+# ── 4. Build the workspace packages plus the pinned LiDAR driver ────────────
+echo "[setup_pi] colcon build (robot packages + pinned sllidar_ros2)…"
 # shellcheck disable=SC1091
 . /opt/ros/jazzy/setup.bash
 ( cd "$WS" && colcon --log-base log_jazzy build \
     --build-base build_jazzy --install-base install_jazzy \
-    --packages-select tennis_robot_msgs tennis_robot_collection_controller tennis_robot )
+    --packages-select sllidar_ros2 tennis_robot_msgs tennis_robot_collection_controller tennis_robot )
 
 echo
 echo "[setup_pi] ✅ done. Verify:"
 echo "    source /opt/ros/jazzy/setup.bash && source $WS/install_jazzy/setup.bash"
 echo "    python3 -c 'import onnxruntime, duckdb, cv2; print(\"py deps OK\")'"
 echo "    ros2 pkg prefix tennis_robot_collection_controller   # plugin package present"
+echo "    ros2 pkg prefix sllidar_ros2                          # pinned LiDAR driver"
 echo
 echo "  Next (WS3): set a shared ROS_DOMAIN_ID on PC + Pi, start the PC sim, and"
 echo "  bring up the Pi control nodes with use_sim_time:=true. See"
