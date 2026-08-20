@@ -1,0 +1,11 @@
+sllidar_node:
+  ros__parameters:
+    # Physical mode must use the Pi's system clock and never wait for Gazebo.
+    use_sim_time: false
+    channel_type: serial
+    serial_port: /dev/serial/by-id/usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_Controller_3c21860b3b70f01184b98a301045c30f-if00-port0
+    serial_baudrate: 460800
+    frame_id: lidar_link
+    inverted: false
+    angle_compensate: true
+    scan_mode: Standard

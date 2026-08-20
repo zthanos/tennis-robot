@@ -25,6 +25,7 @@ from std_msgs.msg import String
 from tennis_robot.control_bus import RobotSensorStore
 from tennis_robot.debug_display import bgra_bmp_data_url
 from tennis_robot.lidar_processor import extract_ball_candidates, front_range_m as lidar_front_range_m
+from tennis_robot.lidar_preview import LaserScanMetadataTracker, with_liveness
 
 _STATUS_FILE = os.getenv(
     "ROBOT_STATUS_FILE",
@@ -42,6 +43,7 @@ IR_THRESHOLD = float(os.getenv("IR_INTAKE_TRIGGER_THRESHOLD", "500.0"))
 IR_CONFIRM_SYMMETRY_MAX_DELTA = float(
     os.getenv("BEAM_SYMMETRY_MAX_DELTA", "200.0")
 )
+LIDAR_STALE_AFTER_S = float(os.getenv("LIDAR_STALE_AFTER_S", "2.5"))
 
 
 class SensorSnapshotNode(Node):
@@ -84,6 +86,7 @@ class SensorSnapshotNode(Node):
         }
         self._front_range_m: float = math.inf
         self._survey_vision: dict = {}
+        self._lidar_metadata = LaserScanMetadataTracker()
 
         preview_qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -318,6 +321,15 @@ class SensorSnapshotNode(Node):
         }
 
     def _on_scan(self, msg: LaserScan) -> None:
+        metadata = self._lidar_metadata.observe(
+            msg,
+            monotonic_s=time.monotonic(),
+            wall_time_s=time.time(),
+        )
+        if self._lidar is not None:
+            # Health/rate must update at sensor rate even though the expensive
+            # preview bitmap and ranges payload are intentionally throttled.
+            self._lidar.update(metadata)
         if not self._preview_processing_due("scan"):
             return
         ranges = [float(r) for r in msg.ranges]
@@ -332,7 +344,7 @@ class SensorSnapshotNode(Node):
         ranges_m: list[float | None] = []
         normalized_ranges: list[float] = []
         for value in ranges:
-            if math.isfinite(value) and value > 0:
+            if math.isfinite(value) and min_range <= value <= max_range:
                 normalized_ranges.append(max(0.0, min(1.0, (value - min_range) / span)))
                 ranges_m.append(value)
             else:
@@ -344,6 +356,7 @@ class SensorSnapshotNode(Node):
                 pixels.extend((80, 220, 120, 255) if y >= height - bar else (18, 24, 28, 255))
 
         self._lidar = {
+            **metadata,
             "width": width,
             "height": height,
             "format": "lidar-bmp",
@@ -428,7 +441,11 @@ class SensorSnapshotNode(Node):
         if now - self._last_write_s < WRITE_INTERVAL_S:
             return
         self._last_write_s = now
-        lidar = self._lidar
+        lidar = with_liveness(
+            self._lidar,
+            now_s=now,
+            stale_after_s=LIDAR_STALE_AFTER_S,
+        )
         if self._preview_pub is not None and isinstance(lidar, dict):
             # The UI renders the scan from ranges_m. Do not send the legacy BMP
             # over DDS; it is typically ~170 kB while the numeric scan is ~7 kB.

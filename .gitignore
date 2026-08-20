@@ -43,3 +43,7 @@ ros2_ws/build_jazzy/
 ros2_ws/install_jazzy/
 ros2_ws/log_jazzy/
 /log/
+
+# Pinned external ROS source imported by ros2_ws/lidar.repos. The manifest is
+# the source of truth; do not vendor the upstream checkout or colcon artifacts.
+ros2_ws/src/sllidar_ros2/

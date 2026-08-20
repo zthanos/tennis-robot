@@ -1,5 +1,5 @@
     const titles = {
-      dashboard: ["Dashboard", "Observe the robot mode, collector state, current target, and command stream while the simulation runs."],
+      dashboard: ["Dashboard", "Observe the robot mode, collector state, current target, and command stream while the robot runs."],
       control: ["Command Center", "Send high-level commands and inspect the selected robot mode."],
       survey: ["Survey Workspace", "Run Map Court with the native live survey map, camera feed, survey metrics, and boundary status in one operational view."],
       collection: ["Collection Workspace", "Run collection with the court map and half-court mapping grid visible together."],
@@ -2125,6 +2125,13 @@
       const target = document.getElementById(id);
       if (!target) return;
       const ranges = Array.isArray(sensor?.ranges_m) ? sensor.ranges_m : [];
+      const summary = window.LidarView.derive(sensor, Date.now());
+      const badge = document.getElementById("lidarLiveBadge");
+      if (badge) {
+        badge.textContent = summary.state.toUpperCase();
+        badge.style.color = summary.state === "live" ? "#2fd08f" : (summary.state === "stale" ? "#ffbd5a" : "var(--muted)");
+        badge.style.background = summary.state === "live" ? "rgba(47,208,143,0.14)" : (summary.state === "stale" ? "rgba(255,189,90,0.14)" : "rgba(255,255,255,0.06)");
+      }
       if (!ranges.length) {
         target.className = "sensor-empty";
         target.style.cssText = "background:#090d12;border:1px solid var(--line);border-radius:8px;min-height:200px;";
@@ -2135,18 +2142,26 @@
       const validRanges = ranges.filter(v => Number.isFinite(v) && v > 0);
       const minRange = Number.isFinite(sensor.min_range_m) ? sensor.min_range_m : 0.05;
       const maxRange = Number.isFinite(sensor.max_range_m) ? sensor.max_range_m : Math.max(1, ...validRanges);
-      const nearest = validRanges.length ? Math.min(...validRanges) : null;
+      const nearest = summary.nearest_m;
       const blocked = validRanges.filter(v => v < Math.min(1.5, maxRange)).length;
       const candList = Array.isArray(candidates) ? candidates : [];
       target.className = "";
       target.style.cssText = "background:#090d12;border:1px solid var(--line);border-radius:8px;overflow:hidden;";
       target.innerHTML = `<canvas id="${canvasId}" width="700" height="700" style="display:block;width:100%;max-height:240px;object-fit:contain;" aria-label="LiDAR 360 degree scan"></canvas>`;
       const metaEl = document.getElementById("lidarScanMeta");
+      const degrees = radians => Number.isFinite(radians) ? `${(radians * 180 / Math.PI).toFixed(2)}°` : "—";
+      const angleSpan = Number.isFinite(summary.angle_min_rad) && Number.isFinite(summary.angle_max_rad)
+        ? `${degrees(summary.angle_min_rad)} .. ${degrees(summary.angle_max_rad)}`
+        : "—";
       if (metaEl) metaEl.innerHTML = [
-        ["front", `<strong style="color:var(--ink);display:block;font-size:13px;">${fmt(sensor.front_range_m, "m")}</strong>`],
+        ["signal", `<strong style="color:${summary.state === "live" ? "#2fd08f" : "#ffbd5a"};display:block;font-size:13px;">${summary.state.toUpperCase()} · ${fmt(summary.age_s, "s")}</strong>`],
+        ["frame", `<strong style="color:var(--ink);display:block;font-size:13px;">${escapeHtml(summary.frame_id)}</strong>`],
+        ["rate", `<strong style="color:var(--ink);display:block;font-size:13px;">${fmt(summary.scan_rate_hz, " Hz")}</strong>`],
+        ["samples", `<strong style="color:var(--ink);display:block;font-size:13px;">${summary.valid_count}/${summary.sample_count} valid</strong>`],
+        ["angles", `<strong style="color:var(--ink);display:block;font-size:13px;">${angleSpan}</strong>`],
+        ["increment", `<strong style="color:var(--ink);display:block;font-size:13px;">${degrees(summary.angle_increment_rad)}</strong>`],
+        ["range", `<strong style="color:var(--ink);display:block;font-size:13px;">${fmt(summary.range_min_m, "m")} .. ${fmt(summary.range_max_m, "m")}</strong>`],
         ["nearest", `<strong style="color:var(--ink);display:block;font-size:13px;">${fmt(nearest, "m")}</strong>`],
-        ["hits", `<strong style="color:var(--ink);display:block;font-size:13px;">${validRanges.length}/${ranges.length}</strong>`],
-        ["candidates", `<strong style="color:${candList.length > 0 ? "#ffbd5a" : "var(--muted)"};display:block;font-size:13px;">${candList.length}</strong>`],
       ].map(([label, val]) => `<div style="border-top:1px solid var(--line);padding-top:8px;">${label}${val}</div>`).join("");
       drawLidarScan(document.getElementById(canvasId), ranges, minRange, maxRange, candList, sensor);
     }
