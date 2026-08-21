@@ -228,38 +228,50 @@ dual-channel DC motor drivers ή 4 ποιοτικούς single-channel drivers �
 | Qty | Υλικό | Περιγραφή |
 |---:|---|---|
 | 1 set | PETG/ASA print ή πλαστικό φύλλο 2-3 mm | Funnel side plates και intake guides |
-| 2 | compliant side carriages | Πλευρική διαδρομή 8 mm για τους intake wheels |
+| 2 | fixed bearing-supported intake pods | Σταθεροί άξονες Ø6 mm με δύο ρουλεμάν ανά wheel· χωρίς side carriages |
 | 1 | wire-mesh removable basket | Basket v2.1, εσωτερικό 400×280 mm |
-| 1 set | μικρές γωνίες ή brackets | Ρυθμιζόμενη σύνδεση funnel/intake carriages |
+| 1 set | μικρές γωνίες ή brackets | Σύνδεση funnel και fixed intake pods στην ξύλινη γέφυρα |
 
 Διαστάσεις στόχοι:
 
 | Χαρακτηριστικό | Στόχος |
 |---|---|
 | Funnel mouth width | Να συμφωνεί με το ενεργό URDF/funnel geometry |
-| Intake gap | 56 mm nominal, sweep-able |
-| Intake wheel radius / height | 60 / 80 mm |
+| Intake gap | 56 mm αρχικό· εναλλακτικές θέσεις 58/60 mm |
+| Intake wheel diameter / width | 124 / 73 mm (πραγματικό εμπορικό envelope) |
 | Basket interior | 400×280 mm, στόχος ~50 μπάλες |
 
 ### Dual Intake Wheels
 
-Ζητάμε:
+Επιλεγμένο για αγορά:
 
 ```text
-2 τεμάχια compliant rubber/PU/TPU wheels, ακτίνα 60 mm και ύψος 80 mm,
-ένα αριστερά και ένα δεξιά του intake corridor
+1 ζευγάρι (2 τροχοί) Pro-Line Trencher F/R 2.8" MT Tires Mounted on Black
+Raid Wheels, 12/14 mm removable hex, κωδικός PRO117010
 ```
+
+Link: https://www.racerc.gr/en/products/pro-line-1-10-trencher-f-r-2-8-mt-tires-mounted-12mm-14mm-black-raid-2
+
+Snapshot τιμής `21/08/2026`: `37,49 €` το ζευγάρι, χωρίς μεταφορικά. Η τιμή
+και η διαθεσιμότητα πρέπει να επιβεβαιωθούν κατά την παραγγελία.
 
 Χαρακτηριστικά:
 
-| Χαρακτηριστικό | Στόχος |
+| Χαρακτηριστικό | Επιλεγμένο εξάρτημα |
 |---|---|
-| Διάμετρος | 120 mm nominal |
-| Ύψος ενεργής επιφάνειας | 80 mm |
-| Υλικό | μαλακό rubber/PU/TPU, όχι σκληρό πλαστικό |
-| Άξονας | κατακόρυφος, ανεξάρτητος ανά wheel |
-| Στήριξη | πλευρικά ενδοτική, travel 8 mm προς τα έξω |
-| Θέση | nominal nip x=540 mm, gap 56 mm, tilt 35° |
+| Ποσότητα αγοράς | 1 συσκευασία = 2 μονταρισμένοι τροχοί |
+| Διάμετρος | 124 mm |
+| Πλάτος | 73 mm |
+| Ελαστικό / insert | Pro-Line M2 medium compound με open-cell foam insert |
+| Wheel interface | Περιλαμβάνονται removable 12 mm και 14 mm RC hex adapters |
+| Άξονας | Ανεξάρτητος σταθερός άξονας μετάδοσης Ø6 mm ανά wheel |
+| Στήριξη | Δύο ρουλεμάν ανά άξονα, χωρίς κινητό carriage |
+| Θέση Option A | x=470 mm, gap 56 mm αρχικό, tilt 35° |
+
+> **Προσοχή:** τα 12/14 mm adapters της συσκευασίας είναι wheel hexes του
+> συστήματος Raid· δεν μετατρέπουν κυλινδρικό άξονα Ø6 mm σε hex. Χρειάζεται
+> ξεχωριστό hub Ø6 mm D-bore → αρσενικό 12 mm RC hex. Το Option A περιλαμβάνει
+> τυπωτό split-clamp prototype, με M4 clamp και εξωτερική αξονική ασφάλιση.
 
 ### Intake Motors
 
