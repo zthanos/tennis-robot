@@ -20,6 +20,11 @@ concepts. They were removed from the working tree on the
 rejected one-motor gear-train option. The active intake has two independent
 motors, one per side-pinch wheel.
 
+Exploratory launcher packaging lives in **`flywheel-launcher-v0/`**. It is an
+envelope-only, non-printable study for a guarded, pitch-adjustable dual
+flywheel module and its feed interface; it does not supersede the active intake
+or basket geometry.
+
 Current mechanical sources of truth:
 
 - `ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro`
