@@ -6,6 +6,94 @@ later) sends high-level per-side duty over USB serial; the Mega handles arming,
 ramp, timeout and E-stop. USB serial is host-agnostic, so what you validate on
 the PC transfers unchanged to the Pi.
 
+## Raspberry Pi ARM64 — Arduino CLI setup
+
+Verified on `tennisserver` (`aarch64`) on 2026-08-20 with an Arduino Mega 2560
+connected as `/dev/ttyACM0`.
+
+Do not use the current `arduino-cli` Snap on this Pi. Snap revision 62 installed
+an incompatible executable and failed with `Exec format error`. Install the
+official ARM64 release instead:
+
+```bash
+sudo snap remove arduino-cli  # only if the incompatible Snap is installed
+mkdir -p /home/thanos/.local/bin
+curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh \
+  | BINDIR=/home/thanos/.local/bin sh
+sudo ln -sfn /home/thanos/.local/bin/arduino-cli /usr/local/bin/arduino-cli
+```
+
+Install the official AVR platform used by the Mega:
+
+```bash
+arduino-cli core update-index
+arduino-cli core install arduino:avr
+```
+
+Verify the installation and USB detection:
+
+```bash
+arduino-cli version
+arduino-cli core list
+arduino-cli board list
+```
+
+Expected board entry:
+
+```text
+/dev/ttyACM0  serial  Arduino Mega or Mega 2560  arduino:avr:mega  arduino:avr
+```
+
+The login user must belong to `dialout`. If it does not, add it and log out/in
+before uploading:
+
+```bash
+sudo usermod -aG dialout "$USER"
+```
+
+From the repository root, compile and upload the motion firmware with:
+
+```bash
+arduino-cli compile --fqbn arduino:avr:mega arduino/motion/motion_mega
+arduino-cli upload --port /dev/ttyACM0 --fqbn arduino:avr:mega \
+  arduino/motion/motion_mega
+```
+
+Installation verified versions:
+
+```text
+arduino-cli 1.5.1
+arduino:avr 1.8.8
+```
+
+### Logic-only START and E-stop validation
+
+Validated on 2026-08-20 with the Mega powered only from the Pi USB. No motor
+drivers, motors or 12V supply were connected.
+
+```text
+START/ARM momentary contact: Mega D32 -> NO contact -> logic GND
+E-stop status contact:       Mega D33 -> NO contact -> logic GND
+```
+
+Both inputs use `INPUT_PULLUP`, so an open contact reads `HIGH` and a closed
+contact reads `LOW`. The illuminated controls' lamp terminals remain separate
+from these switch contacts.
+
+Observed state sequence:
+
+```text
+boot / E-stop released       READY motion_mega DISARMED; T 0 ... 0
+START pressed                OK ARM;                    T 1 ... 0
+E-stop pressed and latched   OK DISARM estop;           T 2 ... 1
+E-stop twist-released                                     T 0 ... 0
+```
+
+Release intentionally returns to `DISARMED`, not `ARMED`; a fresh START or host
+`ARM` command is required. This validates only the Mega status/safety logic.
+The E-stop NC contact must still control the motor-power relay so emergency stop
+physically removes 12V from both BTS7960 drivers.
+
 ## Bench test (motors → PC)
 
 1. **Power:** drive motors need a strong 12V supply (or the battery) — **NOT**
