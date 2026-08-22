@@ -12,7 +12,8 @@ show_chassis = true;
 show_battery = true;
 show_cover = true;
 show_load_path = true;
-show_manual_lever = true;
+show_top_pull_handle = true;
+show_manual_lever = false; // legacy side-lever comparison only
 show_counterbalance = true;
 show_future_actuator = true;
 show_control_provision = true;
@@ -20,6 +21,10 @@ show_actuator_swept_keepout = true;
 
 lift_travel = 100;
 launch_tilt_deg = 12;
+top_handle_x = 220;
+top_handle_post_y = 165;
+top_handle_grip_z_low = 328; // 20 mm below the original grip centre
+top_handle_rod = 18;
 
 // Existing basket references.
 front_pivot = [470, 0, 40];
@@ -41,6 +46,21 @@ upper_stop_top_z = block_center_z_low + lift_travel - block_height / 2;
 // weight and handle-force tests on the physical prototype.
 lever_side_y = -(rail_y + 70);
 lever_pivot = [rail_x - 40, lever_side_y, 120];
+
+// Outer basket envelope, not the 140 mm interior half width: bin.scad carries
+// the mesh wall frame out to bin_half_width + frame_d, the flange drop struts
+// to bin_half_width + wall_thickness / 2 and the moulded carry handles to
+// bin_half_width + 4. The legs must clear the worst of those.
+basket_outer_half_width = 146;
+top_handle_basket_side_clearance = top_handle_post_y
+                                 - top_handle_rod / 2
+                                 - basket_outer_half_width;
+// Static assembly gap only. The legs and the basket both ride the carriage, so
+// there is no relative travel here; the swept leg path at x=211...229 misses
+// the fixed rails and their cross-brace at x=56...84 entirely. The pre-existing
+// longitudinal carriage beam is tighter still at 7 mm on the same datum.
+assert(top_handle_basket_side_clearance >= 10,
+       "top-handle legs need at least 10 mm outside the outer basket envelope");
 
 // V2 electric linear-actuator reservation on the opposite side.  No actuator
 // stroke or force is selected yet; the translucent volume reserves access and
@@ -274,14 +294,32 @@ module cosmetic_cover(lift=0) {
                     cube([470, 8, 8], center=true);
         }
 
-    // Central handle transfers the user's pull into the steel crossbar below.
-    color("dimgray") {
-        for (sy = [-1, 1])
-            translate([145, sy * 55, 320 + lift])
-                cube([18, 18, 55], center=true);
-        translate([145, 0, 348 + lift])
-            cube([18, 128, 18], center=true);
-    }
+}
+
+module top_pull_handle(lift=0) {
+    // Original central top handle. It belongs to the moving carriage/load
+    // path, not to the removable cosmetic hatch. The hatch must be open for
+    // manual operation; the handle remains inside the closed shell envelope.
+    //
+    // The grip is gripped at the centre but reacted at the legs, so the rod
+    // works in bending over a 330 mm unsupported span. It is a purchased metal
+    // section, not a printed part: an 18 mm square in PLA reaches about 26 MPa
+    // and sags roughly 9 mm under a 300 N pull, against about 0.4 mm in
+    // aluminium at the same stress.
+    if (show_top_pull_handle)
+        color("dimgray") {
+            post_bottom_z = 92 + 12; // top of the longitudinal carriage beam
+            for (sy = [-1, 1])
+                translate([top_handle_x, sy * top_handle_post_y,
+                           (post_bottom_z + top_handle_grip_z_low) / 2 + lift])
+                    cube([top_handle_rod, top_handle_rod,
+                          top_handle_grip_z_low - post_bottom_z], center=true);
+            translate([top_handle_x, 0,
+                       top_handle_grip_z_low + lift])
+                cube([top_handle_rod,
+                      2 * top_handle_post_y + top_handle_rod,
+                      top_handle_rod], center=true);
+        }
 }
 
 module basket_launch_pose() {
@@ -297,6 +335,7 @@ module moving_carriage_and_cover(lift=0, launch=false) {
     carriage_frame(lift);
     locking_pins(lift, upper=launch);
     cosmetic_cover(lift);
+    top_pull_handle(lift);
 }
 
 module collect_configuration(alpha=1.0) {

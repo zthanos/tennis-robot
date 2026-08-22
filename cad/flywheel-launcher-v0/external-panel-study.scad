@@ -7,6 +7,7 @@ use <robot-integration.scad>
 $fn = 64;
 
 mode = "launch"; // "collect", "launch" or "both"
+design_variant = "performance_v1"; // "commercial" or "performance_v1"
 shell_profile = "uniform"; // "uniform" baseline or "stepped" comparison
 shell_style = "rounded"; // "rounded" baseline or "faceted" comparison
 lidar_mount_style = "upper_frame";
@@ -15,6 +16,8 @@ show_robot_context = true;
 show_fixed_panels = true;
 show_moving_cowl = false; // internal/stepped comparison; not needed outside
 show_top_hatches = true;
+show_handle_access_hatch = true;
+handle_access_hatch_open = false;
 show_basket_windows = true;
 show_front_mask = true;
 show_panel_mounts = !appearance_mode;
@@ -26,6 +29,9 @@ panel_clearance = 6;
 panel_mount_hole_d = 5.6; // provisional M5 clearance
 shell_alpha = appearance_mode ? 1.0 : 0.70;
 upper_shell_color = "#DCE7EC";
+// Reserved for a future control-surface tone. Deliberately not applied to any
+// roof panel: the handle hatch is differentiated by its dark gasket ring, and
+// #C9DCE5 against #DCE7EC is too close to read as hierarchy on its own.
 upper_hatch_color = "#C9DCE5";
 lower_belt_color = "#28333B";
 service_panel_color = "#52616B";
@@ -40,17 +46,73 @@ rear_taper_start_x = -260;
 rear_support_x = -438;
 hatch_corner_r = 28;
 service_door_corner_r = 18;
-basket_window_center = [220, 320]; // X/Z centre in each side skin
-basket_window_size = [390, 184];   // X/Z clear polycarbonate area
-basket_window_cutout_size = [404, 198];
-basket_window_corner_r = 34;
+// Reduced from 390 x 184. At the old size this was the largest single element
+// on the robot and it showed the one thing worth hiding: mechanism. The ball
+// port now carries the "what is inside" story, so this becomes a modest slot
+// with the port's aspect ratio (~2.9:1) and a shared rear datum at X=19.
+basket_window_center = [164, 310];
+basket_window_size = [290, 100];
+basket_window_cutout_size = [304, 114];
+basket_window_corner_r = 18; // aperture family, same as the ball port
+// Deliberate inverse of the ball port: near-clear where a yellow load should
+// read, heavily smoked where carriage and gas spring should not.
+basket_glazing_alpha = 0.66;
 front_mask_center_z = 304;
 front_mask_size = [300, 270]; // Y/Z
 front_mask_corner_r = 42;
+handle_access_center = [220, 0];
+handle_access_size = [110, 170]; // X/Y; one-piece on a 220 x 220 bed
+handle_access_gap = 3;
+handle_access_corner_r = 18;
+// The hatch folds flat onto the roof. Any intermediate angle raises its
+// free edge through the LiDAR scan plane, so there is no usable
+// half-open position; see handle_access_lidar_clearance below.
+handle_access_hinge_open_deg = 175;
+
+// Roof grid. Panel edges are derived from the fixed subframe, not chosen for
+// looks: fixed_panel_subframe() runs longitudinal rails at y=+/-268 and
+// transverse members at x=-438 and x=405. roof_inset puts every panel edge on
+// the y=+/-268 rail, and the two roof joints sit over transverse members.
+roof_inset = 14;
+roof_shut_gap = 3;
+roof_joint_mid_x = -22;    // needs a new transverse member; see subframe
+roof_joint_front_x = 405;  // existing transverse member
+roof_panel_corner_r = 36;
+performance_window_rake_deg = 10; // design hypothesis within the 8-12 deg range
+performance_accent_color = "#D7FF16";
+launcher_ring_w = 8; // visual starting value; deliberately not a hard constraint
+launcher_recess_outer_d = 164;
+// Real conical recess on the 20 degree axis instead of a flat annulus printed
+// on the fascia. The throat equals the validated 116 mm opening, so the recess
+// never reduces launcher clearance; the cone only widens outward from there.
+launcher_recess_depth = 42;
+launcher_recess_wall = 4;
+
+// Ball-level port, low in the graphite belt. The smoked basket window spans
+// z=221...419 while a full 45-ball load only reaches about z=150, so that
+// window can never show a ball. This one looks straight at the load.
+show_ball_ports = true;
+ball_port_center = [109, 140];      // X/Z in each side skin
+// X chosen so the clear opening starts at X=19, the same rear datum as
+// the basket window above it. The two apertures share that edge and an
+// aspect ratio of about 2.9:1.
+ball_port_size = [180, 62];
+ball_port_cutout_size = [192, 74];
+ball_port_corner_r = 18;
+ball_port_glazing_color = "#C6CFC8";
+
+// The tapered side blade reads as a vehicle stripe, which is the wrong product
+// category for a court trainer. Kept switchable rather than deleted.
+show_side_accent = false;
 
 // Fixed lower shell stays below the basket opening and below the LiDAR plane.
 side_skin_y = 282;
 fixed_skin_bottom_z = 58;
+// Retained by decision (2026-08-22): the uniform roof stays until every
+// mechanical part works, then the profiled-body architecture is re-examined.
+// This 463 exists solely to enclose the raised basket rear rim at 439, which
+// is itself 250 rim + 100 lift + 89 from the unconfirmed 12 degree launch
+// tilt. See the architecture section in the exploration doc.
 uniform_shell_top_z = 463; // 35 mm below the 498 mm LiDAR scan datum
 fixed_skin_top_z = shell_profile == "uniform" ? uniform_shell_top_z : 250;
 rear_skin_x = -456;
@@ -111,6 +173,20 @@ front_mask_roof_clearance = uniform_shell_top_z
 front_mask_intake_clearance = front_mask_center_z
                             - front_mask_size[1] / 2
                             - front_fascia_bottom_z;
+top_handle_upper_top_z_ref = 328 + 100 + 18 / 2;
+top_handle_roof_clearance = uniform_shell_top_z - panel_t
+                          - top_handle_upper_top_z_ref;
+top_handle_access_depth_low = uniform_shell_top_z
+                            - (328 + 18 / 2);
+roof_panel_half_y = side_skin_y - roof_inset;
+roof_rear_panel_hi = roof_joint_mid_x - roof_shut_gap / 2;
+roof_basket_panel_lo = roof_joint_mid_x + roof_shut_gap / 2;
+roof_basket_panel_hi = roof_joint_front_x - roof_shut_gap / 2;
+nose_roof_lo = roof_joint_front_x + roof_shut_gap / 2;
+handle_access_open_edge_z = uniform_shell_top_z + 2
+                          + handle_access_size[0]
+                            * sin(handle_access_hinge_open_deg);
+handle_access_lidar_clearance = lidar_scan_z_ref - handle_access_open_edge_z;
 
 assert(fixed_skin_top_z < lidar_scan_z_ref,
        "fixed body skin must stay below the LiDAR scan plane");
@@ -141,6 +217,34 @@ assert(front_mask_roof_clearance >= 20,
        "front mask needs at least 20 mm below the roof edge");
 assert(front_mask_intake_clearance >= 0,
        "front mask must not descend into the intake opening");
+assert(top_handle_roof_clearance >= 20,
+       "raised top handle needs at least 20 mm below the inner roof");
+assert(handle_access_size[0] <= 220 && handle_access_size[1] <= 220,
+       "handle access hatch must remain a single 220 x 220 print tile");
+assert(handle_access_lidar_clearance >= 20,
+       "opened handle hatch must fold flat, not stand up through the scan plane");
+ball_port_belt_clearance = lower_belt_top_z
+                         - (ball_port_center[1] + ball_port_cutout_size[1] / 2);
+ball_port_skin_clearance = (ball_port_center[1]
+                            - ball_port_cutout_size[1] / 2)
+                         - fixed_skin_bottom_z;
+ball_port_arch_clearance = (330 - wheel_arch_d / 2)
+                         - (ball_port_center[0]
+                            + ball_port_cutout_size[0] / 2);
+
+assert(ball_port_belt_clearance >= 10,
+       "ball port must stay inside the graphite belt");
+assert(ball_port_skin_clearance >= 20,
+       "ball port must keep material above the lower skin edge");
+assert(ball_port_arch_clearance >= 10,
+       "ball port must stop clear of the forward wheel arch");
+assert(launcher_recess_depth > 0
+       && front_exit_open_d < launcher_recess_outer_d,
+       "launcher recess must widen outward from the validated throat");
+assert(abs(roof_panel_half_y - 268) <= 9,
+       "roof panel edges must land on the y=+/-268 subframe rail");
+assert(roof_inset > roof_shut_gap,
+       "roof border must be wider than its own shut gap");
 
 module rounded_rect_2d(size_xy, radius) {
     assert(size_xy[0] > 2 * radius && size_xy[1] > 2 * radius,
@@ -148,6 +252,39 @@ module rounded_rect_2d(size_xy, radius) {
     offset(r=radius)
         square([size_xy[0] - 2 * radius,
                 size_xy[1] - 2 * radius], center=true);
+}
+
+module performance_window_2d(size_xz, radius,
+                             rake_deg=performance_window_rake_deg) {
+    rake_dx = size_xz[1] * tan(rake_deg);
+    half_w = size_xz[0] / 2;
+    half_h = size_xz[1] / 2;
+    offset(r=radius)
+        offset(delta=-radius)
+            polygon(points=[
+                [-half_w, -half_h],
+                [ half_w - rake_dx / 2, -half_h],
+                [ half_w + rake_dx / 2,  half_h],
+                [-half_w,  half_h]
+            ]);
+}
+
+module launcher_face_2d() {
+    // Local X becomes world Z and local Y remains world Y after rotation.
+    // The faceted capsule is visually directional without changing the fascia.
+    half_h = front_mask_size[1] / 2;
+    offset(r=24)
+        offset(delta=-24)
+            polygon(points=[
+                [-half_h, -108],
+                [-half_h,  108],
+                [-105,  142],
+                [  82,  150],
+                [ half_h, 116],
+                [ half_h,-116],
+                [  82, -150],
+                [-105, -142]
+            ]);
 }
 
 module rounded_panel_xy(center_pos, size_xy, radius, thickness=panel_t,
@@ -182,8 +319,142 @@ module basket_window_cutout(side) {
                basket_window_center[1]])
         rotate([90, 0, 0])
             linear_extrude(height=30, center=true)
-                rounded_rect_2d(basket_window_cutout_size,
-                                basket_window_corner_r + 5);
+                if (design_variant == "performance_v1")
+                    performance_window_2d(basket_window_cutout_size,
+                                          basket_window_corner_r + 5);
+                else
+                    rounded_rect_2d(basket_window_cutout_size,
+                                    basket_window_corner_r + 5);
+}
+
+module performance_belt_overlay(side) {
+    color(lower_belt_color, shell_alpha)
+        translate([0, side * (side_skin_y + 3.2), 0])
+            rotate([90, 0, 0])
+                linear_extrude(height=2, center=true)
+                    difference() {
+                        // Two controlled rises make the belt technical rather
+                        // than a continuous vehicle-like stripe.
+                        polygon(points=[
+                            [390, lower_belt_top_z],
+                            [432, 205],
+                            [585, 205],
+                            [625, 226],
+                            [700, 240],
+                            [700, lower_belt_top_z]
+                        ]);
+                        for (xx = [-330, 330])
+                            translate([xx, wheel_center_z_ref])
+                                circle(d=wheel_arch_d);
+                    }
+}
+
+module performance_side_accent(side) {
+    // Short tapered blade: it follows the window rake and terminates as a
+    // visual arrow toward the launcher rather than becoming a body stripe.
+    color(performance_accent_color, shell_alpha)
+        translate([0, side * (side_skin_y + 4.5), 0])
+            rotate([90, 0, 0])
+                linear_extrude(height=2.2, center=true)
+                    offset(r=2.5)
+                        offset(delta=-2.5)
+                            polygon(points=[
+                                [15, 207],
+                                [15, 211],
+                                [350, 219],
+                                [438, 235],
+                                [438, 246],
+                                [345, 230]
+                            ]);
+}
+
+module launcher_recess_shell() {
+    // Cone shell on the launch axis. The throat is exactly the validated
+    // 116 mm opening and the cone only widens outward, so clearance is
+    // untouched. It is deliberately over-extended and then cut by the fascia,
+    // which is the only way the mouth rim lands correctly: the cone mouth is
+    // perpendicular to the 20 degree axis while the fascia is vertical, so the
+    // two planes intersect and a drawn ellipse would read as a crescent.
+    over = 1.5;
+    inner_d1 = front_exit_open_d;
+    outer_d1 = front_exit_open_d + 2 * launcher_recess_wall;
+    outer_d2 = outer_d1
+             + (launcher_recess_outer_d - outer_d1) * over;
+    translate([nose_front_x, 0, front_exit_center_z])
+        rotate([0, 90 - launcher_pitch_ref_deg, 0])
+            translate([0, 0, -launcher_recess_depth])
+                difference() {
+                    cylinder(d1=outer_d1, d2=outer_d2,
+                             h=launcher_recess_depth * over);
+                    translate([0, 0, -1])
+                        cylinder(d1=inner_d1,
+                                 d2=outer_d2 - 2 * launcher_recess_wall,
+                                 h=launcher_recess_depth * over + 2);
+                }
+}
+
+module fascia_half_space() {
+    translate([nose_front_x - 400, 0, front_exit_center_z])
+        cube([800, 800, 800], center=true);
+}
+
+module fascia_rim_slab() {
+    translate([nose_front_x - launcher_ring_w / 2, 0, front_exit_center_z])
+        cube([launcher_ring_w, 800, 800], center=true);
+}
+
+module performance_launcher_details() {
+    // Depth is what reads as a muzzle; a flat annulus printed on the panel does
+    // not. The accent is the cone's own rim, cut by the fascia plane.
+    color("#11191D", shell_alpha)
+        intersection() {
+            launcher_recess_shell();
+            fascia_half_space();
+        }
+    color(performance_accent_color, shell_alpha)
+        intersection() {
+            launcher_recess_shell();
+            fascia_rim_slab();
+        }
+}
+
+module ball_port_2d(size_xz) {
+    rounded_rect_2d(size_xz, ball_port_corner_r);
+}
+
+module ball_port_cutout(side) {
+    translate([ball_port_center[0], side * (side_skin_y + 2),
+               ball_port_center[1]])
+        rotate([90, 0, 0])
+            linear_extrude(height=30, center=true)
+                ball_port_2d(ball_port_cutout_size);
+}
+
+module ball_ports(side) {
+    // Sight-line audit. On -Y only the gas spring (y -186...-214, x 110...240,
+    // z 72...118) clips the bottom ~9 mm of the port. On +Y the V2 actuator
+    // swept keepout (y 202...268, x -18...258, z 45...253) encloses the whole
+    // port opening between the skin at 282 and the basket wall at 146, so if
+    // that actuator is ever fitted the +Y port sees hardware, not balls. This
+    // is the third independent reason to move the actuator inboard.
+    //
+    // Trim first, then near-clear glazing: the point is that a yellow load
+    // reads against the graphite belt, so this glazing is not smoked.
+    color(basket_window_trim_color, shell_alpha)
+        translate([ball_port_center[0], side * (side_skin_y + 2.6),
+                   ball_port_center[1]])
+            rotate([90, 0, 0])
+                linear_extrude(height=panel_t + 1, center=true)
+                    difference() {
+                        ball_port_2d(ball_port_cutout_size);
+                        ball_port_2d(ball_port_size);
+                    }
+    color(ball_port_glazing_color, appearance_mode ? 0.30 : 0.18)
+        translate([ball_port_center[0], side * (side_skin_y + 3.4),
+                   ball_port_center[1]])
+            rotate([90, 0, 0])
+                linear_extrude(height=2, center=true)
+                    ball_port_2d(ball_port_size);
 }
 
 // Rounded plan: smoothly tapered front nose and a deliberately bowed rear.
@@ -237,6 +508,11 @@ module rounded_shell_skin_geometry(z_bottom=fixed_skin_bottom_z,
         if (show_basket_windows)
             for (side = [-1, 1]) basket_window_cutout(side);
 
+        // Low port that looks straight at the stored balls, unlike the window
+        // above it, which sits entirely over a full load.
+        if (show_ball_ports)
+            for (side = [-1, 1]) ball_port_cutout(side);
+
         // The nose skin stops at the Option A bridge top. Everything below
         // stays open for the curved cheeks and incoming tennis ball.
         translate([(420 + nose_front_x + 30) / 2, 0,
@@ -288,19 +564,43 @@ module rounded_shell_band() {
                     rotate([90, 0, 0])
                         linear_extrude(height=panel_t + 1, center=true)
                             difference() {
-                                rounded_rect_2d(basket_window_cutout_size,
-                                                basket_window_corner_r + 5);
-                                rounded_rect_2d(basket_window_size,
-                                                basket_window_corner_r);
+                                if (design_variant == "performance_v1")
+                                    performance_window_2d(
+                                        basket_window_cutout_size,
+                                        basket_window_corner_r + 5);
+                                else
+                                    rounded_rect_2d(
+                                        basket_window_cutout_size,
+                                        basket_window_corner_r + 5);
+                                if (design_variant == "performance_v1")
+                                    performance_window_2d(
+                                        basket_window_size,
+                                        basket_window_corner_r);
+                                else
+                                    rounded_rect_2d(
+                                        basket_window_size,
+                                        basket_window_corner_r);
                             }
-            rounded_panel_xz([basket_window_center[0],
-                              side * (side_skin_y + 3.4),
-                              basket_window_center[1]],
-                             basket_window_size,
-                             basket_window_corner_r,
-                             2,
-                             basket_glazing_color,
-                             appearance_mode ? 0.46 : 0.24);
+            if (design_variant == "performance_v1")
+                color(basket_glazing_color,
+                      appearance_mode ? basket_glazing_alpha : 0.30)
+                    translate([basket_window_center[0],
+                               side * (side_skin_y + 3.4),
+                               basket_window_center[1]])
+                        rotate([90, 0, 0])
+                            linear_extrude(height=2, center=true)
+                                performance_window_2d(
+                                    basket_window_size,
+                                    basket_window_corner_r);
+            else
+                rounded_panel_xz([basket_window_center[0],
+                                  side * (side_skin_y + 3.4),
+                                  basket_window_center[1]],
+                                 basket_window_size,
+                                 basket_window_corner_r,
+                                 2,
+                                 basket_glazing_color,
+                                 appearance_mode ? basket_glazing_alpha : 0.30);
         }
 
     if (show_front_mask)
@@ -309,43 +609,146 @@ module rounded_shell_band() {
                 translate([nose_front_x + 1.5, 0, front_mask_center_z])
                     rotate([0, 90, 0])
                         linear_extrude(height=panel_t + 1, center=true)
-                            rounded_rect_2d([front_mask_size[1],
-                                             front_mask_size[0]],
-                                            front_mask_corner_r);
+                            if (design_variant == "performance_v1")
+                                launcher_face_2d();
+                            else
+                                rounded_rect_2d([front_mask_size[1],
+                                                 front_mask_size[0]],
+                                                front_mask_corner_r);
                 translate([nose_front_x, 0, front_exit_center_z])
                     rotate([0, 90 - launcher_pitch_ref_deg, 0])
                         cylinder(d=front_exit_open_d,
                                  h=90, center=true);
             }
+
+    if (show_ball_ports)
+        for (side = [-1, 1]) ball_ports(side);
+
+    if (design_variant == "performance_v1") {
+        for (side = [-1, 1]) {
+            performance_belt_overlay(side);
+            if (show_side_accent) performance_side_accent(side);
+        }
+        performance_launcher_details();
+    } else
+        assert(design_variant == "commercial",
+               str("Unknown design_variant: ", design_variant));
+}
+
+// Removable roof panel outline: the body plan inset by roof_inset, cut to an X
+// band at the two structural joints. Deriving it from the plan keeps a constant
+// border, follows the bowed rear instead of overhanging it, and inherits the
+// body corner radius rather than adding another one.
+module roof_panel_2d(x_lo, x_hi) {
+    offset(r=roof_panel_corner_r)
+        offset(delta=-roof_panel_corner_r)
+            intersection() {
+                rounded_body_plan_2d(roof_inset);
+                translate([(x_lo + x_hi) / 2, 0])
+                    square([x_hi - x_lo, 900], center=true);
+            }
+}
+
+module roof_opening_2d(x_lo, x_hi) {
+    offset(delta=roof_shut_gap) roof_panel_2d(x_lo, x_hi);
 }
 
 module rounded_top_system() {
     if (shell_profile == "uniform" && show_top_hatches) {
-        // Rear hatch with real clearance around the rear-mounted LiDAR mast.
+        // Fixed roof border. Without it the removable panels are the only roof
+        // and each side is left open; the border and both panel edges now share
+        // the same y=+/-268 rail.
+        color(upper_shell_color, shell_alpha)
+            translate([0, 0, uniform_shell_top_z])
+                linear_extrude(height=panel_t)
+                    difference() {
+                        intersection() {
+                            rounded_body_plan_2d();
+                            translate([(-700 + nose_roof_lo) / 2, 0])
+                                square([nose_roof_lo + 700, 900], center=true);
+                        }
+                        roof_opening_2d(-700, roof_rear_panel_hi);
+                        roof_opening_2d(roof_basket_panel_lo,
+                                        roof_basket_panel_hi);
+                    }
+
+        // Rear battery/electronics panel. The LiDAR bore still passes through
+        // it; the pod study will shrink that to a fastener/cable pattern.
         color(upper_shell_color, shell_alpha)
             difference() {
-                translate([-270, 0, uniform_shell_top_z + 2])
+                translate([0, 0, uniform_shell_top_z + 2])
                     linear_extrude(height=panel_t, center=true)
-                        rounded_rect_2d([450, 426], hatch_corner_r + 8);
+                        roof_panel_2d(-700, roof_rear_panel_hi);
                 translate([-420, 0, uniform_shell_top_z + 2])
                     cylinder(d=70, h=panel_t + 4, center=true);
             }
 
-        rounded_panel_xy([220, 0, uniform_shell_top_z + 2],
-                         [440, 440], 36, panel_t,
-                         upper_hatch_color, shell_alpha);
+        // Basket panel, carrying the handle-access control.
+        color(upper_shell_color, shell_alpha)
+            difference() {
+                translate([0, 0, uniform_shell_top_z + 2])
+                    linear_extrude(height=panel_t, center=true)
+                        roof_panel_2d(roof_basket_panel_lo,
+                                      roof_basket_panel_hi);
+                if (show_handle_access_hatch)
+                    translate([handle_access_center[0],
+                               handle_access_center[1],
+                               uniform_shell_top_z + 2])
+                        linear_extrude(height=panel_t + 4, center=true)
+                            rounded_rect_2d([
+                                handle_access_size[0] + 2 * handle_access_gap,
+                                handle_access_size[1] + 2 * handle_access_gap
+                            ], handle_access_corner_r + handle_access_gap);
+            }
 
-        // Full rounded nose roof closes the volume above the flywheel. The
-        // launcher exits only through the circular front-fascia opening.
+        if (show_handle_access_hatch) handle_access_hatch();
+
+        // Full rounded nose roof closes the volume above the flywheel. Its rear
+        // edge is now the shut line over the x=405 transverse member.
         color(upper_shell_color, shell_alpha)
             translate([0, 0, uniform_shell_top_z])
                 linear_extrude(height=panel_t)
                     intersection() {
                         rounded_body_plan_2d();
-                        translate([605, 0])
-                            square([370, 570], center=true);
+                        translate([(nose_roof_lo + 800) / 2, 0])
+                            square([800 - nose_roof_lo, 900], center=true);
                     }
     }
+}
+
+module handle_access_hatch() {
+    hatch_z = uniform_shell_top_z + 2;
+    // Thin dark perimeter represents the compressed gasket/visual shut line.
+    color("#303A40", shell_alpha)
+        translate([handle_access_center[0], handle_access_center[1], hatch_z])
+            linear_extrude(height=1.2, center=true)
+                difference() {
+                    rounded_rect_2d([
+                        handle_access_size[0] + 2 * handle_access_gap,
+                        handle_access_size[1] + 2 * handle_access_gap
+                    ], handle_access_corner_r + handle_access_gap);
+                    rounded_rect_2d(handle_access_size,
+                                    handle_access_corner_r);
+                }
+
+    if (!handle_access_hatch_open)
+        rounded_panel_xy([handle_access_center[0],
+                          handle_access_center[1], hatch_z + 0.3],
+                         handle_access_size, handle_access_corner_r,
+                         panel_t, upper_shell_color, shell_alpha);
+    else
+        // Rear-edge hinge that folds the panel flat onto the basket hatch
+        // instead of standing it upright, which would block the LiDAR. No well
+        // or collar descends into the basket volume. The finished face rests
+        // downward when folded, so the stop needs bumpers on the roof.
+        color(upper_shell_color, shell_alpha)
+            translate([handle_access_center[0] - handle_access_size[0] / 2,
+                       handle_access_center[1], hatch_z])
+                rotate([0, -handle_access_hinge_open_deg, 0])
+                    translate([handle_access_size[0] / 2, 0, 0])
+                        linear_extrude(height=panel_t, center=true)
+                            rounded_rect_2d(handle_access_size,
+                                            handle_access_corner_r);
 }
 
 function fixed_mount_y(x_pos) =
@@ -399,9 +802,15 @@ module fixed_panel_subframe() {
         for (zz = [72, upper_rail_z]) {
             translate([rear_support_x, 0, zz])
                 cube([18, 2 * rear_support_y, 18], center=true);
-            translate([405, 0, zz])
+            translate([roof_joint_front_x, 0, zz])
                 cube([18, 536, 18], center=true);
         }
+
+        // Transverse member under the rear<->basket roof shut line. Without it
+        // both panels end in a free edge across an unsupported void, which a
+        // 3 mm printed panel spanning 450 mm cannot carry.
+        translate([roof_joint_mid_x, 0, upper_rail_z])
+            cube([18, 536, 18], center=true);
     }
 
     if (show_panel_mounts)

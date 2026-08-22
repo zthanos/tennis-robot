@@ -513,11 +513,28 @@ Active cooler (υποχρεωτικός σε αυτό το φορτίο)
 | 1 set | ξυλόβιδες 3.5x30 ή 4x30 | ξύλινα rails/νευρώσεις |
 | 1 | D4 wood glue | μόνιμες ξύλινες ενισχύσεις |
 
-## 8. Να Μην Αγοραστούν Ακόμα
+## 8. Flywheel Launcher — Επιλεγμένα και Εκκρεμή
+
+### Flywheel motors — επιλεγμένα για αγορά
+
+| Qty | Είδος | Βασικά στοιχεία | Πωλητής / σύνδεσμος | Κατάσταση |
+|---:|---|---|---|---|
+| 2 | **ODrive Dual Shaft Motor D5065 270KV** | BLDC outrunner 5065, 270 RPM/V, κύριος άξονας 8 mm με flat, δεύτερος άξονας 8 mm για προαιρετικό encoder, 7 pole pairs, ενσωματωμένο θερμίστορ NTC 10k, phase leads με 4 mm bullet connectors | [Hellas Digital — D5065 270KV](https://www.hellasdigital.gr/electronics/motors-and-drivers/stepper/dual-shaft-motor-d5065-270kv/) | **Επιλεγμένο — δεν έχει παραγγελθεί.** Snapshot 22/08/2026: 98,99 € με ΦΠΑ/τεμ., 197,98 € τα 2 πριν από μεταφορικά |
+
+Χρήση: ένα μοτέρ ανά flywheel, direct drive. Στο nominal battery voltage
+`12.8 V`, το θεωρητικό no-load speed είναι περίπου `3450 RPM`. Ο controller
+πρέπει να επιβάλλει speed limit και battery-current limit· starting point για
+bench validation είναι `18-20 A` ανά μοτέρ. Οι motor controllers, οι encoders
+και τα flywheel hubs/guards **δεν περιλαμβάνονται**.
+
+Η καταχώριση του καταστήματος βρίσκεται στην κατηγορία «Stepper», αλλά το
+`D5065` είναι τριφασικό BLDC outrunner.
+
+### Να μην αγοραστούν ακόμη
 
 Μην κλειδώσουμε ακόμα:
 
-- launch flywheel motors
+- flywheel motor controllers, μέχρι να κλειδώσει το current-control interface με το Mega
 - expensive launcher wheels
 - large battery pack για launcher
 - pan/tilt μηχανισμούς
@@ -554,6 +571,10 @@ production-like εναλλακτική: 2 dual-channel quality drivers ή 4 sing
   (M.2 board + active cooler + 27W PSU + metal case), Amazon basket €385,54
 1 Silicon Power P34A60 256GB NVMe M.2 PCIe Gen3x4 2280
   (SP256GBP34A60M28AY), Amazon basket €50,99 — boot candidate, ΟΧΙ ακόμη validated
+2 ODrive Dual Shaft Motor D5065 270KV για τα δύο direct-drive flywheels:
+  https://www.hellasdigital.gr/electronics/motors-and-drivers/stepper/dual-shaft-motor-d5065-270kv/
+  8mm primary shaft με flat + 8mm secondary shaft, NTC 10k thermistor,
+  snapshot 22/08/2026: €98,99 με ΦΠΑ/τεμ. — controllers δεν περιλαμβάνονται
 1 emergency stop switch
 1 fuse holder + ασφάλειες
 κόκκινο/μαύρο καλώδιο 2.5mm² για μπαταρία/motors
