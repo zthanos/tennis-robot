@@ -18,6 +18,7 @@ mode = "launch";           // "collect", "launch" or "both"
 launcher_layout = "front"; // user requirement; side/rear remain comparisons
 front_feed_mode = "opening"; // "opening" (baseline) or "rail"
 launcher_orientation = "side_by_side"; // low baseline; "over_under" comparison
+lidar_mount_style = "upper_frame"; // "upper_frame" baseline or "base_mast"
 
 show_drive = true;
 show_sensors = true;
@@ -135,10 +136,28 @@ module drivetrain_context() {
 }
 
 module sensor_context() {
-    // Current LiDAR mast/head reference at the rear.
-    color("dimgray")
-        translate([-420, 0, (52 + 475) / 2])
-            cube([25, 25, 475 - 52], center=true);
+    // LiDAR scan position stays unchanged. The selected shell baseline carries
+    // it on a short bracket tied to the structural upper rear crossmember,
+    // rather than on the earlier long mast rising from the chassis plate.
+    if (lidar_mount_style == "upper_frame") {
+        color("dimgray") {
+            translate([-420, 0, 462]) cube([92, 118, 14], center=true);
+            for (sy = [-1, 1])
+                hull() {
+                    translate([-438, sy * 48, 445])
+                        cube([18, 18, 18], center=true);
+                    translate([-420, sy * 48, 462])
+                        cube([18, 18, 14], center=true);
+                }
+            translate([-420, 0, 478]) cylinder(d=34, h=26, center=true);
+        }
+    } else if (lidar_mount_style == "base_mast")
+        color("dimgray")
+            translate([-420, 0, (52 + 475) / 2])
+                cube([25, 25, 475 - 52], center=true);
+    else
+        assert(false, str("Unknown lidar_mount_style: ", lidar_mount_style));
+
     color("black")
         translate([-420, 0, lidar_scan_z]) cylinder(d=94, h=45, center=true);
 
@@ -151,13 +170,16 @@ module sensor_context() {
                 translate([535, 0, (168 + 428) / 2])
                     cube([18, 18, 428 - 168], center=true);
         }
-        // Candidate relocation below and ahead of the launch path. Optical
-        // coverage and final TF require a separate camera study.
-        color("midnightblue")
-            translate([720, 0, 260]) cube([92, 30, 30], center=true);
+        // Selected packaging candidate: OAK-D mounts externally on the closed
+        // front fascia, below the launcher cylinder and above the Option A
+        // cheek/bridge top. The crossbar is structural; the cosmetic panel is
+        // only a locating/optical surface.
         color("dimgray")
-            translate([720, 0, (168 + 245) / 2])
-                cube([18, 18, 245 - 168], center=true);
+            translate([775, 0, 184]) cube([18, 270, 18], center=true);
+        color("midnightblue")
+            translate([800, 0, 205]) cube([92, 30, 30], center=true);
+        color("dimgray")
+            translate([786, 0, 195]) cube([34, 18, 42], center=true);
     } else {
         color("midnightblue")
             translate([535, 0, 443]) cube([92, 30, 30], center=true);

@@ -254,3 +254,84 @@ switches, driver keep-out και cable route για μελλοντικό electri
 actuator. Rail section, bearings, pin diameters, spring force, hole patterns και
 material thicknesses παραμένουν provisional μέχρι να ζυγιστεί το γεμάτο
 basket και να μετρηθεί η πραγματική δύναμη χειρισμού.
+
+## External panels / shell study
+
+Απόφαση διερεύνησης (2026-08-21): μετά το κλείδωμα της χαμηλής launcher
+baseline μπορεί να ξεκινήσει η εξωτερική εμφάνιση, αλλά ως ανεξάρτητο
+panel-envelope και όχι ως manufacturing shell. Το
+`cad/flywheel-launcher-v0/external-panel-study.scad` χωρίζει το bodywork σε:
+
+- σταθερό χαμηλό perimeter subframe πάνω στο chassis,
+- αφαιρούμενα lower side panels με wheel arches,
+- αφαιρούμενο πίσω hatch για μπαταρία/ηλεκτρονικά,
+- ενιαίο fixed upper edge και μεγάλο αφαιρούμενο top hatch,
+- προαιρετικό moving cowl μόνο ως stepped comparison,
+- χαμηλά εμπρός side fairings με ανοικτό κέντρο για intake, OAK-D και launcher.
+
+Το shell δεν επιτρέπεται να μεταφέρει το βάρος του basket. Νεότερη απόφαση
+χρήστη: η κύρια εξωτερική baseline έχει ενιαίο ύψος `z=463 mm`, δηλαδή `35 mm`
+κάτω από το LiDAR scan datum. Έτσι κρύβονται rails/launcher και η σιλουέτα
+μένει ομαλή σε collect και launch. Το μεγάλο επάνω hatch αφαιρείται για basket
+service. Στο CAD υπάρχουν προαιρετικά keep-out
+volumes για κατακόρυφη αφαίρεση basket και μπαταρίας. Πριν από DXF/STL ή κοπή
+πρέπει να μετρηθούν πραγματικά motor mounts, panel gaps, hinges/quarter-turn
+fasteners, αερισμός και το τελικό optical window της OAK-D.
+
+Η πρώτη faceted εξωτερική baseline έχει fixed body περίπου `900 × 564 mm`
+πάνω στην πλάκα `920 × 580 mm`, χωρίς να αυξάνει το συνολικό πλάτος που ήδη
+ορίζουν οι τροχοί (~`780 mm`). Τα wheel arches κρατούν ονομαστικό radial
+clearance `17.5 mm`, τα nose side panels `27 mm` από το flywheel guard envelope
+και το uniform shell top `35 mm` κάτω από το LiDAR scan datum. Με panel `3 mm`
+μένουν μόνο περίπου `16 mm` ονομαστικού εσωτερικού κενού πάνω από το raised
+basket rim· αυτό απαιτεί full-load/flex validation και το hatch μπορεί να
+παραμένει ανοικτό στη ρίψη αν οι μπάλες προεξέχουν. Το nose φτάνει περίπου
+στο `x=790 mm`, αλλά παραμένει ανοικτό στον κεντρικό άξονα και επομένως δεν
+λειτουργεί ως κλειστό front wall γύρω από intake/camera/exit guide.
+Δύο top shoulders συνεχίζουν τη γραμμή `z=463 mm` δεξιά και αριστερά από αυτό
+το κεντρικό κανάλι, ενώ το rear hatch έχει πραγματικό cutout `70 mm` για τον
+ιστό LiDAR.
+
+Νεότερη αισθητική απόφαση χρήστη: η κύρια μορφή γίνεται `rounded`. Το rounded skin
+χρησιμοποιεί plan corner radius `55 mm`, ομαλή στένωση προς το nose,
+στρογγυλεμένα battery/service doors και rounded top hatches. Η προηγούμενη
+`faceted` μορφή παραμένει διαθέσιμη ως CAD comparison και όχι ως baseline.
+
+Νεότερη mounting απόφαση χρήστη: το LiDAR δεν στηρίζεται πλέον με μακρύ ιστό
+από την πλάκα του chassis. Η θέση/scan datum παραμένει `(-420, 0, 498 mm)`, αλλά
+ένα κοντό bracket δένει στην επάνω πίσω structural crossmember περίπου στο
+`z=445 mm`. Το cosmetic hatch έχει μόνο cutout για bracket/cables και δεν
+παραλαμβάνει το φορτίο του αισθητήρα. Η μικρότερη προεξοχή αναμένεται να
+μειώσει κάμψη και κραδασμούς, αλλά το πραγματικό bracket χρειάζεται modal/
+vibration check μετά την επιλογή υλικού.
+
+Το rounded rear δεν είναι πλέον επίπεδο: η κάτοψη γίνεται ήπια κυρτή και
+εκτείνεται κατά `45 mm` πίσω από το παλιό rear datum. Το αντίστοιχο rear hatch
+μεγαλώνει και στρογγυλεύει ώστε να ακολουθεί τη νέα καμπύλη χωρίς απότομη
+οπτική διακοπή.
+
+Οι πίσω βάσεις των panels υποχωρούν κατά `30 mm` προς το κέντρο και τα επάνω/
+κάτω διαμήκη rails συγκλίνουν σταδιακά από `x=-260 mm` μέχρι την πίσω τραβέρσα.
+Η υποχώρηση αφαιρεί τον τεχνητό «ώμο» του κελύφους, χωρίς να μετακινεί τη
+μπαταρία, το service hatch ή τον κεντρικό άξονα στήριξης του LiDAR.
+
+Η αισθητική κατεύθυνση δεν μετατρέπει όλο το robot σε οργανικό concept. Η
+ορθογώνια αρχιτεκτονική, ο διαθέσιμος εσωτερικός όγκος και τα αφαιρούμενα panels
+παραμένουν. Το `appearance_mode` εφαρμόζει μόνο τρεις παρεμβάσεις υψηλής
+απόδοσης: ανοιχτό ψυχρό γκρι rounded upper shell, κρυφές εσωτερικές βάσεις και
+συνεχή σκούρα ζώνη chassis μέχρι `z=190 mm`, ευθυγραμμισμένη με την κάτω ακμή
+της OAK-D. Στόχος είναι η μετάβαση από
+industrial prototype σε commercial sports robot χωρίς μηχανικό redesign.
+
+Νεότερη front-fascia απόφαση χρήστη: το εξωτερικό nose δεν κατεβαίνει μέχρι τη
+βάση. Τα Option A cheeks τελειώνουν στο `z=150 mm` και το bridge στο
+`z=168 mm`, επομένως η κάτω ακμή του bodywork ορίζεται στο `z=168 mm`. Το
+intake mouth και η πλήρης περιοχή κάτω από αυτή τη στάθμη παραμένουν ανοικτά.
+
+Από `z=168…463 mm` το front fascia κλείνει πάνω και κάτω από το flywheel. Το
+μοναδικό launcher opening είναι κεκλιμένη κυκλική οπή `116 mm` γύρω από τον
+exit guide `90 mm`, με ονομαστικό radial clearance `13 mm`. Στο front plane το
+κέντρο της βρίσκεται περίπου στο `z=299 mm` πάνω στον άξονα pitch `20°`.
+Η OAK-D μεταφέρεται εξωτερικά κάτω από τον κύλινδρο, περίπου στο
+`(x=800, y=0, z=205 mm)`, και δένει σε structural crossbar πίσω από το fascia·
+το cosmetic panel δεν παραλαμβάνει το φορτίο της κάμερας.
