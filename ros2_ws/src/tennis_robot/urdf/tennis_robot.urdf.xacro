@@ -13,6 +13,8 @@
   <xacro:include filename="components/ir_beam.urdf.xacro"/>
   <xacro:include filename="components/body_panels.urdf.xacro"/>
   <xacro:include filename="components/intake_debug_camera.urdf.xacro"/>
+  <xacro:include filename="components/electronics_packaging.urdf.xacro"/>
+  <xacro:include filename="components/flywheel_launcher.urdf.xacro"/>
 
   <!-- ros2_control args. sim_mode swaps the hardware backend (sim vs real).
        controllers_config is the absolute path to controllers.yaml, injected by
@@ -20,6 +22,17 @@
   <xacro:arg name="sim_mode" default="true"/>
   <xacro:arg name="controllers_config" default="config/controllers.yaml"/>
   <xacro:arg name="expose_intake_carriage_state" default="false"/>
+  <!-- Selectable packaging overlay. Baseline remains the frozen collection
+       model; compact shifts the complete functional chain by -100 mm and
+       enables the new mass-bearing components through the generator. -->
+  <xacro:arg name="functional_shift_x" default="0.0"/>
+  <xacro:arg name="intake_cad_alignment_x" default="0.0"/>
+  <xacro:arg name="battery_center_x" default="-0.143"/>
+  <xacro:arg name="enable_compact_electronics" default="false"/>
+  <xacro:arg name="enable_flywheel" default="false"/>
+  <xacro:arg name="flywheel_max_vel" default="320.0"/>
+  <xacro:arg name="basket_empty_mass" default="0.01"/>
+  <xacro:arg name="basket_payload_mass" default="0.0"/>
   <!-- Dual-wheel intake tuning (docs/dual-wheel-intake-design-el.md).
        Injected from INTAKE_WHEEL_* envs by scripts/generate_robot_urdf.py. -->
   <xacro:arg name="intake_wheel_radius" default="0.060"/>
@@ -63,6 +76,8 @@
   <!-- base_link is the chassis plate centre. The plate top is 52 mm above
        ground, below the 85 mm motor-shaft/wheel-axle centreline. -->
   <xacro:property name="base_link_height" value="0.045"/>
+  <xacro:property name="functional_shift_x" value="${float($(arg functional_shift_x))}"/>
+  <xacro:property name="intake_cad_alignment_x" value="${float($(arg intake_cad_alignment_x))}"/>
 
   <!-- 4WD skid-steer drivetrain. Four identical 170 mm (radius 0.085) driven
        wheels (HPI Dirt Buster Block, 170x80 mm, Baja 5B), two per side, placed
@@ -87,7 +102,7 @@
        the basket. -->
   <xacro:property name="intake_wheel_radius" value="${float($(arg intake_wheel_radius))}"/>
   <xacro:property name="intake_wheel_gap" value="${float($(arg intake_wheel_gap))}"/>
-  <xacro:property name="intake_nip_x" value="${float($(arg intake_nip_x))}"/>
+  <xacro:property name="intake_nip_x" value="${float($(arg intake_nip_x)) + functional_shift_x + intake_cad_alignment_x}"/>
   <xacro:property name="intake_wheel_tilt_rad" value="${float($(arg intake_wheel_tilt_deg)) * 0.017453292519943295}"/>
   <xacro:property name="intake_wheel_max_vel" value="${float($(arg intake_wheel_max_vel))}"/>
   <xacro:property name="intake_wheel_effort" value="${float($(arg intake_wheel_effort))}"/>
@@ -116,7 +131,7 @@
 
   <xacro:property name="lidar_xyz" value="-0.42 0 0.498"/>
   <xacro:property name="lidar_rpy" value="0 0 0"/>  <!-- level chassis: horizontal scan plane -->
-  <xacro:property name="camera_xyz" value="0.535 0 0.443"/>
+  <xacro:property name="camera_xyz" value="${0.535 + functional_shift_x} 0 0.443"/>
   <xacro:property name="camera_rpy" value="0 0.273 0"/>  <!-- forward-down tilt ~15.6deg; preserves the old world aim (0.22 cam + 0.053 chassis pitch) now that the chassis is level -->
   <xacro:property name="sensor_update_rate" value="31.25"/>
 
@@ -127,7 +142,7 @@
        z=0.033 ground). This frames both intake wheels, the gap between
        them, and the ball as it enters the nip. The old side mount
        (0.5, 0.13) is now inside the left wheel's swept volume. -->
-  <xacro:property name="intake_debug_camera_xyz" value="0.78 0 0.06"/>
+  <xacro:property name="intake_debug_camera_xyz" value="${0.78 + functional_shift_x} 0 0.06"/>
   <xacro:property name="intake_debug_camera_rpy" value="0 0.339 3.14159"/>
 
   <!-- Throat beam crosses the corridor at ball-centre height (40 mm above
@@ -137,13 +152,13 @@
        At x=0.720 it fires before first wheel contact, leaving time to start
        or maintain the rollers. Collection confirmation is the BASKET beam
        pair below — see gazebo_extras_node.py. -->
-  <xacro:property name="ir_x" value="0.720"/>
+  <xacro:property name="ir_x" value="${0.720 + functional_shift_x}"/>
   <xacro:property name="ir_y" value="0.105"/>
   <xacro:property name="ir_z" value="-0.005"/>
   <!-- Basket confirmation beam is behind the retention lip, halfway down the
        internal management tray. A ball on the external receiver is not yet
        collected and must keep the intake running until it crosses this beam. -->
-  <xacro:property name="basket_ir_x" value="${float($(arg basket_floor_front_x)) - float($(arg basket_management_run)) / 2.0}"/>
+  <xacro:property name="basket_ir_x" value="${float($(arg basket_floor_front_x)) - float($(arg basket_management_run)) / 2.0 + functional_shift_x}"/>
   <xacro:property name="basket_ir_y" value="0.105"/> 
   <!-- Beam height 0.075 above court: ABOVE a court ball's top (0.066) so the
        ray cannot clip balls standing beside the robot through the open wire
@@ -241,11 +256,13 @@
       sensor_index="1"/>
 
   <xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}" pitch="${scooper_pitch}"
+      x_shift="${functional_shift_x}"
+      cheek_x_bias="${intake_cad_alignment_x}"
       enable_cheeks="$(arg enable_funnel)" enable_ramp="$(arg enable_ramp)"/>
   <xacro:if value="$(arg enable_assist)">
     <xacro:intake_assist_roller
         parent="base_link"
-        x="${intake_assist_x}"
+        x="${intake_assist_x + functional_shift_x}"
         z="${intake_assist_z}"
         radius="${intake_assist_radius}"
         length="${intake_assist_length}"
@@ -255,7 +272,7 @@
     <xacro:intake_ramp_conveyor_roller
         name="intake_conveyor_front"
         parent="base_link"
-        x="${0.525 + intake_conveyor_x_bias}"
+        x="${0.525 + intake_conveyor_x_bias + functional_shift_x}"
         z="${0.051 + intake_conveyor_z_bias}"
         radius="${intake_conveyor_radius}"
         length="${intake_conveyor_length}"
@@ -263,7 +280,7 @@
     <xacro:intake_ramp_conveyor_roller
         name="intake_conveyor_mid"
         parent="base_link"
-        x="${0.490 + intake_conveyor_x_bias}"
+        x="${0.490 + intake_conveyor_x_bias + functional_shift_x}"
         z="${0.067 + intake_conveyor_z_bias}"
         radius="${intake_conveyor_radius}"
         length="${intake_conveyor_length}"
@@ -271,7 +288,7 @@
     <xacro:intake_ramp_conveyor_roller
         name="intake_conveyor_rear"
         parent="base_link"
-        x="${0.455 + intake_conveyor_x_bias}"
+        x="${0.455 + intake_conveyor_x_bias + functional_shift_x}"
         z="${0.101 + intake_conveyor_z_bias}"
         radius="${intake_conveyor_radius}"
         length="${intake_conveyor_length}"
@@ -291,8 +308,27 @@
       receiver_rise="${float($(arg basket_receiver_rise))}"
       hood_rear_overhang="${float($(arg basket_hood_rear_overhang))}"
       hood_rear_clearance_z_ground="${float($(arg basket_hood_rear_clearance_z))}"
-      hood_front_clearance_z_ground="${float($(arg basket_hood_front_clearance_z))}"/>
-  <xacro:battery_pack parent="base_link"/>
+      hood_front_clearance_z_ground="${float($(arg basket_hood_front_clearance_z))}"
+      x_shift="${functional_shift_x}"
+      empty_mass="${float($(arg basket_empty_mass))}"
+      payload_mass="${float($(arg basket_payload_mass))}"/>
+  <xacro:battery_pack parent="base_link"
+      center_x="${float($(arg battery_center_x))}"/>
+
+  <xacro:if value="$(arg enable_compact_electronics)">
+    <xacro:compact_electronics_packaging
+        parent="base_link" base_link_height="${base_link_height}"/>
+  </xacro:if>
+
+  <xacro:if value="$(arg enable_flywheel)">
+    <xacro:side_by_side_flywheel_launcher
+        parent="base_link"
+        origin_x="${0.560 + functional_shift_x}"
+        nip_z_ground="0.215"
+        base_link_height="${base_link_height}"
+        pitch_rad="0.349066"
+        max_vel="${float($(arg flywheel_max_vel))}"/>
+  </xacro:if>
 
   <xacro:rplidar_c1_mount
       parent="base_link"
@@ -366,6 +402,8 @@
       controllers_config="$(arg controllers_config)"
       expose_intake_carriage_state="$(arg expose_intake_carriage_state)"
       intake_max_vel="${intake_wheel_max_vel}"
+      enable_flywheel="$(arg enable_flywheel)"
+      flywheel_max_vel="${float($(arg flywheel_max_vel))}"
       enable_assist="$(arg enable_assist)"
       enable_conveyor="$(arg enable_conveyor)"/>
 

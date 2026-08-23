@@ -69,6 +69,7 @@ def generate_robot_urdf():
             "--sdf-output", ROBOT_SDF,
             "--sim-mode", "true",
             "--controllers-config", CONTROLLERS_CONFIG,
+            "--packaging-variant", os.getenv("ROBOT_PACKAGING_VARIANT", "baseline"),
         ],
         check=True,
     )
@@ -125,6 +126,11 @@ def generate_launch_description():
         "true",
         "yes",
     }
+    _packaging_variant = os.getenv("ROBOT_PACKAGING_VARIANT", "baseline").lower()
+    enable_flywheel = os.getenv(
+        "ROBOT_ENABLE_FLYWHEEL",
+        "true" if _packaging_variant == "compact" else "false",
+    ).lower() in {"1", "true", "yes"}
     skip_control_panel = bench_minimal or os.getenv(
         "SIM_SKIP_CONTROL_PANEL", "false"
     ).lower() in {"1", "true", "yes"}
@@ -250,6 +256,7 @@ def generate_launch_description():
     diff_drive_spawner = _spawner("diff_drive_controller")
     intake_wheel_spawner = _spawner("intake_wheel_velocity_controller")
     assist_wheel_spawner = _spawner("assist_wheel_velocity_controller")
+    flywheel_spawner = _spawner("flywheel_velocity_controller")
 
     # Actuation layer: the only node that talks to the controller command topics.
     drive_actuator = Node(
@@ -603,10 +610,18 @@ def generate_launch_description():
                 OnProcessExit(target_action=diff_drive_spawner, on_exit=[intake_wheel_spawner])
             ),
         ]
+        previous_spawner = intake_wheel_spawner
         if enable_assist:
             controller_chain.append(
                 RegisterEventHandler(
                     OnProcessExit(target_action=intake_wheel_spawner, on_exit=[assist_wheel_spawner])
+                )
+            )
+            previous_spawner = assist_wheel_spawner
+        if enable_flywheel:
+            controller_chain.append(
+                RegisterEventHandler(
+                    OnProcessExit(target_action=previous_spawner, on_exit=[flywheel_spawner])
                 )
             )
         actions += [gz_full, gz_headless, robot_state_publisher,

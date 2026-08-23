@@ -15,11 +15,12 @@
        commanded with opposite signs so both inner faces drive rearward)
     intake_assist_wheel_joint -> optional second-stage ramp assist roller
     intake_conveyor_*_joint -> optional Phase 3B ramp conveyor approximation
+	  flywheel_left_joint / flywheel_right_joint -> optional launcher wheels
 	-->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- intake_max_vel = GB37Y3530-12V-251R no-load speed (251 RPM = 26.3 rad/s). -->
   <xacro:macro name="tennis_robot_ros2_control"
-               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 intake_max_vel:=26.3 expose_intake_carriage_state:=false enable_assist:=false enable_conveyor:=false">
+               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 intake_max_vel:=26.3 flywheel_max_vel:=320.0 expose_intake_carriage_state:=false enable_flywheel:=false enable_assist:=false enable_conveyor:=false">
 
     <ros2_control name="TennisRobotSystem" type="system">
 
@@ -43,6 +44,9 @@
           <param name="right_wheel_names">rear_right_wheel_joint,front_right_wheel_joint</param>
           <!-- Two identical GB37 motors, one driver channel each. -->
           <param name="intake_wheel_names">intake_wheel_left_joint,intake_wheel_right_joint</param>
+          <xacro:if value="${enable_flywheel}">
+            <param name="flywheel_names">flywheel_left_joint,flywheel_right_joint</param>
+          </xacro:if>
           <xacro:if value="${enable_assist}">
             <param name="assist_wheel_names">intake_assist_wheel_joint</param>
           </xacro:if>
@@ -107,6 +111,27 @@
         <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
+
+      <!-- Optional two-motor side-by-side launcher. Opposite commands make
+           both inner wheel faces drive the ball forward (+X). -->
+      <xacro:if value="${enable_flywheel}">
+        <joint name="flywheel_left_joint">
+          <command_interface name="velocity">
+            <param name="min">-${flywheel_max_vel}</param>
+            <param name="max">${flywheel_max_vel}</param>
+          </command_interface>
+          <state_interface name="position"/>
+          <state_interface name="velocity"/>
+        </joint>
+        <joint name="flywheel_right_joint">
+          <command_interface name="velocity">
+            <param name="min">-${flywheel_max_vel}</param>
+            <param name="max">${flywheel_max_vel}</param>
+          </command_interface>
+          <state_interface name="position"/>
+          <state_interface name="velocity"/>
+        </joint>
+      </xacro:if>
 
       <!-- Gazebo-only observability for the passive spring carriages. The
            physical prototype has no carriage encoder, so these state-only

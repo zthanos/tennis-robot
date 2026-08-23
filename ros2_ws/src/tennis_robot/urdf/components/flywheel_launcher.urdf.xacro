@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Low side-by-side flywheel launcher. The two wheel axes are vertical in
+       the unpitched launcher frame, then the whole frame pitches upward about
+       +Y. Wheel/motor selection: two D5065 270 KV BLDC motors, 0.49 kg each.
+       Motor mass stays in the fixed frame; only the wheel/shaft inertia spins. -->
+  <xacro:macro name="side_by_side_flywheel_launcher"
+      params="parent origin_x nip_z_ground base_link_height pitch_rad wheel_radius:=0.100 wheel_width:=0.040 nip_gap:=0.058 wheel_mass:=0.30 frame_mass:=3.00 max_vel:=320 effort:=6.0">
+    <xacro:property name="wheel_y" value="${nip_gap / 2.0 + wheel_radius}"/>
+    <xacro:property name="frame_x" value="0.280"/>
+    <xacro:property name="frame_y" value="${2.0 * (wheel_y + wheel_radius + 0.025)}"/>
+    <xacro:property name="frame_z" value="0.035"/>
+
+    <joint name="flywheel_launcher_mount_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="flywheel_launcher_frame_link"/>
+      <origin xyz="${origin_x} 0 ${nip_z_ground - base_link_height}"
+              rpy="0 ${-pitch_rad} 0"/>
+    </joint>
+    <link name="flywheel_launcher_frame_link">
+      <xacro:box_inertial mass="${frame_mass}" x="${frame_x}" y="${frame_y}" z="${frame_z}"/>
+      <!-- Frame collision stays below the ball path; a separate guide tube is
+           visual-only until feeder/exit contact testing defines its surface. -->
+      <collision name="flywheel_launcher_frame_col">
+        <origin xyz="0 0 ${-wheel_radius - 0.035}" rpy="0 0 0"/>
+        <geometry><box size="${frame_x} ${frame_y} ${frame_z}"/></geometry>
+      </collision>
+      <visual name="flywheel_launcher_frame_vis">
+        <origin xyz="0 0 ${-wheel_radius - 0.035}" rpy="0 0 0"/>
+        <geometry><box size="${frame_x} ${frame_y} ${frame_z}"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+      <visual name="flywheel_exit_guide_vis">
+        <origin xyz="${wheel_radius + 0.10} 0 0" rpy="0 1.5708 0"/>
+        <geometry><cylinder radius="0.045" length="0.20"/></geometry>
+        <material name="body_dark_grey"/>
+      </visual>
+    </link>
+
+    <xacro:flywheel_wheel side="left" parent="flywheel_launcher_frame_link"
+        y="${wheel_y}" radius="${wheel_radius}" width="${wheel_width}"
+        mass="${wheel_mass}" max_vel="${max_vel}" effort="${effort}"/>
+    <xacro:flywheel_wheel side="right" parent="flywheel_launcher_frame_link"
+        y="${-wheel_y}" radius="${wheel_radius}" width="${wheel_width}"
+        mass="${wheel_mass}" max_vel="${max_vel}" effort="${effort}"/>
+  </xacro:macro>
+
+  <xacro:macro name="flywheel_wheel" params="side parent y radius width mass max_vel effort">
+    <link name="flywheel_${side}_link">
+      <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="z"/>
+      <collision name="flywheel_${side}_col">
+        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+      </collision>
+      <visual name="flywheel_${side}_vis">
+        <geometry><cylinder radius="${radius}" length="${width}"/></geometry>
+        <material name="safety_orange"/>
+      </visual>
+      <visual name="flywheel_${side}_marker_vis">
+        <origin xyz="${radius - 0.008} 0 ${width / 2.0 + 0.003}" rpy="0 0 0"/>
+        <geometry><box size="0.012 0.025 0.006"/></geometry>
+        <material name="rubber_black"/>
+      </visual>
+    </link>
+    <joint name="flywheel_${side}_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child link="flywheel_${side}_link"/>
+      <origin xyz="0 ${y} 0" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="${effort}" velocity="${max_vel}"/>
+      <dynamics damping="0.002"/>
+    </joint>
+    <gazebo reference="flywheel_${side}_link">
+      <mu1>2.0</mu1><mu2>2.0</mu2>
+    </gazebo>
+  </xacro:macro>
+</robot>

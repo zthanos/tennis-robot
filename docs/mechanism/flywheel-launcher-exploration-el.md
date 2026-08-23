@@ -201,6 +201,42 @@ L5  Robot integration
 funnel/singulator, spring stroke και σωλήνα transfer. Το rail layout του
 launcher μένει μόνο ως A/B εναλλακτική μέχρι να αποδειχθεί ότι χρειάζεται.
 
+## Gazebo packaging variant
+
+Η προσαρμογή στη φυσική προσομοίωση είναι selectable και δεν αντικαθιστά το
+bench-proven baseline:
+
+```bash
+ROBOT_PACKAGING_VARIANT=baseline ros2 launch tennis_robot sim.launch.py headless:=true
+ROBOT_PACKAGING_VARIANT=compact  ros2 launch tennis_robot sim.launch.py headless:=true
+```
+
+Το `compact` μεταφέρει το functional group κατά `-100 mm`, ευθυγραμμίζει τα
+intake wheels/cheeks με τα πραγματικά CAD datums, μετακινεί την μπαταρία πίσω
+και προσθέτει τα mass/envelope models του κατακόρυφου motion tray, του Pi case,
+του ξεχωριστού buck converter και του εμπρός launcher. Το basket περιλαμβάνει
+φορτίο `45 x 57 g = 2.565 kg`. Το launcher έχει δύο ανεξάρτητα flywheel joints
+και controller `flywheel_velocity_controller`; το nominal Gazebo model
+χρησιμοποιεί `R=100 mm`, nip `58 mm`, pitch `20 deg` και όριο `320 rad/s`.
+
+Το mass audit στο zero-joint pose δίνει:
+
+- baseline: `20.385 kg`, CoM `x=-29.9 mm`, `z=83.7 mm`,
+- compact/full-load: `29.800 kg`, CoM `x=+11.3 mm`, `z=107.8 mm`.
+
+Άρα το compact hypothesis προσθέτει `9.415 kg`, μετακινεί το CoM περίπου
+`41 mm` εμπρός και `24 mm` ψηλότερα, χωρίς αλλαγή wheelbase ή chassis. Σε
+ίδιο controller command (`0.3 m/s`, `+/-0.8 rad/s`) το πρώτο A/B probe έδωσε
+`0.447 m` έναντι `0.450 m` στην ευθεία και συμμετρική απόκριση στροφής
+`+63.3/-64.6 deg` έναντι `+65.1/-66.0 deg` από wheel odometry. Η μικρή διαφορά
+δεν αποτελεί ακόμη acceptance της πρόσφυσης: απαιτείται επανάληψη με Gazebo
+ground truth και μετά loaded physical skid-steer test.
+
+Η compact handoff collision και η ορατή επιφάνειά της είναι πλέον το ίδιο
+segmented ramp, world `x~=360...320 mm`, πίσω από το wheel nip `x=370 mm`.
+Έτσι το Gazebo δεν εμφανίζει ούτε προσομοιώνει την παλιά ράμπα μπροστά από τους
+rollers. Η γεωμετρία παραμένει study-only και δεν αλλάζει κανένα αρχείο Option A.
+
 ## Πρώτο full-robot placement study
 
 Το `cad/flywheel-launcher-v0/robot-integration.scad` εισάγει read-only την

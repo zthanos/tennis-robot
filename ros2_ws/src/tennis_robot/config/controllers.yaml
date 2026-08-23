@@ -37,6 +37,9 @@ controller_manager:
     conveyor_velocity_controller:
       type: forward_command_controller/ForwardCommandController
 
+    flywheel_velocity_controller:
+      type: forward_command_controller/ForwardCommandController
+
 diff_drive_controller:
   ros__parameters:
     # 4WD skid-steer: two driven wheels per side, both commanded together.
@@ -102,4 +105,11 @@ assist_wheel_velocity_controller:
 conveyor_velocity_controller:
   ros__parameters:
     joints: ["intake_conveyor_front_joint", "intake_conveyor_mid_joint", "intake_conveyor_rear_joint"]
+    interface_name: velocity
+
+flywheel_velocity_controller:
+  ros__parameters:
+    # Forward launch: left negative, right positive. The controller exposes
+    # the two raw wheel commands so differential spin remains possible later.
+    joints: ["flywheel_left_joint", "flywheel_right_joint"]
     interface_name: velocity

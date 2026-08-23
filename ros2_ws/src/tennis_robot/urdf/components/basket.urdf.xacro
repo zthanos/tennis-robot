@@ -24,7 +24,7 @@
        All *_ground params are in the GROUND frame; basket_link shares
        base_link's origin (base_link_height above ground). -->
   <xacro:macro name="ball_basket"
-      params="parent floor_front_x floor_top_z_ground rear_x half_width wall_top_z_ground center_lip_height management_run management_rise receiver_run receiver_rise hood_rear_overhang hood_rear_clearance_z_ground hood_front_clearance_z_ground">
+      params="parent floor_front_x floor_top_z_ground rear_x half_width wall_top_z_ground center_lip_height management_run management_rise receiver_run receiver_rise hood_rear_overhang hood_rear_clearance_z_ground hood_front_clearance_z_ground x_shift:=0.0 empty_mass:=0.01 payload_mass:=0.0">
     <xacro:property name="floor_top" value="${floor_top_z_ground - base_link_height}"/>
     <xacro:property name="wall_top" value="${wall_top_z_ground - base_link_height}"/>
     <!-- Thin skinned bin: 5 mm floor (exterior bottom = floor_top - 0.005,
@@ -83,15 +83,24 @@
     <xacro:property name="hood_side_top_z" value="${hood_rear_clearance_z_ground - base_link_height + hood_rise * (receiver_top_mid_x - hood_rear_x) / hood_run}"/>
     <xacro:property name="hood_side_mid_z" value="${(receiver_top_mid_z + hood_side_top_z) / 2.0}"/>
     <xacro:property name="hood_side_height" value="${hood_side_top_z - receiver_top_mid_z}"/>
+    <xacro:property name="basket_mass" value="${empty_mass + payload_mass}"/>
+    <xacro:property name="basket_com_x" value="${(floor_front_x + rear_x) / 2.0}"/>
+    <xacro:property name="basket_com_z" value="${floor_top + 0.45 * wall_height}"/>
     <joint name="basket_joint" type="fixed">
       <parent link="${parent}"/>
       <child link="basket_link"/>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="${x_shift} 0 0" rpy="0 0 0"/>
     </joint>
     <link name="basket_link">
       <inertial>
-        <mass value="0.01"/>
-        <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+        <origin xyz="${basket_com_x} 0 ${basket_com_z}" rpy="0 0 0"/>
+        <mass value="${basket_mass}"/>
+        <inertia
+            ixx="${basket_mass * ((2.0 * half_width) * (2.0 * half_width) + wall_height * wall_height) / 12.0}"
+            ixy="0" ixz="0"
+            iyy="${basket_mass * (bin_length * bin_length + wall_height * wall_height) / 12.0}"
+            iyz="0"
+            izz="${basket_mass * (bin_length * bin_length + (2.0 * half_width) * (2.0 * half_width)) / 12.0}"/>
       </inertial>
 
       <collision name="basket_floor_col">

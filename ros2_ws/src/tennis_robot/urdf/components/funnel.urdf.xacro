@@ -6,11 +6,11 @@
          ramp   -> elevation + guidance toward the basket
        enable_cheeks / enable_ramp implement the Concept Validation Plan
        gates (Phase 1 = throat only runs with both disabled). -->
-  <xacro:macro name="intake_funnel" params="parent chassis_z pitch enable_cheeks:=true enable_ramp:=true">
+  <xacro:macro name="intake_funnel" params="parent chassis_z pitch x_shift:=0.0 cheek_x_bias:=0.0 enable_cheeks:=true enable_ramp:=true">
     <joint name="funnel_joint" type="fixed">
       <parent link="${parent}"/>
       <child link="funnel_link"/>
-      <origin xyz="0 0 ${-chassis_z / 2}" rpy="0 0 0"/>
+      <origin xyz="${x_shift} 0 ${-chassis_z / 2}" rpy="0 0 0"/>
     </joint>
     <link name="funnel_link">
       <inertial>
@@ -32,22 +32,22 @@
              (0.590, ±0.090) by 65.4 mm — rule is ≥65 mm (cylinder r=0.060
              + carriage travel). -->
         <visual name="funnel_left_cheek_vis">
-          <origin xyz="0.7655 0.144 0.052" rpy="0 ${pitch} 0.504"/>
+          <origin xyz="${0.7655 + cheek_x_bias} 0.144 0.052" rpy="0 ${pitch} 0.504"/>
           <geometry><box size="0.2524 0.01 0.10"/></geometry>
           <material name="intake_orange"/>
         </visual>
         <collision name="funnel_left_cheek_col">
-          <origin xyz="0.7655 0.144 0.052" rpy="0 ${pitch} 0.504"/>
+          <origin xyz="${0.7655 + cheek_x_bias} 0.144 0.052" rpy="0 ${pitch} 0.504"/>
           <geometry><box size="0.2524 0.01 0.10"/></geometry>
         </collision>
 
         <visual name="funnel_right_cheek_vis">
-          <origin xyz="0.7655 -0.144 0.052" rpy="0 ${pitch} -0.504"/>
+          <origin xyz="${0.7655 + cheek_x_bias} -0.144 0.052" rpy="0 ${pitch} -0.504"/>
           <geometry><box size="0.2524 0.01 0.10"/></geometry>
           <material name="intake_orange"/>
         </visual>
         <collision name="funnel_right_cheek_col">
-          <origin xyz="0.7655 -0.144 0.052" rpy="0 ${pitch} -0.504"/>
+          <origin xyz="${0.7655 + cheek_x_bias} -0.144 0.052" rpy="0 ${pitch} -0.504"/>
           <geometry><box size="0.2524 0.01 0.10"/></geometry>
         </collision>
       </xacro:if>

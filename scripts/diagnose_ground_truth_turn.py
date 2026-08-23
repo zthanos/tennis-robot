@@ -10,11 +10,10 @@ import time
 import argparse
 
 import rclpy
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, TwistStamped
 from nav_msgs.msg import Odometry
 
 
-GZ_POSE_TOPIC = "/world/tennis_court/pose/info"
 CMD_TOPIC = "/cmd_vel_teleop"
 ODOM_TOPIC = "/diff_drive_controller/odom"
 
@@ -29,45 +28,39 @@ def _angle_delta(a: float, b: float) -> float:
 
 def _gazebo_model_pose(model_name: str = "tennis_robot") -> tuple[list[float], list[float]]:
     out = subprocess.check_output(
-        ["gz", "topic", "-e", "-t", GZ_POSE_TOPIC, "-n", "1"],
+        ["gz", "model", "-m", model_name, "-p"],
         text=True,
         timeout=8,
     )
-    current: list[str] = []
-    depth = 0
-    in_pose = False
-    for line in out.splitlines():
-        stripped = line.strip()
-        if stripped == "pose {":
-            in_pose = True
-            current = [line]
-            depth = 1
-            continue
-        if not in_pose:
-            continue
-        current.append(line)
-        depth += line.count("{") - line.count("}")
-        if depth != 0:
-            continue
-        block = "\n".join(current)
-        if f'name: "{model_name}"' in block:
-            vals = [
-                float(v)
-                for v in re.findall(
-                    r"\n\s*(?:x|y|z|w):\s*(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
-                    block,
-                )
-            ]
-            return vals[:3], vals[3:7]
-        in_pose = False
-        current = []
+    triples = re.findall(
+        r"\[\s*(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\s+"
+        r"(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\s+"
+        r"(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\s*\]",
+        out,
+        flags=re.IGNORECASE,
+    )
+    if len(triples) >= 2:
+        position = [float(value) for value in triples[-2]]
+        roll, pitch, yaw = (float(value) for value in triples[-1])
+        cr, sr = math.cos(roll / 2.0), math.sin(roll / 2.0)
+        cp, sp = math.cos(pitch / 2.0), math.sin(pitch / 2.0)
+        cy, sy = math.cos(yaw / 2.0), math.sin(yaw / 2.0)
+        quaternion = [
+            sr * cp * cy - cr * sp * sy,
+            cr * sp * cy + sr * cp * sy,
+            cr * cp * sy - sr * sp * cy,
+            cr * cp * cy + sr * sp * sy,
+        ]
+        return position, quaternion
     raise RuntimeError(f"Gazebo pose for {model_name!r} not found")
 
 
 class GroundTruthTurnDiagnostic:
-    def __init__(self) -> None:
+    def __init__(self, cmd_topic: str, stamped_cmd: bool) -> None:
         self.node = rclpy.create_node("ground_truth_turn_diagnostic")
-        self.pub = self.node.create_publisher(Twist, CMD_TOPIC, 10)
+        self.stamped_cmd = stamped_cmd
+        command_type = TwistStamped if stamped_cmd else Twist
+        self.pub = self.node.create_publisher(command_type, cmd_topic, 10)
         self.odom: Odometry | None = None
         self.node.create_subscription(Odometry, ODOM_TOPIC, self._odom_cb, 10)
 
@@ -96,8 +89,16 @@ class GroundTruthTurnDiagnostic:
     def _stop(self) -> None:
         msg = Twist()
         for _ in range(10):
-            self.pub.publish(msg)
+            self.pub.publish(self._command(msg))
             rclpy.spin_once(self.node, timeout_sec=0.05)
+
+    def _command(self, twist: Twist):
+        if not self.stamped_cmd:
+            return twist
+        msg = TwistStamped()
+        msg.header.stamp = self.node.get_clock().now().to_msg()
+        msg.twist = twist
+        return msg
 
     def run_turn(self, label: str, angular_z: float, sim_seconds: float = 2.0) -> None:
         self._wait_for_odom()
@@ -110,7 +111,7 @@ class GroundTruthTurnDiagnostic:
         cmd.angular.z = angular_z
         started = time.time()
         while time.time() - started < 45.0:
-            self.pub.publish(cmd)
+            self.pub.publish(self._command(cmd))
             rclpy.spin_once(self.node, timeout_sec=0.05)
             if self._odom_stamp() - odom_stamp0 >= sim_seconds:
                 break
@@ -138,10 +139,12 @@ def main() -> None:
         default="left,right",
         help="Comma-separated turn sequence using left/right labels.",
     )
+    parser.add_argument("--cmd-topic", default=CMD_TOPIC)
+    parser.add_argument("--stamped-cmd", action="store_true")
     args = parser.parse_args()
 
     rclpy.init()
-    diag = GroundTruthTurnDiagnostic()
+    diag = GroundTruthTurnDiagnostic(args.cmd_topic, args.stamped_cmd)
     try:
         for index, item in enumerate(args.sequence.split(",")):
             direction = item.strip().lower()

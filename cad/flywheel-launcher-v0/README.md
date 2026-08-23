@@ -130,6 +130,72 @@ the 142 mm basket outlet, 215 mm nip, 275 mm feeder crest, provisional 370 mm
 launcher ceiling, approximately 444 mm raised-basket rim and 498 mm LiDAR scan
 plane. These are packaging references, not manufacturing tolerances.
 
+## Compact packaging study (fixed chassis)
+
+`compact-packaging-study.scad` tests the shorter functional silhouette without
+cutting the `920 x 580 mm` Option A chassis or changing its wheelbase.  The
+complete `intake -> bridge -> basket -> feeder -> launcher` group moves
+rearward by a provisional 100 mm, preserving all validated relative geometry.
+Option A remains a read-only `use<>` dependency.
+
+One relative datum is deliberately corrected only in this study: the imported
+Option A handoff ramp is not rendered. Its `X=520 mm`, `Z=1.5 mm` front lip
+would touch a centred 66 mm ball at ball-centre `X~=529.8 mm`, whereas the
+finite tilted-wheel geometry does not contact that ball until `X~=481.2 mm`.
+The hard lip would therefore lead the compliant tires by about 48.6 mm and
+could reject the ball. The compact study substitutes a short lip at
+`X=460 mm`, giving the wheels approximately 11.4 mm of first-contact lead. The
+new `X=460..420 mm`, `Z=1.5..35 mm` handoff is a simulation hypothesis, not a
+manufacturing change; loaded-ball and physical rolling tests remain mandatory.
+
+The study-only wooden bridge subtracts an open rear notch across the basket's
+vertical service corridor and two open-bottom `D=80 mm` motor arches.  Against
+the nominal `D=60 mm` drive motors, each arch leaves 10 mm radial clearance
+and 25 mm of wood above the crown.  External angle/doubler references stay
+outside the basket keep-out.  The notch covers the basket's outer
+`Y=+/-146 mm` geometry plus a provisional 14 mm service margin, so neither the
+bridge nor its reinforcement blocks lift, tilt or vertical basket removal. It
+extends to local `X=484 mm`, covering the receiving chute/hood at `X=470 mm`
+plus the same 14 mm margin; stopping at the main bin's `X=420 mm` edge would
+not clear the complete removable assembly.
+
+The battery moves rearward to `X=-255 mm`; the existing `240 x 180 mm` motion
+tray stands vertically at `X=-425 mm`, with its components facing forward.
+The resulting hypothesis clearances are 35 mm from the chassis rear, 32 mm
+tray-to-battery and 92 mm battery-to-shifted-basket.  These are clearance-study
+datums, not released mounting holes.  The flat roof hatch follows the basket
+to `X=120 mm`; the LiDAR remains fixed.
+
+Render all keep-outs and both basket poses with:
+
+```bash
+/snap/bin/openscad-nightly \
+  -o cad/flywheel-launcher-v0/compact-packaging-study.png \
+  --imgsize=1600,1000 --viewall --autocenter \
+  cad/flywheel-launcher-v0/compact-packaging-study.scad
+```
+
+For the non-misleading top view of the intake only, set
+`show_intake_ball_path=true` and disable the basket, launcher, drive, shell and
+rear electronics. In that view the long orange curves are the two outboard
+cheeks at `Y=+/-205 mm`, not a transverse ramp; the corrected yellow handoff
+starts behind the black intake wheels.
+
+The corresponding Gazebo model is selected without changing the preserved
+baseline:
+
+```bash
+ROBOT_PACKAGING_VARIANT=compact ros2 launch tennis_robot sim.launch.py headless:=true
+```
+
+It carries the same `-100 mm` functional shift, rear battery, vertical motion
+tray, Pi case, separate buck converter, loaded basket and front dual-flywheel
+launcher.  The generated SDF replaces both the handoff collision and its visual
+with matching short segments behind the intake-wheel nip, so the simulation no
+longer displays the obsolete forward lip. See
+`docs/mechanism/flywheel-launcher-exploration-el.md` for masses, CoM and the
+initial baseline/compact motion comparison.
+
 Useful overrides:
 
 ```bash
