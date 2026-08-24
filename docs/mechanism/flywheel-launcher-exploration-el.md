@@ -916,3 +916,75 @@ port). Εμφανίστηκε ζωντανά ως
 `tests/test_no_shadowed_definitions.py` (AST) που απαγορεύει διπλούς ορισμούς σε
 module/class scope. Δεν επηρεάζει προηγούμενα αποτελέσματα: οι διπλές αντιγραφές
 ήταν ταυτόσημες μέχρι εκείνη την επεξεργασία.
+
+## Distributed PC↔Pi: η εντολή actuator δεν έφτανε ποτέ (2026-08-24)
+
+Πρώτο ζωντανό Throwing Mode run στην **κατανεμημένη** τοπολογία (Gazebo GUI στο
+PC, brain στο Pi, `ROS_DOMAIN_ID=42`, `option-a-launch`). Η session πήγε
+`FAULT` με `flywheel readiness was not confirmed`, ενώ οι flywheels **δεν
+γύρισαν καθόλου** — μετρημένα `0.0 / 0.0 rad/s` σε όλο το ARMING.
+
+Δεν ήταν timeout. Η εντολή **δεν παραδόθηκε ποτέ**.
+
+Το `RosService._publish_command` στέλνει `ros2 topic pub --times 5 -r 10`. Το
+`--times` κάνει ήδη wait για matching subscription, άρα η ριπή γράφεται — αλλά
+η διεργασία τερματίζει αμέσως μετά, και πάνω από το LAN το reliable handshake
+δεν έχει ολοκληρωθεί, οπότε **όλα τα samples χάνονται**. Είναι η κατανεμημένη
+μορφή του ίδιου σφάλματος που το σχόλιο της μεθόδου περιγράφει για το `--once`:
+η αρχική μέτρηση («πέντε αντίγραφα οδήγησαν το basket_joint σε πλήρη διαδρομή»)
+έγινε **σε ένα μηχάνημα**, όπου το discovery είναι υποδευτερόλεπτο.
+
+Μετρημένα Pi → PC, ζωντανός `flywheel_velocity_controller`:
+
+```text
+--times 5 -r 10                   flywheel 0.0 rad/s      (τίποτα δεν έφτασε)
+--times 5 -r 10 --keep-alive 3    flywheel 55.0 rad/s
+keep-alive sweep: 0.25 s έχανε εντολές· 0.5 s και 1.0 s παρέδωσαν 3/3
+```
+
+→ `COMMAND_PUBLISH_KEEP_ALIVE_S = 1.0`: ο writer μένει ζωντανός μετά το
+τελευταίο μήνυμα. Είναι εγγύηση παράδοσης, όχι timeout — χωρίς αυτό η εντολή
+δεν φτάνει καθόλου και καμία αναμονή στην πλευρά του feedback δεν τη σώζει.
+
+Αφορά **κάθε** actuator εντολή της κονσόλας, όχι μόνο τον launcher: flywheel
+speed, `stop_basket`, collector manual control. Το `stop_basket` είναι το
+σοβαρό — ένα stop που σιωπηλά δεν φτάνει. Το basket lift δεν επηρεάστηκε γιατί
+περνά από τον `basket_lift_mover`, μια μακρόβια rclpy διεργασία.
+
+Regression: `tests/test_actuator_command_delivery.py` (καρφώνει το argv — το
+`ros2 topic pub` επιστρέφει 0 είτε παραδόθηκε είτε όχι).
+
+## Ο launcher του URDF ΔΕΝ είναι ο launcher του CAD (2026-08-24)
+
+Η παραδοχή «intake και launcher δεν συνυπάρχουν» **δεν προκύπτει από το CAD**.
+
+`cad/flywheel-launcher-v0/robot-integration.scad`, `full_robot_context()`
+σχεδιάζει πάντα ολόκληρο το Option A intake (`option_a_read_only_context()`)
+και αμέσως μετά τον launcher, με ρητό σχόλιο:
+
+```text
+// Launcher stays mounted in both modes; interlock state changes.
+```
+
+Το `mode="both"` δεν σημαίνει «οι δύο μηχανισμοί μαζί» — είναι το καλάθι στις
+**δύο θέσεις** (κάτω ghost / πάνω). Ο intake σχεδιάζεται σε κάθε mode.
+
+Η απόκλιση είναι στο **frame**, όχι στη θέση. Μετρημένα στο ίδιο πλαίσιο
+(nip 215 mm, pitch 20°, x 560 mm):
+
+| | y | χαμηλότερο z |
+|---|---|---|
+| CAD cradle (δύο `side_plate` 8 mm, `side_plate_y = ±43`) | −157 … +157 | **127 mm** |
+| URDF `flywheel_launcher_frame_link` (280×508×35) | −254 … +254 | **24 mm** |
+
+Το URDF αντικατέστησε τα δύο λεπτά ελάσματα με μία πλάκα **1.6× πιο φαρδιά**
+που κρέμεται **103 mm χαμηλότερα**, μέσα στο στόμιο του intake στο ύψος του
+δαπέδου — εκεί που η δομή του CAD δεν φτάνει ποτέ. Ο nip στα 215 mm
+(`0.17 + 0.045`) ταιριάζει με το CAD· μόνο το frame όχι.
+
+Άρα οι μετρήσεις «frame vs intake wheels 84 mm, vs funnel cheeks 67 mm» που
+παρήγαγαν το συμπέρασμα του αποκλεισμού **δεν μέτρησαν τον launcher του CAD**.
+Το `option-a-launch` αφαιρεί το intake για λόγο που δεν προκύπτει από το
+σχέδιο. **ΑΝΟΙΧΤΟ — απόφαση χρήστη:** είτε το URDF frame ευθυγραμμίζεται με το
+CAD cradle (και τότε επανεξετάζεται αν χρειάζεται ξεχωριστό variant), είτε
+τεκμηριώνεται γιατί η πλάκα είναι η σωστή αναπαράσταση.

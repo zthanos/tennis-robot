@@ -46,6 +46,11 @@ class RosService:
     # A single-shot publish is not reliably delivered (see _publish_command).
     COMMAND_PUBLISH_TIMES = 5
     COMMAND_PUBLISH_RATE_HZ = 10
+    # How long the short-lived publisher stays alive AFTER its last message, so
+    # the reliable-delivery handshake can finish before the writer is destroyed.
+    # Sized from the distributed PC<->Pi LAN, not from loopback: see
+    # _publish_command.
+    COMMAND_PUBLISH_KEEP_ALIVE_S = 1.0
     # Basket lift carriage. The speed must match the basket_joint velocity limit
     # in urdf/components/basket.urdf.xacro (and its ros2_control command range);
     # this service drives the joint at its rated speed and closes the position
@@ -137,7 +142,7 @@ class RosService:
 
     def _publish_command(self, topic: str, msg_type: str, payload: str,
                          timeout_s: float = 12.0) -> bool:
-        """Assert one actuator command, as a short burst.
+        """Assert one actuator command, as a short burst that outlives delivery.
 
         `ros2 topic pub --once` tears its publisher down as soon as the message
         is handed to DDS, and the controller frequently never sees it: measured
@@ -145,6 +150,20 @@ class RosService:
         command left basket_joint at rest, while five copies drove it through
         full travel. Commands are idempotent (a controller latches the last
         one), so repeating is free.
+
+        Repeating is NOT enough once the controller is on another machine.
+        `--times` already waits for a matching subscription, so the burst is
+        written — but the process then exits immediately, and across the LAN the
+        reliable handshake has not completed, so every sample is dropped. This
+        is the distributed form of the same bug: measured Pi -> PC against a live
+        flywheel_velocity_controller, `--times 5 -r 10` (~0.5 s of writer life)
+        delivered NOTHING and the joint stayed at 0.0 rad/s, while the identical
+        burst with `--keep-alive 3` reached 55.0 rad/s. Sweeping the value: 0.25 s
+        still dropped commands, 0.5 s and 1.0 s delivered 3/3 each.
+
+        So the writer is kept alive past its last message. This is a delivery
+        guarantee, not a timeout: without it the command never arrives at all,
+        and no amount of waiting on the feedback side would recover it.
         """
         try:
             result = subprocess.run(
@@ -152,6 +171,7 @@ class RosService:
                     "topic", "pub",
                     "--times", str(self.COMMAND_PUBLISH_TIMES),
                     "-r", str(self.COMMAND_PUBLISH_RATE_HZ),
+                    "--keep-alive", str(self.COMMAND_PUBLISH_KEEP_ALIVE_S),
                     topic, msg_type, payload,
                 ]),
                 cwd=str(self._cfg.root), text=True, stdout=subprocess.PIPE,
