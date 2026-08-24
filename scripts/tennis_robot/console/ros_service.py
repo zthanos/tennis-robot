@@ -21,6 +21,8 @@ import threading
 import time
 import json
 import socket
+import math
+import re
 from dataclasses import dataclass
 
 from .config import ConsoleConfig, text_from_subprocess_output
@@ -41,6 +43,18 @@ class RosService:
     # How long a successful preflight is trusted, so back-to-back sends don't
     # each pay for an extra `ros2 action info` round-trip.
     PREFLIGHT_CACHE_S = 10.0
+    # A single-shot publish is not reliably delivered (see _publish_command).
+    COMMAND_PUBLISH_TIMES = 5
+    COMMAND_PUBLISH_RATE_HZ = 10
+    # Basket lift carriage. The speed must match the basket_joint velocity limit
+    # in urdf/components/basket.urdf.xacro (and its ros2_control command range);
+    # this service drives the joint at its rated speed and closes the position
+    # loop from /joint_states.
+    # Must match behavior_server.max_rotational_vel in config/nav2_params.yaml.
+    SPIN_ANGULAR_SPEED_RAD_S = 0.25
+    BASKET_LIFT_SPEED_MPS = 0.12
+    BASKET_POSITION_TOLERANCE_M = 0.005
+    BASKET_STATIONARY_TOLERANCE_MPS = 0.03
 
     def __init__(self, config: ConsoleConfig, command_store=None) -> None:
         self._cfg = config
@@ -51,6 +65,8 @@ class RosService:
         self._ros2_on_path = shutil.which("ros2") is not None
         self._preflight_ok_until = 0.0
         self._collector_state = {"running": False, "speed": 10.0, "manual_override": False}
+        self._joint_cache_at = 0.0
+        self._joint_cache: dict[str, tuple[float, float]] = {}
 
         # Survey launch process.
         self._survey_lock = threading.Lock()
@@ -88,17 +104,10 @@ class RosService:
                 return {"ok": False, "message": f"Collector serial bridge unavailable: {exc}"}
 
         payload = json.dumps({"action": action}, separators=(",", ":"))
-        result = subprocess.run(
-            self._ros2_argv([
-                "topic", "pub", "--once", "/collector/manual_control",
-                "std_msgs/msg/String", f"data: '{payload}'",
-            ]),
-            cwd=str(self._cfg.root),
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            timeout=8.0,
-            check=False,
+        # Same delivery caveat as every other actuator command here — a "stop"
+        # that silently never arrives is the worst possible failure mode.
+        published = self._publish_command(
+            "/collector/manual_control", "std_msgs/msg/String", f"data: '{payload}'"
         )
         state = self._collector_state
         if action == "start":
@@ -111,10 +120,453 @@ class RosService:
             state["speed"] = max(-40.0, float(state["speed"]) - 2.0)
         elif action == "release":
             state["manual_override"] = False
-        return {"ok": result.returncode == 0, **state, "action": action}
+        return {"ok": published, **state, "action": action}
 
     def collector_status(self) -> dict[str, object]:
         return {"ok": True, **self._collector_state}
+
+    # ------------------------------------------------------------------
+    # Throwing Mode actuator/navigation port
+    # ------------------------------------------------------------------
+    def runtime_kind(self) -> str:
+        return os.getenv("TENNIS_ROBOT_RUNTIME", "hardware").strip().lower()
+
+    def _distributed_brain(self) -> bool:
+        return os.getenv("TENNIS_ROBOT_DISTRIBUTED_BRAIN", "false").strip().lower() \
+            in {"1", "true", "yes"}
+
+    def _publish_command(self, topic: str, msg_type: str, payload: str,
+                         timeout_s: float = 12.0) -> bool:
+        """Assert one actuator command, as a short burst.
+
+        `ros2 topic pub --once` tears its publisher down as soon as the message
+        is handed to DDS, and the controller frequently never sees it: measured
+        against a live Gazebo controller_manager, a single --once velocity
+        command left basket_joint at rest, while five copies drove it through
+        full travel. Commands are idempotent (a controller latches the last
+        one), so repeating is free.
+        """
+        try:
+            result = subprocess.run(
+                self._ros2_argv([
+                    "topic", "pub",
+                    "--times", str(self.COMMAND_PUBLISH_TIMES),
+                    "-r", str(self.COMMAND_PUBLISH_RATE_HZ),
+                    topic, msg_type, payload,
+                ]),
+                cwd=str(self._cfg.root), text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, timeout=timeout_s, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        return result.returncode == 0
+
+    def _controller_active(self, name: str) -> bool:
+        try:
+            result = subprocess.run(
+                self._ros2_argv([
+                    "service", "call", "/controller_manager/list_controllers",
+                    "controller_manager_msgs/srv/ListControllers", "{}",
+                ]),
+                cwd=str(self._cfg.root), text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, timeout=5.0, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        if result.returncode != 0:
+            return False
+        match = re.search(
+            rf"\bname(?:=|:)\s*['\"]?{re.escape(name)}['\"]?(.*?)(?=\bname(?:=|:)|$)",
+            result.stdout, flags=re.DOTALL,
+        )
+        return bool(match and re.search(
+            r"\bstate(?:=|:)\s*['\"]?active\b", match.group(1)
+        ))
+
+    def flywheel_available(self) -> bool:
+        if self._distributed_brain():
+            return self._joint_state("flywheel_left_joint") is not None \
+                and self._joint_state("flywheel_right_joint") is not None
+        return self._controller_active("flywheel_velocity_controller")
+
+    def _read_joint_states(self) -> dict[str, tuple[float, float]]:
+        now = time.monotonic()
+        if now - self._joint_cache_at <= 1.0:
+            return self._joint_cache
+        try:
+            import yaml
+        except ImportError:
+            return {}
+        try:
+            result = subprocess.run(
+                self._ros2_argv(["topic", "echo", "--once", "/joint_states"]),
+                cwd=str(self._cfg.root), text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, timeout=5.0, check=False,
+            )
+            if result.returncode != 0:
+                return {}
+            # Jazzy may prepend ANSI diagnostics and best-effort packet-loss
+            # notices before the actual YAML document. Parse only from the
+            # message header onward; transport warnings are not joint data.
+            output = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", result.stdout)
+            document_start = output.find("header:")
+            if document_start < 0:
+                return {}
+            document = yaml.safe_load(output[document_start:].split("---", 1)[0])
+            names = list(document.get("name") or [])
+            positions = list(document.get("position") or [])
+            velocities = list(document.get("velocity") or [])
+            states = {
+                str(name): (float(positions[index]), float(velocities[index]))
+                for index, name in enumerate(names)
+                if index < len(positions) and index < len(velocities)
+            }
+            self._joint_cache = states
+            self._joint_cache_at = now
+            return states
+        except (OSError, subprocess.TimeoutExpired, ValueError, yaml.YAMLError,
+                TypeError, AttributeError, IndexError):
+            return {}
+
+    def _joint_state(self, joint_name: str) -> tuple[float, float] | None:
+        return self._read_joint_states().get(joint_name)
+
+    def _basket_lift_travel(self) -> float:
+        # Must match the basket_joint upper limit built into the model; the
+        # generator reads the same variable with the same default.
+        return float(os.getenv("BASKET_LIFT_TRAVEL_M", "0.100"))
+
+    def _basket_controller_ready(self) -> bool:
+        if self._distributed_brain():
+            # controller_manager lives with Gazebo on the PC; bridged
+            # /joint_states feedback is the only local evidence available.
+            return self._joint_state("basket_joint") is not None
+        return self._controller_active("basket_velocity_controller")
+
+    def _command_basket_velocity(self, velocity_mps: float) -> bool:
+        return self._publish_command(
+            "/basket_velocity_controller/commands",
+            "std_msgs/msg/Float64MultiArray", f"data: [{velocity_mps}]",
+        )
+
+    def stop_basket(self) -> bool:
+        """Unconditionally halt the carriage. Safe to call from any state."""
+        stopped = self._command_basket_velocity(0.0)
+        self._joint_cache_at = 0.0
+        return stopped
+
+    def set_basket_position(self, raised: bool, timeout_s: float | None = None) -> bool:
+        if self.runtime_kind() != "simulation":
+            # Physical actuator driver + limit switches are not implemented.
+            return False
+        if not self._basket_controller_ready():
+            return False
+        travel = self._basket_lift_travel()
+        target = travel if raised else 0.0
+        if timeout_s is None:
+            timeout_s = travel / self.BASKET_LIFT_SPEED_MPS + 5.0
+        # The move runs closed-loop inside one rclpy process. Doing it here from
+        # `ros2 topic echo` samples cannot work: each sample costs ~1.5 s, which
+        # is 180 mm of travel at the carriage's rated speed, so the loop would
+        # overshoot the endpoint and park the joint on a hard stop — and a
+        # prismatic joint resting on its limit is exactly what gz-sim/DART
+        # refuses to drive afterwards.
+        # The mover's exit code IS the confirmation: it checks tracking velocity,
+        # endpoint and settling against continuous feedback. Re-checking here
+        # with a one-shot `ros2 topic echo` would only add a flakier duplicate
+        # of a weaker test, and a dropped sample would report a good move as a
+        # failure.
+        moved = self._run_ros_module(
+            "tennis_robot.basket_lift_mover",
+            ["--target", f"{target}", "--timeout-s", f"{timeout_s}"],
+            timeout_s=timeout_s + 20.0,
+        )
+        self._joint_cache_at = 0.0
+        return moved
+
+    def _python_module_argv(self, module: str, args: list[str]) -> list[str]:
+        """argv running a tennis_robot module under an interpreter with rclpy.
+
+        Same shape as _ros2_argv: direct when ROS is already sourced in this
+        process's environment, otherwise through a login shell that sources it.
+        """
+        command = ["python3", "-m", module, *args]
+        if self._ros2_on_path:
+            return command
+        inner = self._cfg.ros_prelude + " ".join(shlex.quote(a) for a in command)
+        return ["bash", "-lc", inner]
+
+    def _run_ros_module(self, module: str, args: list[str], timeout_s: float) -> bool:
+        try:
+            result = subprocess.run(
+                self._python_module_argv(module, args),
+                cwd=str(self._cfg.root), text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, timeout=timeout_s, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        return result.returncode == 0
+
+    def basket_position_state(self) -> str:
+        if self.runtime_kind() != "simulation":
+            return "UNKNOWN"
+        state = self._joint_state("basket_joint")
+        if state is None:
+            return "UNKNOWN"
+        travel = self._basket_lift_travel()
+        position, velocity = state
+        if abs(velocity) > self.BASKET_STATIONARY_TOLERANCE_MPS:
+            return "RAISING" if velocity > 0.0 else "LOWERING"
+        # Deliberately looser than the tolerance set_basket_position settles to,
+        # so a confirmed move never reports back as UNKNOWN.
+        endpoint_tolerance = 2.0 * self.BASKET_POSITION_TOLERANCE_M
+        if abs(position) <= endpoint_tolerance:
+            return "LOWERED"
+        if abs(position - travel) <= endpoint_tolerance:
+            return "RAISED"
+        return "UNKNOWN"
+
+    def set_flywheel_speed(self, ball_speed_mps: float) -> bool:
+        if not math.isfinite(ball_speed_mps) or ball_speed_mps < 0.0:
+            return False
+        if not self.flywheel_available():
+            return ball_speed_mps == 0.0
+        wheel_rad_s = min(320.0, ball_speed_mps / 0.10)
+        return self._publish_command(
+            "/flywheel_velocity_controller/commands",
+            "std_msgs/msg/Float64MultiArray",
+            f"data: [{wheel_rad_s}, {-wheel_rad_s}]",
+        )
+
+    def wait_flywheel_ready(self, ball_speed_mps: float, timeout_s: float = 8.0) -> bool:
+        target = min(320.0, ball_speed_mps / 0.10)
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            left = self._joint_state("flywheel_left_joint")
+            right = self._joint_state("flywheel_right_joint")
+            if left and right and abs(left[1] - target) <= 0.10 * max(target, 1.0) \
+                    and abs(right[1] + target) <= 0.10 * max(target, 1.0):
+                return True
+            time.sleep(0.1)
+        return False
+
+    def request_ball_feed(self, *, session_id: str, throw_id: str,
+                          target_zone: str, throw_speed_mps: float,
+                          throw_angle_deg: float) -> bool:
+        # Phase 1 has no feeder actuator yet.  Publish an explicit event request
+        # for the simulator/future feeder node; the UI labels it as placeholder
+        # event simulation and never calls it measured physical telemetry.
+        payload = json.dumps({
+            "session_id": session_id,
+            "throw_id": throw_id,
+            "target_zone": target_zone,
+            "throw_speed_mps": throw_speed_mps,
+            "throw_angle_deg": throw_angle_deg,
+            "count": 1,
+        }, separators=(",", ":"))
+        # A feed request is a discrete event, so it must NOT go through the
+        # repeat-burst publisher used for idempotent setpoints: that turned one
+        # throw into several requests, and still lost whole throws when more
+        # than one node subscribed. Publish exactly once, after a subscriber is
+        # actually matched, and let the consumer de-duplicate on throw_id.
+        return self._run_ros_module(
+            "tennis_robot.reliable_event_publish",
+            ["--topic", "/throwing/feed_request", "--json", payload],
+            timeout_s=20.0,
+        )
+
+    def navigate_to_pose(self, x_m: float, y_m: float, yaw_rad: float) -> dict[str, object]:
+        preflight = self.nav_preflight()
+        if preflight.timed_out or not preflight.ready:
+            return {"succeeded": False, "message": "Nav2 NavigateToPose is not ready"}
+        goal = {
+            "pose": {"header": {"frame_id": "map"}, "pose": {
+                "position": {"x": x_m, "y": y_m, "z": 0.0},
+                "orientation": {"z": math.sin(yaw_rad / 2.0), "w": math.cos(yaw_rad / 2.0)},
+            }}
+        }
+        result, timed_out = self.nav_send_goal(json.dumps(goal, separators=(",", ":")))
+        if timed_out or result is None:
+            return {"succeeded": False, "message": "navigation timed out"}
+        output = text_from_subprocess_output(result.stdout)
+        succeeded = result.returncode == 0 and (
+            "status: SUCCEEDED" in output or "Goal succeeded" in output
+        )
+        return {"succeeded": succeeded, "message": output[-1000:]}
+
+    def align_heading(self, target_yaw_rad: float, tolerance_rad: float,
+                      timeout_s: float = 45.0) -> bool:
+        """Rotate in place to an absolute map-frame heading.
+
+        NavigateToPose cannot deliver a final heading here: the shared
+        general_goal_checker sets yaw_goal_tolerance 3.14 so the collection
+        lanes do not spin at each lane end, Regulated Pure Pursuit performs no
+        final rotation, and Nav2's Spin behaviour aborts with COLLISION_AHEAD
+        against a costmap measured clear (with no opt-out field in this Jazzy
+        build). The rotation therefore runs closed-loop in its own process, the
+        same shape as the basket mover — see tennis_robot.heading_aligner.
+        """
+        return self._run_ros_module(
+            "tennis_robot.heading_aligner",
+            ["--target-yaw", f"{target_yaw_rad}",
+             "--tolerance-rad", f"{tolerance_rad}",
+             "--timeout-s", f"{timeout_s}"],
+            timeout_s=timeout_s + 20.0,
+        )
+
+    def _python_module_argv(self, module: str, args: list[str]) -> list[str]:
+        """argv running a tennis_robot module under an interpreter with rclpy.
+
+        Same shape as _ros2_argv: direct when ROS is already sourced in this
+        process's environment, otherwise through a login shell that sources it.
+        """
+        command = ["python3", "-m", module, *args]
+        if self._ros2_on_path:
+            return command
+        inner = self._cfg.ros_prelude + " ".join(shlex.quote(a) for a in command)
+        return ["bash", "-lc", inner]
+
+    def _run_ros_module(self, module: str, args: list[str], timeout_s: float) -> bool:
+        try:
+            result = subprocess.run(
+                self._python_module_argv(module, args),
+                cwd=str(self._cfg.root), text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, timeout=timeout_s, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        return result.returncode == 0
+
+    def basket_position_state(self) -> str:
+        if self.runtime_kind() != "simulation":
+            return "UNKNOWN"
+        state = self._joint_state("basket_joint")
+        if state is None:
+            return "UNKNOWN"
+        travel = self._basket_lift_travel()
+        position, velocity = state
+        if abs(velocity) > self.BASKET_STATIONARY_TOLERANCE_MPS:
+            return "RAISING" if velocity > 0.0 else "LOWERING"
+        # Deliberately looser than the tolerance set_basket_position settles to,
+        # so a confirmed move never reports back as UNKNOWN.
+        endpoint_tolerance = 2.0 * self.BASKET_POSITION_TOLERANCE_M
+        if abs(position) <= endpoint_tolerance:
+            return "LOWERED"
+        if abs(position - travel) <= endpoint_tolerance:
+            return "RAISED"
+        return "UNKNOWN"
+
+    def set_flywheel_speed(self, ball_speed_mps: float) -> bool:
+        if not math.isfinite(ball_speed_mps) or ball_speed_mps < 0.0:
+            return False
+        if not self.flywheel_available():
+            return ball_speed_mps == 0.0
+        wheel_rad_s = min(320.0, ball_speed_mps / 0.10)
+        return self._publish_command(
+            "/flywheel_velocity_controller/commands",
+            "std_msgs/msg/Float64MultiArray",
+            f"data: [{wheel_rad_s}, {-wheel_rad_s}]",
+        )
+
+    def wait_flywheel_ready(self, ball_speed_mps: float, timeout_s: float = 8.0) -> bool:
+        target = min(320.0, ball_speed_mps / 0.10)
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            left = self._joint_state("flywheel_left_joint")
+            right = self._joint_state("flywheel_right_joint")
+            if left and right and abs(left[1] - target) <= 0.10 * max(target, 1.0) \
+                    and abs(right[1] + target) <= 0.10 * max(target, 1.0):
+                return True
+            time.sleep(0.1)
+        return False
+
+    def request_ball_feed(self, *, session_id: str, throw_id: str,
+                          target_zone: str, throw_speed_mps: float,
+                          throw_angle_deg: float) -> bool:
+        # Phase 1 has no feeder actuator yet.  Publish an explicit event request
+        # for the simulator/future feeder node; the UI labels it as placeholder
+        # event simulation and never calls it measured physical telemetry.
+        payload = json.dumps({
+            "session_id": session_id,
+            "throw_id": throw_id,
+            "target_zone": target_zone,
+            "throw_speed_mps": throw_speed_mps,
+            "throw_angle_deg": throw_angle_deg,
+            "count": 1,
+        }, separators=(",", ":"))
+        # A feed request is a discrete event, so it must NOT go through the
+        # repeat-burst publisher used for idempotent setpoints: that turned one
+        # throw into several requests, and still lost whole throws when more
+        # than one node subscribed. Publish exactly once, after a subscriber is
+        # actually matched, and let the consumer de-duplicate on throw_id.
+        return self._run_ros_module(
+            "tennis_robot.reliable_event_publish",
+            ["--topic", "/throwing/feed_request", "--json", payload],
+            timeout_s=20.0,
+        )
+
+    def navigate_to_pose(self, x_m: float, y_m: float, yaw_rad: float) -> dict[str, object]:
+        preflight = self.nav_preflight()
+        if preflight.timed_out or not preflight.ready:
+            return {"succeeded": False, "message": "Nav2 NavigateToPose is not ready"}
+        goal = {
+            "pose": {"header": {"frame_id": "map"}, "pose": {
+                "position": {"x": x_m, "y": y_m, "z": 0.0},
+                "orientation": {"z": math.sin(yaw_rad / 2.0), "w": math.cos(yaw_rad / 2.0)},
+            }}
+        }
+        result, timed_out = self.nav_send_goal(json.dumps(goal, separators=(",", ":")))
+        if timed_out or result is None:
+            return {"succeeded": False, "message": "navigation timed out"}
+        output = text_from_subprocess_output(result.stdout)
+        succeeded = result.returncode == 0 and (
+            "status: SUCCEEDED" in output or "Goal succeeded" in output
+        )
+        return {"succeeded": succeeded, "message": output[-1000:]}
+
+    def rotate_by(self, delta_yaw_rad: float, timeout_s: float = 45.0) -> bool:
+        """Rotate in place by a relative yaw using Nav2's Spin behaviour.
+
+        NavigateToPose cannot deliver a final heading here. The shared
+        general_goal_checker sets yaw_goal_tolerance: 3.14 on purpose — the
+        collection lanes must not spin at each lane end — and the Regulated
+        Pure Pursuit controller performs no final rotation to the goal
+        orientation either. So Nav2 legitimately reports SUCCEEDED at the right
+        XY facing any direction, which is fine for collection and useless for
+        throwing, where the robot has to face the net.
+
+        Tightening the shared checker would regress collection, so the
+        subsystem that needs a heading closes it itself, with the Spin
+        behaviour Nav2 already runs. This is a single corrective rotation, not
+        a retry loop: if it does not land the heading, the readiness gate still
+        refuses to arm.
+        """
+        target = math.atan2(math.sin(delta_yaw_rad), math.cos(delta_yaw_rad))
+        # Size time_allowance from the rotation actually requested. Spin's
+        # default allowance is 10 s, and behavior_server runs a deliberately
+        # slow 0.25 rad/s spin (to keep wheel slip and SLAM drift down), so a
+        # half-turn silently times out part-way: the first live run asked for
+        # 2.80 rad and got 2.03 before the allowance expired.
+        allowance_s = abs(target) / self.SPIN_ANGULAR_SPEED_RAD_S + 5.0
+        goal = json.dumps(
+            {"target_yaw": target, "time_allowance": {"sec": int(allowance_s) + 1}},
+            separators=(",", ":"),
+        )
+        try:
+            result = subprocess.run(
+                self._ros2_argv([
+                    "action", "send_goal", "/spin", "nav2_msgs/action/Spin", goal,
+                ]),
+                cwd=str(self._cfg.root), text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=max(timeout_s, allowance_s + 15.0), check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        output = text_from_subprocess_output(result.stdout)
+        return result.returncode == 0 and (
+            "status: SUCCEEDED" in output or "Goal succeeded" in output
+        )
 
     def _ros2_argv(self, args: list[str]) -> list[str]:
         """Build subprocess argv for a ros2 command. Directly (`ros2 …`,

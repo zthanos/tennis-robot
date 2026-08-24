@@ -29,6 +29,7 @@ from tennis_robot.console.path_service import PathService  # noqa: E402
 from tennis_robot.console.ros_service import RosService  # noqa: E402
 from tennis_robot.console.server import ConsoleServer  # noqa: E402
 from tennis_robot.console.survey_service import SurveyService  # noqa: E402
+from tennis_robot.console.throwing_service import ThrowingService  # noqa: E402
 
 
 def build_app(config: ConsoleConfig, args: argparse.Namespace) -> ConsoleApp:
@@ -38,16 +39,26 @@ def build_app(config: ConsoleConfig, args: argparse.Namespace) -> ConsoleApp:
     sensor_store = RobotSensorStore.from_env()
     db = TennisRobotDB(args.db_file) if args.db_file else TennisRobotDB()
 
+    ros = RosService(config, command_store=command_store)
+    camera = CameraService()
+    throwing = ThrowingService(
+        ros=ros,
+        status_store=status_store,
+        sensor_store=sensor_store,
+        boundary_path=config.court_boundary_path,
+        camera=camera,
+    )
     return ConsoleApp(
         config=config,
         command_store=command_store,
         status_store=status_store,
         sensor_store=sensor_store,
-        ros=RosService(config, command_store=command_store),
+        ros=ros,
         survey=SurveyService(config),
         path=PathService.from_config(config),
-        camera=CameraService(),
+        camera=camera,
         db=DatabaseService(db),
+        throwing=throwing,
     )
 
 

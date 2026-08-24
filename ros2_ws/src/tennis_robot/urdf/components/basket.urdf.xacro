@@ -24,7 +24,7 @@
        All *_ground params are in the GROUND frame; basket_link shares
        base_link's origin (base_link_height above ground). -->
   <xacro:macro name="ball_basket"
-      params="parent floor_front_x floor_top_z_ground rear_x half_width wall_top_z_ground center_lip_height management_run management_rise receiver_run receiver_rise hood_rear_overhang hood_rear_clearance_z_ground hood_front_clearance_z_ground x_shift:=0.0 empty_mass:=0.01 payload_mass:=0.0">
+      params="parent floor_front_x floor_top_z_ground rear_x half_width wall_top_z_ground center_lip_height management_run management_rise receiver_run receiver_rise hood_rear_overhang hood_rear_clearance_z_ground hood_front_clearance_z_ground x_shift:=0.0 lift_travel:=0.100 lift_overtravel:=0.010 empty_mass:=0.01 payload_mass:=0.0">
     <xacro:property name="floor_top" value="${floor_top_z_ground - base_link_height}"/>
     <xacro:property name="wall_top" value="${wall_top_z_ground - base_link_height}"/>
     <!-- Thin skinned bin: 5 mm floor (exterior bottom = floor_top - 0.005,
@@ -86,10 +86,32 @@
     <xacro:property name="basket_mass" value="${empty_mass + payload_mass}"/>
     <xacro:property name="basket_com_x" value="${(floor_front_x + rear_x) / 2.0}"/>
     <xacro:property name="basket_com_z" value="${floor_top + 0.45 * wall_height}"/>
-    <joint name="basket_joint" type="fixed">
+    <!-- The basket carriage is a real actuator boundary.  Collection/transport
+         uses position 0; Throwing Mode raises the complete basket assembly.
+         The same joint/controller contract is reserved for physical hardware,
+         whose driver and limit switches are intentionally still pending.
+
+         lift_overtravel moves the modelled LOWER hard stop below the parked
+         position. It is not a mechanical dimension: the commanded travel is
+         still exactly 0...lift_travel. A prismatic joint parked exactly ON its
+         lower limit sits on a permanently active DART limit constraint, and
+         gz-sim then cannot drive it with a velocity command — the joint stays
+         frozen even with hold_joints=false and even under gravity. The upper
+         stop needs no margin: the carriage only touches it briefly and gravity
+         immediately pulls it back inside the range, releasing the constraint.
+
+         lift_travel is the CAD baseline LIFT ONLY (100 mm). The mechanical
+         launch pose is 100 mm lift PLUS ~12 deg tilt; the tilt mechanism is not
+         mechanically validated, so no tilt joint is modelled and reaching this
+         joint's upper limit is NOT the complete physical throwing pose.
+         See docs/mechanism/flywheel-launcher-exploration-el.md. -->
+    <joint name="basket_joint" type="prismatic">
       <parent link="${parent}"/>
       <child link="basket_link"/>
       <origin xyz="${x_shift} 0 0" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-lift_overtravel}" upper="${lift_travel}" effort="120.0" velocity="0.12"/>
+      <dynamics damping="1.0" friction="0.0"/>
     </joint>
     <link name="basket_link">
       <inertial>

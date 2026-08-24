@@ -226,46 +226,16 @@ wait_for_controllers() {
     return 1
 }
 
-wait_for_clock_progress() {
-    local timeout_s="$1"
-    python3 - "$timeout_s" <<'PY'
-import sys
-import time
-
-import rclpy
-from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
-from rosgraph_msgs.msg import Clock
-
-timeout_s = float(sys.argv[1])
-deadline = time.monotonic() + timeout_s
-samples = []
-
-rclpy.init()
-node = rclpy.create_node("intake_sweep_clock_probe")
-clock_qos = QoSProfile(
-    depth=1,
-    reliability=ReliabilityPolicy.BEST_EFFORT,
-    durability=DurabilityPolicy.VOLATILE,
-)
-
-def on_clock(msg: Clock) -> None:
-    stamp_ns = msg.clock.sec * 1_000_000_000 + msg.clock.nanosec
-    if not samples or stamp_ns != samples[-1]:
-        samples.append(stamp_ns)
-
-subscription = node.create_subscription(Clock, "/clock", on_clock, clock_qos)
-try:
-    while time.monotonic() < deadline and len(samples) < 2:
-        rclpy.spin_once(node, timeout_sec=0.25)
-finally:
-    node.destroy_subscription(subscription)
-    node.destroy_node()
-    rclpy.shutdown()
-
-if len(samples) < 2 or samples[-1] <= samples[0]:
-    raise SystemExit(1)
-print(f"clock_progress_ns={samples[0]}->{samples[-1]}")
-PY
+verify_bench_ready() {
+    # A bench is not ready because its processes started. This asserts that the
+    # simulation clock advances, that controller_manager is actually on it, and
+    # that a commanded joint's MEASURED state moves — the three properties that
+    # "Configured and activated ..." in the launch log does not imply.
+    local log_file="$1"
+    local budget="$CLOCK_TIMEOUT_S"
+    timeout "$(( budget * 3 + 30 ))" python3 \
+        "$SCRIPT_DIR/scripts/sim_debug/verify_sim_bench.py" --timeout-s "$budget" \
+        > "$log_file" 2>&1
 }
 
 publish_stop_commands() {
@@ -864,6 +834,11 @@ run_bench_driver() {
         cleanup_launch
         return 1
     fi
+    if ! verify_bench_ready "$case_dir/bench_ready.log"; then
+        echo "FAILED: simulation bench is not usable; see $case_dir/bench_ready.log" >&2
+        cleanup_launch
+        return 1
+    fi
     ros2 topic list | sort > "$case_dir/ros_topics.txt" 2>&1 || true
     ros2 topic info /diff_drive_controller/cmd_vel_unstamped \
         > "$case_dir/cmd_vel_unstamped.info" 2>&1 || true
@@ -956,9 +931,8 @@ run_collect_one_driver() {
         if ! wait_for_controllers "$case_dir/launch.log" "$READY_TIMEOUT_S" \
             > "$case_dir/controllers_ready.log" 2>&1; then
             startup_failure="controllers did not become active"
-        elif ! wait_for_clock_progress "$CLOCK_TIMEOUT_S" \
-            > "$case_dir/clock_ready.log" 2>&1; then
-            startup_failure="/clock did not progress"
+        elif ! verify_bench_ready "$case_dir/clock_ready.log"; then
+            startup_failure="simulation bench is not usable (clock/controller/joint)"
         elif ! wait_for_status "$start_time" "$READY_TIMEOUT_S" \
             > "$case_dir/ready.json"; then
             startup_failure="status did not become fresh"

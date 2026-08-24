@@ -1836,3 +1836,102 @@
   r=0.060 + carriage travel — οριακά εντός).
 - **Status**: ✅ γεωμετρία· ⏳ επαλήθευση σε sweep run (πλάγιες διελεύσεις
   με offset ±0.10-0.15 πρέπει πλέον να κεντράρονται αντί να εκτρέπονται).
+
+
+### 61. basket_joint: fixed -> prismatic, 100 mm (⏳ live επαλήθευση εκκρεμεί)
+
+- **Αλλαγή**: το `basket_joint` έγινε `prismatic` (`0...0.100 m`, effort 120 N,
+  velocity 0.12 m/s, damping 1.0) με controller `basket_velocity_controller`
+  (ForwardCommandController σε velocity· το position loop κλείνει ο supervisor
+  στο `RosService.set_basket_position` από `/joint_states`). Το travel ήταν
+  αρχικά `0.45 m` — δεν αντιστοιχούσε σε τίποτα στο CAD και έστελνε το χείλος
+  του basket στα `700 mm`, πάνω από το scan plane· διορθώθηκε σε `0.100 m`
+  (CAD baseline lift).
+- **Επίπτωση στο intake**: το basket (`4.565 kg` με φορτίο 45 μπαλών) δεν είναι
+  πια συγκολλημένο στο `base_link` — είναι κινούμενο σώμα σε prismatic. Η
+  γεωμετρία σε θέση `0` είναι **αμετάβλητη**, αλλά οι κρούσεις μπαλών στο
+  receiving chute μπορούν πλέον να διεγείρουν τον άξονα.
+- **Status**: ✅ γεωμετρία αμετάβλητη στη θέση 0 (SAT: 0 διεισδύσεις σε
+  baseline/option-a-collect)· ⏳ **εκκρεμεί επανάληψη του option-a-collect
+  sweep** ώστε να επιβεβαιωθεί ότι τα `8/8` basket-entry/retention κριτήρια
+  δεν επηρεάζονται από το κινούμενο basket.
+- **ROOT CAUSE ΒΡΕΘΗΚΕ ΚΑΙ ΔΙΟΡΘΩΘΗΚΕ (2026-08-24)**: το `basket_joint` είχε
+  `lower="0.0"`, δηλαδή **το κάτω hard stop συνέπιπτε ακριβώς με τη θέση
+  στάθμευσης**. Ένα prismatic joint που κάθεται πάνω στο όριό του έχει
+  **μονίμως ενεργό DART limit constraint** και το gz-sim δεν μπορεί πια να το
+  οδηγήσει: το joint μένει παγωμένο **ακόμη και με `hold_joints=false` και
+  ακόμη και υπό βαρύτητα**, ενώ κάθε άλλο joint του ίδιου μοντέλου κινείται.
+- **Μετρήσεις που το απέδειξαν** (introspection του controller_manager τη
+  στιγμή της αστοχίας): `command_interface.basket_joint/velocity = 0.12`,
+  `...velocity.is_limited = 0.0`, `state_interface.basket_joint/velocity ≈ 3e-18`,
+  controller `active` με `claimed_interfaces=['basket_joint/velocity']`,
+  `failed_triggers = 0`. Δηλαδή **το ros2_control έγραφε σωστά την εντολή** και
+  το gz_ros2_control δεν την εφάρμοζε. Απορρίφθηκαν: σφάλμα σειράς
+  ενεργοποίησης (η επανενεργοποίηση του controller ΔΕΝ το ξεκόλλησε),
+  διασταύρωση εντολών (κανένα άλλο joint δεν κινήθηκε), `hold_joints`
+  (καμία αλλαγή με `false`), γεωμετρική σύγκρουση (SAT 0 σε 0…100 mm),
+  διαφορά μοντέλου (μάζα/αδράνεια/όρια ταυτόσημα ανά variant).
+- **Γιατί φαινόταν variant-dependent**: δεν ήταν. Είναι οριακή κατάσταση του
+  solver στο ίδιο σημείο· η μετάβαση μέσα/έξω από το κλείδωμα εξαρτιόταν από το
+  transient στάθμευσης, όχι από το packaging.
+- **Fix**: `lift_overtravel = 10 mm` **μόνο στο κάτω stop**
+  (`lower=-0.010`, `upper=0.100`). Η **εντολοδοτούμενη** διαδρομή παραμένει
+  ακριβώς `0…100 mm`· μετακινείται μόνο το μοντελοποιημένο hard stop, ώστε το
+  παρκαρισμένο carriage να μην κάθεται σε ενεργό constraint. Το πάνω stop δεν
+  χρειάζεται περιθώριο: εκεί το carriage ακουμπά στιγμιαία και η βαρύτητα το
+  τραβά αμέσως πίσω μέσα στο εύρος.
+- **Δεύτερο, συνδεδεμένο εύρημα**: με το κάτω stop πλέον στα −10 mm, ο παλιός
+  supervisor **υπερέβαινε τον στόχο και πάρκαρε ΠΑΝΩ στο νέο stop** (κόλλημα
+  ξανά). Αιτία: έκλεινε τον βρόχο με ένα `ros2 topic echo --once` ανά δείγμα
+  (~1.5 s), δηλαδή **180 mm διαδρομής ανά δείγμα** στα 0.12 m/s. Η κίνηση
+  εκτελείται τώρα κλειστού βρόχου μέσα σε μία διεργασία rclpy
+  (`tennis_robot.basket_lift_mover`), που η console καλεί ως subprocess —
+  διατηρώντας το όριο «η console μιλά στο ROS με subprocess».
+- **Επικύρωση (χωρίς καμία λογική retry)**: `verify_basket_cycles.py --cycles 5`
+  → **10/10 μεταβάσεις** σε `option-a-collect` ΚΑΙ σε `option-a-launch` (με
+  ενεργό flywheel controller), σε καθαρά απομονωμένα `ROS_DOMAIN_ID`, με peak
+  tracking `120.00 mm/s` σε κάθε μετάβαση και το `verify_sim_bench.py` να
+  περνά πριν από κάθε run.
+
+### 62. Carriage compliance: VALIDATED_IN_SIM, καμία διόρθωση (2026-08-24)
+
+- **Ερώτημα**: τα `intake_wheel_*_carriage_joint` είναι prismatic `[0, 0.008]`
+  και στέκονται στο κάτω όριό τους — ίδια δομή με το basket latch (#61).
+  Το προηγούμενο «0 samples» ΔΕΝ ήταν κολλημένο joint: το carriage state
+  απλώς δεν εκπέμπεται εξ ορισμού, οπότε το probe δεν είχε τι να καταγράψει.
+- **Μέτρηση** (known-good case, `INTAKE_EXPOSE_CARRIAGE_STATE=true`,
+  flywheel off, bench gate PASSED, 86 contact samples με carriage state):
+
+```text
+t_s     left_mm  right_mm  vel_mm/s   force_N
+3.116     0.199     0.199     29.75      4.59
+3.151     1.193     1.193     35.98      1.47
+3.187     3.126     3.126     71.79      3.00
+3.205     3.926     3.926     98.86      9.78   <- peak force
+3.223     4.848     4.848    -52.15      5.23   <- ήδη επιστρέφει
+```
+
+- Peak displacement **4.848 mm** από τα 8 mm (61%), **αμφίπλευρα και συμμετρικά**
+  στο micron, μη μηδενική ταχύτητα σε **86/86** δείγματα, peak `98.9 mm/s`,
+  δυνάμεις επαφής `2.9 N` μέση / `9.78 N` max, και **αρνητική ταχύτητα στο
+  τελευταίο δείγμα** = επιστροφή προς το spring reference καθώς λήγει η επαφή.
+- **Γιατί ΔΕΝ αναπαράγεται το latch του basket**: δεν υπάρχει μόνιμο φορτίο
+  προς το stop. Ο άξονας είναι οριζόντιος (καμία βαρύτητα), το ελατήριο έχει
+  reference 0 στο ίδιο το stop (μηδενική δύναμη εκεί), και η μπάλα σπρώχνει
+  **μακριά** από το όριο. Το constraint δεν είναι ποτέ μόνιμα ενεργό.
+- **Καμία διόρθωση δεν χρειάστηκε. Τα joints δεν πειράχτηκαν** — το εύρος
+  συμπίεσης παραμένει `0..8 mm`.
+- **Regression assertion**: νέο required criterion
+  `both_carriages_leave_lower_stop` στο `analyze_intake_release_criteria.py`
+  (κατώφλι `0.5 mm`, μετρημένο `4.83 mm`). Ενεργοποιείται **μόνο** όταν
+  υπάρχει το telemetry· χωρίς αυτό το run μένει `6/6` και το πεδίο γράφει
+  ρητά `not recorded (INTAKE_EXPOSE_CARRIAGE_STATE=false)` — απούσα μέτρηση
+  δεν είναι απόδειξη κολλημένου joint.
+- **Επαλήθευση `option-a-collect`** (movable 100 mm basket, flywheel off,
+  carriage state, bench gate PASSED): `samples=90`, `45/45` αμφίπλευρα,
+  `contact_duration_s=0.1168`, `depth_max=0.047 mm`, `force_max=9.786 N`,
+  release criteria **7/7** (μαζί με το νέο), basket entry/retention **8/8**
+  `pass: True`. Καμία διαφορά κάτω από `cad/collector-intake-v1/option-a/`.
+- **Συνέπεια για το #61**: το κινούμενο basket (prismatic, 100 mm, φορτίο
+  4.565 kg) **δεν χαλάει** τα κριτήρια εισόδου/συγκράτησης. Το εκκρεμές
+  re-run του sweep από το #61 ΕΓΙΝΕ και πέρασε.

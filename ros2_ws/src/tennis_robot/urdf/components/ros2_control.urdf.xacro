@@ -20,7 +20,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- intake_max_vel = GB37Y3530-12V-251R no-load speed (251 RPM = 26.3 rad/s). -->
   <xacro:macro name="tennis_robot_ros2_control"
-               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 intake_max_vel:=26.3 flywheel_max_vel:=320.0 expose_intake_carriage_state:=false enable_flywheel:=false enable_assist:=false enable_conveyor:=false">
+               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 intake_max_vel:=26.3 flywheel_max_vel:=320.0 basket_lift_travel:=0.100 expose_intake_carriage_state:=false enable_intake:=true enable_flywheel:=false enable_assist:=false enable_conveyor:=false">
 
     <ros2_control name="TennisRobotSystem" type="system">
 
@@ -43,7 +43,9 @@
           <param name="left_wheel_names">rear_left_wheel_joint,front_left_wheel_joint</param>
           <param name="right_wheel_names">rear_right_wheel_joint,front_right_wheel_joint</param>
           <!-- Two identical GB37 motors, one driver channel each. -->
-          <param name="intake_wheel_names">intake_wheel_left_joint,intake_wheel_right_joint</param>
+          <xacro:if value="${enable_intake}">
+            <param name="intake_wheel_names">intake_wheel_left_joint,intake_wheel_right_joint</param>
+          </xacro:if>
           <xacro:if value="${enable_flywheel}">
             <param name="flywheel_names">flywheel_left_joint,flywheel_right_joint</param>
           </xacro:if>
@@ -93,20 +95,40 @@
         <state_interface name="velocity"/>
       </joint>
 
-      <!-- Dual-wheel intake (one motor per wheel, opposite spin) -->
-      <joint name="intake_wheel_left_joint">
-        <command_interface name="velocity">
-          <param name="min">-${intake_max_vel}</param>
-          <param name="max">${intake_max_vel}</param>
-        </command_interface>
-        <state_interface name="position"/>
-        <state_interface name="velocity"/>
-      </joint>
+      <!-- Dual-wheel intake (one motor per wheel, opposite spin). Absent in
+           the launch configuration, whose intake assembly is not fitted. -->
+      <xacro:if value="${enable_intake}">
+        <joint name="intake_wheel_left_joint">
+          <command_interface name="velocity">
+            <param name="min">-${intake_max_vel}</param>
+            <param name="max">${intake_max_vel}</param>
+          </command_interface>
+          <state_interface name="position"/>
+          <state_interface name="velocity"/>
+        </joint>
 
-      <joint name="intake_wheel_right_joint">
+        <joint name="intake_wheel_right_joint">
+          <command_interface name="velocity">
+            <param name="min">-${intake_max_vel}</param>
+            <param name="max">${intake_max_vel}</param>
+          </command_interface>
+          <state_interface name="position"/>
+          <state_interface name="velocity"/>
+        </joint>
+      </xacro:if>
+
+      <!-- Basket lift carriage.  The actuator primitive is a rated-speed drive,
+           matching both the Gazebo joint and the future physical carriage; the
+           position target is closed by the supervisor above from the `position`
+           state interface (plus limit switches on real hardware).  gz_ros2_control
+           emulates a `position` command interface with an unsaturated
+           proportional controller, so it would ignore this joint's rated speed.
+           Keep min/max equal to the basket_joint velocity limit in
+           components/basket.urdf.xacro. -->
+      <joint name="basket_joint">
         <command_interface name="velocity">
-          <param name="min">-${intake_max_vel}</param>
-          <param name="max">${intake_max_vel}</param>
+          <param name="min">-0.12</param>
+          <param name="max">0.12</param>
         </command_interface>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
@@ -137,7 +159,7 @@
            physical prototype has no carriage encoder, so these state-only
            interfaces must not become part of the real hardware contract. -->
       <xacro:if value="${sim_mode}">
-        <xacro:if value="${expose_intake_carriage_state}">
+        <xacro:if value="${enable_intake and expose_intake_carriage_state}">
           <joint name="intake_wheel_left_carriage_joint">
             <state_interface name="position"/>
             <state_interface name="velocity"/>

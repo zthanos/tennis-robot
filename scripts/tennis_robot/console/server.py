@@ -15,7 +15,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from .app import ConsoleApp
+from .app import CommandRejected, ConsoleApp
 from .config import STATIC_CONTENT_TYPES
 
 
@@ -79,6 +79,7 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         "/api/surveys": "surveys",
         "/api/survey-archive": "survey_archive",
         "/api/collector": "collector_status",
+        "/api/throwing": "throwing_status",
     }
     # Quiet access-log paths (polled frequently by the UI).
     _QUIET_PATHS = {
@@ -144,6 +145,12 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
                 return
             self._send_json(self.app.collector_control(str(data.get("action", ""))))
             return
+        if path == "/api/throwing":
+            data = self._read_json_body()
+            if not isinstance(data, dict):
+                return
+            self._send_json(self.app.throwing_command(str(data.get("action", "")), data))
+            return
         if path in {"/command", "/api/command"}:
             self._post_command(path)
             return
@@ -166,7 +173,16 @@ class ControlPanelHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(length).decode("utf-8")
         mode = parse_qs(body).get("mode", ["idle"])[0]
-        command = self.app.set_command(mode)
+        try:
+            command = self.app.set_command(mode)
+        except CommandRejected as exc:
+            # Another subsystem owns the machine. The browser form path still
+            # redirects; only the JSON API surfaces the conflict status.
+            if path == "/api/command":
+                self._send_json({"ok": False, "message": str(exc)},
+                                status=HTTPStatus.CONFLICT)
+                return
+            command = None
         if path == "/api/command":
             self._send_json(command.to_mapping())
             return

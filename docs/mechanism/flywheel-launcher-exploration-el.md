@@ -208,8 +208,31 @@ bench-proven baseline:
 
 ```bash
 ROBOT_PACKAGING_VARIANT=baseline ros2 launch tennis_robot sim.launch.py headless:=true
+ROBOT_PACKAGING_VARIANT=option-a-collect ros2 launch tennis_robot sim.launch.py headless:=true
 ROBOT_PACKAGING_VARIANT=compact  ros2 launch tennis_robot sim.launch.py headless:=true
 ```
+
+Το `option-a-collect` είναι το ενδιάμεσο physics gate πριν από την προσομοίωση
+του launcher. Διατηρεί τα bench-proven datums του Option A (`intake nip
+x=540 mm` και segmented ramp περίπου `x=524...450 mm`), αλλά χρησιμοποιεί την
+πίσω θέση μπαταρίας, το κατακόρυφο motion tray, το Pi case, τον ξεχωριστό buck
+converter και το full basket load του compact packaging. Το flywheel είναι
+απενεργοποιημένο εξ ορισμού σε αυτή την παραλλαγή, ώστε το collection result να
+μην επηρεάζεται από provisional launcher collisions.
+
+Στις 2026-08-23 το generated model πέρασε `check_urdf` με συνολική μάζα
+`26.200 kg` και CoM `x=-28.7 mm`, `y=-2.8 mm`, `z=93.0 mm`. Deterministic
+native Gazebo sweep πέντε επαναλήψεων, με gap `56 mm`, wheel radius `60 mm`,
+tilt `35 deg` και wheel speed `25 rad/s`, έδωσε:
+
+- `5/5` runs με `6/6` required intake/release criteria,
+- `5/5` runs με `8/8` basket-entry/retention criteria,
+- μηδενικό stall σε όλα τα runs,
+- peak inward transport `0.745...0.919 m/s`,
+- την target μπάλα παρούσα στο basket στο τελευταίο pose sample κάθε run.
+
+Το launch-ballistics gate δεν αξιολογείται σε αυτή τη φάση: η αποτυχία του με
+flywheel disabled είναι αναμενόμενη και δεν αποτελεί collection failure.
 
 Το `compact` μεταφέρει το functional group κατά `-100 mm`, ευθυγραμμίζει τα
 intake wheels/cheeks με τα πραγματικά CAD datums, μετακινεί την μπαταρία πίσω
@@ -662,3 +685,173 @@ model.** Το `external-panel-study.scad` παγώνει ως έχει.
 
 Χωρίς τα 1-3 το κέλυφος παραμένει study. Με αυτά, τα περισσότερα provisional
 datums του `external-panel-study.scad` γίνονται μετρημένα.
+
+## Gazebo flywheel-only gate (2026-08-23)
+
+Το intake και το flywheel αντιμετωπίζονται ως ανεξάρτητοι μηχανισμοί με
+διαφορετικά joints, controllers και software. Το ενδιάμεσο feed είναι τρίτο
+interface και δεν επιτρέπεται να αλλάξει τα frozen datums ή το tuning του
+Option A intake.
+
+Η ηλεκτρομηχανική αλυσίδα του launcher πέρασε το πρώτο μέρος του gate:
+
+- ο `flywheel_velocity_controller` ενεργοποιήθηκε και το joint feedback
+  ακολούθησε ακριβώς `+100/-100 rad/s`·
+- τα intake joints παρέμειναν `0/0 rad/s` σε όλη τη flywheel-only δοκιμή·
+- το `FLYWHEEL_NIP_GAP_M` εκτέθηκε ως ανεξάρτητη simulation/calibration
+  παράμετρος, με αμετάβλητο default `58 mm`.
+
+Η single-ball εκτόξευση **δεν πέρασε ακόμη**. Με rigid μπάλα Ø66 και nominal
+gap `58 mm` η διπλή επαφή την εκτινάσσει πλευρικά. Στα `64 mm` μειώνεται η
+αριθμητική διείσδυση, αλλά το συγχρονισμένο A/B με ίδιο one-step
+spring-feeder-equivalent impulse έδωσε:
+
+- flywheels off: `max_vx ~0.597 m/s`·
+- flywheels `+100/-100 rad/s`: `max_vx ~0.605 m/s`, πλευρική απόκλιση
+  `~277 mm`, χωρίς αύξηση του μέγιστου Z.
+
+Άρα δεν ξεκινά ακόμη calibration εμβέλειας/RPM. Το επόμενο gate είναι
+flywheel-only με κεντράρισμα της μπάλας (guide/feeder fixture) ή compliant
+tennis-ball contact model. Το `64 mm` είναι simulation hypothesis, όχι
+αποφασισμένη μηχανική διάσταση.
+
+Ως regression guard εκτελέστηκε full `option-a-collect` sweep με
+`ROBOT_ENABLE_FLYWHEEL=false`: bilateral contact `45/45`, wheel feedback
+`25/25 rad/s` και `6` collected balls. Δεν υπάρχει diff κάτω από
+`cad/collector-intake-v1/option-a/`.
+
+
+## Μηχανικές configurations COLLECT / LAUNCH στο Gazebo (2026-08-23)
+
+Το intake assembly και ο launcher **διεκδικούν τον ίδιο μπροστινό όγκο**:
+
+```text
+intake wheels + funnel + ramp + deflector   x 446...884 mm, z 0...281 mm
+flywheel wheels                             x 459...661 mm, z 162...268 mm
+flywheel frame plate (280x508x35, pitch 20) x 469...744 mm, z  24...152 mm
+```
+
+Μετρημένες διεισδύσεις OBB/SAT όταν συνυπάρχουν: frame vs intake wheels
+`84 mm`, vs funnel cheeks `67 mm`, flywheel wheels vs intake deflector
+`36.5 mm`. Δεν είναι σφάλμα τοποθέτησης — είναι δύο **εναλλακτικές μηχανικές
+διατάξεις της ίδιας μηχανής**. Ο μηχανισμός μετάβασης (rail/slide) **δεν έχει
+επιλεγεί**, άρα δεν μοντελοποιείται κανένας.
+
+Οι variants του `scripts/generate_robot_urdf.py --packaging-variant`:
+
+| variant | intake | launcher | basket entry hood |
+|---|---|---|---|
+| `baseline` | ναι | **όχι** | ναι |
+| `option-a-collect` | ναι | **όχι** | ναι |
+| `option-a-launch` | **όχι** | ναι | **όχι** (θέση LAUNCH: hood ανοικτό) |
+| `compact` | ναι | ναι | ναι — provisional study, **διατηρεί τις συγκρούσεις** |
+
+Το hood αφαιρείται μέσω του **υπάρχοντος** switch `hood_rear_overhang > 0`, όχι
+νέας γεωμετρίας. Επαληθευμένο: `baseline`, `option-a-collect` και
+`option-a-launch` δίνουν **0 διεισδύσεις** σε lift `0/25/50/75/100 mm`.
+
+**Ο flywheel είναι πλέον `false` εξ ορισμού σε κάθε collection variant.** Σκέτο
+`./run_native.sh` δεν σηκώνει launcher. Ζωντανή απόδειξη της ανάγκης: ίδιο
+sweep case, `contact samples 0` με flywheel on έναντι `90` (bilateral `45/45`)
+με flywheel off.
+
+## Διόρθωση datum LiDAR (2026-08-23)
+
+Η αλυσίδα έχει **τρία** σκέλη, όχι δύο:
+
+```text
+base_footprint (έδαφος)                    0.000
+  + base_link_height                       +0.045 -> base_link  0.045
+  + lidar_xyz.z                            +0.498 -> lidar_link 0.543
+  + front_lidar <pose> (sim-only raise)    +0.035 -> ΕΠΙΠΕΔΟ ΣΑΡΩΣΗΣ 0.578
+```
+
+Το `0.498` ήταν γραμμένο ως local z, οπότε το πραγματικό optical centre ήταν
+`578 mm` — απόκλιση `80 mm`, όχι 45. Το `+0.035` υπάρχει επειδή το gpu_lidar
+κάνει raycast σε **visuals** και ο sensor μέσα στο κέλυφός του τυφλώνεται· είναι
+μέρος του datum. Τώρα το CAD ύψος είναι η πηγή αλήθειας και το mount προκύπτει:
+`lidar_mount_z = 0.498 - 0.045 - 0.035 = 0.418`. Μετρημένο ζωντανά:
+TF `base_footprint->lidar_link = 0.463`, sensor pose στο spawned SDF `0.498`.
+Ο ιστός παράγεται πλέον από το `mount_z`, ώστε να μη διαπερνά ποτέ το chassis.
+
+**Ανοιχτό, ανεξάρτητο από αυτή την αλλαγή:** το `net_lidar_strand` στο
+`gazebo/models/tennis_court/model.sdf` είναι στο `z=0.713` με σχόλιο «AT the
+LiDAR scan height». Δεν ίσχυε ούτε στα `578` ούτε στα `498`. Στα `498` η σάρωση
+πέφτει μέσα στο πλέγμα `net_h` του `0.50` (`0.497...0.503`), δηλαδή περιθώριο
+`~2 mm`. Χρειάζεται ευθυγράμμιση του strand με το datum πριν εμπιστευτούμε
+ξανά το net lock.
+
+## Basket lift: 100 mm, χωρίς tilt
+
+Το simulated travel ήταν `450 mm` — 4.5x το CAD baseline, και έστελνε το χείλος
+στα `700 mm`, πάνω από το scan plane. Τώρα `BASKET_LIFT_TRAVEL_M=0.100`
+παντού (xacro arg, macro default, ros2_control, generator, console supervisor).
+
+**Το `RAISED` σημαίνει ΜΟΝΟ ότι ο άξονας ανύψωσης έφτασε στο άκρο του.** Η
+μηχανική στάση εκτόξευσης είναι `100 mm lift + ~12 deg tilt`· ο μηχανισμός tilt
+**δεν είναι επικυρωμένος**, άρα δεν μοντελοποιείται άξονας. Η ετοιμότητα
+εκφράζεται ήδη ως `lift_confirmed AND tilt_confirmed` (`TiltState`,
+`RobotReadiness.throwing_pose_confirmed`), με το tilt σε
+`MECHANICAL_VALIDATION_PENDING`· όταν υπάρξει επικυρωμένος μηχανισμός γράφει
+`CONFIRMED/FAULT` εκεί χωρίς αλλαγή στο state machine.
+
+
+## Throwing Mode: πρώτη ζωντανή E2E orchestration (2026-08-24)
+
+`ROBOT_PACKAGING_VARIANT=option-a-launch`, `ROS_DOMAIN_ID=123`, headless,
+`SLAM_MODE=localization`, bench gate PASSED πριν από κάθε run.
+
+Πλήρης διαδρομή, session `0f935a4a` (μετρημένα timestamps):
+
+```text
+t= 0.0   POSITIONING     pose (0.000, 0.000, 0.003), basket -3.17 mm
+t=37.2   RAISING_BASKET  pose (-2.995, -0.074, 0.083)  <- XY err 0.09 m, yaw err 4.6 deg
+t=43.3   ARMING          basket 97.41 mm, API RAISED
+t=48.6   READY           flywheels μετρημένα +180 / -180 rad/s
+t=50.6   THROWING        thrown=1
+t=79.3   COMPLETED       thrown=3
+t=91.3   settle          flywheels 0.0/0.0, basket 97.41 mm RAISED
+```
+
+Consumer (`gazebo_extras_node`): **3/3 feed events accepted, με σειρά, 0 duplicates**.
+Test Throw: **ακριβώς 1**, κανένα δεύτερο μετά από 5x το interval.
+Pause/Resume: **0 feeds σε 20 s pause**, καμία ριπή ανάκτησης, ίδιο session, 4/4.
+Interlocks: `collect_route` **409** όσο το Throwing Mode κατέχει τον μηχανισμό,
+collector start απορρίπτεται, collector stop και `idle` πάντα επιτρεπτά.
+
+### Ελαττώματα που βρήκε το ζωντανό run
+
+1. **Καμία τελική κατεύθυνση από το Nav2.** Ο κοινός `general_goal_checker`
+   έχει `yaw_goal_tolerance: 3.14` σκόπιμα (οι lanes συλλογής δεν πρέπει να
+   στριφογυρίζουν), και ο RPP δεν κάνει τελική περιστροφή. Το NavigateToPose
+   επέστρεφε SUCCEEDED με το ρομπότ **159 μοίρες** λάθος. Το Nav2 `Spin`
+   ABORT-άρει με `COLLISION_AHEAD (703)` ακόμη και με τοπικό costmap μετρημένο
+   εντελώς καθαρό, και το Jazzy goal δεν έχει `disable_collision_checks`.
+   → `tennis_robot.heading_aligner`: κλειστού βρόχου περιστροφή στο
+   `/cmd_vel_teleop` (mux priority 100), φραγμένη σε γωνία και σε φρεσκάδα
+   feedback. Το gate ετοιμότητας παραμένει ο κριτής.
+2. **5x διπλά feed requests.** Το burst publish (σωστό για idempotent setpoints)
+   είναι λάθος για διακριτά γεγονότα. → `reliable_event_publish` (ένα μήνυμα,
+   αφού ταιριάξουν οι subscribers) + **de-duplication στον consumer με throw_id**.
+3. **Basket οδηγήθηκε ΜΕΣΑ στο κάτω stop** (97.4 → −10.0 mm) και ξανακόλλησε.
+   Διόρθωση του #61: δεν φταίει μόνο η *στάθμευση* πάνω στο όριο — **η άφιξη
+   στο stop υπό εντολή** κλειδώνει το joint. → ο mover φράσσεται από την
+   απόσταση και ακυρώνει σε stale feedback.
+4. **Falsy-zero bug**: `self.position or start` μετέτρεπε τη θέση 0.0 (το κάτω
+   άκρο!) σε start. Το έπιασε behavioural test.
+
+### Ανοιχτά
+
+- **Throw interval**: μετρημένο `7.9 / 8.6 s` για ρύθμιση `4.0 s`. Το
+  `interval_s` είναι **κενό μεταξύ ρίψεων**, και το κόστος του feed publish
+  (~4 s) προστίθεται. Χρειάζεται απόφαση: period ή gap.
+- **Feed delivery με >1 subscriber**: ένας βραχύβιος publisher ανά γεγονός δεν
+  εγγυάται παράδοση σε πολλούς subscribers. Στην παραγωγική τοπολογία (ένας
+  consumer) μετρήθηκε 3/3· με δεύτερο παρατηρητή χάνονταν ρίψεις. Η οριστική
+  λύση είναι persistent publisher, δηλαδή rclpy μέσα στην console.
+- **Αστάθεια Nav2**: μετά από πολλά runs το Nav2 ABORT-άρει κάθε goal. Αιτία
+  που εντοπίστηκε: **stale FastDDS shared memory** (`/dev/shm/fastrtps_*`,
+  `open_and_lock_file failed`) από επανειλημμένα SIGKILL. Καθαρισμός του
+  `/dev/shm` πριν από κάθε καθαρή εκτέλεση.
+- **BALL_LAUNCH_PHYSICS_NOT_VALIDATED**: τα αποδεκτά feed events ΔΕΝ σημαίνουν
+  ότι εκτοξεύτηκε μπάλα. Το `balls_thrown` μετρά **αποδεκτά feed requests**.

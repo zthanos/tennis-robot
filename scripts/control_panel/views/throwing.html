@@ -1,0 +1,54 @@
+<div class="throw-readiness panel">
+  <div><span>Session</span><strong id="throwingState">UNKNOWN</strong></div>
+  <div><span>Robot</span><strong id="throwPositionState">NOT_POSITIONED</strong></div>
+  <div><span>Basket lift</span><strong id="throwBasketState">UNKNOWN</strong></div>
+  <div><span>Basket tilt</span><strong id="throwBasketTilt">MECHANICAL_VALIDATION_PENDING</strong></div>
+  <div><span>Flywheel</span><strong id="throwFlywheelState">NOT_AVAILABLE</strong></div>
+  <div><span>OAK-D</span><strong id="throwOakState">NOT_CONNECTED</strong></div>
+  <div><span>Safety</span><strong id="throwSafetyState">UNKNOWN</strong></div>
+  <div><span>Balls</span><strong id="throwBalls">Unknown</strong></div>
+</div>
+
+<div class="throw-layout">
+  <div class="grid" style="align-content:start;">
+    <div class="panel">
+      <h3>Training Configuration</h3>
+      <div class="throw-form">
+        <label>Training Program<select id="throwProgram"><option value="forehand">Forehand Training</option><option value="backhand">Backhand Training</option><option value="mixed">Mixed Training</option></select></label>
+        <label>Throw Speed <small>m/s</small><input id="throwSpeed" type="number" min="1" max="35" step="0.5" value="18"></label>
+        <label>Throw Angle <small>degrees</small><input id="throwAngle" type="number" min="0" max="60" step="1" value="20"></label>
+        <label>Interval <small>seconds</small><input id="throwInterval" type="number" min="0.25" max="60" step="0.25" value="4"></label>
+        <label>Number of Balls<input id="throwBallCount" type="number" min="1" max="200" step="1" value="12"></label>
+      </div>
+      <div class="controls" style="margin-top:16px;">
+        <button class="command" type="button" data-throw-action="start">Start Training</button>
+        <button class="secondary-action" type="button" data-throw-action="pause">Pause</button>
+        <button class="secondary-action" type="button" data-throw-action="resume">Resume</button>
+        <button class="command" value="idle" type="button" data-throw-action="stop">Stop</button>
+        <button class="secondary-action" type="button" data-throw-action="test_throw">Test Throw</button>
+      </div>
+      <p id="throwMessage" class="throw-note">Waiting for a command.</p>
+    </div>
+    <div class="panel">
+      <h3>Basket Position</h3>
+      <p class="throw-note">Requested movement is confirmed from the basket lift joint (100 mm CAD travel). Manual controls are disabled while the session owns the mechanism. <strong>RAISED means the lift axis reached its endpoint only</strong> — the mechanical launch pose is 100 mm lift plus ~12&deg; tilt, and the tilt mechanism is not yet validated, so no tilt axis is simulated.</p>
+      <div class="controls"><button class="secondary-action" data-throw-action="basket_lower">Lower</button><button class="secondary-action" data-throw-action="basket_raise">Raise</button></div>
+    </div>
+    <div class="panel">
+      <h3>Session Statistics</h3>
+      <div class="kv">
+        <div><span>Balls Thrown</span><strong id="statThrown">0</strong></div>
+        <div><span>Balls Hit by Player</span><strong id="statHit">Unavailable</strong></div>
+        <div><span>Hit Rate</span><strong id="statHitRate">Unavailable</strong></div>
+        <div><span>Balls In / Out</span><strong id="statInOut">Unavailable</strong></div>
+        <div><span>Average Travel Distance</span><strong id="statDistance">Unavailable</strong></div>
+        <div><span>Latest throw_id</span><strong id="throwId">None</strong></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>OAK-D Live View</h3>
+    <div class="throw-camera"><img id="throwOakFrame" alt="OAK-D live view"><div id="throwOakEmpty">OAK-D not connected</div></div>
+    <p class="throw-note">Reserved overlays: launched ball, trajectory, player contact, landing point, and in/out. Phase 1 does not fabricate these analytics.</p>
+  </div>
+</div>

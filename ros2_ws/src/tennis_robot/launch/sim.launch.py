@@ -21,7 +21,9 @@ WORKSPACE = os.environ.get(
 )
 GZ_MODELS = f"{WORKSPACE}/gazebo/models"
 ROS_SOURCE_MODELS = f"{WORKSPACE}/ros2_ws/src"
-GZ_WORLD = f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
+GZ_WORLD = os.getenv(
+    "GZ_WORLD_FILE", f"{WORKSPACE}/gazebo/worlds/tennis_court.sdf"
+)
 BRIDGE_CONFIG = f"{WORKSPACE}/gazebo/bridge_config.yaml"
 ROBOT_URDF = f"{WORKSPACE}/runtime/tennis_robot.urdf"
 ROBOT_SDF = f"{WORKSPACE}/runtime/tennis_robot.sdf"
@@ -127,9 +129,18 @@ def generate_launch_description():
         "yes",
     }
     _packaging_variant = os.getenv("ROBOT_PACKAGING_VARIANT", "baseline").lower()
+    # Mechanical operating configuration — MUST stay in step with the same
+    # decision in scripts/generate_robot_urdf.py, which builds the model these
+    # controllers are spawned against. Only the launch configuration (and the
+    # provisional `compact` study) fits the launcher; every collection variant
+    # leaves it off, because the launcher frame cuts through the intake mouth.
+    _launch_configuration = _packaging_variant == "option-a-launch"
     enable_flywheel = os.getenv(
         "ROBOT_ENABLE_FLYWHEEL",
-        "true" if _packaging_variant == "compact" else "false",
+        "true" if _launch_configuration or _packaging_variant == "compact" else "false",
+    ).lower() in {"1", "true", "yes"}
+    enable_intake = os.getenv(
+        "ROBOT_ENABLE_INTAKE", "false" if _launch_configuration else "true",
     ).lower() in {"1", "true", "yes"}
     skip_control_panel = bench_minimal or os.getenv(
         "SIM_SKIP_CONTROL_PANEL", "false"
@@ -257,6 +268,7 @@ def generate_launch_description():
     intake_wheel_spawner = _spawner("intake_wheel_velocity_controller")
     assist_wheel_spawner = _spawner("assist_wheel_velocity_controller")
     flywheel_spawner = _spawner("flywheel_velocity_controller")
+    basket_spawner = _spawner("basket_velocity_controller")
 
     # Actuation layer: the only node that talks to the controller command topics.
     drive_actuator = Node(
@@ -539,6 +551,14 @@ def generate_launch_description():
         ],
         additional_env={
             "PYTHONPATH": CONTROL_PANEL_PYTHONPATH,
+            # Gates the console's simulation-only actuator paths and its
+            # permissive E-stop/motor-power defaults.  This launch file also
+            # brings up a brain-only stack (run_pi.sh), which on a real robot
+            # must NOT claim to be a simulation — so derive it from whether the
+            # sim runs here, and let a distributed sim brain override it.
+            "TENNIS_ROBOT_RUNTIME": os.getenv(
+                "TENNIS_ROBOT_RUNTIME", "simulation" if _launch_sim else "hardware"
+            ),
             "ROBOT_COMMAND_FILE": os.getenv(
                 "ROBOT_COMMAND_FILE", f"{WORKSPACE}/runtime/robot_command.json"
             ),
@@ -570,7 +590,16 @@ def generate_launch_description():
     # distributed simulation, sensor snapshots are split: the PC encodes a
     # low-rate JPEG preview next to the raw Gazebo camera, while the Pi receives
     # only that compact preview. Raw RGB/depth therefore never cross the LAN.
-    _sim_node_actions = [bridge, sim_clock_relay, gz_extras, drive_actuator, *cmd_vel_relays,
+    # gz /clock -> bridge -> /clock_raw -> sim_clock_relay -> /clock. These two
+    # nodes are one transport, not two optional nodes: sim_clock_relay is the
+    # ONLY publisher of /clock, so dropping it while keeping the bridge leaves
+    # /clock_raw with zero subscribers and every use_sim_time node — including
+    # the controller_manager that gz_ros2_control runs in-process — on an unset
+    # clock. That failure is silent: physics keeps advancing and controllers
+    # still report "active", but every ROS timestamp freezes at 0. Never split
+    # this pair.
+    _sim_clock_transport = [bridge, sim_clock_relay]
+    _sim_node_actions = [*_sim_clock_transport, gz_extras, drive_actuator, *cmd_vel_relays,
                          collector_logic, twist_mux, ekf]
     _brain_node_actions = [perception, controller, navigation, command_bridge]
     if _sensor_snapshot_mode == "publisher":
@@ -586,7 +615,9 @@ def generate_launch_description():
     # Delay ROS nodes until Gazebo + bridge are up (all-in-one), or until DDS
     # discovery of the PC sensors has settled (Pi brain).
     if bench_minimal:
-        delayed_node_actions = [bridge, gz_extras]
+        # Strips the brain and the actuation/fusion nodes, but keeps the full
+        # clock transport — a bench still needs a valid simulation clock.
+        delayed_node_actions = [*_sim_clock_transport, gz_extras]
     else:
         delayed_node_actions = []
         if _launch_sim:
@@ -601,29 +632,23 @@ def generate_launch_description():
         # Spawn controllers sequentially. Jazzy's spawner serializes operations
         # with a shared lock; launching all spawners at once makes repeated fresh
         # simulations intermittently exhaust the lock timeout.
-        delayed_controllers = TimerAction(period=6.0, actions=[jsb_spawner])
-        controller_chain = [
-            RegisterEventHandler(
-                OnProcessExit(target_action=jsb_spawner, on_exit=[diff_drive_spawner])
-            ),
-            RegisterEventHandler(
-                OnProcessExit(target_action=diff_drive_spawner, on_exit=[intake_wheel_spawner])
-            ),
-        ]
-        previous_spawner = intake_wheel_spawner
+        # Spawn order is the sequence of controllers this mechanical
+        # configuration actually has. A controller whose joints are not in the
+        # model cannot configure, so the intake spawner is dropped along with
+        # the intake assembly rather than being left to fail.
+        spawn_sequence = [jsb_spawner, diff_drive_spawner]
+        if enable_intake:
+            spawn_sequence.append(intake_wheel_spawner)
+        spawn_sequence.append(basket_spawner)
         if enable_assist:
-            controller_chain.append(
-                RegisterEventHandler(
-                    OnProcessExit(target_action=intake_wheel_spawner, on_exit=[assist_wheel_spawner])
-                )
-            )
-            previous_spawner = assist_wheel_spawner
+            spawn_sequence.append(assist_wheel_spawner)
         if enable_flywheel:
-            controller_chain.append(
-                RegisterEventHandler(
-                    OnProcessExit(target_action=previous_spawner, on_exit=[flywheel_spawner])
-                )
-            )
+            spawn_sequence.append(flywheel_spawner)
+        delayed_controllers = TimerAction(period=6.0, actions=[spawn_sequence[0]])
+        controller_chain = [
+            RegisterEventHandler(OnProcessExit(target_action=previous, on_exit=[following]))
+            for previous, following in zip(spawn_sequence, spawn_sequence[1:])
+        ]
         actions += [gz_full, gz_headless, robot_state_publisher,
                     delayed_spawn, delayed_controllers, *controller_chain]
 

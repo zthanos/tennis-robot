@@ -40,6 +40,9 @@ controller_manager:
     flywheel_velocity_controller:
       type: forward_command_controller/ForwardCommandController
 
+    basket_velocity_controller:
+      type: forward_command_controller/ForwardCommandController
+
 diff_drive_controller:
   ros__parameters:
     # 4WD skid-steer: two driven wheels per side, both commanded together.
@@ -109,7 +112,19 @@ conveyor_velocity_controller:
 
 flywheel_velocity_controller:
   ros__parameters:
-    # Forward launch: left negative, right positive. The controller exposes
+    # Forward launch: left positive, right negative. The controller exposes
     # the two raw wheel commands so differential spin remains possible later.
     joints: ["flywheel_left_joint", "flywheel_right_joint"]
+    interface_name: velocity
+
+basket_velocity_controller:
+  ros__parameters:
+    joints: ["basket_joint"]
+    # The actuator primitive is a rated-speed drive; domain commands are still
+    # target positions, and RosService.set_basket_position closes that loop from
+    # /joint_states, stopping the carriage at the lowered/raised endpoint. A
+    # position command interface is deliberately NOT used: gz_ros2_control
+    # emulates one with an unsaturated proportional controller that ignores the
+    # joint's rated speed. The name states the interface, so the supervisor
+    # boundary stays visible to whoever writes the physical actuator driver.
     interface_name: velocity

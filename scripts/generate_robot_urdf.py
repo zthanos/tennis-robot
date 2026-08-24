@@ -42,11 +42,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--packaging-variant",
         default=os.getenv("ROBOT_PACKAGING_VARIANT", "baseline"),
-        choices=["baseline", "compact"],
+        choices=["baseline", "option-a-collect", "option-a-launch", "compact"],
         help=(
-            "Robot packaging model. baseline preserves the frozen collection "
-            "simulation; compact enables the -100 mm functional shift, rear "
-            "electronics and flywheel mass model."
+            "Robot mechanical/packaging configuration. COLLECT configurations "
+            "(baseline, option-a-collect) fit the intake assembly and no "
+            "launcher. The LAUNCH configuration (option-a-launch) fits the "
+            "flywheel launcher and omits the intake assembly, which claims the "
+            "same front volume. compact retains the provisional shifted "
+            "launcher study and is the only variant carrying both."
         ),
     )
     parser.add_argument(
@@ -136,7 +139,8 @@ def _patch_collision_bounce(
     _set_text(bounce, "threshold", threshold)
 
 
-def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline") -> str:
+def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline",
+                        intake_fitted: bool = True) -> str:
     """Patch contact tuning and Gazebo-native intake collision geometry."""
     root = ET.fromstring(sdf_text)
     lip_height_m = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
@@ -223,11 +227,12 @@ def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline") -> s
     # sdformat may rename collisions while converting the URDF, so locate each
     # intake wheel's actual collision name and point its contact sensor at it.
     # Fail loud on both wheels: a silent mismatch means the bench counts zero
-    # contacts forever.
-    wheel_sensors = {
+    # contacts forever. The launch configuration has no intake assembly at all,
+    # which is a declared configuration rather than a mismatch.
+    wheel_sensors = {} if not intake_fitted else {
         "roller_contact_0": "intake_wheel_left_link",
         "roller_contact_1": "intake_wheel_right_link",
-    }
+    }  # type: ignore[dict-item]
     wheel_col_names: dict[str, str] = {}
     for link in root.findall(".//link"):
         lname = link.attrib.get("name", "")
@@ -260,7 +265,7 @@ def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline") -> s
     # URDF cannot express joint springs, hence the SDF patch. Fail loud if the
     # carriage joints are missing.
     spring_k = os.getenv("INTAKE_WHEEL_SPRING_K", "1000")
-    carriage_joints = {
+    carriage_joints = set() if not intake_fitted else {
         "intake_wheel_left_carriage_joint",
         "intake_wheel_right_carriage_joint",
     }
@@ -575,16 +580,25 @@ def main() -> int:
     env = os.environ.copy()
     env.setdefault("PYTHONUTF8", "1")
     controllers_config = args.controllers_config.resolve()
-    compact = args.packaging_variant == "compact"
+    compact = args.packaging_variant in {"option-a-collect", "option-a-launch", "compact"}
+    option_a_collect = args.packaging_variant in {"option-a-collect", "option-a-launch"}
+    # Mechanical operating configuration. The intake assembly (x 446...884 mm,
+    # z 0...281 mm) and the flywheel launcher (wheels x 459...661, z 162...268)
+    # occupy the same front volume, so no variant may fit both. The physical
+    # concept switches between them by hand; the deployment mechanism has not
+    # been selected, so nothing models a transition.
+    launch_configuration = args.packaging_variant == "option-a-launch"
 
     def variant_value(env_name: str, baseline: str, compact_value: str) -> str:
         return os.getenv(env_name, compact_value if compact else baseline)
 
-    functional_shift_x = variant_value(
-        "ROBOT_FUNCTIONAL_SHIFT_X_M", "0.0", "-0.100"
+    functional_shift_x = os.getenv(
+        "ROBOT_FUNCTIONAL_SHIFT_X_M",
+        "0.0" if option_a_collect or not compact else "-0.100",
     )
-    intake_cad_alignment_x = variant_value(
-        "ROBOT_INTAKE_CAD_ALIGNMENT_X_M", "0.0", "-0.070"
+    intake_cad_alignment_x = os.getenv(
+        "ROBOT_INTAKE_CAD_ALIGNMENT_X_M",
+        "0.0" if option_a_collect or not compact else "-0.070",
     )
     battery_center_x = variant_value(
         "ROBOT_BATTERY_CENTER_X_M", "-0.143", "-0.255"
@@ -592,7 +606,25 @@ def main() -> int:
     enable_compact_electronics = variant_value(
         "ROBOT_ENABLE_COMPACT_ELECTRONICS", "false", "true"
     )
-    enable_flywheel = variant_value("ROBOT_ENABLE_FLYWHEEL", "false", "true")
+    # The launcher is fitted ONLY by the launch configuration. Every collection
+    # variant defaults it off: with the intake assembly present the launcher
+    # frame cuts straight through the intake mouth, so a plain run_native.sh
+    # must never bring it up implicitly.
+    enable_flywheel = os.getenv(
+        "ROBOT_ENABLE_FLYWHEEL",
+        "true" if (launch_configuration or args.packaging_variant == "compact") else "false",
+    )
+    enable_intake = os.getenv(
+        "ROBOT_ENABLE_INTAKE", "false" if launch_configuration else "true"
+    )
+    # The basket entry hood is the intake handoff mouth. The mechanical concept
+    # puts it "open or released" in the LAUNCH position (see
+    # docs/mechanism/flywheel-launcher-exploration-el.md), which is also what
+    # keeps its cheeks out of the launcher frame. Zero overhang removes the hood
+    # through the basket macro's existing switch — no new geometry, no new arg.
+    basket_hood_rear_overhang = os.getenv(
+        "BASKET_HOOD_REAR_OVERHANG_M", "0.0" if launch_configuration else "0.040"
+    )
     # Compact mass hypotheses: 2.0 kg removable basket/carriage contribution
     # plus 45 ITF-range balls at 57 g each. Set payload to 0 for simulations
     # that spawn the balls as individual Gazebo models, avoiding double count.
@@ -612,10 +644,14 @@ def main() -> int:
             f"intake_cad_alignment_x:={intake_cad_alignment_x}",
             f"battery_center_x:={battery_center_x}",
             f"enable_compact_electronics:={enable_compact_electronics}",
+            f"enable_intake:={enable_intake}",
             f"enable_flywheel:={enable_flywheel}",
             f"flywheel_max_vel:={os.getenv('FLYWHEEL_MAX_VEL_RAD_S', '320.0')}",
+            f"flywheel_nip_gap:={os.getenv('FLYWHEEL_NIP_GAP_M', '0.058')}",
             f"basket_empty_mass:={basket_empty_mass}",
             f"basket_payload_mass:={basket_payload_mass}",
+            f"basket_lift_travel:={os.getenv('BASKET_LIFT_TRAVEL_M', '0.100')}",
+            f"basket_lift_overtravel:={os.getenv('BASKET_LIFT_OVERTRAVEL_M', '0.010')}",
             f"expose_intake_carriage_state:={os.getenv('INTAKE_EXPOSE_CARRIAGE_STATE', 'false')}",
             # Dual-wheel intake tuning + Concept Validation Plan gates
             # (docs/mechanism/dual-wheel-intake-design-el.md).
@@ -645,7 +681,7 @@ def main() -> int:
             f"basket_management_rise:={os.getenv('BASKET_MANAGEMENT_RISE_M', '0.010')}",
             f"basket_receiver_run:={os.getenv('BASKET_RECEIVER_RUN_M', '0.050')}",
             f"basket_receiver_rise:={os.getenv('BASKET_RECEIVER_RISE_M', '0.005')}",
-            f"basket_hood_rear_overhang:={os.getenv('BASKET_HOOD_REAR_OVERHANG_M', '0.040')}",
+            f"basket_hood_rear_overhang:={basket_hood_rear_overhang}",
             f"basket_hood_rear_clearance_z:={os.getenv('BASKET_HOOD_REAR_CLEARANCE_Z_M', '0.120')}",
             f"basket_hood_front_clearance_z:={os.getenv('BASKET_HOOD_FRONT_CLEARANCE_Z_M', '0.135')}",
         ],
@@ -692,7 +728,9 @@ def main() -> int:
         _replace_text(
             sdf_output,
             _patch_sdf_contacts(
-                sdf_result.stdout, packaging_variant=args.packaging_variant
+                sdf_result.stdout,
+                packaging_variant=args.packaging_variant,
+                intake_fitted=(enable_intake.lower() not in {"0", "false", "no"}),
             ),
         )
         print(f"Generated {_display_path(sdf_output)} with patched contact surfaces")
