@@ -298,8 +298,18 @@ class ThrowingSession:
 
     def confirm_successful_throw(self, readiness: RobotReadiness, throw_id: str,
                                  target: TargetZone) -> tuple[str, TargetZone]:
-        """Count a prepared throw only after its feed request is accepted."""
-        if self.state not in {SessionState.READY, SessionState.THROWING}:
+        """Count a prepared throw only after its feed request is accepted.
+
+        PAUSED is accepted here but NOT in prepare_throw. Pausing is what stops
+        the next throw from starting; a throw whose feed request was already
+        emitted has physically happened, so refusing to count it would lose the
+        throw and leave an uncorrelated feed event on the wire. A pause landing
+        during the feed request therefore keeps the session paused and still
+        records the throw that was already in flight.
+        """
+        resumable = self.state is SessionState.PAUSED
+        if self.state not in {SessionState.READY, SessionState.THROWING,
+                              SessionState.PAUSED}:
             raise ThrowingError(f"cannot throw from {self.state.value}")
         blockers = readiness.throw_blockers
         if blockers:
@@ -308,7 +318,11 @@ class ThrowingSession:
             raise ThrowingError("throw_id must be unique")
         if target != self.next_target:
             raise ThrowingError("prepared target no longer matches the session sequence")
-        self.state = SessionState.THROWING
+        if resumable:
+            # Stay paused; resume() must still return to a throwing state.
+            self.paused_from = SessionState.THROWING
+        else:
+            self.state = SessionState.THROWING
         self.successful_throw_ids.append(throw_id)
         self.statistics.balls_thrown += 1
         return throw_id, target

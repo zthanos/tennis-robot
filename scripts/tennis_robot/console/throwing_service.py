@@ -67,6 +67,10 @@ class ThrowingService:
     POSITION_TOLERANCE_M = 0.30
     ORIENTATION_TOLERANCE_RAD = math.radians(8.0)
     STATIONARY_TOLERANCE_MPS = 0.04
+    # How early the feed request is handed to the publisher, which then
+    # waits out the remainder and emits on the beat. Must exceed the
+    # publisher's discovery cost (measured 1.5-3.1 s).
+    FEED_EMISSION_LEAD_S = 3.6
     # Session states in which the drivetrain, basket carriage and launcher all
     # belong to Throwing Mode. Collection must not drive the robot from under a
     # spinning launcher, which is the software half of the doc's
@@ -324,30 +328,86 @@ class ThrowingService:
                 raise ThrowingError("flywheel readiness was not confirmed")
             self._flywheel_state = FlywheelState.READY
             with self._lock: self._session.flywheel_confirmed_ready(self._readiness())
+            # `interval_s` is the launch-to-launch PERIOD, not a rest between
+            # throws: each throw is scheduled at previous_launch + interval, so
+            # the time the feed request itself takes is absorbed by the period
+            # instead of being added to it. Measuring the period from the
+            # instant the feed request is issued (rather than from when it
+            # returns) is what makes the cadence observed at the consumer equal
+            # the configured value, because every request spends the same setup
+            # time before it publishes.
+            #
+            # monotonic() deliberately: this is application cadence, not
+            # simulation time, and it must not jump if the wall clock is
+            # adjusted.
+            next_launch_at: float | None = None
+            configuration_interval = self._session.configuration.interval_s
+            # The publisher needs this much time to discover the consumer before
+            # it can emit on the beat; clamped so short intervals still work.
+            emission_lead = min(self.FEED_EMISSION_LEAD_S, 0.9 * configuration_interval)
             while self._session.statistics.balls_thrown < self._session.configuration.ball_count:
                 if self._stop_requested.is_set(): break
-                while self._session.state == SessionState.PAUSED and not self._stop_requested.wait(0.1):
-                    pass
-                if self._stop_requested.is_set(): break
+                if self._session.state == SessionState.PAUSED:
+                    # Suspend the interval clock instead of letting it run down,
+                    # so resuming neither fires a burst of "overdue" throws nor
+                    # makes the operator wait out a fresh full interval.
+                    remaining_at_pause = (
+                        None if next_launch_at is None
+                        else max(0.0, next_launch_at - time.monotonic())
+                    )
+                    while (self._session.state == SessionState.PAUSED
+                           and not self._stop_requested.wait(0.1)):
+                        pass
+                    if self._stop_requested.is_set(): break
+                    if remaining_at_pause is not None:
+                        next_launch_at = time.monotonic() + remaining_at_pause
+                    continue
+                if next_launch_at is not None:
+                    # Hand off to the feed publisher FEED_EMISSION_LEAD_S before
+                    # the launch instant: it needs that time to discover the
+                    # consumer, and it then waits out the remainder itself so the
+                    # event is emitted exactly on the beat.
+                    remaining = (next_launch_at - emission_lead) - time.monotonic()
+                    if remaining > 0:
+                        # Short slices so Pause and Stop stay responsive during
+                        # the interval.
+                        self._stop_requested.wait(min(remaining, 0.1))
+                        continue
                 readiness = self._readiness()
                 with self._lock:
                     throw_id, target = self._session.prepare_throw(readiness)
                     configuration = self._session.configuration
+                # Always leave the publisher its full lead, including for the
+                # first throw: emitting as soon as possible would set the beat
+                # from a late first emission and drag the whole cadence with it.
+                earliest = time.monotonic() + emission_lead
+                launch_at = earliest if next_launch_at is None else max(next_launch_at, earliest)
+                # Rebase from the ACTUAL launch instant, never from a missed
+                # deadline: a late throw shifts the cadence forward, it never
+                # accumulates a debt that later fires as a catch-up burst.
+                next_launch_at = launch_at + configuration.interval_s
                 if not self._ros.request_ball_feed(
                     session_id=self._session.session_id,
                     throw_id=throw_id,
                     target_zone=target.value,
                     throw_speed_mps=configuration.throw_speed_mps,
                     throw_angle_deg=configuration.throw_angle_deg,
+                    publish_at_unix=time.time() + (launch_at - time.monotonic()),
                 ):
                     raise ThrowingError("ball feed request was not accepted")
                 with self._lock:
+                    if self._session.state in {SessionState.COMPLETED, SessionState.FAULT}:
+                        # Stop landed while this feed request was in flight. The
+                        # event was already emitted, but the session is already
+                        # closed — that is a clean stop, not a fault. (A PAUSE
+                        # landing mid-feed is different: the throw still counts,
+                        # see ThrowingSession.confirm_successful_throw.)
+                        break
                     self._session.confirm_successful_throw(readiness, throw_id, target)
                     self._last_throw = {"throw_id": throw_id, "target_zone": target.value,
                                         "source": "PLACEHOLDER_EVENT_SIMULATION",
                                         "at": time.time()}
                 if test_throw: break
-                if self._stop_requested.wait(self._session.configuration.interval_s): break
             self._safe_stop(completed=True)
         except (OSError, KeyError, TypeError, ValueError, ThrowingError) as exc:
             # Stop the actuators BEFORE taking the lock: a concurrent status()

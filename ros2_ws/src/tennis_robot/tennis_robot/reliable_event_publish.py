@@ -29,11 +29,15 @@ import rclpy
 from std_msgs.msg import String
 
 DEFAULT_MATCH_TIMEOUT_S = 5.0
-SUBSCRIBER_SETTLE_S = 1.0
+# Best-effort window for a SECOND subscriber to finish discovery. Kept
+# short: it is pure latency on every event, and the multi-subscriber
+# limitation of this short-lived publisher is documented technical debt.
+SUBSCRIBER_SETTLE_S = 0.5
 LINGER_S = 0.3
 
 
 def main(argv: list[str] | None = None) -> int:
+    started_at = time.monotonic()
     parser = argparse.ArgumentParser(description="Publish one discrete event.")
     parser.add_argument("--topic", required=True)
     parser.add_argument("--json", required=True, help="Payload for a std_msgs/String.")
@@ -42,6 +46,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--settle-s", type=float, default=SUBSCRIBER_SETTLE_S,
                         help="Keep discovering after the first match, so every "
                              "already-running subscriber receives the event.")
+    parser.add_argument("--publish-at", type=float, default=None,
+                        help="Absolute unix timestamp to publish AT. Discovery "
+                             "cost (measured 2.0-3.6 s, and variable) otherwise "
+                             "lands in the emission instant and shows up as "
+                             "cadence jitter at the consumer. Waiting here makes "
+                             "the emission deterministic; the caller issues the "
+                             "request early enough to absorb the setup.")
     args = parser.parse_args(argv)
 
     rclpy.init()
@@ -70,12 +81,20 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
+        if args.publish_at is not None:
+            # Hold the matched publisher until the scheduled launch instant.
+            while time.time() < args.publish_at:
+                rclpy.spin_once(node, timeout_sec=0.005)
         publisher.publish(String(data=args.json))
+        emitted_at = time.time()
         # Give the middleware time to flush before the publisher is destroyed.
         linger = time.monotonic() + LINGER_S
         while time.monotonic() < linger:
             rclpy.spin_once(node, timeout_sec=0.05)
-        print(f"published 1 event on {args.topic} to {matched} subscriber(s)")
+        lateness = "" if args.publish_at is None else (
+            f", {emitted_at - args.publish_at:+.3f}s vs the scheduled instant")
+        print(f"published 1 event on {args.topic} to {matched} subscriber(s) "
+              f"after {time.monotonic() - started_at:.3f}s{lateness}")
         return 0
     finally:
         node.destroy_node()

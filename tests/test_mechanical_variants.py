@@ -34,8 +34,13 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "generate_robot_urdf.py"
 CONTROLLERS = ROOT / "ros2_ws" / "src" / "tennis_robot" / "config" / "controllers.yaml"
 
+# `xacro` on PATH is not enough: the generator subprocess also needs the ROS
+# Python environment (AMENT_PREFIX_PATH / PYTHONPATH). Without it these would
+# FAIL rather than skip, which reads as a broken model instead of an
+# unconfigured shell.
 pytestmark = pytest.mark.skipif(
-    shutil.which("xacro") is None, reason="xacro not on PATH (ROS not sourced)"
+    shutil.which("xacro") is None or not os.environ.get("AMENT_PREFIX_PATH"),
+    reason="ROS 2 environment not sourced (need xacro + AMENT_PREFIX_PATH)",
 )
 
 COLLECTION_VARIANTS = ("baseline", "option-a-collect")

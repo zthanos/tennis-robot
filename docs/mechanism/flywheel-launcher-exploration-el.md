@@ -855,3 +855,64 @@ collector start απορρίπτεται, collector stop και `idle` πάντ�
   `/dev/shm` πριν από κάθε καθαρή εκτέλεση.
 - **BALL_LAUNCH_PHYSICS_NOT_VALIDATED**: τα αποδεκτά feed events ΔΕΝ σημαίνουν
   ότι εκτοξεύτηκε μπάλα. Το `balls_thrown` μετρά **αποδεκτά feed requests**.
+
+
+## Throwing Mode E2E: τα δύο τελευταία gates (2026-08-24)
+
+### Interval — σημασιολογία περιόδου
+
+Το `Interval Between Throws` είναι **περίοδος launch-to-launch**, όχι ανάπαυση
+μετά το feed. Η υλοποίηση κοιμόταν ολόκληρο το interval **μετά** την εργασία του
+feed, οπότε η μετρημένη καδέντζα ήταν `feed work + interval` = `7.92 / 8.56 s`
+για ρύθμιση `4.0 s`.
+
+Δύο διορθώσεις:
+
+1. **Deadline-based scheduling** με `time.monotonic()`: το επόμενο throw
+   προγραμματίζεται στο `previous_launch + interval`, και η αναμονή γίνεται σε
+   φέτες `0.1 s` ώστε Pause/Stop να παραμένουν responsive. Το rebasing γίνεται
+   από την **πραγματική** στιγμή εκτόξευσης, άρα χαμένο deadline μετατοπίζει την
+   καδέντζα — ποτέ δεν συσσωρεύει χρέος που θα έβγαινε ως catch-up burst.
+2. **Ντετερμινιστική στιγμή εκπομπής**: το κόστος discovery του βραχύβιου
+   publisher μετρήθηκε `2.0–3.6 s` **και μεταβλητό**, οπότε έμπαινε στη στιγμή
+   εκπομπής και εμφανιζόταν ως jitter στον consumer (`5.81 / 2.23 / 5.70 s`). Ο
+   publisher δέχεται πλέον `--publish-at <unix_ts>`: κάνει το discovery νωρίς,
+   κρατά τη matched σύνδεση και εκπέμπει **ακριβώς** τη στιγμή-στόχο. Ο service
+   του παραδίδει το αίτημα `FEED_EMISSION_LEAD_S` νωρίτερα.
+
+Μετρημένο στον ίδιο authoritative consumer (`gazebo_extras_node`), ανοχή
+**±0.5 s ορισμένη ΠΡΙΝ τη μέτρηση**: gaps `4.093 s` και `4.095 s`
+(σφάλμα `+0.093 / +0.095`). **PASS.**
+
+### Pause/Resume — το ρολόι του interval αναστέλλεται
+
+Ο χρόνος σε PAUSED δεν είναι χρέος: κρατείται το υπόλοιπο του interval τη στιγμή
+του Pause και αποκαθίσταται στο Resume. Ούτε burst, ούτε αναμονή ολόκληρου νέου
+interval.
+
+**Race που βρέθηκε**: Pause που φτάνει **κατά τη διάρκεια** ενός feed. Το event
+είχε ήδη εκπεμφθεί, αλλά το `confirm_successful_throw` απέρριπτε την κατάσταση
+PAUSED → η ρίψη χανόταν και η session πήγαινε FAULT (προϋπάρχον, όχι νέο). Πλέον
+το PAUSED γίνεται δεκτό **μόνο** στο confirm· το `prepare_throw` εξακολουθεί να
+αρνείται να **ξεκινήσει** ρίψη σε pause.
+
+### Stop σε ενεργή session
+
+Stop εκδόθηκε σε κατάσταση `THROWING` μετά από επιβεβαιωμένα feed events.
+Μετρημένα: αποδοχή HTTP 200· `THROWING → COMPLETED`· flywheels
+`180/-180 → 0.0/0.0 rad/s`· basket `97.41 mm RAISED`, υπολειπόμενη ταχύτητα
+`-0.0 mm/s`· pose αμετάβλητο (καμία επανεκκίνηση πλοήγησης)· collector
+`running=False`· `/api/throwing` απάντησε σε `0.018 s` (κανένα deadlock)· και
+**καμία επιπλέον ρίψη** μετά από αναμονή `8 s` (>1 interval). **PASS.**
+
+### Σφάλμα εργαλείου που άξιζε guard
+
+Ένα scripted slice-replace **διπλασίασε** μπλοκ μεθόδων στο `ros_service.py`
+αντί να το αντικαταστήσει. Η Python κρατά την **τελευταία** definition, οπότε
+μεταγενέστερη επεξεργασία της πρώτης δεν είχε καμία επίδραση στο runtime ενώ το
+`grep` έβρισκε το νέο κείμενο και όλα τα tests περνούσαν (χρησιμοποιούν fake ros
+port). Εμφανίστηκε ζωντανά ως
+`unexpected keyword argument 'publish_at_unix'`. Προστέθηκε
+`tests/test_no_shadowed_definitions.py` (AST) που απαγορεύει διπλούς ορισμούς σε
+module/class scope. Δεν επηρεάζει προηγούμενα αποτελέσματα: οι διπλές αντιγραφές
+ήταν ταυτόσημες μέχρι εκείνη την επεξεργασία.
