@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "status": "IMPLEMENTED_AND_CALIBRATED_NORMAL_CONTACT;_TYRE_FRICTION_PENDING",
+  "scope": "isolated flywheel launcher contacts and ground-rebound calibration",
+  "ball": {
+    "type": "ITF Type 2 medium",
+    "nominal_diameter_m": 0.066,
+    "diameter_allowed_m": [0.0654, 0.0686],
+    "mass_kg": 0.058,
+    "mass_allowed_kg": [0.056, 0.0594],
+    "inertia_model": "isotropic thin-shell approximation I=2/3*m*r^2; solid-sphere I=2/5*m*r^2 retained as sensitivity case",
+    "shell_inertia_kg_m2": 0.000042108,
+    "solid_sphere_sensitivity_inertia_kg_m2": 0.0000252648,
+    "initial_spin_rad_s": [0.0, 0.0, 0.0]
+  },
+  "selected_representation": {
+    "kind": "custom_axisymmetric_penalty_contact_system",
+    "implementation_status": "IMPLEMENTED_AND_CALIBRATED",
+    "state_body": "one rigid body carries pose, linear velocity, angular velocity, mass and inertia",
+    "launcher_contact": "analytical sphere-to-finite-cylinder contact evaluated independently for each flywheel",
+    "normal_force_law": "stateful nonlinear loading/unloading penalty law plus compression-dependent viscous damping; coefficients are in tennis_ball_compliance_calibration_results.json",
+    "tangential_force_law": "regularized Coulomb traction and equal/opposite wheel torque are implemented, but remain disabled (zero traction) until tyre friction is measured",
+    "ground_contact": "analytical rigid-plane contact using the same calibrated ball constitutive law, with independent contact state",
+    "collision_filtering": "native rigid flywheel/ball response disabled only for the analytically handled pair; cradle and ground collisions remain physical",
+    "reason": "installed Gazebo Harmonic uses DART; ODE surface kp/kd tags do not define a portable calibrated DART ball deformation model"
+  },
+  "itf_2026_reference": {
+    "source": "https://www.itftennis.com/media/15648/2026-technical-booklet.pdf",
+    "deformation_test_total_load_n": 95.64,
+    "deformation_contact_preload_n": 15.57,
+    "deformation_additional_load_n": 80.07,
+    "forward_deformation_m": [0.0056, 0.0074],
+    "return_deformation_m": [0.008, 0.0108],
+    "platen_speed_m_s": 0.0033333333333333335,
+    "forward_hold_s": 5.0,
+    "return_hold_s": 10.0,
+    "rebound_drop_height_m": 2.54,
+    "rebound_height_m": [1.35, 1.47]
+  },
+  "launcher_interface": {
+    "nip_gap_m": 0.058,
+    "nominal_diametral_reduction_m": 0.008,
+    "nominal_reduction_fraction": 0.12121212121212122,
+    "note": "8 mm exceeds the ITF forward-deformation band at 95.64 N; nip load cannot be inferred from the ITF limit table alone"
+  },
+  "required_calibration_evidence": {
+    "three_axis_preconditioning_and_platen_curves": true,
+    "loading_unloading_hysteresis_fit": true,
+    "rigid_surface_rebound_fit": true,
+    "launcher_tyre_friction_measurement": false,
+    "finite_cylinder_edge_contact_verification": true,
+    "energy_accounting_verification": true,
+    "time_step_convergence_1ms_0_5ms_0_25ms": true,
+    "bilateral_contact_symmetry_verification": true
+  },
+  "evidence_limit": "The three-axis curves are axisymmetric protocol simulations fitted to published ITF bands, not measurements of an individual physical ball; ball-specific characterization remains unresolved.",
+  "acceptance": {
+    "design_architecture_selected": true,
+    "coefficients_may_be_fitted_only_to_calibration_trials": true,
+    "launch_results_may_not_be_used_for_parameter_fit": true,
+    "compliant_model_implemented": true,
+    "compliant_model_calibrated": true,
+    "launcher_physics_trials_authorized": true,
+    "authorization_scope": "normal-contact launcher trials only; tyre-friction-dependent conclusions remain prohibited"
+  },
+  "calibration_result": {
+    "path": "config/tennis_ball_compliance_calibration_results.json",
+    "gazebo_dart_first_rebound_bottom_height_m": 1.410931181794,
+    "standalone_rk4_first_rebound_bottom_height_m": 1.4099735972615135,
+    "gazebo_to_standalone_relative_difference": 0.0006791506836343287
+  }
+}

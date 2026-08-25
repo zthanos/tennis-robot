@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name="flywheel_launcher_bench" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="components/materials.urdf.xacro"/>
+  <xacro:include filename="components/base.urdf.xacro"/>
+  <xacro:include filename="components/flywheel_launcher.urdf.xacro"/>
+  <xacro:include filename="components/flywheel_launcher_module.urdf.xacro"/>
+
+  <xacro:arg name="sim_mode" default="true"/>
+  <xacro:arg name="controllers_config" default="config/flywheel_launcher_bench_controllers.yaml"/>
+  <xacro:arg name="pitch_rad" default="0.349065850399"/>
+  <xacro:arg name="nip_height" default="0.350"/>
+
+  <!-- Kinematic root is the minimal fixed bench datum. It is deliberately not
+       a robot chassis and has no collision in the ball path. -->
+  <link name="launcher_bench_datum_link">
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+    <visual name="datum_vis">
+      <origin xyz="0 0 -0.010" rpy="0 0 0"/>
+      <geometry><box size="0.300 0.400 0.020"/></geometry>
+      <material name="mount_gray"/>
+    </visual>
+  </link>
+  <gazebo reference="launcher_bench_datum_link">
+    <kinematic>true</kinematic>
+    <gravity>false</gravity>
+  </gazebo>
+
+  <xacro:authoritative_flywheel_launcher_module
+      parent="launcher_bench_datum_link"
+      origin_xyz="0 0 $(arg nip_height)"
+      pitch_rad="$(arg pitch_rad)"/>
+
+  <ros2_control name="FlywheelLauncherBenchSystem" type="system">
+    <hardware>
+      <xacro:if value="$(arg sim_mode)">
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </xacro:if>
+    </hardware>
+    <joint name="flywheel_left_joint">
+      <command_interface name="velocity"><param name="min">-320.0</param><param name="max">320.0</param></command_interface>
+      <state_interface name="position"/><state_interface name="velocity"/>
+    </joint>
+    <joint name="flywheel_right_joint">
+      <command_interface name="velocity"><param name="min">-320.0</param><param name="max">320.0</param></command_interface>
+      <state_interface name="position"/><state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <xacro:if value="$(arg sim_mode)">
+    <gazebo>
+      <plugin filename="gz_ros2_control-system"
+              name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>$(arg controllers_config)</parameters>
+      </plugin>
+    </gazebo>
+  </xacro:if>
+</robot>

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<sdf version="1.11">
+  <world name="flywheel_launcher_geometry_bench">
+    <!-- DART is selected explicitly. SDF <physics type> does not select a
+         gz-physics engine; the Physics system's engine filename does. -->
+    <physics name="dart_1khz" type="dart">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <dart>
+        <collision_detector>ode</collision_detector>
+        <solver><solver_type>dantzig</solver_type></solver>
+      </dart>
+    </physics>
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
+      <engine><filename>gz-physics-dartsim-plugin</filename></engine>
+    </plugin>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
+
+    <light type="directional" name="sun">
+      <pose>0 0 10 0 0 0</pose><cast_shadows>true</cast_shadows>
+      <diffuse>0.9 0.9 0.9 1</diffuse><specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.2 -0.84</direction>
+    </light>
+    <model name="ground">
+      <static>true</static>
+      <link name="ground_link">
+        <collision name="ground_col"><geometry><plane><normal>0 0 1</normal><size>30 12</size></plane></geometry></collision>
+        <visual name="ground_vis"><geometry><plane><normal>0 0 1</normal><size>30 12</size></plane></geometry>
+          <material><ambient>0.25 0.28 0.30 1</ambient><diffuse>0.35 0.38 0.40 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Spawn flywheel_launcher_bench.urdf after Xacro expansion. No ball is
+         included until the compliant-ball calibration gate passes. -->
+  </world>
+</sdf>
