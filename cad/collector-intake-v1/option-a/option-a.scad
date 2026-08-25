@@ -12,6 +12,7 @@
 // Units: mm, ground frame, robot +X points forward.
 
 include <params.scad>
+include <bridge-params.scad>
 
 $fn = 64;
 explode = 0;
@@ -59,13 +60,6 @@ oa_ir2_mount_y = 175;
 oa_ir_sensor_size = [20, 16, 16];
 oa_ir_drop_t = 6;
 oa_ir_beam_d = 3;
-
-oa_bridge_center_x = 490;
-oa_bridge_depth = 220;
-oa_bridge_width = 470;
-oa_bridge_t = 18;
-oa_bridge_under_z = 150;
-oa_bridge_top_z = oa_bridge_under_z + oa_bridge_t;
 
 oa_upright_x0 = 385;
 oa_upright_x1 = 595;
@@ -475,6 +469,8 @@ module option_a_ir_review() {
 
 if (part == "hex_hub")
     printed_hex_hub();
+else if (part == "bridge")
+    plywood_bridge();
 else if (part == "cheek_left")
     curved_cheek(1);
 else if (part == "cheek_right")

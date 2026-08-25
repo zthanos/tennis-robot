@@ -24,12 +24,11 @@
        All *_ground params are in the GROUND frame; basket_link shares
        base_link's origin (base_link_height above ground). -->
   <xacro:macro name="ball_basket"
-      params="parent floor_front_x floor_top_z_ground rear_x half_width wall_top_z_ground center_lip_height management_run management_rise receiver_run receiver_rise hood_rear_overhang hood_rear_clearance_z_ground hood_front_clearance_z_ground x_shift:=0.0 lift_travel:=0.100 lift_overtravel:=0.010 empty_mass:=0.01 payload_mass:=0.0">
+      params="parent floor_front_x floor_top_z_ground rear_x half_width wall_top_z_ground center_lip_height management_run management_rise receiver_run receiver_rise hood_rear_overhang hood_rear_clearance_z_ground hood_front_clearance_z_ground x_shift:=0.0 lift_travel:=0.100 lift_overtravel:=0.010 empty_mass:=0.01 payload_mass:=0.0 launch_tilt_rad:=0.0 launch_pivot_x:=0.470 launch_pivot_z_ground:=0.040 floor_thickness:=0.005 cad_support_details:=false">
     <xacro:property name="floor_top" value="${floor_top_z_ground - base_link_height}"/>
     <xacro:property name="wall_top" value="${wall_top_z_ground - base_link_height}"/>
     <!-- Thin skinned bin: 5 mm floor (exterior bottom = floor_top - 0.005,
          the robot's lowest point), 10 mm wall frames. -->
-    <xacro:property name="floor_thickness" value="0.005"/>
     <xacro:property name="wall_thickness" value="0.010"/>
     <xacro:property name="bin_length" value="${floor_front_x - rear_x}"/>
     <xacro:property name="wall_height" value="${wall_top - floor_top}"/>
@@ -84,8 +83,8 @@
     <xacro:property name="hood_side_mid_z" value="${(receiver_top_mid_z + hood_side_top_z) / 2.0}"/>
     <xacro:property name="hood_side_height" value="${hood_side_top_z - receiver_top_mid_z}"/>
     <xacro:property name="basket_mass" value="${empty_mass + payload_mass}"/>
-    <xacro:property name="basket_com_x" value="${(floor_front_x + rear_x) / 2.0}"/>
-    <xacro:property name="basket_com_z" value="${floor_top + 0.45 * wall_height}"/>
+    <xacro:property name="basket_com_x" value="${0.209460 if cad_support_details else (floor_front_x + rear_x) / 2.0}"/>
+    <xacro:property name="basket_com_z" value="${0.091481 - base_link_height if cad_support_details else floor_top + 0.45 * wall_height}"/>
     <!-- The basket carriage is a real actuator boundary.  Collection/transport
          uses position 0; Throwing Mode raises the complete basket assembly.
          The same joint/controller contract is reserved for physical hardware,
@@ -100,18 +99,30 @@
          stop needs no margin: the carriage only touches it briefly and gravity
          immediately pulls it back inside the range, releasing the constraint.
 
-         lift_travel is the CAD baseline LIFT ONLY (100 mm). The mechanical
-         launch pose is 100 mm lift PLUS ~12 deg tilt; the tilt mechanism is not
-         mechanically validated, so no tilt joint is modelled and reaching this
-         joint's upper limit is NOT the complete physical throwing pose.
-         See docs/mechanism/flywheel-launcher-exploration-el.md. -->
+         lift_travel is the CAD baseline LIFT ONLY (100 mm).  The compact CAD
+         additionally defines a 12 degree mechanical pose about [470,0,40] mm.
+         It is represented by the fixed basket_launch_pose_joint below: a
+         generated configuration, not an invented or controlled actuator. -->
     <joint name="basket_joint" type="prismatic">
       <parent link="${parent}"/>
-      <child link="basket_link"/>
+      <child link="basket_guide_path_link"/>
       <origin xyz="${x_shift} 0 0" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
       <limit lower="${-lift_overtravel}" upper="${lift_travel}" effort="120.0" velocity="0.12"/>
       <dynamics damping="1.0" friction="0.0"/>
+    </joint>
+    <!-- Kinematic guide-path frame only. It has no fictitious cage geometry or
+         independent mass; the fixed basket child is reduced onto this frame by
+         SDF, leaving basket_joint as the single physical moving coordinate. -->
+    <link name="basket_guide_path_link"/>
+    <joint name="basket_launch_pose_joint" type="fixed">
+      <parent link="basket_guide_path_link"/>
+      <child link="basket_link"/>
+      <!-- T(pivot) * R_y(tilt) * T(-pivot), collapsed into one URDF origin
+           so the entire basket rotates about the CAD pivot without a massless
+           intermediary physical link. -->
+      <origin xyz="${launch_pivot_x - (cos(launch_tilt_rad) * launch_pivot_x + sin(launch_tilt_rad) * (launch_pivot_z_ground - base_link_height))} 0 ${launch_pivot_z_ground - base_link_height - (-sin(launch_tilt_rad) * launch_pivot_x + cos(launch_tilt_rad) * (launch_pivot_z_ground - base_link_height))}"
+              rpy="0 ${launch_tilt_rad} 0"/>
     </joint>
     <link name="basket_link">
       <inertial>
@@ -125,6 +136,21 @@
             izz="${basket_mass * (bin_length * bin_length + (2.0 * half_width) * (2.0 * half_width)) / 12.0}"/>
       </inertial>
 
+      <xacro:if value="${cad_support_details}">
+        <!-- Generated directly from compact_relieved_bin(); this preserves
+             the two 128 x 77 mm tyre pockets and lower chassis relief in both
+             collision and visual geometry.  OpenSCAD STL units are mm. -->
+        <collision name="compact_relieved_bin_col">
+          <origin xyz="0 0 ${-base_link_height}" rpy="0 0 0"/>
+          <geometry><mesh filename="package://tennis_robot/meshes/compact_relieved_bin.stl" scale="0.001 0.001 0.001"/></geometry>
+        </collision>
+        <visual name="compact_relieved_bin_vis">
+          <origin xyz="0 0 ${-base_link_height}" rpy="0 0 0"/>
+          <geometry><mesh filename="package://tennis_robot/meshes/compact_relieved_bin.stl" scale="0.001 0.001 0.001"/></geometry>
+          <material name="basket_gray"/>
+        </visual>
+      </xacro:if>
+      <xacro:unless value="${cad_support_details}">
       <collision name="basket_floor_col">
         <origin xyz="${(floor_front_x + rear_x) / 2.0} 0 ${floor_top - floor_thickness / 2.0}" rpy="0 0 0"/>
         <geometry><box size="${bin_length} ${2.0 * half_width} ${floor_thickness}"/></geometry>
@@ -304,6 +330,17 @@
           <material name="ir_beam_red"/>
         </visual>
       </xacro:if>
+
+      </xacro:unless>
     </link>
+    <xacro:if value="${cad_support_details}">
+      <gazebo reference="basket_link">
+        <sensor name="basket_handoff_contact_0" type="contact">
+          <always_on>true</always_on><update_rate>500</update_rate>
+          <topic>/gz/basket_handoff_contact_0</topic>
+          <contact><collision>compact_relieved_bin_col</collision></contact>
+        </sensor>
+      </gazebo>
+    </xacro:if>
   </xacro:macro>
 </robot>

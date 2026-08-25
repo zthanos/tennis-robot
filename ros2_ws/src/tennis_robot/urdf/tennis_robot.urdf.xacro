@@ -15,6 +15,7 @@
   <xacro:include filename="components/intake_debug_camera.urdf.xacro"/>
   <xacro:include filename="components/electronics_packaging.urdf.xacro"/>
   <xacro:include filename="components/flywheel_launcher.urdf.xacro"/>
+  <xacro:include filename="components/compact_mechanics.urdf.xacro"/>
 
   <!-- ros2_control args. sim_mode swaps the hardware backend (sim vs real).
        controllers_config is the absolute path to controllers.yaml, injected by
@@ -29,10 +30,12 @@
   <xacro:arg name="intake_cad_alignment_x" default="0.0"/>
   <xacro:arg name="battery_center_x" default="-0.143"/>
   <xacro:arg name="enable_compact_electronics" default="false"/>
-  <!-- Mechanical operating configuration. The physical concept has separate
-       COLLECT and LAUNCH configurations; the intake assembly and the flywheel
-       launcher claim the same front volume and are never fitted together.
-       Selected through the packaging variant, see scripts/generate_robot_urdf.py. -->
+  <xacro:arg name="enable_compact_mechanics" default="false"/>
+  <xacro:arg name="enable_basket_raised_holders" default="false"/>
+  <xacro:arg name="intake_parent_link" default="base_link"/>
+  <!-- Historical study variants may still select separate collect/launch
+       configurations.  The authoritative compact CAD permanently carries the
+       correctly aligned intake and launcher together. -->
   <xacro:arg name="enable_intake" default="true"/>
   <xacro:arg name="enable_flywheel" default="false"/>
   <xacro:arg name="flywheel_max_vel" default="320.0"/>
@@ -41,9 +44,13 @@
   <xacro:arg name="basket_payload_mass" default="0.0"/>
   <xacro:arg name="basket_lift_travel" default="0.100"/>
   <xacro:arg name="basket_lift_overtravel" default="0.010"/>
+  <xacro:arg name="basket_launch_tilt_rad" default="0.0"/>
+  <xacro:arg name="basket_floor_thickness" default="0.005"/>
+  <xacro:arg name="basket_cad_support_details" default="false"/>
   <!-- Dual-wheel intake tuning (docs/dual-wheel-intake-design-el.md).
        Injected from INTAKE_WHEEL_* envs by scripts/generate_robot_urdf.py. -->
   <xacro:arg name="intake_wheel_radius" default="0.060"/>
+  <xacro:arg name="intake_wheel_width" default="0.080"/>
   <xacro:arg name="intake_wheel_gap" default="0.056"/>
   <xacro:arg name="intake_nip_x" default="0.540"/>
   <xacro:arg name="intake_wheel_tilt_deg" default="35.0"/>
@@ -53,6 +60,8 @@
        Phase 2 = +funnel, Phase 3 = wheels+ramp, Phase 4 = full intake. -->
   <xacro:arg name="enable_funnel" default="true"/>
   <xacro:arg name="enable_ramp" default="true"/>
+  <xacro:arg name="compact_handoff_ramp_mesh"
+      default="package://tennis_robot/meshes/compact_relieved_handoff_ramp.stl"/>
   <xacro:arg name="enable_assist" default="false"/>
   <xacro:arg name="enable_conveyor" default="false"/>
   <xacro:arg name="intake_assist_x" default="0.545"/>
@@ -122,7 +131,7 @@
        ramp sheet where it climbs through their rear span (ramp z≈0.021 at
        x=0.53 — a 0.005 bottom would intersect it). base_link is 45 mm above
        ground, hence wheel_z = 0.025. -->
-  <xacro:property name="intake_wheel_height" value="0.080"/>
+  <xacro:property name="intake_wheel_height" value="${float($(arg intake_wheel_width))}"/>
   <xacro:property name="intake_wheel_z" value="${0.070 - base_link_height}"/>
   <!-- Outward carriage travel: 8 mm absorbs the 3 mm/side nominal
        interference with margin. Spring k is SDF-patched by the generator. -->
@@ -244,13 +253,22 @@
       width="${wheel_width}"
       mass="${wheel_mass}"/>
 
-  <!-- INTAKE ASSEMBLY — fitted only in the COLLECT configuration.
-       Its wheels, funnel cheeks, elevation ramp and safety deflector occupy
-       x 446…884 mm / z 0…281 mm, the same volume the flywheel launcher needs
-       (wheels x 459…661, z 162…268). The two are alternative mechanical
-       configurations of one robot, so the launch configuration simply does not
-       carry this assembly — no deployment mechanism is modelled, because none
-       has been selected yet. -->
+  <!-- The compact bridge is the real load path for the intake pods and the
+       launcher cradle.  It must exist before those child joints are emitted. -->
+  <xacro:if value="$(arg enable_compact_mechanics)">
+    <xacro:compact_plywood_bridge parent="base_link" base_link_height="${base_link_height}"/>
+    <xacro:compact_basket_fixed_rails parent="base_link"
+        x_shift="${functional_shift_x}" base_link_height="${base_link_height}"/>
+    <xacro:compact_fixed_entry_hood parent="base_link"
+        x_shift="${functional_shift_x}" base_link_height="${base_link_height}"/>
+    <xacro:if value="$(arg enable_basket_raised_holders)">
+      <xacro:compact_basket_raised_holders parent="base_link"
+          x_shift="${functional_shift_x}" base_link_height="${base_link_height}"/>
+    </xacro:if>
+  </xacro:if>
+
+  <!-- Intake assembly.  In compact it is bridge-mounted and uses the measured
+       CAD cheeks/ramp; older study variants retain their historical funnel. -->
   <xacro:if value="$(arg enable_intake)">
     <!-- Left wheel drives ω<0 / right ω>0 (opposite signs, commanded by
          intake_wheel_velocity_controller) so both inner faces move rearward. -->
@@ -266,6 +284,7 @@
         max_vel="${intake_wheel_max_vel}"
         effort="${intake_wheel_effort}"
         mass="0.20"
+        parent="$(arg intake_parent_link)"
         sensor_index="0"/>
     <xacro:intake_side_wheel
         side="right"
@@ -279,12 +298,21 @@
         max_vel="${intake_wheel_max_vel}"
         effort="${intake_wheel_effort}"
         mass="0.20"
+        parent="$(arg intake_parent_link)"
         sensor_index="1"/>
 
-    <xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}" pitch="${scooper_pitch}"
-        x_shift="${functional_shift_x}"
-        cheek_x_bias="${intake_cad_alignment_x}"
-        enable_cheeks="$(arg enable_funnel)" enable_ramp="$(arg enable_ramp)"/>
+    <xacro:if value="$(arg enable_compact_mechanics)">
+      <xacro:compact_intake_static_structure parent="compact_bridge_link"
+          base_link_height="${base_link_height}"
+          enable_cheeks="$(arg enable_funnel)" enable_ramp="$(arg enable_ramp)"
+          ramp_mesh="$(arg compact_handoff_ramp_mesh)"/>
+    </xacro:if>
+    <xacro:unless value="$(arg enable_compact_mechanics)">
+      <xacro:intake_funnel parent="base_link" chassis_z="${chassis_z}" pitch="${scooper_pitch}"
+          x_shift="${functional_shift_x}"
+          cheek_x_bias="${intake_cad_alignment_x}"
+          enable_cheeks="$(arg enable_funnel)" enable_ramp="$(arg enable_ramp)"/>
+    </xacro:unless>
   </xacro:if>
   <xacro:if value="$(arg enable_assist)">
     <xacro:intake_assist_roller
@@ -340,7 +368,10 @@
       lift_travel="${float($(arg basket_lift_travel))}"
       lift_overtravel="${float($(arg basket_lift_overtravel))}"
       empty_mass="${float($(arg basket_empty_mass))}"
-      payload_mass="${float($(arg basket_payload_mass))}"/>
+      payload_mass="${float($(arg basket_payload_mass))}"
+      launch_tilt_rad="${float($(arg basket_launch_tilt_rad))}"
+      floor_thickness="${float($(arg basket_floor_thickness))}"
+      cad_support_details="$(arg basket_cad_support_details)"/>
   <xacro:battery_pack parent="base_link"
       center_x="${float($(arg battery_center_x))}"/>
 
@@ -350,14 +381,22 @@
   </xacro:if>
 
   <xacro:if value="$(arg enable_flywheel)">
-    <xacro:side_by_side_flywheel_launcher
-        parent="base_link"
-        origin_x="${0.560 + functional_shift_x}"
-        nip_z_ground="0.215"
-        base_link_height="${base_link_height}"
-        pitch_rad="0.349066"
-        nip_gap="${float($(arg flywheel_nip_gap))}"
-        max_vel="${float($(arg flywheel_max_vel))}"/>
+    <xacro:if value="$(arg enable_compact_mechanics)">
+      <xacro:compact_cad_flywheel_launcher parent="compact_bridge_link"
+          base_link_height="${base_link_height}"
+          nip_gap="${float($(arg flywheel_nip_gap))}"
+          max_vel="${float($(arg flywheel_max_vel))}"/>
+    </xacro:if>
+    <xacro:unless value="$(arg enable_compact_mechanics)">
+      <xacro:side_by_side_flywheel_launcher
+          parent="base_link"
+          origin_x="${0.560 + functional_shift_x}"
+          nip_z_ground="0.215"
+          base_link_height="${base_link_height}"
+          pitch_rad="0.349066"
+          nip_gap="${float($(arg flywheel_nip_gap))}"
+          max_vel="${float($(arg flywheel_max_vel))}"/>
+    </xacro:unless>
   </xacro:if>
 
   <xacro:rplidar_c1_mount

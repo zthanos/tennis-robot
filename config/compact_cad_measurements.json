@@ -1,0 +1,576 @@
+{
+  "source": "cad/flywheel-launcher-v0/compact-validation-export.scad",
+  "units": "mm",
+  "parts": {
+    "chassis": {
+      "bbox_mm": [
+        [
+          -460.0,
+          -290.0,
+          38.0
+        ],
+        [
+          460.0,
+          290.0,
+          52.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 84
+    },
+    "bridge": {
+      "bbox_mm": [
+        [
+          270.0,
+          -245.0,
+          52.0
+        ],
+        [
+          500.0,
+          245.0,
+          168.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 16140
+    },
+    "cheeks": {
+      "bbox_mm": [
+        [
+          455.0,
+          -208.0,
+          18.0
+        ],
+        [
+          708.0,
+          208.0,
+          150.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 16980
+    },
+    "handoff_ramp": {
+      "bbox_mm": [
+        [
+          319.65,
+          -94.0,
+          0.0
+        ],
+        [
+          360.35,
+          94.0,
+          53.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 1848
+    },
+    "intake_wheels": {
+      "bbox_mm": [
+        [
+          298.27703332726935,
+          -152.0,
+          4.53921132968695
+        ],
+        [
+          441.72296667273065,
+          152.0,
+          135.46078867031304
+        ]
+      ],
+      "vertex_count_with_duplicates": 2280
+    },
+    "launcher": {
+      "bbox_mm": [
+        [
+          323.64439780309726,
+          -229.0,
+          127.0558684773767
+        ],
+        [
+          776.0925451011458,
+          229.0,
+          366.7326137995799
+        ]
+      ],
+      "vertex_count_with_duplicates": 3564
+    },
+    "launcher_cradle": {
+      "bbox_mm": [
+        [
+          323.64439780309726,
+          -229.0,
+          127.0558684773767
+        ],
+        [
+          596.3556021969027,
+          229.0,
+          302.9441315226233
+        ]
+      ],
+      "vertex_count_with_duplicates": 2352
+    },
+    "basket_collect": {
+      "bbox_mm": [
+        [
+          -112.0,
+          -188.0,
+          19.0
+        ],
+        [
+          370.0,
+          188.0,
+          285.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 22014
+    },
+    "basket_bin": {
+      "bbox_mm": [
+        [
+          -112.0,
+          -172.0,
+          19.0
+        ],
+        [
+          356.2911860100865,
+          172.0,
+          285.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 19782
+    },
+    "basket_hood": {
+      "bbox_mm": [
+        [
+          280.0,
+          -188.0,
+          37.5
+        ],
+        [
+          370.0,
+          188.0,
+          148.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 2160
+    },
+    "basket_launch": {
+      "bbox_mm": [
+        [
+          -98.97220326388123,
+          -188.0,
+          37.5
+        ],
+        [
+          370.0,
+          188.0,
+          444.93043309655883
+        ]
+      ],
+      "vertex_count_with_duplicates": 22860
+    },
+    "basket_launch_moving": {
+      "bbox_mm": [
+        [
+          -98.97220326388123,
+          -172.0,
+          129.85448492547806
+        ],
+        [
+          364.7540750350392,
+          172.0,
+          444.93043309655883
+        ]
+      ],
+      "vertex_count_with_duplicates": 19782
+    },
+    "basket_guides": {
+      "bbox_mm": [
+        [
+          -75.0,
+          -215.0,
+          52.0
+        ],
+        [
+          15.0,
+          215.0,
+          455.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 168
+    },
+    "basket_holders": {
+      "bbox_mm": [
+        [
+          65.11095024597813,
+          -196.0,
+          52.0
+        ],
+        [
+          187.9580401063617,
+          196.0,
+          216.19039536231105
+        ]
+      ],
+      "vertex_count_with_duplicates": 222
+    },
+    "hood_supports": {
+      "bbox_mm": [
+        [
+          326.0,
+          -188.0,
+          52.0
+        ],
+        [
+          334.0,
+          188.0,
+          148.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 222
+    },
+    "launcher_bridge_intersection": {
+      "bbox_mm": [
+        [
+          377.88085939134726,
+          -201.56403293424734,
+          150.0
+        ],
+        [
+          468.2873680932979,
+          201.56403293424734,
+          168.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 7506,
+      "intersection_volume_mm3": 145093.43125912445
+    },
+    "basket_hood_bridge_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_collect_bridge_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_raised_bridge_intersection": {
+      "bbox_mm": [
+        [
+          280.0,
+          -172.0,
+          152.0
+        ],
+        [
+          320.0,
+          172.0,
+          156.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 72,
+      "intersection_volume_mm3": 2240.0
+    },
+    "basket_launch_bridge_intersection": {
+      "bbox_mm": [
+        [
+          295.9871690715329,
+          -172.0,
+          162.13335574969364
+        ],
+        [
+          324.41920701639384,
+          172.0,
+          168.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 72,
+      "intersection_volume_mm3": 1053.2334467279968
+    },
+    "bridge_cheeks_intersection": {
+      "bbox_mm": [
+        [
+          458.1847377712246,
+          -134.68048102192475,
+          150.0
+        ],
+        [
+          487.8227173665409,
+          134.1723731578941,
+          150.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 1434,
+      "intersection_volume_mm3": 9.43934234480063e-09
+    },
+    "bridge_chassis_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_collect_chassis_intersection": {
+      "bbox_mm": [
+        [
+          -80.0,
+          -172.0,
+          49.0
+        ],
+        [
+          334.0,
+          188.0,
+          52.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 138,
+      "intersection_volume_mm3": 360.0000000000279
+    },
+    "basket_flange_chassis_intersection": {
+      "bbox_mm": [
+        [
+          -80.0,
+          -172.0,
+          49.0
+        ],
+        [
+          10.0,
+          172.0,
+          52.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 126,
+      "intersection_volume_mm3": 360.0000000000461
+    },
+    "basket_walls_chassis_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_floor_chassis_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "launcher_basket_hood_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "launcher_basket_collect_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "launcher_basket_raised_intersection": {
+      "bbox_mm": [
+        [
+          353.0581301291048,
+          -90.0,
+          132.35657385701805
+        ],
+        [
+          356.2911860100865,
+          90.0,
+          134.67245638537207
+        ]
+      ],
+      "vertex_count_with_duplicates": 144,
+      "intersection_volume_mm3": 48.4405265805805
+    },
+    "launcher_hood_raised_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "launcher_basket_launch_intersection": {
+      "bbox_mm": [
+        [
+          324.492026053859,
+          -140.0,
+          208.1828405893775
+        ],
+        [
+          335.85134811845893,
+          146.0,
+          219.82994139721018
+        ]
+      ],
+      "vertex_count_with_duplicates": 216,
+      "intersection_volume_mm3": 757.7161131339998
+    },
+    "launcher_hood_launch_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_collect_intake_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_collect_left_wheel_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_collect_right_wheel_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_hood_intake_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_bin_intake_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_collect_battery_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_raised_battery_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_launch_battery_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_launch_lidar_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "guides_chassis_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "guides_intake_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "guides_bridge_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "guides_launcher_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_launch_holders_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "holders_chassis_intersection": {
+      "bbox_mm": [
+        [
+          67.9580401063617,
+          -196.0,
+          52.0
+        ],
+        [
+          187.9580401063617,
+          -172.0,
+          52.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 12,
+      "intersection_volume_mm3": 1.6007106751203537e-10
+    },
+    "holders_bridge_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "holders_launcher_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "hood_supports_wheels_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "hood_supports_launcher_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "hood_supports_bridge_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "hood_supports_basket_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "hood_supports_chassis_intersection": {
+      "bbox_mm": [
+        [
+          326.0,
+          180.0,
+          52.0
+        ],
+        [
+          334.0,
+          188.0,
+          52.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 12,
+      "intersection_volume_mm3": 0.0
+    },
+    "handoff_ramp_left_wheel_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "handoff_ramp_right_wheel_intersection": {
+      "bbox_mm": null,
+      "intersection_volume_mm3": 0.0,
+      "vertex_count_with_duplicates": 0
+    },
+    "basket_bin_local": {
+      "bbox_mm": [
+        [
+          -12.0,
+          -172.0,
+          19.0
+        ],
+        [
+          456.2911860100865,
+          172.0,
+          285.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 19782
+    },
+    "basket_hood_local": {
+      "bbox_mm": [
+        [
+          380.0,
+          -188.0,
+          37.5
+        ],
+        [
+          470.0,
+          188.0,
+          148.0
+        ]
+      ],
+      "vertex_count_with_duplicates": 2160
+    }
+  }
+}

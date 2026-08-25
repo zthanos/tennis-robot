@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    Physics decomposition of cad/flywheel-launcher-v0/
+    compact-packaging-study.scad.  Coordinates are metres in the CAD ground
+    frame (+X forward, +Y left, +Z up); base_link_height is subtracted exactly
+    once where a ground-frame Z datum enters the base_link-aligned link frame.
+
+    Material estimates used below:
+      birch plywood 600 kg/m^3; aluminium 2700 kg/m^3;
+      6 mm HDPE cheeks 950 kg/m^3; printed/rubber ramp assembly ~0.09 kg.
+    The fixed links remain separate because they are distinct load/contact
+    owners even though Gazebo may reduce their fixed joints internally.
+  -->
+
+  <xacro:macro name="compact_box" params="name xyz rpy size material">
+    <collision name="${name}_col">
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <geometry><box size="${size}"/></geometry>
+    </collision>
+    <visual name="${name}_vis">
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <geometry><box size="${size}"/></geometry>
+      <material name="${material}"/>
+    </visual>
+  </xacro:macro>
+
+  <!-- CAD plywood_bridge() after functional_shift_x=-0.100 m.  The top is
+       split around the basket service notch and the uprights are split around
+       the open-bottom motor arches; this preserves the actual clearances
+       instead of replacing the bridge with a solid bounding box. -->
+  <xacro:macro name="compact_plywood_bridge" params="parent base_link_height">
+    <joint name="compact_bridge_mount_joint" type="fixed">
+      <parent link="${parent}"/><child link="compact_bridge_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+    <gazebo reference="compact_bridge_mount_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+    <link name="compact_bridge_link">
+      <!-- 1.19 kg: 600 kg/m^3 plywood after notch/arch subtraction, plus
+           0.047 kg for the two aluminium external doublers.  Inertia is the
+           conservative box-envelope estimate about the measured assembly COM. -->
+      <inertial>
+        <origin xyz="0.412 0 ${0.128 - base_link_height}" rpy="0 0 0"/>
+        <mass value="1.19"/>
+        <inertia ixx="0.0252" ixy="0" ixz="0"
+                 iyy="0.0062" iyz="0" izz="0.0307"/>
+      </inertial>
+
+      <!-- Horizontal bridge: x 0.280..0.500, y +/-0.245, z 0.150..0.168.
+           The rear centre is removed through x=0.384, y +/-0.165. -->
+      <xacro:compact_box name="bridge_top_forward"
+          xyz="0.442 0 ${0.159 - base_link_height}" rpy="0 0 0"
+          size="0.116 0.490 0.018" material="plywood"/>
+      <xacro:compact_box name="bridge_top_rear_left"
+          xyz="0.332 0.205 ${0.159 - base_link_height}" rpy="0 0 0"
+          size="0.104 0.080 0.018" material="plywood"/>
+      <xacro:compact_box name="bridge_top_rear_right"
+          xyz="0.332 -0.205 ${0.159 - base_link_height}" rpy="0 0 0"
+          size="0.104 0.080 0.018" material="plywood"/>
+
+      <!-- Side uprights x 0.285..0.495, z 0.052..0.150.  The 80 mm motor
+           service arch is centred at x=0.330,z=0.085. -->
+      <xacro:compact_box name="bridge_left_upright_front"
+          xyz="0.4325 0.205 ${0.101 - base_link_height}" rpy="0 0 0"
+          size="0.125 0.018 0.098" material="plywood"/>
+      <xacro:compact_box name="bridge_right_upright_front"
+          xyz="0.4325 -0.205 ${0.101 - base_link_height}" rpy="0 0 0"
+          size="0.125 0.018 0.098" material="plywood"/>
+      <xacro:compact_box name="bridge_left_arch_header"
+          xyz="0.330 0.205 ${0.1375 - base_link_height}" rpy="0 0 0"
+          size="0.080 0.018 0.025" material="plywood"/>
+      <xacro:compact_box name="bridge_right_arch_header"
+          xyz="0.330 -0.205 ${0.1375 - base_link_height}" rpy="0 0 0"
+          size="0.080 0.018 0.025" material="plywood"/>
+      <xacro:compact_box name="bridge_left_upright_rear"
+          xyz="0.2875 0.205 ${0.101 - base_link_height}" rpy="0 0 0"
+          size="0.005 0.018 0.098" material="plywood"/>
+      <xacro:compact_box name="bridge_right_upright_rear"
+          xyz="0.2875 -0.205 ${0.101 - base_link_height}" rpy="0 0 0"
+          size="0.005 0.018 0.098" material="plywood"/>
+
+      <xacro:compact_box name="bridge_left_doubler"
+          xyz="0.330 0.205 ${0.143 - base_link_height}" rpy="0 0 0"
+          size="0.120 0.006 0.012" material="mount_gray"/>
+      <xacro:compact_box name="bridge_right_doubler"
+          xyz="0.330 -0.205 ${0.143 - base_link_height}" rpy="0 0 0"
+          size="0.120 0.006 0.012" material="mount_gray"/>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="compact_cheek_segment"
+      params="index x y length yaw side base_link_height">
+    <xacro:compact_box name="compact_cheek_${side}_${index}"
+        xyz="${x} ${side * y} ${0.084 - base_link_height}"
+        rpy="0 0 ${side * yaw}" size="${length} 0.006 0.132"
+        material="intake_orange"/>
+  </xacro:macro>
+
+  <xacro:macro name="compact_ramp_segment"
+      params="index x z length pitch wall_z wall_h base_link_height">
+    <xacro:compact_box name="compact_handoff_sheet_${index}"
+        xyz="${x} 0 ${z - base_link_height}" rpy="0 ${pitch} 0"
+        size="${length} 0.180 0.0015" material="intake_orange"/>
+    <xacro:compact_box name="compact_handoff_left_wall_${index}"
+        xyz="${x} 0.092 ${wall_z - base_link_height}" rpy="0 0 0"
+        size="${length} 0.004 ${wall_h}" material="intake_orange"/>
+    <xacro:compact_box name="compact_handoff_right_wall_${index}"
+        xyz="${x} -0.092 ${wall_z - base_link_height}" rpy="0 0 0"
+        size="${length} 0.004 ${wall_h}" material="intake_orange"/>
+  </xacro:macro>
+
+  <!-- Curved CAD cheeks and compact_handoff_ramp are distinct contact owners.
+       Eight convex segments follow the cubic Bezier/smoothstep definitions;
+       max chord error is below 1 mm and avoids concave mesh collision. -->
+  <xacro:macro name="compact_intake_static_structure"
+      params="parent base_link_height enable_cheeks:=true enable_ramp:=true ramp_mesh:='package://tennis_robot/meshes/compact_relieved_handoff_ramp.stl'">
+    <xacro:if value="${enable_cheeks}">
+      <joint name="compact_intake_cheeks_joint" type="fixed">
+        <parent link="${parent}"/><child link="compact_intake_cheeks_link"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+      </joint>
+      <gazebo reference="compact_intake_cheeks_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+      <link name="compact_intake_cheeks_link">
+        <!-- 0.41 kg at 950 kg/m^3 from two 6 mm x 132 mm HDPE curves plus
+             their 4 mm mounting flanges. -->
+        <inertial>
+          <origin xyz="0.600 0 ${0.084 - base_link_height}" rpy="0 0 0"/>
+          <mass value="0.41"/>
+          <inertia ixx="0.00130" ixy="0" ixz="0"
+                   iyy="0.00242" iyz="0" izz="0.00236"/>
+        </inertial>
+        <xacro:compact_cheek_segment index="00" x="0.693362" y="0.202379" length="0.023858" yaw="-2.920065" side="1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="01" x="0.668229" y="0.192848" length="0.030323" yaw="-2.668353" side="1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="02" x="0.640009" y="0.176168" length="0.035343" yaw="-2.555828" side="1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="03" x="0.609954" y="0.155199" length="0.037969" yaw="-2.510633" side="1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="04" x="0.579319" y="0.132801" length="0.037931" yaw="-2.509904" side="1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="05" x="0.549358" y="0.111832" length="0.035226" yaw="-2.553621" side="1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="06" x="0.521325" y="0.095152" length="0.030114" yaw="-2.664805" side="1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="07" x="0.496474" y="0.085621" length="0.023538" yaw="-2.917002" side="1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="00" x="0.693362" y="0.202379" length="0.023858" yaw="-2.920065" side="-1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="01" x="0.668229" y="0.192848" length="0.030323" yaw="-2.668353" side="-1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="02" x="0.640009" y="0.176168" length="0.035343" yaw="-2.555828" side="-1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="03" x="0.609954" y="0.155199" length="0.037969" yaw="-2.510633" side="-1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="04" x="0.579319" y="0.132801" length="0.037931" yaw="-2.509904" side="-1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="05" x="0.549358" y="0.111832" length="0.035226" yaw="-2.553621" side="-1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="06" x="0.521325" y="0.095152" length="0.030114" yaw="-2.664805" side="-1" base_link_height="${base_link_height}"/>
+        <xacro:compact_cheek_segment index="07" x="0.496474" y="0.085621" length="0.023538" yaw="-2.917002" side="-1" base_link_height="${base_link_height}"/>
+        <!-- End caps reproduce the d=6 mm hull stations at the CAD mouth. -->
+        <xacro:compact_box name="compact_cheek_left_mouth_cap"
+            xyz="0.705 0.205 ${0.084 - base_link_height}" rpy="0 0 0"
+            size="0.006 0.006 0.132" material="intake_orange"/>
+        <xacro:compact_box name="compact_cheek_right_mouth_cap"
+            xyz="0.705 -0.205 ${0.084 - base_link_height}" rpy="0 0 0"
+            size="0.006 0.006 0.132" material="intake_orange"/>
+        <xacro:compact_box name="compact_cheek_left_flange"
+            xyz="0.485 0.1165 ${0.148 - base_link_height}" rpy="0 0 0"
+            size="0.060 0.067 0.004" material="intake_orange"/>
+        <xacro:compact_box name="compact_cheek_right_flange"
+            xyz="0.485 -0.1165 ${0.148 - base_link_height}" rpy="0 0 0"
+            size="0.060 0.067 0.004" material="intake_orange"/>
+      </link>
+    </xacro:if>
+
+    <xacro:if value="${enable_ramp}">
+      <joint name="compact_handoff_ramp_joint" type="fixed">
+        <parent link="${parent}"/><child link="compact_handoff_ramp_link"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+      </joint>
+      <gazebo reference="compact_handoff_ramp_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+      <link name="compact_handoff_ramp_link">
+        <inertial>
+          <origin xyz="0.334580 0 ${0.010426 - base_link_height}" rpy="0 0 0"/>
+          <mass value="0.074"/>
+          <inertia ixx="0.000202" ixy="0" ixz="0"
+                   iyy="0.000012" iyz="0" izz="0.000211"/>
+        </inertial>
+        <!-- Generated from the locally trimmed authoritative ramp.  Keeping
+             one source mesh prevents the contact surface from drifting away
+             from the exact CAD boolean. -->
+        <collision name="compact_relieved_handoff_ramp_col">
+          <origin xyz="0 0 ${-base_link_height}" rpy="0 0 0"/>
+          <geometry><mesh filename="${ramp_mesh}" scale="0.001 0.001 0.001"/></geometry>
+        </collision>
+        <visual name="compact_relieved_handoff_ramp_vis">
+          <origin xyz="0 0 ${-base_link_height}" rpy="0 0 0"/>
+          <geometry><mesh filename="${ramp_mesh}" scale="0.001 0.001 0.001"/></geometry>
+          <material name="intake_orange"/>
+        </visual>
+      </link>
+      <gazebo reference="compact_handoff_ramp_link">
+        <sensor name="compact_ramp_contact_0" type="contact">
+          <always_on>true</always_on><update_rate>500</update_rate>
+          <topic>/gz/compact_ramp_contact_0</topic>
+          <contact><collision>compact_relieved_handoff_ramp_col</collision></contact>
+        </sensor>
+      </gazebo>
+    </xacro:if>
+  </xacro:macro>
+
+  <!-- Chassis-mounted entry hood and its rerouted structural portal.  The
+       exact CAD mesh contains the two tyre pockets and launcher-plate pocket;
+       it is deliberately not parented to the moving basket. -->
+  <xacro:macro name="compact_fixed_entry_hood" params="parent x_shift base_link_height">
+    <joint name="compact_fixed_entry_hood_joint" type="fixed">
+      <parent link="${parent}"/><child link="compact_fixed_entry_hood_link"/>
+      <origin xyz="${x_shift} 0 0" rpy="0 0 0"/>
+    </joint>
+    <gazebo reference="compact_fixed_entry_hood_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+    <link name="compact_fixed_entry_hood_link">
+      <!-- 0.087 kg is the fixed homogeneous-volume share of the revised 1.099 kg
+           empty basket/hood system. Structural sizing remains unvalidated. -->
+      <inertial>
+        <origin xyz="0.422404 0 ${0.124859 - base_link_height}" rpy="0 0 0"/>
+        <mass value="0.087"/>
+        <inertia ixx="0.00112" ixy="0" ixz="0"
+                 iyy="0.00013" iyz="0" izz="0.00118"/>
+      </inertial>
+      <collision name="compact_fixed_entry_hood_col">
+        <origin xyz="0 0 ${-base_link_height}" rpy="0 0 0"/>
+        <geometry><mesh filename="package://tennis_robot/meshes/compact_fixed_hood.stl" scale="0.001 0.001 0.001"/></geometry>
+      </collision>
+      <visual name="compact_fixed_entry_hood_vis">
+        <origin xyz="0 0 ${-base_link_height}" rpy="0 0 0"/>
+        <geometry><mesh filename="package://tennis_robot/meshes/compact_fixed_hood.stl" scale="0.001 0.001 0.001"/></geometry>
+        <material name="basket_gray"/>
+      </visual>
+    </link>
+  </xacro:macro>
+
+  <!-- Two fixed guide envelopes are the complete current guide architecture.
+       The previous moving beam/crossbar/cowl cage was not physical. Purchased
+       followers and attachment details remain a mechanical-detailing item. -->
+  <xacro:macro name="compact_basket_fixed_rails" params="parent x_shift base_link_height">
+    <joint name="basket_rails_mount_joint" type="fixed">
+      <parent link="${parent}"/><child link="basket_rails_link"/>
+      <origin xyz="${x_shift} 0 0" rpy="0 0 0"/>
+    </joint>
+    <gazebo reference="basket_rails_mount_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+    <link name="basket_rails_link">
+      <!-- Two hollow 28x22x403 mm aluminium guide envelopes plus base feet:
+           0.82 kg engineering estimate. No surrounding cross brace/cage. -->
+      <inertial>
+        <origin xyz="0.070 0 ${0.155 - base_link_height}" rpy="0 0 0"/>
+        <mass value="0.82"/>
+        <inertia ixx="0.0320" ixy="0" ixz="0"
+                 iyy="0.0060" iyz="0" izz="0.0280"/>
+      </inertial>
+      <xacro:compact_box name="basket_left_rail" xyz="0.070 0.180 ${0.2535 - base_link_height}" rpy="0 0 0" size="0.028 0.022 0.403" material="mount_gray"/>
+      <xacro:compact_box name="basket_right_rail" xyz="0.070 -0.180 ${0.2535 - base_link_height}" rpy="0 0 0" size="0.028 0.022 0.403" material="mount_gray"/>
+      <xacro:compact_box name="basket_left_rail_foot" xyz="0.070 0.180 ${0.058 - base_link_height}" rpy="0 0 0" size="0.090 0.070 0.012" material="mount_gray"/>
+      <xacro:compact_box name="basket_right_rail_foot" xyz="0.070 -0.180 ${0.058 - base_link_height}" rpy="0 0 0" size="0.090 0.070 0.012" material="mount_gray"/>
+    </link>
+  </xacro:macro>
+
+  <!-- Configuration-specific plywood holder envelopes for the current static
+       100 mm + 12 degree launch study. Their tilted top faces coincide with
+       two 120x12 mm patches of the real basket flange. The engagement/latch
+       mechanism is not selected, so these are enabled only for the explicit
+       supported-pose configuration, never during the diagnostic lift. -->
+  <xacro:macro name="compact_basket_raised_holders"
+      params="parent x_shift base_link_height">
+    <joint name="basket_raised_holders_mount_joint" type="fixed">
+      <parent link="${parent}"/><child link="basket_raised_holders_link"/>
+      <origin xyz="${x_shift} 0 0" rpy="0 0 0"/>
+    </joint>
+    <gazebo reference="basket_raised_holders_mount_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+    <link name="basket_raised_holders_link">
+      <!-- 0.457 kg at the project plywood density 600 kg/m^3. -->
+      <inertial>
+        <origin xyz="0.227958 0 ${0.118094 - base_link_height}" rpy="0 0 0"/>
+        <mass value="0.457"/>
+        <inertia ixx="0.00688" ixy="0" ixz="0"
+                 iyy="0.00160" iyz="0" izz="0.00643"/>
+      </inertial>
+      <xacro:compact_box name="basket_left_holder_post"
+          xyz="0.227958 0.184 ${0.118076 - base_link_height}" rpy="0 0 0"
+          size="0.120 0.024 0.132153" material="plywood"/>
+      <xacro:compact_box name="basket_right_holder_post"
+          xyz="0.227958 -0.184 ${0.118076 - base_link_height}" rpy="0 0 0"
+          size="0.120 0.024 0.132153" material="plywood"/>
+      <xacro:compact_box name="basket_left_holder_shelf"
+          xyz="0.225879 0.178 ${0.193934 - base_link_height}" rpy="0 0.209440 0"
+          size="0.120 0.036 0.020" material="plywood"/>
+      <xacro:compact_box name="basket_right_holder_shelf"
+          xyz="0.225879 -0.178 ${0.193934 - base_link_height}" rpy="0 0.209440 0"
+          size="0.120 0.036 0.020" material="plywood"/>
+    </link>
+  </xacro:macro>
+
+  <!-- CAD launcher_cradle(), side_by_side, origin [560,0,0] shifted -100.
+       The two 8 mm structural plates are real collision bodies; keep-out/feed/
+       exit envelopes from launcher-envelope.scad are deliberately not parts. -->
+  <xacro:macro name="compact_cad_flywheel_launcher"
+      params="parent base_link_height max_vel nip_gap:=0.058 effort:=6.0">
+    <xacro:property name="wheel_radius" value="0.100"/>
+    <xacro:property name="wheel_width" value="0.050"/>
+    <xacro:property name="wheel_y" value="${nip_gap / 2.0 + wheel_radius}"/>
+    <joint name="flywheel_launcher_mount_joint" type="fixed">
+      <parent link="${parent}"/><child link="flywheel_launcher_frame_link"/>
+      <origin xyz="0.460 0 ${0.215 - base_link_height}" rpy="0 -0.349066 0"/>
+    </joint>
+    <gazebo reference="flywheel_launcher_mount_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+    <link name="flywheel_launcher_frame_link">
+      <!-- 2 x 256x258x8 mm aluminium plates = 2.85 kg; two documented D5065
+           motors add 0.98 kg.  COM is at the symmetric nip frame origin. -->
+      <inertial>
+        <mass value="3.83"/>
+        <inertia ixx="0.0240" ixy="0" ixz="0"
+                 iyy="0.0237" iyz="0" izz="0.0422"/>
+      </inertial>
+      <xacro:compact_box name="flywheel_cradle_lower_plate"
+          xyz="0 0 -0.043" rpy="0 0 0" size="0.256 0.258 0.008" material="mount_gray"/>
+      <xacro:compact_box name="flywheel_cradle_upper_plate"
+          xyz="0 0 0.043" rpy="0 0 0" size="0.256 0.258 0.008" material="mount_gray"/>
+    </link>
+    <!-- Solid-volume estimate at ~255 kg/m^3 effective tyre/hub density:
+         0.40 kg each.  cylinder_inertial gives Ispin=0.0020 kg m^2. -->
+    <xacro:flywheel_wheel side="left" parent="flywheel_launcher_frame_link"
+        y="${wheel_y}" radius="${wheel_radius}" width="${wheel_width}"
+        mass="0.40" max_vel="${max_vel}" effort="${effort}"/>
+    <xacro:flywheel_wheel side="right" parent="flywheel_launcher_frame_link"
+        y="${-wheel_y}" radius="${wheel_radius}" width="${wheel_width}"
+        mass="0.40" max_vel="${max_vel}" effort="${effort}"/>
+  </xacro:macro>
+</robot>

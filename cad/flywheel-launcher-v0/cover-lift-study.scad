@@ -1,4 +1,5 @@
-// Two-position manual basket lift carried by rails, not by the cosmetic cover.
+// HISTORICAL / NON-AUTHORITATIVE: superseded surrounding-carriage lift study.
+// Retained only for design archaeology; current compact CAD must not use it.
 // Packaging/mechanism study only — no manufacturing holes or purchased slides.
 // Units: mm, ground frame, robot +X forward, +Y left.
 

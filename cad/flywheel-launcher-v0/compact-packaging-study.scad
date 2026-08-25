@@ -8,10 +8,12 @@
 // manufacturing dimensions.  Units: mm, ground frame, robot +X forward.
 
 use <../collector-intake-v1/option-a/option-a.scad>
+include <../collector-intake-v1/option-a/bridge-params.scad>
 use <../basket-bin-v2/bin.scad>
 use <../basket-bin-v2/hood.scad>
 use <launcher-envelope.scad>
-use <cover-lift-study.scad>
+use <compact-basket-support.scad>
+use <compact-parked-reliefs.scad>
 include <../motion-electronics-tray/params.scad>
 use <../motion-electronics-tray/tray.scad>
 
@@ -85,7 +87,7 @@ basket_service_top_z = 600;
 // an open rear notch for basket removal and motor arches in the wooden legs.
 bridge_rear_x = 380;
 bridge_front_x = 600;
-bridge_half_y = 235;
+bridge_half_y = oa_bridge_width / 2;
 bridge_t = 18;
 bridge_under_z = 150;
 bridge_upright_y = 205;
@@ -225,7 +227,7 @@ function compact_ramp_z(x) =
     compact_ramp_front_z
     + (compact_ramp_rear_z-compact_ramp_front_z) * (t*t*(3-2*t));
 
-module compact_handoff_ramp() {
+module compact_handoff_ramp_unrelieved() {
     // New study geometry; do not export as a replacement Option A part until
     // the loaded-ball Gazebo sweep and a physical rolling check both pass.
     color("goldenrod")
@@ -261,6 +263,11 @@ module compact_handoff_ramp() {
             }
 }
 
+module compact_handoff_ramp() {
+    compact_parked_ramp_relief()
+        compact_handoff_ramp_unrelieved();
+}
+
 module shifted_option_a_intake() {
     color("peru", 0.78) compact_bridge();
     curved_cheek(1);
@@ -287,10 +294,7 @@ module shifted_option_a_intake() {
 }
 
 module basket_collect_pose(alpha=1.0) {
-    color("gainsboro", alpha) bin();
-    color("lightsteelblue", alpha) hood();
-    moving_carriage_and_cover(lift=0, launch=false);
-    actuation_for_pose(lift=0, launch=false);
+    color("gainsboro", alpha) compact_relieved_bin();
 }
 
 module basket_launch_pose_local() {
@@ -298,26 +302,26 @@ module basket_launch_pose_local() {
         translate(launch_pivot)
             rotate([0, launch_tilt_deg, 0])
                 translate(-launch_pivot) {
-                    bin();
-                    hood();
+                    compact_relieved_bin();
                 }
-    moving_carriage_and_cover(lift=lift_travel, launch=true);
-    actuation_for_pose(lift=lift_travel, launch=true);
 }
 
 module shifted_functional_group() {
     translate([functional_shift_x, 0, 0]) {
         shifted_option_a_intake();
         if (show_basket_system) {
-            fixed_rails();
-            actuation_fixed_provisions();
+            compact_basket_guides();
+            color("lightsteelblue") compact_fixed_hood();
 
             if (pose == "collect")
                 basket_collect_pose();
-            else if (pose == "launch")
+            else if (pose == "launch") {
+                compact_raised_basket_holders();
                 basket_launch_pose_local();
+            }
             else if (pose == "both") {
                 basket_collect_pose(alpha=0.22);
+                compact_raised_basket_holders();
                 basket_launch_pose_local();
             } else
                 assert(false, str("Unknown pose: ", pose));

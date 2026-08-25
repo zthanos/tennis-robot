@@ -10,7 +10,8 @@ use <../basket-bin-v2/bin.scad>
 use <../basket-bin-v2/hood.scad>
 use <../basket-bin-v2/chassis_context.scad>
 use <launcher-envelope.scad>
-use <cover-lift-study.scad>
+use <compact-basket-support.scad>
+use <compact-parked-reliefs.scad>
 
 $fn = 72;
 
@@ -190,23 +191,9 @@ module sensor_context() {
 }
 
 module lift_system_context() {
-    fixed_rails();
-    actuation_fixed_provisions();
-    if (mode == "collect") {
-        moving_carriage_and_cover(lift=0, launch=false);
-        actuation_for_pose(lift=0, launch=false);
-    }
-    else if (mode == "launch") {
-        moving_carriage_and_cover(lift=launch_lift_z, launch=true);
-        actuation_for_pose(lift=launch_lift_z, launch=true);
-    }
-    else if (mode == "both") {
-        color("steelblue", 0.22)
-            moving_carriage_and_cover(lift=0, launch=false);
-        actuation_for_pose(lift=0, launch=false);
-        moving_carriage_and_cover(lift=launch_lift_z, launch=true);
-        actuation_for_pose(lift=launch_lift_z, launch=true);
-    }
+    compact_basket_guides();
+    if (mode == "launch" || mode == "both")
+        compact_raised_basket_holders();
 }
 
 module side_port_cutout() {
@@ -238,7 +225,7 @@ module side_gate(open=false) {
 
 module basket_with_side_port(gate_open=false) {
     difference() {
-        bin();
+        compact_relieved_bin();
         side_port_cutout();
     }
     side_gate(gate_open);
@@ -248,8 +235,8 @@ module collect_basket_assembly() {
     if (launcher_layout == "side")
         basket_with_side_port(gate_open=false);
     else
-        bin();
-    hood();
+        compact_relieved_bin();
+    compact_relieved_hood();
 }
 
 module launch_basket_transform() {

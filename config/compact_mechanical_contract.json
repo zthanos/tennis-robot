@@ -1,0 +1,398 @@
+{
+  "source": "cad/flywheel-launcher-v0/compact-packaging-study.scad",
+  "units": "m",
+  "frame": "ground: +X forward, +Y left, +Z up",
+  "functional_shift_x": -0.1,
+  "bbox_tolerance_m": 0.002,
+  "bridge_support_geometry_mm": {
+    "minimum_required_overlap": null,
+    "chassis_outer_y": [
+      -290.0,
+      290.0
+    ],
+    "chassis_side_strip_y": {
+      "left": [
+        170.0,
+        290.0
+      ],
+      "right": [
+        -290.0,
+        -170.0
+      ]
+    },
+    "bridge_outer_y": [
+      -245.0,
+      245.0
+    ],
+    "upright_contact_y": {
+      "left": [
+        196.0,
+        214.0
+      ],
+      "right": [
+        -214.0,
+        -196.0
+      ]
+    },
+    "upright_contact_x_after_compact_shift": [
+      285.0,
+      460.0
+    ],
+    "upright_contact_width_y": 18.0,
+    "upright_contact_length_x": 175.0,
+    "contact_area_each_mm2": 3150.0,
+    "bridge_to_chassis_outer_edge_margin_each_side": 45.0,
+    "upright_to_support_strip_inner_margin": 26.0,
+    "upright_to_support_strip_outer_margin": 76.0,
+    "top_overhang_beyond_upright_outer_edge": 31.0,
+    "assessment": "GEOMETRIC_PASS_STRUCTURAL_REVIEW_REQUIRED"
+  },
+  "known_cad_interferences": {
+    "launcher_vs_bridge": {
+      "physical_intersection_volume_mm3": 145093.43,
+      "bbox_mm": [
+        [
+          377.88085939134726,
+          -201.56403293424734,
+          150.0
+        ],
+        [
+          468.2873680932979,
+          201.56403293424734,
+          168.0
+        ]
+      ],
+      "status": "CAD_SOURCE_BLOCKER"
+    },
+    "launcher_vs_basket_hood": {
+      "physical_intersection_volume_mm3": 0.0,
+      "bbox_mm": null,
+      "status": "CAD_SOURCE_BLOCKER"
+    },
+    "basket_raised_vs_bridge": {
+      "status": "CAD_SOURCE_BLOCKER",
+      "physical_intersection_volume_mm3": 2240.0,
+      "bbox_mm": [
+        [
+          280.0,
+          -172.0,
+          152.0
+        ],
+        [
+          320.0,
+          172.0,
+          156.0
+        ]
+      ]
+    },
+    "basket_launch_vs_bridge": {
+      "status": "CAD_SOURCE_BLOCKER",
+      "physical_intersection_volume_mm3": 1053.23,
+      "bbox_mm": [
+        [
+          295.9871690715329,
+          -172.0,
+          162.13335574969364
+        ],
+        [
+          324.41920701639384,
+          172.0,
+          168.0
+        ]
+      ]
+    },
+    "launcher_vs_basket_launch": {
+      "status": "CAD_SOURCE_BLOCKER",
+      "physical_intersection_volume_mm3": 757.72,
+      "bbox_mm": [
+        [
+          324.492026053859,
+          -140.0,
+          208.1828405893775
+        ],
+        [
+          335.85134811845893,
+          146.0,
+          219.82994139721018
+        ]
+      ]
+    },
+    "launcher_vs_basket_raised": {
+      "status": "CAD_SOURCE_BLOCKER",
+      "physical_intersection_volume_mm3": 48.44,
+      "bbox_mm": [
+        [
+          353.0581301291048,
+          -90.0,
+          132.35657385701805
+        ],
+        [
+          356.2911860100865,
+          90.0,
+          134.67245638537207
+        ]
+      ]
+    }
+  },
+  "components": {
+    "chassis": {
+      "links": [
+        "base_link"
+      ],
+      "collision_prefixes": [
+        "chassis_"
+      ],
+      "cad_bbox": [
+        [
+          -0.46,
+          -0.29,
+          0.038
+        ],
+        [
+          0.46,
+          0.29,
+          0.052
+        ]
+      ]
+    },
+    "drive_wheels": {
+      "links": [
+        "rear_left_wheel_link",
+        "rear_right_wheel_link",
+        "front_left_wheel_link",
+        "front_right_wheel_link"
+      ],
+      "cad_bbox": [
+        [
+          -0.415,
+          -0.39,
+          0.0
+        ],
+        [
+          0.415,
+          0.39,
+          0.17
+        ]
+      ]
+    },
+    "intake_wheels": {
+      "links": [
+        "intake_wheel_left_link",
+        "intake_wheel_right_link"
+      ],
+      "cad_bbox": [
+        [
+          0.2982,
+          -0.152,
+          0.0044
+        ],
+        [
+          0.4418,
+          0.152,
+          0.1356
+        ]
+      ]
+    },
+    "intake_cheeks": {
+      "links": [
+        "compact_intake_cheeks_link"
+      ],
+      "cad_bbox": [
+        [
+          0.455,
+          -0.208,
+          0.018
+        ],
+        [
+          0.708,
+          0.208,
+          0.15
+        ]
+      ]
+    },
+    "handoff_ramp": {
+      "links": [
+        "compact_handoff_ramp_link"
+      ],
+      "cad_bbox": [
+        [
+          0.31965,
+          -0.094,
+          0.0
+        ],
+        [
+          0.36035,
+          0.094,
+          0.053
+        ]
+      ]
+    },
+    "plywood_bridge": {
+      "links": [
+        "compact_bridge_link"
+      ],
+      "cad_bbox": [
+        [
+          0.27,
+          -0.245,
+          0.052
+        ],
+        [
+          0.5,
+          0.245,
+          0.168
+        ]
+      ]
+    },
+    "basket_guides": {
+      "links": [
+        "basket_rails_link"
+      ],
+      "cad_bbox": [
+        [
+          -0.075,
+          -0.215,
+          0.052
+        ],
+        [
+          0.015,
+          0.215,
+          0.455
+        ]
+      ]
+    },
+    "basket_raised_holders": {
+      "links": [
+        "basket_raised_holders_link"
+      ],
+      "cad_bbox": [
+        [
+          0.06511095024597813,
+          -0.196,
+          0.052
+        ],
+        [
+          0.1879580401063617,
+          0.196,
+          0.21619039536231105
+        ]
+      ],
+      "launch_only": true
+    },
+    "launcher_cradle": {
+      "links": [
+        "flywheel_launcher_frame_link"
+      ],
+      "cad_bbox": [
+        [
+          0.3236,
+          -0.129,
+          0.1271
+        ],
+        [
+          0.5964,
+          0.129,
+          0.3029
+        ]
+      ]
+    },
+    "flywheels": {
+      "links": [
+        "flywheel_left_link",
+        "flywheel_right_link"
+      ],
+      "cad_bbox": [
+        [
+          0.3575,
+          -0.229,
+          0.1573
+        ],
+        [
+          0.5625,
+          0.229,
+          0.2727
+        ]
+      ]
+    },
+    "basket_collect": {
+      "links": [
+        "basket_link"
+      ],
+      "cad_bbox": [
+        [
+          -0.112,
+          -0.172,
+          0.019
+        ],
+        [
+          0.3562911860100865,
+          0.172,
+          0.285
+        ]
+      ],
+      "tolerance_m": 0.002
+    },
+    "basket_fixed_hood": {
+      "links": [
+        "compact_fixed_entry_hood_link"
+      ],
+      "cad_bbox": [
+        [
+          0.28,
+          -0.188,
+          0.0375
+        ],
+        [
+          0.37,
+          0.188,
+          0.148
+        ]
+      ],
+      "tolerance_m": 0.002
+    },
+    "basket_launch": {
+      "links": [
+        "basket_link"
+      ],
+      "cad_bbox": [
+        [
+          -0.09897220326388123,
+          -0.172,
+          0.12985448492547808
+        ],
+        [
+          0.3647540750350392,
+          0.172,
+          0.44493043309655883
+        ]
+      ],
+      "tolerance_m": 0.002,
+      "launch_only": true
+    },
+    "lidar_scan_plane": {
+      "links": [
+        "lidar_link"
+      ],
+      "cad_scalar_z": 0.498,
+      "tolerance_m": 1e-06
+    }
+  },
+  "known_intentional_contacts": {
+    "basket_flange_vs_chassis": {
+      "physical_intersection_volume_mm3": 360.0,
+      "bbox_mm": [
+        [
+          -80.0,
+          -172.0,
+          49.0
+        ],
+        [
+          10.0,
+          172.0,
+          52.0
+        ]
+      ],
+      "status": "INTENTIONAL_SUPPORT_CONTACT"
+    }
+  }
+}

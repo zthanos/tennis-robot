@@ -48,8 +48,8 @@ def parse_args() -> argparse.Namespace:
             "(baseline, option-a-collect) fit the intake assembly and no "
             "launcher. The LAUNCH configuration (option-a-launch) fits the "
             "flywheel launcher and omits the intake assembly, which claims the "
-            "same front volume. compact retains the provisional shifted "
-            "launcher study and is the only variant carrying both."
+            "same front volume. compact reconstructs the shifted compact CAD "
+            "study and is the only variant carrying both."
         ),
     )
     parser.add_argument(
@@ -191,6 +191,10 @@ def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline",
         "intake_wheel_right_link": ("2.5", "2.5", "0.0", "0.0"),
         "flywheel_left_link": ("2.0", "2.0", "0.0", "0.0"),
         "flywheel_right_link": ("2.0", "2.0", "0.0", "0.0"),
+        "compact_intake_cheeks_link": ("0.1", "0.1", "0.0", "0.0"),
+        "compact_handoff_ramp_link": ("0.35", "0.35", "0.0", "0.0"),
+        "compact_bridge_link": ("0.5", "0.5", "0.0", "0.0"),
+        "flywheel_launcher_frame_link": ("0.4", "0.4", "0.0", "0.0"),
     }
     wheel_soft_contact = {
         "kp": os.getenv("INTAKE_WHEEL_CONTACT_KP", "8000"),
@@ -233,14 +237,26 @@ def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline",
         "roller_contact_0": "intake_wheel_left_link",
         "roller_contact_1": "intake_wheel_right_link",
     }  # type: ignore[dict-item]
+    if compact_packaging and intake_fitted:
+        wheel_sensors.update({
+            "basket_handoff_contact_0": "basket_link",
+            "compact_ramp_contact_0": "compact_handoff_ramp_link",
+        })
     wheel_col_names: dict[str, str] = {}
     for link in root.findall(".//link"):
         lname = link.attrib.get("name", "")
-        if lname not in wheel_sensors.values():
-            continue
-        collision = link.find("collision")
-        if collision is not None:
-            wheel_col_names[lname] = collision.attrib.get("name", "")
+        if lname in wheel_sensors.values():
+            collision = link.find("collision")
+            if collision is not None:
+                wheel_col_names[lname] = collision.attrib.get("name", "")
+        # sdformat reduces both fixed compact mesh links. Locate their renamed
+        # collisions by source-name fragment, independent of the owner link.
+        for collision in link.findall("collision"):
+            cname = collision.attrib.get("name", "")
+            if "compact_relieved_bin_col" in cname:
+                wheel_col_names["basket_link"] = cname
+            if "compact_relieved_handoff_ramp_col" in cname:
+                wheel_col_names["compact_handoff_ramp_link"] = cname
     missing = [l for l in wheel_sensors.values() if not wheel_col_names.get(l)]
     if missing:
         raise RuntimeError(f"expected intake wheel collisions for contact sensors: {missing}")
@@ -255,7 +271,7 @@ def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline",
             patched_sensors.add(sname)
     if patched_sensors != set(wheel_sensors):
         raise RuntimeError(
-            f"expected both intake wheel contact sensors, patched only {sorted(patched_sensors)}"
+            f"expected compact intake contact sensors, patched only {sorted(patched_sensors)}"
         )
 
     # Lateral compliance for the rigid nip (docs/mechanism/dual-wheel-intake-design-el.md):
@@ -487,7 +503,8 @@ def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline",
     # Funnel cheeks: smooth guides — low friction so an off-centre ball slides
     # toward the scoop instead of being grabbed and pushed.
     for collision in root.findall(".//collision"):
-        if "cheek_col" in collision.attrib.get("name", ""):
+        if ("cheek_col" in collision.attrib.get("name", "")
+                or "compact_cheek_" in collision.attrib.get("name", "")):
             _patch_collision_surface(collision, "0.1", "0.1", "0.0", "0.0")
 
     # High safety deflector only; keep it comparatively slick so it does not
@@ -581,12 +598,11 @@ def main() -> int:
     env.setdefault("PYTHONUTF8", "1")
     controllers_config = args.controllers_config.resolve()
     compact = args.packaging_variant in {"option-a-collect", "option-a-launch", "compact"}
+    compact_machine = args.packaging_variant == "compact"
     option_a_collect = args.packaging_variant in {"option-a-collect", "option-a-launch"}
-    # Mechanical operating configuration. The intake assembly (x 446...884 mm,
-    # z 0...281 mm) and the flywheel launcher (wheels x 459...661, z 162...268)
-    # occupy the same front volume, so no variant may fit both. The physical
-    # concept switches between them by hand; the deployment mechanism has not
-    # been selected, so nothing models a transition.
+    # option-a-launch remains the historical launcher-only study.  The compact
+    # machine follows compact-packaging-study.scad: the corrected bridge,
+    # cheeks, ramp and two-plate cradle allow intake and launcher to coexist.
     launch_configuration = args.packaging_variant == "option-a-launch"
 
     def variant_value(env_name: str, baseline: str, compact_value: str) -> str:
@@ -606,10 +622,8 @@ def main() -> int:
     enable_compact_electronics = variant_value(
         "ROBOT_ENABLE_COMPACT_ELECTRONICS", "false", "true"
     )
-    # The launcher is fitted ONLY by the launch configuration. Every collection
-    # variant defaults it off: with the intake assembly present the launcher
-    # frame cuts straight through the intake mouth, so a plain run_native.sh
-    # must never bring it up implicitly.
+    enable_compact_mechanics = "true" if compact_machine else "false"
+    intake_parent_link = "compact_bridge_link" if compact_machine else "base_link"
     enable_flywheel = os.getenv(
         "ROBOT_ENABLE_FLYWHEEL",
         "true" if (launch_configuration or args.packaging_variant == "compact") else "false",
@@ -625,15 +639,19 @@ def main() -> int:
     basket_hood_rear_overhang = os.getenv(
         "BASKET_HOOD_REAR_OVERHANG_M", "0.0" if launch_configuration else "0.040"
     )
-    # Compact mass hypotheses: 2.0 kg removable basket/carriage contribution
+    # Revised compact material-volume estimate: 1.012 kg removable relieved
+    # bin plus 0.087 kg fixed relieved hood/support portal (in compact Xacro).
     # plus 45 ITF-range balls at 57 g each. Set payload to 0 for simulations
     # that spawn the balls as individual Gazebo models, avoiding double count.
-    basket_empty_mass = variant_value(
-        "ROBOT_BASKET_EMPTY_MASS_KG", "0.01", "2.0"
+    basket_empty_mass = os.getenv(
+        "ROBOT_BASKET_EMPTY_MASS_KG",
+        "1.012" if compact_machine else ("2.0" if compact else "0.01"),
     )
     basket_payload_mass = variant_value(
         "ROBOT_BASKET_PAYLOAD_MASS_KG", "0.0", "2.565"
     )
+    basket_tilt_deg = float(os.getenv("BASKET_LAUNCH_TILT_DEG", "0.0"))
+    basket_launch_tilt_rad = f"{math.radians(basket_tilt_deg):.9f}"
     result = subprocess.run(
         [
             xacro_exe,
@@ -644,18 +662,25 @@ def main() -> int:
             f"intake_cad_alignment_x:={intake_cad_alignment_x}",
             f"battery_center_x:={battery_center_x}",
             f"enable_compact_electronics:={enable_compact_electronics}",
+            f"enable_compact_mechanics:={enable_compact_mechanics}",
+            f"enable_basket_raised_holders:={os.getenv('BASKET_RAISED_HOLDERS_ENGAGED', 'true' if compact_machine and basket_tilt_deg != 0.0 else 'false')}",
+            f"intake_parent_link:={intake_parent_link}",
             f"enable_intake:={enable_intake}",
             f"enable_flywheel:={enable_flywheel}",
             f"flywheel_max_vel:={os.getenv('FLYWHEEL_MAX_VEL_RAD_S', '320.0')}",
             f"flywheel_nip_gap:={os.getenv('FLYWHEEL_NIP_GAP_M', '0.058')}",
             f"basket_empty_mass:={basket_empty_mass}",
             f"basket_payload_mass:={basket_payload_mass}",
+            f"basket_launch_tilt_rad:={basket_launch_tilt_rad}",
+            f"basket_floor_thickness:={'0.006' if compact_machine else '0.005'}",
+            f"basket_cad_support_details:={'true' if compact_machine else 'false'}",
             f"basket_lift_travel:={os.getenv('BASKET_LIFT_TRAVEL_M', '0.100')}",
             f"basket_lift_overtravel:={os.getenv('BASKET_LIFT_OVERTRAVEL_M', '0.010')}",
             f"expose_intake_carriage_state:={os.getenv('INTAKE_EXPOSE_CARRIAGE_STATE', 'false')}",
             # Dual-wheel intake tuning + Concept Validation Plan gates
             # (docs/mechanism/dual-wheel-intake-design-el.md).
-            f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', '0.060')}",
+            f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', '0.062' if compact_machine else '0.060')}",
+            f"intake_wheel_width:={os.getenv('INTAKE_WHEEL_WIDTH_M', '0.073' if compact_machine else '0.080')}",
             f"intake_wheel_gap:={os.getenv('INTAKE_WHEEL_GAP_M', '0.056')}",
             f"intake_nip_x:={os.getenv('INTAKE_NIP_X_M', '0.540')}",
             f"intake_wheel_tilt_deg:={os.getenv('INTAKE_WHEEL_TILT_DEG', '35.0')}",
@@ -663,6 +688,7 @@ def main() -> int:
             f"intake_wheel_effort:={os.getenv('INTAKE_WHEEL_EFFORT_NM', '1.77')}",
             f"enable_funnel:={os.getenv('INTAKE_ENABLE_FUNNEL', 'true')}",
             f"enable_ramp:={os.getenv('INTAKE_ENABLE_RAMP', 'true')}",
+            f"compact_handoff_ramp_mesh:={os.getenv('COMPACT_HANDOFF_RAMP_MESH', 'package://tennis_robot/meshes/compact_relieved_handoff_ramp.stl')}",
             f"enable_assist:={os.getenv('INTAKE_ENABLE_ASSIST', 'false')}",
             f"enable_conveyor:={os.getenv('INTAKE_ENABLE_CONVEYOR', 'false')}",
             f"intake_assist_x:={os.getenv('INTAKE_ASSIST_X_M', '0.545')}",

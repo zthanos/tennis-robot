@@ -68,7 +68,7 @@
        unlike the old roller orbit the required yield direction here is a
        constant ±y, which one prismatic DOF covers exactly). -->
   <xacro:macro name="intake_side_wheel"
-               params="side y nip_x wheel_z tilt_rad radius height carriage_travel max_vel effort mass sensor_index">
+               params="side y nip_x wheel_z tilt_rad radius height carriage_travel max_vel effort mass sensor_index parent:=base_link">
     <link name="intake_wheel_${side}_carriage_link">
       <inertial>
         <mass value="0.05"/>
@@ -85,7 +85,7 @@
          passing ball compresses the "foam" by pushing the carriage outward
          against the SDF-patched spring. -->
     <joint name="intake_wheel_${side}_carriage_joint" type="prismatic">
-      <parent link="base_link"/>
+      <parent link="${parent}"/>
       <child link="intake_wheel_${side}_carriage_link"/>
       <origin xyz="${nip_x} ${y} ${wheel_z}" rpy="0 0 0"/>
       <axis xyz="0 ${1 if y >= 0 else -1} 0"/>
