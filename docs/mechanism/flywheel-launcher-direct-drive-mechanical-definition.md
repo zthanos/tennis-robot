@@ -3,6 +3,8 @@
 Date: 2026-08-26
 Scope: isolated, standalone flywheel launcher only
 
+> **Evidence-chain status:** this report remains active evidence for the direct-panel motor placement and structural screen. Its 0.40 kg placeholder and Gate-A stop describe this stage only. The later [`flywheel-wheel-candidate-provisional-gate-a.md`](flywheel-wheel-candidate-provisional-gate-a.md) supersedes those two status items with the controlled 0.70–0.90 kg candidate range and simulation-ready provisional interface. The current checkpoint is [`standalone-flywheel-launcher.md`](standalone-flywheel-launcher.md).
+
 ## Decision
 
 The intended architecture is accepted: each D5065 mounts directly to the outside face of the existing 8 mm upper cradle panel, its 8 mm shaft passes inward through that panel, and the hub and 200 × 50 mm flywheel sit inside the cradle. The complete launcher module supplies the accepted 20° pitch. A separate motor bracket and independent motor-pitch hardware are neither required nor missing.

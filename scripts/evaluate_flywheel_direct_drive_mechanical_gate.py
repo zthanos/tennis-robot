@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULT = ROOT / "config/flywheel_launcher_direct_drive_mechanical_gate.json"
+PROVISIONAL_RESULT = ROOT / "config/flywheel_launcher_provisional_gate_a.json"
 XACRO = ROOT / "ros2_ws/src/tennis_robot/urdf/components/flywheel_launcher_module.urdf.xacro"
 CAD = ROOT / "cad/flywheel-launcher-v0/direct-drive-mechanical-definition-study.scad"
 
@@ -73,8 +74,14 @@ def evaluate() -> list[str]:
         failures.append("accepted launcher datums changed")
 
     xacro = XACRO.read_text(encoding="utf-8")
-    if "wheel_mass:=0.40" not in xacro:
-        failures.append("standalone Xacro provisional wheel mass changed before Gate A")
+    provisional_ready = False
+    if PROVISIONAL_RESULT.exists():
+        provisional_ready = json.loads(PROVISIONAL_RESULT.read_text(encoding="utf-8"))["classifications"][
+            "FLYWHEEL_MECHANICAL_GATE_A_SIMULATION_READY"
+        ]
+    expected_mass = "wheel_mass:=0.90" if provisional_ready else "wheel_mass:=0.40"
+    if expected_mass not in xacro:
+        failures.append("standalone Xacro wheel mass does not match the active Gate A state")
     wheel_macro = (ROOT / "ros2_ws/src/tennis_robot/urdf/components/flywheel_launcher.urdf.xacro").read_text(encoding="utf-8")
     if '<xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${width}" axis="z"/>' not in wheel_macro:
         failures.append("standalone provisional solid-cylinder inertia law was not found")
@@ -92,7 +99,7 @@ def main() -> int:
         for failure in failures:
             print(f"FAIL: {failure}")
         return 1
-    print("PASS: direct-panel geometry is screened and Gate A remains correctly stopped")
+    print("PASS: historical physical-stop snapshot remains consistent; the provisional simulation gate is evaluated separately")
     return 0
 
 

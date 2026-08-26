@@ -513,40 +513,41 @@ Active cooler (υποχρεωτικός σε αυτό το φορτίο)
 | 1 set | ξυλόβιδες 3.5x30 ή 4x30 | ξύλινα rails/νευρώσεις |
 | 1 | D4 wood glue | μόνιμες ξύλινες ενισχύσεις |
 
-## 8. Flywheel Launcher — Επιλεγμένα και Εκκρεμή
+## 8. Standalone Flywheel Launcher
 
-### Flywheel motors — επιλεγμένα για αγορά
+Authoritative module status: [`standalone-flywheel-launcher.md`](../mechanism/standalone-flywheel-launcher.md). The architecture is provisionally frozen; no physical speed, range, spin, tread or final hub has been validated.
 
-| Qty | Είδος | Βασικά στοιχεία | Πωλητής / σύνδεσμος | Κατάσταση |
-|---:|---|---|---|---|
-| 2 | **ODrive Dual Shaft Motor D5065 270KV** | BLDC outrunner 5065, 270 RPM/V, κύριος άξονας 8 mm με flat, δεύτερος άξονας 8 mm για προαιρετικό encoder, 7 pole pairs, ενσωματωμένο θερμίστορ NTC 10k, phase leads με 4 mm bullet connectors | [Hellas Digital — D5065 270KV](https://www.hellasdigital.gr/electronics/motors-and-drivers/stepper/dual-shaft-motor-d5065-270kv/) | **Επιλεγμένο — δεν έχει παραγγελθεί.** Snapshot 22/08/2026: 98,99 € με ΦΠΑ/τεμ., 197,98 € τα 2 πριν από μεταφορικά |
+### ALREADY OWNED
 
-Χρήση: ένα μοτέρ ανά flywheel, direct drive. Στο nominal battery voltage
-`12.8 V`, το θεωρητικό no-load speed είναι περίπου `3450 RPM`. Ο controller
-πρέπει να επιβάλλει speed limit και battery-current limit· starting point για
-bench validation είναι `18-20 A` ανά μοτέρ. Οι motor controllers, οι encoders
-και τα flywheel hubs/guards **δεν περιλαμβάνονται**.
+No launcher-specific motor, wheel or high-speed hub is confirmed as received. Do not transfer complete-robot stock into this section without a physical inventory check.
 
-Η καταχώριση του καταστήματος βρίσκεται στην κατηγορία «Stepper», αλλά το
-`D5065` είναι τριφασικό BLDC outrunner.
+### TO BUY
 
-### Να μην αγοραστούν ακόμη
+| Qty | Item | Evidence currently available | Source/status |
+|---:|---|---|---|
+| 2 | **ODrive Dual Shaft Motor D5065-270KV** | Manufacturer evidence: 50 mm body diameter, 65 mm body length, mass approximately 0.49 kg; 8 mm primary shaft with flat, 30 mm projection, 24 mm flat length and 0.5 mm flat depth; 8 mm secondary shaft; 12N14P / 7 pole pairs; four nominal 4 mm mounting features on 30 mm PCD; 270 rpm/V; `Kt=0.031 N·m/A`; phase-neutral resistance `0.039 Ω`; NTC 10 kΩ thermistor; 4 mm bullet phase connectors. Mount-feature thread/depth and rotor inertia are not published in the captured evidence. | [Hellas Digital — D5065 270KV](https://www.hellasdigital.gr/electronics/motors-and-drivers/stepper/dual-shaft-motor-d5065-270kv/). Selected, not ordered. Snapshot 22/08/2026: €98.99 incl. VAT each, €197.98/pair before shipping. |
+| 2 | **Provisional AliExpress flywheel candidate** | `USER_SUPPLIED_SELLER_DATA`: nominal 200 mm diameter, 50 mm width, nominal 10 mm axle/bore, aluminium-alloy hub plus rubber tyre, seller-listed mass approximately 900 g. None of these values is measured hardware. | AliExpress candidate already evaluated in the project. Exact listing/order status must be confirmed at purchase. |
 
-Μην κλειδώσουμε ακόμα:
+One D5065 directly drives each wheel. The standalone simulation uses a provisional 12.8 V bus and 20 A operating limit per motor, corresponding to 0.62 N·m. Theoretical no-load speed is not a ball-speed claim. Motor controllers, high-speed guarding and power hardware remain separate selections.
 
-- flywheel motor controllers, μέχρι να κλειδώσει το current-control interface με το Mega
-- expensive launcher wheels
-- large battery pack για launcher
-- pan/tilt μηχανισμούς
+Critical receiving inspection for each wheel: verify whether the nominal 10 mm datum is a rigid, concentric through-bore in the aluminium hub. If it is a bearing inner race, removable bearing stack, sleeve or another non-rigid torque interface, reopen mechanical Gate A before manufacturing the final arbor.
 
-Πρώτα θέλουμε:
+### PROVISIONAL / VERIFY BEFORE ORDERING OR MANUFACTURING
 
-```text
-να κυλάει η βάση,
-να πλησιάζει αργά την μπάλα,
-να τη βάζει στο funnel,
-και ο collector να την ανεβάζει στο hopper.
-```
+| Qty | Item | Current requirement and hold point |
+|---:|---|---|
+| 2 | **Custom metal clamping adaptor/arbor** | Required path: `D5065 8 mm D-shaft -> metal clamp/adaptor/arbor -> measured 10 mm wheel interface`. The analysis study uses approximately 21.5 mm D-shaft engagement, positive split/D-flat clamping and removable positive axial retention. No printed torque-transmitting hub. Custom-machined part, not a selected purchase. Do not release final dimensions until the received wheel and motor shafts are measured. |
+| 2 sets | Motor-to-panel fasteners, washers and locking hardware | Required, but thread designation, usable motor engagement, bolt length, property class, washer stack, locking method and torque await measurement of the delivered D5065 and final panel definition. Do not guess. |
+| 2 sets | Wheel-side spacer/washer/retention hardware | Required removable axial retention. Diameter, thread, clamp faces, allowable preload and engagement depend on the measured wheel and controlled arbor drawing. |
+| 1 set | High-speed guard and guarded bench service hardware | Required before powered physical testing. Final apertures and tool access depend on the manufactured rotating assembly and test fixture. |
+| test coupons | Urethane, nitrile/NBR and butyl rubber tread/contact samples | Physical-validation candidates only; no production tread is selected and no diagnostic simulation μ is a material specification. Screen dynamic traction, felt wear, temperature and repeated-cycle durability first. |
+| TBD | Flywheel motor controller(s) and launcher power hardware | Verify current-control, telemetry, braking, thermal and safety-chain requirements before ordering. Do not select merely to reproduce ideal simulated wheel speed. |
+
+### Manufacturing hold
+
+Safe now: measurement/test-fixture planning and reproduction of the standalone simulation.
+
+Not released now: final wheel hub/arbor, final upper-panel service cutout, wheel-side fasteners/thread engagement, balance/runout/retention definition or any high-speed manufactured rotating assembly. The panel has passed a conservative structural screen only; physical structural and vibration validation remain pending.
 
 ## 9. Σύντομη Λίστα Για Το Ταμείο
 
@@ -575,6 +576,9 @@ production-like εναλλακτική: 2 dual-channel quality drivers ή 4 sing
   https://www.hellasdigital.gr/electronics/motors-and-drivers/stepper/dual-shaft-motor-d5065-270kv/
   8mm primary shaft με flat + 8mm secondary shaft, NTC 10k thermistor,
   snapshot 22/08/2026: €98,99 με ΦΠΑ/τεμ. — controllers δεν περιλαμβάνονται
+2 provisional AliExpress flywheels, seller-listed 200x50mm, nominal 10mm datum,
+  aluminium-alloy hub + rubber tyre, approximately 900g each
+  — measure the 10mm interface before releasing any custom hub/arbor
 1 emergency stop switch
 1 fuse holder + ασφάλειες
 κόκκινο/μαύρο καλώδιο 2.5mm² για μπαταρία/motors

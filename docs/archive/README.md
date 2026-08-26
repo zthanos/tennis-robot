@@ -23,3 +23,4 @@ intake / basket v2.1 specs.
 - `mechanical/concept-a-funnel-lift-wheel-plan.md` — single wide intake roller.
 - `mechanical/plywood-cut-list-760x430.md` — obsolete chassis dimensions.
 - `mechanical/images/` — matching historical assembly/base/product drawings.
+- `mechanism/flywheel-launcher/` — superseded flywheel v0 exploration and pre-correction/pre-calibration stop reports; replaced by `../mechanism/standalone-flywheel-launcher.md` and its current evidence chain.

@@ -633,7 +633,7 @@ def main() -> int:
     )
     # The basket entry hood is the intake handoff mouth. The mechanical concept
     # puts it "open or released" in the LAUNCH position (see
-    # docs/mechanism/flywheel-launcher-exploration-el.md), which is also what
+    # docs/archive/mechanism/flywheel-launcher/flywheel-launcher-exploration-el.md), which is also what
     # keeps its cheeks out of the launcher frame. Zero overhang removes the hood
     # through the basket macro's existing switch — no new geometry, no new arg.
     basket_hood_rear_overhang = os.getenv(

@@ -1,5 +1,5 @@
 // Flywheel launcher v0 — non-manufacturing packaging model.
-// See README.md and docs/mechanism/flywheel-launcher-exploration-el.md.
+// See README.md and docs/mechanism/standalone-flywheel-launcher.md.
 
 include <params.scad>
 

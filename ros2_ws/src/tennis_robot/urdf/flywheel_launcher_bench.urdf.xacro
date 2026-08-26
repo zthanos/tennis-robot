@@ -40,11 +40,12 @@
       </xacro:if>
     </hardware>
     <joint name="flywheel_left_joint">
-      <command_interface name="velocity"><param name="min">-320.0</param><param name="max">320.0</param></command_interface>
+      <!-- 20 A provisional D5065 limit: Kt 0.031 N m/A => 0.62 N m. -->
+      <command_interface name="effort"><param name="min">-0.62</param><param name="max">0.62</param></command_interface>
       <state_interface name="position"/><state_interface name="velocity"/>
     </joint>
     <joint name="flywheel_right_joint">
-      <command_interface name="velocity"><param name="min">-320.0</param><param name="max">320.0</param></command_interface>
+      <command_interface name="effort"><param name="min">-0.62</param><param name="max">0.62</param></command_interface>
       <state_interface name="position"/><state_interface name="velocity"/>
     </joint>
   </ros2_control>

@@ -5,10 +5,10 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    flywheel_velocity_controller:
+    flywheel_effort_controller:
       type: forward_command_controller/ForwardCommandController
 
-flywheel_velocity_controller:
+flywheel_effort_controller:
   ros__parameters:
     joints: [flywheel_left_joint, flywheel_right_joint]
-    interface_name: velocity
+    interface_name: effort

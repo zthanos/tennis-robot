@@ -20,6 +20,16 @@ target_link_libraries(tennis_ball_compliant_contact_system
   gz-transport13::gz-transport13
   gz-msgs10::gz-msgs10)
 
+add_library(flywheel_capability_control_system SHARED
+  src/FlywheelCapabilityControlSystem.cc)
+target_compile_features(flywheel_capability_control_system PUBLIC cxx_std_17)
+target_compile_options(flywheel_capability_control_system PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(flywheel_capability_control_system
+  gz-sim8::gz-sim8
+  gz-plugin2::gz-plugin2
+  gz-transport13::gz-transport13
+  gz-msgs10::gz-msgs10)
+
 if(BUILD_TESTING)
   enable_testing()
   add_executable(contact_model_test test/ContactModelTest.cc)
@@ -30,7 +40,7 @@ if(BUILD_TESTING)
   add_test(NAME contact_model_test COMMAND contact_model_test)
 endif()
 
-install(TARGETS tennis_ball_compliant_contact_system
+install(TARGETS tennis_ball_compliant_contact_system flywheel_capability_control_system
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)

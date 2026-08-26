@@ -1,12 +1,24 @@
-# Flywheel launcher v0
+# Flywheel launcher CAD workspace
 
-Exploratory envelope model for the launcher described in
-`docs/mechanism/flywheel-launcher-exploration-el.md`.
+The current standalone architecture and evidence status are defined by
+`docs/mechanism/standalone-flywheel-launcher.md`. The active standalone CAD
+inputs in this directory are `launcher-envelope.scad`,
+`standalone-launcher-physics-reference.scad`,
+`direct-drive-mechanical-definition-study.scad`,
+`provisional-wheel-hub-gate-a-study.scad`,
+`provisional-upper-panel-12mm-cutouts.scad` and
+`provisional-cradle-exit-clearance.scad`.
 
-This model is intentionally **not printable** and contains no motor shafts,
-bearings, fastener holes or purchased-wheel interfaces. It exists to compare
-wheel size, nip compression, pitch, guards and feed clearance before hardware
-selection.
+These sources are analysis/simulation geometry, not released manufacturing
+drawings. The CAD exit cylinder is a reference/keep-out and is not a physical
+barrel. The final hub/arbor and panel service cutout remain on hold pending
+measurement of the purchased wheel and D5065.
+
+The remaining basket, compact packaging, shell and complete-robot files in this
+directory belong to a separate integration workstream. They are not alternate
+standalone launcher definitions and must not override the frozen datums above.
+The superseded v0 narrative is archived at
+`docs/archive/mechanism/flywheel-launcher/flywheel-launcher-exploration-el.md`.
 
 Compile/render with the repository's reproducible Docker service:
 
@@ -192,8 +204,9 @@ It carries the same `-100 mm` functional shift, rear battery, vertical motion
 tray, Pi case, separate buck converter, loaded basket and front dual-flywheel
 launcher.  The generated SDF replaces both the handoff collision and its visual
 with matching short segments behind the intake-wheel nip, so the simulation no
-longer displays the obsolete forward lip. See
-`docs/mechanism/flywheel-launcher-exploration-el.md` for masses, CoM and the
+longer displays the obsolete forward lip. See the archived
+`docs/archive/mechanism/flywheel-launcher/flywheel-launcher-exploration-el.md`
+for historical masses, CoM and the
 initial baseline/compact motion comparison.
 
 Useful overrides:

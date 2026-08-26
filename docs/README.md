@@ -41,6 +41,8 @@ docs/
 - `slam-mapping-el.md` - SLAM mapping notes.
 
 ## mechanism/
+- `standalone-flywheel-launcher.md` - **authoritative provisional standalone flywheel architecture**, build/test boundary, physical-validation plan and reopen gate.
+- `flywheel-wheel-candidate-provisional-gate-a.md`, `flywheel-launcher-post-nip-exit-corridor-audit.md`, `flywheel-launcher-capability-validation-report.md`, `flywheel-energy-transfer-root-cause-report.md` - current flywheel evidence chain.
 - `intake-debug-log-el.md` - **running debug log** for the intake/collector mechanism.
 - `dual-wheel-intake-design-el.md`, `intake-concept-decision-el.md`, `intake-bench-sweep-report-el.md`.
 - `basket-bin-redesign-spec-el.md`.

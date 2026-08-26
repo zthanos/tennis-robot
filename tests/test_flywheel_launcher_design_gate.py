@@ -59,16 +59,20 @@ def test_rendered_launcher_matches_authoritative_nip_and_cradle():
     frame = root.find("./link[@name='flywheel_launcher_frame_link']")
     assert frame is not None
     collisions = {item.attrib["name"]: item for item in frame.findall("collision")}
-    assert set(collisions) == {
+    assert {
         "flywheel_cradle_lower_plate_col",
         "flywheel_cradle_upper_plate_col",
-    }
-    for collision in collisions.values():
-        assert _floats(collision.find("./geometry/box").attrib["size"]) == (
-            0.256,
-            0.314,
-            0.008,
-        )
+        "d5065_motor_left_col",
+        "d5065_motor_right_col",
+    } <= set(collisions)
+    lower_mesh = collisions["flywheel_cradle_lower_plate_col"].find("./geometry/mesh")
+    assert lower_mesh is not None
+    assert lower_mesh.attrib["filename"].endswith("flywheel_lower_panel_exit_clearance.stl")
+    assert _floats(lower_mesh.attrib["scale"]) == (0.001, 0.001, 0.001)
+    upper_mesh = collisions["flywheel_cradle_upper_plate_col"].find("./geometry/mesh")
+    assert upper_mesh is not None
+    assert upper_mesh.attrib["filename"].endswith("flywheel_upper_panel_exit_clearance.stl")
+    assert _floats(upper_mesh.attrib["scale"]) == (0.001, 0.001, 0.001)
     assert _floats(collisions["flywheel_cradle_lower_plate_col"].find("origin").attrib["xyz"])[2] == -0.043
     assert _floats(collisions["flywheel_cradle_upper_plate_col"].find("origin").attrib["xyz"])[2] == 0.043
 

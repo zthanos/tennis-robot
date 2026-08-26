@@ -24,7 +24,7 @@ is defined in the CAD or mechanical documentation.
 | `config/compact_cad_measurements.json` | derived CAD measurements | regenerated |
 | `config/compact_mechanical_contract.json` | generated-model contract | synchronized |
 | `docs/mechanism/compact-cad-urdf-alignment-el.md` | historical pre-reconstruction analysis | intentionally unchanged |
-| `docs/mechanism/flywheel-launcher-exploration-el.md` | historical design exploration | intentionally unchanged |
+| `docs/archive/mechanism/flywheel-launcher/flywheel-launcher-exploration-el.md` | historical design exploration | archived unchanged |
 
 Repository search found no second current bridge solid generator and no stated
 minimum support/edge-overlap requirement.

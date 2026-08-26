@@ -287,7 +287,8 @@ def test_control_panel_page_and_sim_joint_integration_are_present():
 
 
 # ---------------------------------------------------------------------------
-# Machine-ownership interlocks (docs/mechanism/flywheel-launcher-exploration-el.md:
+# Machine-ownership interlocks (historical context in
+# docs/archive/mechanism/flywheel-launcher/flywheel-launcher-exploration-el.md:
 # "COLLECT: launcher inhibited" / "LAUNCH: intake disabled")
 # ---------------------------------------------------------------------------
 

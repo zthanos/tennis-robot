@@ -1,6 +1,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -44,6 +45,15 @@ public:
     this->groundHeight = _sdf->Get<double>("ground_height", 0.0).first;
     this->topic = _sdf->Get<std::string>(
         "telemetry_topic", "/tennis_ball/compliant_contacts").first;
+    if (_sdf->HasElement("telemetry_csv"))
+    {
+      this->telemetryCsv.open(_sdf->Get<std::string>("telemetry_csv"));
+      this->telemetryCsv << "time_s,contact_id,normal_force_n,elastic_force_n,damping_force_n,"
+        "tangential_speed_m_s,tangential_force_x_n,tangential_force_y_n,tangential_force_z_n,"
+        "friction_limit_n,ball_torque_x_nm,ball_torque_y_nm,ball_torque_z_nm,"
+        "wheel_torque_x_nm,wheel_torque_y_nm,wheel_torque_z_nm,contact_x_m,contact_y_m,contact_z_m,"
+        "normal_x,normal_y,normal_z,compression_m,compression_rate_m_s\n";
+    }
     if (_sdf->HasElement("friction_coefficient"))
       this->frictionCoefficient = _sdf->Get<double>("friction_coefficient");
 
@@ -136,7 +146,8 @@ public:
       ball.AddWorldWrench(_ecm, ballForce, ballTorque);
       wheel.AddWorldWrench(_ecm, wheelForce, wheelTorque);
       this->AppendTelemetry(
-          telemetry, static_cast<double>(index), normal, geometry,
+          telemetry, std::chrono::duration<double>(_info.simTime).count(),
+          static_cast<double>(index), normal, geometry,
           tangentialVelocity, tangentialForce, frictionLimit,
           ballTorque, wheelTorque);
     }
@@ -159,7 +170,8 @@ public:
         geometry.normal = gz::math::Vector3d::UnitZ;
         geometry.region = "ground";
         this->AppendTelemetry(
-            telemetry, 2.0, normal, geometry,
+            telemetry, std::chrono::duration<double>(_info.simTime).count(),
+            2.0, normal, geometry,
             gz::math::Vector3d::Zero, gz::math::Vector3d::Zero,
             std::numeric_limits<double>::quiet_NaN(),
             gz::math::Vector3d::Zero, gz::math::Vector3d::Zero);
@@ -192,7 +204,13 @@ private:
           for (const auto collision : _ecm.ChildrenByComponents(
               this->wheelEntities[index], gz::sim::components::Collision()))
           {
-            _ecm.RequestRemoveEntity(collision);
+            const auto collisionName = _ecm.Component<gz::sim::components::Name>(collision);
+            auto tyreToken = this->wheelLinkNames[index];
+            const auto linkSuffix = tyreToken.rfind("_link");
+            if (linkSuffix != std::string::npos)
+              tyreToken.replace(linkSuffix, 5, "_col_collision");
+            if (collisionName && collisionName->Data().find(tyreToken) != std::string::npos)
+              _ecm.RequestRemoveEntity(collision);
           }
         }
       }
@@ -208,7 +226,7 @@ private:
   }
 
   void AppendTelemetry(
-      gz::msgs::Double_V &_message, const double _contactId,
+      gz::msgs::Double_V &_message, const double _time, const double _contactId,
       const NormalSample &_normal, const Geometry &_geometry,
       const gz::math::Vector3d &_tangentialVelocity,
       const gz::math::Vector3d &_tangentialForce,
@@ -227,6 +245,19 @@ private:
     this->AppendVector(_message, _geometry.normal);
     _message.add_data(_geometry.compression);
     _message.add_data(_normal.compressionRate);
+    if (this->telemetryCsv)
+    {
+      this->telemetryCsv << _time << ',' << _contactId << ',' << _normal.force << ','
+        << _normal.elasticForce << ',' << _normal.dampingForce << ','
+        << _tangentialVelocity.Length() << ','
+        << _tangentialForce.X() << ',' << _tangentialForce.Y() << ',' << _tangentialForce.Z() << ','
+        << _frictionLimit << ','
+        << _ballTorque.X() << ',' << _ballTorque.Y() << ',' << _ballTorque.Z() << ','
+        << _wheelTorque.X() << ',' << _wheelTorque.Y() << ',' << _wheelTorque.Z() << ','
+        << _geometry.point.X() << ',' << _geometry.point.Y() << ',' << _geometry.point.Z() << ','
+        << _geometry.normal.X() << ',' << _geometry.normal.Y() << ',' << _geometry.normal.Z() << ','
+        << _geometry.compression << ',' << _normal.compressionRate << '\n';
+    }
   }
 
   Parameters parameters;
@@ -244,6 +275,7 @@ private:
   std::string topic{"/tennis_ball/compliant_contacts"};
   gz::transport::Node node;
   gz::transport::Node::Publisher publisher;
+  std::ofstream telemetryCsv;
 };
 }  // namespace tennis_ball_contact_system
 

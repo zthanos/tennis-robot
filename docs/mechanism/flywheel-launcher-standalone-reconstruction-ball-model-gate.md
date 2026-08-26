@@ -2,6 +2,8 @@
 
 Date: 2026-08-25
 
+> **Evidence-chain status:** preserved supporting evidence for the standalone reconstruction and independent ball-model gate. Its provisional 0.40 kg wheel placeholder records this earlier stage and is superseded by the current wheel-candidate Gate A and [`standalone-flywheel-launcher.md`](standalone-flywheel-launcher.md). The calibrated-ball conclusions remain current.
+
 ## Outcome
 
 The authoritative launcher geometry has been reconstructed as a standalone
