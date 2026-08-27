@@ -43,8 +43,11 @@ docs/
 ## mechanism/
 - `standalone-flywheel-launcher.md` - **authoritative provisional standalone flywheel architecture**, build/test boundary, physical-validation plan and reopen gate.
 - `flywheel-wheel-candidate-provisional-gate-a.md`, `flywheel-launcher-post-nip-exit-corridor-audit.md`, `flywheel-launcher-capability-validation-report.md`, `flywheel-energy-transfer-root-cause-report.md` - current flywheel evidence chain.
-- `intake-debug-log-el.md` - **running debug log** for the intake/collector mechanism.
-- `dual-wheel-intake-design-el.md`, `intake-concept-decision-el.md`, `intake-bench-sweep-report-el.md`.
+- `standalone-intake-fixed-motor-compliant-tyre.md` - **authoritative current
+  intake architecture** and open physical-validation gates.
+- `intake-concept-decision-el.md` - supporting decision evidence.
+- `../archive/mechanism/intake/README.md` - superseded intake reports, CAD/data
+  traceability, and the classification ledger.
 - `basket-bin-redesign-spec-el.md`.
 
 ## hardware/

@@ -9,8 +9,6 @@ parts=(
   cheek_left
   cheek_right
   ramp
-  hex_hub
-  bearing_cartridge
   ir_entry_bracket
   ir_confirmation_bracket
 )

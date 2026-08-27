@@ -3,9 +3,9 @@
 // Key decisions:
 //   * 340 mm chassis opening;
 //   * intake wheels tucked approximately halfway into the front edge;
-//   * mandatory 35 degree forward tilt retained from the working intake;
-//   * 18 mm plywood portal bridge carries both fixed motor/shaft pods;
-//   * commercial 124 x 73 mm RC wheels use printed 6 mm -> 12 mm hex hubs;
+//   * both 35 degree axes lie in X-Z and are parallel in front view;
+//   * 18 mm plywood portal bridge carries both FIXED direct-drive motor mounts;
+//   * purchased 14-00012630 adapters join FIT0186 shafts to wheel hexes;
 //   * curved cheeks soften first contact;
 //   * cheek-to-base transition is intentionally NOT frozen yet.
 //
@@ -32,20 +32,12 @@ oa_wheel_y = oa_gap / 2 + oa_wheel_d / 2; // +/-90 at 56 mm gap
 oa_wheel_z = 70;
 oa_wheel_tilt = 35;
 
-// Fixed, bearing-supported transmission. The motor's measured 5 mm D-shaft
-// ends at the coupler and does not carry wheel impact or side loads.
-oa_transmission_shaft_d = 6;
-oa_transmission_shaft_clearance_d = 6.2;
-oa_transmission_shaft_flat = 0.8; // provisional until the 6 mm shaft is bought
-oa_bearing_od = 19;               // provisional 626 bearing envelope
-oa_bearing_width = 6;
-oa_hex_af = 12;
-oa_hex_depth = 6;
-oa_hub_collar_d = 26;
-oa_hub_collar_h = 14;
-oa_hub_clamp_bolt_d = 4.5;
-oa_hub_clamp_nut_af = 7.2;
-oa_hub_clamp_nut_depth = 3.5;
+// Coaxial direct-drive stack. Adapter seating and maximum outer profile are
+// conservative packaging assumptions pending physical metrology.
+oa_adapter_length = 30;
+oa_adapter_d = 20;
+oa_adapter_seating = 8;
+oa_motor_shaft_projection = 20;
 
 // IR beam packaging references. Beam #1 sits in the clean gap after the
 // cheek tips and before the tilted wheel envelope. The legacy basket beam at
@@ -152,85 +144,20 @@ module plywood_bridge() {
                           oa_bridge_under_z-chassis_plate_top_z],
                          center=true);
         }
-        // Fixed service openings for the tilted shafts. Final hole shape is
-        // drilled from the printed pod template after checking the bearings.
-        axis_dx_top = (oa_bridge_top_z-oa_wheel_z)*tan(oa_wheel_tilt);
-        slot_x = oa_wheel_x + axis_dx_top;
+        // Exact zero-clearance analysis cut along each retained motor axis.
+        // It replaces the invalid convenient 22 mm vertical hole. Clearance,
+        // cable access and the final bridge-to-motor-face bracket remain
+        // pending physical metrology; no bolt pattern is invented here.
         for (sy = [-1, 1])
-            translate([slot_x, sy*oa_wheel_y, oa_bridge_under_z-1]) {
-                cube([22, 22, oa_bridge_t+2], center=true);
-                // Four fixed M5 pod bolts; no lateral sliding carriage.
-                for (dx = [-26, 26], dy = [-24, 24])
-                    translate([dx, dy, 0])
-                        cylinder(d=m5_clearance_d, h=oa_bridge_t+2,
-                                 center=true);
-            }
+            translate([oa_wheel_x, sy*oa_wheel_y, oa_wheel_z])
+                rotate([0, oa_wheel_tilt, 0])
+                    cylinder(d=oa_motor_d, h=200);
         // Matching through-holes for the two cheek top flanges. They sit
-        // outboard of the moving motor/shaft service slots.
+        // laterally clear of the fixed motor/shaft service openings.
         for (sy = [-1, 1], xx = oa_cheek_mount_hole_x)
             translate([xx, sy*oa_cheek_mount_hole_y,
                        oa_bridge_under_z-1])
                 cylinder(d=m5_clearance_d, h=oa_bridge_t+2);
-    }
-}
-
-// D-shaped hole for the selected 6 mm transmission shaft. The flat remains
-// provisional, and the clamp slit/M4 fastener provide secondary retention.
-module oa_d_bore(d, flat_depth, h) {
-    intersection() {
-        cylinder(d=d, h=h);
-        translate([-d, -d, 0])
-            cube([d + d/2-flat_depth, 2*d, h]);
-    }
-}
-
-// Printable split-clamp adapter: 6 mm D-bore to male 12 mm RC hex. Print the
-// hex on the bed in PETG/PA, 5-6 perimeters. The hub is a replaceable part,
-// not a bearing surface. Wheel axial retention is provided by an M4 bolt into
-// the tapped end of the steel shaft, with a broad washer outside the wheel.
-module printed_hex_hub() {
-    hub_h = oa_hex_depth + oa_hub_collar_h;
-    difference() {
-        union() {
-            cylinder(d=oa_hex_af/cos(30), h=oa_hex_depth, $fn=6);
-            translate([0, 0, oa_hex_depth])
-                cylinder(d=oa_hub_collar_d, h=oa_hub_collar_h);
-        }
-        translate([0, 0, -1])
-            oa_d_bore(oa_transmission_shaft_clearance_d,
-                      oa_transmission_shaft_flat, hub_h+2);
-
-        // Radial slit permits real clamping instead of relying on a set screw.
-        translate([-0.7, oa_transmission_shaft_clearance_d/2-0.2,
-                   oa_hex_depth-1])
-            cube([1.4, oa_hub_collar_d/2, oa_hub_collar_h+2]);
-
-        // M4 bolt crosses the slit; the opposite side traps an M4 nut.
-        translate([-oa_hub_collar_d/2-1, 8,
-                   oa_hex_depth+oa_hub_collar_h/2])
-            rotate([0, 90, 0])
-                cylinder(d=oa_hub_clamp_bolt_d,
-                         h=oa_hub_collar_d+2);
-        translate([oa_hub_collar_d/2-oa_hub_clamp_nut_depth, 8,
-                   oa_hex_depth+oa_hub_collar_h/2])
-            rotate([0, 90, 0])
-                cylinder(d=oa_hub_clamp_nut_af/cos(30),
-                         h=oa_hub_clamp_nut_depth+1, $fn=6);
-    }
-}
-
-// Provisional two-bearing sleeve represented in the assembly. Exported so all
-// current Option A solids stay together, but do not print it as a final part
-// until the real bearings and shaft have been measured.
-module bearing_cartridge() {
-    difference() {
-        cylinder(d=34, h=46);
-        translate([0,0,-1])
-            cylinder(d=oa_transmission_shaft_clearance_d, h=48);
-        translate([0,0,2])
-            cylinder(d=oa_bearing_od, h=oa_bearing_width);
-        translate([0,0,38])
-            cylinder(d=oa_bearing_od, h=oa_bearing_width+1);
     }
 }
 
@@ -369,12 +296,11 @@ module short_handoff_ramp() {
         }
 }
 
-module tilted_wheel_motor_pod(side=1) {
+module fixed_direct_drive_stack(side=1) {
     sy = side*oa_wheel_y;
-    axis_to_bridge_under = (oa_bridge_under_z-oa_wheel_z)
-        / cos(oa_wheel_tilt);
-    axis_to_bridge_top = (oa_bridge_top_z-oa_wheel_z)
-        / cos(oa_wheel_tilt);
+    adapter_s0 = oa_wheel_width/2 - oa_adapter_seating;
+    motor_face_s = adapter_s0 + oa_adapter_length;
+    motor_shaft_s0 = motor_face_s - oa_motor_shaft_projection;
 
     translate([oa_wheel_x, sy, oa_wheel_z])
         rotate([0, oa_wheel_tilt, 0]) {
@@ -388,41 +314,19 @@ module tilted_wheel_motor_pod(side=1) {
             color("black")
                 cylinder(d=44, h=oa_wheel_width-4, center=true);
 
-            // Replaceable printed 6 mm -> 12 mm RC hex adapter.
+            // Purchased 14-00012630 6 mm shaft -> 12 mm hex adapter.
             color("gold")
-                translate([0, 0, oa_wheel_width/2-oa_hex_depth])
-                    printed_hex_hub();
+                translate([0, 0, adapter_s0])
+                    cylinder(d=oa_adapter_d, h=oa_adapter_length);
 
-            // Supported transmission shaft between wheel and bridge.
+            // FIT0186 output shaft and measured motor-body envelope.
             color("silver")
-                translate([0, 0, -oa_wheel_width/2-2])
-                    cylinder(d=oa_transmission_shaft_d,
-                             h=axis_to_bridge_top+oa_wheel_width/2+18);
-
-            // Fixed two-bearing cartridge straddles the plywood bridge.
-            color("slategray")
-                translate([0, 0, axis_to_bridge_under-24])
-                    bearing_cartridge();
-
-            // 5-to-6 mm flexible coupler, above both supporting bearings.
-            color("silver")
-                translate([0, 0, axis_to_bridge_top+18])
-                    difference() {
-                        cylinder(d=18, h=25);
-                        translate([0,0,-1])
-                            cylinder(d=oa_transmission_shaft_clearance_d,
-                                     h=27);
-                    }
-
-            // Approximate motor body, aligned with the tilted shaft.
+                translate([0, 0, motor_shaft_s0])
+                    cylinder(d=oa_motor_shaft_d,
+                             h=oa_motor_shaft_projection);
             color("steelblue")
-                translate([0, 0, axis_to_bridge_top+43])
+                translate([0, 0, motor_face_s])
                     cylinder(d=oa_motor_d, h=oa_motor_l);
-
-            // Fixed pod plate on top of the wooden bridge.
-            color("dimgray")
-                translate([0, 0, axis_to_bridge_top+2])
-                    cylinder(d=58, h=6);
         }
 }
 
@@ -433,14 +337,14 @@ module scale_ball(x, y=0, z=33) {
 module option_a() {
     chassis_plate_option_a();
     basket_reference();
-    // Semi-transparent for concept review so the tilted wheel pods remain
+    // Semi-transparent for concept review so the fixed direct-drive stacks remain
     // visible through the plywood portal in top/perspective renders.
     color("peru", 0.58) plywood_bridge();
     curved_cheek(1);
     curved_cheek(-1);
     short_handoff_ramp();
-    tilted_wheel_motor_pod(1);
-    tilted_wheel_motor_pod(-1);
+    fixed_direct_drive_stack(1);
+    fixed_direct_drive_stack(-1);
     if (show_ir_beams) intake_ir_beams();
 
     if (show_balls) {
@@ -458,8 +362,8 @@ module option_a_ir_review() {
     curved_cheek(1);
     curved_cheek(-1);
     short_handoff_ramp();
-    tilted_wheel_motor_pod(1);
-    tilted_wheel_motor_pod(-1);
+    fixed_direct_drive_stack(1);
+    fixed_direct_drive_stack(-1);
     intake_ir_beams();
 
     // Two simultaneous scale references: entry and confirmed handoff.
@@ -467,9 +371,7 @@ module option_a_ir_review() {
     scale_ball(oa_ir2_x, 0, 68);
 }
 
-if (part == "hex_hub")
-    printed_hex_hub();
-else if (part == "bridge")
+if (part == "bridge")
     plywood_bridge();
 else if (part == "cheek_left")
     curved_cheek(1);
@@ -477,8 +379,6 @@ else if (part == "cheek_right")
     curved_cheek(-1);
 else if (part == "ramp")
     short_handoff_ramp();
-else if (part == "bearing_cartridge")
-    bearing_cartridge();
 else if (part == "ir_entry_bracket")
     ir_drop_bracket(oa_ir1_z);
 else if (part == "ir_confirmation_bracket")

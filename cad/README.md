@@ -29,9 +29,9 @@ Current mechanical sources of truth:
 
 - `ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro`
 - `ros2_ws/src/tennis_robot/urdf/components/basket.urdf.xacro`
-- `docs/mechanism/dual-wheel-intake-design-el.md`
+- `docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md`
 - `docs/mechanism/basket-bin-redesign-spec-el.md`
-- `docs/mechanism/intake-debug-log-el.md`
+- `docs/archive/mechanism/intake/README.md` (historical intake index only)
 - `docs/hardware/chassis-layout-4wd-dual-intake-el.md`
 
 The next SCAD model should be generated from the validated 920 x 580 mm 4WD

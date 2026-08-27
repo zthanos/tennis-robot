@@ -274,7 +274,14 @@ def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "baseline",
             f"expected compact intake contact sensors, patched only {sorted(patched_sensors)}"
         )
 
-    # Lateral compliance for the rigid nip (docs/mechanism/dual-wheel-intake-design-el.md):
+    # NOT_PHYSICAL_INTAKE_ARCHITECTURE:
+    # LEGACY SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE.
+    # The physical motors/wheel centres are fixed and compliance comes from
+    # the Trencher tyre/foam plus the ball. This patch moves motor collisions,
+    # so its results are not physical-design or capture-validation evidence.
+    # Retained temporarily only to reproduce historical rigid-wheel runs.
+    #
+    # Lateral compliance for the legacy rigid-nip simulation surrogate.
     # each wheel's passive prismatic y-carriage gets a spring so the nominal
     # 3 mm/side interference becomes grip force instead of a rigid jam
     # (lesson of collect_test1/2; same SDF spring technique as debug-log #9).
@@ -678,7 +685,7 @@ def main() -> int:
             f"basket_lift_overtravel:={os.getenv('BASKET_LIFT_OVERTRAVEL_M', '0.010')}",
             f"expose_intake_carriage_state:={os.getenv('INTAKE_EXPOSE_CARRIAGE_STATE', 'false')}",
             # Dual-wheel intake tuning + Concept Validation Plan gates
-            # (docs/mechanism/dual-wheel-intake-design-el.md).
+            # (NOT_PHYSICAL_INTAKE_ARCHITECTURE simulation surrogate).
             f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', '0.062' if compact_machine else '0.060')}",
             f"intake_wheel_width:={os.getenv('INTAKE_WHEEL_WIDTH_M', '0.073' if compact_machine else '0.080')}",
             f"intake_wheel_gap:={os.getenv('INTAKE_WHEEL_GAP_M', '0.056')}",

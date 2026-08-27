@@ -1,4 +1,7 @@
-"""Live Gazebo physics probe for intake / roller tuning."""
+"""Live Gazebo probe for the CURRENT_SIMULATION_SURROGATE intake.
+
+NOT_PHYSICAL_INTAKE_ARCHITECTURE: carriage results are not tyre validation.
+"""
 
 from __future__ import annotations
 
@@ -115,7 +118,7 @@ class SimPhysicsProbe(Node):
             path.parent.mkdir(parents=True, exist_ok=True)
             self._jsonl = path.open("w", encoding="utf-8")
 
-        # Dual-wheel side-pinch geometry (docs/mechanism/dual-wheel-intake-design-el.md).
+        # NOT_PHYSICAL_INTAKE_ARCHITECTURE dual-wheel simulation surrogate.
         self._nip_x = float(os.getenv("INTAKE_NIP_X_M", "0.540"))
         self._wheel_radius = float(os.getenv("INTAKE_WHEEL_RADIUS_M", "0.060"))
         self._wheel_gap = float(os.getenv("INTAKE_WHEEL_GAP_M", "0.056"))

@@ -40,9 +40,9 @@ module compact_axis_expanded(clearance=compact_relief_clearance) {
 }
 
 module compact_intake_wheel_clearance_pockets() {
-    for (sy = [-1, 1])
+    for (side = [-1, 1])
         translate([compact_intake_wheel_x,
-                   sy * compact_intake_wheel_y,
+                   side * compact_intake_wheel_y,
                    compact_intake_wheel_z])
             rotate([0, compact_intake_wheel_tilt, 0])
                 cylinder(d=compact_intake_wheel_pocket_d,

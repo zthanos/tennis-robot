@@ -2,6 +2,9 @@
 <!--
   ros2_control hardware description for the tennis robot.
 
+  Intake carriage state is CURRENT_SIMULATION_SURROGATE and
+  NOT_PHYSICAL_INTAKE_ARCHITECTURE. Physical motors/wheel centres are fixed.
+
   This is the single contract between the high-level stack and the actuators.
   Swapping the <hardware> plugin (sim_mode arg) is the ONLY change required to
   move from Gazebo to the real robot: controllers, command topics and the whole

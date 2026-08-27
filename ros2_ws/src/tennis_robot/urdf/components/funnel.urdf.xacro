@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <!-- Dual-wheel intake support structure. Roles per
-       docs/dual-wheel-intake-design-el.md:
+  <!-- Funnel support for the NOT_PHYSICAL_INTAKE_ARCHITECTURE simulator.
+       Current physical definition:
+       docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md.
          cheeks -> centering (guide off-centre balls into the wheel throat)
          ramp   -> elevation + guidance toward the basket
        enable_cheeks / enable_ramp implement the Concept Validation Plan

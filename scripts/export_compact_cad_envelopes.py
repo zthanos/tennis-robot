@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "cad/flywheel-launcher-v0/compact-validation-export.scad"
 PARTS = (
     "chassis", "bridge", "cheeks", "handoff_ramp", "intake_wheels",
+    "intake_direct_drive_pods",
     "launcher", "launcher_cradle", "basket_collect", "basket_bin",
     "basket_hood", "basket_launch", "basket_launch_moving",
     "basket_guides", "basket_holders", "hood_supports",
@@ -162,6 +163,8 @@ def main() -> int:
             for point in bridge_bbox
         ]
         for component, part in {
+            "intake_wheels": "intake_wheels",
+            "intake_direct_drive_pods": "intake_direct_drive_pods",
             "basket_collect": "basket_bin",
             "basket_fixed_hood": "basket_hood",
             "basket_launch": "basket_launch_moving",

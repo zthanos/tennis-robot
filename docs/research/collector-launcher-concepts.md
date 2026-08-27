@@ -57,7 +57,7 @@ docs/mechanism/intake-concept-decision-el.md
 Measurement report:
 
 ```text
-docs/mechanism/intake-bench-sweep-report-el.md
+docs/archive/mechanism/intake/intake-bench-sweep-report-el.md
 ```
 
 Next concept direction:

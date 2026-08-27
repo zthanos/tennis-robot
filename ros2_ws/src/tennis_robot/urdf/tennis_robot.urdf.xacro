@@ -47,7 +47,8 @@
   <xacro:arg name="basket_launch_tilt_rad" default="0.0"/>
   <xacro:arg name="basket_floor_thickness" default="0.005"/>
   <xacro:arg name="basket_cad_support_details" default="false"/>
-  <!-- Dual-wheel intake tuning (docs/dual-wheel-intake-design-el.md).
+  <!-- NOT_PHYSICAL_INTAKE_ARCHITECTURE surrogate tuning. Physical definition:
+       docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md.
        Injected from INTAKE_WHEEL_* envs by scripts/generate_robot_urdf.py. -->
   <xacro:arg name="intake_wheel_radius" default="0.060"/>
   <xacro:arg name="intake_wheel_width" default="0.080"/>
@@ -113,7 +114,8 @@
   <xacro:property name="motor_length" value="0.10"/>
 
   <!-- Dual-wheel side-pinch intake: capture -> transport -> guide -> hopper
-       (docs/dual-wheel-intake-design-el.md). Two vertical-axis wheels flank a
+       (historical rationale archived under docs/archive/mechanism/intake/).
+       Two vertical-axis wheels flank a
        centre corridor at the nip plane; the funnel centres the ball, the
        wheels capture and transport it rearward, the ramp elevates it toward
        the basket. -->
@@ -133,8 +135,11 @@
        ground, hence wheel_z = 0.025. -->
   <xacro:property name="intake_wheel_height" value="${float($(arg intake_wheel_width))}"/>
   <xacro:property name="intake_wheel_z" value="${0.070 - base_link_height}"/>
-  <!-- Outward carriage travel: 8 mm absorbs the 3 mm/side nominal
-       interference with margin. Spring k is SDF-patched by the generator. -->
+  <!-- NOT_PHYSICAL_INTAKE_ARCHITECTURE:
+       SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE, legacy rigid-wheel model.
+       The physical FIT0186 motors and wheel centres are fixed to the bridge;
+       no carriage exists. This 8 mm DOF must not be used as physical-design
+       or validation evidence and must be replaced by calibrated tyre contact. -->
   <xacro:property name="intake_carriage_travel" value="0.008"/>
   <xacro:property name="intake_assist_x" value="${float($(arg intake_assist_x))}"/>
   <xacro:property name="intake_assist_z" value="${float($(arg intake_assist_z))}"/>

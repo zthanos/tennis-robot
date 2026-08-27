@@ -1,5 +1,10 @@
 # Compact mechanical reconstruction and validation
 
+> **`CURRENT_SIMULATION_SURROGATE` — `NOT_PHYSICAL_INTAKE_ARCHITECTURE`.**
+> Intake carriage claims below describe the retained legacy simulator only.
+> The current physical FIT0186 motors and wheel centres are fixed; see
+> [`standalone-intake-fixed-motor-compliant-tyre.md`](standalone-intake-fixed-motor-compliant-tyre.md).
+
 Date: 2026-08-25
 
 ## Result
@@ -13,7 +18,8 @@ flywheels. Fixed assemblies remain separate links/contact owners in the SDF.
 
 The reconstruction is dimensionally aligned and dynamically usable, but it
 cannot honestly be declared collision-clean: exact OpenSCAD boolean
-intersections prove that the source CAD itself has two physical interferences.
+intersections retain a launcher/bridge physical blocker plus pose-specific
+bridge contacts.
 The Xacro deliberately preserves those source solids. Removing them requires a
 mechanical design decision, not a URDF correction.
 
@@ -140,11 +146,13 @@ and intake carriages versus bridge. The remaining failures reproduce the CAD:
 
 | Source solids | Exact OpenSCAD intersection | Intersection bounds (mm) |
 |---|---:|---|
-| Launcher vs plywood bridge | 145,093.43 mm3 | (377.881,-201.564,150) to (468.287,201.564,168) |
-| Launcher vs basket hood, current 12-degree pose | 15,281.46 mm3 | (344.971,-119,137.555) to (390.999,119,238.913) |
+| Launcher vs plywood bridge | 130,232.06 mm3 | (377.881,-201.564,150) to (468.287,201.564,168) |
+| Launcher vs basket hood, current 12-degree pose | 0 mm3 | none |
+| Launcher vs moving basket, current 12-degree pose | 757.72 mm3 | (324.492,-140,208.183) to (335.851,146,219.830) |
+| Launcher vs raised basket | 48.44 mm3 | (353.058,-90,132.357) to (356.291,90,134.672) |
 | Raised basket vs bridge | 2,240.00 mm3 | (280,-172,152) to (320,172,156) |
 | 12-degree launch basket vs bridge | 1,053.23 mm3 | (295.987,-172,162.133) to (324.419,172,168) |
-| Lowered basket vs chassis | 4,616.00 mm3 | (-86,-172,38) to (10,172,52) |
+| Lowered basket flange vs chassis | 360.00 mm3 intentional support contact | (-80,-172,49) to (10,172,52) |
 
 These were measured by exporting boolean intersections of physical modules,
 not inferred from URDF bounding boxes. Consequently the validator exits nonzero

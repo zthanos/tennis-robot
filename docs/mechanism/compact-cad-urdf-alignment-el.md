@@ -1,5 +1,11 @@
 # Compact packaging: αντιστοίχιση CAD ↔ URDF
 
+> **`CURRENT_SUPPORTING_EVIDENCE`.** Fixed-rest bounds and alignment deltas are
+> useful integration evidence. Any carriage/pod wording below describes the
+> retained `NOT_PHYSICAL_INTAKE_ARCHITECTURE` simulator and does not define the
+> physical compliance mechanism. Current physical definition:
+> [`standalone-intake-fixed-motor-compliant-tyre.md`](standalone-intake-fixed-motor-compliant-tyre.md).
+
 **Κατάσταση: ΑΝΑΛΥΣΗ ΜΟΝΟ.** Καμία αλλαγή στο xacro δεν έγινε από αυτό το
 έγγραφο. Σκοπός του είναι να πει, με μετρήσεις και όχι με ανάγνωση
 παραμέτρων, πού το simulation model διαφέρει από το σχέδιο.
@@ -44,7 +50,7 @@ functional_shift_x = "0.0" if option_a_collect or not compact else "-0.100"
 | plywood bridge | 280 … 500 | ±235 | **52 … 168** | — | — | **ΑΠΟΝ** |
 | cheeks | 455 … 708 | ±208 | 18 … **150** | 346 … 714 | ±212.6 | 18.8 … **281.1** |
 | handoff ramp | 319.6 … 360.4 | ±94 | 0 … 53 | — | — | **ΑΠΟΝ** (χωνεμένο στο `funnel_link`) |
-| wheel motor pods | 298.3 … 515.7 | ±152 | 4.5 … 269.2 | 355 … 385 | ±103 | 112 … 124 |
+| fixed wheel/adapter/motor stacks | 298.3 … 456.0 | ±152 | 4.5 … 183.9 | 298.3 … 456.0 | ±152 | 4.5 … 183.9 |
 | launcher (δομή) | 323.6 … 776.1 | ±229 | **127.1** … 366.7 | 359.2 … 757.3 | **±254** | **23.8** … 359.9 |
 | basket (collect) | −112 … 370.6 | ±172 | 19 … 285 | −90 … 372 | ±155 | 20 … 252 |
 | basket (launch) | −99 … 370 | ±172 | **129.9 … 444.9** | ίδιο με collect +100 | ±155 | 120 … 352 |
@@ -101,8 +107,10 @@ flywheel d200 · nip gap 58 · pitch 20° · basket lift travel 100 · intake ni
 
 - intake wheel: CAD `oa_wheel_d = 124` / `oa_wheel_width = 73`· xacro
   `intake_wheel_radius = 0.060` (d=120) / `intake_wheel_height = 0.080`.
-- motor pods: το URDF μοντελοποιεί μόνο ένα μικρό carriage
-  (`x[355,385] z[112,124]`) έναντι πλήρους pod envelope `x[298,516] z[4.5,269]`.
+- fixed intake stacks: CAD και generated model συμφωνούν στο corrected
+  longitudinal X-Z envelope `x[298.3,456.0]`, `y±152`, `z[4.5,183.9]`. Τα
+  `*_carriage_link` names παραμένουν simulation-surrogate naming και δεν
+  σημαίνουν φυσικό carriage.
 - basket half-width: CAD ±172 (με flanges/λαβές) έναντι ±155 στο URDF.
 
 ## Συνέπεια

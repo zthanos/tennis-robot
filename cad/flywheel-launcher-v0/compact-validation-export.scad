@@ -72,9 +72,16 @@ module compact_intake() {
         curved_cheek(1);
         curved_cheek(-1);
         compact_handoff_ramp();
-        for (sy = [-1, 1])
-            translate([470, sy * 90, 70])
+        for (side = [-1, 1])
+            translate([470, side * 90, 70])
                 rotate([0, 35, 0]) cylinder(d=124, h=73, center=true);
+    }
+}
+
+module compact_intake_direct_drive_pods() {
+    shifted() {
+        fixed_direct_drive_stack(1);
+        fixed_direct_drive_stack(-1);
     }
 }
 
@@ -118,10 +125,12 @@ else if (part == "handoff_ramp_right_wheel_intersection")
 else if (part == "intake_wheels")
     shifted() {
         // Wheel solids only; pods/motors are a separate assembly envelope.
-        for (sy = [-1, 1])
-            translate([470, sy * 90, 70])
+        for (side = [-1, 1])
+            translate([470, side * 90, 70])
                 rotate([0, 35, 0]) cylinder(d=124, h=73, center=true);
     }
+else if (part == "intake_direct_drive_pods")
+    compact_intake_direct_drive_pods();
 else if (part == "launcher")
     shifted() translate(launcher_origin)
         launcher_oriented(orientation="side_by_side", nip_height=215);
@@ -264,8 +273,8 @@ else if (part == "hood_supports_wheels_intersection")
     intersection() {
         shifted() compact_rerouted_hood_supports();
         shifted()
-            for (sy = [-1, 1])
-                translate([470, sy * 90, 70])
+            for (side = [-1, 1])
+                translate([470, side * 90, 70])
                     rotate([0, 35, 0]) cylinder(d=128, h=77, center=true);
     }
 else if (part == "hood_supports_launcher_intersection")

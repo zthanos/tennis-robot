@@ -57,11 +57,19 @@
        the drive_wheel macro above). The old swivel-caster macro and its scrub
        resistance are gone. -->
 
-  <!-- Dual-wheel side-pinch intake (docs/dual-wheel-intake-design-el.md):
+  <!-- NOT_PHYSICAL_INTAKE_ARCHITECTURE:
+       LEGACY SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE.
+       Physical architecture: both FIT0186 motors and both wheel centres are
+       fixed to the bridge. Compliance is tennis-ball + Trencher tyre/foam.
+       The prismatic link below moves the motor collision too, so it is not a
+       faithful physical surrogate and is prohibited as validation evidence.
+       It remains temporarily for traceability of older simulation runs.
+
+       Legacy dual-wheel simulation geometry; physical definition:
+       docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md.
        two side wheels, one each side of a centre corridor, both inner faces
-       driving rearward (-x). The wheel axis can be pitched slightly toward
-       +x for Phase 3 experiments, adding an upward component as the ball
-       enters the ramp. Each wheel hangs on a passive
+       driving rearward (-x). Both wheel axes share the same longitudinal X-Z
+       tilt and remain parallel in front view. Each wheel hangs on a passive
        prismatic y-carriage whose spring is patched into the generated SDF
        (scripts/generate_robot_urdf.py) — this is the lateral compliance a
        rigid ball needs to pass a rigid nip (lesson of collect_test1/2, and
@@ -79,8 +87,33 @@
         <geometry><box size="0.03 0.03 0.012"/></geometry>
         <material name="mount_gray"/>
       </visual>
+      <!-- Coaxial purchased direct-drive hardware. Local +Z is wheel->motor;
+           common pitch maps both sides to (sin(tilt), 0, cos(tilt)).
+           Wheel centres are mirrored in Y, but the axes stay parallel. -->
+      <collision name="intake_adapter_col">
+        <origin xyz="${sin(tilt_rad) * 0.0435} 0 ${cos(tilt_rad) * 0.0435}"
+                rpy="0 ${tilt_rad} 0"/>
+        <geometry><cylinder radius="0.010" length="0.030"/></geometry>
+      </collision>
+      <visual name="intake_adapter_vis">
+        <origin xyz="${sin(tilt_rad) * 0.0435} 0 ${cos(tilt_rad) * 0.0435}"
+                rpy="0 ${tilt_rad} 0"/>
+        <geometry><cylinder radius="0.010" length="0.030"/></geometry>
+        <material name="safety_orange"/>
+      </visual>
+      <collision name="intake_motor_col">
+        <origin xyz="${sin(tilt_rad) * 0.0935} 0 ${cos(tilt_rad) * 0.0935}"
+                rpy="0 ${tilt_rad} 0"/>
+        <geometry><cylinder radius="0.015" length="0.070"/></geometry>
+      </collision>
+      <visual name="intake_motor_vis">
+        <origin xyz="${sin(tilt_rad) * 0.0935} 0 ${cos(tilt_rad) * 0.0935}"
+                rpy="0 ${tilt_rad} 0"/>
+        <geometry><cylinder radius="0.015" length="0.070"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
     </link>
-    <!-- Axis points OUTWARD (away from the corridor): rest position 0 is the
+    <!-- LEGACY SURROGATE ONLY. Axis points OUTWARD (away from the corridor): rest position 0 is the
          inner stop (nominal 3 mm interference per side on a 66 mm ball); a
          passing ball compresses the "foam" by pushing the carriage outward
          against the SDF-patched spring. -->

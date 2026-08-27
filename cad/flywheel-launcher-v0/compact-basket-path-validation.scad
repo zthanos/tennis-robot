@@ -98,16 +98,16 @@ module fixed_intake() {
         curved_cheek(1);
         curved_cheek(-1);
         compact_handoff_ramp();
-        for (sy = [-1, 1])
-            translate([470, sy * 90, 70])
+        for (side = [-1, 1])
+            translate([470, side * 90, 70])
                 rotate([0, 35, 0]) cylinder(d=124, h=73, center=true);
     }
 }
 
 module fixed_intake_wheels() {
     shifted()
-        for (sy = [-1, 1])
-            translate([470, sy * 90, 70])
+        for (side = [-1, 1])
+            translate([470, side * 90, 70])
                 rotate([0, 35, 0]) cylinder(d=124, h=73, center=true);
 }
 

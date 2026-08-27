@@ -18,7 +18,7 @@ shaft_mount_reference_measured = 15;
 
 // GB37-family drawings and the archived concept used a larger gearbox
 // envelope than the ruler measurement. The first print therefore tests a
-// useful range instead of committing the carriage to one diameter.
+// useful range instead of committing the fixed motor mount to one diameter.
 motor_fit_diameters = [30.5, 32.5, 35.5, 37.5];
 
 // D-flat depth is not yet measured. Test several clearance diameters with a
@@ -31,7 +31,9 @@ intake_wheel_d = 120;
 intake_wheel_height = 80;
 intake_gap = 56;
 intake_axis_tilt_deg = 35;
-carriage_outward_travel = 8;
+// Historical simulation-only rigid-wheel compliance surrogate. This is not a
+// physical CAD travel datum; the intended motor and wheel centres are fixed.
+legacy_simulation_surrogate_travel = 8;
 
 // Chassis and printable intake structure (ground frame, robot +X forward).
 chassis_front_x = 460;

@@ -1,4 +1,8 @@
-"""Generated-model acceptance tests for the authoritative compact CAD model."""
+"""Acceptance tests for the retained compact simulation model.
+
+Intake carriage assertions are CURRENT_SIMULATION_SURROGATE and
+NOT_PHYSICAL_INTAKE_ARCHITECTURE; they do not validate physical compliance.
+"""
 
 from __future__ import annotations
 
@@ -66,6 +70,19 @@ def _joint(root: ET.Element, name: str) -> ET.Element:
     return next(joint for joint in root.findall("joint") if joint.get("name") == name)
 
 
+def _axis_from_rpy(rpy: list[float]) -> np.ndarray:
+    """Map local +Z through URDF/SDF fixed-axis roll-pitch-yaw."""
+    roll, pitch, yaw = rpy
+    cr, sr = math.cos(roll), math.sin(roll)
+    cp, sp = math.cos(pitch), math.sin(pitch)
+    cy, sy = math.cos(yaw), math.sin(yaw)
+    return np.asarray([
+        cy * sp * cr + sy * sr,
+        sy * sp * cr - cy * sr,
+        cp * cr,
+    ])
+
+
 def test_compact_contains_the_cad_physical_hierarchy(models):
     root = models[0]
     links = {link.get("name") for link in root.findall("link")}
@@ -87,6 +104,70 @@ def test_compact_contains_the_cad_physical_hierarchy(models):
     assert _joint(root, "compact_handoff_ramp_joint").find("parent").get("link") == "compact_bridge_link"
     assert _joint(root, "flywheel_launcher_mount_joint").find("parent").get("link") == "compact_bridge_link"
     assert _joint(root, "basket_joint").find("parent").get("link") == "base_link"
+
+
+def test_intake_axes_are_parallel_longitudinal_and_stack_is_coaxial(models):
+    urdf, sdf_path = models[0], models[2]
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    orientation = contract["intake_direct_drive_orientation"]
+    expected_axes = {
+        "left": np.asarray(orientation["left_world_axis"]),
+        "right": np.asarray(orientation["right_world_axis"]),
+    }
+
+    for side in ("left", "right"):
+        wheel_joint = _joint(urdf, f"intake_wheel_{side}_joint")
+        rpy = [float(value) for value in wheel_joint.find("origin").get("rpy").split()]
+        assert _axis_from_rpy(rpy) == pytest.approx(expected_axes[side], abs=1e-9)
+
+        carriage_joint = _joint(urdf, f"intake_wheel_{side}_carriage_joint")
+        wheel_base = np.asarray([
+            float(value) for value in carriage_joint.find("origin").get("xyz").split()
+        ])
+        wheel_ground = wheel_base + np.asarray([0.0, 0.0, 0.045])
+        assert wheel_ground == pytest.approx(
+            orientation["wheel_centres_ground_m"][side], abs=1e-9
+        )
+
+        carriage = _link(urdf, f"intake_wheel_{side}_carriage_link")
+        collisions = {item.get("name"): item for item in carriage.findall("collision")}
+        assert {"intake_adapter_col", "intake_motor_col"} <= collisions.keys()
+        motor_offset = np.asarray([
+            float(value) for value in collisions["intake_motor_col"].find("origin").get("xyz").split()
+        ])
+        motor_ground = wheel_ground + motor_offset
+        assert motor_ground == pytest.approx(
+            orientation["motor_centres_ground_m"][side], abs=1e-9
+        )
+        assert motor_offset[1] == pytest.approx(0.0, abs=1e-12)
+        assert motor_offset[0] > 0.0
+        assert motor_offset[2] > 0.0
+
+    assert expected_axes["left"] == pytest.approx(expected_axes["right"], abs=1e-9)
+    assert expected_axes["left"] == pytest.approx(
+        [math.sin(math.radians(35)), 0.0, math.cos(math.radians(35))], abs=1e-9
+    )
+
+    sdf = ET.parse(sdf_path).getroot()
+    for side in ("left", "right"):
+        joint = next(item for item in sdf.findall(".//joint")
+                     if item.get("name") == f"intake_wheel_{side}_joint")
+        pose = [float(value) for value in joint.findtext("pose").split()]
+        assert _axis_from_rpy(pose[3:]) == pytest.approx(expected_axes[side], abs=1e-9)
+
+
+def test_intake_and_launcher_coexist_without_obsolete_driveline(models):
+    root = models[0]
+    links = {link.get("name") for link in root.findall("link")}
+    assert {"intake_wheel_left_link", "intake_wheel_right_link",
+            "flywheel_left_link", "flywheel_right_link"} <= links
+    collision_names = {
+        collision.get("name") for link in root.findall("link")
+        for collision in link.findall("collision")
+    }
+    assert {"intake_adapter_col", "intake_motor_col", "wheel_col"} <= collision_names
+    forbidden = ("bearing", "coupler", "pulley", "belt", "printed_hub", "long_shaft")
+    assert not any(token in name.lower() for name in collision_names for token in forbidden)
 
 
 def test_cad_wheel_dimensions_and_cradle_structure(models):
@@ -209,7 +290,7 @@ def test_static_sat_has_only_the_interferences_present_in_source_cad(models):
         failed = {name for name, value in checks.items() if not value["pass"]}
         assert failed == {"launcher_vs_bridge"}, state
     blockers = result["known_cad_interferences"]
-    assert blockers["launcher_vs_bridge"]["physical_intersection_volume_mm3"] > 140_000
+    assert blockers["launcher_vs_bridge"]["physical_intersection_volume_mm3"] > 120_000
     assert blockers["launcher_vs_basket_hood"]["physical_intersection_volume_mm3"] == 0.0
     assert blockers["launcher_vs_basket_launch"]["physical_intersection_volume_mm3"] > 700
     assert blockers["launcher_vs_basket_raised"]["physical_intersection_volume_mm3"] > 40

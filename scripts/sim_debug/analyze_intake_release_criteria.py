@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Evaluate dual-wheel intake transport criteria from contact + pose logs.
+"""Evaluate legacy intake-surrogate transport criteria from contact + pose logs.
+
+CURRENT_SIMULATION_SURROGATE; NOT_PHYSICAL_INTAKE_ARCHITECTURE. Results from
+the prismatic-carriage model cannot close physical tyre-compliance gates.
 
 Criteria follow docs/mechanism/intake-concept-decision-el.md (transport concept:
 capture -> transport -> guide -> hopper). The --phase flag gates which

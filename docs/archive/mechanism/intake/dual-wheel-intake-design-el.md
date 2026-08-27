@@ -1,4 +1,10 @@
-# Dual-wheel intake — design spec
+# SUPERSEDED COMPLIANCE MODEL — dual-wheel intake design spec
+
+> The prismatic spring-carriage compliance in this historical document is a
+> simulation surrogate, not the intended physical mechanism. Current physical
+> architecture: fixed FIT0186 motors and wheel centres, with compliance from
+> the tennis ball and Pro-Line Trencher tyre/open-cell insert. See
+> [`standalone-intake-fixed-motor-compliant-tyre.md`](../../../mechanism/standalone-intake-fixed-motor-compliant-tyre.md).
 
 Ημερομηνία: 2026-07-10
 Branch: `feat/dual-wheel-intake-concept`
@@ -6,8 +12,8 @@ Branch: `feat/dual-wheel-intake-concept`
 Αυτό το έγγραφο ορίζει τη γεωμετρία, τη φυσική και τα κριτήρια αποδοχής του
 dual-wheel intake που αντικαθιστά το single top-roller concept. Η απόφαση
 εγκατάλειψης του top roller τεκμηριώνεται στο
-`docs/mechanism/intake-concept-decision-el.md` και στο
-`docs/mechanism/intake-bench-sweep-report-el.md`.
+`docs/mechanism/intake-concept-decision-el.md` και στο archived
+`docs/archive/mechanism/intake/intake-bench-sweep-report-el.md`.
 
 ## Τρέχουσα as-built baseline (2026-08-16)
 
@@ -296,5 +302,5 @@ release 0.133 m/s, no crest) — το dual-wheel πρέπει να περνά τ
 `release_criteria.json` ανά run· αποτυχία phase σταματά την πρόοδο στην
 επόμενη (fail-fast, όπως το stop/continue gate του bench report).
 
-Κάθε βήμα καταγράφεται στο `docs/mechanism/intake-debug-log-el.md` (hypothesis /
+Κάθε βήμα καταγράφεται στο archived `docs/archive/mechanism/intake/intake-debug-log-el.md` (hypothesis /
 result / status) το ίδιο turn με την αλλαγή.

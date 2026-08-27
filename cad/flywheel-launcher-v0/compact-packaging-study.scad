@@ -273,8 +273,8 @@ module shifted_option_a_intake() {
     curved_cheek(1);
     curved_cheek(-1);
     compact_handoff_ramp();
-    tilted_wheel_motor_pod(1);
-    tilted_wheel_motor_pod(-1);
+    fixed_direct_drive_stack(1);
+    fixed_direct_drive_stack(-1);
     intake_ir_beams();
 
     if (show_intake_ball_path) {

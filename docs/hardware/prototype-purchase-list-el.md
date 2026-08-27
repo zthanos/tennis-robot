@@ -228,9 +228,9 @@ dual-channel DC motor drivers ή 4 ποιοτικούς single-channel drivers �
 | Qty | Υλικό | Περιγραφή |
 |---:|---|---|
 | 1 set | PETG/ASA print ή πλαστικό φύλλο 2-3 mm | Funnel side plates και intake guides |
-| 2 | fixed bearing-supported intake pods | Σταθεροί άξονες Ø6 mm με δύο ρουλεμάν ανά wheel· χωρίς side carriages |
+| 2 | fixed FIT0186 motor mounts | Άκαμπτη στήριξη μοτέρ στη γέφυρα· direct-drive wheel stack, χωρίς carriage ή remote shaft |
 | 1 | wire-mesh removable basket | Basket v2.1, εσωτερικό 400×280 mm |
-| 1 set | μικρές γωνίες ή brackets | Σύνδεση funnel και fixed intake pods στην ξύλινη γέφυρα |
+| 1 set | μικρές γωνίες ή brackets | Σύνδεση funnel και fixed motor mounts στην ξύλινη γέφυρα |
 
 Διαστάσεις στόχοι:
 
@@ -264,14 +264,16 @@ Snapshot τιμής `21/08/2026`: `37,49 €` το ζευγάρι, χωρίς μ
 | Πλάτος | 73 mm |
 | Ελαστικό / insert | Pro-Line M2 medium compound με open-cell foam insert |
 | Wheel interface | Περιλαμβάνονται removable 12 mm και 14 mm RC hex adapters |
-| Άξονας | Ανεξάρτητος σταθερός άξονας μετάδοσης Ø6 mm ανά wheel |
-| Στήριξη | Δύο ρουλεμάν ανά άξονα, χωρίς κινητό carriage |
-| Θέση Option A | x=470 mm, gap 56 mm αρχικό, tilt 35° |
+| Μετάδοση | FIT0186 native 6 mm D-shaft → purchased `14-00012630` → 12 mm Raid interface |
+| Στήριξη | Fixed FIT0186 mount, χωρίς carriage, remote shaft ή εξωτερικά bearings |
+| Θέση Option A | wheel centres x=470 mm, gap 56 mm αρχικό, κοινό longitudinal X-Z tilt 35°· παράλληλοι άξονες στη front view |
 
 > **Προσοχή:** τα 12/14 mm adapters της συσκευασίας είναι wheel hexes του
 > συστήματος Raid· δεν μετατρέπουν κυλινδρικό άξονα Ø6 mm σε hex. Χρειάζεται
-> ξεχωριστό hub Ø6 mm D-bore → αρσενικό 12 mm RC hex. Το Option A περιλαμβάνει
-> τυπωτό split-clamp prototype, με M4 clamp και εξωτερική αξονική ασφάλιση.
+> Το wheel-side 12 mm Raid interface δεν αντικαθιστά το shaft adapter. Έχουν
+> αγοραστεί έξι `14-00012630` adapters 6 mm shaft → 12 mm hex· δύο κατανέμονται
+> στο intake. Η ακριβής έδραση, εμπλοκή και αξονική ασφάλιση παραμένουν gate
+> φυσικής μετρολογίας. Δεν προβλέπεται τυπωτό torque hub.
 
 ### Intake Motors
 

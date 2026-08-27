@@ -1,5 +1,9 @@
 # Compact ramp-to-receiving-chute handoff repair
 
+> **`CURRENT_SIMULATION_SURROGATE` — `NOT_PHYSICAL_INTAKE_ARCHITECTURE`.**
+> Carriage telemetry in this report belongs to the retained legacy simulator
+> and does not define physical intake compliance.
+
 Date: 2026-08-25
 
 ## Diagnosis

@@ -1,8 +1,9 @@
-# Collector intake — Option A
+# Collector intake — fixed-motor Option A supporting CAD
 
-This directory is the single source for the agreed curved-cheek, plywood-bridge
-collector intake. Do not mix its exports with the older straight-cheek/rail
-files one directory above.
+This directory supports the current fixed-motor, direct-drive,
+compliant-tyre architecture. The authoritative architecture and open gates are
+in [`standalone-intake-fixed-motor-compliant-tyre.md`](../../../docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md).
+The motors and wheel centres do not translate.
 
 ## Contents
 
@@ -19,14 +20,13 @@ files one directory above.
 | `cheek_left.stl` | 1 | Current Option A geometry |
 | `cheek_right.stl` | 1 | Current Option A geometry |
 | `ramp.stl` | 1 | Current Option A geometry; lip x=520 mm |
-| `hex_hub.stl` | 2 | Provisional 6 mm D-bore / 12 mm RC hex |
-| `bearing_cartridge.stl` | 2 | Provisional 626 envelope; measure bearings first |
 | `ir_entry_bracket.stl` | 2 | Universal zip-tie carrier; provisional sensor envelope |
 | `ir_confirmation_bracket.stl` | 2 | Universal zip-tie carrier; provisional sensor envelope |
 
 The 18 mm bridge and uprights are plywood and therefore intentionally have no
-STL. Purchased wheels, motors, shafts, bearings, couplers and fasteners also
-have no manufacturing STL.
+STL. Purchased wheels, motors, `14-00012630` adapters and fasteners also have
+no manufacturing STL. There is no remote transmission shaft, bearing
+cartridge, coupler, or printed torque hub in the current intake architecture.
 
 The exported full curved cheek is 253 x 128 x 132 mm because its bridge flange
 extends rearward. It is geometrically inside the 256 x 256 mm P2S volume with
@@ -40,13 +40,15 @@ for a 220 x 220 mm printer or if the P2S keep-out area cannot be cleared.
 All files are exported together to prevent version mixing; that does not turn
 unmeasured interfaces into production-ready parts. In particular:
 
-- confirm the wheel's actual 12 mm hex depth and the purchased 6 mm shaft flat
-  before printing the hubs as production parts;
-- confirm the real bearing OD/width before printing cartridges;
+- measure the FIT0186 shaft projection/flat/shoulder, purchased adapter seating
+  and stop, Raid hex pocket, and removable axial retention before releasing the
+  direct-drive stack;
 - confirm the IR module body and optical-centre dimensions before printing the
   drop brackets;
-- the final motor clamp/face adapter still requires the actual mounting-hole
-  pattern. The assembly currently shows only the measured motor envelope.
+- the final fixed motor bracket and bridge service opening require physical
+  metrology. The invalid 22 mm vertical opening and invented M5 pattern were
+  removed; CAD now cuts only the exact zero-clearance 30 mm motor envelope
+  along the retained X-Z axis, without releasing manufacturing clearance.
 
 Regenerate and manifold-check the set with:
 

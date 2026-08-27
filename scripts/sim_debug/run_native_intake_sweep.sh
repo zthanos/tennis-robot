@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Native Ubuntu/Jazzy intake geometry sweep.
+# CURRENT_SIMULATION_SURROGATE; NOT_PHYSICAL_INTAKE_ARCHITECTURE.
 #
 # Runs one headless Gazebo simulation per geometry config and writes per-run
 # JSONL plus a combined summary CSV. The default "bench" driver bypasses
@@ -60,7 +61,8 @@ export HOME="${INTAKE_SWEEP_HOME:-$SCRIPT_DIR/runtime/sweep_home}"
 export ROS_HOME="${ROS_HOME:-$SCRIPT_DIR/runtime/ros_home}"
 mkdir -p "$HOME" "$ROS_HOME" "$ROS_HOME/locks"
 
-# Dual-wheel intake sweep axes (docs/dual-wheel-intake-design-el.md).
+# NOT_PHYSICAL_INTAKE_ARCHITECTURE simulation-surrogate sweep axes.
+# Physical definition: docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md.
 IFS=' ' read -r -a WHEEL_GAPS <<< "${INTAKE_SWEEP_WHEEL_GAPS:-0.056}"
 IFS=' ' read -r -a WHEEL_RADII <<< "${INTAKE_SWEEP_WHEEL_RADII:-0.060}"
 IFS=' ' read -r -a NIP_XS <<< "${INTAKE_SWEEP_NIP_XS:-0.540}"

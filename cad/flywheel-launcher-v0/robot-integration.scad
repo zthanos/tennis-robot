@@ -112,8 +112,8 @@ module option_a_read_only_context() {
     curved_cheek(1);
     curved_cheek(-1);
     short_handoff_ramp();
-    tilted_wheel_motor_pod(1);
-    tilted_wheel_motor_pod(-1);
+    fixed_direct_drive_stack(1);
+    fixed_direct_drive_stack(-1);
     if (show_option_a_ir) intake_ir_beams();
 }
 

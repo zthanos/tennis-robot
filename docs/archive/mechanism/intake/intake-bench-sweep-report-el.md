@@ -1,5 +1,9 @@
 # Intake bench sweep report
 
+> **Archived: `HISTORICAL_SUPERSEDED`.** This is single-top-roller simulation
+> evidence, not the current physical intake definition. See the
+> [fixed-motor architecture](../../../mechanism/standalone-intake-fixed-motor-compliant-tyre.md).
+
 Ημερομηνία: 2026-07-10
 
 Σκοπός αυτού του εγγράφου είναι να κρατήσει καθαρά τις μετρήσεις του νέου

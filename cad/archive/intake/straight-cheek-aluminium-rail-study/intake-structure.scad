@@ -177,7 +177,8 @@ module assembly() {
     color("orange") cheek_world(1);
     color("orange") cheek_world(-1);
 
-    // Wheel references only; wheel/carriage CAD follows the motor fit check.
+    // Wheel references only; fixed motor/adapter/wheel mount CAD follows the
+    // motor and purchased-interface metrology check. No carriage is intended.
     for (sy = [-1, 1])
         color("black", 0.55)
             translate([540, sy*(intake_gap/2+intake_wheel_d/2), 70])

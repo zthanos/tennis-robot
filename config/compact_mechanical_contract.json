@@ -49,7 +49,7 @@
   },
   "known_cad_interferences": {
     "launcher_vs_bridge": {
-      "physical_intersection_volume_mm3": 145093.43,
+      "physical_intersection_volume_mm3": 130232.06,
       "bbox_mm": [
         [
           377.88085939134726,
@@ -134,6 +134,68 @@
       ]
     }
   },
+  "intake_direct_drive_orientation": {
+    "physical_architecture": "FIXED_MOTOR_COMPLIANT_TYRE",
+    "motors_fixed_to_bridge": true,
+    "wheel_centres_fixed": true,
+    "physical_compliance": [
+      "tennis_ball deformation",
+      "Pro-Line Trencher tyre and foam-insert radial deformation"
+    ],
+    "translating_motor_pods_required": false,
+    "simulation_surrogate_notice": "NOT_PHYSICAL_INTAKE_ARCHITECTURE: current *_carriage_link and prismatic joints are a legacy SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE. They move the motor collisions and are not physical-design or validation evidence.",
+    "tilt_deg": 35.0,
+    "tilt_plane": "ROBOT_LONGITUDINAL_X_Z",
+    "front_view_axes_parallel": true,
+    "local_axis": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "left_world_axis": [
+      0.573576436,
+      0.0,
+      0.819152044
+    ],
+    "right_world_axis": [
+      0.573576436,
+      0.0,
+      0.819152044
+    ],
+    "wheel_centres_ground_m": {
+      "left": [
+        0.37,
+        0.09,
+        0.07
+      ],
+      "right": [
+        0.37,
+        -0.09,
+        0.07
+      ]
+    },
+    "motor_centres_ground_m": {
+      "left": [
+        0.423629397,
+        0.09,
+        0.146590716
+      ],
+      "right": [
+        0.423629397,
+        -0.09,
+        0.146590716
+      ]
+    },
+    "motor_axis_distance_m": 0.0935,
+    "independent_motor_outboard_offset_m": 0.0,
+    "coaxial_motor_forward_offset_m": 0.053629397,
+    "driveline": [
+      "FIT0186_6mm_D_shaft",
+      "14-00012630_6mm_to_12mm_hex_adapter",
+      "PRO117010_supplied_12mm_hex",
+      "PRO117010_wheel"
+    ]
+  },
   "components": {
     "chassis": {
       "links": [
@@ -182,14 +244,36 @@
       ],
       "cad_bbox": [
         [
-          0.2982,
+          0.29827703332726935,
           -0.152,
-          0.0044
+          0.004539211329686949
         ],
         [
-          0.4418,
+          0.44172296667273064,
           0.152,
-          0.1356
+          0.13546078867031303
+        ]
+      ]
+    },
+    "intake_direct_drive_pods": {
+      "physical_role": "FIXED_DIRECT_DRIVE_STACKS_AT_REST",
+      "simulation_link_mapping": "LEGACY_SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE",
+      "links": [
+        "intake_wheel_left_carriage_link",
+        "intake_wheel_right_carriage_link",
+        "intake_wheel_left_link",
+        "intake_wheel_right_link"
+      ],
+      "cad_bbox": [
+        [
+          0.29827703332726935,
+          -0.152,
+          0.004539211329686949
+        ],
+        [
+          0.45599185273544424,
+          0.152,
+          0.18386468423640112
         ]
       ]
     },

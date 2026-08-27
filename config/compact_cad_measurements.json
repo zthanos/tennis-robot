@@ -30,7 +30,7 @@
           168.0
         ]
       ],
-      "vertex_count_with_duplicates": 16140
+      "vertex_count_with_duplicates": 9162
     },
     "cheeks": {
       "bbox_mm": [
@@ -76,6 +76,21 @@
         ]
       ],
       "vertex_count_with_duplicates": 2280
+    },
+    "intake_direct_drive_pods": {
+      "bbox_mm": [
+        [
+          298.27703332726935,
+          -152.0,
+          4.53921132968695
+        ],
+        [
+          455.99185273544424,
+          152.0,
+          183.86468423640113
+        ]
+      ],
+      "vertex_count_with_duplicates": 11496
     },
     "launcher": {
       "bbox_mm": [
@@ -240,8 +255,8 @@
           168.0
         ]
       ],
-      "vertex_count_with_duplicates": 7506,
-      "intersection_volume_mm3": 145093.43125912445
+      "vertex_count_with_duplicates": 5160,
+      "intersection_volume_mm3": 130232.05662338482
     },
     "basket_hood_bridge_intersection": {
       "bbox_mm": null,
@@ -288,7 +303,7 @@
     "bridge_cheeks_intersection": {
       "bbox_mm": [
         [
-          458.1847377712246,
+          462.12830097945755,
           -134.68048102192475,
           150.0
         ],
@@ -298,8 +313,8 @@
           150.0
         ]
       ],
-      "vertex_count_with_duplicates": 1434,
-      "intersection_volume_mm3": 9.43934234480063e-09
+      "vertex_count_with_duplicates": 606,
+      "intersection_volume_mm3": 1.9782836110001276e-09
     },
     "bridge_chassis_intersection": {
       "bbox_mm": null,

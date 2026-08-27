@@ -2,8 +2,10 @@
 
 ## Active design
 
-The agreed collector is **Option A**. Its source, parameters, previews, export
-script and generated STLs are kept together in [`option-a/`](option-a/).
+The current physical collector is the fixed-motor, direct-drive,
+compliant-tyre architecture. Its authoritative definition is
+[`standalone-intake-fixed-motor-compliant-tyre.md`](../../docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md).
+Option A is supporting CAD for the fixed mount, funnel, and bridge.
 
 Use only:
 
@@ -21,15 +23,8 @@ The root-level `motor-fit-gauge.scad/.stl` is a measurement coupon for the
 approximately 70 mm long motor, approximately 30 mm body and measured 5 mm
 D-shaft. It is not a torque-transmitting part.
 
-## Pre-Option-A files — do not mix
+## Pre-Option-A archive — do not mix
 
-The following root-level files and `stl/` exports belong to the earlier
-straight-cheek/aluminium-rail study:
-
-- `intake-structure.scad`;
-- `export-structure-stls.sh`;
-- `stl/cheek_front.stl`, `cheek_rear.stl`, `cheek_joiner.stl`;
-- `stl/ramp.stl`, `rail_saddle.stl`, `rail_cap.stl`.
-
-They remain only as development history and are **not parts of Option A**.
-Running their export script does not update the Option A print set.
+The earlier straight-cheek/aluminium-rail study and its outputs are preserved
+under [`cad/archive/intake/straight-cheek-aluminium-rail-study/`](../archive/intake/straight-cheek-aluminium-rail-study/).
+They are not current parts.

@@ -1,5 +1,9 @@
 # Intake roller/lip debugging — log
 
+> **Archived: `HISTORICAL_SUPERSEDED`.** This log records earlier roller and
+> simulation work. It must not override the
+> [current fixed-motor architecture](../../../mechanism/standalone-intake-fixed-motor-compliant-tyre.md).
+
 Σκοπός: αρχείο-καταγραφή για κάθε ενέργεια/διόρθωση γύρω από το intake
 (roller, lip, channel, debug camera) ώστε να μην ξαναγυρνάμε στον ίδιο κύκλο.
 Νέα εγγραφή ανά αλλαγή: τι δοκιμάστηκε, τι αποτέλεσμα είχε, τι επόμενο βήμα.
@@ -472,7 +476,7 @@
   ramp=elevation προς basket· (γ) actuation με ΔΥΟ πανομοιότυπα μοτέρ (ίδιο
   μοντέλο με του top roller), ένα ανά τροχό, αντίθετης φοράς —
   αντικαθιστά το αρχικό "ένα μοτέρ + γρανάζια" (+1 μοτέρ στο BOM).
-- **Spec**: γράφτηκε `docs/mechanism/dual-wheel-intake-design-el.md` — nominal
+- **Spec**: γράφτηκε `docs/archive/mechanism/intake/dual-wheel-intake-design-el.md` — nominal
   Rw=45mm, gap=60mm (3mm interference/πλευρά), nip x≈0.59, τροχοί
   z 0.005-0.085 (καλύπτουν ισημερινό μπάλας z=33), ω=±45 rad/s.
 - **Κρίσιμος υπολογισμός**: ramp end z=0.128 ⇒ v_release ≥1.59 m/s (ιδανικά
@@ -675,7 +679,7 @@
     τα δύο contact topics (`/gz/roller_contact_0`, `/gz/roller_contact_1`).
   - `diagnose_motion.sh`: updated στο νέο
     `/intake_wheel_velocity_controller/commands` με `[-10,+10]`.
-  - `docs/mechanism/dual-wheel-intake-design-el.md`: env typo
+  - `docs/archive/mechanism/intake/dual-wheel-intake-design-el.md`: env typo
     `INTAKE_WHEEL_NIP_X_M` → `INTAKE_NIP_X_M`.
 - **Sanity run μετά τα fixes**:
   - Path: `runtime/intake_sweeps/20260710_154459`.
