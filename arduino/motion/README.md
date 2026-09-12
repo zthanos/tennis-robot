@@ -1,5 +1,18 @@
 # Motion MCU (Arduino Mega) — drive firmware
 
+## Available Mega sketches
+
+- `motion_mega/motion_mega.ino`: υπάρχον drive-only firmware.
+- `motion_intake_mega/motion_intake_mega.ino`: ενιαίο bring-up firmware για
+  motion, intake, 6 encoders, 2 IR beams, safety inputs και GY-521/MPU6050.
+- `08_mpu6050_mega_bench/08_mpu6050_mega_bench.ino`: gyro-only test χωρίς
+  τροφοδοσία των motor drivers.
+
+Για την πρώτη θέση σε λειτουργία της κοινής perfboard εκτελείται πρώτα το
+gyro-only test, μετά τα ξεχωριστά motion/intake tests και τελευταίο το ενιαίο
+sketch. Όλα ξεκινούν με μηδενικές εξόδους· οι δοκιμές κινητήρων γίνονται με
+τους τροχούς σηκωμένους ή αφαιρεμένους.
+
 `motion_mega/motion_mega.ino` — real-time / safety layer for the 4WD skid-steer
 drive. Two BTS7960 drivers (one per side), four encoders. The host (PC now, Pi
 later) sends high-level per-side duty over USB serial; the Mega handles arming,
@@ -62,11 +75,16 @@ Matches `docs/hardware/motion-perfboard-wiring-el.md §4`:
 | Encoders B | LF=D22, LR=D23, RF=D24, RR=D25 |
 | START_ARM / ESTOP_STATUS / ARMED_LED | D32 / D33 / D34 |
 | IMU I2C (not used in v1) | SDA=D20, SCL=D21 |
+| Reserved intake L298N control | PWM=D44/D45, direction=D40/D41/D42/D43 |
+| Reserved intake encoders (PCINT) | left=A8/A9, right=A10/A11 |
+| Reserved intake IR beams | entry=D36, exit=D37 |
 
 ## Notes / next steps
 
 - v1 counts encoders on the A-edge only (direction from B). Fine for bench
   direction/odometry sanity; full 4× quadrature can come later if needed.
-- The IMU (MPU6050) is wired to the Mega I2C but not read in v1.
+- Το drive-only v1 δεν διαβάζει IMU ούτε ελέγχει intake. Το νέο
+  `motion_intake_mega.ino` υλοποιεί και τα δύο, κρατώντας το pin map και τα
+  safety timeouts της ενιαίας perfboard.
 - Later, a host node converts ROS `/cmd_vel` (Twist) → per-side duty and sends
   `M left right` — keeps the Mega dumb + safe. See `motion_controller.py`.

@@ -21,6 +21,7 @@
 |---:|---|---|---:|---:|---:|---|---|---|
 | 7 | Waveshare Slamtec RPLIDAR C1 Laser Ranging Sensor, 360° Omnidirectional Lidar, Millimetre Level High Definition, Anti-Interference and Anti-Adhesion, Compact and Easy to Integrate | Sensors / Navigation LiDAR | 1 | 83,35 € | 83,35 € | TBD | Παρασκευή | Αγοράστηκε — εκκρεμεί παράδοση (δεν έχει έρθει ακόμα) |
 | 8 | HPI Racing Dirt Buster Block Tire S Compound on Black Wheel (Baja 5B Rear, 170x80 mm, mounted w/ foam inserts, 24 mm hex) — 1 ζευγάρι | Drive / Wheels | 2 | TBD | TBD | RC offroad (μεταχειρισμένα) | Παραλήφθηκε | Αγοράστηκε |
+| R1 | DC Motor Driver Breakout with L298N (`19-00010298`) | Collector / Intake | 1 | — | — | Grobotronics | — | Παραλήφθηκε |
 
 ## Παραγγελία Grobotronics — 03/07/2026
 
@@ -42,6 +43,12 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 
 > Σχέδιο τροχών: brass hex adapter 6mm→12mm hex (G3, με set screw στο flat του D-shaft) + 3D printed
 > προσαρμογέας 12mm hex → 24mm hex (Baja 5B) από το `cad/`. Πήραμε 6 (4 + 2 ρεζέρβες).
+
+## Παραγγελία Grobotronics — 01/09/2026
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Κατάσταση |
+|---:|---|---|---:|---:|---:|---|
+| G12 | DFRobot Metal DC Geared Motor w/Encoder 12V 251RPM 18kg.cm (`FIT0186`, `GB37Y3530-12V-251R`) — δεύτερο μοτέρ intake | Collector / Intake | 1 | — | — | Παραλήφθηκε 03/09/2026 |
 
 ## Parts To Order
 
@@ -67,7 +74,7 @@ Snapshot date: `28/06/2026`
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|---|
 | 11 | Solderable perfboard (double-sided, πράσινο) | Motion / Board | 2 | — | — | — | ✅ Παραλήφθηκε |
-| 12 | Pin headers 2.54 mm για J1-J9 | Motion / Board | 4x 1x20 female | 0,25 € | 1,00 € | Grobotronics | ✅ Παραγγέλθηκε — βλ. G8 |
+| 12 | Pin headers 2.54 mm για το παλιό J1-J9 layout | Motion / Board | 4x 1x20 female = 80 θέσεις | 0,25 € | 1,00 € | Grobotronics | ⚠️ Παραλήφθηκαν, αλλά το νέο unified layout απαιτεί 103 θέσεις και keyed harness επιλογή |
 | 13 | 4-pin connectors/headers για encoders (J4-J7) | Motion / Board | 4 | ~1 € | ~4 € | TBD | ⏸ Εκκρεμεί αυτοψία: τι connector έχει το FIT0403 (PH 6-pin; καλώδιο στο κουτί;) πριν αγοραστεί οτιδήποτε |
 | 14 | Hookup wire (solid πράσινο + μαύρο) + 65pcs M-M jumpers | Motion / Board | — | — | — | — | ✅ Παραλήφθηκε |
 | 14b | Copper foil tape (shielding/bus, προαιρετικό) | Motion / Board | 1 | — | — | — | ✅ Παραλήφθηκε |
@@ -83,6 +90,9 @@ Snapshot date: `28/06/2026`
 | 26 | 2x Inline ασφαλειοθήκη MINI blade αδιάβροχη (PerVoi) — motor: καλώδιο ≥1.5mm² | Motion / Safety | 2 | ~2-3 € | ~4-6 € | Skroutz | 🛒 Στο καλάθι Skroutz |
 | 27 | Καλώδιο ισχύος πολύκλωνο 1.5-2.5mm² κόκκινο+μαύρο (~2m έκαστο) + USB-C pigtail για buck→Pi | Motion / Wiring | — | ~8-12 € | ~8-12 € | Kafkas/TBD | Προς παραγγελία |
 | 28 | Αντίσταση 470Ω (LED start button) | Motion / Board | 1 | ~0,10 € | ~0,10 € | — | Από απόθεμα ή με επόμενη παραγγελία |
+| 29 | Unified-header συμπλήρωμα: τουλάχιστον 2x επιπλέον 1x20 strips ή πλήρες σετ keyed box headers/plugs | Motion + Intake / Board | 23+ επιπλέον επαφές | TBD | TBD | TBD | Προς επιλογή πριν κολληθούν headers |
+| 30 | Perfboard passives: 11x 100nF ceramic, 1x 220µF ≥10V, 2x 10kΩ, 1x 470Ω | Motion + Intake / Board | 1 σετ | TBD | TBD | TBD | Απαιτούνται πριν την τελική κόλληση |
+| 31 | JP_PWR 1x3 + jumper και πολωμένο PWR_IN 1x2 με mating plug | Motion + Intake / Board | 1 σετ | TBD | TBD | TBD | Απαιτούνται για ασφαλή επιλογή Mega/εξωτερικού 5V |
 
 > ✅ **Άξονας επιβεβαιωμένος:** Το μοτέρ είναι **DFRobot FIT0403** (12V 122RPM w/Encoder, gearbox 90:1) με **6 mm D-shaft**. Το hub πρέπει να γεφυρώνει `6 mm D-shaft → 24 mm hex (Baja 5B)`, με set screw στο flat του shaft. Χρειάζονται 4 (ένα ανά κινητήριο τροχό). Ψάξε: "6mm to 24mm hex hub adapter" ή "24mm hex wheel hub 6mm bore".
 
