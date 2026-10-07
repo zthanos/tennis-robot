@@ -21,7 +21,7 @@ documents και όχι από την τρέχουσα μορφή του Webots 
 - `docs/survey/court-knowledge-model-specification.md`
 - `docs/archive/collection-state-machine-plan-el.md` (ιστορικό, μη ενεργό)
 - `docs/collection-route/mission-dashboard-plan-el.md`
-- `docs/mechanism/dual-wheel-intake-design-el.md`
+- `docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md`
 - `docs/hardware/prototype-purchase-list-el.md`
 - `docs/hardware/chassis-layout-4wd-dual-intake-el.md`
 

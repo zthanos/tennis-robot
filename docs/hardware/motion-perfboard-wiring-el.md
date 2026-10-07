@@ -329,6 +329,26 @@ module απαιτήσει ξεχωριστό έλεγχο, κρατάμε χώρ
 αλλά αυτό πρέπει να επιβεβαιωθεί στο συγκεκριμένο module. Αν το module γράφει
 μόνο 3.3V, χρησιμοποίησε 3.3V και έλεγξε αν χρειάζεται level shifting στο I2C.
 
+### Reserved Dual-Intake Pins
+
+Για να μην επικαλύπτεται η παράλληλη σχεδίαση του intake με το motion harness,
+δεσμεύονται τα παρακάτω pins. Δεν έχουν ακόμη υλοποιηθεί στο `motion_mega.ino`.
+
+| Arduino Mega | Intake net | Χρήση |
+|---|---|---|
+| D44 / D45 PWM | `INTAKE_LEFT_RPWM/LPWM` | Αριστερός BTS7960 |
+| D40 | `INTAKE_LEFT_EN` | R_EN + L_EN αριστερού BTS7960 |
+| D46 / D11 PWM | `INTAKE_RIGHT_RPWM/LPWM` | Δεξιός BTS7960 |
+| D42 | `INTAKE_RIGHT_EN` | R_EN + L_EN δεξιού BTS7960 |
+| A10 / A11 | `INTAKE_LEFT_ENC_A/B` | Αριστερός FIT0186 encoder, PCINT |
+| A8 / A9 | `INTAKE_RIGHT_ENC_A/B` | Δεξιός FIT0186 encoder, PCINT |
+| D36 | `INTAKE_IR_ENTRY` | IR break beam στην είσοδο funnel, active LOW |
+| D37 | `INTAKE_IR_EXIT` | IR break beam στην έξοδο τροχών, active LOW |
+
+Τα A8-A11 απαιτούν pin-change interrupt ISR/library. Δεν χρησιμοποιούμε για το
+intake τα D2, D3, D18, D19 ή D22-D25, επειδή ανήκουν ήδη στους drive encoders,
+ούτε τα D20/D21, επειδή ανήκουν στο I2C.
+
 Στο prototype το MPU6050 χρησιμοποιείται για yaw-rate/acceleration sanity checks
 και βελτίωση odometry diagnostics. Δεν το αντιμετωπίζουμε ως απόλυτη πυξίδα.
 

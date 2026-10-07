@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # Native Ubuntu/Jazzy intake geometry sweep.
 #
+# The model under test is the frozen fixed-motor architecture (no carriage, CAD
+# wheel dimensions, authoritative Option A handoff ramp). Run it with
+# ROBOT_PACKAGING_VARIANT=compact: that is the only variant carrying the CAD
+# cheeks, ramp and bridge. Tread friction and ball-to-ramp friction are SWEPT
+# bounds (INTAKE_SWEEP_TREAD_MUS / INTAKE_RAMP_MU), never values chosen to make
+# a case pass. Wheel droop, torque and current are NOT measurable here.
+#
 # Runs one headless Gazebo simulation per geometry config and writes per-run
 # JSONL plus a combined summary CSV. The default "bench" driver bypasses
 # perception / collect_one and drives a fixed robot pose directly into ball_02.
@@ -60,14 +67,18 @@ export HOME="${INTAKE_SWEEP_HOME:-$SCRIPT_DIR/runtime/sweep_home}"
 export ROS_HOME="${ROS_HOME:-$SCRIPT_DIR/runtime/ros_home}"
 mkdir -p "$HOME" "$ROS_HOME" "$ROS_HOME/locks"
 
-# Dual-wheel intake sweep axes (docs/dual-wheel-intake-design-el.md).
+# Frozen CAD geometry (scripts/intake_geometry.py). These are transcriptions,
+# not tuning knobs; overriding them is a deliberate off-CAD experiment.
 IFS=' ' read -r -a WHEEL_GAPS <<< "${INTAKE_SWEEP_WHEEL_GAPS:-0.056}"
-IFS=' ' read -r -a WHEEL_RADII <<< "${INTAKE_SWEEP_WHEEL_RADII:-0.060}"
+IFS=' ' read -r -a WHEEL_RADII <<< "${INTAKE_SWEEP_WHEEL_RADII:-0.062}"
 IFS=' ' read -r -a NIP_XS <<< "${INTAKE_SWEEP_NIP_XS:-0.540}"
 IFS=' ' read -r -a WHEEL_TILTS_DEG <<< "${INTAKE_SWEEP_WHEEL_TILTS_DEG:-${INTAKE_WHEEL_TILT_DEG:-35.0}}"
 WHEEL_MAX_VEL="${INTAKE_WHEEL_MAX_VEL_RAD_S:-26.3}"
 WHEEL_EFFORT="${INTAKE_WHEEL_EFFORT_NM:-1.77}"
-IFS=' ' read -r -a SPRING_KS <<< "${INTAKE_SWEEP_SPRING_KS:-1000}"
+# Physically unmeasured felt/tread friction: swept over the same bounds as the
+# reduced-order study. Replaces the removed carriage-spring axis.
+IFS=' ' read -r -a TREAD_MUS <<< "${INTAKE_SWEEP_TREAD_MUS:-0.6}"
+export INTAKE_RAMP_MU="${INTAKE_RAMP_MU:-0.40}"
 IFS=' ' read -r -a BENCH_DRIVE_SPEEDS <<< "${INTAKE_SWEEP_DRIVE_SPEEDS:-${INTAKE_BENCH_DRIVE_SPEED:-0.12}}"
 IFS=' ' read -r -a BENCH_WHEEL_SPEEDS <<< "${INTAKE_SWEEP_WHEEL_SPEEDS:-${INTAKE_BENCH_WHEEL_SPEED:-25.0}}"
 IFS=' ' read -r -a BALL_LATERAL_OFFSETS <<< "${INTAKE_SWEEP_BALL_LATERAL_OFFSETS:-0.0}"
@@ -226,46 +237,16 @@ wait_for_controllers() {
     return 1
 }
 
-wait_for_clock_progress() {
-    local timeout_s="$1"
-    python3 - "$timeout_s" <<'PY'
-import sys
-import time
-
-import rclpy
-from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
-from rosgraph_msgs.msg import Clock
-
-timeout_s = float(sys.argv[1])
-deadline = time.monotonic() + timeout_s
-samples = []
-
-rclpy.init()
-node = rclpy.create_node("intake_sweep_clock_probe")
-clock_qos = QoSProfile(
-    depth=1,
-    reliability=ReliabilityPolicy.BEST_EFFORT,
-    durability=DurabilityPolicy.VOLATILE,
-)
-
-def on_clock(msg: Clock) -> None:
-    stamp_ns = msg.clock.sec * 1_000_000_000 + msg.clock.nanosec
-    if not samples or stamp_ns != samples[-1]:
-        samples.append(stamp_ns)
-
-subscription = node.create_subscription(Clock, "/clock", on_clock, clock_qos)
-try:
-    while time.monotonic() < deadline and len(samples) < 2:
-        rclpy.spin_once(node, timeout_sec=0.25)
-finally:
-    node.destroy_subscription(subscription)
-    node.destroy_node()
-    rclpy.shutdown()
-
-if len(samples) < 2 or samples[-1] <= samples[0]:
-    raise SystemExit(1)
-print(f"clock_progress_ns={samples[0]}->{samples[-1]}")
-PY
+verify_bench_ready() {
+    # A bench is not ready because its processes started. This asserts that the
+    # simulation clock advances, that controller_manager is actually on it, and
+    # that a commanded joint's MEASURED state moves — the three properties that
+    # "Configured and activated ..." in the launch log does not imply.
+    local log_file="$1"
+    local budget="$CLOCK_TIMEOUT_S"
+    timeout "$(( budget * 3 + 30 ))" python3 \
+        "$SCRIPT_DIR/scripts/sim_debug/verify_sim_bench.py" --timeout-s "$budget" \
+        > "$log_file" 2>&1
 }
 
 publish_stop_commands() {
@@ -814,7 +795,9 @@ run_bench_driver() {
         echo "wheel_tilt_deg=$INTAKE_WHEEL_TILT_DEG"
         echo "wheel_max_vel=$WHEEL_MAX_VEL"
         echo "wheel_effort=$WHEEL_EFFORT"
-        echo "spring_k=$INTAKE_WHEEL_SPRING_K"
+        echo "tread_mu=$INTAKE_TREAD_MU"
+        echo "ramp_mu=$INTAKE_RAMP_MU"
+        echo "packaging_variant=${ROBOT_PACKAGING_VARIANT:-compact}"
         echo "ball_lateral_offset=$BENCH_BALL_LATERAL"
         echo "ramp_entry_x=${INTAKE_RAMP_ENTRY_X_M:-default}"
         echo "ramp_profile=${INTAKE_RAMP_PROFILE:-launch}"
@@ -864,6 +847,11 @@ run_bench_driver() {
         cleanup_launch
         return 1
     fi
+    if ! verify_bench_ready "$case_dir/bench_ready.log"; then
+        echo "FAILED: simulation bench is not usable; see $case_dir/bench_ready.log" >&2
+        cleanup_launch
+        return 1
+    fi
     ros2 topic list | sort > "$case_dir/ros_topics.txt" 2>&1 || true
     ros2 topic info /diff_drive_controller/cmd_vel_unstamped \
         > "$case_dir/cmd_vel_unstamped.info" 2>&1 || true
@@ -873,6 +861,19 @@ run_bench_driver() {
     setsid python3 "$SCRIPT_DIR/scripts/sim_debug/log_gz_poses.py" "$case_dir/gz_poses.jsonl" \
         > "$case_dir/gz_poses.log" 2>&1 &
     pose_logger_pid="$!"
+
+    # Place the bench target where the sweep asked for it. Without this the
+    # lateral-offset axis is silently ignored: the world's own ball_02 pose
+    # wins and every "offset" case measures the centred case again.
+    if ! set_gz_model_pose "${INTAKE_BENCH_BALL_NAME:-ball_02}" \
+        "$BENCH_BALL_X" "$BENCH_BALL_Y" "${INTAKE_BENCH_BALL_Z:-0.033}" \
+        > "$case_dir/bench_ball_setup.log" 2>&1; then
+        echo "FAILED: could not position the bench target ball; see $case_dir/bench_ball_setup.log" >&2
+        cleanup_launch
+        return 1
+    fi
+    echo "bench_ball=${INTAKE_BENCH_BALL_NAME:-ball_02} x=$BENCH_BALL_X y=$BENCH_BALL_Y" \
+        >> "$case_dir/bench_ball_setup.log"
 
     if ! prepare_basket_load "$case_dir/basket_load_setup.log" "$BASKET_LOAD_COUNT"; then
         echo "FAILED: basket preload setup; see $case_dir/basket_load_setup.log" >&2
@@ -956,9 +957,8 @@ run_collect_one_driver() {
         if ! wait_for_controllers "$case_dir/launch.log" "$READY_TIMEOUT_S" \
             > "$case_dir/controllers_ready.log" 2>&1; then
             startup_failure="controllers did not become active"
-        elif ! wait_for_clock_progress "$CLOCK_TIMEOUT_S" \
-            > "$case_dir/clock_ready.log" 2>&1; then
-            startup_failure="/clock did not progress"
+        elif ! verify_bench_ready "$case_dir/clock_ready.log"; then
+            startup_failure="simulation bench is not usable (clock/controller/joint)"
         elif ! wait_for_status "$start_time" "$READY_TIMEOUT_S" \
             > "$case_dir/ready.json"; then
             startup_failure="status did not become fresh"
@@ -1040,12 +1040,12 @@ run_case() {
     local wheel_radius="$2"
     local nip_x="$3"
     local wheel_tilt="$4"
-    local spring_k="$5"
+    local tread_mu="$5"
     local drive_speed="$6"
     local wheel_speed="$7"
     local ball_lateral="$8"
     local repeat="$9"
-    local case_name="gap_${wheel_gap}_rw_${wheel_radius}_nipx_${nip_x}_tilt_${wheel_tilt}_k_${spring_k}_drive_${drive_speed}_wspeed_${wheel_speed}_assist_${ENABLE_ASSIST}_${ASSIST_SPEED}_ax_${ASSIST_X}_az_${ASSIST_Z}_conv_${ENABLE_CONVEYOR}_${CONVEYOR_SPEED}_cx_${CONVEYOR_X_BIAS}_cz_${CONVEYOR_Z_BIAS}_lat_${ball_lateral}_r${repeat}"
+    local case_name="gap_${wheel_gap}_rw_${wheel_radius}_nipx_${nip_x}_tilt_${wheel_tilt}_mu_${tread_mu}_drive_${drive_speed}_wspeed_${wheel_speed}_assist_${ENABLE_ASSIST}_${ASSIST_SPEED}_ax_${ASSIST_X}_az_${ASSIST_Z}_conv_${ENABLE_CONVEYOR}_${CONVEYOR_SPEED}_cx_${CONVEYOR_X_BIAS}_cz_${CONVEYOR_Z_BIAS}_lat_${ball_lateral}_r${repeat}"
     case_name="${case_name//- /}"
     case_name="${case_name//./p}"
     case_name="${case_name//-/m}"
@@ -1058,7 +1058,7 @@ run_case() {
     export INTAKE_WHEEL_TILT_DEG="$wheel_tilt"
     export INTAKE_WHEEL_MAX_VEL_RAD_S="$WHEEL_MAX_VEL"
     export INTAKE_WHEEL_EFFORT_NM="$WHEEL_EFFORT"
-    export INTAKE_WHEEL_SPRING_K="$spring_k"
+    export INTAKE_TREAD_MU="$tread_mu"
     export INTAKE_ENABLE_FUNNEL="$ENABLE_FUNNEL"
     export INTAKE_ENABLE_RAMP="$ENABLE_RAMP"
     export INTAKE_ENABLE_ASSIST="$ENABLE_ASSIST"
@@ -1076,7 +1076,7 @@ run_case() {
 
     echo
     echo "=== $case_name ==="
-    echo "phase=$INTAKE_PHASE gap=$wheel_gap rw=$wheel_radius nip_x=$nip_x tilt=$wheel_tilt k=$spring_k drive=$drive_speed wheel_speed=$wheel_speed lateral=$ball_lateral"
+    echo "phase=$INTAKE_PHASE gap=$wheel_gap rw=$wheel_radius nip_x=$nip_x tilt=$wheel_tilt tread_mu=$tread_mu ramp_mu=$INTAKE_RAMP_MU drive=$drive_speed wheel_speed=$wheel_speed lateral=$ball_lateral"
 
     python3 "$SCRIPT_DIR/scripts/generate_curved_scoop_mesh.py" > "$case_dir/generate_scoop.log" 2>&1
 
@@ -1101,12 +1101,12 @@ for wheel_gap in "${WHEEL_GAPS[@]}"; do
     for wheel_radius in "${WHEEL_RADII[@]}"; do
         for nip_x in "${NIP_XS[@]}"; do
             for wheel_tilt in "${WHEEL_TILTS_DEG[@]}"; do
-                for spring_k in "${SPRING_KS[@]}"; do
+                for tread_mu in "${TREAD_MUS[@]}"; do
                     for drive_speed in "${BENCH_DRIVE_SPEEDS[@]}"; do
                         for wheel_speed in "${BENCH_WHEEL_SPEEDS[@]}"; do
                             for ball_lateral in "${BALL_LATERAL_OFFSETS[@]}"; do
                                 for repeat in $(seq 1 "$SWEEP_REPEATS"); do
-                                    run_case "$wheel_gap" "$wheel_radius" "$nip_x" "$wheel_tilt" "$spring_k" "$drive_speed" "$wheel_speed" "$ball_lateral" "$repeat"
+                                    run_case "$wheel_gap" "$wheel_radius" "$nip_x" "$wheel_tilt" "$tread_mu" "$drive_speed" "$wheel_speed" "$ball_lateral" "$repeat"
                                 done
                             done
                         done

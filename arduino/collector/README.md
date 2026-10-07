@@ -69,6 +69,42 @@ motor leads `AO1`/`AO2`. Μην αλλάξεις τα καλώδια του enco
    - Ξεκίνα με την εντολή `v` και μέτρα `VCC=5V`, `VM=12V`, κοινό `GND`.
    - Μετά δοκίμασε `p` για ένα πολύ σύντομο χαμηλό-PWM pulse.
 
+7. `07_dual_intake_mega_bench`
+   - Στατικό bench sketch για Mega -> 2x BTS7960 -> 2x FIT0186.
+   - Χρησιμοποιεί intake PWM D44/D45/D46/D11, enable D40/D42 και encoders A8-A11,
+     χωρίς να αγγίζει τα pins της κίνησης. Η ενεργή καλωδίωση είναι στο
+     `docs/hardware/intake-dual-fit0186-bts7960-mega-wiring-el.md`.
+   - Καταγράφει RPM, encoder counts και προαιρετικό χρόνο entry-to-exit από δύο
+     IR beams στα D36/D37.
+   - Ξεκινά disarmed, περιορίζει PWM σε 90/255, τα χειροκίνητα run σε 1500 ms
+     και τον αυτόματο κύκλο μπάλας σε 4000 ms, και σταματά αν δεν βλέπει
+     encoder progress.
+   - Για το πρώτο τεστ: `ARM`, μετά `PULSE L 45 250` και `PULSE R 45 250`, με
+     τους τροχούς αφαιρεμένους. Το `AUTO 60` οπλίζει έναν κύκλο μπάλας μόνο
+     αφού ολοκληρωθούν οι ασφαλείς wheel-off και free-wheel δοκιμές.
+
+8. `../motion/motion_intake_mega`
+   - Ενιαίο Mega sketch για το τελικό pinout της κοινής motion/intake
+     perfboard, με drive, dual intake, έξι encoders, δύο IR και MPU6050.
+   - Χρησιμοποιείται μόνο αφού περάσουν ανεξάρτητα τα drive-only,
+     dual-intake και MPU6050 bench tests.
+
+Το Pi script `scripts/run_intake_ir_cycle.py` οπλίζει επαναλαμβανόμενους
+κύκλους μέσω USB serial. Το Mega ξεκινά και τα δύο μοτέρ όταν κοπεί το entry
+IR και τα σταματά αμέσως όταν κοπεί το exit IR ή όταν συμπληρωθούν 4 s. Πριν
+το χρησιμοποιήσεις, ανέβασε στο Mega την τρέχουσα έκδοση του sketch `07`.
+
+```bash
+python3 scripts/run_intake_ir_cycle.py --port /dev/ttyACM0 --pwm 60
+```
+
+Για τις στατικές δοκιμές υπάρχει επίσης ασφαλές web panel για το Raspberry Pi
+στη θύρα `8082`. Η εγκατάσταση και η αντιστοίχιση των φυσικών μοτέρ
+τεκμηριώνονται στο `docs/hardware/intake-bench-panel-el.md`.
+
+Για έναν μόνο κύκλο πρόσθεσε `--once`. Το `Ctrl-C`, οποιοδήποτε σφάλμα ή
+απώλεια telemetry προκαλεί `STOP` και `DISARM` πριν κλείσει η serial θύρα.
+
 ## Πριν Βάλεις 12V Στο VM
 
 Μέτρα με πολύμετρο πάνω στα pins του TB6612:
@@ -127,13 +163,11 @@ ir:<entry_broken>,<exit_broken>,<cycle_state>
 Η αυτόματη ακολουθία του runtime sketch είναι:
 
 1. `entry=BROKEN`: εκκίνηση του roller προς τα εμπρός.
-2. `exit=BROKEN`: η μπάλα έφτασε στο exit.
-3. `exit=CLEAR`: η μπάλα πέρασε, ο roller σταματά.
-4. Νέος κύκλος οπλίζει μόνο αφού το `entry` γίνει ξανά `CLEAR`.
+2. `exit=BROKEN`: η μπάλα έφτασε στο exit και τα μοτέρ σταματούν αμέσως.
+3. Νέος κύκλος οπλίζει μόνο αφού γίνουν ξανά `CLEAR` και τα δύο IR beams.
 
-Αν το `exit` δεν ολοκληρώσει τη μετάβαση μέσα σε `5 s`, το sketch σταματά τον
-roller, αναφέρει `timed_out` και οπλίζει ξανά μόνο όταν καθαρίσουν και τα δύο
-IR beams.
+Αν το `exit` δεν κοπεί μέσα σε `4 s`, το sketch σταματά τα μοτέρ, αναφέρει
+`BALL_TIMEOUT` και οπλίζει ξανά μόνο όταν καθαρίσουν και τα δύο IR beams.
 
 ## Motor Driver Προσοχή
 

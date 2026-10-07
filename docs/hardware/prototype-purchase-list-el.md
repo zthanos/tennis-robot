@@ -162,6 +162,10 @@ Specs επιβεβαιωμένα (DFRobot FIT0403):
 2 τεμάχια motor driver για brushed DC motor στο πρώτο prototype
 ```
 
+Οι δύο BTS7960 που ήδη υπάρχουν δεσμεύτηκαν για το intake. Για την κίνηση
+χρειάζονται **δύο επιπλέον** πριν από drive bring-up. Η παρακάτω κοστολόγηση
+παραμένει το ιστορικό snapshot της κίνησης.
+
 Budget επιλογή:
 
 ```text
@@ -228,38 +232,52 @@ dual-channel DC motor drivers ή 4 ποιοτικούς single-channel drivers �
 | Qty | Υλικό | Περιγραφή |
 |---:|---|---|
 | 1 set | PETG/ASA print ή πλαστικό φύλλο 2-3 mm | Funnel side plates και intake guides |
-| 2 | compliant side carriages | Πλευρική διαδρομή 8 mm για τους intake wheels |
+| 2 | fixed FIT0186 motor mounts | Άκαμπτη στήριξη μοτέρ στη γέφυρα· direct-drive wheel stack, χωρίς carriage ή remote shaft |
 | 1 | wire-mesh removable basket | Basket v2.1, εσωτερικό 400×280 mm |
-| 1 set | μικρές γωνίες ή brackets | Ρυθμιζόμενη σύνδεση funnel/intake carriages |
+| 1 set | μικρές γωνίες ή brackets | Σύνδεση funnel και fixed motor mounts στην ξύλινη γέφυρα |
 
 Διαστάσεις στόχοι:
 
 | Χαρακτηριστικό | Στόχος |
 |---|---|
 | Funnel mouth width | Να συμφωνεί με το ενεργό URDF/funnel geometry |
-| Intake gap | 56 mm nominal, sweep-able |
-| Intake wheel radius / height | 60 / 80 mm |
+| Intake gap | 56 mm αρχικό· εναλλακτικές θέσεις 58/60 mm |
+| Intake wheel diameter / width | 124 / 73 mm (πραγματικό εμπορικό envelope) |
 | Basket interior | 400×280 mm, στόχος ~50 μπάλες |
 
 ### Dual Intake Wheels
 
-Ζητάμε:
+Επιλεγμένο για αγορά:
 
 ```text
-2 τεμάχια compliant rubber/PU/TPU wheels, ακτίνα 60 mm και ύψος 80 mm,
-ένα αριστερά και ένα δεξιά του intake corridor
+1 ζευγάρι (2 τροχοί) Pro-Line Trencher F/R 2.8" MT Tires Mounted on Black
+Raid Wheels, 12/14 mm removable hex, κωδικός PRO117010
 ```
+
+Link: https://www.racerc.gr/en/products/pro-line-1-10-trencher-f-r-2-8-mt-tires-mounted-12mm-14mm-black-raid-2
+
+Snapshot τιμής `21/08/2026`: `37,49 €` το ζευγάρι, χωρίς μεταφορικά. Η τιμή
+και η διαθεσιμότητα πρέπει να επιβεβαιωθούν κατά την παραγγελία.
 
 Χαρακτηριστικά:
 
-| Χαρακτηριστικό | Στόχος |
+| Χαρακτηριστικό | Επιλεγμένο εξάρτημα |
 |---|---|
-| Διάμετρος | 120 mm nominal |
-| Ύψος ενεργής επιφάνειας | 80 mm |
-| Υλικό | μαλακό rubber/PU/TPU, όχι σκληρό πλαστικό |
-| Άξονας | κατακόρυφος, ανεξάρτητος ανά wheel |
-| Στήριξη | πλευρικά ενδοτική, travel 8 mm προς τα έξω |
-| Θέση | nominal nip x=540 mm, gap 56 mm, tilt 35° |
+| Ποσότητα αγοράς | 1 συσκευασία = 2 μονταρισμένοι τροχοί |
+| Διάμετρος | 124 mm |
+| Πλάτος | 73 mm |
+| Ελαστικό / insert | Pro-Line M2 medium compound με open-cell foam insert |
+| Wheel interface | Περιλαμβάνονται removable 12 mm και 14 mm RC hex adapters |
+| Μετάδοση | FIT0186 native 6 mm D-shaft → purchased `14-00012630` → 12 mm Raid interface |
+| Στήριξη | Fixed FIT0186 mount, χωρίς carriage, remote shaft ή εξωτερικά bearings |
+| Θέση Option A | wheel centres x=470 mm, gap 56 mm αρχικό, κοινό longitudinal X-Z tilt 35°· παράλληλοι άξονες στη front view |
+
+> **Προσοχή:** τα 12/14 mm adapters της συσκευασίας είναι wheel hexes του
+> συστήματος Raid· δεν μετατρέπουν κυλινδρικό άξονα Ø6 mm σε hex. Χρειάζεται
+> Το wheel-side 12 mm Raid interface δεν αντικαθιστά το shaft adapter. Έχουν
+> αγοραστεί έξι `14-00012630` adapters 6 mm shaft → 12 mm hex· δύο κατανέμονται
+> στο intake. Η ακριβής έδραση, εμπλοκή και αξονική ασφάλιση παραμένουν gate
+> φυσικής μετρολογίας. Δεν προβλέπεται τυπωτό torque hub.
 
 ### Intake Motors
 
@@ -268,6 +286,9 @@ dual-channel DC motor drivers ή 4 ποιοτικούς single-channel drivers �
 ```text
 2 πανομοιότυπα DC gear motors 12V, ένα ανά intake wheel
 ```
+
+Κατάσταση 03/09/2026: έχουν παραληφθεί και τα δύο πανομοιότυπα `FIT0186 /
+GB37Y3530-12V-251R`.
 
 Χαρακτηριστικά:
 
@@ -286,6 +307,13 @@ Driver με δύο πραγματικά ανεξάρτητα κανάλια ή �
 τροχοί να περιστρέφονται αντίθετα. Το SparkFun TB6612 του collector πρέπει να
 επαληθευτεί ως προς το πραγματικό ρεύμα των δύο μοτέρ πριν χρησιμοποιηθεί.
 ```
+
+Το παραληφθέν `L298N` (`19-00010298`, 2 A ανά κανάλι κατά τον πωλητή)
+παραμένει μόνο ιστορική καταγραφή. Δεν χρησιμοποιείται πλέον στο intake:
+κάθε `FIT0186` έχει δηλωμένο stall current 7 A. Η παλιά bench καλωδίωση
+βρίσκεται στο [archive](../archive/hardware/intake-dual-fit0186-l298n-mega-wiring-el.md).
+Το ενεργό intake χρησιμοποιεί **δύο BTS7960, έναν ανά μοτέρ**. Δες
+[την τρέχουσα καλωδίωση](intake-dual-fit0186-bts7960-mega-wiring-el.md).
 
 ## 5. Ασφάλεια Και Ηλεκτρικά
 
@@ -501,23 +529,41 @@ Active cooler (υποχρεωτικός σε αυτό το φορτίο)
 | 1 set | ξυλόβιδες 3.5x30 ή 4x30 | ξύλινα rails/νευρώσεις |
 | 1 | D4 wood glue | μόνιμες ξύλινες ενισχύσεις |
 
-## 8. Να Μην Αγοραστούν Ακόμα
+## 8. Standalone Flywheel Launcher
 
-Μην κλειδώσουμε ακόμα:
+Authoritative module status: [`standalone-flywheel-launcher.md`](../mechanism/standalone-flywheel-launcher.md). The architecture is provisionally frozen; no physical speed, range, spin, tread or final hub has been validated.
 
-- launch flywheel motors
-- expensive launcher wheels
-- large battery pack για launcher
-- pan/tilt μηχανισμούς
+### ALREADY OWNED
 
-Πρώτα θέλουμε:
+No launcher-specific motor, wheel or high-speed hub is confirmed as received. Do not transfer complete-robot stock into this section without a physical inventory check.
 
-```text
-να κυλάει η βάση,
-να πλησιάζει αργά την μπάλα,
-να τη βάζει στο funnel,
-και ο collector να την ανεβάζει στο hopper.
-```
+### TO BUY
+
+| Qty | Item | Evidence currently available | Source/status |
+|---:|---|---|---|
+| 2 | **ODrive Dual Shaft Motor D5065-270KV** | Manufacturer evidence: 50 mm body diameter, 65 mm body length, mass approximately 0.49 kg; 8 mm primary shaft with flat, 30 mm projection, 24 mm flat length and 0.5 mm flat depth; 8 mm secondary shaft; 12N14P / 7 pole pairs; four nominal 4 mm mounting features on 30 mm PCD; 270 rpm/V; `Kt=0.031 N·m/A`; phase-neutral resistance `0.039 Ω`; NTC 10 kΩ thermistor; 4 mm bullet phase connectors. Mount-feature thread/depth and rotor inertia are not published in the captured evidence. | [Hellas Digital — D5065 270KV](https://www.hellasdigital.gr/electronics/motors-and-drivers/stepper/dual-shaft-motor-d5065-270kv/). Selected, not ordered. Snapshot 22/08/2026: €98.99 incl. VAT each, €197.98/pair before shipping. |
+| 2 | **Provisional AliExpress flywheel candidate** | `USER_SUPPLIED_SELLER_DATA`: nominal 200 mm diameter, 50 mm width, nominal 10 mm axle/bore, aluminium-alloy hub plus rubber tyre, seller-listed mass approximately 900 g. None of these values is measured hardware. | AliExpress candidate already evaluated in the project. Exact listing/order status must be confirmed at purchase. |
+
+One D5065 directly drives each wheel. The standalone simulation uses a provisional 12.8 V bus and 20 A operating limit per motor, corresponding to 0.62 N·m. Theoretical no-load speed is not a ball-speed claim. Motor controllers, high-speed guarding and power hardware remain separate selections.
+
+Critical receiving inspection for each wheel: verify whether the nominal 10 mm datum is a rigid, concentric through-bore in the aluminium hub. If it is a bearing inner race, removable bearing stack, sleeve or another non-rigid torque interface, reopen mechanical Gate A before manufacturing the final arbor.
+
+### PROVISIONAL / VERIFY BEFORE ORDERING OR MANUFACTURING
+
+| Qty | Item | Current requirement and hold point |
+|---:|---|---|
+| 2 | **Custom metal clamping adaptor/arbor** | Required path: `D5065 8 mm D-shaft -> metal clamp/adaptor/arbor -> measured 10 mm wheel interface`. The analysis study uses approximately 21.5 mm D-shaft engagement, positive split/D-flat clamping and removable positive axial retention. No printed torque-transmitting hub. Custom-machined part, not a selected purchase. Do not release final dimensions until the received wheel and motor shafts are measured. |
+| 2 sets | Motor-to-panel fasteners, washers and locking hardware | Required, but thread designation, usable motor engagement, bolt length, property class, washer stack, locking method and torque await measurement of the delivered D5065 and final panel definition. Do not guess. |
+| 2 sets | Wheel-side spacer/washer/retention hardware | Required removable axial retention. Diameter, thread, clamp faces, allowable preload and engagement depend on the measured wheel and controlled arbor drawing. |
+| 1 set | High-speed guard and guarded bench service hardware | Required before powered physical testing. Final apertures and tool access depend on the manufactured rotating assembly and test fixture. |
+| test coupons | Urethane, nitrile/NBR and butyl rubber tread/contact samples | Physical-validation candidates only; no production tread is selected and no diagnostic simulation μ is a material specification. Screen dynamic traction, felt wear, temperature and repeated-cycle durability first. |
+| TBD | Flywheel motor controller(s) and launcher power hardware | Verify current-control, telemetry, braking, thermal and safety-chain requirements before ordering. Do not select merely to reproduce ideal simulated wheel speed. |
+
+### Manufacturing hold
+
+Safe now: measurement/test-fixture planning and reproduction of the standalone simulation.
+
+Not released now: final wheel hub/arbor, final upper-panel service cutout, wheel-side fasteners/thread engagement, balance/runout/retention definition or any high-speed manufactured rotating assembly. The panel has passed a conservative structural screen only; physical structural and vibration validation remain pending.
 
 ## 9. Σύντομη Λίστα Για Το Ταμείο
 
@@ -542,6 +588,13 @@ production-like εναλλακτική: 2 dual-channel quality drivers ή 4 sing
   (M.2 board + active cooler + 27W PSU + metal case), Amazon basket €385,54
 1 Silicon Power P34A60 256GB NVMe M.2 PCIe Gen3x4 2280
   (SP256GBP34A60M28AY), Amazon basket €50,99 — boot candidate, ΟΧΙ ακόμη validated
+2 ODrive Dual Shaft Motor D5065 270KV για τα δύο direct-drive flywheels:
+  https://www.hellasdigital.gr/electronics/motors-and-drivers/stepper/dual-shaft-motor-d5065-270kv/
+  8mm primary shaft με flat + 8mm secondary shaft, NTC 10k thermistor,
+  snapshot 22/08/2026: €98,99 με ΦΠΑ/τεμ. — controllers δεν περιλαμβάνονται
+2 provisional AliExpress flywheels, seller-listed 200x50mm, nominal 10mm datum,
+  aluminium-alloy hub + rubber tyre, approximately 900g each
+  — measure the 10mm interface before releasing any custom hub/arbor
 1 emergency stop switch
 1 fuse holder + ασφάλειες
 κόκκινο/μαύρο καλώδιο 2.5mm² για μπαταρία/motors

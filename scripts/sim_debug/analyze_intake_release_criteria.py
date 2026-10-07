@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Evaluate dual-wheel intake transport criteria from contact + pose logs.
+"""Evaluate intake transport criteria from contact + pose logs.
+
+The model under test is the frozen fixed-motor architecture: both motors and
+both wheel centres are rigid, so there is no carriage travel to observe and no
+carriage criterion. Tyre compliance, wheel droop, torque and current are NOT
+measurable in Gazebo (see D4) and are owned by the reduced-order solver
+(scripts/run_standalone_intake_handoff_study.py). SIMULATION_BOUNDED; felt
+friction, tyre stiffness and ball-to-ramp friction remain physically
+unmeasured swept bounds.
 
 Criteria follow docs/mechanism/intake-concept-decision-el.md (transport concept:
 capture -> transport -> guide -> hopper). The --phase flag gates which
@@ -220,6 +228,16 @@ def analyze(
         if row.get("type") in ("lip_contact_sample", "ramp_guide_contact_sample")
         and row.get("ball") == ball_name
     ]
+    compact_ramp_rows = [
+        row for row in all_contact_rows
+        if row.get("type") == "compact_ramp_contact_sample"
+        and row.get("ball") == ball_name
+    ]
+    chute_rows = [
+        row for row in all_contact_rows
+        if row.get("type") == "chute_contact_sample"
+        and row.get("ball") == ball_name
+    ]
     pose_rows = _load_jsonl(pose_jsonl)
     pose_samples = _pose_samples(pose_rows, ball_name)
 
@@ -250,6 +268,18 @@ def analyze(
     )
     first_contact_wall_s = min(contact_wall_times) if contact_wall_times else None
     release_wall_s = max(contact_wall_times) if contact_wall_times else None
+    first_chute_wall_s = min(
+        (float(row["t_wall"]) for row in chute_rows if row.get("t_wall") is not None),
+        default=None,
+    )
+    wheel_capture_before_chute = (
+        bool(left_rows)
+        and bool(right_rows)
+        and (first_chute_wall_s is None or (
+            first_contact_wall_s is not None
+            and first_contact_wall_s <= first_chute_wall_s
+        ))
+    )
 
     # Capture: ball centre fully through the throat.
     capture = _first_crossing(
@@ -323,6 +353,12 @@ def analyze(
 
     required: dict[str, Any] = {
         "confirmed_contact_with_both_rollers": bool(left_rows) and bool(right_rows),
+        # Dedicated regression guard for the compact x=403.5 mm failure. A
+        # pre-wheel receiving-chute event, or absence of either wheel contact,
+        # must fail even if later pose-only hopper tests appear plausible.
+        "wheel_capture_before_blocking_chute_contact": (
+            wheel_capture_before_chute and capture is not None
+        ),
         "capture_through_wheel_throat": capture is not None,
         "positive_inward_transport": (
             capture_inward_m_s is not None
@@ -352,6 +388,7 @@ def analyze(
     required_pass = sum(1 for value in required.values() if value is True)
 
     return {
+        "intake_architecture": "FIXED_MOTOR_COMPLIANT_TYRE_NO_CARRIAGE",
         "contact_log": str(contact_jsonl),
         "pose_log": str(pose_jsonl),
         "ball_name": ball_name,
@@ -378,10 +415,20 @@ def analyze(
             "wheel_left_contact_samples": len(left_rows),
             "wheel_right_contact_samples": len(right_rows),
             "ramp_guide_contact_samples": len(ramp_guide_rows),
+            "compact_ramp_contact_samples": len(compact_ramp_rows),
+            "chute_contact_samples": len(chute_rows),
             "contact_duration_s": round(contact_duration_s, 4),
             "first_contact_t_s": round(min(contact_elapsed_times), 4)
             if contact_elapsed_times
             else None,
+            "first_ramp_contact_t_s": round(min(
+                float(row["t_s"]) for row in compact_ramp_rows
+                if row.get("t_s") is not None
+            ), 4) if any(row.get("t_s") is not None for row in compact_ramp_rows) else None,
+            "first_chute_contact_t_s": round(min(
+                float(row["t_s"]) for row in chute_rows
+                if row.get("t_s") is not None
+            ), 4) if any(row.get("t_s") is not None for row in chute_rows) else None,
             "last_contact_t_s": round(max(contact_elapsed_times), 4)
             if contact_elapsed_times
             else None,
@@ -407,6 +454,7 @@ def analyze(
         "notes": {
             "inward_sign": "positive inward speed is computed as -base_vx because inward is toward smaller base_x",
             "capture": "capture = ball centre crosses the throat exit plane (nip - bite_dx) after first wheel contact",
+            "contact_order": "wheel_capture_before_blocking_chute_contact requires bilateral wheel contact no later than the first receiving-chute contact",
             "stall": "stall = longest continuous dwell below stall speed inside the intake zone after first contact",
             "vertical_at_release": "NOT a criterion: it belonged to the old launch concept; elevation is the ramp's job",
             "repeatability": "4/5-per-condition repeatability is evaluated across runs by the sweep summary",

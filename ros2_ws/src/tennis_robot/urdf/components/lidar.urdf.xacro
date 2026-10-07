@@ -1,17 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="rplidar_c1_mount" params="parent link_name xyz rpy update_rate">
+  <!-- mount_z      : this link's origin in the PARENT frame (base_link).
+       scan_offset_z: sim-only raise of the sensor origin above the link, so the
+                      gpu_lidar (which renders VISUALS) does not sit inside its
+                      own head_vis cylinder. It is part of the datum chain:
+                      ground_scan_z = base_link_height + mount_z + scan_offset_z.
+       chassis_top_z: chassis top in the parent frame; the mast is derived from
+                      it so changing mount_z can never push the mast through the
+                      chassis (or below ground) unnoticed. -->
+  <xacro:macro name="rplidar_c1_mount"
+               params="parent link_name xyz rpy update_rate scan_offset_z:=0.035 mount_z chassis_top_z:=0.007">
+    <xacro:property name="head_clearance" value="0.015"/>
+    <xacro:property name="mast_length" value="${mount_z - head_clearance - chassis_top_z}"/>
     <link name="${link_name}">
       <inertial>
         <mass value="0.05"/>
         <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
       </inertial>
       <visual name="mast_vis">
-        <!-- Runs from just under the LiDAR head down to the chassis top.
-             With lidar_xyz.z=0.498 and a 14 mm plate, the lower end is
-             base_link z=+0.007; it must never protrude below the chassis. -->
-        <origin xyz="0 0 -0.253" rpy="0 0 0"/>
-        <geometry><box size="0.025 0.025 0.476"/></geometry>
+        <!-- Runs from just under the LiDAR head down to the chassis top. Both
+             ends are derived, so the lower end stays on the chassis for any
+             mount_z instead of being a hand-maintained constant. -->
+        <origin xyz="0 0 ${(chassis_top_z + mount_z - head_clearance) / 2.0 - mount_z}" rpy="0 0 0"/>
+        <geometry><box size="0.025 0.025 ${mast_length}"/></geometry>
         <material name="anthracite"/>
       </visual>
       <visual name="head_vis">
@@ -29,8 +40,10 @@
       <sensor name="front_lidar" type="gpu_lidar">
         <!-- Raised above head_vis (cylinder r=0.047, z=±0.0225): gpu_lidar
              renders VISUALS, and a sensor origin inside its own housing makes
-             every ray hit the cylinder interior at ~5 cm (lidar goes blind). -->
-        <pose>0 0 0.035 0 0 0</pose>
+             every ray hit the cylinder interior at ~5 cm (lidar goes blind).
+             THIS OFFSET IS PART OF THE HEIGHT DATUM — the scan plane is this
+             much above lidar_link, not at it. -->
+        <pose>0 0 ${scan_offset_z} 0 0 0</pose>
         <update_rate>${update_rate}</update_rate>
         <always_on>true</always_on>
         <visualize>false</visualize>

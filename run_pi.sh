@@ -34,6 +34,20 @@ export TENNIS_ROBOT_ROOT="$SCRIPT_DIR"
 # Brain only — the sim (Gazebo + robot abstraction) lives on the PC.
 export TENNIS_LAUNCH_SIM=false
 export TENNIS_LAUNCH_BRAIN=true
+# MUST match run_native.sh. The brain builds its own robot_description for
+# robot_state_publisher; if the two sides disagree on the packaging variant the
+# Pi broadcasts a TF tree the PC is not simulating (compact shifts the whole
+# functional chain by -100 mm), and every frame lookup is silently offset.
+export ROBOT_PACKAGING_VARIANT="${ROBOT_PACKAGING_VARIANT:-compact}"
+# The operator console runs on this side while ros2_control lives with Gazebo
+# on the PC. It must use bridged command topics + /joint_states feedback rather
+# than querying the PC-local controller_manager service.
+export TENNIS_ROBOT_DISTRIBUTED_BRAIN=true
+# Distributed SIMULATION: the actuators this console drives are Gazebo's, on the
+# PC.  On a real robot set this to `hardware` (or unset it — a brain-only launch
+# defaults to hardware) so the console stops assuming E-stop clear / motor power
+# available and stops offering the simulation-only basket actuator.
+export TENNIS_ROBOT_RUNTIME="${TENNIS_ROBOT_RUNTIME:-simulation}"
 # Distributed sim: perception runs on the PC (the Gazebo camera lives there), so
 # it is NOT launched here. A real robot with a Pi-side camera would set this
 # false to run perception on the Pi.

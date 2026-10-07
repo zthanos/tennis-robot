@@ -1,0 +1,4667 @@
+{
+  "source": "cad/flywheel-launcher-v0/compact-intake-pod-concept-study.scad",
+  "units": "mm",
+  "generated_by": "scripts/analyze_compact_intake_pod_concepts.py",
+  "collision_method": "exact OpenSCAD/CGAL Boolean intersection volume",
+  "clearance_method": "bidirectional deterministic STL surface sampling at nominal 4 mm; positive-clearance estimates do not determine collision status",
+  "evidence": {
+    "FIT0186_body_and_shaft": "MEASURED_FROM_HARDWARE: body diameter 30, body length 70, 6 mm D-shaft, approximately 20 projection",
+    "14-00012630": "PURCHASED_PART_DATUM: 6 mm shaft side, 12 mm hex wheel side, total length 30, quantity 6",
+    "14-00012630_external_profile": "MEASUREMENT_PENDING; analysis-only conservative diameter 20",
+    "PRO117010_envelope": "MANUFACTURER_SPEC: diameter 124, width 73, Raid 6x30 removable interface and supplied 12 mm hex",
+    "PRO117010_installed_hex": "PHYSICAL_MEASUREMENT_PENDING: exact offset, depth and seating",
+    "adapter_seating": "ANALYSIS_ONLY_ASSUMPTION: 8 mm nominal; sensitivity at 0 and 12 mm",
+    "machine_obstacles": "EXISTING_AUTHORITATIVE_CAD",
+    "wheel_centres_axis_and_travel": "DERIVED_FROM_LOCKED_DATUM",
+    "candidate_A_structure": "ANALYSIS_ONLY_ASSUMPTION; allocation probe, not manufacturing CAD"
+  },
+  "removed_false_assumptions": [
+    "198 mm transmission shaft",
+    "external bearings and supports",
+    "bearing cartridge",
+    "flexible coupler",
+    "printed wheel hub",
+    "invented long-stack motor clamp/mount",
+    "belt/pulley/gearing"
+  ],
+  "historical_results": {
+    "status": "INVALID_DUE_TO_INCORRECT_INTAKE_AXIS",
+    "motor_bridge_mm3": 33986,
+    "motor_launcher_mm3": 25174,
+    "motor_flywheel_each_mm3": 722,
+    "wheel_basket_mm3": 499
+  },
+  "scene_completeness": {
+    "left_complete_intake_pod": true,
+    "right_complete_intake_pod": true,
+    "both_intake_wheels": true,
+    "both_FIT0186_motors": true,
+    "both_14-00012630_adapters": true,
+    "intake_cheeks": true,
+    "handoff_ramp": true,
+    "receiving_hood_channel": true,
+    "basket_bin": true,
+    "bridge": true,
+    "chassis": true,
+    "battery": true,
+    "launcher_cradle": true,
+    "left_flywheel": true,
+    "right_flywheel": true
+  },
+  "orientation_gate": {
+    "status": "PASS",
+    "frame": "compact ground frame, mm",
+    "tilt_deg": 35.0,
+    "independent_motor_outboard_offset_mm": 0.0,
+    "sides": {
+      "left": {
+        "wheel_center_mm": [
+          370.0,
+          90.0,
+          70.0
+        ],
+        "wheel_to_motor_axis_unit_vector": [
+          0.0,
+          0.573576436,
+          0.819152044
+        ],
+        "motor_center_mm": [
+          370.0,
+          143.629397,
+          146.590716
+        ],
+        "wheel_to_motor_vector_mm": [
+          0.0,
+          53.629397,
+          76.590716
+        ],
+        "outward_dot_product_mm": 53.629397
+      },
+      "right": {
+        "wheel_center_mm": [
+          370.0,
+          -90.0,
+          70.0
+        ],
+        "wheel_to_motor_axis_unit_vector": [
+          0.0,
+          -0.573576436,
+          0.819152044
+        ],
+        "motor_center_mm": [
+          370.0,
+          -143.629397,
+          146.590716
+        ],
+        "wheel_to_motor_vector_mm": [
+          0.0,
+          -53.629397,
+          76.590716
+        ],
+        "outward_dot_product_mm": 53.629397
+      }
+    }
+  },
+  "environment_bbox_mm": {
+    "basket": [
+      [
+        -112.0,
+        -172.0,
+        19.0
+      ],
+      [
+        370.597,
+        172.0,
+        285.0
+      ]
+    ],
+    "hood": [
+      [
+        280.0,
+        -188.0,
+        52.0
+      ],
+      [
+        370.0,
+        188.0,
+        148.0
+      ]
+    ],
+    "ramp": [
+      [
+        319.65,
+        -94.0,
+        0.0
+      ],
+      [
+        360.35,
+        94.0,
+        29.272
+      ]
+    ],
+    "cheeks": [
+      [
+        455.0,
+        -208.0,
+        18.0
+      ],
+      [
+        708.0,
+        208.0,
+        150.0
+      ]
+    ],
+    "bridge": [
+      [
+        270.0,
+        -245.0,
+        52.0
+      ],
+      [
+        500.0,
+        245.0,
+        168.0
+      ]
+    ],
+    "chassis": [
+      [
+        -460.0,
+        -290.0,
+        38.0
+      ],
+      [
+        460.0,
+        290.0,
+        52.0
+      ]
+    ],
+    "battery": [
+      [
+        -337.987,
+        -98.987,
+        52.013
+      ],
+      [
+        -172.013,
+        98.987,
+        221.987
+      ]
+    ],
+    "launcher_cradle": [
+      [
+        323.644,
+        -157.0,
+        127.056
+      ],
+      [
+        596.356,
+        157.0,
+        302.944
+      ]
+    ],
+    "left_flywheel": [
+      [
+        357.48,
+        29.0,
+        157.306
+      ],
+      [
+        562.52,
+        229.0,
+        272.694
+      ]
+    ],
+    "right_flywheel": [
+      [
+        357.48,
+        -229.0,
+        157.306
+      ],
+      [
+        562.52,
+        -29.0,
+        272.694
+      ]
+    ]
+  },
+  "endpoint_0_4_8": {
+    "0": {
+      "component_bbox_mm": {
+        "motor": [
+          [
+            355.0,
+            -175.992,
+            109.317
+          ],
+          [
+            385.0,
+            175.992,
+            183.865
+          ]
+        ],
+        "motor_output_shaft": [
+          [
+            367.0,
+            -126.012,
+            99.817
+          ],
+          [
+            373.0,
+            126.012,
+            119.641
+          ]
+        ],
+        "adapter": [
+          [
+            360.0,
+            -131.746,
+            87.61
+          ],
+          [
+            380.0,
+            131.746,
+            123.656
+          ]
+        ],
+        "wheel_hex": [
+          [
+            363.072,
+            -116.424,
+            89.085
+          ],
+          [
+            376.928,
+            116.424,
+            104.16
+          ]
+        ],
+        "wheel": [
+          [
+            308.0,
+            -161.723,
+            4.539
+          ],
+          [
+            432.0,
+            161.723,
+            135.461
+          ]
+        ],
+        "direct_drive_hardware": [
+          [
+            308.0,
+            -175.992,
+            4.539
+          ],
+          [
+            432.0,
+            175.992,
+            183.865
+          ]
+        ],
+        "carriage_moving": [
+          [
+            385.0,
+            -107.0,
+            173.0
+          ],
+          [
+            487.0,
+            107.0,
+            201.0
+          ]
+        ],
+        "complete_moving_pod": [
+          [
+            308.0,
+            -175.992,
+            4.539
+          ],
+          [
+            487.0,
+            175.992,
+            201.0
+          ]
+        ]
+      },
+      "components": {
+        "motor": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 35.06
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 16.35
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 98.52
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 70.04
+          },
+          "bridge": {
+            "intersection_volume_mm3": 2852.471,
+            "intersection_bbox_mm": [
+              [
+                355.967,
+                -175.992,
+                157.558
+              ],
+              [
+                384.033,
+                175.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 66.83
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 527.9
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 14627.457,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 4120.529,
+            "intersection_bbox_mm": [
+              [
+                367.869,
+                133.938,
+                157.416
+              ],
+              [
+                385.0,
+                172.153,
+                183.865
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 4120.529,
+            "intersection_bbox_mm": [
+              [
+                367.869,
+                -172.153,
+                157.416
+              ],
+              [
+                385.0,
+                -133.938,
+                183.865
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "motor_output_shaft": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 48.57
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 17.85
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 82.36
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 86.66
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 33.49
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 73.31
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 539.37
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 11.58
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 38.46
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 38.65
+          }
+        },
+        "adapter": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 41.57
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 10.95
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 70.59
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 79.91
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 29.15
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 65.96
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 532.18
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 7.1
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 34.24
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 34.24
+          }
+        },
+        "wheel_hex": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 48.84
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 15.08
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 70.68
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 90.72
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 47.38
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 69.91
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 535.24
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 25.25
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 54.28
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 54.28
+          }
+        },
+        "wheel": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.0
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.01
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.0
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 42.29
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 15.79
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 14.08
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.02
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 1103.783,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -72.152,
+                127.056
+              ],
+              [
+                378.055,
+                72.152,
+                135.461
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 31.78
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 31.78
+          }
+        },
+        "direct_drive_hardware": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.0
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.01
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.04
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 42.29
+          },
+          "bridge": {
+            "intersection_volume_mm3": 2852.471,
+            "intersection_bbox_mm": [
+              [
+                355.967,
+                -175.992,
+                157.558
+              ],
+              [
+                384.033,
+                175.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 14.25
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.03
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 15731.24,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 4120.529,
+            "intersection_bbox_mm": [
+              [
+                367.869,
+                133.938,
+                157.416
+              ],
+              [
+                385.0,
+                172.153,
+                183.865
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 4120.529,
+            "intersection_bbox_mm": [
+              [
+                367.869,
+                -172.153,
+                157.416
+              ],
+              [
+                385.0,
+                -133.938,
+                183.865
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "carriage_moving": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 72.54
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 41.69
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 153.62
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 23.03
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 5.0
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 136.61
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 557.01
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 5469.529,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                -107.0,
+                173.0
+              ],
+              [
+                487.0,
+                107.0,
+                183.288
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                73.0,
+                173.0
+              ],
+              [
+                487.0,
+                107.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                -107.0,
+                173.0
+              ],
+              [
+                487.0,
+                -73.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "complete_moving_pod": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.01
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.06
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 2.0
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 23.03
+          },
+          "bridge": {
+            "intersection_volume_mm3": 2852.471,
+            "intersection_bbox_mm": [
+              [
+                355.967,
+                -175.992,
+                157.558
+              ],
+              [
+                384.033,
+                175.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 14.22
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.02
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 21200.769,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -157.0,
+                127.056
+              ],
+              [
+                487.0,
+                157.0,
+                183.288
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 48710.451,
+            "intersection_bbox_mm": [
+              [
+                367.869,
+                73.0,
+                157.416
+              ],
+              [
+                487.0,
+                172.153,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 48710.451,
+            "intersection_bbox_mm": [
+              [
+                367.869,
+                -172.153,
+                157.416
+              ],
+              [
+                487.0,
+                -73.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        }
+      },
+      "collision_details_by_side": {
+        "motor|bridge": {
+          "left": {
+            "intersection_volume_mm3": 1426.236,
+            "intersection_bbox_mm": [
+              [
+                355.967,
+                165.0,
+                157.558
+              ],
+              [
+                384.033,
+                175.992,
+                168.0
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 1426.236,
+            "intersection_bbox_mm": [
+              [
+                355.967,
+                -175.992,
+                157.558
+              ],
+              [
+                384.033,
+                -165.0,
+                168.0
+              ]
+            ]
+          }
+        },
+        "motor|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 7313.728,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                114.894,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 7313.728,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                -114.894,
+                146.199
+              ]
+            ]
+          }
+        },
+        "motor|left_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 4120.529,
+            "intersection_bbox_mm": [
+              [
+                367.869,
+                133.938,
+                157.416
+              ],
+              [
+                385.0,
+                172.153,
+                183.865
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          }
+        },
+        "motor|right_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          },
+          "right": {
+            "intersection_volume_mm3": 4120.529,
+            "intersection_bbox_mm": [
+              [
+                367.869,
+                -172.153,
+                157.416
+              ],
+              [
+                385.0,
+                -133.938,
+                183.865
+              ]
+            ]
+          }
+        },
+        "wheel|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 551.891,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                56.395,
+                127.056
+              ],
+              [
+                378.055,
+                72.152,
+                135.461
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 551.891,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -72.152,
+                127.056
+              ],
+              [
+                378.055,
+                -56.395,
+                135.461
+              ]
+            ]
+          }
+        },
+        "carriage_moving|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 2734.764,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                73.0,
+                173.0
+              ],
+              [
+                487.0,
+                107.0,
+                183.288
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 2734.764,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                -107.0,
+                173.0
+              ],
+              [
+                487.0,
+                -73.0,
+                183.288
+              ]
+            ]
+          }
+        },
+        "carriage_moving|left_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                73.0,
+                173.0
+              ],
+              [
+                487.0,
+                107.0,
+                201.0
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          }
+        },
+        "carriage_moving|right_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          },
+          "right": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                -107.0,
+                173.0
+              ],
+              [
+                487.0,
+                -73.0,
+                201.0
+              ]
+            ]
+          }
+        }
+      },
+      "opposite_intake_pod": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      }
+    },
+    "4": {
+      "component_bbox_mm": {
+        "motor": [
+          [
+            355.0,
+            -179.992,
+            109.317
+          ],
+          [
+            385.0,
+            179.992,
+            183.865
+          ]
+        ],
+        "motor_output_shaft": [
+          [
+            367.0,
+            -130.012,
+            99.817
+          ],
+          [
+            373.0,
+            130.012,
+            119.641
+          ]
+        ],
+        "adapter": [
+          [
+            360.0,
+            -135.746,
+            87.61
+          ],
+          [
+            380.0,
+            135.746,
+            123.656
+          ]
+        ],
+        "wheel_hex": [
+          [
+            363.072,
+            -120.424,
+            89.085
+          ],
+          [
+            376.928,
+            120.424,
+            104.16
+          ]
+        ],
+        "wheel": [
+          [
+            308.0,
+            -165.723,
+            4.539
+          ],
+          [
+            432.0,
+            165.723,
+            135.461
+          ]
+        ],
+        "direct_drive_hardware": [
+          [
+            308.0,
+            -179.992,
+            4.539
+          ],
+          [
+            432.0,
+            179.992,
+            183.865
+          ]
+        ],
+        "carriage_moving": [
+          [
+            385.0,
+            -111.0,
+            173.0
+          ],
+          [
+            487.0,
+            111.0,
+            201.0
+          ]
+        ],
+        "complete_moving_pod": [
+          [
+            308.0,
+            -179.992,
+            4.539
+          ],
+          [
+            487.0,
+            179.992,
+            201.0
+          ]
+        ]
+      },
+      "components": {
+        "motor": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 35.04
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 20.33
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 100.35
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 70.04
+          },
+          "bridge": {
+            "intersection_volume_mm3": 5229.233,
+            "intersection_bbox_mm": [
+              [
+                355.128,
+                -179.992,
+                151.845
+              ],
+              [
+                384.872,
+                179.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 64.87
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 528.15
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 14199.715,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 3476.648,
+            "intersection_bbox_mm": [
+              [
+                368.775,
+                138.11,
+                157.51
+              ],
+              [
+                385.0,
+                174.992,
+                183.865
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 3476.648,
+            "intersection_bbox_mm": [
+              [
+                368.775,
+                -174.992,
+                157.51
+              ],
+              [
+                385.0,
+                -138.11,
+                183.865
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "motor_output_shaft": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 47.83
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 21.25
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 83.61
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 86.85
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 33.61
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 70.33
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 539.52
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 11.55
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 38.11
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 38.11
+          }
+        },
+        "adapter": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 40.84
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 14.26
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 71.99
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 80.04
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 29.03
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 62.66
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 532.3
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 7.12
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 34.36
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 34.41
+          }
+        },
+        "wheel_hex": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 47.13
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 18.16
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 71.95
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 90.44
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 47.64
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 66.66
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 535.35
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 25.2
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 53.74
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 53.74
+          }
+        },
+        "wheel": {
+          "basket": {
+            "intersection_volume_mm3": 213.917,
+            "intersection_bbox_mm": [
+              [
+                314.0,
+                -140.0,
+                25.0
+              ],
+              [
+                330.0,
+                144.857,
+                86.55
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "hood": {
+            "intersection_volume_mm3": 144.01,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                -95.0,
+                113.499
+              ],
+              [
+                370.0,
+                95.0,
+                131.753
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 4.3
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 42.72
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 15.88
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 10.76
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.02
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 1103.783,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -76.152,
+                127.056
+              ],
+              [
+                378.055,
+                76.152,
+                135.461
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 30.38
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 30.62
+          }
+        },
+        "direct_drive_hardware": {
+          "basket": {
+            "intersection_volume_mm3": 213.917,
+            "intersection_bbox_mm": [
+              [
+                314.0,
+                -140.0,
+                25.0
+              ],
+              [
+                330.0,
+                144.857,
+                86.55
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "hood": {
+            "intersection_volume_mm3": 144.01,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                -95.0,
+                113.499
+              ],
+              [
+                370.0,
+                95.0,
+                131.753
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 4.3
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 42.72
+          },
+          "bridge": {
+            "intersection_volume_mm3": 5229.233,
+            "intersection_bbox_mm": [
+              [
+                355.128,
+                -179.992,
+                151.845
+              ],
+              [
+                384.872,
+                179.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 10.74
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.02
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 15303.497,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 3476.648,
+            "intersection_bbox_mm": [
+              [
+                368.775,
+                138.11,
+                157.51
+              ],
+              [
+                385.0,
+                174.992,
+                183.865
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 3476.648,
+            "intersection_bbox_mm": [
+              [
+                368.775,
+                -174.992,
+                157.51
+              ],
+              [
+                385.0,
+                -138.11,
+                183.865
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "carriage_moving": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 70.86
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 41.57
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 153.6
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 23.0
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 5.0
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 134.8
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 557.01
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 5469.529,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                -111.0,
+                173.0
+              ],
+              [
+                487.0,
+                111.0,
+                183.288
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                77.0,
+                173.0
+              ],
+              [
+                487.0,
+                111.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                -111.0,
+                173.0
+              ],
+              [
+                487.0,
+                -77.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "complete_moving_pod": {
+          "basket": {
+            "intersection_volume_mm3": 213.917,
+            "intersection_bbox_mm": [
+              [
+                314.0,
+                -140.0,
+                25.0
+              ],
+              [
+                330.0,
+                144.857,
+                86.55
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "hood": {
+            "intersection_volume_mm3": 144.01,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                -95.0,
+                113.499
+              ],
+              [
+                370.0,
+                95.0,
+                131.753
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 4.29
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 23.0
+          },
+          "bridge": {
+            "intersection_volume_mm3": 5229.233,
+            "intersection_bbox_mm": [
+              [
+                355.128,
+                -179.992,
+                151.845
+              ],
+              [
+                384.872,
+                179.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 10.73
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.02
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 20773.026,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -157.0,
+                127.056
+              ],
+              [
+                487.0,
+                157.0,
+                183.288
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 48066.57,
+            "intersection_bbox_mm": [
+              [
+                368.775,
+                77.0,
+                157.51
+              ],
+              [
+                487.0,
+                174.992,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 48066.57,
+            "intersection_bbox_mm": [
+              [
+                368.775,
+                -174.992,
+                157.51
+              ],
+              [
+                487.0,
+                -77.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        }
+      },
+      "collision_details_by_side": {
+        "motor|bridge": {
+          "left": {
+            "intersection_volume_mm3": 2614.617,
+            "intersection_bbox_mm": [
+              [
+                355.128,
+                165.0,
+                151.845
+              ],
+              [
+                384.872,
+                179.992,
+                168.0
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 2614.617,
+            "intersection_bbox_mm": [
+              [
+                355.128,
+                -179.992,
+                151.845
+              ],
+              [
+                384.872,
+                -165.0,
+                168.0
+              ]
+            ]
+          }
+        },
+        "motor|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 7099.857,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                118.894,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 7099.857,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                -118.894,
+                146.199
+              ]
+            ]
+          }
+        },
+        "motor|left_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 3476.648,
+            "intersection_bbox_mm": [
+              [
+                368.775,
+                138.11,
+                157.51
+              ],
+              [
+                385.0,
+                174.992,
+                183.865
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          }
+        },
+        "motor|right_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          },
+          "right": {
+            "intersection_volume_mm3": 3476.648,
+            "intersection_bbox_mm": [
+              [
+                368.775,
+                -174.992,
+                157.51
+              ],
+              [
+                385.0,
+                -138.11,
+                183.865
+              ]
+            ]
+          }
+        },
+        "wheel|basket": {
+          "left": {
+            "intersection_volume_mm3": 102.855,
+            "intersection_bbox_mm": [
+              [
+                316.108,
+                107.286,
+                25.0
+              ],
+              [
+                330.0,
+                144.857,
+                82.349
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 111.062,
+            "intersection_bbox_mm": [
+              [
+                314.0,
+                -140.0,
+                25.0
+              ],
+              [
+                330.0,
+                -107.286,
+                86.55
+              ]
+            ]
+          }
+        },
+        "wheel|hood": {
+          "left": {
+            "intersection_volume_mm3": 72.005,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                69.259,
+                113.499
+              ],
+              [
+                370.0,
+                95.0,
+                131.753
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 72.005,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                -95.0,
+                113.499
+              ],
+              [
+                370.0,
+                -69.259,
+                131.753
+              ]
+            ]
+          }
+        },
+        "wheel|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 551.891,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                60.395,
+                127.056
+              ],
+              [
+                378.055,
+                76.152,
+                135.461
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 551.891,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -76.152,
+                127.056
+              ],
+              [
+                378.055,
+                -60.395,
+                135.461
+              ]
+            ]
+          }
+        },
+        "carriage_moving|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 2734.764,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                77.0,
+                173.0
+              ],
+              [
+                487.0,
+                111.0,
+                183.288
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 2734.764,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                -111.0,
+                173.0
+              ],
+              [
+                487.0,
+                -77.0,
+                183.288
+              ]
+            ]
+          }
+        },
+        "carriage_moving|left_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                77.0,
+                173.0
+              ],
+              [
+                487.0,
+                111.0,
+                201.0
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          }
+        },
+        "carriage_moving|right_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          },
+          "right": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                -111.0,
+                173.0
+              ],
+              [
+                487.0,
+                -77.0,
+                201.0
+              ]
+            ]
+          }
+        }
+      },
+      "opposite_intake_pod": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      }
+    },
+    "8": {
+      "component_bbox_mm": {
+        "motor": [
+          [
+            355.0,
+            -183.992,
+            109.317
+          ],
+          [
+            385.0,
+            183.992,
+            183.865
+          ]
+        ],
+        "motor_output_shaft": [
+          [
+            367.0,
+            -134.012,
+            99.817
+          ],
+          [
+            373.0,
+            134.012,
+            119.641
+          ]
+        ],
+        "adapter": [
+          [
+            360.0,
+            -139.746,
+            87.61
+          ],
+          [
+            380.0,
+            139.746,
+            123.656
+          ]
+        ],
+        "wheel_hex": [
+          [
+            363.072,
+            -124.424,
+            89.085
+          ],
+          [
+            376.928,
+            124.424,
+            104.16
+          ]
+        ],
+        "wheel": [
+          [
+            308.0,
+            -169.723,
+            4.539
+          ],
+          [
+            432.0,
+            169.723,
+            135.461
+          ]
+        ],
+        "direct_drive_hardware": [
+          [
+            308.0,
+            -183.992,
+            4.539
+          ],
+          [
+            432.0,
+            183.992,
+            183.865
+          ]
+        ],
+        "carriage_moving": [
+          [
+            385.0,
+            -115.0,
+            173.0
+          ],
+          [
+            487.0,
+            115.0,
+            201.0
+          ]
+        ],
+        "complete_moving_pod": [
+          [
+            308.0,
+            -183.992,
+            4.539
+          ],
+          [
+            487.0,
+            183.992,
+            201.0
+          ]
+        ]
+      },
+      "components": {
+        "motor": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 35.02
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 21.23
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 102.3
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 70.02
+          },
+          "bridge": {
+            "intersection_volume_mm3": 8764.746,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -183.992,
+                150.0
+              ],
+              [
+                385.0,
+                183.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 63.11
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 528.43
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 12996.465,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 2773.736,
+            "intersection_bbox_mm": [
+              [
+                370.185,
+                142.303,
+                157.615
+              ],
+              [
+                385.0,
+                177.65,
+                183.858
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 2773.736,
+            "intersection_bbox_mm": [
+              [
+                370.185,
+                -177.65,
+                157.615
+              ],
+              [
+                385.0,
+                -142.303,
+                183.858
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "motor_output_shaft": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 47.31
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 24.83
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 85.04
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 86.85
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 33.47
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 67.46
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 539.71
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 11.68
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 37.91
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 37.91
+          }
+        },
+        "adapter": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 40.31
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 17.66
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 73.58
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 80.11
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 29.01
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 59.42
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 532.45
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 7.21
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 34.31
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 34.31
+          }
+        },
+        "wheel_hex": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 45.71
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 21.44
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 73.42
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 90.29
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 47.54
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 63.38
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 535.49
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 25.24
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 53.49
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 53.49
+          }
+        },
+        "wheel": {
+          "basket": {
+            "intersection_volume_mm3": 2602.794,
+            "intersection_bbox_mm": [
+              [
+                311.789,
+                -140.0,
+                19.149
+              ],
+              [
+                330.0,
+                146.0,
+                89.351
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "hood": {
+            "intersection_volume_mm3": 1264.355,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                -95.0,
+                113.499
+              ],
+              [
+                370.0,
+                95.0,
+                131.753
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 6.59
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 42.92
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 15.76
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 7.71
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.03
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 1103.783,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -80.152,
+                127.056
+              ],
+              [
+                378.055,
+                80.152,
+                135.461
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 29.13
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 29.13
+          }
+        },
+        "direct_drive_hardware": {
+          "basket": {
+            "intersection_volume_mm3": 2602.794,
+            "intersection_bbox_mm": [
+              [
+                311.789,
+                -140.0,
+                19.149
+              ],
+              [
+                330.0,
+                146.0,
+                89.351
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "hood": {
+            "intersection_volume_mm3": 1264.355,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                -95.0,
+                113.499
+              ],
+              [
+                370.0,
+                95.0,
+                131.753
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 6.59
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 42.92
+          },
+          "bridge": {
+            "intersection_volume_mm3": 8764.746,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -183.992,
+                150.0
+              ],
+              [
+                385.0,
+                183.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 7.75
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.05
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 14100.248,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 2773.736,
+            "intersection_bbox_mm": [
+              [
+                370.185,
+                142.303,
+                157.615
+              ],
+              [
+                385.0,
+                177.65,
+                183.858
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 2773.736,
+            "intersection_bbox_mm": [
+              [
+                370.185,
+                -177.65,
+                157.615
+              ],
+              [
+                385.0,
+                -142.303,
+                183.858
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "carriage_moving": {
+          "basket": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 69.38
+          },
+          "hood": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 41.57
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 153.56
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 23.0
+          },
+          "bridge": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 5.02
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 133.09
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 557.01
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 5469.529,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                -115.0,
+                173.0
+              ],
+              [
+                487.0,
+                115.0,
+                183.288
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                81.0,
+                173.0
+              ],
+              [
+                487.0,
+                115.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                -115.0,
+                173.0
+              ],
+              [
+                487.0,
+                -81.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        },
+        "complete_moving_pod": {
+          "basket": {
+            "intersection_volume_mm3": 2602.794,
+            "intersection_bbox_mm": [
+              [
+                311.789,
+                -140.0,
+                19.149
+              ],
+              [
+                330.0,
+                146.0,
+                89.351
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "hood": {
+            "intersection_volume_mm3": 1264.355,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                -95.0,
+                113.499
+              ],
+              [
+                370.0,
+                95.0,
+                131.753
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "ramp": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 6.6
+          },
+          "cheeks": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 23.0
+          },
+          "bridge": {
+            "intersection_volume_mm3": 8764.746,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -183.992,
+                150.0
+              ],
+              [
+                385.0,
+                183.992,
+                168.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "chassis": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 7.77
+          },
+          "battery": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null,
+            "sampled_min_positive_clearance_mm": 480.04
+          },
+          "launcher_cradle": {
+            "intersection_volume_mm3": 19569.777,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -157.0,
+                127.056
+              ],
+              [
+                487.0,
+                157.0,
+                183.288
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "left_flywheel": {
+            "intersection_volume_mm3": 47363.658,
+            "intersection_bbox_mm": [
+              [
+                370.185,
+                81.0,
+                157.615
+              ],
+              [
+                487.0,
+                177.65,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          },
+          "right_flywheel": {
+            "intersection_volume_mm3": 47363.658,
+            "intersection_bbox_mm": [
+              [
+                370.185,
+                -177.65,
+                157.615
+              ],
+              [
+                487.0,
+                -81.0,
+                201.0
+              ]
+            ],
+            "sampled_min_positive_clearance_mm": null
+          }
+        }
+      },
+      "collision_details_by_side": {
+        "motor|bridge": {
+          "left": {
+            "intersection_volume_mm3": 4382.373,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                165.0,
+                150.0
+              ],
+              [
+                385.0,
+                183.992,
+                168.0
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 4382.373,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -183.992,
+                150.0
+              ],
+              [
+                385.0,
+                -165.0,
+                168.0
+              ]
+            ]
+          }
+        },
+        "motor|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 6498.233,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                122.894,
+                127.056
+              ],
+              [
+                385.0,
+                157.0,
+                146.199
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 6498.233,
+            "intersection_bbox_mm": [
+              [
+                355.0,
+                -157.0,
+                127.056
+              ],
+              [
+                385.0,
+                -122.894,
+                146.199
+              ]
+            ]
+          }
+        },
+        "motor|left_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 2773.736,
+            "intersection_bbox_mm": [
+              [
+                370.185,
+                142.303,
+                157.615
+              ],
+              [
+                385.0,
+                177.65,
+                183.858
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          }
+        },
+        "motor|right_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          },
+          "right": {
+            "intersection_volume_mm3": 2773.736,
+            "intersection_bbox_mm": [
+              [
+                370.185,
+                -177.65,
+                157.615
+              ],
+              [
+                385.0,
+                -142.303,
+                183.858
+              ]
+            ]
+          }
+        },
+        "wheel|basket": {
+          "left": {
+            "intersection_volume_mm3": 1237.136,
+            "intersection_bbox_mm": [
+              [
+                311.789,
+                98.0,
+                19.149
+              ],
+              [
+                330.0,
+                146.0,
+                85.15
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 1365.658,
+            "intersection_bbox_mm": [
+              [
+                311.789,
+                -140.0,
+                19.149
+              ],
+              [
+                330.0,
+                -98.0,
+                89.351
+              ]
+            ]
+          }
+        },
+        "wheel|hood": {
+          "left": {
+            "intersection_volume_mm3": 632.178,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                73.158,
+                113.499
+              ],
+              [
+                370.0,
+                95.0,
+                131.753
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 632.178,
+            "intersection_bbox_mm": [
+              [
+                330.0,
+                -95.0,
+                113.499
+              ],
+              [
+                370.0,
+                -73.158,
+                131.753
+              ]
+            ]
+          }
+        },
+        "wheel|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 551.891,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                64.395,
+                127.056
+              ],
+              [
+                378.055,
+                80.152,
+                135.461
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 551.891,
+            "intersection_bbox_mm": [
+              [
+                353.228,
+                -80.152,
+                127.056
+              ],
+              [
+                378.055,
+                -64.395,
+                135.461
+              ]
+            ]
+          }
+        },
+        "carriage_moving|launcher_cradle": {
+          "left": {
+            "intersection_volume_mm3": 2734.764,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                81.0,
+                173.0
+              ],
+              [
+                487.0,
+                115.0,
+                183.288
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 2734.764,
+            "intersection_bbox_mm": [
+              [
+                470.361,
+                -115.0,
+                173.0
+              ],
+              [
+                487.0,
+                -81.0,
+                183.288
+              ]
+            ]
+          }
+        },
+        "carriage_moving|left_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                81.0,
+                173.0
+              ],
+              [
+                487.0,
+                115.0,
+                201.0
+              ]
+            ]
+          },
+          "right": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          }
+        },
+        "carriage_moving|right_flywheel": {
+          "left": {
+            "intersection_volume_mm3": 0.0,
+            "intersection_bbox_mm": null
+          },
+          "right": {
+            "intersection_volume_mm3": 44589.922,
+            "intersection_bbox_mm": [
+              [
+                385.0,
+                -115.0,
+                173.0
+              ],
+              [
+                487.0,
+                -81.0,
+                201.0
+              ]
+            ]
+          }
+        }
+      },
+      "opposite_intake_pod": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      }
+    }
+  },
+  "candidate_A_fixed_guide": {
+    "bbox_mm": [
+      [
+        384.0,
+        -139.0,
+        168.0
+      ],
+      [
+        490.0,
+        139.0,
+        194.0
+      ]
+    ],
+    "environment": {
+      "basket": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null,
+        "sampled_min_positive_clearance_mm": 66.0
+      },
+      "hood": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null,
+        "sampled_min_positive_clearance_mm": 40.49
+      },
+      "ramp": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null,
+        "sampled_min_positive_clearance_mm": 150.02
+      },
+      "cheeks": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null,
+        "sampled_min_positive_clearance_mm": 18.0
+      },
+      "bridge": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": [
+          [
+            386.0,
+            -139.0,
+            168.0
+          ],
+          [
+            410.0,
+            139.0,
+            168.0
+          ]
+        ],
+        "sampled_min_positive_clearance_mm": 0.09
+      },
+      "chassis": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null,
+        "sampled_min_positive_clearance_mm": 120.16
+      },
+      "battery": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null,
+        "sampled_min_positive_clearance_mm": 556.01
+      },
+      "launcher_cradle": {
+        "intersection_volume_mm3": 11206.341,
+        "intersection_bbox_mm": [
+          [
+            466.0,
+            -139.0,
+            168.0
+          ],
+          [
+            490.0,
+            139.0,
+            184.416
+          ]
+        ],
+        "sampled_min_positive_clearance_mm": null
+      },
+      "left_flywheel": {
+        "intersection_volume_mm3": 13194.118,
+        "intersection_bbox_mm": [
+          [
+            384.0,
+            49.0,
+            168.0
+          ],
+          [
+            410.0,
+            139.0,
+            194.0
+          ]
+        ],
+        "sampled_min_positive_clearance_mm": null
+      },
+      "right_flywheel": {
+        "intersection_volume_mm3": 13194.118,
+        "intersection_bbox_mm": [
+          [
+            384.0,
+            -139.0,
+            168.0
+          ],
+          [
+            410.0,
+            -49.0,
+            194.0
+          ]
+        ],
+        "sampled_min_positive_clearance_mm": null
+      }
+    }
+  },
+  "continuous_0_to_8_swept": {
+    "method": "exact CGAL intersection against continuous endpoint-hull swept solids; carriage follower bores conservatively filled",
+    "component_bbox_mm": {
+      "motor": [
+        [
+          355.0,
+          -183.992,
+          109.317
+        ],
+        [
+          385.0,
+          183.992,
+          183.865
+        ]
+      ],
+      "motor_output_shaft": [
+        [
+          367.0,
+          -134.012,
+          99.817
+        ],
+        [
+          373.0,
+          134.012,
+          119.641
+        ]
+      ],
+      "adapter": [
+        [
+          360.0,
+          -139.746,
+          87.61
+        ],
+        [
+          380.0,
+          139.746,
+          123.656
+        ]
+      ],
+      "wheel_hex": [
+        [
+          363.072,
+          -124.424,
+          89.085
+        ],
+        [
+          376.928,
+          124.424,
+          104.16
+        ]
+      ],
+      "wheel": [
+        [
+          308.0,
+          -169.723,
+          4.539
+        ],
+        [
+          432.0,
+          169.723,
+          135.461
+        ]
+      ],
+      "direct_drive_hardware": [
+        [
+          308.0,
+          -183.992,
+          4.539
+        ],
+        [
+          432.0,
+          183.992,
+          183.865
+        ]
+      ],
+      "carriage_moving": [
+        [
+          385.0,
+          -115.0,
+          173.0
+        ],
+        [
+          487.0,
+          115.0,
+          201.0
+        ]
+      ],
+      "complete_moving_pod": [
+        [
+          308.0,
+          -183.992,
+          4.539
+        ],
+        [
+          487.0,
+          183.992,
+          201.0
+        ]
+      ]
+    },
+    "components": {
+      "motor": {
+        "basket": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 35.0
+        },
+        "hood": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 16.35
+        },
+        "ramp": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 98.52
+        },
+        "cheeks": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 70.01
+        },
+        "bridge": {
+          "intersection_volume_mm3": 8764.963,
+          "intersection_bbox_mm": [
+            [
+              355.0,
+              -183.992,
+              150.0
+            ],
+            [
+              385.0,
+              183.992,
+              168.0
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "chassis": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 63.11
+        },
+        "battery": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 527.9
+        },
+        "launcher_cradle": {
+          "intersection_volume_mm3": 17067.204,
+          "intersection_bbox_mm": [
+            [
+              355.0,
+              -157.0,
+              127.056
+            ],
+            [
+              385.0,
+              157.0,
+              146.199
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "left_flywheel": {
+          "intersection_volume_mm3": 5218.578,
+          "intersection_bbox_mm": [
+            [
+              367.869,
+              133.938,
+              157.416
+            ],
+            [
+              385.0,
+              177.65,
+              183.865
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "right_flywheel": {
+          "intersection_volume_mm3": 5218.578,
+          "intersection_bbox_mm": [
+            [
+              367.869,
+              -177.65,
+              157.416
+            ],
+            [
+              385.0,
+              -133.938,
+              183.865
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        }
+      },
+      "motor_output_shaft": {
+        "basket": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 47.31
+        },
+        "hood": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 17.85
+        },
+        "ramp": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 82.36
+        },
+        "cheeks": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 86.66
+        },
+        "bridge": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 33.47
+        },
+        "chassis": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 67.46
+        },
+        "battery": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 539.37
+        },
+        "launcher_cradle": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 11.53
+        },
+        "left_flywheel": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 37.91
+        },
+        "right_flywheel": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 37.91
+        }
+      },
+      "adapter": {
+        "basket": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 40.31
+        },
+        "hood": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 10.89
+        },
+        "ramp": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 70.59
+        },
+        "cheeks": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 79.91
+        },
+        "bridge": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 28.96
+        },
+        "chassis": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 59.42
+        },
+        "battery": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 532.18
+        },
+        "launcher_cradle": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 7.1
+        },
+        "left_flywheel": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 34.24
+        },
+        "right_flywheel": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 34.24
+        }
+      },
+      "wheel_hex": {
+        "basket": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 45.71
+        },
+        "hood": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 15.04
+        },
+        "ramp": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 70.68
+        },
+        "cheeks": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 90.29
+        },
+        "bridge": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 47.38
+        },
+        "chassis": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 63.38
+        },
+        "battery": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 535.24
+        },
+        "launcher_cradle": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 25.24
+        },
+        "left_flywheel": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 53.49
+        },
+        "right_flywheel": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 53.49
+        }
+      },
+      "wheel": {
+        "basket": {
+          "intersection_volume_mm3": 2634.26,
+          "intersection_bbox_mm": [
+            [
+              311.789,
+              -140.0,
+              19.149
+            ],
+            [
+              330.0,
+              146.0,
+              89.351
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "hood": {
+          "intersection_volume_mm3": 1269.348,
+          "intersection_bbox_mm": [
+            [
+              330.0,
+              -95.0,
+              113.499
+            ],
+            [
+              370.0,
+              95.0,
+              131.753
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "ramp": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 2.04
+        },
+        "cheeks": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 42.29
+        },
+        "bridge": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 15.75
+        },
+        "chassis": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 7.79
+        },
+        "battery": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 480.01
+        },
+        "launcher_cradle": {
+          "intersection_volume_mm3": 2704.282,
+          "intersection_bbox_mm": [
+            [
+              353.228,
+              -80.152,
+              127.056
+            ],
+            [
+              378.055,
+              80.152,
+              135.461
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "left_flywheel": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 29.13
+        },
+        "right_flywheel": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 29.13
+        }
+      },
+      "direct_drive_hardware": {
+        "basket": {
+          "intersection_volume_mm3": 2634.26,
+          "intersection_bbox_mm": [
+            [
+              311.789,
+              -140.0,
+              19.149
+            ],
+            [
+              330.0,
+              146.0,
+              89.351
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "hood": {
+          "intersection_volume_mm3": 1269.348,
+          "intersection_bbox_mm": [
+            [
+              330.0,
+              -95.0,
+              113.499
+            ],
+            [
+              370.0,
+              95.0,
+              131.753
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "ramp": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 2.01
+        },
+        "cheeks": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 42.29
+        },
+        "bridge": {
+          "intersection_volume_mm3": 8764.963,
+          "intersection_bbox_mm": [
+            [
+              355.0,
+              -183.992,
+              150.0
+            ],
+            [
+              385.0,
+              183.992,
+              168.0
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "chassis": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 7.48
+        },
+        "battery": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 480.01
+        },
+        "launcher_cradle": {
+          "intersection_volume_mm3": 19771.486,
+          "intersection_bbox_mm": [
+            [
+              353.228,
+              -157.0,
+              127.056
+            ],
+            [
+              385.0,
+              157.0,
+              146.199
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "left_flywheel": {
+          "intersection_volume_mm3": 5218.578,
+          "intersection_bbox_mm": [
+            [
+              367.869,
+              133.938,
+              157.416
+            ],
+            [
+              385.0,
+              177.65,
+              183.865
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "right_flywheel": {
+          "intersection_volume_mm3": 5218.578,
+          "intersection_bbox_mm": [
+            [
+              367.869,
+              -177.65,
+              157.416
+            ],
+            [
+              385.0,
+              -133.938,
+              183.865
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        }
+      },
+      "carriage_moving": {
+        "basket": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 69.38
+        },
+        "hood": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 41.62
+        },
+        "ramp": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 153.54
+        },
+        "cheeks": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 23.0
+        },
+        "bridge": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 5.0
+        },
+        "chassis": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 133.07
+        },
+        "battery": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 557.01
+        },
+        "launcher_cradle": {
+          "intersection_volume_mm3": 10824.501,
+          "intersection_bbox_mm": [
+            [
+              458.634,
+              -115.0,
+              173.0
+            ],
+            [
+              487.0,
+              115.0,
+              183.324
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "left_flywheel": {
+          "intersection_volume_mm3": 81920.675,
+          "intersection_bbox_mm": [
+            [
+              385.0,
+              73.0,
+              173.0
+            ],
+            [
+              487.0,
+              115.0,
+              201.0
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "right_flywheel": {
+          "intersection_volume_mm3": 81920.675,
+          "intersection_bbox_mm": [
+            [
+              385.0,
+              -115.0,
+              173.0
+            ],
+            [
+              487.0,
+              -73.0,
+              201.0
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        }
+      },
+      "complete_moving_pod": {
+        "basket": {
+          "intersection_volume_mm3": 2634.26,
+          "intersection_bbox_mm": [
+            [
+              311.789,
+              -140.0,
+              19.149
+            ],
+            [
+              330.0,
+              146.0,
+              89.351
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "hood": {
+          "intersection_volume_mm3": 1269.348,
+          "intersection_bbox_mm": [
+            [
+              330.0,
+              -95.0,
+              113.499
+            ],
+            [
+              370.0,
+              95.0,
+              131.753
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "ramp": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 2.01
+        },
+        "cheeks": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 23.0
+        },
+        "bridge": {
+          "intersection_volume_mm3": 8764.963,
+          "intersection_bbox_mm": [
+            [
+              355.0,
+              -183.992,
+              150.0
+            ],
+            [
+              385.0,
+              183.992,
+              168.0
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "chassis": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 7.87
+        },
+        "battery": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null,
+          "sampled_min_positive_clearance_mm": 480.01
+        },
+        "launcher_cradle": {
+          "intersection_volume_mm3": 30595.986,
+          "intersection_bbox_mm": [
+            [
+              353.228,
+              -157.0,
+              127.056
+            ],
+            [
+              487.0,
+              157.0,
+              183.324
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "left_flywheel": {
+          "intersection_volume_mm3": 87139.253,
+          "intersection_bbox_mm": [
+            [
+              367.869,
+              73.0,
+              157.416
+            ],
+            [
+              487.0,
+              177.65,
+              201.0
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        },
+        "right_flywheel": {
+          "intersection_volume_mm3": 87139.253,
+          "intersection_bbox_mm": [
+            [
+              367.869,
+              -177.65,
+              157.416
+            ],
+            [
+              487.0,
+              -73.0,
+              201.0
+            ]
+          ],
+          "sampled_min_positive_clearance_mm": null
+        }
+      }
+    },
+    "collision_details_by_side": {
+      "motor|bridge": {
+        "left": {
+          "intersection_volume_mm3": 4382.482,
+          "intersection_bbox_mm": [
+            [
+              355.0,
+              165.0,
+              150.0
+            ],
+            [
+              385.0,
+              183.992,
+              168.0
+            ]
+          ]
+        },
+        "right": {
+          "intersection_volume_mm3": 4382.482,
+          "intersection_bbox_mm": [
+            [
+              355.0,
+              -183.992,
+              150.0
+            ],
+            [
+              385.0,
+              -165.0,
+              168.0
+            ]
+          ]
+        }
+      },
+      "motor|launcher_cradle": {
+        "left": {
+          "intersection_volume_mm3": 8533.602,
+          "intersection_bbox_mm": [
+            [
+              355.0,
+              114.894,
+              127.056
+            ],
+            [
+              385.0,
+              157.0,
+              146.199
+            ]
+          ]
+        },
+        "right": {
+          "intersection_volume_mm3": 8533.602,
+          "intersection_bbox_mm": [
+            [
+              355.0,
+              -157.0,
+              127.056
+            ],
+            [
+              385.0,
+              -114.894,
+              146.199
+            ]
+          ]
+        }
+      },
+      "motor|left_flywheel": {
+        "left": {
+          "intersection_volume_mm3": 5218.578,
+          "intersection_bbox_mm": [
+            [
+              367.869,
+              133.938,
+              157.416
+            ],
+            [
+              385.0,
+              177.65,
+              183.865
+            ]
+          ]
+        },
+        "right": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null
+        }
+      },
+      "motor|right_flywheel": {
+        "left": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null
+        },
+        "right": {
+          "intersection_volume_mm3": 5218.578,
+          "intersection_bbox_mm": [
+            [
+              367.869,
+              -177.65,
+              157.416
+            ],
+            [
+              385.0,
+              -133.938,
+              183.865
+            ]
+          ]
+        }
+      },
+      "wheel|basket": {
+        "left": {
+          "intersection_volume_mm3": 1252.869,
+          "intersection_bbox_mm": [
+            [
+              311.789,
+              96.139,
+              19.149
+            ],
+            [
+              330.0,
+              146.0,
+              85.15
+            ]
+          ]
+        },
+        "right": {
+          "intersection_volume_mm3": 1381.391,
+          "intersection_bbox_mm": [
+            [
+              311.789,
+              -140.0,
+              19.149
+            ],
+            [
+              330.0,
+              -96.139,
+              89.351
+            ]
+          ]
+        }
+      },
+      "wheel|hood": {
+        "left": {
+          "intersection_volume_mm3": 634.674,
+          "intersection_bbox_mm": [
+            [
+              330.0,
+              68.93,
+              113.499
+            ],
+            [
+              370.0,
+              95.0,
+              131.753
+            ]
+          ]
+        },
+        "right": {
+          "intersection_volume_mm3": 634.674,
+          "intersection_bbox_mm": [
+            [
+              330.0,
+              -95.0,
+              113.499
+            ],
+            [
+              370.0,
+              -68.93,
+              131.753
+            ]
+          ]
+        }
+      },
+      "wheel|launcher_cradle": {
+        "left": {
+          "intersection_volume_mm3": 1352.141,
+          "intersection_bbox_mm": [
+            [
+              353.228,
+              56.395,
+              127.056
+            ],
+            [
+              378.055,
+              80.152,
+              135.461
+            ]
+          ]
+        },
+        "right": {
+          "intersection_volume_mm3": 1352.141,
+          "intersection_bbox_mm": [
+            [
+              353.228,
+              -80.152,
+              127.056
+            ],
+            [
+              378.055,
+              -56.395,
+              135.461
+            ]
+          ]
+        }
+      },
+      "carriage_moving|launcher_cradle": {
+        "left": {
+          "intersection_volume_mm3": 5412.25,
+          "intersection_bbox_mm": [
+            [
+              458.634,
+              73.0,
+              173.0
+            ],
+            [
+              487.0,
+              115.0,
+              183.324
+            ]
+          ]
+        },
+        "right": {
+          "intersection_volume_mm3": 5412.25,
+          "intersection_bbox_mm": [
+            [
+              458.634,
+              -115.0,
+              173.0
+            ],
+            [
+              487.0,
+              -73.0,
+              183.324
+            ]
+          ]
+        }
+      },
+      "carriage_moving|left_flywheel": {
+        "left": {
+          "intersection_volume_mm3": 81920.675,
+          "intersection_bbox_mm": [
+            [
+              385.0,
+              73.0,
+              173.0
+            ],
+            [
+              487.0,
+              115.0,
+              201.0
+            ]
+          ]
+        },
+        "right": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null
+        }
+      },
+      "carriage_moving|right_flywheel": {
+        "left": {
+          "intersection_volume_mm3": 0.0,
+          "intersection_bbox_mm": null
+        },
+        "right": {
+          "intersection_volume_mm3": 81920.675,
+          "intersection_bbox_mm": [
+            [
+              385.0,
+              -115.0,
+              173.0
+            ],
+            [
+              487.0,
+              -73.0,
+              201.0
+            ]
+          ]
+        }
+      }
+    },
+    "opposite_intake_pod": {
+      "intersection_volume_mm3": 0.0,
+      "intersection_bbox_mm": null
+    }
+  },
+  "adapter_seating_sensitivity_swept": {
+    "0": {
+      "basket": {
+        "intersection_volume_mm3": 2634.26,
+        "intersection_bbox_mm": [
+          [
+            311.789,
+            -140.0,
+            19.149
+          ],
+          [
+            330.0,
+            146.0,
+            89.351
+          ]
+        ]
+      },
+      "hood": {
+        "intersection_volume_mm3": 1269.348,
+        "intersection_bbox_mm": [
+          [
+            330.0,
+            -95.0,
+            113.499
+          ],
+          [
+            370.0,
+            95.0,
+            131.753
+          ]
+        ]
+      },
+      "ramp": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      },
+      "cheeks": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      },
+      "bridge": {
+        "intersection_volume_mm3": 8797.894,
+        "intersection_bbox_mm": [
+          [
+            355.0,
+            -184.932,
+            150.0
+          ],
+          [
+            385.0,
+            184.932,
+            168.0
+          ]
+        ]
+      },
+      "chassis": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      },
+      "battery": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      },
+      "launcher_cradle": {
+        "intersection_volume_mm3": 19658.242,
+        "intersection_bbox_mm": [
+          [
+            353.228,
+            -157.0,
+            127.056
+          ],
+          [
+            385.0,
+            157.0,
+            146.199
+          ]
+        ]
+      },
+      "left_flywheel": {
+        "intersection_volume_mm3": 7230.99,
+        "intersection_bbox_mm": [
+          [
+            366.755,
+            133.938,
+            157.416
+          ],
+          [
+            385.0,
+            181.839,
+            190.418
+          ]
+        ]
+      },
+      "right_flywheel": {
+        "intersection_volume_mm3": 7230.99,
+        "intersection_bbox_mm": [
+          [
+            366.755,
+            -181.839,
+            157.416
+          ],
+          [
+            385.0,
+            -133.938,
+            190.418
+          ]
+        ]
+      }
+    },
+    "12": {
+      "basket": {
+        "intersection_volume_mm3": 2634.26,
+        "intersection_bbox_mm": [
+          [
+            311.789,
+            -140.0,
+            19.149
+          ],
+          [
+            330.0,
+            146.0,
+            89.351
+          ]
+        ]
+      },
+      "hood": {
+        "intersection_volume_mm3": 1269.348,
+        "intersection_bbox_mm": [
+          [
+            330.0,
+            -95.0,
+            113.499
+          ],
+          [
+            370.0,
+            95.0,
+            131.753
+          ]
+        ]
+      },
+      "ramp": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      },
+      "cheeks": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      },
+      "bridge": {
+        "intersection_volume_mm3": 8095.178,
+        "intersection_bbox_mm": [
+          [
+            355.0,
+            -181.698,
+            150.0
+          ],
+          [
+            385.0,
+            181.698,
+            168.0
+          ]
+        ]
+      },
+      "chassis": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      },
+      "battery": {
+        "intersection_volume_mm3": 0.0,
+        "intersection_bbox_mm": null
+      },
+      "launcher_cradle": {
+        "intersection_volume_mm3": 19771.486,
+        "intersection_bbox_mm": [
+          [
+            353.228,
+            -157.0,
+            127.056
+          ],
+          [
+            385.0,
+            157.0,
+            146.199
+          ]
+        ]
+      },
+      "left_flywheel": {
+        "intersection_volume_mm3": 4247.301,
+        "intersection_bbox_mm": [
+          [
+            368.551,
+            133.938,
+            157.416
+          ],
+          [
+            385.0,
+            175.364,
+            180.588
+          ]
+        ]
+      },
+      "right_flywheel": {
+        "intersection_volume_mm3": 4247.301,
+        "intersection_bbox_mm": [
+          [
+            368.551,
+            -175.364,
+            157.416
+          ],
+          [
+            385.0,
+            -133.938,
+            180.588
+          ]
+        ]
+      }
+    }
+  },
+  "available_carriage_design_envelope": {
+    "status": "NOT_RELEASED_WHILE_DIRECT_HARDWARE_COLLISION_EXISTS",
+    "hardware_swept_bbox_mm": [
+      [
+        308.0,
+        -183.992,
+        4.539
+      ],
+      [
+        432.0,
+        183.992,
+        183.865
+      ]
+    ],
+    "candidate_A_moving_allocation_bbox_mm": [
+      [
+        385.0,
+        -115.0,
+        173.0
+      ],
+      [
+        487.0,
+        115.0,
+        201.0
+      ]
+    ],
+    "candidate_A_fixed_allocation_bbox_mm": [
+      [
+        384.0,
+        -139.0,
+        168.0
+      ],
+      [
+        490.0,
+        139.0,
+        194.0
+      ]
+    ],
+    "note": "No final support, spring, cable, stop, or fastener geometry is inferred from these bounds."
+  },
+  "bridge_relief_screen": {
+    "existing_service_opening_xy_mm": [
+      22,
+      22
+    ],
+    "motor_horizontal_plane_cross_axis_x_mm": 30,
+    "motor_horizontal_plane_cross_axis_y_mm": 36.62,
+    "minimum_opening_with_2mm_each_side_xy_mm": [
+      34,
+      48.62
+    ],
+    "classification": "ANALYTIC_SCREEN_ONLY; any bridge relief is a new mechanical decision"
+  },
+  "classifications": {
+    "INTAKE_35_DEGREE_ORIENTATION_CORRECTED": true,
+    "LEFT_MOTOR_IS_OUTBOARD": true,
+    "RIGHT_MOTOR_IS_OUTBOARD": true,
+    "INTAKE_AXES_INTENDED_MIRROR_VALIDATED": true,
+    "DIRECT_DRIVE_INTAKE_POD_PACKAGING_GEOMETRICALLY_VALID": false,
+    "DIRECT_DRIVE_HARDWARE_0_TO_8MM_SWEPT_CLEAR": false,
+    "CANDIDATE_A_GUIDE_PACKAGING_GEOMETRICALLY_VALID": false,
+    "INTAKE_MOVING_POD_ARCHITECTURAL_REDESIGN_REQUIRED": true,
+    "INTAKE_CARRIAGE_MANUFACTURING_CAD_PENDING": true,
+    "COMPACT_PHYSICAL_INTAKE_MODEL_COMPLETE": false,
+    "COMPACT_INTAKE_STATIC_PACKAGING_VALIDATED": false,
+    "COMPACT_PARKED_PACKAGING_VALIDATED_IN_SIM": false,
+    "COMPACT_INTAKE_HANDOFF_VALIDATED_IN_SIM": false,
+    "COMPACT_BASKET_LAUNCH_PATH_VALIDATED_IN_SIM": false,
+    "BALL_LAUNCH_PHYSICS_NOT_VALIDATED": true,
+    "PHYSICAL_HARDWARE_PENDING": true
+  }
+}

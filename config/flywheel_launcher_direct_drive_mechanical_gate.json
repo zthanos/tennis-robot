@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-08-26",
+  "scope": "standalone flywheel launcher direct-drive mechanical definition",
+  "decision": {
+    "status": "PARTIAL_DEFINITION_STOP",
+    "summary": "The accepted upper panel is a geometrically feasible direct D5065 mounting plate and has been structurally screened. Gate A remains stopped at the wheel/hub/retention/mass-property interface.",
+    "separate_motor_bracket_required": false,
+    "independent_motor_pitch_hardware_required": false,
+    "launcher_trials_run": false
+  },
+  "evidence_classes": [
+    "MANUFACTURER_SPEC",
+    "MEASURED_FROM_HARDWARE",
+    "MEASURED_FROM_CAD",
+    "DERIVED",
+    "ASSUMED / PROVISIONAL",
+    "MISSING"
+  ],
+  "authoritative_launcher_datums": {
+    "flywheel_diameter_m": 0.2,
+    "flywheel_width_m": 0.05,
+    "wheel_centre_spacing_m": 0.258,
+    "nip_m": 0.058,
+    "cradle_plate_size_m": [
+      0.256,
+      0.314,
+      0.008
+    ],
+    "launcher_pitch_deg": 20.0
+  },
+  "direct_panel_mount": {
+    "motor_centres_launcher_local_m": [
+      [
+        0.0,
+        0.129,
+        0.047
+      ],
+      [
+        0.0,
+        -0.129,
+        0.047
+      ]
+    ],
+    "shaft_axes_launcher_local": [
+      [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      [
+        0.0,
+        0.0,
+        -1.0
+      ]
+    ],
+    "orientation": "motor body outside upper panel; shaft and hub toward launcher inside; shaft coaxial with flywheel",
+    "motor_body_edge_clearance_m": 0.0030000000000000027,
+    "mount_hole_edge_ligament_m": 0.010999999999999982,
+    "mount_pattern": {
+      "hole_count": 4,
+      "hole_diameter_m": 0.004,
+      "pitch_circle_diameter_m": 0.03,
+      "classification": "MANUFACTURER_SPEC",
+      "thread_or_clearance": null,
+      "usable_thread_engagement_m": null,
+      "missing": "Confirm whether the four 4 mm drawing features are threaded, their thread specification, and usable depth."
+    },
+    "motor_body": {
+      "diameter_m": 0.05,
+      "length_m": 0.065,
+      "mass_kg": 0.49,
+      "classification": "MANUFACTURER_SPEC",
+      "source": "https://shop.odriverobotics.com/products/odrive-custom-motor-d5065"
+    },
+    "wire_and_service_clearance": {
+      "status": "MISSING",
+      "reason": "Repository evidence does not dimension lead exit, 4 mm bullet connector envelope, thermistor lead exit, bend radius, or tool swing."
+    }
+  },
+  "axial_stack_launcher_local_z_m": {
+    "motor_body_outside_end": 0.112,
+    "motor_mounting_face": 0.047,
+    "panel_outside_face": 0.047,
+    "panel_inside_face": 0.03899999999999999,
+    "shaft_tip": 0.017,
+    "hub_start": null,
+    "hub_end": null,
+    "flywheel_outer_face": 0.025,
+    "flywheel_centre_plane": 0.0,
+    "flywheel_inner_face": -0.025,
+    "axial_retention_hardware": null,
+    "shaft_projection_beyond_panel_inside_m": 0.021999999999999992,
+    "shaft_projection_inside_wheel_envelope_m": 0.008,
+    "panel_inside_to_flywheel_outer_gap_m": 0.013999999999999992,
+    "manufacturer_flat_length_m": 0.024,
+    "manufacturer_flat_depth_m": 0.0005
+  },
+  "panel_cutout_screen": {
+    "shaft_diameter_m": 0.008,
+    "final_cutout_defined": false,
+    "reason": "The required opening depends on the selected hub outside diameter, pinch-bolt/tool access, and axial-retention installation path.",
+    "central_opening_to_mount_hole_edge_ligament_m": {
+      "diameter_10_mm": 0.008,
+      "diameter_16_mm": 0.004999999999999999,
+      "diameter_18_mm": 0.004,
+      "diameter_20_mm": 0.002999999999999999
+    },
+    "note": "10/16/18/20 mm openings are geometric sensitivity cases only, not released manufacturing dimensions."
+  },
+  "purchased_hub_audit": {
+    "selected": null,
+    "candidates": [
+      {
+        "manufacturer": "goBILDA",
+        "part": "1309-0016-0008 Sonic Hub, 8 mm round bore",
+        "material": "aluminum",
+        "mass_kg": 0.014,
+        "wheel_interface": "M4 threaded holes on 16 mm pattern",
+        "shaft_retention": "dual pinch bolts",
+        "source": "https://www.gobilda.com/1309-series-sonic-hub-8mm-bore/"
+      },
+      {
+        "manufacturer": "goBILDA",
+        "part": "1310-0016-0008 Hyper Hub, 8 mm round bore",
+        "material": "aluminum",
+        "mass_kg": 0.024,
+        "wheel_interface": "16 mm goBILDA pattern; exact target-wheel compatibility not established",
+        "shaft_retention": "balanced dual-pinch clamping",
+        "source": "https://www.gobilda.com/1310-series-hyper-hub-8mm-bore/"
+      }
+    ],
+    "stop_reason": "No repository evidence defines the actual 200 x 50 mm flywheel centre bore, recess, bolt pattern, material, or torque rating. Candidate clamp hubs also provide no quantified torque/axial capacity for this D-shaft application in the captured evidence."
+  },
+  "structural_screen": {
+    "status": "SCREEN_PASS_WITH_ASSUMPTIONS_NOT_PHYSICAL_VALIDATION",
+    "physical_inputs": {
+      "motor_mass_kg": 0.49,
+      "panel_thickness_m": 0.008,
+      "calibrated_quasi_static_per_wheel_reaction_at_4mm_n": 27.14734266213139
+    },
+    "provisional_inputs": {
+      "flywheel_mass_kg": 0.4,
+      "hub_mass_kg": null,
+      "panel_alloy_for_stress_comparison": "6061-T6, assumed only; CAD identifies aluminium density but no alloy/temper",
+      "screen_radial_reaction_n": 263.70336454676846,
+      "screen_radial_reaction_basis": "1.25 x maximum independent ball-rebound calibration peak; conservative screen case, not a measured launcher load"
+    },
+    "derived": {
+      "static_gravity_moment_without_hub_nm": 0.32484528125,
+      "radial_screen_moment_nm": 11.339244675511043,
+      "motor_torque_at_provisional_20a_nm": 0.62,
+      "motor_torque_at_manufacturer_85a_3s_nm": 2.635,
+      "worst_case_bolt_tension_n": 388.80299855870146,
+      "radial_shear_per_bolt_n": 65.92584113669211,
+      "torque_shear_per_bolt_n": 43.916666666666664,
+      "resultant_shear_per_bolt_n": 79.21420415993256,
+      "panel_bearing_stress_pa": 12150093.70495942,
+      "strip_bending_stress_30mm_effective_width_pa": 36450281.11487826,
+      "strip_bending_stress_50mm_effective_width_pa": 21870168.668926954
+    },
+    "reinforcement_decision": "No reinforcement released. The provisional stress screen does not justify a separate cradle; final cutout, alloy, hub/flywheel mass, actual launcher reaction, fastener engagement, and vibration evidence must precede any local doubler decision.",
+    "vibration_resonance": "UNRESOLVED: requires actual rotating mass/inertia, runout/balance, motor bearing stiffness, panel boundary conditions, and modal/bench measurement."
+  },
+  "rotating_assembly": {
+    "flywheel_mass_kg": null,
+    "flywheel_inertia_kg_m2": null,
+    "hub_mass_kg": null,
+    "hub_inertia_kg_m2": null,
+    "motor_rotor_inertia_kg_m2": null,
+    "provisional_simulation_wheel_mass_kg": 0.4,
+    "provisional_solid_cylinder_spin_inertia_kg_m2": 0.002,
+    "provisional_values_accepted_for_capability_simulation": false
+  },
+  "simulation_ownership": {
+    "standalone_xacro": "ros2_ws/src/tennis_robot/urdf/components/flywheel_launcher_module.urdf.xacro",
+    "standalone_xacro_updated": false,
+    "reason": "The wheel, hub, retention and complete rotating inertia are not sufficiently defined; the existing 0.40 kg wheel and 0.002 kg m^2 solid-cylinder inertia remain explicit provisional placeholders.",
+    "complete_robot_files_updated": false
+  },
+  "remaining_physical_measurements": [
+    "Select or provide the actual 200 x 50 mm flywheel and measure its mass, centre bore/hex, recesses, face thickness, any bolt-circle diameters/hole sizes, and axial datum.",
+    "Confirm D5065 mounting-face hole thread/clearance type and usable engagement depth on delivered hardware; record lead/thermistor exit and connector service envelope.",
+    "After matching a metal hub to the measured wheel interface, record hub drawing, engagement length, torque/axial rating, mass, axial stop and removable retention hardware.",
+    "Obtain manufacturer motor-rotor inertia or measure it independently; then calculate the complete motor rotor + hub + flywheel inertia.",
+    "Verify upper-panel alloy/temper, final cutout, flatness and mounting boundary; weigh the finished rotating assembly and perform balance/runout and vibration checks."
+  ],
+  "classifications": {
+    "D5065_DIRECT_PANEL_MOUNT_GEOMETRICALLY_VALID": true,
+    "D5065_DIRECT_PANEL_MOUNT_STRUCTURALLY_SCREENED": true,
+    "FLYWHEEL_PANEL_CUTOUT_DEFINED": false,
+    "FLYWHEEL_DIRECT_DRIVE_HUB_DEFINED": false,
+    "FLYWHEEL_SHAFT_ENGAGEMENT_VALIDATED": false,
+    "FLYWHEEL_AXIAL_RETENTION_DEFINED": false,
+    "FLYWHEEL_ROTATING_MASS_DEFINED": false,
+    "FLYWHEEL_ROTATING_INERTIA_DEFINED": false,
+    "FLYWHEEL_MECHANICAL_GATE_A_PASSED": false
+  }
+}

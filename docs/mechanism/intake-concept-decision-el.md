@@ -23,7 +23,7 @@ hopper.
 Η απόφαση βασίζεται στο deterministic Gazebo intake bench και στο report:
 
 ```text
-docs/mechanism/intake-bench-sweep-report-el.md
+docs/archive/mechanism/intake/intake-bench-sweep-report-el.md
 ```
 
 Κύρια ευρήματα:

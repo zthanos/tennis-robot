@@ -1,0 +1,4274 @@
+{
+  "schema_version": 2,
+  "generated_on": "2026-08-26",
+  "scope": "isolated_standalone_flywheel_launcher_capability_validation",
+  "decision": {
+    "status": "CAPABILITY_MAP_COMPLETE_WITH_PHYSICAL_MODEL_LIMITATIONS",
+    "stop_condition_encountered": false,
+    "operational_speed_targets_reached": false,
+    "reason": "All executed physics gates passed, but the bounded uncalibrated tyre-friction model saturates below 12 m/s and no aerodynamic court model exists."
+  },
+  "protocol": "config/flywheel_launcher_capability_protocol.json",
+  "frozen_input_checks": {
+    "ball_calibration_results": true,
+    "ball_model": true,
+    "standalone_bench_xacro": true,
+    "launcher_module_xacro": true,
+    "lower_exit_relief_mesh": true,
+    "upper_exit_relief_mesh": true,
+    "normal_and_tangential_contact_plugin": true,
+    "motor_control_plugin": true
+  },
+  "regression_reference": {
+    "checks": {
+      "successful_launch": true,
+      "post_release_noncontact": true,
+      "exit_speed": true,
+      "elevation": true
+    },
+    "passed": true,
+    "operating_point": {
+      "case_id": "regression_mu_0p3_dt_1ms",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 80.0,
+      "right_target_rad_s": -80.0,
+      "left_actual_precontact_rad_s": 79.99680599999999,
+      "right_actual_precontact_rad_s": -79.99680599999999,
+      "wheel_surface_speed_m_s": 7.9996806,
+      "spinup_time_s": 1.363,
+      "exit_position_m": [
+        0.038094,
+        0.0,
+        0.358997
+      ],
+      "exit_velocity_vector_m_s": [
+        5.01907,
+        0.0,
+        1.61728
+      ],
+      "exit_speed_m_s": 5.273201898590647,
+      "elevation_deg": 17.860343423863593,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0500238,
+        0.0
+      ],
+      "spin_rpm": 0.4776921025344213,
+      "topspin_rad_s": -0.0500238,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.016000000000000125,
+        "right": 0.016000000000000125
+      },
+      "maximum_ball_compression_m": 0.00399957,
+      "left_peak_normal_force_n": 27.1548,
+      "right_peak_normal_force_n": 27.1548,
+      "left_peak_tangential_force_n": 8.146440637344408,
+      "right_peak_tangential_force_n": 8.146440637344408,
+      "left_rpm_droop": 10.187246893205412,
+      "right_rpm_droop": 10.187246893205412,
+      "left_droop_percent": 1.3335607424126228,
+      "right_droop_percent": 1.3335607424126228,
+      "recovery_time_s": 0.20900000000000007,
+      "motor_response": {
+        "left_precontact_rpm": 763.9132263878033,
+        "right_precontact_rpm": -763.9132263878033,
+        "left_min_contact_rpm_magnitude": 753.7259794945979,
+        "right_min_contact_rpm_magnitude": 753.7259794945979,
+        "left_max_contact_rpm_magnitude": 763.9313127555364,
+        "right_max_contact_rpm_magnitude": 763.9313127555364,
+        "left_precontact_torque_nm": 0.160067,
+        "right_precontact_torque_nm": -0.160067,
+        "left_precontact_current_a": 5.163451612903225,
+        "right_precontact_current_a": 5.163451612903225,
+        "left_peak_event_torque_nm": 0.213501,
+        "right_peak_event_torque_nm": 0.213501,
+        "left_peak_event_current_a": 6.8871290322580645,
+        "right_peak_event_current_a": 6.8871290322580645,
+        "estimated_peak_required_bus_voltage_v": 3.097906278138818,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 6.1292000000000115
+      },
+      "apex_height_m": 0.491636,
+      "time_to_apex_s": 0.16400000000000015,
+      "first_bounce_xyz_m": [
+        2.40207,
+        0.0,
+        0.0314045
+      ],
+      "first_bounce_time_s": 0.508,
+      "first_bounce_time_from_exit_s": 0.4710000000000001,
+      "horizontal_range_m": 2.363976,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        5.01907,
+        0.0,
+        -2.98872
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 21.601993724025313,
+        "right_wheel_kinetic_pre_j": 21.601993724025313,
+        "wheel_kinetic_pre_j": 43.203987448050626,
+        "left_wheel_kinetic_post_j": 21.03527947183246,
+        "right_wheel_kinetic_post_j": 21.03527947183246,
+        "wheel_kinetic_post_j": 42.07055894366492,
+        "motor_mechanical_work_event_j": 0.5361999999999938,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 0.8063930896357001,
+        "ball_exit_rotational_j": 5.268512044582776e-08,
+        "potential_energy_change_j": 0.020671571200000006,
+        "elastic_energy_stored_j": 0.08520355168928026,
+        "elastic_energy_recovered_j": 0.06746728107302069,
+        "elastic_hysteresis_j": 0.01773627061625957,
+        "normal_damping_dissipation_j": 0.0033105686997490905,
+        "tangential_friction_dissipation_j": 0.6380342095387067,
+        "contact_dissipation_j": 0.6590810488547154,
+        "drivetrain_damping_j": 0.4295605237703176,
+        "residual_j": 0.014342114825845909,
+        "residual_fraction": 0.0003259526559147397
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.3,
+        "classification": "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    }
+  },
+  "authoritative_baseline": {
+    "motor": "D5065-270KV",
+    "bus_voltage_v": 12.8,
+    "torque_constant_nm_per_a": 0.031,
+    "phase_neutral_resistance_ohm": 0.039,
+    "current_limit_a_per_motor": 20.0,
+    "effort_limit_nm": 0.62,
+    "wheel_diameter_m": 0.2,
+    "wheel_width_m": 0.05,
+    "wheel_mass_kg": 0.9,
+    "wheel_spin_inertia_kg_m2": 0.006751162108290868,
+    "accepted_wheel_mass_bound_kg": [
+      0.7,
+      0.9
+    ],
+    "accepted_wheel_inertia_bound_kg_m2": [
+      0.0035,
+      0.009
+    ],
+    "nip_m": 0.058,
+    "wheel_centre_spacing_m": 0.258,
+    "mechanical_pitch_deg": 20.0,
+    "injection_speed_m_s": 3.0,
+    "injection_spin_rad_s": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "contact_model_status": {
+    "calibrated_ball_normal_law_unchanged": true,
+    "launcher_results_used_for_ball_refit": false,
+    "tyre_friction_physically_calibrated": false,
+    "tyre_normal_compliance_separately_modelled": false,
+    "friction_sensitivity_coefficients": [
+      0.3,
+      0.6,
+      0.9
+    ],
+    "normal_contact_conclusion": "NUMERICALLY_CONVERGED_FROZEN_BALL_LAW_AGAINST_RIGID_WHEEL",
+    "tangential_contact_conclusion": "SENSITIVITY_ONLY_NOT_PHYSICALLY_VALIDATED"
+  },
+  "symmetric_operating_points": [
+    {
+      "case_id": "regression_mu_0p3_dt_1ms",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 80.0,
+      "right_target_rad_s": -80.0,
+      "left_actual_precontact_rad_s": 79.99680599999999,
+      "right_actual_precontact_rad_s": -79.99680599999999,
+      "wheel_surface_speed_m_s": 7.9996806,
+      "spinup_time_s": 1.363,
+      "exit_position_m": [
+        0.038094,
+        0.0,
+        0.358997
+      ],
+      "exit_velocity_vector_m_s": [
+        5.01907,
+        0.0,
+        1.61728
+      ],
+      "exit_speed_m_s": 5.273201898590647,
+      "elevation_deg": 17.860343423863593,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0500238,
+        0.0
+      ],
+      "spin_rpm": 0.4776921025344213,
+      "topspin_rad_s": -0.0500238,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.016000000000000125,
+        "right": 0.016000000000000125
+      },
+      "maximum_ball_compression_m": 0.00399957,
+      "left_peak_normal_force_n": 27.1548,
+      "right_peak_normal_force_n": 27.1548,
+      "left_peak_tangential_force_n": 8.146440637344408,
+      "right_peak_tangential_force_n": 8.146440637344408,
+      "left_rpm_droop": 10.187246893205412,
+      "right_rpm_droop": 10.187246893205412,
+      "left_droop_percent": 1.3335607424126228,
+      "right_droop_percent": 1.3335607424126228,
+      "recovery_time_s": 0.20900000000000007,
+      "motor_response": {
+        "left_precontact_rpm": 763.9132263878033,
+        "right_precontact_rpm": -763.9132263878033,
+        "left_min_contact_rpm_magnitude": 753.7259794945979,
+        "right_min_contact_rpm_magnitude": 753.7259794945979,
+        "left_max_contact_rpm_magnitude": 763.9313127555364,
+        "right_max_contact_rpm_magnitude": 763.9313127555364,
+        "left_precontact_torque_nm": 0.160067,
+        "right_precontact_torque_nm": -0.160067,
+        "left_precontact_current_a": 5.163451612903225,
+        "right_precontact_current_a": 5.163451612903225,
+        "left_peak_event_torque_nm": 0.213501,
+        "right_peak_event_torque_nm": 0.213501,
+        "left_peak_event_current_a": 6.8871290322580645,
+        "right_peak_event_current_a": 6.8871290322580645,
+        "estimated_peak_required_bus_voltage_v": 3.097906278138818,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 6.1292000000000115
+      },
+      "apex_height_m": 0.491636,
+      "time_to_apex_s": 0.16400000000000015,
+      "first_bounce_xyz_m": [
+        2.40207,
+        0.0,
+        0.0314045
+      ],
+      "first_bounce_time_s": 0.508,
+      "first_bounce_time_from_exit_s": 0.4710000000000001,
+      "horizontal_range_m": 2.363976,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        5.01907,
+        0.0,
+        -2.98872
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 21.601993724025313,
+        "right_wheel_kinetic_pre_j": 21.601993724025313,
+        "wheel_kinetic_pre_j": 43.203987448050626,
+        "left_wheel_kinetic_post_j": 21.03527947183246,
+        "right_wheel_kinetic_post_j": 21.03527947183246,
+        "wheel_kinetic_post_j": 42.07055894366492,
+        "motor_mechanical_work_event_j": 0.5361999999999938,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 0.8063930896357001,
+        "ball_exit_rotational_j": 5.268512044582776e-08,
+        "potential_energy_change_j": 0.020671571200000006,
+        "elastic_energy_stored_j": 0.08520355168928026,
+        "elastic_energy_recovered_j": 0.06746728107302069,
+        "elastic_hysteresis_j": 0.01773627061625957,
+        "normal_damping_dissipation_j": 0.0033105686997490905,
+        "tangential_friction_dissipation_j": 0.6380342095387067,
+        "contact_dissipation_j": 0.6590810488547154,
+        "drivetrain_damping_j": 0.4295605237703176,
+        "residual_j": 0.014342114825845909,
+        "residual_fraction": 0.0003259526559147397
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.3,
+        "classification": "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p3_w120",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 120.0,
+      "right_target_rad_s": -120.0,
+      "left_actual_precontact_rad_s": 119.918365,
+      "right_actual_precontact_rad_s": -119.918365,
+      "wheel_surface_speed_m_s": 11.9918365,
+      "spinup_time_s": 1.983,
+      "exit_position_m": [
+        0.0382418,
+        0.0,
+        0.358541
+      ],
+      "exit_velocity_vector_m_s": [
+        5.03775,
+        0.0,
+        1.57005
+      ],
+      "exit_speed_m_s": 5.276739719277425,
+      "elevation_deg": 17.310010386498487,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0326226,
+        0.0
+      ],
+      "spin_rpm": 0.31152288279057994,
+      "topspin_rad_s": -0.0326226,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.016000000000000125,
+        "right": 0.016000000000000125
+      },
+      "maximum_ball_compression_m": 0.00399952,
+      "left_peak_normal_force_n": 27.155,
+      "right_peak_normal_force_n": 27.155,
+      "left_peak_tangential_force_n": 8.146490667334582,
+      "right_peak_tangential_force_n": 8.146490667334582,
+      "left_rpm_droop": 9.724669417306572,
+      "right_rpm_droop": 9.724669417306572,
+      "left_droop_percent": 0.849215214033304,
+      "right_droop_percent": 0.849215214033304,
+      "recovery_time_s": 0.21299999999999963,
+      "motor_response": {
+        "left_precontact_rpm": 1145.136033434888,
+        "right_precontact_rpm": -1145.136033434888,
+        "left_min_contact_rpm_magnitude": 1135.4113640175813,
+        "right_min_contact_rpm_magnitude": 1135.4113640175813,
+        "left_max_contact_rpm_magnitude": 1145.590914177739,
+        "right_max_contact_rpm_magnitude": 1145.590914177739,
+        "left_precontact_torque_nm": 0.241715,
+        "right_precontact_torque_nm": -0.241715,
+        "left_precontact_current_a": 7.79725806451613,
+        "right_precontact_current_a": 7.79725806451613,
+        "left_peak_event_torque_nm": 0.294987,
+        "right_peak_event_torque_nm": 0.294987,
+        "left_peak_event_current_a": 9.515709677419355,
+        "right_peak_event_current_a": 9.515709677419355,
+        "estimated_peak_required_bus_voltage_v": 4.6123572456967175,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 13.446200000000005
+      },
+      "apex_height_m": 0.483525,
+      "time_to_apex_s": 0.16000000000000014,
+      "first_bounce_xyz_m": [
+        2.37072,
+        0.0,
+        0.0327969
+      ],
+      "first_bounce_time_s": 0.5009999999999999,
+      "first_bounce_time_from_exit_s": 0.4630000000000001,
+      "horizontal_range_m": 2.3324781999999997,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        5.03775,
+        0.0,
+        -2.95755
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 48.542253941243445,
+        "right_wheel_kinetic_pre_j": 48.542253941243445,
+        "wheel_kinetic_pre_j": 97.08450788248689,
+        "left_wheel_kinetic_post_j": 47.730128487842116,
+        "right_wheel_kinetic_post_j": 47.730128487842116,
+        "wheel_kinetic_post_j": 95.46025697568423,
+        "motor_mechanical_work_event_j": 1.1565999999999974,
+        "ball_initial_translational_j": 6.962900000000002e-05,
+        "ball_exit_translational_j": 0.8074754798850001,
+        "ball_exit_rotational_j": 2.240638328362104e-08,
+        "potential_energy_change_j": 0.0204123808,
+        "elastic_energy_stored_j": 0.08522093471000025,
+        "elastic_energy_recovered_j": 0.06745204312358069,
+        "elastic_hysteresis_j": 0.01776889158641956,
+        "normal_damping_dissipation_j": 0.003309001719994391,
+        "tangential_friction_dissipation_j": 1.2429868837012807,
+        "contact_dissipation_j": 1.2640647770076947,
+        "drivetrain_damping_j": 0.9702267860079947,
+        "residual_j": -0.2812589103044225,
+        "residual_fraction": -0.0028629431917337944
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.3,
+        "classification": "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p3_w160",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 160.0,
+      "right_target_rad_s": -160.0,
+      "left_actual_precontact_rad_s": 159.69977500000002,
+      "right_actual_precontact_rad_s": -159.69977500000002,
+      "wheel_surface_speed_m_s": 15.969977500000002,
+      "spinup_time_s": 2.751,
+      "exit_position_m": [
+        0.0383157,
+        0.0,
+        0.358436
+      ],
+      "exit_velocity_vector_m_s": [
+        5.04483,
+        0.0,
+        1.55151
+      ],
+      "exit_speed_m_s": 5.2780197999818075,
+      "elevation_deg": 17.09499522969334,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0235963,
+        0.0
+      ],
+      "spin_rpm": 0.2253280670207574,
+      "topspin_rad_s": -0.0235963,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.016000000000000125,
+        "right": 0.016000000000000125
+      },
+      "maximum_ball_compression_m": 0.00399958,
+      "left_peak_normal_force_n": 27.1548,
+      "right_peak_normal_force_n": 27.1548,
+      "left_peak_tangential_force_n": 8.146431571836974,
+      "right_peak_tangential_force_n": 8.146431571836974,
+      "left_rpm_droop": 8.410781700106117,
+      "right_rpm_droop": 8.410781700106117,
+      "left_droop_percent": 0.5515192491661483,
+      "right_droop_percent": 0.5515192491661483,
+      "recovery_time_s": 0.22299999999999986,
+      "motor_response": {
+        "left_precontact_rpm": 1525.0205161148097,
+        "right_precontact_rpm": -1525.0205161148097,
+        "left_min_contact_rpm_magnitude": 1516.6097344147036,
+        "right_min_contact_rpm_magnitude": 1516.6097344147036,
+        "left_max_contact_rpm_magnitude": 1526.693791609006,
+        "right_max_contact_rpm_magnitude": 1526.693791609006,
+        "left_precontact_torque_nm": 0.326309,
+        "right_precontact_torque_nm": -0.326309,
+        "left_precontact_current_a": 10.52609677419355,
+        "right_precontact_current_a": 10.52609677419355,
+        "left_peak_event_torque_nm": 0.379054,
+        "right_peak_event_torque_nm": 0.379054,
+        "left_peak_event_current_a": 12.227548387096775,
+        "right_peak_event_current_a": 12.227548387096775,
+        "estimated_peak_required_bus_voltage_v": 6.125098520855328,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 24.51600000000002
+      },
+      "apex_height_m": 0.480476,
+      "time_to_apex_s": 0.15799999999999992,
+      "first_bounce_xyz_m": [
+        2.36398,
+        0.0,
+        0.0300692
+      ],
+      "first_bounce_time_s": 0.4980000000000002,
+      "first_bounce_time_from_exit_s": 0.46099999999999985,
+      "horizontal_range_m": 2.3256643,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        5.04483,
+        0.0,
+        -2.95649
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 86.09088042125848,
+        "right_wheel_kinetic_pre_j": 86.09088042125848,
+        "wheel_kinetic_pre_j": 172.18176084251695,
+        "left_wheel_kinetic_post_j": 85.15675056280931,
+        "right_wheel_kinetic_post_j": 85.15675056280931,
+        "wheel_kinetic_post_j": 170.31350112561861,
+        "motor_mechanical_work_event_j": 2.0260000000000105,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 0.807867297261,
+        "ball_exit_rotational_j": 1.1722559257669259e-08,
+        "potential_energy_change_j": 0.02035269879999999,
+        "elastic_energy_stored_j": 0.08520002675774026,
+        "elastic_energy_recovered_j": 0.06748163264614057,
+        "elastic_hysteresis_j": 0.017718394111599686,
+        "normal_damping_dissipation_j": 0.003312478264871757,
+        "tangential_friction_dissipation_j": 1.84741324087408,
+        "contact_dissipation_j": 1.8684441132505514,
+        "drivetrain_damping_j": 1.7269555076000351,
+        "residual_j": -0.2689400151497985,
+        "residual_fraction": -0.0015414846077404065
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.3,
+        "classification": "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p3_w200",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 200.0,
+      "right_target_rad_s": -200.0,
+      "left_actual_precontact_rad_s": 199.56158,
+      "right_actual_precontact_rad_s": -199.56158,
+      "wheel_surface_speed_m_s": 19.956158000000002,
+      "spinup_time_s": 3.758,
+      "exit_position_m": [
+        0.0383481,
+        0.0,
+        0.358351
+      ],
+      "exit_velocity_vector_m_s": [
+        5.04857,
+        0.0,
+        1.54158
+      ],
+      "exit_speed_m_s": 5.278686194622673,
+      "elevation_deg": 16.98004208634149,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0184235,
+        0.0
+      ],
+      "spin_rpm": 0.17593146564321202,
+      "topspin_rad_s": -0.0184235,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.016000000000000125,
+        "right": 0.016000000000000125
+      },
+      "maximum_ball_compression_m": 0.00399958,
+      "left_peak_normal_force_n": 27.1548,
+      "right_peak_normal_force_n": 27.1548,
+      "left_peak_tangential_force_n": 8.14642589620862,
+      "right_peak_tangential_force_n": 8.14642589620862,
+      "left_rpm_droop": 7.578130784331897,
+      "right_rpm_droop": 7.578130784331897,
+      "left_droop_percent": 0.3976617142437896,
+      "right_droop_percent": 0.3976617142437896,
+      "recovery_time_s": 0.22799999999999976,
+      "motor_response": {
+        "left_precontact_rpm": 1905.672714493723,
+        "right_precontact_rpm": -1905.672714493723,
+        "left_min_contact_rpm_magnitude": 1898.0945837093911,
+        "right_min_contact_rpm_magnitude": 1898.0945837093911,
+        "left_max_contact_rpm_magnitude": 1908.1117958275952,
+        "right_max_contact_rpm_magnitude": 1908.1117958275952,
+        "left_precontact_torque_nm": 0.409213,
+        "right_precontact_torque_nm": -0.409213,
+        "left_precontact_current_a": 13.20041935483871,
+        "right_precontact_current_a": 13.20041935483871,
+        "left_peak_event_torque_nm": 0.461623,
+        "right_peak_event_torque_nm": 0.461623,
+        "left_peak_event_current_a": 14.891064516129033,
+        "right_peak_event_current_a": 14.891064516129033,
+        "estimated_peak_required_bus_voltage_v": 7.6387986068465255,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 38.64199999999994
+      },
+      "apex_height_m": 0.47883,
+      "time_to_apex_s": 0.15700000000000003,
+      "first_bounce_xyz_m": [
+        2.35564,
+        0.0,
+        0.0313517
+      ],
+      "first_bounce_time_s": 0.49599999999999955,
+      "first_bounce_time_from_exit_s": 0.45899999999999963,
+      "horizontal_range_m": 2.3172919000000003,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        5.04857,
+        0.0,
+        -2.94682
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 134.43192209502496,
+        "right_wheel_kinetic_pre_j": 134.43192209502496,
+        "wheel_kinetic_pre_j": 268.8638441900499,
+        "left_wheel_kinetic_post_j": 133.38232482561486,
+        "right_wheel_kinetic_post_j": 133.38232482561486,
+        "wheel_kinetic_post_j": 266.7646496512297,
+        "motor_mechanical_work_event_j": 3.1280000000000427,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 0.8080713102977,
+        "ball_exit_rotational_j": 7.146261366271499e-09,
+        "potential_energy_change_j": 0.020304384799999988,
+        "elastic_energy_stored_j": 0.08519967918290026,
+        "elastic_energy_recovered_j": 0.06748258596996068,
+        "elastic_hysteresis_j": 0.017717093212939586,
+        "normal_damping_dissipation_j": 0.0033126213400034104,
+        "tangential_friction_dissipation_j": 2.452326428705708,
+        "contact_dissipation_j": 2.473356143258651,
+        "drivetrain_damping_j": 2.701214381895985,
+        "residual_j": -0.515331791992383,
+        "residual_fraction": -0.0018928466718954244
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.3,
+        "classification": "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p3_w240",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 240.0,
+      "right_target_rad_s": -240.0,
+      "left_actual_precontact_rad_s": 239.56,
+      "right_actual_precontact_rad_s": -239.56,
+      "wheel_surface_speed_m_s": 23.956000000000003,
+      "spinup_time_s": 5.225,
+      "exit_position_m": [
+        0.0383682,
+        0.0,
+        0.358297
+      ],
+      "exit_velocity_vector_m_s": [
+        5.05089,
+        0.0,
+        1.53539
+      ],
+      "exit_speed_m_s": 5.279101461820941,
+      "elevation_deg": 16.90843526795438,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0150919,
+        0.0
+      ],
+      "spin_rpm": 0.14411702913891453,
+      "topspin_rad_s": -0.0150919,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.01599999999999968,
+        "right": 0.01599999999999968
+      },
+      "maximum_ball_compression_m": 0.00399958,
+      "left_peak_normal_force_n": 27.1548,
+      "right_peak_normal_force_n": 27.1548,
+      "left_peak_tangential_force_n": 8.146432481074473,
+      "right_peak_tangential_force_n": 8.146432481074473,
+      "left_rpm_droop": 7.572592192312441,
+      "right_rpm_droop": 7.572592192312441,
+      "left_droop_percent": 0.3310235431624672,
+      "right_droop_percent": 0.3310235431624672,
+      "recovery_time_s": 0.2270000000000003,
+      "motor_response": {
+        "left_precontact_rpm": 2287.629490025667,
+        "right_precontact_rpm": -2287.629490025667,
+        "left_min_contact_rpm_magnitude": 2280.0568978333545,
+        "right_min_contact_rpm_magnitude": 2280.0568978333545,
+        "left_max_contact_rpm_magnitude": 2290.0741099515585,
+        "right_max_contact_rpm_magnitude": 2290.0741099515585,
+        "left_precontact_torque_nm": 0.489247,
+        "right_precontact_torque_nm": -0.489247,
+        "left_precontact_current_a": 15.78216129032258,
+        "right_precontact_current_a": 15.78216129032258,
+        "left_peak_event_torque_nm": 0.541654,
+        "right_peak_event_torque_nm": 0.541654,
+        "left_peak_event_current_a": 17.472709677419353,
+        "right_peak_event_current_a": 17.472709677419353,
+        "estimated_peak_required_bus_voltage_v": 9.154137492329234,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 54.817999999999984
+      },
+      "apex_height_m": 0.477808,
+      "time_to_apex_s": 0.15600000000000058,
+      "first_bounce_xyz_m": [
+        2.35168,
+        0.0,
+        0.0314198
+      ],
+      "first_bounce_time_s": 0.4950000000000001,
+      "first_bounce_time_from_exit_s": 0.4580000000000002,
+      "horizontal_range_m": 2.3133118,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        5.05089,
+        0.0,
+        -2.94321
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 193.72119951263358,
+        "right_wheel_kinetic_pre_j": 193.72119951263358,
+        "wheel_kinetic_pre_j": 387.44239902526715,
+        "left_wheel_kinetic_post_j": 192.46175266831045,
+        "right_wheel_kinetic_post_j": 192.46175266831045,
+        "wheel_kinetic_post_j": 384.9235053366209,
+        "motor_mechanical_work_event_j": 4.446000000000026,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 0.8081984550818001,
+        "ball_exit_rotational_j": 4.79537369187294e-09,
+        "potential_energy_change_j": 0.02027369119999999,
+        "elastic_energy_stored_j": 0.08519947729247421,
+        "elastic_energy_recovered_j": 0.06748319795452012,
+        "elastic_hysteresis_j": 0.017716279337954083,
+        "normal_damping_dissipation_j": 0.0033126937262098945,
+        "tangential_friction_dissipation_j": 3.058084873821671,
+        "contact_dissipation_j": 3.0791138468858352,
+        "drivetrain_damping_j": 3.894233311359876,
+        "residual_j": -0.5765057240906417,
+        "residual_fraction": -0.0014701197511588755
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.3,
+        "classification": "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p3_w280",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 280.0,
+      "right_target_rad_s": -280.0,
+      "left_actual_precontact_rad_s": 279.9224874371859,
+      "right_actual_precontact_rad_s": -279.9224874371859,
+      "wheel_surface_speed_m_s": 27.99224874371859,
+      "spinup_time_s": 7.976,
+      "exit_position_m": [
+        0.0383819,
+        0.0,
+        0.358261
+      ],
+      "exit_velocity_vector_m_s": [
+        5.05247,
+        0.0,
+        1.53116
+      ],
+      "exit_speed_m_s": 5.279384817050183,
+      "elevation_deg": 16.859525527716347,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0127674,
+        0.0
+      ],
+      "spin_rpm": 0.12191968922588786,
+      "topspin_rad_s": -0.0127674,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.015999999999998793,
+        "right": 0.015999999999998793
+      },
+      "maximum_ball_compression_m": 0.00399958,
+      "left_peak_normal_force_n": 27.1548,
+      "right_peak_normal_force_n": 27.1548,
+      "left_peak_tangential_force_n": 8.146426593849556,
+      "right_peak_tangential_force_n": 8.146426593849556,
+      "left_rpm_droop": 9.754486496064446,
+      "right_rpm_droop": 9.754486496064446,
+      "left_droop_percent": 0.3649179623038027,
+      "right_droop_percent": 0.3649179623038027,
+      "recovery_time_s": 0.21300000000000097,
+      "motor_response": {
+        "left_precontact_rpm": 2673.0628534924267,
+        "right_precontact_rpm": -2673.0628534924267,
+        "left_min_contact_rpm_magnitude": 2663.3083669963626,
+        "right_min_contact_rpm_magnitude": 2663.3083669963626,
+        "left_max_contact_rpm_magnitude": 2673.4974664531055,
+        "right_max_contact_rpm_magnitude": 2673.4974664531055,
+        "left_precontact_torque_nm": 0.561636,
+        "right_precontact_torque_nm": -0.561636,
+        "left_precontact_current_a": 18.117290322580647,
+        "right_precontact_current_a": 18.117290322580647,
+        "left_peak_event_torque_nm": 0.61493,
+        "right_peak_event_torque_nm": 0.61493,
+        "left_peak_event_current_a": 19.836451612903225,
+        "right_peak_event_current_a": 19.836451612903225,
+        "estimated_peak_required_bus_voltage_v": 10.673854403615916,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 69.19399999999985
+      },
+      "apex_height_m": 0.47711,
+      "time_to_apex_s": 0.15600000000000058,
+      "first_bounce_xyz_m": [
+        2.34736,
+        0.0,
+        0.0323992
+      ],
+      "first_bounce_time_s": 0.49400000000000155,
+      "first_bounce_time_from_exit_s": 0.45700000000000074,
+      "horizontal_range_m": 2.3089781,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        5.05247,
+        0.0,
+        -2.93764
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 264.499050960603,
+        "right_wheel_kinetic_pre_j": 264.499050960603,
+        "wheel_kinetic_pre_j": 528.998101921206,
+        "left_wheel_kinetic_post_j": 262.5928764441516,
+        "right_wheel_kinetic_post_j": 262.5928764441516,
+        "wheel_kinetic_post_j": 525.1857528883032,
+        "motor_mechanical_work_event_j": 5.9240000000002055,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 0.8082852173485,
+        "ball_exit_rotational_j": 3.4319389091090396e-09,
+        "potential_energy_change_j": 0.0202532288,
+        "elastic_energy_stored_j": 0.08519939012070589,
+        "elastic_energy_recovered_j": 0.06748353420297462,
+        "elastic_hysteresis_j": 0.01771585591773127,
+        "normal_damping_dissipation_j": 0.0033127341811922447,
+        "tangential_friction_dissipation_j": 3.6660192385263604,
+        "contact_dissipation_j": 3.6870478286252837,
+        "drivetrain_damping_j": 5.31026063077583,
+        "residual_j": 0.17092202050734162,
+        "residual_fraction": 0.00031937145467081157
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.3,
+        "classification": "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p3_w300",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 300.0,
+      "right_target_rad_s": -300.0,
+      "left_actual_precontact_rad_s": 299.94001005025126,
+      "right_actual_precontact_rad_s": -299.94001005025126,
+      "wheel_surface_speed_m_s": 29.994001005025126,
+      "spinup_time_s": 11.472,
+      "exit_position_m": [
+        0.0383872,
+        0.0,
+        0.358246
+      ],
+      "exit_velocity_vector_m_s": [
+        5.05308,
+        0.0,
+        1.52951
+      ],
+      "exit_speed_m_s": 5.279490347230497,
+      "elevation_deg": 16.840468534808508,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0118556,
+        0.0
+      ],
+      "spin_rpm": 0.11321264059921647,
+      "topspin_rad_s": -0.0118556,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.01600000000000057,
+        "right": 0.01600000000000057
+      },
+      "maximum_ball_compression_m": 0.00399958,
+      "left_peak_normal_force_n": 27.1548,
+      "right_peak_normal_force_n": 27.1548,
+      "left_peak_tangential_force_n": 8.14642641626106,
+      "right_peak_tangential_force_n": 8.14642641626106,
+      "left_rpm_droop": 10.065054573961273,
+      "right_rpm_droop": 10.065054573961273,
+      "left_droop_percent": 0.3514069530352585,
+      "right_droop_percent": 0.3514069530352585,
+      "recovery_time_s": 0.23699999999999832,
+      "motor_response": {
+        "left_precontact_rpm": 2864.216113831815,
+        "right_precontact_rpm": -2864.216113831815,
+        "left_min_contact_rpm_magnitude": 2854.151059257854,
+        "right_min_contact_rpm_magnitude": 2854.151059257854,
+        "left_max_contact_rpm_magnitude": 2864.5502432394783,
+        "right_max_contact_rpm_magnitude": 2864.5502432394783,
+        "left_precontact_torque_nm": 0.601266,
+        "right_precontact_torque_nm": -0.601266,
+        "left_precontact_current_a": 19.395677419354836,
+        "right_precontact_current_a": 19.395677419354836,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 87.20000000000027
+      },
+      "apex_height_m": 0.476839,
+      "time_to_apex_s": 0.15600000000000058,
+      "first_bounce_xyz_m": [
+        2.34765,
+        0.0,
+        0.0316329
+      ],
+      "first_bounce_time_s": 0.4939999999999998,
+      "first_bounce_time_from_exit_s": 0.45700000000000074,
+      "horizontal_range_m": 2.3092628,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        5.05308,
+        0.0,
+        -2.93929
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 303.68080645842355,
+        "right_wheel_kinetic_pre_j": 303.68080645842355,
+        "wheel_kinetic_pre_j": 607.3616129168471,
+        "left_wheel_kinetic_post_j": 301.5522634102976,
+        "right_wheel_kinetic_post_j": 301.5522634102976,
+        "wheel_kinetic_post_j": 603.1045268205952,
+        "motor_mechanical_work_event_j": 6.619999999999891,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 0.8083175314684998,
+        "ball_exit_rotational_j": 2.9592502621334407e-09,
+        "potential_energy_change_j": 0.020244702800000007,
+        "elastic_energy_stored_j": 0.08519948133662399,
+        "elastic_energy_recovered_j": 0.06748357460268742,
+        "elastic_hysteresis_j": 0.017715906733936568,
+        "normal_damping_dissipation_j": 0.0033127489456437537,
+        "tangential_friction_dissipation_j": 3.9689821169521635,
+        "contact_dissipation_j": 3.9900107726317438,
+        "drivetrain_damping_j": 6.097615810783805,
+        "residual_j": 0.22131717219446134,
+        "residual_fraction": 0.0003603093900636448
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.3,
+        "classification": "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p6_w080",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 80.0,
+      "right_target_rad_s": -80.0,
+      "left_actual_precontact_rad_s": 79.99680599999999,
+      "right_actual_precontact_rad_s": -79.99680599999999,
+      "wheel_surface_speed_m_s": 7.9996806,
+      "spinup_time_s": 1.363,
+      "exit_position_m": [
+        0.0436859,
+        0.0,
+        0.362197
+      ],
+      "exit_velocity_vector_m_s": [
+        6.52816,
+        0.0,
+        2.26678
+      ],
+      "exit_speed_m_s": 6.910511164450861,
+      "elevation_deg": 19.148589995990356,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.114416,
+        0.0
+      ],
+      "spin_rpm": 1.0925923181281378,
+      "topspin_rad_s": -0.114416,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399978,
+      "left_peak_normal_force_n": 27.1558,
+      "right_peak_normal_force_n": 27.1558,
+      "left_peak_tangential_force_n": 16.293458646586842,
+      "right_peak_tangential_force_n": 16.293458646586842,
+      "left_rpm_droop": 16.824962949796102,
+      "right_rpm_droop": 16.824962949796102,
+      "left_droop_percent": 2.202470433632058,
+      "right_droop_percent": 2.202470433632058,
+      "recovery_time_s": 0.27300000000000013,
+      "motor_response": {
+        "left_precontact_rpm": 763.9132263878033,
+        "right_precontact_rpm": -763.9132263878033,
+        "left_min_contact_rpm_magnitude": 747.0882634380074,
+        "right_min_contact_rpm_magnitude": 747.0882634380074,
+        "left_max_contact_rpm_magnitude": 763.9313127555364,
+        "right_max_contact_rpm_magnitude": 763.9313127555364,
+        "left_precontact_torque_nm": 0.160067,
+        "right_precontact_torque_nm": -0.160067,
+        "left_precontact_current_a": 5.163451612903225,
+        "right_precontact_current_a": 5.163451612903225,
+        "left_peak_event_torque_nm": 0.248257,
+        "right_peak_event_torque_nm": 0.248257,
+        "left_peak_event_current_a": 8.008290322580645,
+        "right_peak_event_current_a": 8.008290322580645,
+        "estimated_peak_required_bus_voltage_v": 3.1416315684613982,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 8.427599999999998
+      },
+      "apex_height_m": 0.623222,
+      "time_to_apex_s": 0.23099999999999987,
+      "first_bounce_xyz_m": [
+        3.81696,
+        0.0,
+        0.0325504
+      ],
+      "first_bounce_time_s": 0.613,
+      "first_bounce_time_from_exit_s": 0.5779999999999998,
+      "horizontal_range_m": 3.7732741,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        6.52816,
+        0.0,
+        -3.38782
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 21.601993724025313,
+        "right_wheel_kinetic_pre_j": 21.601993724025313,
+        "wheel_kinetic_pre_j": 43.203987448050626,
+        "left_wheel_kinetic_post_j": 20.67486374569153,
+        "right_wheel_kinetic_post_j": 20.67486374569153,
+        "wheel_kinetic_post_j": 41.34972749138306,
+        "motor_mechanical_work_event_j": 0.5198000000000036,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3848997720660001,
+        "ball_exit_rotational_j": 2.75618357313024e-07,
+        "potential_energy_change_j": 0.022490451199999997,
+        "elastic_energy_stored_j": 0.08318382785974712,
+        "elastic_energy_recovered_j": 0.06905565019280208,
+        "elastic_hysteresis_j": 0.014128177666945047,
+        "normal_damping_dissipation_j": 0.004250435374856089,
+        "tangential_friction_dissipation_j": 0.848225014563405,
+        "contact_dissipation_j": 0.8666036276052062,
+        "drivetrain_damping_j": 0.37582480919040295,
+        "residual_j": -0.015339082426393036,
+        "residual_fraction": -0.000348740681085923
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p6_w120",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 120.0,
+      "right_target_rad_s": -120.0,
+      "left_actual_precontact_rad_s": 119.918365,
+      "right_actual_precontact_rad_s": -119.918365,
+      "wheel_surface_speed_m_s": 11.9918365,
+      "spinup_time_s": 1.983,
+      "exit_position_m": [
+        0.0439097,
+        0.0,
+        0.361526
+      ],
+      "exit_velocity_vector_m_s": [
+        6.56043,
+        0.0,
+        2.18511
+      ],
+      "exit_speed_m_s": 6.914763010906448,
+      "elevation_deg": 18.42158546771868,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0851352,
+        0.0
+      ],
+      "spin_rpm": 0.8129812746670276,
+      "topspin_rad_s": -0.0851352,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399973,
+      "left_peak_normal_force_n": 27.1565,
+      "right_peak_normal_force_n": 27.1565,
+      "left_peak_tangential_force_n": 16.293832218451254,
+      "right_peak_tangential_force_n": 16.293832218451254,
+      "left_rpm_droop": 16.370979840824237,
+      "right_rpm_droop": 16.370979840824237,
+      "left_droop_percent": 1.4296100518048265,
+      "right_droop_percent": 1.4296100518048265,
+      "recovery_time_s": 0.2759999999999998,
+      "motor_response": {
+        "left_precontact_rpm": 1145.136033434888,
+        "right_precontact_rpm": -1145.136033434888,
+        "left_min_contact_rpm_magnitude": 1128.7650535940638,
+        "right_min_contact_rpm_magnitude": 1128.7650535940638,
+        "left_max_contact_rpm_magnitude": 1145.590914177739,
+        "right_max_contact_rpm_magnitude": 1145.590914177739,
+        "left_precontact_torque_nm": 0.241715,
+        "right_precontact_torque_nm": -0.241715,
+        "left_precontact_current_a": 7.79725806451613,
+        "right_precontact_current_a": 7.79725806451613,
+        "left_peak_event_torque_nm": 0.329789,
+        "right_peak_event_torque_nm": 0.329789,
+        "left_peak_event_current_a": 10.638354838709677,
+        "right_peak_event_current_a": 10.638354838709677,
+        "estimated_peak_required_bus_voltage_v": 4.65614040698704,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 18.0728
+      },
+      "apex_height_m": 0.604042,
+      "time_to_apex_s": 0.22199999999999998,
+      "first_bounce_xyz_m": [
+        3.74399,
+        0.0,
+        0.0324958
+      ],
+      "first_bounce_time_s": 0.5999999999999996,
+      "first_bounce_time_from_exit_s": 0.5639999999999996,
+      "horizontal_range_m": 3.7000803,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        6.56043,
+        0.0,
+        -3.33229
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 48.542253941243445,
+        "right_wheel_kinetic_pre_j": 48.542253941243445,
+        "wheel_kinetic_pre_j": 97.08450788248689,
+        "left_wheel_kinetic_post_j": 47.18579389904944,
+        "right_wheel_kinetic_post_j": 47.18579389904944,
+        "wheel_kinetic_post_j": 94.37158779809889,
+        "motor_mechanical_work_event_j": 1.0935999999999808,
+        "ball_initial_translational_j": 6.962900000000002e-05,
+        "ball_exit_translational_j": 1.3866044774130004,
+        "ball_exit_rotational_j": 1.5259943998290813e-07,
+        "potential_energy_change_j": 0.02210905480000001,
+        "elastic_energy_stored_j": 0.08321151772452112,
+        "elastic_energy_recovered_j": 0.06906192195400207,
+        "elastic_hysteresis_j": 0.014149595770519052,
+        "normal_damping_dissipation_j": 0.004248979556979092,
+        "tangential_friction_dissipation_j": 1.8396235352397072,
+        "contact_dissipation_j": 1.8580221105672055,
+        "drivetrain_damping_j": 0.8512605761200067,
+        "residual_j": -0.3114066581116741,
+        "residual_fraction": -0.0031718520959022637
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p6_w160",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 160.0,
+      "right_target_rad_s": -160.0,
+      "left_actual_precontact_rad_s": 159.69977500000002,
+      "right_actual_precontact_rad_s": -159.69977500000002,
+      "wheel_surface_speed_m_s": 15.969977500000002,
+      "spinup_time_s": 2.751,
+      "exit_position_m": [
+        0.04402,
+        0.0,
+        0.361351
+      ],
+      "exit_velocity_vector_m_s": [
+        6.5719,
+        0.0,
+        2.15505
+      ],
+      "exit_speed_m_s": 6.916220796974313,
+      "elevation_deg": 18.155293306186408,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0620072,
+        0.0
+      ],
+      "spin_rpm": 0.5921251432372663,
+      "topspin_rad_s": -0.0620072,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.014000000000000346,
+        "right": 0.014000000000000346
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.293461055944313,
+      "right_peak_tangential_force_n": 16.293461055944313,
+      "left_rpm_droop": 15.066641420208935,
+      "right_rpm_droop": 15.066641420208935,
+      "left_droop_percent": 0.9879631953144595,
+      "right_droop_percent": 0.9879631953144595,
+      "recovery_time_s": 0.28200000000000003,
+      "motor_response": {
+        "left_precontact_rpm": 1525.0205161148097,
+        "right_precontact_rpm": -1525.0205161148097,
+        "left_min_contact_rpm_magnitude": 1509.9538746946007,
+        "right_min_contact_rpm_magnitude": 1509.9538746946007,
+        "left_max_contact_rpm_magnitude": 1526.693791609006,
+        "right_max_contact_rpm_magnitude": 1526.693791609006,
+        "left_precontact_torque_nm": 0.326309,
+        "right_precontact_torque_nm": -0.326309,
+        "left_precontact_current_a": 10.52609677419355,
+        "right_precontact_current_a": 10.52609677419355,
+        "left_peak_event_torque_nm": 0.41392,
+        "right_peak_event_torque_nm": 0.41392,
+        "left_peak_event_current_a": 13.35225806451613,
+        "right_peak_event_current_a": 13.35225806451613,
+        "estimated_peak_required_bus_voltage_v": 6.168962198274683,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 31.891999999999996
+      },
+      "apex_height_m": 0.597226,
+      "time_to_apex_s": 0.21899999999999986,
+      "first_bounce_xyz_m": [
+        3.71771,
+        0.0,
+        0.0321304
+      ],
+      "first_bounce_time_s": 0.5940000000000003,
+      "first_bounce_time_from_exit_s": 0.5590000000000002,
+      "horizontal_range_m": 3.6736899999999997,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        6.5719,
+        0.0,
+        -3.31335
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 86.09088042125848,
+        "right_wheel_kinetic_pre_j": 86.09088042125848,
+        "wheel_kinetic_pre_j": 172.18176084251695,
+        "left_wheel_kinetic_post_j": 84.42808392822683,
+        "right_wheel_kinetic_post_j": 84.42808392822683,
+        "wheel_kinetic_post_j": 168.85616785645365,
+        "motor_mechanical_work_event_j": 1.8900000000000432,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3871891932625002,
+        "ball_exit_rotational_j": 8.095037410263935e-08,
+        "potential_energy_change_j": 0.02200958479999999,
+        "elastic_energy_stored_j": 0.08317703680833854,
+        "elastic_energy_recovered_j": 0.06906050752999794,
+        "elastic_hysteresis_j": 0.014116529278340603,
+        "normal_damping_dissipation_j": 0.004253138330318603,
+        "tangential_friction_dissipation_j": 2.8299533419334626,
+        "contact_dissipation_j": 2.848323009542122,
+        "drivetrain_damping_j": 1.517323252420013,
+        "residual_j": -0.2988322383256672,
+        "residual_fraction": -0.001714154191490812
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p6_w200",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 200.0,
+      "right_target_rad_s": -200.0,
+      "left_actual_precontact_rad_s": 199.56158,
+      "right_actual_precontact_rad_s": -199.56158,
+      "wheel_surface_speed_m_s": 19.956158000000002,
+      "spinup_time_s": 3.758,
+      "exit_position_m": [
+        0.0440668,
+        0.0,
+        0.361227
+      ],
+      "exit_velocity_vector_m_s": [
+        6.57787,
+        0.0,
+        2.13919
+      ],
+      "exit_speed_m_s": 6.91697242968338,
+      "elevation_deg": 18.015050637657414,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0484691,
+        0.0
+      ],
+      "spin_rpm": 0.46284581113292306,
+      "topspin_rad_s": -0.0484691,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.29342895129964,
+      "right_peak_tangential_force_n": 16.29342895129964,
+      "left_rpm_droop": 14.253089097606106,
+      "right_rpm_droop": 14.253089097606106,
+      "left_droop_percent": 0.7479295363366054,
+      "right_droop_percent": 0.7479295363366054,
+      "recovery_time_s": 0.28600000000000003,
+      "motor_response": {
+        "left_precontact_rpm": 1905.672714493723,
+        "right_precontact_rpm": -1905.672714493723,
+        "left_min_contact_rpm_magnitude": 1891.419625396117,
+        "right_min_contact_rpm_magnitude": 1891.419625396117,
+        "left_max_contact_rpm_magnitude": 1908.1117958275952,
+        "right_max_contact_rpm_magnitude": 1908.1117958275952,
+        "left_precontact_torque_nm": 0.409213,
+        "right_precontact_torque_nm": -0.409213,
+        "left_precontact_current_a": 13.20041935483871,
+        "right_precontact_current_a": 13.20041935483871,
+        "left_peak_event_torque_nm": 0.496531,
+        "right_peak_event_torque_nm": 0.496531,
+        "left_peak_event_current_a": 16.017129032258065,
+        "right_peak_event_current_a": 16.017129032258065,
+        "estimated_peak_required_bus_voltage_v": 7.682715122975558,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 49.597999999999956
+      },
+      "apex_height_m": 0.593634,
+      "time_to_apex_s": 0.21799999999999997,
+      "first_bounce_xyz_m": [
+        3.70794,
+        0.0,
+        0.0298049
+      ],
+      "first_bounce_time_s": 0.5919999999999996,
+      "first_bounce_time_from_exit_s": 0.5569999999999995,
+      "horizontal_range_m": 3.6638732,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        6.57787,
+        0.0,
+        -3.30961
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 134.43192209502496,
+        "right_wheel_kinetic_pre_j": 134.43192209502496,
+        "wheel_kinetic_pre_j": 268.8638441900499,
+        "left_wheel_kinetic_post_j": 132.46731161534734,
+        "right_wheel_kinetic_post_j": 132.46731161534734,
+        "wheel_kinetic_post_j": 264.9346232306947,
+        "motor_mechanical_work_event_j": 2.8920000000000528,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3874907201970001,
+        "ball_exit_rotational_j": 4.946118644836974e-08,
+        "potential_energy_change_j": 0.02193910320000001,
+        "elastic_energy_stored_j": 0.08317652206497313,
+        "elastic_energy_recovered_j": 0.0690608583116021,
+        "elastic_hysteresis_j": 0.014115663753371033,
+        "normal_damping_dissipation_j": 0.004253335059138904,
+        "tangential_friction_dissipation_j": 3.8211433823626653,
+        "contact_dissipation_j": 3.839512381175175,
+        "drivetrain_damping_j": 2.37532904718402,
+        "residual_j": -0.5426304452761226,
+        "residual_fraction": -0.0019948455916713025
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p6_w240",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 240.0,
+      "right_target_rad_s": -240.0,
+      "left_actual_precontact_rad_s": 239.56,
+      "right_actual_precontact_rad_s": -239.56,
+      "wheel_surface_speed_m_s": 23.956000000000003,
+      "spinup_time_s": 5.225,
+      "exit_position_m": [
+        0.0440957,
+        0.0,
+        0.36115
+      ],
+      "exit_velocity_vector_m_s": [
+        6.58155,
+        0.0,
+        2.12935
+      ],
+      "exit_speed_m_s": 6.917436795880393,
+      "elevation_deg": 17.928116777740673,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.039711,
+        0.0
+      ],
+      "spin_rpm": 0.37921211670733534,
+      "topspin_rad_s": -0.039711,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.293398757343176,
+      "right_peak_tangential_force_n": 16.293398757343176,
+      "left_rpm_droop": 14.238001209001089,
+      "right_rpm_droop": 14.238001209001089,
+      "left_droop_percent": 0.6223910502588136,
+      "right_droop_percent": 0.6223910502588136,
+      "recovery_time_s": 0.28500000000000014,
+      "motor_response": {
+        "left_precontact_rpm": 2287.629490025667,
+        "right_precontact_rpm": -2287.629490025667,
+        "left_min_contact_rpm_magnitude": 2273.391488816666,
+        "right_min_contact_rpm_magnitude": 2273.391488816666,
+        "left_max_contact_rpm_magnitude": 2290.0741099515585,
+        "right_max_contact_rpm_magnitude": 2290.0741099515585,
+        "left_precontact_torque_nm": 0.489247,
+        "right_precontact_torque_nm": -0.489247,
+        "left_precontact_current_a": 15.78216129032258,
+        "right_precontact_current_a": 15.78216129032258,
+        "left_peak_event_torque_nm": 0.576562,
+        "right_peak_event_torque_nm": 0.576562,
+        "left_peak_event_current_a": 18.598774193548387,
+        "right_peak_event_current_a": 18.598774193548387,
+        "estimated_peak_required_bus_voltage_v": 9.198054008458266,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 70.19400000000013
+      },
+      "apex_height_m": 0.591421,
+      "time_to_apex_s": 0.21700000000000053,
+      "first_bounce_xyz_m": [
+        3.69685,
+        0.0,
+        0.0308997
+      ],
+      "first_bounce_time_s": 0.5900000000000007,
+      "first_bounce_time_from_exit_s": 0.5550000000000006,
+      "horizontal_range_m": 3.6527543,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        6.58155,
+        0.0,
+        -3.29985
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 193.72119951263358,
+        "right_wheel_kinetic_pre_j": 193.72119951263358,
+        "wheel_kinetic_pre_j": 387.44239902526715,
+        "left_wheel_kinetic_post_j": 191.3639097551082,
+        "right_wheel_kinetic_post_j": 191.3639097551082,
+        "wheel_kinetic_post_j": 382.7278195102164,
+        "motor_mechanical_work_event_j": 4.086000000000013,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.387677022925,
+        "ball_exit_rotational_j": 3.3201389971134e-08,
+        "potential_energy_change_j": 0.021895336400000017,
+        "elastic_energy_stored_j": 0.08317627663816686,
+        "elastic_energy_recovered_j": 0.06906123866120227,
+        "elastic_hysteresis_j": 0.01411503797696459,
+        "normal_damping_dissipation_j": 0.004253430026349911,
+        "tangential_friction_dissipation_j": 4.813728655227309,
+        "contact_dissipation_j": 4.832097123230624,
+        "drivetrain_damping_j": 3.4263595157399274,
+        "residual_j": -0.6070296198602265,
+        "residual_fraction": -0.0015493796416413447
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p6_w280",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 280.0,
+      "right_target_rad_s": -280.0,
+      "left_actual_precontact_rad_s": 279.9224874371859,
+      "right_actual_precontact_rad_s": -279.9224874371859,
+      "wheel_surface_speed_m_s": 27.99224874371859,
+      "spinup_time_s": 7.976,
+      "exit_position_m": [
+        0.0441153,
+        0.0,
+        0.361098
+      ],
+      "exit_velocity_vector_m_s": [
+        6.58404,
+        0.0,
+        2.12265
+      ],
+      "exit_speed_m_s": 6.91774715815055,
+      "elevation_deg": 17.868970653347283,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0335934,
+        0.0
+      ],
+      "spin_rpm": 0.32079333991579667,
+      "topspin_rad_s": -0.0335934,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.29339488002451,
+      "right_peak_tangential_force_n": 16.29339488002451,
+      "left_rpm_droop": 16.496289885437296,
+      "right_rpm_droop": 16.496289885437296,
+      "left_droop_percent": 0.6171306396287862,
+      "right_droop_percent": 0.6171306396287862,
+      "recovery_time_s": 0.28800000000000026,
+      "motor_response": {
+        "left_precontact_rpm": 2673.0628534924267,
+        "right_precontact_rpm": -2673.0628534924267,
+        "left_min_contact_rpm_magnitude": 2656.56656360699,
+        "right_min_contact_rpm_magnitude": 2656.56656360699,
+        "left_max_contact_rpm_magnitude": 2673.4974664531055,
+        "right_max_contact_rpm_magnitude": 2673.4974664531055,
+        "left_precontact_torque_nm": 0.561636,
+        "right_precontact_torque_nm": -0.561636,
+        "left_precontact_current_a": 18.117290322580647,
+        "right_precontact_current_a": 18.117290322580647,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 10.68023279071269,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 95.08400000000017
+      },
+      "apex_height_m": 0.589917,
+      "time_to_apex_s": 0.21600000000000108,
+      "first_bounce_xyz_m": [
+        3.69167,
+        0.0,
+        0.0304411
+      ],
+      "first_bounce_time_s": 0.5890000000000004,
+      "first_bounce_time_from_exit_s": 0.5540000000000003,
+      "horizontal_range_m": 3.6475546999999997,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        6.58404,
+        0.0,
+        -3.29675
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 264.499050960603,
+        "right_wheel_kinetic_pre_j": 264.499050960603,
+        "wheel_kinetic_pre_j": 528.998101921206,
+        "left_wheel_kinetic_post_j": 261.278322648393,
+        "right_wheel_kinetic_post_j": 261.278322648393,
+        "wheel_kinetic_post_j": 522.556645296786,
+        "motor_mechanical_work_event_j": 5.33400000000006,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3878015465789004,
+        "ball_exit_rotational_j": 2.3759786887032242e-08,
+        "potential_energy_change_j": 0.021865779599999986,
+        "elastic_energy_stored_j": 0.08317621897829768,
+        "elastic_energy_recovered_j": 0.06906105233700403,
+        "elastic_hysteresis_j": 0.014115166641293642,
+        "normal_damping_dissipation_j": 0.00425347851642544,
+        "tangential_friction_dissipation_j": 5.809888309094985,
+        "contact_dissipation_j": 5.828256954252704,
+        "drivetrain_damping_j": 4.674117339359624,
+        "residual_j": 0.12383487745498645,
+        "residual_fraction": 0.00023164348994989076
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p6_w300",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 300.0,
+      "right_target_rad_s": -300.0,
+      "left_actual_precontact_rad_s": 299.94001005025126,
+      "right_actual_precontact_rad_s": -299.94001005025126,
+      "wheel_surface_speed_m_s": 29.994001005025126,
+      "spinup_time_s": 11.472,
+      "exit_position_m": [
+        0.0441229,
+        0.0,
+        0.361077
+      ],
+      "exit_velocity_vector_m_s": [
+        6.585,
+        0.0,
+        2.12005
+      ],
+      "exit_speed_m_s": 6.917863615488527,
+      "elevation_deg": 17.8460357763908,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0311922,
+        0.0
+      ],
+      "spin_rpm": 0.2978635689546611,
+      "topspin_rad_s": -0.0311922,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.293425571737703,
+      "right_peak_tangential_force_n": 16.293425571737703,
+      "left_rpm_droop": 16.921449522360295,
+      "right_rpm_droop": 16.921449522360295,
+      "left_droop_percent": 0.5907881545894378,
+      "right_droop_percent": 0.5907881545894378,
+      "recovery_time_s": 0.4469999999999992,
+      "motor_response": {
+        "left_precontact_rpm": 2864.216113831815,
+        "right_precontact_rpm": -2864.216113831815,
+        "left_min_contact_rpm_magnitude": 2847.294664309455,
+        "right_min_contact_rpm_magnitude": 2847.294664309455,
+        "left_max_contact_rpm_magnitude": 2864.5502432394783,
+        "right_max_contact_rpm_magnitude": 2864.5502432394783,
+        "left_precontact_torque_nm": 0.601266,
+        "right_precontact_torque_nm": -0.601266,
+        "left_precontact_current_a": 19.395677419354836,
+        "right_precontact_current_a": 19.395677419354836,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 164.94000000000005
+      },
+      "apex_height_m": 0.589335,
+      "time_to_apex_s": 0.2159999999999993,
+      "first_bounce_xyz_m": [
+        3.68563,
+        0.0,
+        0.0322905
+      ],
+      "first_bounce_time_s": 0.5879999999999992,
+      "first_bounce_time_from_exit_s": 0.552999999999999,
+      "horizontal_range_m": 3.6415071,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        6.585,
+        0.0,
+        -3.28955
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 303.68080645842355,
+        "right_wheel_kinetic_pre_j": 303.68080645842355,
+        "wheel_kinetic_pre_j": 607.3616129168471,
+        "left_wheel_kinetic_post_j": 300.1172764134483,
+        "right_wheel_kinetic_post_j": 300.1172764134483,
+        "wheel_kinetic_post_j": 600.2345528268966,
+        "motor_mechanical_work_event_j": 5.880000000000109,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3878482730725001,
+        "ball_exit_rotational_j": 2.0484559638045358e-08,
+        "potential_energy_change_j": 0.02185384319999999,
+        "elastic_energy_stored_j": 0.08317609942000252,
+        "elastic_energy_recovered_j": 0.06906124544320333,
+        "elastic_hysteresis_j": 0.014114853976799194,
+        "normal_damping_dissipation_j": 0.0042534975458230866,
+        "tangential_friction_dissipation_j": 6.306251170098446,
+        "contact_dissipation_j": 6.324619521621068,
+        "drivetrain_damping_j": 5.367861232364201,
+        "residual_j": 0.1652970957942843,
+        "residual_fraction": 0.00026943202622533343
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p9_w080",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 80.0,
+      "right_target_rad_s": -80.0,
+      "left_actual_precontact_rad_s": 79.99680599999999,
+      "right_actual_precontact_rad_s": -79.99680599999999,
+      "wheel_surface_speed_m_s": 7.9996806,
+      "spinup_time_s": 1.363,
+      "exit_position_m": [
+        0.0414278,
+        0.0,
+        0.362254
+      ],
+      "exit_velocity_vector_m_s": [
+        7.59787,
+        0.0,
+        2.77075
+      ],
+      "exit_speed_m_s": 8.087316248261843,
+      "elevation_deg": 20.03562686818822,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0839076,
+        0.0
+      ],
+      "spin_rpm": 0.801258558178651,
+      "topspin_rad_s": -0.0839076,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.012000000000000122,
+        "right": 0.012000000000000122
+      },
+      "maximum_ball_compression_m": 0.00397975,
+      "left_peak_normal_force_n": 27.0546,
+      "right_peak_normal_force_n": 27.0546,
+      "left_peak_tangential_force_n": 24.3490762393268,
+      "right_peak_tangential_force_n": 24.3490762393268,
+      "left_rpm_droop": 21.930971834070295,
+      "right_rpm_droop": 21.930971834070295,
+      "left_droop_percent": 2.8708721195693703,
+      "right_droop_percent": 2.8708721195693703,
+      "recovery_time_s": 0.30600000000000005,
+      "motor_response": {
+        "left_precontact_rpm": 763.9132263878033,
+        "right_precontact_rpm": -763.9132263878033,
+        "left_min_contact_rpm_magnitude": 741.9822545537331,
+        "right_min_contact_rpm_magnitude": 741.9822545537331,
+        "left_max_contact_rpm_magnitude": 763.9313127555364,
+        "right_max_contact_rpm_magnitude": 763.9313127555364,
+        "left_precontact_torque_nm": 0.160067,
+        "right_precontact_torque_nm": -0.160067,
+        "left_precontact_current_a": 5.163451612903225,
+        "right_precontact_current_a": 5.163451612903225,
+        "left_peak_event_torque_nm": 0.274988,
+        "right_peak_event_torque_nm": 0.274988,
+        "left_peak_event_current_a": 8.87058064516129,
+        "right_peak_event_current_a": 8.87058064516129,
+        "estimated_peak_required_bus_voltage_v": 3.1752608910420435,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 9.752200000000002
+      },
+      "apex_height_m": 0.752556,
+      "time_to_apex_s": 0.28200000000000003,
+      "first_bounce_xyz_m": [
+        5.10161,
+        0.0,
+        0.0308867
+      ],
+      "first_bounce_time_s": 0.6989999999999998,
+      "first_bounce_time_from_exit_s": 0.6659999999999999,
+      "horizontal_range_m": 5.0601822,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        7.59787,
+        0.0,
+        -3.74625
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 21.601993724025313,
+        "right_wheel_kinetic_pre_j": 21.601993724025313,
+        "wheel_kinetic_pre_j": 43.203987448050626,
+        "left_wheel_kinetic_post_j": 20.413210247222782,
+        "right_wheel_kinetic_post_j": 20.413210247222782,
+        "wheel_kinetic_post_j": 40.826420494445564,
+        "motor_mechanical_work_event_j": 0.477800000000002,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.8967358388826001,
+        "ball_exit_rotational_j": 1.4823037830119903e-07,
+        "potential_energy_change_j": 0.022522850000000014,
+        "elastic_energy_stored_j": 0.08304233526704137,
+        "elastic_energy_recovered_j": 0.06233484956520498,
+        "elastic_hysteresis_j": 0.020707485701836392,
+        "normal_damping_dissipation_j": 0.003953552063463254,
+        "tangential_friction_dissipation_j": 0.9150338566195062,
+        "contact_dissipation_j": 0.9396948943848058,
+        "drivetrain_damping_j": 0.32413134291955753,
+        "residual_j": -0.06729822422627757,
+        "residual_fraction": -0.0015315166964294902
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.9,
+        "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p9_w120",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 120.0,
+      "right_target_rad_s": -120.0,
+      "left_actual_precontact_rad_s": 119.918365,
+      "right_actual_precontact_rad_s": -119.918365,
+      "wheel_surface_speed_m_s": 11.9918365,
+      "spinup_time_s": 1.983,
+      "exit_position_m": [
+        0.0420155,
+        0.0,
+        0.361523
+      ],
+      "exit_velocity_vector_m_s": [
+        7.79453,
+        0.0,
+        2.68707
+      ],
+      "exit_speed_m_s": 8.244697878382203,
+      "elevation_deg": 19.021013985286466,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.13047,
+        0.0
+      ],
+      "spin_rpm": 1.245896725511975,
+      "topspin_rad_s": -0.13047,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.012000000000000122,
+        "right": 0.012000000000000122
+      },
+      "maximum_ball_compression_m": 0.00397923,
+      "left_peak_normal_force_n": 27.0507,
+      "right_peak_normal_force_n": 27.0507,
+      "left_peak_tangential_force_n": 24.34559779679349,
+      "right_peak_tangential_force_n": 24.34559779679349,
+      "left_rpm_droop": 21.55624788675811,
+      "right_rpm_droop": 21.55624788675811,
+      "left_droop_percent": 1.8824180933420773,
+      "right_droop_percent": 1.8824180933420773,
+      "recovery_time_s": 0.31099999999999994,
+      "motor_response": {
+        "left_precontact_rpm": 1145.136033434888,
+        "right_precontact_rpm": -1145.136033434888,
+        "left_min_contact_rpm_magnitude": 1123.5797855481298,
+        "right_min_contact_rpm_magnitude": 1123.5797855481298,
+        "left_max_contact_rpm_magnitude": 1145.590914177739,
+        "right_max_contact_rpm_magnitude": 1145.590914177739,
+        "left_precontact_torque_nm": 0.241715,
+        "right_precontact_torque_nm": -0.241715,
+        "left_precontact_current_a": 7.79725806451613,
+        "right_precontact_current_a": 7.79725806451613,
+        "left_peak_event_torque_nm": 0.357555,
+        "right_peak_event_torque_nm": 0.357555,
+        "left_peak_event_current_a": 11.534032258064517,
+        "right_peak_event_current_a": 11.534032258064517,
+        "estimated_peak_required_bus_voltage_v": 4.691071826341879,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 20.909400000000005
+      },
+      "apex_height_m": 0.728565,
+      "time_to_apex_s": 0.274,
+      "first_bounce_xyz_m": [
+        5.11626,
+        0.0,
+        0.030991
+      ],
+      "first_bounce_time_s": 0.6849999999999996,
+      "first_bounce_time_from_exit_s": 0.6509999999999998,
+      "horizontal_range_m": 5.0742445,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        7.79453,
+        0.0,
+        -3.68293
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 48.542253941243445,
+        "right_wheel_kinetic_pre_j": 48.542253941243445,
+        "wheel_kinetic_pre_j": 97.08450788248689,
+        "left_wheel_kinetic_post_j": 46.736684748845356,
+        "right_wheel_kinetic_post_j": 46.736684748845356,
+        "wheel_kinetic_post_j": 93.47336949769071,
+        "motor_mechanical_work_event_j": 0.9935999999999865,
+        "ball_initial_translational_j": 6.962900000000002e-05,
+        "ball_exit_translational_j": 1.9712762500682,
+        "ball_exit_rotational_j": 3.583900496286e-07,
+        "potential_energy_change_j": 0.022107349599999992,
+        "elastic_energy_stored_j": 0.08305250371188135,
+        "elastic_energy_recovered_j": 0.062270083973805,
+        "elastic_hysteresis_j": 0.020782419738076346,
+        "normal_damping_dissipation_j": 0.003948040893080053,
+        "tangential_friction_dissipation_j": 2.1987650349270975,
+        "contact_dissipation_j": 2.2234954955582538,
+        "drivetrain_damping_j": 0.7352963850079943,
+        "residual_j": -0.3473678248283387,
+        "residual_fraction": -0.003541744286466326
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.9,
+        "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p9_w160",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 160.0,
+      "right_target_rad_s": -160.0,
+      "left_actual_precontact_rad_s": 159.69977500000002,
+      "right_actual_precontact_rad_s": -159.69977500000002,
+      "wheel_surface_speed_m_s": 15.969977500000002,
+      "spinup_time_s": 2.751,
+      "exit_position_m": [
+        0.0421397,
+        0.0,
+        0.361328
+      ],
+      "exit_velocity_vector_m_s": [
+        7.80943,
+        0.0,
+        2.6472
+      ],
+      "exit_speed_m_s": 8.245899875992917,
+      "elevation_deg": 18.72536401072842,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0964808,
+        0.0
+      ],
+      "spin_rpm": 0.9213237740076323,
+      "topspin_rad_s": -0.0964808,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.012000000000000122,
+        "right": 0.012000000000000122
+      },
+      "maximum_ball_compression_m": 0.00397983,
+      "left_peak_normal_force_n": 27.0552,
+      "right_peak_normal_force_n": 27.0552,
+      "left_peak_tangential_force_n": 24.349669437422044,
+      "right_peak_tangential_force_n": 24.349669437422044,
+      "left_rpm_droop": 20.280557355899624,
+      "right_rpm_droop": 20.280557355899624,
+      "left_droop_percent": 1.3298547227133057,
+      "right_droop_percent": 1.3298547227133057,
+      "recovery_time_s": 0.31700000000000017,
+      "motor_response": {
+        "left_precontact_rpm": 1525.0205161148097,
+        "right_precontact_rpm": -1525.0205161148097,
+        "left_min_contact_rpm_magnitude": 1504.73995875891,
+        "right_min_contact_rpm_magnitude": 1504.73995875891,
+        "left_max_contact_rpm_magnitude": 1526.693791609006,
+        "right_max_contact_rpm_magnitude": 1526.693791609006,
+        "left_precontact_torque_nm": 0.326309,
+        "right_precontact_torque_nm": -0.326309,
+        "left_precontact_current_a": 10.52609677419355,
+        "right_precontact_current_a": 10.52609677419355,
+        "left_peak_event_torque_nm": 0.441713,
+        "right_peak_event_torque_nm": 0.441713,
+        "left_peak_event_current_a": 14.248806451612904,
+        "right_peak_event_current_a": 14.248806451612904,
+        "estimated_peak_required_bus_voltage_v": 6.203927585371457,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 36.58200000000005
+      },
+      "apex_height_m": 0.71754,
+      "time_to_apex_s": 0.27,
+      "first_bounce_xyz_m": [
+        5.07141,
+        0.0,
+        0.0307656
+      ],
+      "first_bounce_time_s": 0.677,
+      "first_bounce_time_from_exit_s": 0.6439999999999997,
+      "horizontal_range_m": 5.0292703,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        7.80943,
+        0.0,
+        -3.6542
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 86.09088042125848,
+        "right_wheel_kinetic_pre_j": 86.09088042125848,
+        "wheel_kinetic_pre_j": 172.18176084251695,
+        "left_wheel_kinetic_post_j": 83.82484921718779,
+        "right_wheel_kinetic_post_j": 83.82484921718779,
+        "wheel_kinetic_post_j": 167.64969843437558,
+        "motor_mechanical_work_event_j": 1.7019999999999982,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.9718510781821001,
+        "ball_exit_rotational_j": 1.9598210155894657e-07,
+        "potential_energy_change_j": 0.02199651159999999,
+        "elastic_energy_stored_j": 0.08303897287523897,
+        "elastic_energy_recovered_j": 0.062373393567797614,
+        "elastic_hysteresis_j": 0.020665579307441354,
+        "normal_damping_dissipation_j": 0.003958318318916175,
+        "tangential_friction_dissipation_j": 3.481305854458092,
+        "contact_dissipation_j": 3.50592975208445,
+        "drivetrain_damping_j": 1.3117046721360348,
+        "residual_j": -0.31699990525731647,
+        "residual_fraction": -0.0018203301649926233
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.9,
+        "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p9_w200",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 200.0,
+      "right_target_rad_s": -200.0,
+      "left_actual_precontact_rad_s": 199.56158,
+      "right_actual_precontact_rad_s": -199.56158,
+      "wheel_surface_speed_m_s": 19.956158000000002,
+      "spinup_time_s": 3.758,
+      "exit_position_m": [
+        0.0421903,
+        0.0,
+        0.361194
+      ],
+      "exit_velocity_vector_m_s": [
+        7.81719,
+        0.0,
+        2.62654
+      ],
+      "exit_speed_m_s": 8.24664609812377,
+      "elevation_deg": 18.572112470201134,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0756542,
+        0.0
+      ],
+      "spin_rpm": 0.7224443937397722,
+      "topspin_rad_s": -0.0756542,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.012000000000000122,
+        "right": 0.012000000000000122
+      },
+      "maximum_ball_compression_m": 0.00397984,
+      "left_peak_normal_force_n": 27.0553,
+      "right_peak_normal_force_n": 27.0553,
+      "left_peak_tangential_force_n": 24.34976201044388,
+      "right_peak_tangential_force_n": 24.34976201044388,
+      "left_rpm_droop": 19.467005033296523,
+      "right_rpm_droop": 19.467005033296523,
+      "left_droop_percent": 1.0215292943661782,
+      "right_droop_percent": 1.0215292943661782,
+      "recovery_time_s": 0.31800000000000006,
+      "motor_response": {
+        "left_precontact_rpm": 1905.672714493723,
+        "right_precontact_rpm": -1905.672714493723,
+        "left_min_contact_rpm_magnitude": 1886.2057094604265,
+        "right_min_contact_rpm_magnitude": 1886.2057094604265,
+        "left_max_contact_rpm_magnitude": 1908.1117958275952,
+        "right_max_contact_rpm_magnitude": 1908.1117958275952,
+        "left_precontact_torque_nm": 0.409213,
+        "right_precontact_torque_nm": -0.409213,
+        "left_precontact_current_a": 13.20041935483871,
+        "right_precontact_current_a": 13.20041935483871,
+        "left_peak_event_torque_nm": 0.524344,
+        "right_peak_event_torque_nm": 0.524344,
+        "left_peak_event_current_a": 16.914322580645162,
+        "right_peak_event_current_a": 16.914322580645162,
+        "estimated_peak_required_bus_voltage_v": 7.717705671362655,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 56.096000000000004
+      },
+      "apex_height_m": 0.711857,
+      "time_to_apex_s": 0.2669999999999999,
+      "first_bounce_xyz_m": [
+        5.04519,
+        0.0,
+        0.0320062
+      ],
+      "first_bounce_time_s": 0.673,
+      "first_bounce_time_from_exit_s": 0.6400000000000001,
+      "horizontal_range_m": 5.0029997,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        7.81719,
+        0.0,
+        -3.63566
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 134.43192209502496,
+        "right_wheel_kinetic_pre_j": 134.43192209502496,
+        "wheel_kinetic_pre_j": 268.8638441900499,
+        "left_wheel_kinetic_post_j": 131.71142929437974,
+        "right_wheel_kinetic_post_j": 131.71142929437974,
+        "wheel_kinetic_post_j": 263.4228585887595,
+        "motor_mechanical_work_event_j": 2.5919999999999845,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.9722079841633005,
+        "ball_exit_rotational_j": 1.2050378966123257e-07,
+        "potential_energy_change_j": 0.02192034600000001,
+        "elastic_energy_stored_j": 0.08303867342688136,
+        "elastic_energy_recovered_j": 0.06237608540300496,
+        "elastic_hysteresis_j": 0.020662588023876396,
+        "normal_damping_dissipation_j": 0.003958631330037054,
+        "tangential_friction_dissipation_j": 4.764809409924413,
+        "contact_dissipation_j": 4.789430629278327,
+        "drivetrain_damping_j": 2.0544624794759843,
+        "residual_j": -0.5446160615450086,
+        "residual_fraction": -0.002004355769337972
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.9,
+        "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p9_w240",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 240.0,
+      "right_target_rad_s": -240.0,
+      "left_actual_precontact_rad_s": 239.56,
+      "right_actual_precontact_rad_s": -239.56,
+      "wheel_surface_speed_m_s": 23.956000000000003,
+      "spinup_time_s": 5.225,
+      "exit_position_m": [
+        0.0422213,
+        0.0,
+        0.361111
+      ],
+      "exit_velocity_vector_m_s": [
+        7.82193,
+        0.0,
+        2.61382
+      ],
+      "exit_speed_m_s": 8.247099121345638,
+      "elevation_deg": 18.477855383438733,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.062053,
+        0.0
+      ],
+      "spin_rpm": 0.5925625010208828,
+      "topspin_rad_s": -0.062053,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.012000000000000122,
+        "right": 0.012000000000000122
+      },
+      "maximum_ball_compression_m": 0.00397984,
+      "left_peak_normal_force_n": 27.0553,
+      "right_peak_normal_force_n": 27.0553,
+      "left_peak_tangential_force_n": 24.349810883876877,
+      "right_peak_tangential_force_n": 24.349810883876877,
+      "left_rpm_droop": 19.451917144691507,
+      "right_rpm_droop": 19.451917144691507,
+      "left_droop_percent": 0.8503088996493597,
+      "right_droop_percent": 0.8503088996493597,
+      "recovery_time_s": 0.3179999999999996,
+      "motor_response": {
+        "left_precontact_rpm": 2287.629490025667,
+        "right_precontact_rpm": -2287.629490025667,
+        "left_min_contact_rpm_magnitude": 2268.1775728809753,
+        "right_min_contact_rpm_magnitude": 2268.1775728809753,
+        "left_max_contact_rpm_magnitude": 2290.0741099515585,
+        "right_max_contact_rpm_magnitude": 2290.0741099515585,
+        "left_precontact_torque_nm": 0.489247,
+        "right_precontact_torque_nm": -0.489247,
+        "left_precontact_current_a": 15.78216129032258,
+        "right_precontact_current_a": 15.78216129032258,
+        "left_peak_event_torque_nm": 0.604376,
+        "right_peak_event_torque_nm": 0.604376,
+        "left_peak_event_current_a": 19.496000000000002,
+        "right_peak_event_current_a": 19.496000000000002,
+        "estimated_peak_required_bus_voltage_v": 9.233045814909879,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 79.45799999999991
+      },
+      "apex_height_m": 0.70838,
+      "time_to_apex_s": 0.266,
+      "first_bounce_xyz_m": [
+        5.03261,
+        0.0,
+        0.0310864
+      ],
+      "first_bounce_time_s": 0.6710000000000003,
+      "first_bounce_time_from_exit_s": 0.6379999999999999,
+      "horizontal_range_m": 4.9903887000000005,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        7.82193,
+        0.0,
+        -3.62878
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 193.72119951263358,
+        "right_wheel_kinetic_pre_j": 193.72119951263358,
+        "wheel_kinetic_pre_j": 387.44239902526715,
+        "left_wheel_kinetic_post_j": 190.4551811240089,
+        "right_wheel_kinetic_post_j": 190.4551811240089,
+        "wheel_kinetic_post_j": 380.9103622480178,
+        "motor_mechanical_work_event_j": 3.650000000000091,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.9724246736017,
+        "ball_exit_rotational_j": 8.107000202868599e-08,
+        "potential_energy_change_j": 0.02187316880000001,
+        "elastic_energy_stored_j": 0.0830385356312583,
+        "elastic_energy_recovered_j": 0.06237731547361183,
+        "elastic_hysteresis_j": 0.020661220157646473,
+        "normal_damping_dissipation_j": 0.003958789912327093,
+        "tangential_friction_dissipation_j": 6.050109775174085,
+        "contact_dissipation_j": 6.074729785244059,
+        "drivetrain_damping_j": 2.9645121785079773,
+        "residual_j": -0.5910832133883295,
+        "residual_fraction": -0.0015103589007400486
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.9,
+        "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p9_w280",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 280.0,
+      "right_target_rad_s": -280.0,
+      "left_actual_precontact_rad_s": 279.9224874371859,
+      "right_actual_precontact_rad_s": -279.9224874371859,
+      "wheel_surface_speed_m_s": 27.99224874371859,
+      "spinup_time_s": 7.976,
+      "exit_position_m": [
+        0.0422424,
+        0.0,
+        0.361055
+      ],
+      "exit_velocity_vector_m_s": [
+        7.82515,
+        0.0,
+        2.60517
+      ],
+      "exit_speed_m_s": 8.247416762320187,
+      "elevation_deg": 18.413770979398635,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0525191,
+        0.0
+      ],
+      "spin_rpm": 0.5015204623042536,
+      "topspin_rad_s": -0.0525191,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.011999999999999234,
+        "right": 0.011999999999999234
+      },
+      "maximum_ball_compression_m": 0.00397984,
+      "left_peak_normal_force_n": 27.0553,
+      "right_peak_normal_force_n": 27.0553,
+      "left_peak_tangential_force_n": 24.349751775623997,
+      "right_peak_tangential_force_n": 24.349751775623997,
+      "left_rpm_droop": 21.748403007469953,
+      "right_rpm_droop": 21.748403007469953,
+      "left_droop_percent": 0.8136136035505148,
+      "right_droop_percent": 0.8136136035505148,
+      "recovery_time_s": 0.34999999999999964,
+      "motor_response": {
+        "left_precontact_rpm": 2673.0628534924267,
+        "right_precontact_rpm": -2673.0628534924267,
+        "left_min_contact_rpm_magnitude": 2651.3144504849565,
+        "right_min_contact_rpm_magnitude": 2651.3144504849565,
+        "left_max_contact_rpm_magnitude": 2673.4974664531055,
+        "right_max_contact_rpm_magnitude": 2673.4974664531055,
+        "left_precontact_torque_nm": 0.561636,
+        "right_precontact_torque_nm": -0.561636,
+        "left_precontact_current_a": 18.117290322580647,
+        "right_precontact_current_a": 18.117290322580647,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 10.68023279071269,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 116.42399999999986
+      },
+      "apex_height_m": 0.706024,
+      "time_to_apex_s": 0.2649999999999988,
+      "first_bounce_xyz_m": [
+        5.01903,
+        0.0,
+        0.032796
+      ],
+      "first_bounce_time_s": 0.6690000000000005,
+      "first_bounce_time_from_exit_s": 0.6359999999999992,
+      "horizontal_range_m": 4.9767876,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        7.82515,
+        0.0,
+        -3.61783
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 264.499050960603,
+        "right_wheel_kinetic_pre_j": 264.499050960603,
+        "wheel_kinetic_pre_j": 528.998101921206,
+        "left_wheel_kinetic_post_j": 260.1938154812334,
+        "right_wheel_kinetic_post_j": 260.1938154812334,
+        "wheel_kinetic_post_j": 520.3876309624668,
+        "motor_mechanical_work_event_j": 4.6740000000002055,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.9725766142905998,
+        "ball_exit_rotational_j": 5.807231897770974e-08,
+        "potential_energy_change_j": 0.02184133840000001,
+        "elastic_energy_stored_j": 0.08303842181806101,
+        "elastic_energy_recovered_j": 0.06237827141541092,
+        "elastic_hysteresis_j": 0.02066015040265009,
+        "normal_damping_dissipation_j": 0.003958877035039209,
+        "tangential_friction_dissipation_j": 7.340046360520005,
+        "contact_dissipation_j": 7.364665387957694,
+        "drivetrain_damping_j": 4.045040757255967,
+        "residual_j": 0.14076669934874264,
+        "residual_fraction": 0.00026364136589675685
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.9,
+        "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "sym_mu_0p9_w300",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 300.0,
+      "right_target_rad_s": -300.0,
+      "left_actual_precontact_rad_s": 299.94001005025126,
+      "right_actual_precontact_rad_s": -299.94001005025126,
+      "wheel_surface_speed_m_s": 29.994001005025126,
+      "spinup_time_s": 11.472,
+      "exit_position_m": [
+        0.0422505,
+        0.0,
+        0.361033
+      ],
+      "exit_velocity_vector_m_s": [
+        7.82638,
+        0.0,
+        2.60182
+      ],
+      "exit_speed_m_s": 8.24752636957288,
+      "elevation_deg": 18.388990873124495,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0487729,
+        0.0
+      ],
+      "spin_rpm": 0.46574688743560216,
+      "topspin_rad_s": -0.0487729,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.011999999999999234,
+        "right": 0.011999999999999234
+      },
+      "maximum_ball_compression_m": 0.00397984,
+      "left_peak_normal_force_n": 27.0553,
+      "right_peak_normal_force_n": 27.0553,
+      "left_peak_tangential_force_n": 24.349768377594565,
+      "right_peak_tangential_force_n": 24.349768377594565,
+      "left_rpm_droop": 22.13536545805071,
+      "right_rpm_droop": 22.13536545805071,
+      "left_droop_percent": 0.7728245557712997,
+      "right_droop_percent": 0.7728245557712997,
+      "recovery_time_s": 0.6070000000000011,
+      "motor_response": {
+        "left_precontact_rpm": 2864.216113831815,
+        "right_precontact_rpm": -2864.216113831815,
+        "left_min_contact_rpm_magnitude": 2842.0807483737644,
+        "right_min_contact_rpm_magnitude": 2842.0807483737644,
+        "left_max_contact_rpm_magnitude": 2864.5502432394783,
+        "right_max_contact_rpm_magnitude": 2864.5502432394783,
+        "left_precontact_torque_nm": 0.601266,
+        "right_precontact_torque_nm": -0.601266,
+        "left_precontact_current_a": 19.395677419354836,
+        "right_precontact_current_a": 19.395677419354836,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 224.03999999999996
+      },
+      "apex_height_m": 0.705116,
+      "time_to_apex_s": 0.26500000000000057,
+      "first_bounce_xyz_m": [
+        5.01983,
+        0.0,
+        0.0306468
+      ],
+      "first_bounce_time_s": 0.6689999999999987,
+      "first_bounce_time_from_exit_s": 0.6359999999999992,
+      "horizontal_range_m": 4.9775795,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        7.82638,
+        0.0,
+        -3.62118
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 303.68080645842355,
+        "right_wheel_kinetic_pre_j": 303.68080645842355,
+        "wheel_kinetic_pre_j": 607.3616129168471,
+        "left_wheel_kinetic_post_j": 298.96090150199154,
+        "right_wheel_kinetic_post_j": 298.96090150199154,
+        "wheel_kinetic_post_j": 597.9218030039831,
+        "motor_mechanical_work_event_j": 5.139999999999873,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.9726290452872004,
+        "ball_exit_rotational_j": 5.008316623442814e-08,
+        "potential_energy_change_j": 0.021828833599999996,
+        "elastic_energy_stored_j": 0.08303848403570101,
+        "elastic_energy_recovered_j": 0.062378394745183405,
+        "elastic_hysteresis_j": 0.020660089290517603,
+        "normal_damping_dissipation_j": 0.0039589079212744875,
+        "tangential_friction_dissipation_j": 7.982749410517053,
+        "contact_dissipation_j": 8.007368407728846,
+        "drivetrain_damping_j": 4.645887058811963,
+        "residual_j": 0.1925164139386748,
+        "residual_fraction": 0.00031417810443436873
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.9,
+        "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    }
+  ],
+  "timestep_convergence": {
+    "acceptance_was_frozen_before_results": true,
+    "acceptance": {
+      "maximum_relative_exit_speed_difference": 0.02,
+      "maximum_absolute_elevation_difference_deg": 0.75,
+      "maximum_absolute_azimuth_difference_deg": 0.25,
+      "spin_difference": {
+        "maximum_relative": 0.05,
+        "absolute_floor_rad_s": 2.0
+      },
+      "maximum_relative_compression_difference": 0.05,
+      "maximum_relative_peak_force_difference": 0.1,
+      "contact_duration_difference": {
+        "maximum_relative": 0.1,
+        "absolute_floor_s": 0.001
+      },
+      "maximum_relative_wheel_droop_difference": 0.1,
+      "recovery_time_difference": {
+        "maximum_relative": 0.1,
+        "absolute_floor_s": 0.05
+      },
+      "maximum_absolute_energy_residual_fraction": 0.02,
+      "maximum_energy_residual_fraction_difference": 0.005
+    },
+    "conditions": {
+      "low": {
+        "target_magnitude_rad_s": 80,
+        "comparisons": [
+          {
+            "timestep_s": 0.001,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.00079683498754844,
+              "elevation_absolute_difference_deg": 0.11950718426306395,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 0.00639300000000001,
+              "compression_relative_difference": 5.000025000138675e-05,
+              "peak_force_relative_difference": 0.00019520819137762863,
+              "contact_duration_absolute_difference_s": 2.7755575615628914e-17,
+              "wheel_droop_relative_difference": 0.004052968899262828,
+              "recovery_absolute_difference_s": 0.0,
+              "energy_residual_fraction": -0.000348740681085923,
+              "energy_residual_fraction_difference": 0.00022883805931526278
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          },
+          {
+            "timestep_s": 0.0005,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.00021103039348183296,
+              "elevation_absolute_difference_deg": 0.03965733871894628,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 0.001691000000000012,
+              "compression_relative_difference": 7.500037500142959e-06,
+              "peak_force_relative_difference": 5.524760133331087e-05,
+              "contact_duration_absolute_difference_s": 1.3877787807814457e-16,
+              "wheel_droop_relative_difference": 0.0006487229162517337,
+              "recovery_absolute_difference_s": 0.0,
+              "energy_residual_fraction": -0.00019427904844401527,
+              "energy_residual_fraction_difference": 7.437642667335503e-05
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          },
+          {
+            "timestep_s": 0.00025,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.0,
+              "elevation_absolute_difference_deg": 0.0,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 0.0,
+              "compression_relative_difference": 0.0,
+              "peak_force_relative_difference": 0.0,
+              "contact_duration_absolute_difference_s": 0.0,
+              "wheel_droop_relative_difference": 0.0,
+              "recovery_absolute_difference_s": 0.0,
+              "energy_residual_fraction": -0.00011990262177066023,
+              "energy_residual_fraction_difference": 0.0
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      },
+      "medium": {
+        "target_magnitude_rad_s": 200,
+        "comparisons": [
+          {
+            "timestep_s": 0.001,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.0007606935351643999,
+              "elevation_absolute_difference_deg": 0.11546275361768465,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 0.0007500000000000007,
+              "compression_relative_difference": 4.7500237501339094e-05,
+              "peak_force_relative_difference": 0.00019889282991341064,
+              "contact_duration_absolute_difference_s": 2.7755575615628914e-17,
+              "wheel_droop_relative_difference": 0.008422494554906412,
+              "recovery_absolute_difference_s": 0.0012499999999997513,
+              "energy_residual_fraction": -0.0019948455916713025,
+              "energy_residual_fraction_difference": 0.00045633737955570524
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          },
+          {
+            "timestep_s": 0.0005,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.00019950522988639307,
+              "elevation_absolute_difference_deg": 0.038414453168254425,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 0.00015989999999999754,
+              "compression_relative_difference": 5.000025000095306e-06,
+              "peak_force_relative_difference": 5.524800830930254e-05,
+              "contact_duration_absolute_difference_s": 1.3877787807814457e-16,
+              "wheel_droop_relative_difference": 0.0017608443945701547,
+              "recovery_absolute_difference_s": 0.00025000000000030553,
+              "energy_residual_fraction": -0.002305443945191383,
+              "energy_residual_fraction_difference": 0.0001457390260356248
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          },
+          {
+            "timestep_s": 0.00025,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.0,
+              "elevation_absolute_difference_deg": 0.0,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 0.0,
+              "compression_relative_difference": 0.0,
+              "peak_force_relative_difference": 0.0,
+              "contact_duration_absolute_difference_s": 0.0,
+              "wheel_droop_relative_difference": 0.0,
+              "recovery_absolute_difference_s": 0.0,
+              "energy_residual_fraction": -0.0024511829712270078,
+              "energy_residual_fraction_difference": 0.0
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      },
+      "high": {
+        "target_magnitude_rad_s": 280,
+        "comparisons": [
+          {
+            "timestep_s": 0.001,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.0007545489629264292,
+              "elevation_absolute_difference_deg": 0.11566513573440673,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 0.0004499000000000031,
+              "compression_relative_difference": 4.7500237501339094e-05,
+              "peak_force_relative_difference": 0.00019889282991341064,
+              "contact_duration_absolute_difference_s": 2.7755575615628914e-17,
+              "wheel_droop_relative_difference": 0.003725777766131001,
+              "recovery_absolute_difference_s": 0.0,
+              "energy_residual_fraction": 0.00023164348994989076,
+              "energy_residual_fraction_difference": 0.00041787328761258086
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          },
+          {
+            "timestep_s": 0.0005,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.00019777665655660554,
+              "elevation_absolute_difference_deg": 0.03843933514792397,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 8.960000000000218e-05,
+              "compression_relative_difference": 5.000025000095306e-06,
+              "peak_force_relative_difference": 5.524800830930254e-05,
+              "contact_duration_absolute_difference_s": 5.828670879282072e-16,
+              "wheel_droop_relative_difference": 0.0007596450249602051,
+              "recovery_absolute_difference_s": 0.0,
+              "energy_residual_fraction": -4.8660076088036396e-05,
+              "energy_residual_fraction_difference": 0.0001375697215746537
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          },
+          {
+            "timestep_s": 0.00025,
+            "reference_timestep_s": 0.00025,
+            "metrics": {
+              "exit_speed_relative_difference": 0.0,
+              "elevation_absolute_difference_deg": 0.0,
+              "azimuth_absolute_difference_deg": 0.0,
+              "spin_absolute_difference_rad_s": 0.0,
+              "compression_relative_difference": 0.0,
+              "peak_force_relative_difference": 0.0,
+              "contact_duration_absolute_difference_s": 0.0,
+              "wheel_droop_relative_difference": 0.0,
+              "recovery_absolute_difference_s": 0.0,
+              "energy_residual_fraction": -0.0001862297976626901,
+              "energy_residual_fraction_difference": 0.0
+            },
+            "checks": {
+              "successful_and_clear": true,
+              "exit_speed": true,
+              "elevation": true,
+              "azimuth": true,
+              "spin": true,
+              "compression": true,
+              "peak_force": true,
+              "contact_duration": true,
+              "wheel_droop": true,
+              "recovery": true,
+              "energy_residual_absolute": true,
+              "energy_residual_convergence": true
+            },
+            "passed": true
+          }
+        ],
+        "passed": true
+      }
+    },
+    "passed": true
+  },
+  "differential_operating_points": [
+    {
+      "case_id": "diff_l300_r280",
+      "category": "differential_speed",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 300.0,
+      "right_target_rad_s": -280.0,
+      "left_actual_precontact_rad_s": 299.94001005025126,
+      "right_actual_precontact_rad_s": -280.0,
+      "wheel_surface_speed_m_s": 28.997000502512563,
+      "spinup_time_s": 11.472,
+      "exit_position_m": [
+        0.0441191,
+        1.50739e-09,
+        0.361087
+      ],
+      "exit_velocity_vector_m_s": [
+        6.58452,
+        2.23636e-07,
+        2.12135
+      ],
+      "exit_speed_m_s": 6.917805248263358,
+      "elevation_deg": 17.85750311834511,
+      "azimuth_deg": 1.945988310034395e-06,
+      "spin_vector_rad_s": [
+        -0.051899,
+        -0.032392,
+        -0.0193908
+      ],
+      "spin_rpm": 0.612849943182291,
+      "topspin_rad_s": -0.032391998237307366,
+      "sidespin_rad_s": -0.0193908,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.293453574643976,
+      "right_peak_tangential_force_n": 16.293453465757107,
+      "left_rpm_droop": 16.921449522360295,
+      "right_rpm_droop": 16.950001439286638,
+      "left_droop_percent": 0.5907881545894378,
+      "right_droop_percent": 0.6339285714285633,
+      "recovery_time_s": 0.4469999999999992,
+      "motor_response": {
+        "left_precontact_rpm": 2864.216113831815,
+        "right_precontact_rpm": -2673.8030439438417,
+        "left_min_contact_rpm_magnitude": 2847.294664309455,
+        "right_min_contact_rpm_magnitude": 2656.853042504555,
+        "left_max_contact_rpm_magnitude": 2864.5502432394783,
+        "right_max_contact_rpm_magnitude": 2673.8030439438417,
+        "left_precontact_torque_nm": 0.601266,
+        "right_precontact_torque_nm": -0.56,
+        "left_precontact_current_a": 19.395677419354836,
+        "right_precontact_current_a": 18.06451612903226,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 155.16000000000008
+      },
+      "apex_height_m": 0.589625,
+      "time_to_apex_s": 0.2159999999999993,
+      "first_bounce_xyz_m": [
+        3.69194,
+        1.25361e-07,
+        0.0297096
+      ],
+      "first_bounce_time_s": 0.5889999999999986,
+      "first_bounce_time_from_exit_s": 0.5539999999999985,
+      "horizontal_range_m": 3.6478209000000024,
+      "lateral_deviation_m": 1.2385361e-07,
+      "velocity_immediately_before_bounce_m_s": [
+        6.58452,
+        2.23562e-07,
+        -3.29805
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 303.68080645842355,
+        "right_wheel_kinetic_pre_j": 264.64555464500205,
+        "wheel_kinetic_pre_j": 568.3263611034256,
+        "left_wheel_kinetic_post_j": 300.1172764134483,
+        "right_wheel_kinetic_post_j": 261.33467351832485,
+        "wheel_kinetic_post_j": 561.4519499317731,
+        "motor_mechanical_work_event_j": 5.599999999999909,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3878248541341018,
+        "ball_exit_rotational_j": 8.671618333588053e-08,
+        "potential_energy_change_j": 0.021859527199999996,
+        "elastic_energy_stored_j": 0.08317616470759853,
+        "elastic_energy_recovered_j": 0.06906129955710333,
+        "elastic_hysteresis_j": 0.014114865150495204,
+        "normal_damping_dissipation_j": 0.00425349265578126,
+        "tangential_friction_dissipation_j": 6.058460044068573,
+        "contact_dissipation_j": 6.07682840187485,
+        "drivetrain_damping_j": 5.021508485084187,
+        "residual_j": 0.2268097132290281,
+        "residual_fraction": 0.0003950103358945555
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "diff_l280_r300",
+      "category": "differential_speed",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 280.0,
+      "right_target_rad_s": -300.0,
+      "left_actual_precontact_rad_s": 280.0,
+      "right_actual_precontact_rad_s": -299.94001005025126,
+      "wheel_surface_speed_m_s": 28.997000502512563,
+      "spinup_time_s": 11.472,
+      "exit_position_m": [
+        0.0441191,
+        -1.50739e-09,
+        0.361087
+      ],
+      "exit_velocity_vector_m_s": [
+        6.58452,
+        -2.23636e-07,
+        2.12135
+      ],
+      "exit_speed_m_s": 6.917805248263358,
+      "elevation_deg": 17.85750311834511,
+      "azimuth_deg": -1.945988310034395e-06,
+      "spin_vector_rad_s": [
+        0.051899,
+        -0.032392,
+        0.0193908
+      ],
+      "spin_rpm": 0.612849943182291,
+      "topspin_rad_s": -0.032391998237307366,
+      "sidespin_rad_s": 0.0193908,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.293453465757107,
+      "right_peak_tangential_force_n": 16.293453574643976,
+      "left_rpm_droop": 16.950001439286638,
+      "right_rpm_droop": 16.921449522360295,
+      "left_droop_percent": 0.6339285714285633,
+      "right_droop_percent": 0.5907881545894378,
+      "recovery_time_s": 0.4469999999999992,
+      "motor_response": {
+        "left_precontact_rpm": 2673.8030439438417,
+        "right_precontact_rpm": -2864.216113831815,
+        "left_min_contact_rpm_magnitude": 2656.853042504555,
+        "right_min_contact_rpm_magnitude": 2847.294664309455,
+        "left_max_contact_rpm_magnitude": 2673.8030439438417,
+        "right_max_contact_rpm_magnitude": 2864.5502432394783,
+        "left_precontact_torque_nm": 0.56,
+        "right_precontact_torque_nm": -0.601266,
+        "left_precontact_current_a": 18.06451612903226,
+        "right_precontact_current_a": 19.395677419354836,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 155.16000000000008
+      },
+      "apex_height_m": 0.589625,
+      "time_to_apex_s": 0.2159999999999993,
+      "first_bounce_xyz_m": [
+        3.69194,
+        -1.25361e-07,
+        0.0297096
+      ],
+      "first_bounce_time_s": 0.5889999999999986,
+      "first_bounce_time_from_exit_s": 0.5539999999999985,
+      "horizontal_range_m": 3.6478209000000024,
+      "lateral_deviation_m": -1.2385361e-07,
+      "velocity_immediately_before_bounce_m_s": [
+        6.58452,
+        -2.23562e-07,
+        -3.29805
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 264.64555464500205,
+        "right_wheel_kinetic_pre_j": 303.68080645842355,
+        "wheel_kinetic_pre_j": 568.3263611034256,
+        "left_wheel_kinetic_post_j": 261.33467351832485,
+        "right_wheel_kinetic_post_j": 300.1172764134483,
+        "wheel_kinetic_post_j": 561.4519499317731,
+        "motor_mechanical_work_event_j": 5.599999999999909,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3878248541341018,
+        "ball_exit_rotational_j": 8.671618333588053e-08,
+        "potential_energy_change_j": 0.021859527199999996,
+        "elastic_energy_stored_j": 0.08317616470759853,
+        "elastic_energy_recovered_j": 0.06906129955710333,
+        "elastic_hysteresis_j": 0.014114865150495204,
+        "normal_damping_dissipation_j": 0.00425349265578126,
+        "tangential_friction_dissipation_j": 6.058460044068573,
+        "contact_dissipation_j": 6.07682840187485,
+        "drivetrain_damping_j": 5.021508485084187,
+        "residual_j": 0.2268097132290281,
+        "residual_fraction": 0.0003950103358945555
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "diff_l300_r260",
+      "category": "differential_speed",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 300.0,
+      "right_target_rad_s": -260.0,
+      "left_actual_precontact_rad_s": 299.94001005025126,
+      "right_actual_precontact_rad_s": -260.0,
+      "wheel_surface_speed_m_s": 27.997000502512563,
+      "spinup_time_s": 11.472,
+      "exit_position_m": [
+        0.0441146,
+        3.42881e-09,
+        0.361099
+      ],
+      "exit_velocity_vector_m_s": [
+        6.58396,
+        5.09187e-07,
+        2.12287
+      ],
+      "exit_speed_m_s": 6.917738526317706,
+      "elevation_deg": 17.870908203951064,
+      "azimuth_deg": 4.431112291527863e-06,
+      "spin_vector_rad_s": [
+        -0.112814,
+        -0.0337935,
+        -0.0421995
+      ],
+      "spin_rpm": 1.194608874792438,
+      "topspin_rad_s": -0.03379349127524728,
+      "sidespin_rad_s": -0.0421995,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.293391404312256,
+      "right_peak_tangential_force_n": 16.293455099130117,
+      "left_rpm_droop": 16.921449522360295,
+      "right_rpm_droop": 16.854508473431586,
+      "left_droop_percent": 0.5907881545894378,
+      "right_droop_percent": 0.6788461538461485,
+      "recovery_time_s": 0.4469999999999992,
+      "motor_response": {
+        "left_precontact_rpm": 2864.216113831815,
+        "right_precontact_rpm": -2482.8171122335675,
+        "left_min_contact_rpm_magnitude": 2847.294664309455,
+        "right_min_contact_rpm_magnitude": 2465.9626037601356,
+        "left_max_contact_rpm_magnitude": 2864.5502432394783,
+        "right_max_contact_rpm_magnitude": 2482.8171122335675,
+        "left_precontact_torque_nm": 0.601266,
+        "right_precontact_torque_nm": -0.52,
+        "left_precontact_current_a": 19.395677419354836,
+        "right_precontact_current_a": 16.774193548387096,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.608265,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 19.621451612903225,
+        "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 145.32999999999993
+      },
+      "apex_height_m": 0.589966,
+      "time_to_apex_s": 0.2159999999999993,
+      "first_bounce_xyz_m": [
+        3.69163,
+        2.85519e-07,
+        0.0305644
+      ],
+      "first_bounce_time_s": 0.5889999999999986,
+      "first_bounce_time_from_exit_s": 0.5539999999999985,
+      "horizontal_range_m": 3.647515400000011,
+      "lateral_deviation_m": 2.8209019e-07,
+      "velocity_immediately_before_bounce_m_s": [
+        6.58396,
+        5.09187e-07,
+        -3.29653
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 303.68080645842355,
+        "right_wheel_kinetic_pre_j": 228.18927926023136,
+        "wheel_kinetic_pre_j": 531.8700857186549,
+        "left_wheel_kinetic_post_j": 300.1172764134483,
+        "right_wheel_kinetic_post_j": 225.1470169901418,
+        "wheel_kinetic_post_j": 525.26429340359,
+        "motor_mechanical_work_event_j": 5.289999999999964,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3877980832365078,
+        "ball_exit_rotational_j": 3.294908268485789e-07,
+        "potential_energy_change_j": 0.021866348000000004,
+        "elastic_energy_stored_j": 0.08317613210997252,
+        "elastic_energy_recovered_j": 0.06906115700560332,
+        "elastic_hysteresis_j": 0.014114975104369196,
+        "normal_damping_dissipation_j": 0.004253475869464099,
+        "tangential_friction_dissipation_j": 5.810303314017492,
+        "contact_dissipation_j": 5.828671764991325,
+        "drivetrain_damping_j": 4.698574261956176,
+        "residual_j": 0.21930142397593233,
+        "residual_fraction": 0.0004080630003592351
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    {
+      "case_id": "diff_l260_r300",
+      "category": "differential_speed",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 260.0,
+      "right_target_rad_s": -300.0,
+      "left_actual_precontact_rad_s": 260.0,
+      "right_actual_precontact_rad_s": -299.94001005025126,
+      "wheel_surface_speed_m_s": 27.997000502512563,
+      "spinup_time_s": 11.472,
+      "exit_position_m": [
+        0.0441146,
+        -3.42881e-09,
+        0.361099
+      ],
+      "exit_velocity_vector_m_s": [
+        6.58396,
+        -5.09187e-07,
+        2.12287
+      ],
+      "exit_speed_m_s": 6.917738526317706,
+      "elevation_deg": 17.870908203951064,
+      "azimuth_deg": -4.431112291527863e-06,
+      "spin_vector_rad_s": [
+        0.112814,
+        -0.0337935,
+        0.0421995
+      ],
+      "spin_rpm": 1.194608874792438,
+      "topspin_rad_s": -0.03379349127524728,
+      "sidespin_rad_s": 0.0421995,
+      "contact_duration_s": {
+        "left": 0.013999999999999901,
+        "right": 0.013999999999999901
+      },
+      "maximum_ball_compression_m": 0.00399979,
+      "left_peak_normal_force_n": 27.1557,
+      "right_peak_normal_force_n": 27.1557,
+      "left_peak_tangential_force_n": 16.293455099130117,
+      "right_peak_tangential_force_n": 16.293391404312256,
+      "left_rpm_droop": 16.854508473431586,
+      "right_rpm_droop": 16.921449522360295,
+      "left_droop_percent": 0.6788461538461485,
+      "right_droop_percent": 0.5907881545894378,
+      "recovery_time_s": 0.4469999999999992,
+      "motor_response": {
+        "left_precontact_rpm": 2482.8171122335675,
+        "right_precontact_rpm": -2864.216113831815,
+        "left_min_contact_rpm_magnitude": 2465.9626037601356,
+        "right_min_contact_rpm_magnitude": 2847.294664309455,
+        "left_max_contact_rpm_magnitude": 2482.8171122335675,
+        "right_max_contact_rpm_magnitude": 2864.5502432394783,
+        "left_precontact_torque_nm": 0.52,
+        "right_precontact_torque_nm": -0.601266,
+        "left_precontact_current_a": 16.774193548387096,
+        "right_precontact_current_a": 19.395677419354836,
+        "left_peak_event_torque_nm": 0.608265,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 19.621451612903225,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 145.32999999999993
+      },
+      "apex_height_m": 0.589966,
+      "time_to_apex_s": 0.2159999999999993,
+      "first_bounce_xyz_m": [
+        3.69163,
+        -2.85519e-07,
+        0.0305644
+      ],
+      "first_bounce_time_s": 0.5889999999999986,
+      "first_bounce_time_from_exit_s": 0.5539999999999985,
+      "horizontal_range_m": 3.647515400000011,
+      "lateral_deviation_m": -2.8209019e-07,
+      "velocity_immediately_before_bounce_m_s": [
+        6.58396,
+        -5.09187e-07,
+        -3.29653
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 228.18927926023136,
+        "right_wheel_kinetic_pre_j": 303.68080645842355,
+        "wheel_kinetic_pre_j": 531.8700857186549,
+        "left_wheel_kinetic_post_j": 225.1470169901418,
+        "right_wheel_kinetic_post_j": 300.1172764134483,
+        "wheel_kinetic_post_j": 525.26429340359,
+        "motor_mechanical_work_event_j": 5.289999999999964,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.3877980832365078,
+        "ball_exit_rotational_j": 3.294908268485789e-07,
+        "potential_energy_change_j": 0.021866348000000004,
+        "elastic_energy_stored_j": 0.08317613210997252,
+        "elastic_energy_recovered_j": 0.06906115700560332,
+        "elastic_hysteresis_j": 0.014114975104369196,
+        "normal_damping_dissipation_j": 0.004253475869464099,
+        "tangential_friction_dissipation_j": 5.810303314017492,
+        "contact_dissipation_j": 5.828671764991325,
+        "drivetrain_damping_j": 4.698574261956176,
+        "residual_j": 0.21930142397593233,
+        "residual_fraction": 0.0004080630003592351
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.6,
+        "classification": "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    }
+  ],
+  "differential_spin_summary": {
+    "maximum_spin_magnitude_rad_s": 0.1250991488320364,
+    "maximum_absolute_azimuth_deg": 4.431112291527863e-06,
+    "classification": "NUMERICALLY_CHARACTERIZED_UNDER_UNCALIBRATED_FRICTION_NOT_PHYSICALLY_VALIDATED"
+  },
+  "capability_targets": {
+    "12_m_s": {
+      "reachable": false,
+      "status": "EXECUTED_ENVELOPE_DOES_NOT_REACH_TARGET",
+      "absolute_speed_error_m_s": 3.7524736304271205,
+      "nearest_executed_operating_point": {
+        "case_id": "sym_mu_0p9_w300",
+        "category": "symmetric_sweep",
+        "mechanical_pitch_deg": 20.0,
+        "left_target_rad_s": 300.0,
+        "right_target_rad_s": -300.0,
+        "left_actual_precontact_rad_s": 299.94001005025126,
+        "right_actual_precontact_rad_s": -299.94001005025126,
+        "wheel_surface_speed_m_s": 29.994001005025126,
+        "spinup_time_s": 11.472,
+        "exit_position_m": [
+          0.0422505,
+          0.0,
+          0.361033
+        ],
+        "exit_velocity_vector_m_s": [
+          7.82638,
+          0.0,
+          2.60182
+        ],
+        "exit_speed_m_s": 8.24752636957288,
+        "elevation_deg": 18.388990873124495,
+        "azimuth_deg": 0.0,
+        "spin_vector_rad_s": [
+          0.0,
+          -0.0487729,
+          0.0
+        ],
+        "spin_rpm": 0.46574688743560216,
+        "topspin_rad_s": -0.0487729,
+        "sidespin_rad_s": 0.0,
+        "contact_duration_s": {
+          "left": 0.011999999999999234,
+          "right": 0.011999999999999234
+        },
+        "maximum_ball_compression_m": 0.00397984,
+        "left_peak_normal_force_n": 27.0553,
+        "right_peak_normal_force_n": 27.0553,
+        "left_peak_tangential_force_n": 24.349768377594565,
+        "right_peak_tangential_force_n": 24.349768377594565,
+        "left_rpm_droop": 22.13536545805071,
+        "right_rpm_droop": 22.13536545805071,
+        "left_droop_percent": 0.7728245557712997,
+        "right_droop_percent": 0.7728245557712997,
+        "recovery_time_s": 0.6070000000000011,
+        "motor_response": {
+          "left_precontact_rpm": 2864.216113831815,
+          "right_precontact_rpm": -2864.216113831815,
+          "left_min_contact_rpm_magnitude": 2842.0807483737644,
+          "right_min_contact_rpm_magnitude": 2842.0807483737644,
+          "left_max_contact_rpm_magnitude": 2864.5502432394783,
+          "right_max_contact_rpm_magnitude": 2864.5502432394783,
+          "left_precontact_torque_nm": 0.601266,
+          "right_precontact_torque_nm": -0.601266,
+          "left_precontact_current_a": 19.395677419354836,
+          "right_precontact_current_a": 19.395677419354836,
+          "left_peak_event_torque_nm": 0.62,
+          "right_peak_event_torque_nm": 0.62,
+          "left_peak_event_current_a": 20.0,
+          "right_peak_event_current_a": 20.0,
+          "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+          "provisional_bus_voltage_v": 12.8,
+          "recovery_motor_mechanical_work_j": 224.03999999999996
+        },
+        "apex_height_m": 0.705116,
+        "time_to_apex_s": 0.26500000000000057,
+        "first_bounce_xyz_m": [
+          5.01983,
+          0.0,
+          0.0306468
+        ],
+        "first_bounce_time_s": 0.6689999999999987,
+        "first_bounce_time_from_exit_s": 0.6359999999999992,
+        "horizontal_range_m": 4.9775795,
+        "lateral_deviation_m": 0.0,
+        "velocity_immediately_before_bounce_m_s": [
+          7.82638,
+          0.0,
+          -3.62118
+        ],
+        "energy_accounting": {
+          "left_wheel_kinetic_pre_j": 303.68080645842355,
+          "right_wheel_kinetic_pre_j": 303.68080645842355,
+          "wheel_kinetic_pre_j": 607.3616129168471,
+          "left_wheel_kinetic_post_j": 298.96090150199154,
+          "right_wheel_kinetic_post_j": 298.96090150199154,
+          "wheel_kinetic_post_j": 597.9218030039831,
+          "motor_mechanical_work_event_j": 5.139999999999873,
+          "ball_initial_translational_j": 0.260419896586,
+          "ball_exit_translational_j": 1.9726290452872004,
+          "ball_exit_rotational_j": 5.008316623442814e-08,
+          "potential_energy_change_j": 0.021828833599999996,
+          "elastic_energy_stored_j": 0.08303848403570101,
+          "elastic_energy_recovered_j": 0.062378394745183405,
+          "elastic_hysteresis_j": 0.020660089290517603,
+          "normal_damping_dissipation_j": 0.0039589079212744875,
+          "tangential_friction_dissipation_j": 7.982749410517053,
+          "contact_dissipation_j": 8.007368407728846,
+          "drivetrain_damping_j": 4.645887058811963,
+          "residual_j": 0.1925164139386748,
+          "residual_fraction": 0.00031417810443436873
+        },
+        "tyre_friction_assumption": {
+          "coefficient": 0.9,
+          "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+          "physically_calibrated": false
+        },
+        "wheel_mass_assumption": 0.9,
+        "wheel_inertia_assumption": 0.006751162108290868,
+        "timestep_s": 0.001,
+        "validity": {
+          "successful_launch": true,
+          "target_reachable": true,
+          "bilateral_wheel_contact": true,
+          "post_release_fixed_component_contact": false,
+          "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+          "tangential_transfer_physically_validated": false
+        }
+      }
+    },
+    "14_m_s": {
+      "reachable": false,
+      "status": "EXECUTED_ENVELOPE_DOES_NOT_REACH_TARGET",
+      "absolute_speed_error_m_s": 5.7524736304271205,
+      "nearest_executed_operating_point": {
+        "case_id": "sym_mu_0p9_w300",
+        "category": "symmetric_sweep",
+        "mechanical_pitch_deg": 20.0,
+        "left_target_rad_s": 300.0,
+        "right_target_rad_s": -300.0,
+        "left_actual_precontact_rad_s": 299.94001005025126,
+        "right_actual_precontact_rad_s": -299.94001005025126,
+        "wheel_surface_speed_m_s": 29.994001005025126,
+        "spinup_time_s": 11.472,
+        "exit_position_m": [
+          0.0422505,
+          0.0,
+          0.361033
+        ],
+        "exit_velocity_vector_m_s": [
+          7.82638,
+          0.0,
+          2.60182
+        ],
+        "exit_speed_m_s": 8.24752636957288,
+        "elevation_deg": 18.388990873124495,
+        "azimuth_deg": 0.0,
+        "spin_vector_rad_s": [
+          0.0,
+          -0.0487729,
+          0.0
+        ],
+        "spin_rpm": 0.46574688743560216,
+        "topspin_rad_s": -0.0487729,
+        "sidespin_rad_s": 0.0,
+        "contact_duration_s": {
+          "left": 0.011999999999999234,
+          "right": 0.011999999999999234
+        },
+        "maximum_ball_compression_m": 0.00397984,
+        "left_peak_normal_force_n": 27.0553,
+        "right_peak_normal_force_n": 27.0553,
+        "left_peak_tangential_force_n": 24.349768377594565,
+        "right_peak_tangential_force_n": 24.349768377594565,
+        "left_rpm_droop": 22.13536545805071,
+        "right_rpm_droop": 22.13536545805071,
+        "left_droop_percent": 0.7728245557712997,
+        "right_droop_percent": 0.7728245557712997,
+        "recovery_time_s": 0.6070000000000011,
+        "motor_response": {
+          "left_precontact_rpm": 2864.216113831815,
+          "right_precontact_rpm": -2864.216113831815,
+          "left_min_contact_rpm_magnitude": 2842.0807483737644,
+          "right_min_contact_rpm_magnitude": 2842.0807483737644,
+          "left_max_contact_rpm_magnitude": 2864.5502432394783,
+          "right_max_contact_rpm_magnitude": 2864.5502432394783,
+          "left_precontact_torque_nm": 0.601266,
+          "right_precontact_torque_nm": -0.601266,
+          "left_precontact_current_a": 19.395677419354836,
+          "right_precontact_current_a": 19.395677419354836,
+          "left_peak_event_torque_nm": 0.62,
+          "right_peak_event_torque_nm": 0.62,
+          "left_peak_event_current_a": 20.0,
+          "right_peak_event_current_a": 20.0,
+          "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+          "provisional_bus_voltage_v": 12.8,
+          "recovery_motor_mechanical_work_j": 224.03999999999996
+        },
+        "apex_height_m": 0.705116,
+        "time_to_apex_s": 0.26500000000000057,
+        "first_bounce_xyz_m": [
+          5.01983,
+          0.0,
+          0.0306468
+        ],
+        "first_bounce_time_s": 0.6689999999999987,
+        "first_bounce_time_from_exit_s": 0.6359999999999992,
+        "horizontal_range_m": 4.9775795,
+        "lateral_deviation_m": 0.0,
+        "velocity_immediately_before_bounce_m_s": [
+          7.82638,
+          0.0,
+          -3.62118
+        ],
+        "energy_accounting": {
+          "left_wheel_kinetic_pre_j": 303.68080645842355,
+          "right_wheel_kinetic_pre_j": 303.68080645842355,
+          "wheel_kinetic_pre_j": 607.3616129168471,
+          "left_wheel_kinetic_post_j": 298.96090150199154,
+          "right_wheel_kinetic_post_j": 298.96090150199154,
+          "wheel_kinetic_post_j": 597.9218030039831,
+          "motor_mechanical_work_event_j": 5.139999999999873,
+          "ball_initial_translational_j": 0.260419896586,
+          "ball_exit_translational_j": 1.9726290452872004,
+          "ball_exit_rotational_j": 5.008316623442814e-08,
+          "potential_energy_change_j": 0.021828833599999996,
+          "elastic_energy_stored_j": 0.08303848403570101,
+          "elastic_energy_recovered_j": 0.062378394745183405,
+          "elastic_hysteresis_j": 0.020660089290517603,
+          "normal_damping_dissipation_j": 0.0039589079212744875,
+          "tangential_friction_dissipation_j": 7.982749410517053,
+          "contact_dissipation_j": 8.007368407728846,
+          "drivetrain_damping_j": 4.645887058811963,
+          "residual_j": 0.1925164139386748,
+          "residual_fraction": 0.00031417810443436873
+        },
+        "tyre_friction_assumption": {
+          "coefficient": 0.9,
+          "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+          "physically_calibrated": false
+        },
+        "wheel_mass_assumption": 0.9,
+        "wheel_inertia_assumption": 0.006751162108290868,
+        "timestep_s": 0.001,
+        "validity": {
+          "successful_launch": true,
+          "target_reachable": true,
+          "bilateral_wheel_contact": true,
+          "post_release_fixed_component_contact": false,
+          "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+          "tangential_transfer_physically_validated": false
+        }
+      }
+    },
+    "16_m_s": {
+      "reachable": false,
+      "status": "EXECUTED_ENVELOPE_DOES_NOT_REACH_TARGET",
+      "absolute_speed_error_m_s": 7.7524736304271205,
+      "nearest_executed_operating_point": {
+        "case_id": "sym_mu_0p9_w300",
+        "category": "symmetric_sweep",
+        "mechanical_pitch_deg": 20.0,
+        "left_target_rad_s": 300.0,
+        "right_target_rad_s": -300.0,
+        "left_actual_precontact_rad_s": 299.94001005025126,
+        "right_actual_precontact_rad_s": -299.94001005025126,
+        "wheel_surface_speed_m_s": 29.994001005025126,
+        "spinup_time_s": 11.472,
+        "exit_position_m": [
+          0.0422505,
+          0.0,
+          0.361033
+        ],
+        "exit_velocity_vector_m_s": [
+          7.82638,
+          0.0,
+          2.60182
+        ],
+        "exit_speed_m_s": 8.24752636957288,
+        "elevation_deg": 18.388990873124495,
+        "azimuth_deg": 0.0,
+        "spin_vector_rad_s": [
+          0.0,
+          -0.0487729,
+          0.0
+        ],
+        "spin_rpm": 0.46574688743560216,
+        "topspin_rad_s": -0.0487729,
+        "sidespin_rad_s": 0.0,
+        "contact_duration_s": {
+          "left": 0.011999999999999234,
+          "right": 0.011999999999999234
+        },
+        "maximum_ball_compression_m": 0.00397984,
+        "left_peak_normal_force_n": 27.0553,
+        "right_peak_normal_force_n": 27.0553,
+        "left_peak_tangential_force_n": 24.349768377594565,
+        "right_peak_tangential_force_n": 24.349768377594565,
+        "left_rpm_droop": 22.13536545805071,
+        "right_rpm_droop": 22.13536545805071,
+        "left_droop_percent": 0.7728245557712997,
+        "right_droop_percent": 0.7728245557712997,
+        "recovery_time_s": 0.6070000000000011,
+        "motor_response": {
+          "left_precontact_rpm": 2864.216113831815,
+          "right_precontact_rpm": -2864.216113831815,
+          "left_min_contact_rpm_magnitude": 2842.0807483737644,
+          "right_min_contact_rpm_magnitude": 2842.0807483737644,
+          "left_max_contact_rpm_magnitude": 2864.5502432394783,
+          "right_max_contact_rpm_magnitude": 2864.5502432394783,
+          "left_precontact_torque_nm": 0.601266,
+          "right_precontact_torque_nm": -0.601266,
+          "left_precontact_current_a": 19.395677419354836,
+          "right_precontact_current_a": 19.395677419354836,
+          "left_peak_event_torque_nm": 0.62,
+          "right_peak_event_torque_nm": 0.62,
+          "left_peak_event_current_a": 20.0,
+          "right_peak_event_current_a": 20.0,
+          "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+          "provisional_bus_voltage_v": 12.8,
+          "recovery_motor_mechanical_work_j": 224.03999999999996
+        },
+        "apex_height_m": 0.705116,
+        "time_to_apex_s": 0.26500000000000057,
+        "first_bounce_xyz_m": [
+          5.01983,
+          0.0,
+          0.0306468
+        ],
+        "first_bounce_time_s": 0.6689999999999987,
+        "first_bounce_time_from_exit_s": 0.6359999999999992,
+        "horizontal_range_m": 4.9775795,
+        "lateral_deviation_m": 0.0,
+        "velocity_immediately_before_bounce_m_s": [
+          7.82638,
+          0.0,
+          -3.62118
+        ],
+        "energy_accounting": {
+          "left_wheel_kinetic_pre_j": 303.68080645842355,
+          "right_wheel_kinetic_pre_j": 303.68080645842355,
+          "wheel_kinetic_pre_j": 607.3616129168471,
+          "left_wheel_kinetic_post_j": 298.96090150199154,
+          "right_wheel_kinetic_post_j": 298.96090150199154,
+          "wheel_kinetic_post_j": 597.9218030039831,
+          "motor_mechanical_work_event_j": 5.139999999999873,
+          "ball_initial_translational_j": 0.260419896586,
+          "ball_exit_translational_j": 1.9726290452872004,
+          "ball_exit_rotational_j": 5.008316623442814e-08,
+          "potential_energy_change_j": 0.021828833599999996,
+          "elastic_energy_stored_j": 0.08303848403570101,
+          "elastic_energy_recovered_j": 0.062378394745183405,
+          "elastic_hysteresis_j": 0.020660089290517603,
+          "normal_damping_dissipation_j": 0.0039589079212744875,
+          "tangential_friction_dissipation_j": 7.982749410517053,
+          "contact_dissipation_j": 8.007368407728846,
+          "drivetrain_damping_j": 4.645887058811963,
+          "residual_j": 0.1925164139386748,
+          "residual_fraction": 0.00031417810443436873
+        },
+        "tyre_friction_assumption": {
+          "coefficient": 0.9,
+          "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+          "physically_calibrated": false
+        },
+        "wheel_mass_assumption": 0.9,
+        "wheel_inertia_assumption": 0.006751162108290868,
+        "timestep_s": 0.001,
+        "validity": {
+          "successful_launch": true,
+          "target_reachable": true,
+          "bilateral_wheel_contact": true,
+          "post_release_fixed_component_contact": false,
+          "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+          "tangential_transfer_physically_validated": false
+        }
+      }
+    },
+    "18_m_s": {
+      "reachable": false,
+      "status": "EXECUTED_ENVELOPE_DOES_NOT_REACH_TARGET",
+      "absolute_speed_error_m_s": 9.75247363042712,
+      "nearest_executed_operating_point": {
+        "case_id": "sym_mu_0p9_w300",
+        "category": "symmetric_sweep",
+        "mechanical_pitch_deg": 20.0,
+        "left_target_rad_s": 300.0,
+        "right_target_rad_s": -300.0,
+        "left_actual_precontact_rad_s": 299.94001005025126,
+        "right_actual_precontact_rad_s": -299.94001005025126,
+        "wheel_surface_speed_m_s": 29.994001005025126,
+        "spinup_time_s": 11.472,
+        "exit_position_m": [
+          0.0422505,
+          0.0,
+          0.361033
+        ],
+        "exit_velocity_vector_m_s": [
+          7.82638,
+          0.0,
+          2.60182
+        ],
+        "exit_speed_m_s": 8.24752636957288,
+        "elevation_deg": 18.388990873124495,
+        "azimuth_deg": 0.0,
+        "spin_vector_rad_s": [
+          0.0,
+          -0.0487729,
+          0.0
+        ],
+        "spin_rpm": 0.46574688743560216,
+        "topspin_rad_s": -0.0487729,
+        "sidespin_rad_s": 0.0,
+        "contact_duration_s": {
+          "left": 0.011999999999999234,
+          "right": 0.011999999999999234
+        },
+        "maximum_ball_compression_m": 0.00397984,
+        "left_peak_normal_force_n": 27.0553,
+        "right_peak_normal_force_n": 27.0553,
+        "left_peak_tangential_force_n": 24.349768377594565,
+        "right_peak_tangential_force_n": 24.349768377594565,
+        "left_rpm_droop": 22.13536545805071,
+        "right_rpm_droop": 22.13536545805071,
+        "left_droop_percent": 0.7728245557712997,
+        "right_droop_percent": 0.7728245557712997,
+        "recovery_time_s": 0.6070000000000011,
+        "motor_response": {
+          "left_precontact_rpm": 2864.216113831815,
+          "right_precontact_rpm": -2864.216113831815,
+          "left_min_contact_rpm_magnitude": 2842.0807483737644,
+          "right_min_contact_rpm_magnitude": 2842.0807483737644,
+          "left_max_contact_rpm_magnitude": 2864.5502432394783,
+          "right_max_contact_rpm_magnitude": 2864.5502432394783,
+          "left_precontact_torque_nm": 0.601266,
+          "right_precontact_torque_nm": -0.601266,
+          "left_precontact_current_a": 19.395677419354836,
+          "right_precontact_current_a": 19.395677419354836,
+          "left_peak_event_torque_nm": 0.62,
+          "right_peak_event_torque_nm": 0.62,
+          "left_peak_event_current_a": 20.0,
+          "right_peak_event_current_a": 20.0,
+          "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+          "provisional_bus_voltage_v": 12.8,
+          "recovery_motor_mechanical_work_j": 224.03999999999996
+        },
+        "apex_height_m": 0.705116,
+        "time_to_apex_s": 0.26500000000000057,
+        "first_bounce_xyz_m": [
+          5.01983,
+          0.0,
+          0.0306468
+        ],
+        "first_bounce_time_s": 0.6689999999999987,
+        "first_bounce_time_from_exit_s": 0.6359999999999992,
+        "horizontal_range_m": 4.9775795,
+        "lateral_deviation_m": 0.0,
+        "velocity_immediately_before_bounce_m_s": [
+          7.82638,
+          0.0,
+          -3.62118
+        ],
+        "energy_accounting": {
+          "left_wheel_kinetic_pre_j": 303.68080645842355,
+          "right_wheel_kinetic_pre_j": 303.68080645842355,
+          "wheel_kinetic_pre_j": 607.3616129168471,
+          "left_wheel_kinetic_post_j": 298.96090150199154,
+          "right_wheel_kinetic_post_j": 298.96090150199154,
+          "wheel_kinetic_post_j": 597.9218030039831,
+          "motor_mechanical_work_event_j": 5.139999999999873,
+          "ball_initial_translational_j": 0.260419896586,
+          "ball_exit_translational_j": 1.9726290452872004,
+          "ball_exit_rotational_j": 5.008316623442814e-08,
+          "potential_energy_change_j": 0.021828833599999996,
+          "elastic_energy_stored_j": 0.08303848403570101,
+          "elastic_energy_recovered_j": 0.062378394745183405,
+          "elastic_hysteresis_j": 0.020660089290517603,
+          "normal_damping_dissipation_j": 0.0039589079212744875,
+          "tangential_friction_dissipation_j": 7.982749410517053,
+          "contact_dissipation_j": 8.007368407728846,
+          "drivetrain_damping_j": 4.645887058811963,
+          "residual_j": 0.1925164139386748,
+          "residual_fraction": 0.00031417810443436873
+        },
+        "tyre_friction_assumption": {
+          "coefficient": 0.9,
+          "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+          "physically_calibrated": false
+        },
+        "wheel_mass_assumption": 0.9,
+        "wheel_inertia_assumption": 0.006751162108290868,
+        "timestep_s": 0.001,
+        "validity": {
+          "successful_launch": true,
+          "target_reachable": true,
+          "bilateral_wheel_contact": true,
+          "post_release_fixed_component_contact": false,
+          "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+          "tangential_transfer_physically_validated": false
+        }
+      }
+    }
+  },
+  "measured_envelope": {
+    "maximum_exit_speed_m_s": 8.24752636957288,
+    "maximum_exit_speed_operating_point": {
+      "case_id": "sym_mu_0p9_w300",
+      "category": "symmetric_sweep",
+      "mechanical_pitch_deg": 20.0,
+      "left_target_rad_s": 300.0,
+      "right_target_rad_s": -300.0,
+      "left_actual_precontact_rad_s": 299.94001005025126,
+      "right_actual_precontact_rad_s": -299.94001005025126,
+      "wheel_surface_speed_m_s": 29.994001005025126,
+      "spinup_time_s": 11.472,
+      "exit_position_m": [
+        0.0422505,
+        0.0,
+        0.361033
+      ],
+      "exit_velocity_vector_m_s": [
+        7.82638,
+        0.0,
+        2.60182
+      ],
+      "exit_speed_m_s": 8.24752636957288,
+      "elevation_deg": 18.388990873124495,
+      "azimuth_deg": 0.0,
+      "spin_vector_rad_s": [
+        0.0,
+        -0.0487729,
+        0.0
+      ],
+      "spin_rpm": 0.46574688743560216,
+      "topspin_rad_s": -0.0487729,
+      "sidespin_rad_s": 0.0,
+      "contact_duration_s": {
+        "left": 0.011999999999999234,
+        "right": 0.011999999999999234
+      },
+      "maximum_ball_compression_m": 0.00397984,
+      "left_peak_normal_force_n": 27.0553,
+      "right_peak_normal_force_n": 27.0553,
+      "left_peak_tangential_force_n": 24.349768377594565,
+      "right_peak_tangential_force_n": 24.349768377594565,
+      "left_rpm_droop": 22.13536545805071,
+      "right_rpm_droop": 22.13536545805071,
+      "left_droop_percent": 0.7728245557712997,
+      "right_droop_percent": 0.7728245557712997,
+      "recovery_time_s": 0.6070000000000011,
+      "motor_response": {
+        "left_precontact_rpm": 2864.216113831815,
+        "right_precontact_rpm": -2864.216113831815,
+        "left_min_contact_rpm_magnitude": 2842.0807483737644,
+        "right_min_contact_rpm_magnitude": 2842.0807483737644,
+        "left_max_contact_rpm_magnitude": 2864.5502432394783,
+        "right_max_contact_rpm_magnitude": 2864.5502432394783,
+        "left_precontact_torque_nm": 0.601266,
+        "right_precontact_torque_nm": -0.601266,
+        "left_precontact_current_a": 19.395677419354836,
+        "right_precontact_current_a": 19.395677419354836,
+        "left_peak_event_torque_nm": 0.62,
+        "right_peak_event_torque_nm": 0.62,
+        "left_peak_event_current_a": 20.0,
+        "right_peak_event_current_a": 20.0,
+        "estimated_peak_required_bus_voltage_v": 11.388207829006722,
+        "provisional_bus_voltage_v": 12.8,
+        "recovery_motor_mechanical_work_j": 224.03999999999996
+      },
+      "apex_height_m": 0.705116,
+      "time_to_apex_s": 0.26500000000000057,
+      "first_bounce_xyz_m": [
+        5.01983,
+        0.0,
+        0.0306468
+      ],
+      "first_bounce_time_s": 0.6689999999999987,
+      "first_bounce_time_from_exit_s": 0.6359999999999992,
+      "horizontal_range_m": 4.9775795,
+      "lateral_deviation_m": 0.0,
+      "velocity_immediately_before_bounce_m_s": [
+        7.82638,
+        0.0,
+        -3.62118
+      ],
+      "energy_accounting": {
+        "left_wheel_kinetic_pre_j": 303.68080645842355,
+        "right_wheel_kinetic_pre_j": 303.68080645842355,
+        "wheel_kinetic_pre_j": 607.3616129168471,
+        "left_wheel_kinetic_post_j": 298.96090150199154,
+        "right_wheel_kinetic_post_j": 298.96090150199154,
+        "wheel_kinetic_post_j": 597.9218030039831,
+        "motor_mechanical_work_event_j": 5.139999999999873,
+        "ball_initial_translational_j": 0.260419896586,
+        "ball_exit_translational_j": 1.9726290452872004,
+        "ball_exit_rotational_j": 5.008316623442814e-08,
+        "potential_energy_change_j": 0.021828833599999996,
+        "elastic_energy_stored_j": 0.08303848403570101,
+        "elastic_energy_recovered_j": 0.062378394745183405,
+        "elastic_hysteresis_j": 0.020660089290517603,
+        "normal_damping_dissipation_j": 0.0039589079212744875,
+        "tangential_friction_dissipation_j": 7.982749410517053,
+        "contact_dissipation_j": 8.007368407728846,
+        "drivetrain_damping_j": 4.645887058811963,
+        "residual_j": 0.1925164139386748,
+        "residual_fraction": 0.00031417810443436873
+      },
+      "tyre_friction_assumption": {
+        "coefficient": 0.9,
+        "classification": "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+        "physically_calibrated": false
+      },
+      "wheel_mass_assumption": 0.9,
+      "wheel_inertia_assumption": 0.006751162108290868,
+      "timestep_s": 0.001,
+      "validity": {
+        "successful_launch": true,
+        "target_reachable": true,
+        "bilateral_wheel_contact": true,
+        "post_release_fixed_component_contact": false,
+        "classification": "PROVISIONAL_TYRE_FRICTION_NATIVE_DYNAMICS",
+        "tangential_transfer_physically_validated": false
+      }
+    },
+    "motor_reachable_symmetric_target_magnitude_rad_s": [
+      80.0,
+      300.0
+    ]
+  },
+  "trajectory_model": {
+    "gravity": true,
+    "aerodynamic_drag": false,
+    "magnus_force": false,
+    "spin_decay": false,
+    "ball_exit_state_validated": true,
+    "court_trajectory_model_validated": false,
+    "first_bounce_values_classification": "GRAVITY_ONLY_DIAGNOSTIC",
+    "court_target_mapping_performed": false,
+    "range_capability": "NOT_EVALUATED_WITH_CREDIBLE_COURT_MODEL",
+    "targeting_capability": "NOT_EVALUATED_NO_VALIDATED_HORIZONTAL_AIMING_DOF"
+  },
+  "repeatability": {
+    "deterministic_simulation_repeatability_only": true,
+    "physical_repeatability_claimed": false,
+    "conditions": {
+      "low": {
+        "target_magnitude_rad_s": 80,
+        "executed_trials": 3,
+        "exit_speed_m_s": {
+          "mean": 6.910511164450861,
+          "population_stddev": 0.0
+        },
+        "elevation_deg": {
+          "mean": 19.148589995990356,
+          "population_stddev": 0.0
+        },
+        "azimuth_deg": {
+          "mean": 0.0,
+          "population_stddev": 0.0
+        },
+        "spin_rpm": {
+          "mean": 1.0925923181281378,
+          "population_stddev": 0.0
+        },
+        "first_bounce_x_m": {
+          "mean": 3.81696,
+          "population_stddev": 0.0
+        },
+        "first_bounce_y_m": {
+          "mean": 0.0,
+          "population_stddev": 0.0
+        }
+      },
+      "medium": {
+        "target_magnitude_rad_s": 200,
+        "executed_trials": 3,
+        "exit_speed_m_s": {
+          "mean": 6.91697242968338,
+          "population_stddev": 0.0
+        },
+        "elevation_deg": {
+          "mean": 18.015050637657414,
+          "population_stddev": 0.0
+        },
+        "azimuth_deg": {
+          "mean": 0.0,
+          "population_stddev": 0.0
+        },
+        "spin_rpm": {
+          "mean": 0.46284581113292306,
+          "population_stddev": 0.0
+        },
+        "first_bounce_x_m": {
+          "mean": 3.70794,
+          "population_stddev": 0.0
+        },
+        "first_bounce_y_m": {
+          "mean": 0.0,
+          "population_stddev": 0.0
+        }
+      },
+      "high": {
+        "target_magnitude_rad_s": 300,
+        "executed_trials": 3,
+        "exit_speed_m_s": {
+          "mean": 6.917863615488527,
+          "population_stddev": 0.0
+        },
+        "elevation_deg": {
+          "mean": 17.8460357763908,
+          "population_stddev": 0.0
+        },
+        "azimuth_deg": {
+          "mean": 0.0,
+          "population_stddev": 0.0
+        },
+        "spin_rpm": {
+          "mean": 0.2978635689546611,
+          "population_stddev": 0.0
+        },
+        "first_bounce_x_m": {
+          "mean": 3.68563,
+          "population_stddev": 0.0
+        },
+        "first_bounce_y_m": {
+          "mean": 0.0,
+          "population_stddev": 0.0
+        }
+      }
+    }
+  },
+  "evidence": {
+    "campaign_raw_data_location_during_generation": "/tmp/flywheel_campaign",
+    "campaign_plot": "docs/images/flywheel-capability-campaign-map.png",
+    "representative_stage_frames": "docs/images/flywheel-capability-representative-stages.png",
+    "runner": "scripts/run_flywheel_capability_case.py",
+    "case_analyzer": "scripts/analyze_flywheel_capability_case.py",
+    "campaign_compiler": "scripts/compile_flywheel_capability_campaign.py",
+    "plotter": "scripts/plot_flywheel_capability_campaign.py"
+  },
+  "classifications": {
+    "STANDALONE_LAUNCHER_CAPABILITY_BENCH_VALID": true,
+    "POST_FLYWHEEL_PATH_NONCONTACTING": true,
+    "NORMAL_CONTACT_LAUNCH_VALIDATED": true,
+    "TANGENTIAL_CONTACT_LAUNCH_VALIDATED": false,
+    "LAUNCH_EXIT_VELOCITY_VALIDATED": true,
+    "LAUNCH_EXIT_SPEED_VALIDATED": true,
+    "LAUNCH_EXIT_ELEVATION_VALIDATED": true,
+    "LAUNCH_EXIT_AZIMUTH_VALIDATED": true,
+    "LAUNCH_SPIN_VALIDATED": false,
+    "LAUNCH_SPIN_NUMERICALLY_CHARACTERIZED": true,
+    "RPM_DROOP_VALIDATED": true,
+    "RPM_RECOVERY_VALIDATED": true,
+    "LAUNCH_ENERGY_ACCOUNTING_VALIDATED": true,
+    "LAUNCH_CONTACT_TIMESTEP_CONVERGED": true,
+    "LAUNCHER_12_M_S_CAPABILITY": false,
+    "LAUNCHER_14_M_S_CAPABILITY": false,
+    "LAUNCHER_16_M_S_CAPABILITY": false,
+    "LAUNCHER_18_M_S_CAPABILITY": false,
+    "BALL_EXIT_STATE_VALIDATED": true,
+    "COURT_TRAJECTORY_MODEL_VALIDATED": false,
+    "OPPOSITE_BASELINE_REACH_CAPABILITY": false,
+    "LEFT_DEEP_CORNER_REACH_CAPABILITY": false,
+    "RIGHT_DEEP_CORNER_REACH_CAPABILITY": false,
+    "LAUNCHER_CAPABILITY_MAP_GENERATED": true,
+    "BALL_LAUNCH_PHYSICS_VALIDATED_IN_SIM": false,
+    "PHYSICAL_FLYWHEEL_WHEEL_VALIDATED": false,
+    "PHYSICAL_HARDWARE_PENDING": true
+  }
+}

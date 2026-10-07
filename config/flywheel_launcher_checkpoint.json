@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "checkpoint_date": "2026-08-26",
+  "scope": "isolated_standalone_flywheel_launcher_provisional_freeze",
+  "authoritative_document": "docs/mechanism/standalone-flywheel-launcher.md",
+  "decision": {
+    "status": "PROVISIONALLY_FROZEN_PHYSICAL_VALIDATION_PENDING",
+    "architecture": "dual_direct_drive_side_by_side_flywheels",
+    "target_exit_speed_m_s": [12.0, 14.0],
+    "physical_capability_claimed": false,
+    "reopen_order": [
+      "tread_material_and_contact_behaviour",
+      "contact_arc_nip_and_normal_load",
+      "wheel_mechanical_interface",
+      "larger_architectural_changes"
+    ]
+  },
+  "frozen_provisional_configuration": {
+    "motor_count": 2,
+    "motor": "ODrive D5065-270KV",
+    "drive": "direct",
+    "flywheel_diameter_m": 0.2,
+    "flywheel_width_m": 0.05,
+    "nip_m": 0.058,
+    "wheel_centre_spacing_m": 0.258,
+    "launcher_pitch_deg": 20.0,
+    "motor_body_location": "outside_upper_panel",
+    "shaft_hub_wheel_direction": "toward_launcher_interior",
+    "post_nip_exit_corridor": "corrected_noncontacting_in_simulation",
+    "cad_exit_cylinder": "reference_keep_out_not_physical_barrel",
+    "physical_post_wheel_barrel_required": false
+  },
+  "candidate_wheel": {
+    "selection_status": "PROVISIONAL_SELLER_DATA_NOT_MEASURED",
+    "source": "AliExpress candidate already evaluated by the project",
+    "quantity": 2,
+    "nominal_diameter_m": 0.2,
+    "nominal_width_m": 0.05,
+    "nominal_axle_or_bore_m": 0.01,
+    "construction": "aluminium-alloy hub plus rubber tyre",
+    "seller_listed_mass_kg": 0.9,
+    "critical_reopen_condition": "If the 10 mm datum is a bearing inner race rather than a rigid concentric through-bore with clampable hub faces, reopen mechanical Gate A before final hub manufacture."
+  },
+  "provisional_hub_arbor": {
+    "status": "SIMULATION_INTERFACE_ONLY_NOT_RELEASED_FOR_MANUFACTURE",
+    "path": "D5065 8 mm D-shaft -> metal clamping/adaptor/arbor -> 10 mm wheel interface",
+    "shaft_engagement_m": 0.0215,
+    "positive_clamping_required": true,
+    "removable_axial_retention_required": true,
+    "printed_torque_transmitting_hub_allowed": false,
+    "final_dimensions_depend_on_received_wheel_measurement": true
+  },
+  "simulation_evidence": {
+    "post_nip_path_noncontacting": true,
+    "kinematic_14_m_s_potential_demonstrated": true,
+    "first_converged_diagnostic_at_or_above_14_m_s": {
+      "exit_speed_m_s": 14.389349500686263,
+      "diagnostic_friction_coefficient": 3.0,
+      "wheel_target_magnitude_rad_s": 160.0,
+      "timestep_s": 0.00025,
+      "physical_material_property": false
+    },
+    "ideal_traction_upper_bound_m_s": 25.769453205297157,
+    "ideal_upper_bound_diagnostic_friction_coefficient": 10.0,
+    "traction_primary_uncertainty": true,
+    "motor_torque_or_energy_primary_limit": false
+  },
+  "physical_validation": {
+    "tyre_friction_validated": false,
+    "exit_speed_validated": false,
+    "range_validated": false,
+    "spin_validated": false,
+    "hardware_pending": true,
+    "required_acceptance_topics": [
+      "exit_speed_12_to_14_m_s",
+      "wheel_recovery",
+      "slip",
+      "repeatability",
+      "ball_felt_wear",
+      "vibration_and_runout",
+      "motor_current_and_temperature",
+      "structural_behaviour"
+    ]
+  },
+  "manufacturing_release": {
+    "safe_now": [
+      "non_manufacturing_test_and_measurement_planning",
+      "standalone_simulation_and_regression_artifacts"
+    ],
+    "hold_until_hardware_measurement": [
+      "final_wheel_hub_or_arbor",
+      "final_upper_panel_service_cutout",
+      "wheel_side_fasteners_and_thread_engagement",
+      "final_balance_runout_and_retention_definition"
+    ],
+    "structurally_screened_in_simulation": true,
+    "physically_structurally_validated": false
+  },
+  "classifications": {
+    "FLYWHEEL_ARCHITECTURE_FROZEN_PROVISIONALLY": true,
+    "FLYWHEEL_STANDALONE_MODEL_DEFINED": true,
+    "FLYWHEEL_POST_NIP_PATH_VALIDATED_IN_SIM": true,
+    "FLYWHEEL_KINEMATIC_14MPS_POTENTIAL_DEMONSTRATED": true,
+    "FLYWHEEL_TARGET_EXIT_SPEED_MIN_M_S": 12,
+    "FLYWHEEL_TARGET_EXIT_SPEED_MAX_M_S": 14,
+    "FLYWHEEL_MOTOR_REDESIGN_REQUIRED": false,
+    "FLYWHEEL_NIP_REDESIGN_REQUIRED": false,
+    "FLYWHEEL_TRACTION_IS_PRIMARY_UNCERTAINTY": true,
+    "FLYWHEEL_WHEEL_CANDIDATE_SELECTED_PROVISIONALLY": true,
+    "FLYWHEEL_WHEEL_PHYSICALLY_MEASURED": false,
+    "FLYWHEEL_FINAL_HUB_RELEASED_FOR_MANUFACTURE": false,
+    "FLYWHEEL_PHYSICAL_EXIT_SPEED_VALIDATED": false,
+    "FLYWHEEL_PHYSICAL_RANGE_VALIDATED": false,
+    "FLYWHEEL_PHYSICAL_SPIN_VALIDATED": false,
+    "FLYWHEEL_PHYSICAL_HARDWARE_PENDING": true,
+    "FLYWHEEL_READY_FOR_NEXT_PROJECT_PHASE": true,
+    "FLYWHEEL_ACTIVE_DESIGN_UNAMBIGUOUS": true,
+    "FLYWHEEL_SUPERSEDED_ATTEMPTS_ARCHIVED": true,
+    "FLYWHEEL_HISTORICAL_TRACEABILITY_PRESERVED": true,
+    "FLYWHEEL_STALE_ACTIVE_REFERENCES": false
+  }
+}

@@ -5,9 +5,11 @@ entry hood (debug log #45-#56), parametric OpenSCAD with all dimensions in
 `basket-bin-v2/params.scad`. Renders/exports run through the
 `docker compose --profile cad` services.
 
-Not yet modelled as manufacturing CAD: chassis frame, two-motor dual-wheel
-intake and funnel — see below. Their current layout is documented in
-`docs/hardware/chassis-layout-4wd-dual-intake-el.md`.
+Active intake work is **`collector-intake-v1/option-a/`**. This self-contained
+directory holds the curved-cheek, plywood-bridge, 124 x 73 mm RC-wheel assembly,
+previews, export script and all currently exportable Option A solids. Provisional bearing,
+hub, IR-sensor and motor interfaces are called out in its README rather than
+being mixed with the earlier straight-cheek/rail exports.
 
 The previous `3d-printable-base` and `cyber-shell` models described superseded
 single-roller, scoop, launcher, 760 x 430 mm chassis, and cosmetic-shell
@@ -18,13 +20,18 @@ concepts. They were removed from the working tree on the
 rejected one-motor gear-train option. The active intake has two independent
 motors, one per side-pinch wheel.
 
+Exploratory launcher packaging lives in **`flywheel-launcher-v0/`**. It is an
+envelope-only, non-printable study for a guarded, pitch-adjustable dual
+flywheel module and its feed interface; it does not supersede the active intake
+or basket geometry.
+
 Current mechanical sources of truth:
 
 - `ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro`
 - `ros2_ws/src/tennis_robot/urdf/components/basket.urdf.xacro`
-- `docs/mechanism/dual-wheel-intake-design-el.md`
+- `docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md`
 - `docs/mechanism/basket-bin-redesign-spec-el.md`
-- `docs/mechanism/intake-debug-log-el.md`
+- `docs/archive/mechanism/intake/README.md` (historical intake index only)
 - `docs/hardware/chassis-layout-4wd-dual-intake-el.md`
 
 The next SCAD model should be generated from the validated 920 x 580 mm 4WD

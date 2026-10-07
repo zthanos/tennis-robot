@@ -39,6 +39,10 @@ topics:
     type: std_msgs/msg/String
     qos:
       reliability: best_effort
+  # Throwing Mode actuator feedback. Keep raw camera/depth local; joint state
+  # is the stable ros2_control feedback contract needed by the Pi console.
+  /joint_states:
+    type: sensor_msgs/msg/JointState
 
   # LAN -> PC local: actuator commands only.
   /cmd_vel_nav:
@@ -54,5 +58,14 @@ topics:
     type: tennis_robot_msgs/msg/CollectorCmd
     reversed: true
   /ball/collected:
+    type: std_msgs/msg/String
+    reversed: true
+  /basket_velocity_controller/commands:
+    type: std_msgs/msg/Float64MultiArray
+    reversed: true
+  /flywheel_velocity_controller/commands:
+    type: std_msgs/msg/Float64MultiArray
+    reversed: true
+  /throwing/feed_request:
     type: std_msgs/msg/String
     reversed: true

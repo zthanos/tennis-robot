@@ -95,6 +95,16 @@ class GazeboExtrasNode(Node):
         # marker publishers below (they no-op without a robot pose).
         self.create_subscription(Odometry, "/odom", self._on_odom, 10)
         self.create_subscription(String, "/ball/collected", self._on_ball_collected, 10)
+        # Phase-1 Throwing Mode feed boundary. This deliberately accepts and
+        # records a correlated event only; it does not pretend to launch a
+        # physical Gazebo ball or provide trajectory analytics.
+        self.create_subscription(
+            String, "/throwing/feed_request", self._on_throwing_feed_request, 10
+        )
+
+        # Feed-request de-duplication, keyed by the session's throw_ids.
+        self._throwing_session_id: str | None = None
+        self._throwing_seen_ids: set[str] = set()
 
         self._pub_ir = self.create_publisher(IrReadings, "/ir/readings", 10)
         self._pub_intake_beam = self.create_publisher(
@@ -334,6 +344,39 @@ class GazeboExtrasNode(Node):
             self.get_logger().info(f"ball collected -> removing {name} from world (legacy mode)")
         except OSError as exc:
             self.get_logger().warning(f"gz remove failed for {name}: {exc}")
+
+    def _on_throwing_feed_request(self, msg: String) -> None:
+        try:
+            request = json.loads(msg.data)
+        except (TypeError, json.JSONDecodeError):
+            self.get_logger().warning("rejected malformed throwing feed request")
+            return
+        session_id = str(request.get("session_id", "")).strip()
+        throw_id = str(request.get("throw_id", "")).strip()
+        try:
+            count = int(request.get("count", 0))
+        except (TypeError, ValueError):
+            count = 0
+        if not session_id or not throw_id or count != 1:
+            self.get_logger().warning("rejected incomplete throwing feed request")
+            return
+        # A feed request is a discrete event, not an idempotent setpoint, and it
+        # is published as a short burst so a DDS drop cannot stall the session.
+        # throw_id exists precisely to make consumption idempotent: at-least-once
+        # delivery plus de-duplication here gives effectively-once feeding. A
+        # real feeder must dispense one ball per throw_id, not one per message.
+        if session_id != self._throwing_session_id:
+            self._throwing_session_id = session_id
+            self._throwing_seen_ids.clear()
+        if throw_id in self._throwing_seen_ids:
+            self.get_logger().debug(f"ignored duplicate feed request throw_id={throw_id}")
+            return
+        self._throwing_seen_ids.add(throw_id)
+        self.get_logger().info(
+            "accepted placeholder throwing feed event "
+            f"session_id={session_id} throw_id={throw_id} "
+            f"target={request.get('target_zone', 'unknown')}"
+        )
 
     def _publish(self) -> None:
         ir_msg = IrReadings()

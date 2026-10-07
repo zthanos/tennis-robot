@@ -10,13 +10,15 @@ import json
 import subprocess
 import sys
 import tempfile
+
+import pytest
 from http import HTTPStatus
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from tennis_robot.console.app import ConsoleApp  # noqa: E402
+from tennis_robot.console.app import CommandRejected, ConsoleApp  # noqa: E402
 from tennis_robot.console.camera_service import CameraService  # noqa: E402
 from tennis_robot.console.config import ConsoleConfig  # noqa: E402
 from tennis_robot.console.path_service import PathService  # noqa: E402
@@ -282,3 +284,56 @@ def test_json_transport_negotiates_gzip_without_changing_data():
     assert len(compressed) < len(identity)
     assert _accepts_gzip("br, gzip") is True
     assert _accepts_gzip("gzip;q=0") is False
+
+
+# ---------------------------------------------------------------------------
+# Machine-ownership interlock: Throwing Mode vs collection/drive commands
+# ---------------------------------------------------------------------------
+
+class _FakeThrowing:
+    def __init__(self, conflict=None):
+        self.conflict = conflict
+
+    def machine_owner_conflict(self):
+        return self.conflict
+
+
+class _CollectorRos(_FakeRos):
+    def __init__(self):
+        super().__init__()
+        self.collector_actions = []
+
+    def collector_control(self, action):
+        self.collector_actions.append(action)
+        return {"ok": True}
+
+
+def _make_with_throwing(root: Path, ros, throwing) -> ConsoleApp:
+    app = _make(root, ros, _FakeDB())
+    app.throwing = throwing
+    return app
+
+
+def test_drive_commands_are_refused_while_throwing_owns_the_machine(tmp_path):
+    app = _make_with_throwing(tmp_path, _FakeRos(), _FakeThrowing("Throwing Mode owns the robot"))
+    for mode in ("collect_route", "map_court", "move_forward"):
+        with pytest.raises(CommandRejected):
+            app.set_command(mode)
+    # idle is the stop command and must never be blocked by an interlock.
+    assert app.set_command("idle") is not None
+
+
+def test_drive_commands_pass_through_when_the_machine_is_free(tmp_path):
+    app = _make_with_throwing(tmp_path, _FakeRos(), _FakeThrowing(None))
+    assert app.set_command("collect_route") is not None
+    # An app built without a Throwing Mode service keeps the old behaviour.
+    assert _make(tmp_path, _FakeRos(), _FakeDB()).set_command("collect_route") is not None
+
+
+def test_collector_start_is_refused_but_stop_always_reaches_the_robot(tmp_path):
+    ros = _CollectorRos()
+    app = _make_with_throwing(tmp_path, ros, _FakeThrowing("Throwing Mode owns the robot"))
+    assert not app.collector_control("start")["ok"]
+    assert ros.collector_actions == []
+    assert app.collector_control("stop")["ok"]
+    assert ros.collector_actions == ["stop"]

@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-08-25",
+  "scope": "isolated_flywheel_launcher_capability_bench",
+  "decision": {
+    "status": "STOPPED",
+    "stopped_at_gate": "A_STANDALONE_LAUNCHER_MECHANICAL_COMPLETENESS",
+    "reason": "The repository does not define the launcher-specific motor mounts, wheel hubs, shaft engagement, attachment fasteners, axial retention, wheel mass properties, or pitch hardware. Inventing them is prohibited and their inertia/load path affects launcher physics.",
+    "subsequent_gates_run": false,
+    "launch_trials_run": false
+  },
+  "authoritative_ball_reference": {
+    "path": "config/tennis_ball_compliance_calibration_results.json",
+    "sha256": "a7aa85327219d624c562b4c528f946bb62e1326d0b58dc7064f7439a07731a8a",
+    "working_tree_modified_by_this_task": false,
+    "launcher_results_used_for_fit": false
+  },
+  "mechanical_datum_ledger": [
+    {
+      "datum": "tennis_ball_diameter_m",
+      "value": 0.066,
+      "classification": "EXISTING_CAD_DATUM",
+      "source": "cad/flywheel-launcher-v0/params.scad:ball_d"
+    },
+    {
+      "datum": "flywheel_diameter_m",
+      "value": 0.2,
+      "classification": "EXISTING_CAD_DATUM",
+      "source": "cad/flywheel-launcher-v0/params.scad:wheel_d"
+    },
+    {
+      "datum": "flywheel_width_m",
+      "value": 0.05,
+      "classification": "EXISTING_CAD_DATUM",
+      "source": "cad/flywheel-launcher-v0/params.scad:wheel_width"
+    },
+    {
+      "datum": "wheel_centre_spacing_m",
+      "value": 0.258,
+      "classification": "DERIVED",
+      "source": "wheel_d + nip_gap in cad/flywheel-launcher-v0/params.scad"
+    },
+    {
+      "datum": "geometric_nip_m",
+      "value": 0.058,
+      "classification": "EXISTING_CAD_DATUM",
+      "source": "cad/flywheel-launcher-v0/params.scad:nip_gap"
+    },
+    {
+      "datum": "cradle_plate_size_m",
+      "value": [0.256, 0.314, 0.008],
+      "classification": "DERIVED",
+      "source": "cad/flywheel-launcher-v0/launcher-envelope.scad:side_plate"
+    },
+    {
+      "datum": "mechanical_pitch_deg",
+      "value": 20.0,
+      "classification": "EXISTING_CAD_DATUM",
+      "source": "cad/flywheel-launcher-v0/params.scad:pitch_deg"
+    },
+    {
+      "datum": "d5065_motor_body_diameter_m",
+      "value": 0.05,
+      "classification": "MANUFACTURER_SPEC",
+      "source": "ODrive D5065 product drawing N5065CustomShaft.PNG"
+    },
+    {
+      "datum": "d5065_motor_body_length_m",
+      "value": 0.065,
+      "classification": "MANUFACTURER_SPEC",
+      "source": "ODrive D5065 product drawing N5065CustomShaft.PNG"
+    },
+    {
+      "datum": "d5065_primary_shaft_diameter_m",
+      "value": 0.008,
+      "classification": "MANUFACTURER_SPEC",
+      "source": "ODrive D5065 product page and product drawing"
+    },
+    {
+      "datum": "d5065_primary_shaft_projection_m",
+      "value": 0.03,
+      "classification": "MANUFACTURER_SPEC",
+      "source": "ODrive D5065 product drawing N5065CustomShaft.PNG"
+    },
+    {
+      "datum": "d5065_primary_shaft_flat_length_m",
+      "value": 0.024,
+      "classification": "MANUFACTURER_SPEC",
+      "source": "ODrive D5065 product drawing N5065CustomShaft.PNG"
+    },
+    {
+      "datum": "d5065_primary_shaft_flat_depth_m",
+      "value": 0.0005,
+      "classification": "MANUFACTURER_SPEC",
+      "source": "ODrive D5065 product drawing N5065CustomShaft.PNG detail A"
+    },
+    {
+      "datum": "d5065_secondary_shaft_projection_m",
+      "value": 0.016,
+      "classification": "MANUFACTURER_SPEC",
+      "source": "ODrive D5065 product drawing N5065CustomShaft.PNG"
+    },
+    {
+      "datum": "d5065_mount_pattern",
+      "value": "4 x diameter 0.004 m on pitch circle diameter 0.030 m",
+      "classification": "MANUFACTURER_SPEC",
+      "source": "ODrive D5065 product drawing N5065CustomShaft.PNG"
+    },
+    {
+      "datum": "motor_mount_plate_or_bracket_geometry",
+      "value": null,
+      "classification": "MISSING",
+      "source": "No launcher-specific definition found in repository"
+    },
+    {
+      "datum": "wheel_hub_geometry_and_material",
+      "value": null,
+      "classification": "MISSING",
+      "source": "No launcher-specific definition found in repository"
+    },
+    {
+      "datum": "shaft_engagement_and_attachment_fasteners",
+      "value": null,
+      "classification": "MISSING",
+      "source": "No launcher-specific definition found in repository"
+    },
+    {
+      "datum": "axial_retention_solution",
+      "value": null,
+      "classification": "MISSING",
+      "source": "No launcher-specific definition found in repository"
+    },
+    {
+      "datum": "flywheel_mass_and_rotational_inertia",
+      "value": {
+        "simulation_mass_kg": 0.4,
+        "simulation_solid_cylinder_inertia_kg_m2": 0.002
+      },
+      "classification": "PROVISIONAL",
+      "source": "ros2_ws/src/tennis_robot/urdf/components/flywheel_launcher_module.urdf.xacro"
+    },
+    {
+      "datum": "motor_rotor_inertia_kg_m2",
+      "value": null,
+      "classification": "MISSING",
+      "source": "Not stated in repository or cited manufacturer characteristics"
+    },
+    {
+      "datum": "pitch_pivot_bearings_lock_and_datum_geometry",
+      "value": null,
+      "classification": "MISSING",
+      "source": "Only a fixed 20 degree transform exists"
+    }
+  ],
+  "motor_evidence": {
+    "manufacturer_product_page": "https://shop.odriverobotics.com/products/odrive-custom-motor-d5065",
+    "manufacturer_characteristics": "https://docs.odriverobotics.com/v/latest/hardware/odrive-motors.html",
+    "parameters_not_used_in_trials_because_gate_a_failed": {
+      "speed_constant_rpm_per_v": 270.0,
+      "torque_constant_n_m_per_a": 0.031,
+      "speed_torque_gradient_rpm_per_n_m": 515.67,
+      "pole_pairs": 7,
+      "stator_slots": 12,
+      "phase_neutral_resistance_ohm": 0.039,
+      "phase_neutral_inductance_h": 0.000016,
+      "continuous_current_free_air_a": 45.0,
+      "continuous_current_forced_air_a": 65.0,
+      "peak_current_3s_a": 85.0,
+      "thermistor": "NTC 10k 1% 3435"
+    },
+    "repository_supply_voltage_v": {
+      "value": 12.8,
+      "classification": "PROVISIONAL",
+      "source": "docs/hardware/prototype-purchase-list-el.md"
+    },
+    "repository_current_limit_a_per_motor": {
+      "value": [18.0, 20.0],
+      "classification": "PROVISIONAL",
+      "source": "docs/hardware/prototype-purchase-list-el.md"
+    }
+  },
+  "contact_status": {
+    "calibrated_ball_normal_compliance_preserved": true,
+    "launcher_tyre_friction_calibrated": false,
+    "launcher_tyre_normal_compliance_validated": false,
+    "contact_sensitivity_study_run": false
+  },
+  "requested_outputs": {
+    "operating_points": [],
+    "capability_map_generated": false,
+    "performance_plots_generated": false,
+    "court_map_generated": false,
+    "repeatability_characterized": false
+  },
+  "classifications": {
+    "STANDALONE_FLYWHEEL_LAUNCHER_MECHANICALLY_COMPLETE": false,
+    "D5065_MOTOR_MODEL_EVIDENCE_SUPPORTED": false,
+    "D5065_POWER_LIMITS_ENFORCED": false,
+    "CALIBRATED_BALL_MODEL_UNCHANGED": true,
+    "LAUNCHER_TYRE_FRICTION_CALIBRATED": false,
+    "LAUNCHER_TYRE_NORMAL_COMPLIANCE_VALIDATED": false,
+    "NORMAL_CONTACT_LAUNCH_VALIDATED": false,
+    "TANGENTIAL_CONTACT_LAUNCH_VALIDATED": false,
+    "LAUNCH_EXIT_VELOCITY_VALIDATED": false,
+    "LAUNCH_EXIT_ANGLE_VALIDATED": false,
+    "LAUNCH_SPIN_VALIDATED": false,
+    "RPM_DROOP_AND_RECOVERY_VALIDATED": false,
+    "LAUNCH_ENERGY_ACCOUNTING_VALIDATED": false,
+    "LAUNCHER_CONTACT_TIMESTEP_CONVERGED": false,
+    "LAUNCHER_12_M_S_CAPABILITY": false,
+    "LAUNCHER_14_M_S_CAPABILITY": false,
+    "LAUNCHER_16_M_S_CAPABILITY": false,
+    "LAUNCHER_18_M_S_CAPABILITY": false,
+    "COURT_TRAJECTORY_MODEL_VALIDATED": false,
+    "OPPOSITE_BASELINE_REACH_CAPABILITY": false,
+    "LEFT_DEEP_CORNER_REACH_CAPABILITY": false,
+    "RIGHT_DEEP_CORNER_REACH_CAPABILITY": false,
+    "LAUNCHER_CAPABILITY_MAP_GENERATED": false
+  }
+}

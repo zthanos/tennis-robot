@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import math
 import os
 import shutil
@@ -13,6 +14,40 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+
+import intake_geometry as geom  # noqa: E402
+
+#: Historical xacro argument datum for the nip. It predates the CAD alignment;
+#: ``intake_cad_alignment_x`` moves it onto ``geom.CAD_NIP_X_M``.
+LEGACY_NIP_X_M = 0.540
+
+
+def intake_frame_offsets(packaging_variant: str) -> dict:
+    """The ONE published intake frame mapping for a packaging variant.
+
+    ``functional_shift_x`` is the whole-functional-chain packaging shift;
+    ``intake_cad_alignment_x`` pulls the historical nip argument onto the frozen
+    CAD nip.  Their sum is what the xacro adds to ``intake_nip_x``.  Both the
+    generated model and the CI frame assertion read this function, so no
+    component can carry a private offset.
+    """
+
+    # packaging_shift_x_m fails loudly on any name other than the one machine,
+    # so everything below is unconditionally the CAD-aligned compact mapping.
+    functional_shift_x = geom.packaging_shift_x_m(packaging_variant)
+    cad_alignment_x = geom.CAD_NIP_X_M - LEGACY_NIP_X_M
+    nip_x_base_link = LEGACY_NIP_X_M + functional_shift_x + cad_alignment_x
+    return {
+        "packaging_variant": packaging_variant,
+        "cad_aligned": True,
+        "functional_shift_x_m": functional_shift_x,
+        "intake_cad_alignment_x_m": cad_alignment_x,
+        "legacy_nip_x_m": LEGACY_NIP_X_M,
+        "nip_x_base_link_m": nip_x_base_link,
+        "nip_x_cad_m": geom.CAD_NIP_X_M,
+    }
+
 DEFAULT_SOURCE = PROJECT_ROOT / "ros2_ws" / "src" / "tennis_robot" / "urdf" / "tennis_robot.urdf.xacro"
 DEFAULT_OUTPUT = PROJECT_ROOT / "runtime" / "tennis_robot.urdf"
 DEFAULT_SDF_OUTPUT = PROJECT_ROOT / "runtime" / "tennis_robot.sdf"
@@ -37,6 +72,20 @@ def parse_args() -> argparse.Namespace:
         default="true",
         choices=["true", "false"],
         help="ros2_control hardware backend: true=GazeboSimSystem, false=real robot.",
+    )
+    parser.add_argument(
+        "--packaging-variant",
+        default=os.getenv("ROBOT_PACKAGING_VARIANT", "compact"),
+        choices=["compact"],
+        help=(
+            "Robot mechanical/packaging configuration. Only `compact` remains: "
+            "it reconstructs the shifted compact CAD study (corrected bridge, "
+            "frozen curved cheeks, Option A handoff ramp, two-plate cradle) and "
+            "is the ONE machine that carries the intake and the flywheel "
+            "launcher together. The historical baseline / option-a-collect / "
+            "option-a-launch variants were archived on 2026-08-27 so that there "
+            "is exactly one robot to test."
+        ),
     )
     parser.add_argument(
         "--controllers-config",
@@ -125,7 +174,8 @@ def _patch_collision_bounce(
     _set_text(bounce, "threshold", threshold)
 
 
-def _patch_sdf_contacts(sdf_text: str) -> str:
+def _patch_sdf_contacts(sdf_text: str, packaging_variant: str = "compact",
+                        intake_fitted: bool = True) -> str:
     """Patch contact tuning and Gazebo-native intake collision geometry."""
     root = ET.fromstring(sdf_text)
     lip_height_m = max(0.0, float(os.getenv("INTAKE_LIP_RAISE_M", "0.0")))
@@ -142,8 +192,15 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
     # the wheels kick the ball up-back, the short bar becomes a ski-jump that
     # converts the kick's horizontal KE into climb over a 3 mm retention lip
     # into the chassis-flush hopper.
+    compact_packaging = packaging_variant == "compact"
     nip_x_m = float(os.getenv("INTAKE_NIP_X_M", "0.540"))
-    ramp_entry_default_m = nip_x_m if ramp_profile == "launch" else nip_x_m - 0.040
+    if compact_packaging:
+        # Funnel link itself is shifted -0.100 m. These are local link-frame
+        # values: channel_origin_x=-0.015 makes the world ramp run 0.360..0.320,
+        # matching the corrected OpenSCAD handoff behind the X=0.370 wheel nip.
+        ramp_entry_default_m = 0.475
+    else:
+        ramp_entry_default_m = nip_x_m if ramp_profile == "launch" else nip_x_m - 0.040
     ramp_entry_x_m = float(
         os.getenv("INTAKE_RAMP_ENTRY_X_M", str(ramp_entry_default_m))
     )
@@ -151,20 +208,40 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
     ramp_clear_z_m = max(lip_height_m, float(os.getenv("INTAKE_RAMP_CLEAR_Z_M", "0.004")))
     ramp_knee_x_m = float(os.getenv("INTAKE_RAMP_KNEE_X_M", "0.465"))
     ramp_end_x_m = float(os.getenv("INTAKE_RAMP_END_X_M", "0.425"))
-    launch_exit_x_m = float(os.getenv("INTAKE_LAUNCH_EXIT_X_M", "0.465"))
+    launch_exit_x_m = float(
+        os.getenv("INTAKE_LAUNCH_EXIT_X_M", "0.435" if compact_packaging else "0.465")
+    )
     launch_exit_z_m = float(os.getenv("INTAKE_LAUNCH_EXIT_Z_M", "0.032"))
     launch_exit_angle_deg = float(os.getenv("INTAKE_LAUNCH_EXIT_ANGLE_DEG", "35.0"))
+    tread_mu = os.getenv("INTAKE_TREAD_MU", "0.6")
+    ramp_mu = os.getenv("INTAKE_RAMP_MU", str(geom.BALL_RAMP_FRICTION_NOMINAL))
+    for label, value in (("INTAKE_TREAD_MU", tread_mu), ("INTAKE_RAMP_MU", ramp_mu)):
+        if not 0.0 < float(value) <= 1.5:
+            raise ValueError(
+                f"{label}={value!r} is outside any physical rubber/felt bound"
+            )
     surfaces = {
         "rear_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "rear_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "front_left_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
         "front_right_wheel_link": ("1.2", "1.2", "0.0", "0.0"),
-        # Dual intake wheels: rubber/foam sleeves. High friction gives grip;
-        # the soft contact terms keep the nominal 3 mm/side interference from
-        # behaving like rigid metal (the carriage springs below provide the
-        # actual compliance).
-        "intake_wheel_left_link": ("2.5", "2.5", "0.0", "0.0"),
-        "intake_wheel_right_link": ("2.5", "2.5", "0.0", "0.0"),
+        # Dual intake wheels. mu=2.5 was outside any rubber-on-felt value and
+        # was friction chosen to make capture succeed (D3). Tread friction is
+        # physically unmeasured, so it is a SWEPT bound over the same
+        # 0.3/0.6/0.9 range as the reduced-order study. The soft-contact terms
+        # keep the nominal 3 mm/side interference from behaving like rigid
+        # metal; they are numerical conditioning, and per the two-instrument
+        # rule they must never be used to produce exit-velocity evidence.
+        "intake_wheel_left_link": (tread_mu, tread_mu, "0.0", "0.0"),
+        "intake_wheel_right_link": (tread_mu, tread_mu, "0.0", "0.0"),
+        "flywheel_left_link": ("2.0", "2.0", "0.0", "0.0"),
+        "flywheel_right_link": ("2.0", "2.0", "0.0", "0.0"),
+        "compact_intake_cheeks_link": ("0.1", "0.1", "0.0", "0.0"),
+        # Ball-to-ramp friction is the third physically unmeasured
+        # coefficient; swept over a stated bound, never selected to pass.
+        "compact_handoff_ramp_link": (ramp_mu, ramp_mu, "0.0", "0.0"),
+        "compact_bridge_link": ("0.5", "0.5", "0.0", "0.0"),
+        "flywheel_launcher_frame_link": ("0.4", "0.4", "0.0", "0.0"),
     }
     wheel_soft_contact = {
         "kp": os.getenv("INTAKE_WHEEL_CONTACT_KP", "8000"),
@@ -175,6 +252,18 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
     soft_contacts = {
         "intake_wheel_left_link": wheel_soft_contact,
         "intake_wheel_right_link": wheel_soft_contact,
+        "flywheel_left_link": {
+            "kp": os.getenv("FLYWHEEL_CONTACT_KP", "18000"),
+            "kd": os.getenv("FLYWHEEL_CONTACT_KD", "45"),
+            "max_vel": os.getenv("FLYWHEEL_CONTACT_MAX_VEL", "1.0"),
+            "min_depth": os.getenv("FLYWHEEL_CONTACT_MIN_DEPTH", "0.0005"),
+        },
+        "flywheel_right_link": {
+            "kp": os.getenv("FLYWHEEL_CONTACT_KP", "18000"),
+            "kd": os.getenv("FLYWHEEL_CONTACT_KD", "45"),
+            "max_vel": os.getenv("FLYWHEEL_CONTACT_MAX_VEL", "1.0"),
+            "min_depth": os.getenv("FLYWHEEL_CONTACT_MIN_DEPTH", "0.0005"),
+        },
     }
     for link in root.findall(".//link"):
         name = link.attrib.get("name")
@@ -189,19 +278,32 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
     # sdformat may rename collisions while converting the URDF, so locate each
     # intake wheel's actual collision name and point its contact sensor at it.
     # Fail loud on both wheels: a silent mismatch means the bench counts zero
-    # contacts forever.
-    wheel_sensors = {
+    # contacts forever. The launch configuration has no intake assembly at all,
+    # which is a declared configuration rather than a mismatch.
+    wheel_sensors = {} if not intake_fitted else {
         "roller_contact_0": "intake_wheel_left_link",
         "roller_contact_1": "intake_wheel_right_link",
-    }
+    }  # type: ignore[dict-item]
+    if compact_packaging and intake_fitted:
+        wheel_sensors.update({
+            "basket_handoff_contact_0": "basket_link",
+            "compact_ramp_contact_0": "compact_handoff_ramp_link",
+        })
     wheel_col_names: dict[str, str] = {}
     for link in root.findall(".//link"):
         lname = link.attrib.get("name", "")
-        if lname not in wheel_sensors.values():
-            continue
-        collision = link.find("collision")
-        if collision is not None:
-            wheel_col_names[lname] = collision.attrib.get("name", "")
+        if lname in wheel_sensors.values():
+            collision = link.find("collision")
+            if collision is not None:
+                wheel_col_names[lname] = collision.attrib.get("name", "")
+        # sdformat reduces both fixed compact mesh links. Locate their renamed
+        # collisions by source-name fragment, independent of the owner link.
+        for collision in link.findall("collision"):
+            cname = collision.attrib.get("name", "")
+            if "compact_relieved_bin_col" in cname:
+                wheel_col_names["basket_link"] = cname
+            if "compact_relieved_handoff_ramp_col" in cname:
+                wheel_col_names["compact_handoff_ramp_link"] = cname
     missing = [l for l in wheel_sensors.values() if not wheel_col_names.get(l)]
     if missing:
         raise RuntimeError(f"expected intake wheel collisions for contact sensors: {missing}")
@@ -216,37 +318,24 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
             patched_sensors.add(sname)
     if patched_sensors != set(wheel_sensors):
         raise RuntimeError(
-            f"expected both intake wheel contact sensors, patched only {sorted(patched_sensors)}"
+            f"expected compact intake contact sensors, patched only {sorted(patched_sensors)}"
         )
 
-    # Lateral compliance for the rigid nip (docs/mechanism/dual-wheel-intake-design-el.md):
-    # each wheel's passive prismatic y-carriage gets a spring so the nominal
-    # 3 mm/side interference becomes grip force instead of a rigid jam
-    # (lesson of collect_test1/2; same SDF spring technique as debug-log #9).
-    # URDF cannot express joint springs, hence the SDF patch. Fail loud if the
-    # carriage joints are missing.
-    spring_k = os.getenv("INTAKE_WHEEL_SPRING_K", "1000")
-    carriage_joints = {
-        "intake_wheel_left_carriage_joint",
-        "intake_wheel_right_carriage_joint",
-    }
-    patched_joints: set[str] = set()
-    for joint in root.findall(".//joint"):
-        jname = joint.attrib.get("name", "")
-        if jname not in carriage_joints:
-            continue
-        axis = joint.find("axis")
-        if axis is None:
-            raise RuntimeError(f"carriage joint {jname} has no <axis> to patch")
-        dynamics = axis.find("dynamics")
-        if dynamics is None:
-            dynamics = ET.SubElement(axis, "dynamics")
-        _set_text(dynamics, "spring_reference", "0")
-        _set_text(dynamics, "spring_stiffness", spring_k)
-        patched_joints.add(jname)
-    if patched_joints != carriage_joints:
+    # The legacy prismatic carriage and its SDF spring patch are GONE (D1).
+    # The frozen architecture fixes both motors and both wheel centres to the
+    # bridge; compliance belongs to the ball and the Trencher tyre and is
+    # measured by the reduced-order solver, not by a Gazebo joint. Fail loud if
+    # a carriage joint ever reappears in a generated model.
+    stale = sorted(
+        joint.attrib.get("name", "")
+        for joint in root.findall(".//joint")
+        if "intake_wheel" in joint.attrib.get("name", "")
+        and "carriage" in joint.attrib.get("name", "")
+    )
+    if stale:
         raise RuntimeError(
-            f"expected carriage joints {sorted(carriage_joints)}, patched {sorted(patched_joints)}"
+            "legacy intake carriage joints must not exist in the generated "
+            f"model (LEGACY_CARRIAGE_REMOVED): {stale}"
         )
 
     # URDF has no ramp-prism primitive, and DART does not handle STL
@@ -282,7 +371,10 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
             ramp_steps = 28
             sheet_thickness = 0.002
             collision_clearance = 0.001
-            channel_origin_x = -0.015
+            # gz sdf fixed-joint reduction lumps funnel_link into base_link.
+            # Because this patch replaces the converted pose after lumping, it
+            # must reapply the compact funnel joint's -100 mm world shift.
+            channel_origin_x = -0.015 + (-0.100 if compact_packaging else 0.0)
             channel_width = 0.18
 
             def smoothstep(t: float) -> float:
@@ -366,6 +458,67 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
                 # Low/medium ramp friction: enough to guide the ball, not so
                 # much that the scoop becomes a brake or a conveyor wall.
                 _patch_collision_surface(segment_collision, "0.35", "0.35", "0.0", "0.0")
+
+            # Replace the STL visual with the same segmented surface.  The
+            # compact package moves the ramp relative to the legacy mesh; if
+            # only collision is patched, Gazebo shows the lip in front of the
+            # rollers even though physics correctly places it behind them.
+            channel_visual = next(
+                (
+                    visual
+                    for visual in intake_channel_link.findall("visual")
+                    if "intake_channel_vis" in visual.attrib.get("name", "")
+                ),
+                None,
+            )
+            if channel_visual is not None:
+                visual_material = channel_visual.find("material")
+                material_template = (
+                    copy.deepcopy(visual_material)
+                    if visual_material is not None
+                    else None
+                )
+                visual_name = channel_visual.attrib.get("name", "intake_channel_vis")
+                ramp_visuals = [channel_visual]
+                for i in range(1, ramp_steps):
+                    ramp_visuals.append(
+                        ET.SubElement(
+                            intake_channel_link,
+                            "visual",
+                            {"name": f"{visual_name}_seg_{i:02d}"},
+                        )
+                    )
+
+                for i, segment_visual in enumerate(ramp_visuals):
+                    (x0, z0), (x1, z1) = top_points[i], top_points[i + 1]
+                    dx = x0 - x1
+                    dz = z1 - z0
+                    length = max(0.001, (dx * dx + dz * dz) ** 0.5)
+                    pitch = math.atan2(dz, dx)
+                    normal_x = math.sin(pitch)
+                    normal_z = math.cos(pitch)
+                    center_x = (x0 + x1) / 2.0 - normal_x * sheet_thickness / 2.0
+                    center_z = (z0 + z1) / 2.0 - normal_z * sheet_thickness / 2.0
+
+                    segment_pose = segment_visual.find("pose")
+                    if segment_pose is None:
+                        segment_pose = ET.SubElement(segment_visual, "pose")
+                    segment_pose.text = (
+                        f"{channel_origin_x + center_x:.6f} 0 "
+                        f"{max(sheet_thickness / 2.0, center_z):.6f} "
+                        f"0 {pitch:.6f} 0"
+                    )
+
+                    segment_geometry = segment_visual.find("geometry")
+                    if segment_geometry is None:
+                        segment_geometry = ET.SubElement(segment_visual, "geometry")
+                    segment_geometry.clear()
+                    box = ET.SubElement(segment_geometry, "box")
+                    ET.SubElement(box, "size").text = (
+                        f"{length:.6f} {channel_width:.6f} {sheet_thickness:.6f}"
+                    )
+                    if i > 0 and material_template is not None:
+                        segment_visual.append(copy.deepcopy(material_template))
     if intake_channel_link is not None and intake_channel_collision_name:
         for old_sensor in list(intake_channel_link.findall("sensor")):
             if old_sensor.attrib.get("name") == "lip_contact_0":
@@ -384,7 +537,8 @@ def _patch_sdf_contacts(sdf_text: str) -> str:
     # Funnel cheeks: smooth guides — low friction so an off-centre ball slides
     # toward the scoop instead of being grabbed and pushed.
     for collision in root.findall(".//collision"):
-        if "cheek_col" in collision.attrib.get("name", ""):
+        if ("cheek_col" in collision.attrib.get("name", "")
+                or "compact_cheek_" in collision.attrib.get("name", "")):
             _patch_collision_surface(collision, "0.1", "0.1", "0.0", "0.0")
 
     # High safety deflector only; keep it comparatively slick so it does not
@@ -477,23 +631,84 @@ def main() -> int:
     env = os.environ.copy()
     env.setdefault("PYTHONUTF8", "1")
     controllers_config = args.controllers_config.resolve()
+    # ONE robot. `compact` follows compact-packaging-study.scad: the corrected
+    # bridge, frozen cheeks, Option A ramp and two-plate cradle let the intake
+    # and the launcher coexist. The baseline / option-a-* variants were archived
+    # on 2026-08-27; these names are kept only so the call sites below still
+    # read as intent rather than as bare `True`.
+    # There is exactly one machine, so nothing below branches on a variant.
+    # Every value here is the compact robot's value; the env vars remain as
+    # deliberate overrides, not as variant selectors.
+
+    # ONE published frame mapping (scripts/intake_geometry.py). The functional
+    # shift is a whole-chain packaging decision; the CAD alignment term pulls
+    # the legacy nip argument onto the frozen CAD nip. No component carries a
+    # private offset.
+    offsets = intake_frame_offsets(args.packaging_variant)
+    functional_shift_x = os.getenv(
+        "ROBOT_FUNCTIONAL_SHIFT_X_M", str(offsets["functional_shift_x_m"])
+    )
+    intake_cad_alignment_x = os.getenv(
+        "ROBOT_INTAKE_CAD_ALIGNMENT_X_M", str(offsets["intake_cad_alignment_x_m"])
+    )
+    battery_center_x = os.getenv("ROBOT_BATTERY_CENTER_X_M", "-0.255")
+    enable_compact_electronics = os.getenv("ROBOT_ENABLE_COMPACT_ELECTRONICS", "true")
+    enable_compact_mechanics = "true"
+    intake_parent_link = "compact_bridge_link"
+    enable_flywheel = os.getenv("ROBOT_ENABLE_FLYWHEEL", "true")
+    enable_intake = os.getenv("ROBOT_ENABLE_INTAKE", "true")
+    # The basket entry hood is the intake handoff mouth. The mechanical concept
+    # puts it "open or released" in the LAUNCH position (see
+    # docs/archive/mechanism/flywheel-launcher/flywheel-launcher-exploration-el.md), which is also what
+    # keeps its cheeks out of the launcher frame. Zero overhang removes the hood
+    # through the basket macro's existing switch — no new geometry, no new arg.
+    basket_hood_rear_overhang = os.getenv("BASKET_HOOD_REAR_OVERHANG_M", "0.040")
+    # Revised compact material-volume estimate: 1.012 kg removable relieved
+    # bin plus 0.087 kg fixed relieved hood/support portal (in compact Xacro).
+    # plus 45 ITF-range balls at 57 g each. Set payload to 0 for simulations
+    # that spawn the balls as individual Gazebo models, avoiding double count.
+    basket_empty_mass = os.getenv("ROBOT_BASKET_EMPTY_MASS_KG", "1.012")
+    basket_payload_mass = os.getenv("ROBOT_BASKET_PAYLOAD_MASS_KG", "2.565")
+    basket_tilt_deg = float(os.getenv("BASKET_LAUNCH_TILT_DEG", "0.0"))
+    basket_launch_tilt_rad = f"{math.radians(basket_tilt_deg):.9f}"
     result = subprocess.run(
         [
             xacro_exe,
             str(source),
             f"sim_mode:={args.sim_mode}",
             f"controllers_config:={controllers_config}",
-            f"expose_intake_carriage_state:={os.getenv('INTAKE_EXPOSE_CARRIAGE_STATE', 'false')}",
-            # Dual-wheel intake tuning + Concept Validation Plan gates
-            # (docs/mechanism/dual-wheel-intake-design-el.md).
-            f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', '0.060')}",
-            f"intake_wheel_gap:={os.getenv('INTAKE_WHEEL_GAP_M', '0.056')}",
-            f"intake_nip_x:={os.getenv('INTAKE_NIP_X_M', '0.540')}",
-            f"intake_wheel_tilt_deg:={os.getenv('INTAKE_WHEEL_TILT_DEG', '35.0')}",
+            f"functional_shift_x:={functional_shift_x}",
+            f"intake_cad_alignment_x:={intake_cad_alignment_x}",
+            f"battery_center_x:={battery_center_x}",
+            f"enable_compact_electronics:={enable_compact_electronics}",
+            f"enable_compact_mechanics:={enable_compact_mechanics}",
+            f"enable_basket_raised_holders:={os.getenv('BASKET_RAISED_HOLDERS_ENGAGED', 'true' if basket_tilt_deg != 0.0 else 'false')}",
+            f"intake_parent_link:={intake_parent_link}",
+            f"enable_intake:={enable_intake}",
+            f"enable_flywheel:={enable_flywheel}",
+            f"flywheel_max_vel:={os.getenv('FLYWHEEL_MAX_VEL_RAD_S', '320.0')}",
+            f"flywheel_nip_gap:={os.getenv('FLYWHEEL_NIP_GAP_M', '0.058')}",
+            f"basket_empty_mass:={basket_empty_mass}",
+            f"basket_payload_mass:={basket_payload_mass}",
+            f"basket_launch_tilt_rad:={basket_launch_tilt_rad}",
+            f"basket_floor_thickness:=0.006",
+            f"basket_cad_support_details:=true",
+            f"basket_lift_travel:={os.getenv('BASKET_LIFT_TRAVEL_M', '0.100')}",
+            f"basket_lift_overtravel:={os.getenv('BASKET_LIFT_OVERTRAVEL_M', '0.010')}",
+            # Frozen CAD intake geometry, from scripts/intake_geometry.py.
+            # These are transcriptions of the two authoritative SCAD sources,
+            # not tuning knobs (D2).
+            f"intake_wheel_radius:={os.getenv('INTAKE_WHEEL_RADIUS_M', str(geom.WHEEL_RADIUS_M))}",
+            f"intake_wheel_width:={os.getenv('INTAKE_WHEEL_WIDTH_M', str(geom.WHEEL_WIDTH_M))}",
+            f"intake_wheel_gap:={os.getenv('INTAKE_WHEEL_GAP_M', str(geom.NOMINAL_GAP_M))}",
+            f"intake_nip_x:={os.getenv('INTAKE_NIP_X_M', str(LEGACY_NIP_X_M))}",
+            f"intake_wheel_tilt_deg:={os.getenv('INTAKE_WHEEL_TILT_DEG', str(geom.TILT_DEG))}",
+            f"intake_tread_mu:={os.getenv('INTAKE_TREAD_MU', '0.6')}",
             f"intake_wheel_max_vel:={os.getenv('INTAKE_WHEEL_MAX_VEL_RAD_S', '26.3')}",
             f"intake_wheel_effort:={os.getenv('INTAKE_WHEEL_EFFORT_NM', '1.77')}",
             f"enable_funnel:={os.getenv('INTAKE_ENABLE_FUNNEL', 'true')}",
             f"enable_ramp:={os.getenv('INTAKE_ENABLE_RAMP', 'true')}",
+            f"compact_handoff_ramp_mesh:={os.getenv('COMPACT_HANDOFF_RAMP_MESH', 'package://tennis_robot/meshes/option_a_handoff_ramp.stl')}",
             f"enable_assist:={os.getenv('INTAKE_ENABLE_ASSIST', 'false')}",
             f"enable_conveyor:={os.getenv('INTAKE_ENABLE_CONVEYOR', 'false')}",
             f"intake_assist_x:={os.getenv('INTAKE_ASSIST_X_M', '0.545')}",
@@ -512,7 +727,7 @@ def main() -> int:
             f"basket_management_rise:={os.getenv('BASKET_MANAGEMENT_RISE_M', '0.010')}",
             f"basket_receiver_run:={os.getenv('BASKET_RECEIVER_RUN_M', '0.050')}",
             f"basket_receiver_rise:={os.getenv('BASKET_RECEIVER_RISE_M', '0.005')}",
-            f"basket_hood_rear_overhang:={os.getenv('BASKET_HOOD_REAR_OVERHANG_M', '0.040')}",
+            f"basket_hood_rear_overhang:={basket_hood_rear_overhang}",
             f"basket_hood_rear_clearance_z:={os.getenv('BASKET_HOOD_REAR_CLEARANCE_Z_M', '0.120')}",
             f"basket_hood_front_clearance_z:={os.getenv('BASKET_HOOD_FRONT_CLEARANCE_Z_M', '0.135')}",
         ],
@@ -556,7 +771,14 @@ def main() -> int:
         if sdf_result.returncode != 0:
             print(sdf_result.stderr, file=sys.stderr, end="")
             return sdf_result.returncode
-        _replace_text(sdf_output, _patch_sdf_contacts(sdf_result.stdout))
+        _replace_text(
+            sdf_output,
+            _patch_sdf_contacts(
+                sdf_result.stdout,
+                packaging_variant=args.packaging_variant,
+                intake_fitted=(enable_intake.lower() not in {"0", "false", "no"}),
+            ),
+        )
         print(f"Generated {_display_path(sdf_output)} with patched contact surfaces")
     return 0
 

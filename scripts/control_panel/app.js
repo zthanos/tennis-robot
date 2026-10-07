@@ -3,6 +3,7 @@
       control: ["Command Center", "Send high-level commands and inspect the selected robot mode."],
       survey: ["Survey Workspace", "Run Map Court with the native live survey map, camera feed, survey metrics, and boundary status in one operational view."],
       collection: ["Collection Workspace", "Run collection with the court map and half-court mapping grid visible together."],
+      throwing: ["Throwing Mode", "Position the robot, raise the basket, prepare the flywheels, and run a controlled training session."],
       sensors: ["Diagnostics", "Inspect raw sensor feeds and lower-level debug data without mixing them into the mission workspaces."],
       telemetry: ["Telemetry", "Inspect live robot pose, detection, command output, survey data, and raw status."],
       stats: ["Command Stats", "Review per-mode command counts and recent command usage."],
@@ -377,6 +378,7 @@
       await loadView(name);
       document.querySelectorAll("section.view").forEach(view => view.classList.toggle("active", view.id === name));
       if (name === "webcam") startWebcam(); else stopWebcam();
+      if (name === "throwing") startThrowingRefresh(); else stopThrowingRefresh();
       if (name === "vendors") window.ControlPanelVendors.load();
       if (name === "surveys") window.ControlPanelSurveyHistory.load();
     }
@@ -559,6 +561,109 @@
       const clearBtn = document.getElementById("collectionLogClear");
       if (clearBtn) clearBtn.addEventListener("click", clearCollectionLog);
     };
+    let _throwingInterval = null;
+    let _throwingStatus = null;
+    let _throwingRefreshInFlight = false;
+    function startThrowingRefresh() {
+      refreshThrowing();
+      if (!_throwingInterval) _throwingInterval = setInterval(refreshThrowing, 500);
+    }
+    function stopThrowingRefresh() {
+      if (_throwingInterval) { clearInterval(_throwingInterval); _throwingInterval = null; }
+    }
+    function throwingPayload(action) {
+      return {
+        action,
+        program: document.getElementById("throwProgram")?.value || "forehand",
+        throw_speed_mps: Number(document.getElementById("throwSpeed")?.value),
+        throw_angle_deg: Number(document.getElementById("throwAngle")?.value),
+        interval_s: Number(document.getElementById("throwInterval")?.value),
+        ball_count: Number(document.getElementById("throwBallCount")?.value),
+      };
+    }
+    async function sendThrowing(action) {
+      const response = await fetch("/api/throwing", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(throwingPayload(action)),
+      });
+      const result = await response.json();
+      const message = document.getElementById("throwMessage");
+      if (message) {
+        message.textContent = result.ok ? (result.message || `Command accepted: ${action}`) : (result.message || "Command rejected");
+        message.style.color = result.ok ? "var(--accent)" : "var(--danger)";
+      }
+      await refreshThrowing();
+    }
+    VIEW_INIT.throwing = function () {
+      document.querySelectorAll("#throwing [data-throw-action]").forEach(button => {
+        button.addEventListener("click", () => sendThrowing(button.dataset.throwAction));
+      });
+      const select = document.getElementById("throwProgram");
+      if (select) select.addEventListener("change", () => {
+        const program = (_throwingStatus?.programs || []).find(item => item.id === select.value);
+        if (!program) return;
+        document.getElementById("throwSpeed").value = program.defaults.throw_speed_mps;
+        document.getElementById("throwAngle").value = program.defaults.throw_angle_deg;
+        document.getElementById("throwInterval").value = program.defaults.interval_s;
+        document.getElementById("throwBallCount").value = program.defaults.ball_count;
+      });
+      startThrowingRefresh();
+    };
+    function availabilityText(value, suffix = "") {
+      return value === null || value === undefined ? "Unavailable" : `${value}${suffix}`;
+    }
+    async function refreshThrowing() {
+      if (!document.getElementById("throwingState") || _throwingRefreshInFlight) return;
+      _throwingRefreshInFlight = true;
+      try {
+        const [statusResponse, cameraResponse] = await Promise.all([
+          fetch("/api/throwing", { cache: "no-store" }),
+          fetch("/api/sensors", { cache: "no-store" }),
+        ]);
+        const data = await statusResponse.json();
+        const sensorSnapshot = await cameraResponse.json();
+        _throwingStatus = data;
+        renderThrowing(data, sensorSnapshot.front_camera || { available: false, error: "OAK-D preview unavailable" });
+      } catch (_) { /* next polling cycle recovers */ }
+      finally { _throwingRefreshInFlight = false; }
+    }
+    function renderThrowing(data, camera) {
+      const session = data.session || {};
+      const ready = data.readiness || {};
+      const stats = session.statistics || {};
+      setText("throwingState", session.state || "UNKNOWN");
+      setText("throwPositionState", ready.positioned ? (ready.stationary ? "POSITIONED" : "MOVING") : "NOT_POSITIONED");
+      setText("throwBasketState", ready.basket_state || "UNKNOWN");
+      setText("throwBasketTilt", ready.basket_tilt_state || "MECHANICAL_VALIDATION_PENDING");
+      setText("throwFlywheelState", ready.flywheel_state || "NOT_AVAILABLE");
+      setText("throwOakState", ready.oak_d_state || "NOT_CONNECTED");
+      setText("throwSafetyState", ready.blocking_fault ? "FAULT" : (ready.estop_clear ? "E-STOP CLEAR" : "UNKNOWN / BLOCKED"));
+      setText("throwBalls", ready.hopper_ball_count == null ? "Unknown" : ready.hopper_ball_count);
+      setText("statThrown", stats.balls_thrown ?? 0);
+      setText("statHit", availabilityText(stats.balls_hit));
+      setText("statHitRate", stats.hit_rate == null ? "Unavailable" : `${(stats.hit_rate * 100).toFixed(1)}%`);
+      setText("statInOut", stats.balls_in == null && stats.balls_out == null ? "Unavailable" : `${stats.balls_in ?? 0} / ${stats.balls_out ?? 0}`);
+      setText("statDistance", stats.average_distance_m == null ? "Unavailable" : `${Number(stats.average_distance_m).toFixed(2)} m`);
+      setText("throwId", data.last_throw?.throw_id || "None");
+      const active = ["POSITIONING", "RAISING_BASKET", "ARMING", "READY", "THROWING", "PAUSED", "STOPPING"].includes(session.state);
+      const state = session.state || "IDLE";
+      document.querySelectorAll("#throwing [data-throw-action]").forEach(button => {
+        const action = button.dataset.throwAction;
+        button.disabled = (action === "start" || action === "test_throw") ? active
+          : action === "pause" ? !["READY", "THROWING"].includes(state)
+          : action === "resume" ? state !== "PAUSED"
+          : action === "stop" ? !active
+          : ["basket_raise", "basket_lower"].includes(action) ? active : false;
+      });
+      const image = document.getElementById("throwOakFrame");
+      const empty = document.getElementById("throwOakEmpty");
+      if (camera.data_url) {
+        image.src = camera.data_url; image.style.display = "block"; empty.style.display = "none";
+      } else {
+        image.style.display = "none"; empty.style.display = "block";
+        empty.textContent = camera.error || "OAK-D not connected";
+      }
+    }
     async function copyCollectionLog() {
       const btn = document.getElementById("collectionLogCopy");
       const events = _lastCollectionEvents;

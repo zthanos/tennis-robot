@@ -40,6 +40,8 @@ topics:
     type: std_msgs/msg/String
     qos:
       reliability: best_effort
+  /joint_states:
+    type: sensor_msgs/msg/JointState
 
   # Pi -> PC: actuator commands only.  `reversed` means domain 43 -> 42.
   /cmd_vel_nav:
@@ -55,5 +57,14 @@ topics:
     type: tennis_robot_msgs/msg/CollectorCmd
     reversed: true
   /ball/collected:
+    type: std_msgs/msg/String
+    reversed: true
+  /basket_velocity_controller/commands:
+    type: std_msgs/msg/Float64MultiArray
+    reversed: true
+  /flywheel_velocity_controller/commands:
+    type: std_msgs/msg/Float64MultiArray
+    reversed: true
+  /throwing/feed_request:
     type: std_msgs/msg/String
     reversed: true

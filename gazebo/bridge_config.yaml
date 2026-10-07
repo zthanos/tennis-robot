@@ -112,6 +112,19 @@
   ros_type_name: ros_gz_interfaces/msg/Contacts
   direction: GZ_TO_ROS
 
+# Direct handoff diagnostics: distinguish the removable receiving chute from
+# the fixed compact ramp instead of inferring the blocker from ball pose.
+- gz_topic_name: /world/tennis_court/model/tennis_robot/link/basket_link/sensor/basket_handoff_contact_0/contact
+  ros_topic_name: /gz/basket_handoff_contact_0
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+- gz_topic_name: /world/tennis_court/model/tennis_robot/link/compact_handoff_ramp_link/sensor/compact_ramp_contact_0/contact
+  ros_topic_name: /gz/compact_ramp_contact_0
+  gz_type_name: gz.msgs.Contacts
+  ros_type_name: ros_gz_interfaces/msg/Contacts
+  direction: GZ_TO_ROS
+
 # Real physics contact from the elevation ramp (guide contact).
 - gz_topic_name: /world/tennis_court/model/tennis_robot/link/base_footprint/sensor/lip_contact_0/contact
   ros_topic_name: /gz/lip_contact_0

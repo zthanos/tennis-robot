@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "frozen_before_campaign_results": true,
+  "frozen_on": "2026-08-26",
+  "scope": "standalone_flywheel_launcher_capability_validation_after_exit_corridor_pass",
+  "immutable_inputs": {
+    "ball_calibration_results": {
+      "path": "config/tennis_ball_compliance_calibration_results.json",
+      "sha256": "a7aa85327219d624c562b4c528f946bb62e1326d0b58dc7064f7439a07731a8a"
+    },
+    "ball_model": {
+      "path": "gazebo/models/tennis_ball_compliant/model.sdf",
+      "sha256": "8715ce705508cc8c6428126a4063e1846f43d46c780eef5274780ee1cbb7356f"
+    },
+    "standalone_bench_xacro_sha256": "c89a7052d12757d5c220e74f1b859d9257a659c39bc10b4ab80c0fde9ee25941",
+    "launcher_module_xacro_sha256": "6a43938eea29e1cf27165e74139d5b7385aecd1b0165980e13d602ac14773bc6",
+    "lower_exit_relief_mesh_sha256": "e44259c8ceff4f3522955397a71dcaea5b7a184212f007276ec18da61c939714",
+    "upper_exit_relief_mesh_sha256": "9f2e3f8f3add1be1250b20fb0213279f294cd13b1bd065d5265f7e560488e726",
+    "normal_and_tangential_contact_plugin_sha256": "fec43d27e08b912dcedaba42e33a7d3b313fea11c972c7f65ec5ae384d6cda35",
+    "motor_control_plugin_sha256": "f29b0561bfc97995fe58fe15e673db25a7a914c19a0635170899111c9ddc4996"
+  },
+  "mechanical_and_motor_baseline": {
+    "motor": "D5065-270KV",
+    "bus_voltage_v": 12.8,
+    "torque_constant_nm_per_a": 0.031,
+    "phase_neutral_resistance_ohm": 0.039,
+    "current_limit_a_per_motor": 20.0,
+    "effort_limit_nm": 0.62,
+    "wheel_diameter_m": 0.2,
+    "wheel_width_m": 0.05,
+    "wheel_mass_kg": 0.9,
+    "wheel_spin_inertia_kg_m2": 0.006751162108290868,
+    "accepted_wheel_mass_bound_kg": [0.7, 0.9],
+    "accepted_wheel_inertia_bound_kg_m2": [0.0035, 0.009],
+    "nip_m": 0.058,
+    "wheel_centre_spacing_m": 0.258,
+    "mechanical_pitch_deg": 20.0,
+    "injection_speed_m_s": 3.0,
+    "injection_spin_rad_s": [0.0, 0.0, 0.0]
+  },
+  "tyre_friction_sensitivity": {
+    "physically_calibrated": false,
+    "coefficients": [0.3, 0.6, 0.9],
+    "labels": [
+      "LOW_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+      "MEDIUM_TRACTION_SENSITIVITY_ASSUMPTION_ONLY",
+      "HIGH_TRACTION_SENSITIVITY_ASSUMPTION_ONLY"
+    ],
+    "nominal_mapping_assumption": 0.6,
+    "selection_basis": "predeclared dimensionless sensitivity bounds; not selected from launcher target performance"
+  },
+  "campaign_matrix": {
+    "regression_reference_rad_s": 80.0,
+    "symmetric_target_magnitudes_rad_s": [80.0, 120.0, 160.0, 200.0, 240.0, 280.0, 300.0],
+    "timestep_representatives_rad_s": {
+      "low": 80.0,
+      "medium": 200.0,
+      "high": 280.0
+    },
+    "timesteps_s": [0.001, 0.0005, 0.00025],
+    "differential_offsets_about_nearest_14_m_s_rad_s": [-40.0, -20.0, 20.0, 40.0],
+    "repeat_count_per_representative": 3,
+    "capability_targets_m_s": [12.0, 14.0, 16.0, 18.0]
+  },
+  "regression_acceptance": {
+    "reference_exit_speed_m_s": 5.2732018986,
+    "reference_elevation_deg": 17.860343,
+    "maximum_relative_exit_speed_difference": 0.005,
+    "maximum_absolute_elevation_difference_deg": 0.1,
+    "requires_bilateral_contact": true,
+    "requires_post_release_noncontact": true
+  },
+  "numerical_convergence_acceptance_against_0p25ms": {
+    "maximum_relative_exit_speed_difference": 0.02,
+    "maximum_absolute_elevation_difference_deg": 0.75,
+    "maximum_absolute_azimuth_difference_deg": 0.25,
+    "spin_difference": {
+      "maximum_relative": 0.05,
+      "absolute_floor_rad_s": 2.0
+    },
+    "maximum_relative_compression_difference": 0.05,
+    "maximum_relative_peak_force_difference": 0.10,
+    "contact_duration_difference": {
+      "maximum_relative": 0.10,
+      "absolute_floor_s": 0.001
+    },
+    "maximum_relative_wheel_droop_difference": 0.10,
+    "recovery_time_difference": {
+      "maximum_relative": 0.10,
+      "absolute_floor_s": 0.05
+    },
+    "maximum_absolute_energy_residual_fraction": 0.02,
+    "maximum_energy_residual_fraction_difference": 0.005
+  },
+  "capability_classification_acceptance": {
+    "maximum_absolute_exit_speed_error_m_s": 0.5,
+    "requires_actually_executed_point": true,
+    "extrapolation_permitted": false,
+    "requires_numerically_converged_contact": true,
+    "requires_post_release_noncontact": true
+  },
+  "stop_conditions": [
+    "post-wheel fixed-component contact",
+    "timestep convergence failure",
+    "positive unexplained energy above the frozen residual limit",
+    "requested motor operating point unreachable",
+    "numerically unstable tyre contact",
+    "change to ball calibration, geometry, wheel inertia, nip, or motor limits"
+  ]
+}
