@@ -1,8 +1,10 @@
 # Ενιαία perfboard motion + intake — σχέδιο κόλλησης Rev A
 
 Το παρόν είναι το σημείο αναφοράς για την κοινή perfboard 120 × 80 mm του
-Arduino Mega. Αν κάποιο παλιότερο διάγραμμα δείχνει ξεχωριστά headers, δεν
-χρησιμοποιείται για αυτή την κατασκευή.
+Arduino Mega. **Rev B intake: δύο BTS7960, όχι L298N.** Αν έχει ήδη κολληθεί
+η παλιά Rev A netlist, δεν συνδέουμε τους BTS πριν γίνει continuity audit και
+επανακαλωδίωση των J_MEGA/J_INTAKE 15–20 / 1–6. Αν κάποιο παλιότερο διάγραμμα
+δείχνει ξεχωριστά headers, δεν χρησιμοποιείται για αυτή την κατασκευή.
 
 ## 1. Επιβεβαιωμένη πλακέτα και προσανατολισμός
 
@@ -48,7 +50,7 @@ Arduino Mega. Αν κάποιο παλιότερο διάγραμμα δείχν
 Η perfboard περιλαμβάνει όλες τις **logic συνδέσεις** του motion και intake:
 
 - δύο BTS7960 logic interfaces και τέσσερις drive encoders,
-- dual intake driver interface και δύο intake encoders,
+- δύο BTS7960 intake logic interfaces και δύο intake encoders,
 - δύο IR break beams,
 - START, E-stop status και armed LED,
 - GY-521 / MPU6050 gyro + accelerometer,
@@ -82,8 +84,8 @@ keyed harnesses πρέπει να αγοραστούν τα αντίστοιχα
 | 1 / 2 | D5 / D6 | 3 / 4 | D30 / D9 |
 | 5 / 6 | D10 / D31 | 7 / 8 | D2 / D22 |
 | 9 / 10 | D3 / D23 | 11 / 12 | D18 / D24 |
-| 13 / 14 | D19 / D25 | 15 / 16 | D44 / D40 |
-| 17 / 18 | D41 / D45 | 19 / 20 | D42 / D43 |
+| 13 / 14 | D19 / D25 | 15 / 16 | D44 / D45 |
+| 17 / 18 | D46 / D11 | 19 / 20 | D40 / D42 |
 | 21 / 22 | A8 / A9 | 23 / 24 | A10 / A11 |
 | 25 / 26 | D36 / D37 | 27 / 28 | D32 / D33 |
 | 29 / 30 | D34 / D20-SDA | 31 / 32 | D21-SCL / MEGA_5V |
@@ -120,21 +122,30 @@ keyed harnesses πρέπει να αγοραστούν τα αντίστοιχα
 
 | Από J_MEGA | Προς J_INTAKE | Net |
 |---:|---:|---|
-| 15 | 1 | INTAKE_LEFT_PWM / ENA |
-| 16 | 2 | INTAKE_LEFT_IN1 |
-| 17 | 3 | INTAKE_LEFT_IN2 |
-| 18 | 4 | INTAKE_RIGHT_PWM / ENB |
-| 19 | 5 | INTAKE_RIGHT_IN3 |
-| 20 | 6 | INTAKE_RIGHT_IN4 |
-| 21 | 11 | INTAKE_LEFT_ENCODER_A |
-| 22 | 12 | INTAKE_LEFT_ENCODER_B |
-| 23 | 15 | INTAKE_RIGHT_ENCODER_A |
-| 24 | 16 | INTAKE_RIGHT_ENCODER_B |
+| 15 | 1 | INTAKE_LEFT_RPWM |
+| 16 | 2 | INTAKE_LEFT_LPWM |
+| 17 | 3 | INTAKE_RIGHT_RPWM |
+| 18 | 4 | INTAKE_RIGHT_LPWM |
+| 19 | 5 | INTAKE_LEFT_EN, split to left BTS R_EN + L_EN |
+| 20 | 6 | INTAKE_RIGHT_EN, split to right BTS R_EN + L_EN |
+| 21 | 11 | INTAKE_RIGHT_ENCODER_A (A8) |
+| 22 | 12 | INTAKE_RIGHT_ENCODER_B (A9) |
+| 23 | 15 | INTAKE_LEFT_ENCODER_A (A10) |
+| 24 | 16 | INTAKE_LEFT_ENCODER_B (A11) |
 
-Το `J_INTAKE` 7 είναι logic GND του driver και το 8 μένει `KEY-NC`. Η επάνω
-κλέμμα `5V Optional` του συγκεκριμένου L298N δεν συνδέεται στην perfboard. Ο
-L298N παραμένει μόνο για σύντομα, current-limited bench tests και όχι για stall,
-jam ή τελική λειτουργία των FIT0186.
+**As-built (2026-09-27)**: ο αριστερός intake encoder είναι στα **A10/A11** και ο
+δεξιός στα **A8/A9** (αντίστροφα από το αρχικό σχέδιο). Το firmware
+(`motion_intake_mega.ino`, `07_dual_intake_mega_bench.ino`) ακολουθεί αυτή την
+αντιστοίχιση.
+
+Το `J_INTAKE` 7 είναι logic GND και το 8 μένει `KEY-NC`. Το ήδη υπάρχον
+`J_INTAKE` 9 είναι LOGIC_5V. Το εξωτερικό intake harness διακλαδώνει το 7/9
+προς GND/VCC **και των δύο** BTS7960 και τα 5/6 μόνο προς τα enable του
+αντίστοιχου driver. Σε κάθε enable net χρειάζεται εξωτερικό 10 kΩ pull-down
+προς logic GND κοντά στον BTS, ώστε να είναι OFF κατά το boot/αποσύνδεση του
+Mega. Οι motor-power κλέμμες δεν συνδέονται στην perfboard.
+Πριν χρησιμοποιηθεί ήδη κατασκευασμένη Rev A πλακέτα, μέτρησε κάθε νέο net
+με πολύμετρο: η αλλαγή είναι ηλεκτρική, όχι απλή μετονομασία στο firmware.
 
 ### IR, χειριστήρια και IMU
 
@@ -262,6 +273,7 @@ jam ή τελική λειτουργία των FIT0186.
 - Στο external mode 2–3, ελέγχουμε πρώτα το PWR_IN χωρίς Mega ή αισθητήρες.
 - Δεν υπάρχει πουθενά 12 V πάνω στην perfboard.
 
-Το `motion_mega.ino` ελέγχει σήμερα μόνο το drive motion. Τα intake pins είναι
-δεσμευμένα και ελεγμένα ως προς συγκρούσεις, αλλά το κοινό motion+intake
-firmware είναι ξεχωριστό επόμενο βήμα.
+Το `motion_mega.ino` ελέγχει μόνο το drive motion. Το
+`motion_intake_mega.ino` περιλαμβάνει πλέον το κοινό motion+intake pinout,
+αλλά η πρώτη φυσική δοκιμή των νέων BTS7960 γίνεται με το απομονωμένο
+`07_dual_intake_mega_bench.ino`, αφού ελεγχθεί το harness.

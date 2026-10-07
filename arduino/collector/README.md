@@ -70,8 +70,10 @@ motor leads `AO1`/`AO2`. Μην αλλάξεις τα καλώδια του enco
    - Μετά δοκίμασε `p` για ένα πολύ σύντομο χαμηλό-PWM pulse.
 
 7. `07_dual_intake_mega_bench`
-   - Στατικό bench sketch για Mega -> L298N -> 2x FIT0186.
-   - Χρησιμοποιεί το δεσμευμένο, μη επικαλυπτόμενο pin map D40-D45 και A8-A11.
+   - Στατικό bench sketch για Mega -> 2x BTS7960 -> 2x FIT0186.
+   - Χρησιμοποιεί intake PWM D44/D45/D46/D11, enable D40/D42 και encoders A8-A11,
+     χωρίς να αγγίζει τα pins της κίνησης. Η ενεργή καλωδίωση είναι στο
+     `docs/hardware/intake-dual-fit0186-bts7960-mega-wiring-el.md`.
    - Καταγράφει RPM, encoder counts και προαιρετικό χρόνο entry-to-exit από δύο
      IR beams στα D36/D37.
    - Ξεκινά disarmed, περιορίζει PWM σε 90/255, τα χειροκίνητα run σε 1500 ms
@@ -95,6 +97,10 @@ IR και τα σταματά αμέσως όταν κοπεί το exit IR ή �
 ```bash
 python3 scripts/run_intake_ir_cycle.py --port /dev/ttyACM0 --pwm 60
 ```
+
+Για τις στατικές δοκιμές υπάρχει επίσης ασφαλές web panel για το Raspberry Pi
+στη θύρα `8082`. Η εγκατάσταση και η αντιστοίχιση των φυσικών μοτέρ
+τεκμηριώνονται στο `docs/hardware/intake-bench-panel-el.md`.
 
 Για έναν μόνο κύκλο πρόσθεσε `--once`. Το `Ctrl-C`, οποιοδήποτε σφάλμα ή
 απώλεια telemetry προκαλεί `STOP` και `DISARM` πριν κλείσει η serial θύρα.

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Intake Bench · Tennis Robot</title>
+  <style>
+    :root{color-scheme:dark;--bg:#09110f;--panel:#111d19;--panel2:#172620;--line:#294238;--ink:#f2f7f4;--muted:#a7b9b1;--green:#43d17f;--amber:#f5b942;--red:#ff665f;--blue:#61a8ff}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% -10%,#183c2b 0,transparent 34%),var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+    button{font:inherit}.wrap{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:22px 0 50px}
+    header{display:flex;gap:18px;align-items:flex-start;justify-content:space-between;margin-bottom:18px}h1{font-size:clamp(25px,4vw,42px);line-height:1.05;margin:0 0 7px}.eyebrow{color:var(--green);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:12px}.sub{margin:0;color:var(--muted)}
+    .stop{background:var(--red);color:#240403;border:0;border-radius:16px;padding:17px 24px;font-weight:900;box-shadow:0 8px 24px #ff665f33;cursor:pointer;min-width:150px}.stop:active{transform:translateY(1px)}
+    .status-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:18px 0}.metric{background:#0d1714;border:1px solid var(--line);border-radius:13px;padding:12px}.metric span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.metric strong{display:block;margin-top:5px;font-size:17px;overflow-wrap:anywhere}.good{color:var(--green)!important}.warn{color:var(--amber)!important}.bad{color:var(--red)!important}
+    .notice{background:#251d0c;border:1px solid #6b5420;border-radius:14px;padding:13px 16px;margin:12px 0 22px;color:#ffe4a2}.notice strong{color:#fff0c9}
+    .group{margin:26px 0}.group h2{font-size:18px;margin:0 0 12px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:linear-gradient(145deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:17px;padding:17px;display:flex;flex-direction:column;min-height:190px}.card.planned{border-color:#6b5420}.card h3{margin:0 0 6px;font-size:18px}.card p{margin:0;color:var(--muted)}.tags{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.tag{background:#0a1411;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:11px;color:#cfe0d8}.tag.power{color:#ffe09b;border-color:#725923}.wiring{margin:5px 0 13px;padding-left:20px;color:#d7e3de;font-size:13px}.run{margin-top:auto;border:1px solid #3e6b56;background:#1d4d37;color:#eafff1;border-radius:11px;padding:11px 13px;font-weight:800;cursor:pointer}.run:hover{background:#286448}.run:disabled,.stop:disabled{opacity:.45;cursor:not-allowed}
+    .console{background:#050907;border:1px solid var(--line);border-radius:14px;padding:13px;height:220px;overflow:auto;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;color:#b9d8c9;white-space:pre-wrap}.console .tx{color:#78b7ff}.console .fault{color:#ff837d}
+    dialog{width:min(560px,calc(100% - 24px));border:1px solid var(--line);border-radius:18px;background:#101b17;color:var(--ink);padding:0;box-shadow:0 20px 80px #000b}dialog::backdrop{background:#000a}.modal{padding:22px}.modal h2{margin:0 0 8px}.checks{display:grid;gap:10px;margin:18px 0}.check{display:flex;gap:10px;align-items:flex-start;background:#0a1411;border-radius:10px;padding:10px}.check input{margin-top:3px;transform:scale(1.25)}.modal-actions{display:flex;gap:9px;justify-content:flex-end}.cancel,.confirm{border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}.cancel{background:transparent;color:var(--ink);border:1px solid var(--line)}.confirm{background:var(--green);color:#04150b;border:0}.confirm:disabled{opacity:.4}.busy{position:fixed;inset:0;background:#020705d9;display:none;place-items:center;z-index:20}.busy.show{display:grid}.busy-box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;text-align:center}.pulse{width:18px;height:18px;border-radius:50%;background:var(--green);margin:0 auto 12px;animation:pulse 1s infinite}@keyframes pulse{50%{transform:scale(.55);opacity:.4}}
+    @media(max-width:760px){header{flex-direction:column}.stop{width:100%}.status-grid{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="busy" id="busy"><div class="busy-box"><div class="pulse"></div><strong id="busyText">Εκτέλεση…</strong><div style="color:var(--muted);margin-top:5px">Μην αγγίζεις τους τροχούς.</div></div></div>
+  <main class="wrap">
+    <header>
+      <div><div class="eyebrow">Raspberry Pi · Bench only</div><h1>Intake Test Panel</h1><p class="sub">Προκαθορισμένες δοκιμές για Mega → 2× BTS7960 → intake motors</p></div>
+      <button class="stop" id="stop">STOP + DISARM</button>
+    </header>
+
+    <section class="status-grid">
+      <div class="metric"><span>Pi ↔ Mega</span><strong id="connected">—</strong></div>
+      <div class="metric"><span>Mega state</span><strong id="megaState">—</strong></div>
+      <div class="metric"><span>Entry IR</span><strong id="entryIr">—</strong></div>
+      <div class="metric"><span>Exit IR</span><strong id="exitIr">—</strong></div>
+      <div class="metric"><span>Φυσ. δεξιός</span><strong id="rightMotor">PWM —</strong></div>
+      <div class="metric"><span>Φυσ. αριστερός</span><strong id="leftMotor">PWM —</strong></div>
+    </section>
+
+    <div class="notice"><strong>Το OUT του τροφοδοτικού είναι χειροκίνητο.</strong> Το panel δεν μπορεί να γνωρίζει αν είναι ON/OFF. Ακολούθησε την ένδειξη κάθε κάρτας και αποσύνδεσε ρεύμα + USB πριν αλλάξεις καλώδια.</div>
+    <div id="scenarioGroups"></div>
+
+    <section class="group"><h2>Καταγραφή Mega</h2><div class="console" id="console">Αναμονή σύνδεσης…</div></section>
+  </main>
+
+  <dialog id="confirmDialog"><div class="modal"><h2 id="modalTitle">Επιβεβαίωση</h2><p id="modalDescription"></p><div id="modalWiring"></div><div class="checks">
+    <label class="check"><input type="checkbox" class="ack"><span>Έλεγξα ότι το OUT είναι στη θέση που γράφει η δοκιμή.</span></label>
+    <label class="check"><input type="checkbox" class="ack"><span>Δεν υπάρχει μπάλα/εργαλείο στους τροχούς και τα καλώδια είναι σταθερά.</span></label>
+    <label class="check"><input type="checkbox" class="ack"><span>Τα χέρια και όλοι οι άνθρωποι είναι μακριά από τα κινούμενα μέρη.</span></label>
+  </div><div class="modal-actions"><button class="cancel" id="cancel">Άκυρο</button><button class="confirm" id="confirm" disabled>Εκτέλεση</button></div></div></dialog>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let scenarios = [];
+    let pending = null;
+    let seq = 0;
+    let working = false;
+    const groupsOrder = ['Επόμενη δοκιμή','Έλεγχοι','Μοτέρ','Διαγνωστικά','Προχωρημένα','IR — αργότερα'];
+
+    function esc(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function renderScenarios(){
+      const grouped = Object.groupBy ? Object.groupBy(scenarios,s=>s.group) : scenarios.reduce((a,s)=>((a[s.group]??=[]).push(s),a),{});
+      $('scenarioGroups').innerHTML = groupsOrder.filter(g=>grouped[g]).map(group=>`<section class="group"><h2>${esc(group)}</h2><div class="cards">${grouped[group].map(cardHtml).join('')}</div></section>`).join('');
+      document.querySelectorAll('[data-run]').forEach(btn=>btn.addEventListener('click',()=>openConfirm(btn.dataset.run)));
+    }
+    function cardHtml(s){
+      const wiring = s.wiring.length ? `<ol class="wiring">${s.wiring.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>` : '';
+      return `<article class="card ${s.planned?'planned':''}"><h3>${esc(s.title)}</h3><p>${esc(s.description)}</p><div class="tags"><span class="tag power">${esc(s.power)}</span>${s.command?`<span class="tag">${esc(s.command)}</span>`:''}${s.planned?'<span class="tag">PLANNED</span>':''}</div>${wiring}<button class="run" data-run="${esc(s.scenario_id)}">${s.motion?'Έλεγχος & εκτέλεση':'Εκτέλεση'}</button></article>`;
+    }
+    function openConfirm(id){
+      pending=scenarios.find(s=>s.scenario_id===id); if(!pending)return;
+      if(!pending.motion){runAction(pending);return;}
+      $('modalTitle').textContent=pending.title;
+      $('modalDescription').textContent=`Απαίτηση τροφοδοτικού: ${pending.power}. ${pending.description}`;
+      $('modalWiring').innerHTML=pending.wiring.length?`<ol class="wiring">${pending.wiring.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:'';
+      document.querySelectorAll('.ack').forEach(x=>x.checked=false); $('confirm').disabled=true; $('confirmDialog').showModal();
+    }
+    document.querySelectorAll('.ack').forEach(x=>x.addEventListener('change',()=>{$('confirm').disabled=![...document.querySelectorAll('.ack')].every(x=>x.checked)}));
+    $('cancel').onclick=()=>$('confirmDialog').close();
+    $('confirm').onclick=()=>{const s=pending;$('confirmDialog').close();runAction(s,true)};
+    $('stop').onclick=async()=>{try{await fetch('/api/stop',{method:'POST'});await poll();}catch(e){alert(e)}};
+
+    async function runAction(s,confirmed=false){
+      if(working)return; working=true; $('busyText').textContent=s.title; $('busy').classList.add('show'); setButtons(true);
+      try{
+        const response=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scenario_id:s.scenario_id,confirmed})});
+        const data=await response.json(); if(!response.ok)throw new Error(data.error||`HTTP ${response.status}`); applyStatus(data);
+      }catch(error){alert(`Η δοκιμή δεν εκτελέστηκε: ${error.message}`)}finally{working=false;$('busy').classList.remove('show');setButtons(false);await poll();}
+    }
+    function setButtons(disabled){document.querySelectorAll('.run').forEach(b=>b.disabled=disabled);$('stop').disabled=false;}
+    function stateClass(name){return name==='DISARMED'?'good':name==='FAULTED'?'bad':name==='DISCONNECTED'?'bad':'warn';}
+    function applyStatus(data){
+      const t=data.telemetry||{}; $('connected').textContent=data.connected?'CONNECTED':'OFFLINE'; $('connected').className=data.connected?'good':'bad';
+      $('megaState').textContent=t.state_name||'—'; $('megaState').className=stateClass(t.state_name);
+      $('entryIr').textContent=data.connected?(t.entry_broken?'BROKEN':'CLEAR'):'—'; $('entryIr').className=data.connected?(t.entry_broken?'warn':'good'):'';
+      $('exitIr').textContent=data.connected?(t.exit_broken?'BROKEN':'CLEAR'):'—'; $('exitIr').className=data.connected?(t.exit_broken?'warn':'good'):'';
+      $('rightMotor').textContent=data.connected?`PWM ${t.left_pwm??'—'} · ${t.left_count??'—'} cnt`:'—';
+      $('leftMotor').textContent=data.connected?`PWM ${t.right_pwm??'—'} · ${t.right_count??'—'} cnt`:'—';
+      if(data.lines?.length){const box=$('console'); if(box.textContent==='Αναμονή σύνδεσης…')box.textContent=''; data.lines.forEach(e=>{const line=document.createElement('div');line.className=e.direction==='tx'?'tx':e.line.startsWith('FAULT')?'fault':'';line.textContent=`${e.direction==='tx'?'→':'←'} ${e.line}`;box.appendChild(line)}); while(box.children.length>180)box.firstChild.remove();box.scrollTop=box.scrollHeight;seq=Math.max(seq,data.seq||0);}
+    }
+    async function poll(){try{const r=await fetch(`/api/status?since=${seq}`,{cache:'no-store'});applyStatus(await r.json())}catch(_){$('connected').textContent='OFFLINE';$('connected').className='bad'}}
+    async function init(){const r=await fetch('/api/scenarios');scenarios=(await r.json()).scenarios;renderScenarios();await poll();setInterval(()=>{if(!working)poll()},1000)}
+    init();
+  </script>
+</body>
+</html>

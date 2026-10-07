@@ -336,12 +336,12 @@ module απαιτήσει ξεχωριστό έλεγχο, κρατάμε χώρ
 
 | Arduino Mega | Intake net | Χρήση |
 |---|---|---|
-| D44 PWM | `INTAKE_LEFT_PWM` | L298N ENA |
-| D40 / D41 | `INTAKE_LEFT_IN1/IN2` | L298N αριστερή φορά |
-| D45 PWM | `INTAKE_RIGHT_PWM` | L298N ENB |
-| D42 / D43 | `INTAKE_RIGHT_IN3/IN4` | L298N δεξιά φορά |
-| A8 / A9 | `INTAKE_LEFT_ENC_A/B` | Αριστερός FIT0186 encoder, PCINT |
-| A10 / A11 | `INTAKE_RIGHT_ENC_A/B` | Δεξιός FIT0186 encoder, PCINT |
+| D44 / D45 PWM | `INTAKE_LEFT_RPWM/LPWM` | Αριστερός BTS7960 |
+| D40 | `INTAKE_LEFT_EN` | R_EN + L_EN αριστερού BTS7960 |
+| D46 / D11 PWM | `INTAKE_RIGHT_RPWM/LPWM` | Δεξιός BTS7960 |
+| D42 | `INTAKE_RIGHT_EN` | R_EN + L_EN δεξιού BTS7960 |
+| A10 / A11 | `INTAKE_LEFT_ENC_A/B` | Αριστερός FIT0186 encoder, PCINT |
+| A8 / A9 | `INTAKE_RIGHT_ENC_A/B` | Δεξιός FIT0186 encoder, PCINT |
 | D36 | `INTAKE_IR_ENTRY` | IR break beam στην είσοδο funnel, active LOW |
 | D37 | `INTAKE_IR_EXIT` | IR break beam στην έξοδο τροχών, active LOW |
 

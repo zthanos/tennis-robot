@@ -38,9 +38,30 @@ motor_length_analysis = 70;
 // band of the motor body; its upper edge is flush with the motor top face.
 mount_motor_d = 30;
 mount_depth = 10;
-mount_bore_print_allowance = 0.6; // provisional FDM fit allowance
-mount_outer_d = 42;
+// Two PLA fit checks showed that a closed nominal-fit ring is too sensitive
+// to the unmeasured can diameter and FDM shrinkage.  The third trial uses a
+// deliberately loose split bore that is closed by a transverse M4 fastener.
+mount_bore_print_allowance = 4.6; // 34.6 mm open-clamp trial bore
+mount_outer_d = 46;
 mount_bridge_pad = [50, 42, 5];
+mount_bridge_hole_d = 4.5; // provisional M4 clearance
+mount_bridge_hole_pitch = [34, 28];
+mount_clamp_slit = 2.4;
+mount_clamp_ear_size = [12, 6, 10];
+mount_clamp_hole_d = 4.5; // M4 through-bolt; external washer + nut
+// Two long rails carry the motor/wheel stack axially into a lower half-ring.
+// The retained +X semicircle is opposite the bridge screw pad, so the gearbox
+// can enter laterally from the open side while the lower saddle still bears on
+// its face.  The centre opening leaves the output shaft and nominal adapter
+// untouched.
+mount_cradle_clear_d = 41;
+mount_cradle_arm_size_xy = [16, 7];
+mount_cradle_arm_top = 5;
+mount_cradle_arm_bottom = -66;
+mount_cradle_ring_face = -61.5; // 1.5 mm trial clearance at a 60 mm body span
+mount_cradle_ring_t = 7;
+mount_cradle_ring_od = 46;
+mount_cradle_ring_id = 28;
 
 bridge_depth = 220;
 bridge_width = 490;
@@ -129,6 +150,33 @@ module motor_axis_cylinder(side, s0, diameter, depth) {
                 cylinder(d=diameter, h=depth);
 }
 
+module motor_axis_frame(side, s0) {
+    translate([0, side*wheel_y, wheel_z])
+        rotate([0, tilt_deg, 0])
+            translate([0, 0, s0])
+                children();
+}
+
+module cradle_support_half_ring() {
+    // Local +X points generally downward/away from the bridge pad after the
+    // 35 degree motor-axis rotation.  Keep exactly that half of the annulus.
+    intersection() {
+        difference() {
+            cylinder(d=mount_cradle_ring_od,
+                     h=mount_cradle_ring_t);
+            translate([0, 0, -1])
+                cylinder(d=mount_cradle_ring_id,
+                         h=mount_cradle_ring_t+2);
+        }
+        translate([0,
+                   -mount_cradle_ring_od/2-1,
+                   -1])
+            cube([mount_cradle_ring_od/2+1,
+                  mount_cradle_ring_od+2,
+                  mount_cradle_ring_t+2]);
+    }
+}
+
 module printed_motor_mount(side) {
     mount_s0 = motor_face_s + motor_length_analysis - mount_depth;
     mount_sc = mount_s0 + mount_depth/2;
@@ -141,6 +189,47 @@ module printed_motor_mount(side) {
             union() {
                 // Short collar: exactly 10 mm deep along the motor axis.
                 motor_axis_cylinder(side, mount_s0, mount_outer_d, mount_depth);
+
+                // Two external ears close the radial slit with one M4 bolt.
+                // They overlap the collar by 3 mm and need no trapped nut;
+                // use an external washer and locknut for the physical trial.
+                motor_axis_frame(side, mount_s0)
+                    for (yy = [-1, 1])
+                        translate([
+                            mount_outer_d/2
+                                + mount_clamp_ear_size[0]/2 - 3,
+                            yy*(mount_clamp_slit/2
+                               + mount_clamp_ear_size[1]/2),
+                            mount_depth/2
+                        ])
+                            cube(mount_clamp_ear_size, center=true);
+
+                // Opposed cradle rails transfer the axial weight of the
+                // motor, adapter and wheel into the collar.  The half-ring
+                // below the gearbox face supports the stack without trapping
+                // the rigid gearbox during assembly.
+                motor_axis_frame(side, mount_s0)
+                    for (yy = [-1, 1]) {
+                        translate([
+                            0,
+                            yy*(mount_cradle_clear_d/2
+                               + mount_cradle_arm_size_xy[1]/2),
+                            (mount_cradle_arm_top
+                             + mount_cradle_arm_bottom)/2
+                        ])
+                            cube([
+                                mount_cradle_arm_size_xy[0],
+                                mount_cradle_arm_size_xy[1],
+                                mount_cradle_arm_top
+                                    - mount_cradle_arm_bottom
+                            ], center=true);
+                    }
+
+                motor_axis_frame(side, mount_s0)
+                    translate([0, 0,
+                               mount_cradle_ring_face
+                                   - mount_cradle_ring_t])
+                        cradle_support_half_ring();
 
                 // Bridge pad and two compact hanger webs. Bridge holes and a
                 // final clamp split/fastener remain pending physical fit-up.
@@ -164,6 +253,36 @@ module printed_motor_mount(side) {
             motor_axis_cylinder(side, mount_s0-1,
                                 mount_motor_d+mount_bore_print_allowance,
                                 mount_depth+2);
+
+            // Radial opening from the bore to the outside of the collar.
+            motor_axis_frame(side, mount_s0-1)
+                translate([(mount_outer_d/2+2)/2,
+                           0,
+                           (mount_depth+2)/2])
+                    cube([mount_outer_d/2+2,
+                          mount_clamp_slit,
+                          mount_depth+2], center=true);
+
+            // Transverse M4 clearance through both clamp ears.
+            motor_axis_frame(side, mount_s0)
+                translate([mount_outer_d/2+4, 0, mount_depth/2])
+                    rotate([90, 0, 0])
+                        cylinder(d=mount_clamp_hole_d,
+                                 h=2*(mount_clamp_slit
+                                      + mount_clamp_ear_size[1]),
+                                 center=true);
+
+            // Four provisional M4 bridge fasteners.  The symmetric pattern
+            // keeps the same printed part usable on either side.
+            for (dx = [-mount_bridge_hole_pitch[0]/2,
+                        mount_bridge_hole_pitch[0]/2],
+                 dy = [-mount_bridge_hole_pitch[1]/2,
+                        mount_bridge_hole_pitch[1]/2])
+                translate([mount_xc+dx,
+                           side*wheel_y+dy,
+                           bridge_under_z-mount_bridge_pad[2]-1])
+                    cylinder(d=mount_bridge_hole_d,
+                             h=mount_bridge_pad[2]+2);
         }
 }
 

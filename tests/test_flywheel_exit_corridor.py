@@ -2,9 +2,12 @@ import hashlib
 import json
 import math
 import os
+import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,6 +83,16 @@ def test_practical_relief_is_local_and_remote_from_motor_mounts():
     assert "measured_lower_swept_cutout_2d" in source
 
 
+# The rendered-model tests below shell out to `xacro`, which only exists inside
+# a sourced ROS 2 environment. Skip cleanly there rather than failing with
+# PackageNotFoundError, the same way tests/test_intake_frame_alignment.py does.
+requires_ros = pytest.mark.skipif(
+    shutil.which("xacro") is None or not os.environ.get("AMENT_PREFIX_PATH"),
+    reason="ROS 2 environment not sourced (need xacro + AMENT_PREFIX_PATH)",
+)
+
+
+@requires_ros
 def test_active_standalone_uses_relief_meshes_and_updated_inertia():
     root = rendered_bench()
     frame = root.find("./link[@name='flywheel_launcher_frame_link']")

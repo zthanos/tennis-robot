@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Evaluate legacy intake-surrogate transport criteria from contact + pose logs.
+"""Evaluate intake transport criteria from contact + pose logs.
 
-CURRENT_SIMULATION_SURROGATE; NOT_PHYSICAL_INTAKE_ARCHITECTURE. Results from
-the prismatic-carriage model cannot close physical tyre-compliance gates.
+The model under test is the frozen fixed-motor architecture: both motors and
+both wheel centres are rigid, so there is no carriage travel to observe and no
+carriage criterion. Tyre compliance, wheel droop, torque and current are NOT
+measurable in Gazebo (see D4) and are owned by the reduced-order solver
+(scripts/run_standalone_intake_handoff_study.py). SIMULATION_BOUNDED; felt
+friction, tyre stiffness and ball-to-ramp friction remain physically
+unmeasured swept bounds.
 
 Criteria follow docs/mechanism/intake-concept-decision-el.md (transport concept:
 capture -> transport -> guide -> hopper). The --phase flag gates which
@@ -188,35 +193,6 @@ def _longest_stall_s(
     return longest, longest_at
 
 
-CARRIAGE_JOINTS = (
-    "intake_wheel_left_carriage_joint",
-    "intake_wheel_right_carriage_joint",
-)
-# A pinned carriage reads exactly 0 forever; a working one was measured peaking
-# at 4.85 mm of its 8 mm range. 0.5 mm separates those two states with room to
-# spare without pinning the criterion to one geometry.
-MIN_CARRIAGE_TRAVEL_M = 0.0005
-
-
-def _carriage_peak_travel(rows: list[dict[str, Any]]) -> dict[str, float]:
-    """Peak |displacement| of each spring carriage, when the state was recorded.
-
-    Empty when the model was built without INTAKE_EXPOSE_CARRIAGE_STATE=true:
-    absent telemetry is not evidence of a pinned joint, so the criterion is
-    only enforced when the data actually exists.
-    """
-    peaks: dict[str, float] = {}
-    for row in rows:
-        positions = row.get("carriage_positions_m")
-        if not isinstance(positions, dict):
-            continue
-        for joint in CARRIAGE_JOINTS:
-            value = positions.get(joint)
-            if isinstance(value, (int, float)):
-                peaks[joint] = max(peaks.get(joint, 0.0), abs(float(value)))
-    return peaks
-
-
 def analyze(
     contact_jsonl: Path,
     pose_jsonl: Path,
@@ -375,12 +351,6 @@ def analyze(
         math.sqrt(sum(v * v for v in release_velocity)) if release_velocity else None
     )
 
-    # Spring-carriage compliance. These prismatic joints park at their lower
-    # limit like basket_joint did, so a DART limit latch would silently disable
-    # the bench-proven nip compliance while every other number still looked
-    # healthy. Enforced only when the telemetry exists.
-    carriage_peaks = _carriage_peak_travel(all_contact_rows)
-
     required: dict[str, Any] = {
         "confirmed_contact_with_both_rollers": bool(left_rows) and bool(right_rows),
         # Dedicated regression guard for the compact x=403.5 mm failure. A
@@ -396,11 +366,6 @@ def analyze(
         ),
         "no_stall_or_jam": stall_s <= stall_limit_s,
     }
-    if carriage_peaks:
-        required["both_carriages_leave_lower_stop"] = (
-            len(carriage_peaks) == len(CARRIAGE_JOINTS)
-            and all(peak >= MIN_CARRIAGE_TRAVEL_M for peak in carriage_peaks.values())
-        )
     if phase in ("ramp", "full"):
         required["ramp_climb_started"] = ramp_climb is not None
         required["hopper_entry_or_ramp_crest_crossing"] = (
@@ -423,8 +388,7 @@ def analyze(
     required_pass = sum(1 for value in required.values() if value is True)
 
     return {
-        "carriage_peak_travel_m": {j: round(v, 6) for j, v in carriage_peaks.items()}
-        or "not recorded (INTAKE_EXPOSE_CARRIAGE_STATE=false)",
+        "intake_architecture": "FIXED_MOTOR_COMPLIANT_TYRE_NO_CARRIAGE",
         "contact_log": str(contact_jsonl),
         "pose_log": str(pose_jsonl),
         "ball_name": ball_name,

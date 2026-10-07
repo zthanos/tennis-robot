@@ -2,10 +2,13 @@ import csv
 import json
 import math
 import os
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -84,6 +87,16 @@ def test_mass_inertia_and_motor_sensitivity_cases_cover_required_grid():
         assert len(list(csv.DictReader(handle))) == 30
 
 
+# The rendered-model tests below shell out to `xacro`, which only exists inside
+# a sourced ROS 2 environment. Skip cleanly there rather than failing with
+# PackageNotFoundError, the same way tests/test_intake_frame_alignment.py does.
+requires_ros = pytest.mark.skipif(
+    shutil.which("xacro") is None or not os.environ.get("AMENT_PREFIX_PATH"),
+    reason="ROS 2 environment not sourced (need xacro + AMENT_PREFIX_PATH)",
+)
+
+
+@requires_ros
 def test_rendered_standalone_contains_motor_shaft_hub_retention_and_real_inertia():
     root = render_bench()
     frame = root.find("./link[@name='flywheel_launcher_frame_link']")

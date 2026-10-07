@@ -71,7 +71,7 @@ def generate_robot_urdf():
             "--sdf-output", ROBOT_SDF,
             "--sim-mode", "true",
             "--controllers-config", CONTROLLERS_CONFIG,
-            "--packaging-variant", os.getenv("ROBOT_PACKAGING_VARIANT", "baseline"),
+            "--packaging-variant", os.getenv("ROBOT_PACKAGING_VARIANT", "compact"),
         ],
         check=True,
     )
@@ -128,19 +128,21 @@ def generate_launch_description():
         "true",
         "yes",
     }
-    _packaging_variant = os.getenv("ROBOT_PACKAGING_VARIANT", "baseline").lower()
+
     # Mechanical operating configuration — MUST stay in step with the same
     # decision in scripts/generate_robot_urdf.py, which builds the model these
-    # controllers are spawned against. Only the launch configuration (and the
-    # provisional `compact` study) fits the launcher; every collection variant
-    # leaves it off, because the launcher frame cuts through the intake mouth.
-    _launch_configuration = _packaging_variant == "option-a-launch"
+    # controllers are spawned against.
+    #
+    # ONE robot. `compact` is the only packaging variant left: it is the machine
+    # that carries the frozen CAD intake AND the flywheel launcher together, so
+    # both are on by default. The historical baseline / option-a-collect /
+    # option-a-launch variants were archived on 2026-08-27 — in those, the
+    # launcher frame cut through the intake mouth and the two could not coexist.
     enable_flywheel = os.getenv(
-        "ROBOT_ENABLE_FLYWHEEL",
-        "true" if _launch_configuration or _packaging_variant == "compact" else "false",
+        "ROBOT_ENABLE_FLYWHEEL", "true",
     ).lower() in {"1", "true", "yes"}
     enable_intake = os.getenv(
-        "ROBOT_ENABLE_INTAKE", "false" if _launch_configuration else "true",
+        "ROBOT_ENABLE_INTAKE", "true",
     ).lower() in {"1", "true", "yes"}
     skip_control_panel = bench_minimal or os.getenv(
         "SIM_SKIP_CONTROL_PANEL", "false"
@@ -284,7 +286,6 @@ def generate_launch_description():
     # Twist-speaking producers (motor adapter on /cmd_vel_collection, survey/
     # teleop on /cmd_vel_teleop) must be restamped BEFORE the mux, and the mux
     # output goes straight to ~/cmd_vel. Producers stay distro-agnostic.
-    _stamped_cmd_stack = os.environ.get("ROS_DISTRO", "") not in {"humble", "iron"}
 
     def _stamp_relay(name: str, in_topic: str, out_topic: str) -> Node:
         return Node(
@@ -313,8 +314,6 @@ def generate_launch_description():
                 "/cmd_vel_teleop_stamped",
             ),
         ]
-        if _stamped_cmd_stack
-        else []
     )
     collector_logic = Node(
         package="tennis_robot",
@@ -346,17 +345,10 @@ def generate_launch_description():
                         "topics.teleop.topic": "/cmd_vel_teleop_stamped",
                     }
                 ]
-                if _stamped_cmd_stack
-                else []
             ),
         ],
         remappings=[
-            (
-                "cmd_vel_out",
-                "/diff_drive_controller/cmd_vel"
-                if _stamped_cmd_stack
-                else "/diff_drive_controller/cmd_vel_unstamped",
-            )
+            ("cmd_vel_out", "/diff_drive_controller/cmd_vel")
         ],
     )
 

@@ -75,8 +75,8 @@ Matches `docs/hardware/motion-perfboard-wiring-el.md §4`:
 | Encoders B | LF=D22, LR=D23, RF=D24, RR=D25 |
 | START_ARM / ESTOP_STATUS / ARMED_LED | D32 / D33 / D34 |
 | IMU I2C (not used in v1) | SDA=D20, SCL=D21 |
-| Reserved intake L298N control | PWM=D44/D45, direction=D40/D41/D42/D43 |
-| Reserved intake encoders (PCINT) | left=A8/A9, right=A10/A11 |
+| Reserved intake 2× BTS7960 control | PWM left=D44/D45, right=D46/D11; enable left=D40, right=D42 |
+| Reserved intake encoders (PCINT) | left=A10/A11, right=A8/A9 |
 | Reserved intake IR beams | entry=D36, exit=D37 |
 
 ## Notes / next steps

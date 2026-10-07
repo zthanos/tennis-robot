@@ -13,9 +13,23 @@ from pathlib import Path
 
 # Sourced before every ros2 CLI invocation so the console works from a plain
 # (non-ROS) shell. Kept here so the survey launch and nav-test paths agree.
+#
+# Was hardcoded to `/opt/ros/humble/setup.bash` + the Docker-only
+# `/ros2_ws/install/setup.bash` (2026-08-27: neither path exists on the
+# canonical native Jazzy runtime, so the stated purpose — working from a plain
+# shell — was broken; it only appeared to work because the console is normally
+# launched from an already-sourced environment).
+#
+# Now: follow ROS_DISTRO (default jazzy) and the real workspace, taking the
+# first overlay that exists — run_pi.sh builds `install_jazzy`, run_native.sh
+# builds `install`. Missing files are tolerated so an already-sourced shell is
+# never broken by the prelude.
 ROS_PRELUDE = (
-    "source /opt/ros/humble/setup.bash; "
-    "source /ros2_ws/install/setup.bash; "
+    '. "/opt/ros/${ROS_DISTRO:-jazzy}/setup.bash" 2>/dev/null || true; '
+    'for _ws in "${TENNIS_ROBOT_ROOT:-.}/ros2_ws/install_jazzy" '
+    '"${TENNIS_ROBOT_ROOT:-.}/ros2_ws/install"; do '
+    'if [ -f "$_ws/setup.bash" ]; then . "$_ws/setup.bash"; break; fi; '
+    'done; '
 )
 
 # Typical webcam horizontal FOV; tune if monocular distance estimates are off.

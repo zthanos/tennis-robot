@@ -165,13 +165,35 @@ def test_archive_and_active_bom_are_unambiguous():
     assert "bearing_cartridge.stl" not in option_a
 
 
-def test_retained_simulator_is_explicitly_not_physical_architecture():
+def test_simulation_carries_the_frozen_fixed_motor_architecture():
+    """LEGACY_CARRIAGE_REMOVED — the surrogate is gone, not merely disabled.
+
+    The simulation was corrected toward the frozen hardware, so the files that
+    used to be labelled NOT_PHYSICAL_INTAKE_ARCHITECTURE must no longer contain
+    the translating carriage at all: no prismatic joint, no travel parameter,
+    no SDF spring patch, no carriage state interface.
+    """
+
     paths = [
         ROOT / "ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro",
         ROOT / "ros2_ws/src/tennis_robot/urdf/components/drivetrain.urdf.xacro",
+        ROOT / "ros2_ws/src/tennis_robot/urdf/components/ros2_control.urdf.xacro",
         ROOT / "scripts/generate_robot_urdf.py",
         ROOT / "scripts/sim_debug/analyze_intake_release_criteria.py",
         ROOT / "ros2_ws/src/tennis_robot/tennis_robot/sim_physics_probe.py",
     ]
     for path in paths:
-        assert "NOT_PHYSICAL_INTAKE_ARCHITECTURE" in path.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
+        assert "intake_wheel_left_carriage_joint" not in source, path
+        assert "intake_carriage_travel" not in source, path
+        assert "INTAKE_WHEEL_SPRING_K" not in source, path
+        assert "INTAKE_EXPOSE_CARRIAGE_STATE" not in source, path
+
+    drivetrain = (
+        ROOT / "ros2_ws/src/tennis_robot/urdf/components/drivetrain.urdf.xacro"
+    ).read_text(encoding="utf-8")
+    assert "FIXED-MOTOR, COMPLIANT-TYRE INTAKE" in drivetrain
+    assert "intake_wheel_${side}_mount_joint" in drivetrain
+    assert 'type="prismatic"' not in drivetrain
+    # D3: no unphysical friction may be hardcoded on any intake surface.
+    assert "<mu1>2.5</mu1>" not in drivetrain

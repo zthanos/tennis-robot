@@ -1,7 +1,8 @@
 """Acceptance tests for the retained compact simulation model.
 
-Intake carriage assertions are CURRENT_SIMULATION_SURROGATE and
-NOT_PHYSICAL_INTAKE_ARCHITECTURE; they do not validate physical compliance.
+The intake is the frozen fixed-motor architecture: one rigid coaxial assembly
+per side, welded to the bridge. The legacy prismatic carriage was removed, and
+these tests assert it stays removed.
 """
 
 from __future__ import annotations
@@ -88,8 +89,8 @@ def test_compact_contains_the_cad_physical_hierarchy(models):
     links = {link.get("name") for link in root.findall("link")}
     assert {
         "compact_bridge_link", "compact_intake_cheeks_link",
-        "compact_handoff_ramp_link", "intake_wheel_left_carriage_link",
-        "intake_wheel_right_carriage_link", "intake_wheel_left_link",
+        "compact_handoff_ramp_link", "intake_wheel_left_mount_link",
+        "intake_wheel_right_mount_link", "intake_wheel_left_link",
         "intake_wheel_right_link", "basket_rails_link",
         "basket_guide_path_link", "basket_link",
         "compact_fixed_entry_hood_link",
@@ -99,7 +100,8 @@ def test_compact_contains_the_cad_physical_hierarchy(models):
     assert "funnel_link" not in links, "compact must not inherit the legacy funnel solid"
     assert "basket_lift_carriage_link" not in links
 
-    assert _joint(root, "intake_wheel_left_carriage_joint").find("parent").get("link") == "compact_bridge_link"
+    assert _joint(root, "intake_wheel_left_mount_joint").find("parent").get("link") == "compact_bridge_link"
+    assert _joint(root, "intake_wheel_left_mount_joint").get("type") == "fixed"
     assert _joint(root, "compact_intake_cheeks_joint").find("parent").get("link") == "compact_bridge_link"
     assert _joint(root, "compact_handoff_ramp_joint").find("parent").get("link") == "compact_bridge_link"
     assert _joint(root, "flywheel_launcher_mount_joint").find("parent").get("link") == "compact_bridge_link"
@@ -120,17 +122,17 @@ def test_intake_axes_are_parallel_longitudinal_and_stack_is_coaxial(models):
         rpy = [float(value) for value in wheel_joint.find("origin").get("rpy").split()]
         assert _axis_from_rpy(rpy) == pytest.approx(expected_axes[side], abs=1e-9)
 
-        carriage_joint = _joint(urdf, f"intake_wheel_{side}_carriage_joint")
+        mount_joint = _joint(urdf, f"intake_wheel_{side}_mount_joint")
         wheel_base = np.asarray([
-            float(value) for value in carriage_joint.find("origin").get("xyz").split()
+            float(value) for value in mount_joint.find("origin").get("xyz").split()
         ])
         wheel_ground = wheel_base + np.asarray([0.0, 0.0, 0.045])
         assert wheel_ground == pytest.approx(
             orientation["wheel_centres_ground_m"][side], abs=1e-9
         )
 
-        carriage = _link(urdf, f"intake_wheel_{side}_carriage_link")
-        collisions = {item.get("name"): item for item in carriage.findall("collision")}
+        mount = _link(urdf, f"intake_wheel_{side}_mount_link")
+        collisions = {item.get("name"): item for item in mount.findall("collision")}
         assert {"intake_adapter_col", "intake_motor_col"} <= collisions.keys()
         motor_offset = np.asarray([
             float(value) for value in collisions["intake_motor_col"].find("origin").get("xyz").split()
@@ -231,10 +233,18 @@ def test_lift_compliance_tilt_and_control_contracts(models):
     assert basket.get("type") == "prismatic"
     assert float(basket.find("limit").get("lower")) == pytest.approx(-0.010)
     assert float(basket.find("limit").get("upper")) == pytest.approx(0.100)
-    for side in ("left", "right"):
-        carriage = _joint(collect, f"intake_wheel_{side}_carriage_joint")
-        assert carriage.get("type") == "prismatic"
-        assert float(carriage.find("limit").get("upper")) == pytest.approx(0.008)
+    # LEGACY_CARRIAGE_REMOVED: the fixed-motor architecture has exactly two
+    # intake joints, both rotational; no prismatic tyre-compliance surrogate.
+    intake_joint_types = {
+        joint.get("name"): joint.get("type") for joint in collect.findall("joint")
+        if joint.get("name", "").startswith("intake_wheel_")
+    }
+    assert intake_joint_types == {
+        "intake_wheel_left_mount_joint": "fixed",
+        "intake_wheel_left_joint": "continuous",
+        "intake_wheel_right_mount_joint": "fixed",
+        "intake_wheel_right_joint": "continuous",
+    }
 
     tilt_collect = _joint(collect, "basket_launch_pose_joint")
     tilt_launch = _joint(launch, "basket_launch_pose_joint")
@@ -258,7 +268,7 @@ def test_lift_compliance_tilt_and_control_contracts(models):
 def test_major_dynamic_links_have_credible_positive_inertia(models):
     root = models[0]
     names = {
-        "intake_wheel_left_carriage_link", "intake_wheel_right_carriage_link",
+        "intake_wheel_left_mount_link", "intake_wheel_right_mount_link",
         "intake_wheel_left_link", "intake_wheel_right_link",
         "basket_link",
         "flywheel_left_link", "flywheel_right_link",

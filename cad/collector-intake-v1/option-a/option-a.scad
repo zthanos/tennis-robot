@@ -76,8 +76,39 @@ oa_cheek_mount_hole_x = [565, 585];
 oa_cheek_mount_hole_y = 132;
 
 // Short handoff replaces the old long launch ramp in this packaging study.
-// Recessed behind the nominal wheel leading edge (x=532 mm), ensuring that
-// the compliant tires—not the hard ramp lip—make first contact with the ball.
+//
+// UNRESOLVED — THE RAMP LIP, NOT THE TYRE, TOUCHES THE BALL FIRST.
+// This block used to claim the ramp was "recessed behind the nominal wheel
+// leading edge (x=532 mm), ensuring that the compliant tires — not the hard
+// ramp lip — make first contact with the ball". That claim is FALSE and it
+// has repeatedly been taken as a solved issue. The measured geometry:
+//
+//   x=532 = oa_wheel_x + oa_wheel_d/2 is a 2D projection. In 3D that rim
+//   extremity sits at y=+/-90, z=64.3 mm. A centred ball resting on the court
+//   (y=0, r=33, so its surface reaches y<=33 and its top is z=66) can NEVER
+//   reach it.
+//
+//   First point of the wheel a centred court-resting ball can actually touch:
+//     x = 481.2 mm   (50.8 mm BEHIND the "nominal leading edge")
+//   First contact with the ramp lip (520, 1.5) by the same ball:
+//     x = 529.8 mm
+//   => the lip leads the tyre by 48.6 mm.
+//
+// Consequence, measured in docs/mechanism/standalone-intake-handoff-capability-report.md:
+// the ball must cross 48.6 mm of rising wedge on its own momentum. At the
+// 0.45 m/s reference approach it has only 10.3 mm of coast climb against a
+// 33.5 mm rise, so a centred ball is PLOUGHED AHEAD and never reaches the nip.
+// No centred capture below ~0.775 m/s; the collection route commands 0.35
+// nominal / 0.60 max.
+//
+// For the tyre to touch first, oa_ramp_front_x would have to move to <= 471.4,
+// compressing the 33.5 mm rise into ~51 mm of run (mean ~33 deg, peak ~50 deg
+// against today's 26.7 deg). The recess is NOT free. Other levers: a powered
+// ramp surface (Phase 3B conveyor stub in drivetrain.urdf.xacro) removes the
+// energy problem without touching frozen geometry; lowering/advancing the
+// wheels is coupled to tilt and to the 4.5 mm ground clearance.
+//
+// DO NOT re-mark this as solved without a physical ramp-lip plough bench test.
 oa_ramp_front_x = 520;
 oa_ramp_rear_x = 420;
 oa_ramp_front_z = 1.5;

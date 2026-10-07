@@ -1,0 +1,781 @@
+{
+  "schema_version": 1,
+  "status": "COMPLETE",
+  "frozen_cad_contact_sequence": {
+    "ramp_lip_first_contact_ball_centre_cad_x_m": 0.5298,
+    "first_wheel_contact_ball_centre_cad_x_m": 0.4812,
+    "lip_lead_m": 0.0486,
+    "asserted_by": "tests/test_intake_frame_alignment.py"
+  },
+  "scope": "Gazebo owns ramp wedge/plough dynamics with ground friction, cheek centering, capture half-width, jam/reject modes and 6-DOF multi-contact. Wheel droop, torque and current are NOT measurable here (ideal velocity source) and are not reported.",
+  "model": {
+    "packaging_variant": "compact",
+    "nip_x_base_link_m": 0.37,
+    "ramp": "option_a_handoff_ramp.stl (authoritative oa_ramp_z)",
+    "legacy_carriage": false,
+    "tread_friction_swept": [
+      0.3,
+      0.6,
+      0.9
+    ],
+    "ball_ramp_friction_swept": [
+      0.2,
+      0.4,
+      0.6
+    ]
+  },
+  "stages": {
+    "S1": {
+      "question": "does the ball climb, stall, or get ploughed ahead?",
+      "phase": "Phase 3 (wheels + ramp, no cheeks)",
+      "runs": [
+        {
+          "case": "drive0.35_mu0.3_rampmu0.40",
+          "drive_speed_m_s": 0.35,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.3,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "PLOUGHED_AHEAD",
+          "wheel_contact_samples": {
+            "left": 0,
+            "right": 0
+          },
+          "bilateral_wheel_contact": false,
+          "ramp_contact_samples": 149,
+          "peak_ramp_contact_force_n": 1.3258,
+          "peak_wheel_contact_force_n": 0.0,
+          "minimum_ball_rel_x_m": 0.4101999999999997,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0363,
+          "ball_climb_m": 0.0032999999999999974,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.357600000000001,
+          "advance_saturated_at_net": true,
+          "samples": 650
+        },
+        {
+          "case": "drive0.35_mu0.6_rampmu0.40",
+          "drive_speed_m_s": 0.35,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "PLOUGHED_AHEAD",
+          "wheel_contact_samples": {
+            "left": 0,
+            "right": 0
+          },
+          "bilateral_wheel_contact": false,
+          "ramp_contact_samples": 149,
+          "peak_ramp_contact_force_n": 1.3258,
+          "peak_wheel_contact_force_n": 0.0,
+          "minimum_ball_rel_x_m": 0.41030000000000033,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0364,
+          "ball_climb_m": 0.0034000000000000002,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3577,
+          "advance_saturated_at_net": true,
+          "samples": 607
+        },
+        {
+          "case": "drive0.35_mu0.9_rampmu0.40",
+          "drive_speed_m_s": 0.35,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.9,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "PLOUGHED_AHEAD",
+          "wheel_contact_samples": {
+            "left": 0,
+            "right": 0
+          },
+          "bilateral_wheel_contact": false,
+          "ramp_contact_samples": 149,
+          "peak_ramp_contact_force_n": 1.3258,
+          "peak_wheel_contact_force_n": 0.0,
+          "minimum_ball_rel_x_m": 0.41030000000000033,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0364,
+          "ball_climb_m": 0.0034000000000000002,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.357600000000001,
+          "advance_saturated_at_net": true,
+          "samples": 633
+        },
+        {
+          "case": "drive0.60_mu0.3_rampmu0.40",
+          "drive_speed_m_s": 0.6,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.3,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "PLOUGHED_AHEAD",
+          "wheel_contact_samples": {
+            "left": 0,
+            "right": 0
+          },
+          "bilateral_wheel_contact": false,
+          "ramp_contact_samples": 148,
+          "peak_ramp_contact_force_n": 1.6899,
+          "peak_wheel_contact_force_n": 0.0,
+          "minimum_ball_rel_x_m": 0.3926000000000007,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0439,
+          "ball_climb_m": 0.0109,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.357900000000001,
+          "advance_saturated_at_net": true,
+          "samples": 599
+        },
+        {
+          "case": "drive0.60_mu0.6_rampmu0.40",
+          "drive_speed_m_s": 0.6,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "PLOUGHED_AHEAD",
+          "wheel_contact_samples": {
+            "left": 0,
+            "right": 0
+          },
+          "bilateral_wheel_contact": false,
+          "ramp_contact_samples": 144,
+          "peak_ramp_contact_force_n": 1.6899,
+          "peak_wheel_contact_force_n": 0.0,
+          "minimum_ball_rel_x_m": 0.3927000000000005,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0438,
+          "ball_climb_m": 0.010799999999999997,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.357900000000001,
+          "advance_saturated_at_net": true,
+          "samples": 622
+        },
+        {
+          "case": "drive0.60_mu0.9_rampmu0.40",
+          "drive_speed_m_s": 0.6,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.9,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "PLOUGHED_AHEAD",
+          "wheel_contact_samples": {
+            "left": 0,
+            "right": 0
+          },
+          "bilateral_wheel_contact": false,
+          "ramp_contact_samples": 147,
+          "peak_ramp_contact_force_n": 1.6899,
+          "peak_wheel_contact_force_n": 0.0,
+          "minimum_ball_rel_x_m": 0.3926999999999996,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0438,
+          "ball_climb_m": 0.010799999999999997,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.357900000000001,
+          "advance_saturated_at_net": true,
+          "samples": 651
+        },
+        {
+          "case": "drive0.80_mu0.3_rampmu0.40",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.3,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 17,
+            "right": 131
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 116,
+          "peak_ramp_contact_force_n": 2.0129,
+          "peak_wheel_contact_force_n": 35.9613,
+          "minimum_ball_rel_x_m": 0.3891999999999912,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0455,
+          "ball_climb_m": 0.012499999999999997,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": 0.0455,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.357600000000001,
+          "advance_saturated_at_net": true,
+          "samples": 648
+        },
+        {
+          "case": "drive0.80_mu0.6_rampmu0.20",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.2,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 14,
+            "right": 12
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 99,
+          "peak_ramp_contact_force_n": 4.8519,
+          "peak_wheel_contact_force_n": 60.8578,
+          "minimum_ball_rel_x_m": 0.3892000000000083,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0466,
+          "ball_climb_m": 0.013600000000000001,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": 0.0466,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3588000000000005,
+          "advance_saturated_at_net": true,
+          "samples": 649
+        },
+        {
+          "case": "drive0.80_mu0.6_rampmu0.40",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 14,
+            "right": 12
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 111,
+          "peak_ramp_contact_force_n": 4.8519,
+          "peak_wheel_contact_force_n": 60.8578,
+          "minimum_ball_rel_x_m": 0.3895000000000085,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0466,
+          "ball_climb_m": 0.013600000000000001,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": 0.0466,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.358700000000001,
+          "advance_saturated_at_net": true,
+          "samples": 649
+        },
+        {
+          "case": "drive0.80_mu0.6_rampmu0.60",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.6,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 14,
+            "right": 12
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 111,
+          "peak_ramp_contact_force_n": 4.8519,
+          "peak_wheel_contact_force_n": 60.8578,
+          "minimum_ball_rel_x_m": 0.3911000000000084,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0447,
+          "ball_climb_m": 0.011699999999999995,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3588000000000005,
+          "advance_saturated_at_net": true,
+          "samples": 648
+        },
+        {
+          "case": "drive0.80_mu0.9_rampmu0.40",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.9,
+          "ramp_mu": 0.4,
+          "phase": "ramp",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 11,
+            "right": 11
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 104,
+          "peak_ramp_contact_force_n": 1.7367,
+          "peak_wheel_contact_force_n": 60.8578,
+          "minimum_ball_rel_x_m": 0.3911000000000084,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0447,
+          "ball_climb_m": 0.011699999999999995,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3588000000000005,
+          "advance_saturated_at_net": true,
+          "samples": 649
+        }
+      ],
+      "outcome_counts": {
+        "PLOUGHED_AHEAD": 6,
+        "REJECTED_AT_NIP": 5
+      },
+      "climb_success_rate_percent": 0.0,
+      "capture_rate_percent": 0.0,
+      "maximum_ball_climb_m": 0.013600000000000001,
+      "wheel_engagement_before_stall": true,
+      "BALL_CLIMBS_RAMP_IN_SIM": false
+    },
+    "S2": {
+      "question": "capture half-width",
+      "phase": "Phase 4 (full intake)",
+      "runs": [
+        {
+          "case": "lat0.000_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 14,
+            "right": 12
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 111,
+          "peak_ramp_contact_force_n": 4.8501,
+          "peak_wheel_contact_force_n": 60.8717,
+          "minimum_ball_rel_x_m": 0.391,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0446,
+          "ball_climb_m": 0.0116,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3586,
+          "advance_saturated_at_net": true,
+          "samples": 630
+        },
+        {
+          "case": "lat0.020_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.02,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 20,
+            "right": 26
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 126,
+          "peak_ramp_contact_force_n": 3.8416,
+          "peak_wheel_contact_force_n": 26.8674,
+          "minimum_ball_rel_x_m": 0.3897000000000125,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0452,
+          "ball_climb_m": 0.012199999999999996,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": 0.0452,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3573,
+          "advance_saturated_at_net": true,
+          "samples": 649
+        },
+        {
+          "case": "lat0.040_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.04,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 11,
+            "right": 10
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 3726,
+          "peak_ramp_contact_force_n": 2.2795,
+          "peak_wheel_contact_force_n": 30.508,
+          "minimum_ball_rel_x_m": 0.4110999999985333,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0358,
+          "ball_climb_m": 0.002799999999999997,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3584000000000005,
+          "advance_saturated_at_net": true,
+          "samples": 620
+        },
+        {
+          "case": "lat0.060_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.06,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 78,
+            "right": 14
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 136,
+          "peak_ramp_contact_force_n": 2.1753,
+          "peak_wheel_contact_force_n": 12.7404,
+          "minimum_ball_rel_x_m": 0.39639999999998793,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.042,
+          "ball_climb_m": 0.009000000000000001,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3575,
+          "advance_saturated_at_net": true,
+          "samples": 650
+        },
+        {
+          "case": "lat0.080_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.08,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 121,
+            "right": 5
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 127,
+          "peak_ramp_contact_force_n": 1.9364,
+          "peak_wheel_contact_force_n": 16.5852,
+          "minimum_ball_rel_x_m": 0.4094999999999141,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0366,
+          "ball_climb_m": 0.003599999999999999,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.357600000000001,
+          "advance_saturated_at_net": true,
+          "samples": 638
+        },
+        {
+          "case": "lat0.100_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.1,
+          "outcome": "PLOUGHED_AHEAD",
+          "wheel_contact_samples": {
+            "left": 0,
+            "right": 0
+          },
+          "bilateral_wheel_contact": false,
+          "ramp_contact_samples": 0,
+          "peak_ramp_contact_force_n": 0.0,
+          "peak_wheel_contact_force_n": 0.0,
+          "minimum_ball_rel_x_m": 0.4122999999992837,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0357,
+          "ball_climb_m": 0.002700000000000001,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.357900000000001,
+          "advance_saturated_at_net": true,
+          "samples": 646
+        }
+      ],
+      "outcome_counts": {
+        "REJECTED_AT_NIP": 5,
+        "PLOUGHED_AHEAD": 1
+      },
+      "INTAKE_CAPTURE_HALF_WIDTH_M": null,
+      "gated_by": "S1: no capture on the frozen ramp"
+    },
+    "S3": {
+      "question": "maximum lateral entry velocity",
+      "status": "NOT_RUN",
+      "INTAKE_MAX_LATERAL_ENTRY_VELOCITY_M_S": null,
+      "gated_by": "S2: no capture half-width exists to sweep entry velocity within"
+    },
+    "S4": {
+      "question": "cheek throat adequacy",
+      "cad_throat_ball_centre_half_width_m": 0.047,
+      "measured_capture_half_width_m": null,
+      "CHEEK_THROAT_ADEQUATE": null,
+      "gated_by": "S2: capture half-width is undefined while S1 fails"
+    },
+    "S5": {
+      "question": "wheel-speed sweep on the corrected model",
+      "phase": "Phase 4 (full intake)",
+      "runs": [
+        {
+          "case": "wheel14.5_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 14.5,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 14,
+            "right": 12
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 111,
+          "peak_ramp_contact_force_n": 4.8501,
+          "peak_wheel_contact_force_n": 60.8717,
+          "minimum_ball_rel_x_m": 0.38960000000001266,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0466,
+          "ball_climb_m": 0.013600000000000001,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": 0.0466,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3586,
+          "advance_saturated_at_net": true,
+          "samples": 646
+        },
+        {
+          "case": "wheel19.7_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 19.7,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 11,
+            "right": 10
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 88,
+          "peak_ramp_contact_force_n": 2.0104,
+          "peak_wheel_contact_force_n": 4.19,
+          "minimum_ball_rel_x_m": 0.3898000000000131,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0466,
+          "ball_climb_m": 0.013600000000000001,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": 0.0466,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3586,
+          "advance_saturated_at_net": true,
+          "samples": 650
+        },
+        {
+          "case": "wheel25.0_drive0.80",
+          "drive_speed_m_s": 0.8,
+          "wheel_speed_rad_s": 25.0,
+          "tread_mu": 0.6,
+          "ramp_mu": 0.4,
+          "phase": "full",
+          "packaging_variant": "compact",
+          "lateral_offset_m": 0.0,
+          "outcome": "REJECTED_AT_NIP",
+          "wheel_contact_samples": {
+            "left": 14,
+            "right": 12
+          },
+          "bilateral_wheel_contact": true,
+          "ramp_contact_samples": 111,
+          "peak_ramp_contact_force_n": 4.8501,
+          "peak_wheel_contact_force_n": 60.8717,
+          "minimum_ball_rel_x_m": 0.39149999999999974,
+          "nip_x_base_m": 0.37,
+          "ramp_front_x_base_m": 0.42000000000000004,
+          "reached_nip": false,
+          "reached_ramp_front": true,
+          "maximum_ball_centre_z_m": 0.0441,
+          "ball_climb_m": 0.011099999999999999,
+          "ball_centre_z_at_nip_stations_m": {
+            "NIP_UPPER": null,
+            "NIP_MID": null,
+            "NIP_LOWER": null
+          },
+          "world_forward_advance_m": 6.3586,
+          "advance_saturated_at_net": true,
+          "samples": 649
+        }
+      ],
+      "outcome_counts": {
+        "REJECTED_AT_NIP": 3
+      },
+      "gated_by": "S1: no capture on the frozen ramp"
+    }
+  },
+  "cross_validation": {
+    "compared_case": "centred ball, authoritative ramp, same approach speeds",
+    "tolerance": "qualitative on the capture/plough mechanism at each approach speed. Exit velocity is NOT cross-compared: Gazebo uses rigid contact with kp/kd conditioning and does not own that quantity.",
+    "solver_centred_capture": {
+      "0.35": false,
+      "0.60": false,
+      "0.80": true
+    },
+    "gazebo_centred_capture": {
+      "0.35": false,
+      "0.60": false,
+      "0.80": false
+    },
+    "agree_at_route_speeds": true,
+    "agree_above_threshold": false,
+    "CROSS_INSTRUMENT_AGREEMENT": "AGREE_ON_PLOUGH_AT_ROUTE_SPEEDS",
+    "disagreement": "Above the plough threshold the two instruments differ: the reduced-order solver transports a centred ball at 0.80 m/s, Gazebo reaches the wheel bite and rejects it. The gap is narrow \u2014 both put the ball at the front face of the nip \u2014 and it is REPORTED, NOT TUNED AWAY. Candidate causes, none of which may be adjusted to close it: the two contact laws at the 1.5 mm lip (calibrated ball law vs rigid kp/kd), the solver's 2-contact reduction versus 6-DOF multi-contact, and the absence of tyre compliance in the Gazebo wheel. Settling it needs the physical ramp-lip test, not a model change."
+  },
+  "plots": [
+    "docs/images/intake-gazebo-s1-ball-reach-vs-approach-speed.png"
+  ],
+  "markdown": "**S1 \u2014 ramp dynamics (Phase 3: wheels + ramp, no cheeks), centred ball.**\nThe nip mid-plane sits at base_link x = 370 mm and the ramp\nfront lip at 420 mm. `minimum ball x` is how far the ball\never got toward the nip; `advance` is how far it was pushed forward in the world.\n\n`REJECTED_AT_NIP` means the ball reached the wheel bite and was spat out again.\n`Advance` saturates at the court net (world x=0), so it is a floor, not the\ndistance the ball would have travelled on an open court.\n\n| Drive (m/s) | tread mu | ramp mu | Outcome | Climb (mm) | Min ball x (mm) | Advance (mm) |\n| --- | --- | --- | --- | --- | --- | --- |\n| 0.35 | 0.3 | 0.40 | PLOUGHED_AHEAD | 3.3 | 410 | 6358 |\n| 0.35 | 0.6 | 0.40 | PLOUGHED_AHEAD | 3.4 | 410 | 6358 |\n| 0.35 | 0.9 | 0.40 | PLOUGHED_AHEAD | 3.4 | 410 | 6358 |\n| 0.60 | 0.3 | 0.40 | PLOUGHED_AHEAD | 10.9 | 393 | 6358 |\n| 0.60 | 0.6 | 0.40 | PLOUGHED_AHEAD | 10.8 | 393 | 6358 |\n| 0.60 | 0.9 | 0.40 | PLOUGHED_AHEAD | 10.8 | 393 | 6358 |\n| 0.80 | 0.3 | 0.40 | REJECTED_AT_NIP | 12.5 | 389 | 6358 |\n| 0.80 | 0.6 | 0.20 | REJECTED_AT_NIP | 13.6 | 389 | 6359 |\n| 0.80 | 0.6 | 0.40 | REJECTED_AT_NIP | 13.6 | 390 | 6359 |\n| 0.80 | 0.6 | 0.60 | REJECTED_AT_NIP | 11.7 | 391 | 6359 |\n| 0.80 | 0.9 | 0.40 | REJECTED_AT_NIP | 11.7 | 391 | 6359 |\n\nClimb success (ball reached the nip): 0% of\n11 runs. Capture: 0%.\nMaximum ball climb observed: 13.6 mm.\nAt least one run reached bilateral wheel contact:\ntrue \u2014 that is a REJECT at the nip\nface, not a capture: no run transported the ball past the nip.\n\n**S2 \u2014 capture half-width (Phase 4, full intake).**\n\n| Lateral offset (mm) | Outcome | Min ball x (mm) | Climb (mm) |\n| --- | --- | --- | --- |\n| 0 | REJECTED_AT_NIP | 391 | 11.6 |\n| 20 | REJECTED_AT_NIP | 390 | 12.2 |\n| 40 | REJECTED_AT_NIP | 411 | 2.8 |\n| 60 | REJECTED_AT_NIP | 396 | 9.0 |\n| 80 | REJECTED_AT_NIP | 409 | 3.6 |\n| 100 | PLOUGHED_AHEAD | 412 | 2.7 |\n\n`INTAKE_CAPTURE_HALF_WIDTH_M = null`\n(gated: S1: no capture on the frozen ramp)\n\n**S3 \u2014 lateral entry velocity.** `NOT_RUN`, gated by S2:\nS2: no capture half-width exists to sweep entry velocity within.\n\n**S4 \u2014 cheek throat adequacy.** The CAD throat admits a ball centre to\n\u00b147 mm. There is no measured capture\nhalf-width to compare it against while S1 fails, so `CHEEK_THROAT_ADEQUATE`\nstays undetermined. No cheek geometry was changed.\n\n**S5 \u2014 wheel-speed sweep (Phase 4, centred).**\n\n| Wheel speed (rad/s) | Outcome | Min ball x (mm) | Climb (mm) |\n| --- | --- | --- | --- |\n| 14.5 | REJECTED_AT_NIP | 390 | 13.6 |\n| 19.7 | REJECTED_AT_NIP | 390 | 13.6 |\n| 25.0 | REJECTED_AT_NIP | 391 | 11.1 |\n\n**Cross-validation gate.** qualitative on the capture/plough mechanism at each approach speed. Exit velocity is NOT cross-compared: Gazebo uses rigid contact with kp/kd conditioning and does not own that quantity.\nSolver centred capture by approach speed: {\"0.35\": false, \"0.60\": false, \"0.80\": true}.\nGazebo centred capture by approach speed: {\"0.35\": false, \"0.60\": false, \"0.80\": false}.\n`CROSS_INSTRUMENT_AGREEMENT = AGREE_ON_PLOUGH_AT_ROUTE_SPEEDS`.\nAbove the plough threshold the two instruments differ: the reduced-order solver transports a centred ball at 0.80 m/s, Gazebo reaches the wheel bite and rejects it. The gap is narrow \u2014 both put the ball at the front face of the nip \u2014 and it is REPORTED, NOT TUNED AWAY. Candidate causes, none of which may be adjusted to close it: the two contact laws at the 1.5 mm lip (calibrated ball law vs rigid kp/kd), the solver's 2-contact reduction versus 6-DOF multi-contact, and the absence of tyre compliance in the Gazebo wheel. Settling it needs the physical ramp-lip test, not a model change.\n\n![intake-gazebo-s1-ball-reach-vs-approach-speed](../images/intake-gazebo-s1-ball-reach-vs-approach-speed.png)"
+}

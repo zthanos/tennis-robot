@@ -1939,3 +1939,601 @@ t_s     left_mm  right_mm  vel_mm/s   force_N
 - **Συνέπεια για το #61**: το κινούμενο basket (prismatic, 100 mm, φορτίο
   4.565 kg) **δεν χαλάει** τα κριτήρια εισόδου/συγκράτησης. Το εκκρεμές
   re-run του sweep από το #61 ΕΓΙΝΕ και πέρασε.
+
+
+### 63. Ευθυγράμμιση προσομοίωσης με το παγωμένο CAD + authoritative ramp (2026-08-27)
+
+**Υπόθεση**: κανένα τρέχον νούμερο προσομοίωσης δεν είναι παραδεκτό, επειδή
+(α) το standalone handoff study έτρεξε σε **επίπεδο έδαφος** ενώ το πραγματικό
+Option A έχει ράμπα 33.5 mm που περνά **μέσα από τη ζώνη του nip**, και (β) το
+Gazebo/xacro intake κουβαλούσε ακόμη το legacy translating carriage, μη φυσική
+τριβή και διαστάσεις τροχού που διαφωνούν με το CAD.
+
+**Τι διορθώθηκε (κάθε αλλαγή είναι διόρθωση της ΠΡΟΣΟΜΟΙΩΣΗΣ προς το CAD)**
+
+- **D1 LEGACY_CARRIAGE_REMOVED**: το prismatic `intake_wheel_*_carriage_joint`,
+  το SDF spring patch (`INTAKE_WHEEL_SPRING_K`) και το
+  `INTAKE_EXPOSE_CARRIAGE_STATE` **αφαιρέθηκαν εντελώς** (όχι travel=0, ώστε να
+  μην ξαναενεργοποιείται από παράμετρο). Κάθε πλευρά είναι τώρα ΕΝΑ άκαμπτο
+  ομοαξονικό συγκρότημα: `intake_wheel_*_mount_link` (fixed στο bridge, φέρει
+  adapter+motor) + ο τροχός σε continuous joint στον άξονα 35°. Ο generator
+  πετάει σφάλμα αν ξαναεμφανιστεί carriage joint.
+- **D2 SIM_INTAKE_MATCHES_FROZEN_CAD**: ακτίνα 0.060→**0.062**, πλάτος
+  0.080→**0.073** παντού (όχι μόνο στο compact). Παράγωγα: `wheel_y` 0.088→
+  **0.090**, χαμηλότερο σημείο τροχού 2.8→**4.54 mm**, ταχύτητα επιφάνειας
+  στα 26.3 rad/s 1.578→**1.631 m/s** (+3.1%).
+- **D3 UNPHYSICAL_FRICTION_REMOVED**: `mu=2.5` στα intake wheels (εκτός κάθε
+  τιμής rubber-on-felt) → **swept** `INTAKE_TREAD_MU` στα ίδια όρια με το
+  reduced-order study (0.3/0.6/0.9). Νέο `INTAKE_RAMP_MU` (0.20/0.40/0.60) για
+  την **τρίτη αμέτρητη** τριβή μπάλα↔ράμπα. Ο generator απορρίπτει τιμές εκτός
+  φυσικού εύρους.
+- **D4 (δήλωση, όχι μοντέλο)**: το `gz_ros2_control` velocity command είναι
+  **ideal velocity source**· droop/ροπή/ρεύμα **δεν είναι μετρήσιμα στο Gazebo**
+  και δεν αναφέρονται από εκεί. Έρχονται από τον bounded FIT0186 νόμο του
+  reduced-order solver. Γραμμένο στο xacro, στον probe και στον analyzer.
+- **D5 FRAME_MAPPING_ASSERTED**: ο ισχυρισμός για ~174 mm σχετική απόκλιση
+  cheeks↔wheels **ΔΕΝ επιβεβαιώθηκε**. Τα 8 cheek segments είναι ΑΚΡΙΒΩΣ το CAD
+  Bezier μετατοπισμένο κατά −0.100 m (σφάλμα <1e-6 m σε x/y/μήκος/yaw) και το
+  nip κάθεται στα `0.540 − 0.100 − 0.070 = 0.370` = CAD 0.470 − 0.100. Η
+  απόσταση throat→nip βγαίνει **115.0 mm**, ίση με το CAD. Η φαινομενική
+  απόκλιση προερχόταν από σύγκριση του raw xacro arg (0.540, χωρίς τα shifts) με
+  cheeks που ήδη φέρουν το shift, και του **μέσου** του segment 07 (CAD 596.5)
+  με το σημείο 600.0. Νέο `scripts/intake_geometry.py` = η ΜΙΑ δημοσιευμένη
+  αντιστοίχιση πλαισίων· `generate_robot_urdf.intake_frame_offsets()` το μόνο
+  σημείο που παράγει shifts· `tests/test_intake_frame_alignment.py` ελέγχει σε
+  ΕΝΑ κοινό πλαίσιο cheeks+wheels+ramp και σκάει σε απόκλιση 4 mm (επαληθεύτηκε).
+- **D6 GROUND_PROFILE_IS_AUTHORITATIVE_RAMP**: το position clamp αντικαταστάθηκε
+  από πραγματική επαφή (calibrated ball law + Coulomb) πάνω σε πολυγραμμή που
+  περιέχει το γήπεδο, το κατακόρυφο χείλος 1.5 mm και το smoothstep
+  520→420 mm· τοίχοι 18 mm δεσμεύουν το κέντρο σε |y|≤57 mm· η ταχύτητα
+  προσέγγισης **δεν προδιαγράφεται** πια (η μπάλα ξεκινά ακίνητη στον κόσμο, το
+  γήπεδο κινείται στο πλαίσιο του ρομπότ, η ράμπα όχι).
+- **D7 (νέο εύρημα)**: το `compact_relieved_handoff_ramp.stl` **δεν ήταν** η
+  παγωμένη ράμπα — ήταν η δική της ράμπα της compact μελέτης (460→420 mm, 40 mm
+  διαδρομή, κλίση 51.5°). Παρήχθη το `option_a_handoff_ramp.stl` από το
+  `oa_ramp_z` (`scripts/generate_intake_ramp_mesh.py`) και ενημερώθηκε το
+  `config/compact_mechanical_contract.json` με σημείωση αυθεντίας.
+
+**Αποτέλεσμα (reduced-order solver, 1620 trials, 4 ταχύτητες προσέγγισης ×
+3 εντολές τροχού × 27 bounds × 5 offsets)**
+
+- **STOP CONDITION §14.1**: με την παγωμένη ράμπα η **κεντραρισμένη** μπάλα
+  **ΣΠΡΩΧΝΕΤΑΙ ΜΠΡΟΣΤΑ** (ploughed) και δεν φτάνει ποτέ στο nip στις ταχύτητες
+  που εντέλλεται το collect route: 0/81
+  στα 0.35 m/s, 0/81 στα 0.60 m/s (max του route).
+  Πρώτη σύλληψη στα **0.675 m/s**, σε όλα τα bounds από
+  **0.775 m/s**. Αιτία: το χείλος πιάνει τη μπάλα στα CAD x=529.9 mm,
+  **48.7 mm πριν** την πρώτη επαφή τροχού (481.2 mm), και στο πλαίσιο του ρομπότ
+  η ράμπα δεν παράγει έργο — στα 0.45 m/s υπάρχουν μόνο 10.3 mm ανάβασης έναντι
+  33.5 mm. Είναι το ίδιο πρόβλημα που είχε εντοπίσει η compact μελέτη όταν
+  μετακίνησε το χείλος πίσω από το pinch.
+- Το exit vector στο καθεστώς που ΟΝΤΩΣ πιάνει (0.80 m/s): exit z
+  **+14.3 mm**, exit elevation **-6.39°**,
+  exit speed -0.28 mm/s, καθαρό above-base receiving
+  **+9.1 mm**. Δηλαδή και οι δύο αντίθετες συνέπειες που
+  προέβλεπε το task εμφανίστηκαν· το καθαρό αποτέλεσμα είναι **θετικό**.
+- Ύψος κέντρου μπάλας στους τρεις σταθμούς του nip: στατική πρόβλεψη
+  44.1/55.2/63.9 mm, μετρημένο 44.3..47.9 / 56.6..63.1 / 71.0..77.6 mm
+  (έναντι σταθερού 33.0 mm σε επίπεδο έδαφος).
+- **Basket πάνω στη βάση, χωρίς άνοιγμα** (κεντραρισμένες, HIGH): rim 5 mm →
+  0.025..0.215 m, 10 mm → 0.035..0.205 m,
+  15 mm → 0.045..0.195 m, 20 mm → 0.060..0.180 m,
+  **μέγιστο rim 29 mm** (έναντι 21 mm στο άκυρο επίπεδο datum).
+  Σε LOW εντολή τροχού πέφτει στα 5 mm. Η σύγκρουση «χαμηλό
+  rim για να περάσει η μπάλα» vs «βαθιά απορρόφηση για να μην αναπηδήσει»
+  **δεν λύνεται** εδώ και δηλώνεται ρητά.
+- Τα 52 trials που απορρίφθηκαν από το όριο 5 mm του ελαστικού αναφέρονται
+  **ξεχωριστά** από τις αστοχίες μηχανισμού (είναι όριο εγκυρότητας μοντέλου).
+
+**Status**: ✅ οι διορθώσεις μοντέλου εφαρμόστηκαν και επαληθεύτηκαν με tests·
+⚠️ **ανοιχτό**: η καμπάνια Gazebo S1-S5 και η πύλη cross-validation δεν έχουν
+τρέξει, άρα capture half-width, μέγιστη πλευρική ταχύτητα εισόδου και επάρκεια
+throat παραμένουν **αναπάντητα** (`PENDING_GAZEBO_CAMPAIGN`)· ⚠️ **ανοιχτό**:
+η παγωμένη ράμπα δεν πιάνει κεντραρισμένη μπάλα στις ταχύτητες του route.
+
+
+### 64. Gazebo campaign S1-S5 στο διορθωμένο intake — η μπάλα ΔΕΝ περνά το χείλος (2026-08-27)
+
+**Υπόθεση**: μετά τη διόρθωση του μοντέλου (#63), το Gazebo — που κατέχει τη
+δυναμική σφήνας/άροσης, το centering των cheeks, το capture half-width και τα
+jam/reject — πρέπει να απαντήσει S1-S5 και να περάσει την πύλη cross-validation.
+
+**Ρύθμιση**: `ROBOT_PACKAGING_VARIANT=compact` (η μόνη παραλλαγή που φέρει τα CAD
+cheeks/ramp/bridge), flywheel off, bench driver, headless, 1 run ανά περίπτωση.
+Νέο `scripts/sim_debug/run_intake_gazebo_campaign.sh` +
+`scripts/analyze_intake_gazebo_campaign.py` (μετρά ΤΑ ΠΑΝΤΑ από το
+`gz_poses.jsonl` με το robot pose του ΙΔΙΟΥ δείγματος, ώστε κανένα νούμερο να
+μην εξαρτάται από το lag του live probe).
+
+**Ελάττωμα harness που βρέθηκε και διορθώθηκε**: ο bench driver ΔΕΝ μετακινούσε
+ποτέ τη μπάλα-στόχο — το `INTAKE_SWEEP_BALL_LATERAL_OFFSETS` αγνοούνταν σιωπηλά
+και κάθε «offset» run μετρούσε ξανά την κεντραρισμένη περίπτωση (το
+`prepare_collect_one_target` καλείται μόνο από τον collect_one driver). Προστέθηκε
+`set_gz_model_pose` του στόχου πριν το settle· τα S2 runs επαναλήφθηκαν.
+
+**S1 — Phase 3 (τροχοί + ράμπα, χωρίς cheeks), κεντραρισμένη μπάλα**
+(nip στο base_link x=370 mm, χείλος ράμπας στο 420 mm):
+
+  | drive m/s | tread mu | ramp mu | outcome | climb mm | min ball x mm |
+  | --- | --- | --- | --- | --- | --- |
+  | 0.35 | 0.3 | 0.40 | PLOUGHED_AHEAD | 3.3 | 410 |
+  | 0.35 | 0.6 | 0.40 | PLOUGHED_AHEAD | 3.4 | 410 |
+  | 0.35 | 0.9 | 0.40 | PLOUGHED_AHEAD | 3.4 | 410 |
+  | 0.60 | 0.3 | 0.40 | PLOUGHED_AHEAD | 10.9 | 393 |
+  | 0.60 | 0.6 | 0.40 | PLOUGHED_AHEAD | 10.8 | 393 |
+  | 0.60 | 0.9 | 0.40 | PLOUGHED_AHEAD | 10.8 | 393 |
+  | 0.80 | 0.3 | 0.40 | REJECTED_AT_NIP | 12.5 | 389 |
+  | 0.80 | 0.6 | 0.20 | REJECTED_AT_NIP | 13.6 | 389 |
+  | 0.80 | 0.6 | 0.40 | REJECTED_AT_NIP | 13.6 | 390 |
+  | 0.80 | 0.6 | 0.60 | REJECTED_AT_NIP | 11.7 | 391 |
+  | 0.80 | 0.9 | 0.40 | REJECTED_AT_NIP | 11.7 | 391 |
+
+  Καμία σύλληψη. Στα 0.35/0.60 m/s η μπάλα ανεβαίνει 3.3-10.9 mm,
+  γυρίζει πίσω και **σπρώχνεται μπροστά μέχρι το φιλέ** (η μέτρηση advance
+  κορεσμένη στο x=0 του κόσμου). Στα 0.80 m/s φτάνει στα 389 mm — 19 mm
+  μπροστά από το nip — αγγίζει τους τροχούς και **φτύνεται** (`REJECTED_AT_NIP`).
+  Η tread τριβή δεν αλλάζει τίποτα κάτω από 0.80 m/s επειδή η μπάλα δεν φτάνει
+  ποτέ στους τροχούς: το αποτέλεσμα ΔΕΝ κρύβεται πίσω από επιλογή τριβής.
+
+**S2 — Phase 4 (πλήρες intake με CAD cheeks), 0.80 m/s**:
+
+  | lateral mm | outcome | min ball x mm | climb mm |
+  | --- | --- | --- | --- |
+  | +0 | REJECTED_AT_NIP | 391 | 11.6 |
+  | +20 | REJECTED_AT_NIP | 390 | 12.2 |
+  | +40 | REJECTED_AT_NIP | 411 | 2.8 |
+  | +60 | REJECTED_AT_NIP | 396 | 9.0 |
+  | +80 | REJECTED_AT_NIP | 409 | 3.6 |
+  | +100 | PLOUGHED_AHEAD | 412 | 2.7 |
+
+  `INTAKE_CAPTURE_HALF_WIDTH_M = null` — δεν ορίζεται, γιατί δεν υπάρχει
+  καμία σύλληψη να μετρηθεί.
+
+**S3/S4 — GATED.** Χωρίς capture half-width δεν υπάρχει εύρος μέσα στο οποίο να
+σαρωθεί η πλευρική ταχύτητα εισόδου, ούτε μπάλες που περνούν το throat για να
+μετρηθεί η κατανομή εξόδου. Το CAD throat επιτρέπει κέντρο μπάλας ±47 mm· δεν
+συγκρίνεται με τίποτα και **δεν άλλαξε καμία γεωμετρία cheek**.
+
+**S5 — Phase 4, κεντραρισμένη, σάρωση ταχύτητας τροχού**:
+
+  | wheel rad/s | outcome | min ball x mm | climb mm |
+  | --- | --- | --- | --- |
+  | 14.5 | REJECTED_AT_NIP | 390 | 13.6 |
+  | 19.7 | REJECTED_AT_NIP | 390 | 13.6 |
+  | 25.0 | REJECTED_AT_NIP | 391 | 11.1 |
+
+**Γεωμετρικός έλεγχος (καθαρό παγωμένο CAD, καμία δυναμική)**: το χείλος 1.5 mm
+πιάνει μπάλα που κάθεται στο γήπεδο με κέντρο στα **529.8 mm**, ενώ η πρώτη
+επαφή τροχού για κεντραρισμένη μπάλα είναι στα **481.2 mm**: προβάδισμα
+**48.6 mm**. Ίδια νούμερα με αυτά που είχε υπολογίσει η compact μελέτη όταν
+μετακίνησε το χείλος πίσω από το pinch. Κατοχυρώθηκε ως assertion στο
+`tests/test_intake_frame_alignment.py`.
+
+**Πύλη cross-validation (§8)**: solver κεντραρισμένη σύλληψη
+{"0.35": false, "0.60": false, "0.80": true} vs Gazebo {"0.35": false, "0.60": false, "0.80": false}.
+`CROSS_INSTRUMENT_AGREEMENT = AGREE_ON_PLOUGH_AT_ROUTE_SPEEDS`: **συμφωνούν** ότι στις
+ταχύτητες του route η μπάλα αροτριάται· **διαφωνούν** πάνω από το κατώφλι (ο
+solver τη μεταφέρει στα 0.80 m/s, το Gazebo τη φτύνει στο nip). Η διαφωνία
+**αναφέρεται, δεν εξαλείφθηκε με tuning** — κανένα από τα δύο μοντέλα δεν
+πειράχτηκε για να κλείσει.
+
+**Status**: ⛔ **STOP** (§14.1 και §14.7). Το παγωμένο Option A intake δεν πιάνει
+κεντραρισμένη μπάλα σε καμία δοκιμασμένη συνθήκη μέσα στο Gazebo. Το μικρότερο
+φυσικό τεστ που το κλείνει: **τυπωμένη ράμπα μόνη της**, σπρωγμένη σε ακίνητη
+μπάλα στα 0.35 και 0.80 m/s, χωρίς τροχούς — μετράμε αν η μπάλα ανεβαίνει ή
+μπουλντοζάρεται. Μέχρι να περάσει αυτό, capture half-width, μέγιστη πλευρική
+ταχύτητα εισόδου, επάρκεια throat, ύψος rim καλαθιού και η απόφαση για άνοιγμα
+στη βάση παραμένουν **φυσικά ανοιχτά**.
+
+**Παράρτημα #63.1 — γιατί το plough «φαινόταν λυμένο» (2026-08-27)**
+
+Κατά το review του #63 ελέγχθηκε αν η μελέτη χρησιμοποίησε λάθος ράμπα.
+**Δεν χρησιμοποίησε**: το `option_a_handoff_ramp.stl` εκτείνεται σε base_link
+x 320..420 mm, που με το packaging shift του compact (−100 mm) είναι ακριβώς
+CAD 420..520, δηλαδή το authoritative `oa_ramp_front_x/rear_x`.
+
+Το πραγματικό πρόβλημα ήταν **σχόλιο στο CAD που δήλωνε λυμένο κάτι που δεν
+είναι**. Το `option-a.scad` ισχυριζόταν ότι η ράμπα είναι *«recessed behind the
+nominal wheel leading edge (x=532 mm), ensuring that the compliant tires — not
+the hard ramp lip — make first contact with the ball»*.
+
+- Το x=532 = `oa_wheel_x + oa_wheel_d/2` είναι **προβολή 2D**. Στις 3
+  διαστάσεις το άκρο αυτό βρίσκεται στα y=±90, z=64.3 mm.
+- Κεντραρισμένη μπάλα στο έδαφος (y=0, r=33 → φτάνει y≤33, κορυφή z=66)
+  **δεν το αγγίζει ποτέ**.
+- Πρώτο σημείο τροχού που αγγίζει πραγματικά: **CAD x = 481.2 mm**
+  (50.8 mm πίσω από το δηλωμένο «leading edge»), επαληθευμένο ανεξάρτητα με
+  δειγματοληψία της επιφάνειας μπάλας ενάντια στον πεπερασμένο κύλινδρο.
+- Πρώτη επαφή χείλους ράμπας: **CAD x = 529.8 mm**.
+- **Το χείλος προηγείται κατά 48.6 mm** — συμφωνεί με τη μελέτη.
+
+Δηλαδή η «υποχώρηση 12 mm» (532→520) υπολογίστηκε ενάντια σε σημείο μη
+προσβάσιμο από τη μπάλα. Το plough του #63 είναι **γεωμετρική συνέπεια της
+παγωμένης διάταξης, όχι artifact μοντέλου**.
+
+**Αλλαγή**: το σχόλιο στο `cad/collector-intake-v1/option-a/option-a.scad`
+αντικαταστάθηκε με τη μετρημένη γεωμετρία και σήμανση `UNRESOLVED`. **Καμία
+αλλαγή γεωμετρίας** — comment-only (επαληθεύτηκε με `git diff`).
+
+**Κατάσταση**: ΑΝΟΙΧΤΟ. Για να αγγίζει πρώτα το λάστιχο, το `oa_ramp_front_x`
+πρέπει να πάει ≤471.4, συμπιέζοντας τα 33.5 mm σε ~51 mm διαδρομής (μέση ~33°,
+κορυφή ~50°, έναντι 26.7° σήμερα). Εναλλακτικές: ενεργή ράμπα (Phase 3B
+conveyor stub στο `drivetrain.urdf.xacro`) που εξαλείφει το ενεργειακό
+πρόβλημα χωρίς να αγγίξει παγωμένη γεωμετρία· ή τροχοί χαμηλότερα/μπροστά,
+συζευγμένο με tilt και με τα 4.5 mm απόστασης από το έδαφος.
+**Να μην ξανασημανθεί ως λυμένο χωρίς φυσικό ramp-lip plough bench test.**
+
+
+### 65. Φρουρός μεταγραφής CAD → Python (2026-08-27)
+
+**Υπόθεση**: το `scripts/intake_geometry.py` δηλώνει σειρά αυθεντίας και μετά
+**μεταγράφει με το χέρι** τα νούμερα του CAD ως σταθερές Python. Τίποτα δεν
+επαλήθευε αυτή τη μεταγραφή: μια μελλοντική αλλαγή π.χ. στο `oa_ramp_front_x`
+θα άφηνε το Python σιωπηλά ξεπερασμένο και ΟΛΑ τα κατάντη νούμερα (handoff
+envelope, προφίλ ράμπας, ακόμα και οι αναμενόμενες τιμές του ίδιου του frame
+assertion) θα παρέσερναν χωρίς ούτε ένα test να κοκκινίσει. Είναι η ίδια
+κατηγορία αστοχίας με το παράρτημα #63.1 — δήλωση CAD και μοντέλο να διαφωνούν
+απαρατήρητα.
+
+**Τι χτίστηκε**: `tests/test_cad_transcription.py` (14 tests).
+
+- Μίνι parser SCAD: εξάγει τις αναθέσεις `name = expr;` και αποτιμά την έκφραση
+  με `ast` πάνω σε ό,τι έχει ήδη διαβαστεί (αριθμοί, `+ - * /`, αναφορές,
+  διανύσματα). **Καμία αναμενόμενη τιμή δεν ξαναγράφεται ως literal μέσα στο
+  test** — αυτό θα μετακινούσε τη μεταγραφή, δεν θα τη φρουρούσε.
+- Παράγωγες τιμές του CAD **αποτιμώνται από τα parsed inputs τους**:
+  `oa_wheel_y = oa_gap/2 + oa_wheel_d/2`, `oa_cheek_top_z = oa_bridge_under_z`
+  (μέσω `bridge-params.scad`), `tyre_required_radial_envelope =
+  (ball_d − fixed_gap)/2`, bridge AABB από `bridge_depth/width/under_z/t`.
+- Το πάχος τοιχώματος ράμπας ΔΕΝ είναι ονομασμένη μεταβλητή: διαβάζεται από το
+  ίδιο το στερεό στο `short_handoff_ramp()` (`cube([0.7, 4, …])` κεντραρισμένο
+  στο `oa_ramp_width/2 + 2`) και ελέγχεται και ως πάχος και ως offset.
+- Σταθερές χωρίς μοναδική πηγή SCAD **δεν παραλείπονται σιωπηλά**:
+  `BASE_LINK_HEIGHT_M` ελέγχεται ενάντια στο `tennis_robot.urdf.xacro`
+  (authority 3, robot-model datum), το `PACKAGING_SHIFT_X_M['compact']` ενάντια
+  στο `functional_shift_x` του `compact-packaging-study.scad`, και τα
+  αμέτρητα όρια τριβής/ελαστικού δηλώνονται ρητά ως analysis allocations με
+  test που απαγορεύει να επικαλεστούν πηγή `.scad`.
+- **Cross-authority check**: οι κοινές τιμές των δύο SCAD (wheel_d, wheel_width,
+  wheel_y, wheel_z, gap, tilt) πρέπει να συμφωνούν και μεταξύ τους.
+- **Render check**: `docker compose --profile cad run --rm openscad openscad -o
+  /dev/null …` και για τα δύο authoritative SCAD· skip με ρητό λόγο όταν λείπει
+  ο docker. Μέχρι τώρα **κανένα** test δεν έπιανε syntax error στα CAD.
+
+**Επαλήθευση ότι ο φρουρός φρουρεί** (προσωρινή αλλοίωση → αναμενόμενη αστοχία
+→ επαναφορά, επιβεβαιωμένη με `cmp` + `git diff`):
+
+| # | αλλοίωση | αποτέλεσμα |
+| --- | --- | --- |
+| 1 | `oa_ramp_front_x` 520→515 | ❌ `TRANSCRIPTION MISMATCH: …RAMP_FRONT_X_M = 0.52 m (520 mm), but …option-a.scad:oa_ramp_front_x = 515 mm` |
+| 2 | `oa_cheek_p3` [585,83]→[580,83] | ❌ `TRANSCRIPTION MISMATCH: …CHEEK_P3 = (0.585, 0.083) m, but …oa_cheek_p3 = [580.0, 83.0] mm` |
+| 3 | `wheel_width` 73→70 (authority 1) | ❌ `TRANSCRIPTION MISMATCH: …WHEEL_WIDTH_M = 0.073 m` **και** `AUTHORITY CONFLICT: standalone…wheel_width = 70.0 but option-a…oa_wheel_width = 73.0` |
+| 4 | syntax error στο `option-a.scad` | ❌ `option-a.scad failed to render (exit 1)` |
+
+**Καμία πραγματική ασυμφωνία δεν βρέθηκε**: όλες οι υπάρχουσες σταθερές του
+`intake_geometry.py` ταιριάζουν με το CAD. Καμία αλλαγή γεωμετρίας, ούτε σε
+CAD ούτε σε URDF/xacro/Python.
+
+**Δευτερεύον**: τα 4 rendered-model tests
+(`test_flywheel_exit_corridor`, `test_flywheel_launcher_design_gate` ×2,
+`test_flywheel_provisional_gate_a`) απέτυχαν με `PackageNotFoundError: xacro`
+όταν δεν είναι sourced το ROS. Πήραν το ίδιο `skipif` που χρησιμοποιεί ήδη το
+`test_intake_frame_alignment.py` (χρειάζονται `xacro` **και**
+`AMENT_PREFIX_PATH`). **Καμία assertion δεν αποδυναμώθηκε** — επιβεβαιώθηκε ότι
+και οι 4 **περνούν** με sourced ROS.
+
+**Αποτελέσματα suite** (εντολή §4: αγνοώντας controller_node_collect_route,
+sensor_snapshot_rate, sim_clock_relay):
+
+- χωρίς sourced ROS: **920 passed, 41 skipped, 0 failed**
+  (baseline ήταν 906/37/4· +14 τα νέα transcription tests, +4 skips = ακριβώς
+  τα 4 που πριν απέτυχαν περιβαλλοντικά)·
+- με sourced ROS: **974 passed, 2 skipped, 0 failed**·
+- πλήρες suite με sourced ROS: **997 passed, 2 skipped**.
+
+**Status**: ✅ το κενό μεταγραφής έκλεισε και ο φρουρός παρατηρήθηκε να
+αστοχεί σωστά σε 4 σενάρια. ⚠️ παραμένει ανοιχτό ό,τι άφησε το #64 (plough·
+φυσικό ramp-lip bench test).
+
+### 66. LiDAR θαμμένο μέσα στο κέλυφος — ανύψωση datum σάρωσης (2026-08-27)
+
+**Παρατήρηση χρήστη** στο Gazebo: το LiDAR φαίνεται μέσα στο ρομπότ αντί για
+πάνω στην οροφή.
+
+**Διάγνωση** (η αρχική υπόθεση «το lidar είναι σε λάθος θέση» ήταν λάθος):
+
+- `lidar_scan_plane_z_ground = 0.498` → `lidar_link` σε ground **0.463**.
+- Το `head_vis` είναι κύλινδρος r=0.047 × 45 mm **κεντραρισμένος στο link**,
+  άρα εκτεινόταν σε ground **0.4405..0.4855**.
+- Η οροφή του κελύφους: `panels_joint` στο `base_link + chassis_z/2` (0.007),
+  roof visual `z=0.440`, πάχος 0.004 → κορυφή σε ground **0.494**.
+- Δηλαδή η κεφαλή ήταν **31 mm κάτω** από την οροφή, πλήρως θαμμένη, και το
+  επίπεδο σάρωσης περνούσε **μόλις 4 mm** πάνω της — κάτω από τον ίδιο τον
+  κανόνα `scan_clearance = 8` του CAD. Δούλευε μόνο επειδή το σασί είναι
+  επίπεδο· με οποιαδήποτε κλίση η οροφή κόβει τη σάρωση.
+
+**Γιατί ΔΕΝ κατεβαίνει η οροφή** (διευκρίνιση χρήστη): το ύψος του κελύφους το
+ορίζει το **καλάθι στην ΑΝΩ θέση**, όπου τροφοδοτεί τον flywheel· η κάτω θέση
+εξυπηρετεί το intake. Άρα το CAD `uniform_shell_top_z = 463` (τρία αρχεία:
+lidar-pod-study, appearance-export, external-panel-study) είναι **προγενέστερο
+του basket-lift** και δεν είναι πλέον η αυθεντία για την οροφή. **Ανεβαίνει το
+LiDAR.**
+
+**Αλλαγή**: `lidar_scan_plane_z_ground` **0.498 → 0.5535**, με την παραγωγή
+γραμμένη στο σχόλιο ώστε να ξαναβγαίνει αν μετακινηθεί η οροφή:
+
+```
+roof top 0.494 + clearance 0.002 (CAD sensor_roof_offset) + half head 0.0225
+                               + lidar_sensor_scan_offset 0.035 = 0.5535
+```
+
+Αποτέλεσμα: `lidar_mount_z = 0.4735`, `lidar_link` ground **0.5185**, κεφαλή
+**0.4960..0.5410** — κάθεται **2 mm πάνω** στην οροφή αντί για 31 mm μέσα.
+Καθαρή σάρωση πάνω από την οροφή **+59.5 mm** (ήταν +4.0). Ο ιστός παραμένει
+θετικού μήκους (`head_clearance = 0.015`).
+
+Ενημερώθηκε και το `config/compact_mechanical_contract.json`
+(`components/lidar_scan_plane/cad_scalar_z` 0.498 → 0.5535, tolerance 1e-06).
+
+**ΑΝΟΙΧΤΟ / ΑΣΥΜΦΩΝΙΑ**: το `lidar-pod-study.scad` μοντελοποιεί αισθητήρα
+**30 mm** με το επίπεδο σάρωσης στην κορυφή του, ενώ το URDF έχει κεφαλή
+**45 mm** με sim-only offset 35 mm. Η ασυμφωνία 30/45 mm **δεν** επιλύθηκε εδώ.
+Επίσης το URDF **δεν** περιέχει καθόλου το pod του CAD (fairing μέχρι 490,
+κολόνες r=45 επιλεγμένες < `range_min` 50 ώστε να αυτοαπορρίπτονται, cap).
+
+**Επαλήθευση**: `tests/test_compact_mechanical_model.py` κάνει skip χωρίς
+sourced ROS environment — **η αλλαγή δεν έχει επικυρωθεί με render**. Πρέπει να
+τρέξει `BUILD=true ./run_native.sh` ή pytest με sourced ROS πριν θεωρηθεί
+κλειστή.
+
+### 67. OAK-D πολύ πίσω — μετακίνηση στη μύτη (2026-08-27)
+
+**Παρατήρηση χρήστη** (screenshots Gazebo, πλάγια όψη): η OAK-D κρέμεται στον
+αέρα πάνω από τον flywheel, ενώ τα cheeks και η ράμπα εκτείνονται **πολύ πιο
+μπροστά** από αυτήν. «Ο μηχανισμός μεγάλωσε το μήκος, χάθηκε η προηγούμενη
+τοποθέτηση.»
+
+**Μετρημένες μπροστινές αναφορές (base_link x)**
+
+| στόμιο cheeks (`compact_cheek_*_mouth_cap`) | **0.705** |
+| μύτη CAD (`external-panel-study nose_front_x = 790`) | **0.690** |
+| OAK-D πριν | 0.535 |
+| μπροστινή όψη body panels | 0.46 |
+
+Η μύτη του CAD συμφωνεί με το στόμιο των cheeks μέσα σε 15 mm — άρα το CAD
+ξέρει πού είναι το μπροστά. Η κάμερα ήταν **155–170 mm πίσω** από το πραγματικό
+μπροστινό άκρο.
+
+**Αλλαγή**: `camera_xyz` x **0.535 → 0.690** (μύτη CAD). Το ύψος **δεν**
+άλλαξε (base_link 0.443, ground 0.488) — ικανοποιεί ήδη το «πάνω από το άνοιγμα
+του flywheel» και διατηρεί το βαθμονομημένο aim (`camera_rpy` 0 0.273 0).
+
+**Επαληθευμένες αποστάσεις στη νέα θέση**
+
+```
+έξοδος flywheel στη μύτη   ground 0.2987 (215 + 230*tan20), άνοιγμα d=116 -> κορυφή 0.3567
+κάτω άκρο κάμερας          ground 0.4633  -> +106.6 mm πάνω από το άνοιγμα
+κορυφή μπάλας στην έξοδο   ground 0.3317  -> +131.6 mm καθαρό από την τροχιά εκτόξευσης
+πάνω άκρο κάμερας          ground 0.5127
+επίπεδο σάρωσης LiDAR      ground 0.5535  -> +40.8 mm, ΚΑΜΙΑ απόφραξη
+```
+
+**Παρεμπίπτον εύρημα (#66)**: με το παλιό επίπεδο σάρωσης 0.498 η κάμερα
+(κορυφή 0.5127) **έκοβε τον μπροστινό τομέα του LiDAR κατά 14.7 mm**. Η
+ανύψωση του LiDAR το έλυσε ήδη· δεν χρειάστηκε να χαμηλώσει η κάμερα.
+
+**ΑΝΟΙΧΤΟ**: το `components/body_panels.urdf.xacro` μοντελοποιεί ακόμη το
+**παλιό κοντό κέλυφος**, μπροστινή όψη στο base_link 0.46 — **230 mm πίσω από
+τη μύτη του CAD**. Η βάση της κάμερας εξακολουθεί να κρέμεται στο κενό, και δεν
+υπάρχει άνοιγμα εξόδου flywheel σε καμία όψη. Η επέκταση του κελύφους μέχρι τη
+μύτη και το κόψιμο του ανοίγματος (CAD: κύλινδρος d=116, κέντρο ground 0.2987,
+γωνία 20°) είναι **ξεχωριστή εργασία** και ΔΕΝ έγινε εδώ.
+
+**Επαλήθευση**: όπως και το #66, δεν έχει επικυρωθεί με render — το
+`test_compact_mechanical_model.py` κάνει skip χωρίς sourced ROS.
+
+**Διόρθωση #67.1 — διπλό shift στο `camera_xyz` (2026-08-27)**
+
+Το `camera_xyz` γράφεται ως `${literal + functional_shift_x}`, δηλαδή το
+literal είναι τιμή **CAD frame** και το shift (−0.100 στο compact) το μετατρέπει
+σε base_link. Γράφτηκε λάθος `0.690` (ήδη base_link) → το SDF βγήκε
+**x = 0.590**, δηλαδή 115 mm πίσω από το στόμιο των cheeks.
+
+Διορθώθηκε σε **0.790**, που είναι κυριολεκτικά το `nose_front_x` του CAD →
+base_link 0.690. Επιβεβαίωση από το ίδιο το SDF: `cheek_left_mouth_cap`
+x = 0.7050 = CAD 805 − 100. Σημείωση: το παλιό literal 0.535 έδινε στο compact
+**0.435**, δηλαδή η κάμερα ήταν ακόμη και πίσω από τη μπροστινή όψη των panels
+(0.46).
+
+**Έλεγχος απόφραξης LiDAR (μετρημένος από το `runtime/tennis_robot.sdf`)**
+
+Ο αισθητήρας έχει μόνο `<horizontal>` scan (500 samples, κανένα `<vertical>`),
+άρα κόβει μόνο ό,τι τέμνει το επίπεδο z=0.5535. Ψηλότερες γεωμετρίες:
+
+```
+lidar head_vis      0.4960 .. 0.5410   κάτω από το επίπεδο
+OAK-D cam_vis       0.4633 .. 0.5127   κάτω από το επίπεδο (40.8 mm)
+lidar mast_vis      0.0520 .. 0.5035   κάτω
+top_cover_panel     0.4900 .. 0.4920   κάτω
+```
+
+**Καμία γεωμετρία δεν τέμνει το επίπεδο σάρωσης.** Αν στο Gazebo φαίνεται
+ακόμη να κόβει, η συνεδρία τρέχει **παλιό μοντέλο**: το Gazebo δεν κάνει
+hot-reload spawned model, και το `colcon install` ΑΝΤΙΓΡΑΦΕΙ. Χρειάζεται
+`BUILD=true ./run_native.sh` και **επανεκκίνηση** του Gazebo.
+
+### 68. Ένα ρομπότ: κατάργηση των packaging variants (2026-08-27)
+
+**Απόφαση χρήστη**: να τρέχει default με το flywheel ενεργό (θέλουμε να δούμε αν
+δουλεύουν **και τα δύο**), και να μείνει **μόνο το νέο ρομπότ** ώστε να ξέρουμε
+τι δοκιμάζουμε· τα προηγούμενα σε archive. Εύρος: **κώδικας/μοντέλο μόνο** —
+CAD και docs μένουν ως έχουν.
+
+**Τι έδειξε το inventory** (πολύ μικρότερο απ' ό,τι φαινόταν): **κανένα** από τα
+920 tests δεν όριζε `ROBOT_PACKAGING_VARIANT`· μόνο **8** αρχεία ανέφεραν το
+`baseline` ως variant (τα υπόλοιπα 37 ήταν η αγγλική λέξη)· **1** script ήταν
+καρφωμένο σε legacy variant.
+
+**Αλλαγές**
+
+- `run_native.sh` + `run_pi.sh`: `ROBOT_PACKAGING_VARIANT` default **compact**
+  (overridable). **Πρέπει να συμφωνούν** — αλλιώς το Pi εκπέμπει TF άλλου
+  μοντέλου από αυτό που προσομοιώνει το PC (το compact μετατοπίζει όλη την
+  αλυσίδα κατά −100 mm).
+- Το flywheel **δεν** ορίστηκε χειροκίνητα: ήταν ήδη default true για compact
+  και στα δύο σημεία (`generate_robot_urdf.py`, `sim.launch.py`). Το variant
+  το οδηγεί.
+- `generate_robot_urdf.py`: `choices=["compact"]`, default compact,
+  `_patch_sdf_contacts` default compact, κατάρρευση των 24 διακλαδώσεων.
+- `sim.launch.py`: default compact, `_launch_configuration=False`,
+  `enable_flywheel`/`enable_intake` default "true".
+- `intake_geometry.py`: `PACKAGING_SHIFT_X_M` μόνο `compact: -0.100`. Κρατήθηκε
+  ως dict **επίτηδες**, ώστε το `packaging_shift_x_m` να σκάει σε άγνωστο όνομα
+  αντί να επιστρέφει σιωπηλά το compact shift για ξεπερασμένο variant string.
+- `tennis_robot.urdf.xacro`: `enable_compact_mechanics` **false → true**,
+  `enable_flywheel` **false → true**, αφαίρεση των δύο νεκρών
+  `<xacro:unless enable_compact_mechanics>` κλάδων, αφαίρεση του include του
+  αρχειοθετημένου funnel.
+- `components/funnel.urdf.xacro` → `components/archive/funnel.urdf.xacro`. Το
+  install glob είναι **μη-αναδρομικό** (`urdf/components/*.xacro`), οπότε μένει
+  στο repo αλλά δεν εγκαθίσταται. Το `flywheel_launcher.urdf.xacro` **ΕΜΕΙΝΕ**:
+  ορίζει το κοινό macro `flywheel_wheel` που χρησιμοποιεί το compact.
+- `run_throwing_visual_validation.sh`: `option-a-launch` → `compact` +
+  `ROBOT_ENABLE_INTAKE=false` (ίδια πρόθεση, ένα ρομπότ).
+- `tests/test_mechanical_variants.py`: **ξαναγράφτηκε**. Κωδικοποιούσε την
+  ΑΝΤΙΘΕΤΗ πρόθεση («ο launcher δεν πρέπει να είναι default», «collect και
+  launch αλληλοαποκλείονται»). Τώρα: το ένα ρομπότ φέρει **και τα δύο**, και
+  κάθε ένα σβήνει ανεξάρτητα με env. Περνούσε μόνο επειδή κάνει skip χωρίς
+  ROS — θα έσκαγε με sourced ROS στα διαγραμμένα variants.
+
+**Επαλήθευση**
+
+- Suite: **920 passed, 0 failed** (skips 41 → 32, οι παραμετροποιήσεις που έφυγαν).
+- **Render end-to-end** (`BUILD=true ./run_native.sh`): μηδέν σφάλμα generator/
+  xacro· στο παραγόμενο SDF `intake_wheel_left_link`, `flywheel_left_link`,
+  `compact_intake_cheeks_link`, `compact_handoff_ramp_link` **παρόντα**,
+  `funnel_link` **απών**· ενεργοποιήθηκαν `intake_wheel_velocity_controller`,
+  `flywheel_velocity_controller`, `basket_velocity_controller`.
+
+**ΕΚΚΡΕΜΕΙ**: το `test_mechanical_variants.py` κάνει skip χωρίς sourced ROS,
+άρα ο νέος του κώδικας **δεν έχει εκτελεστεί**. Πρέπει να τρέξει μία φορά με
+sourced ROS environment πριν θεωρηθεί επικυρωμένο.
+
+**Παράρτημα #68.1 — έλεγχος fallbacks και μηχανισμών (2026-08-27)**
+
+**Fallbacks.** Και τα **52** `xacro:arg` περνιούνται από τον
+`generate_robot_urdf.py`, οπότε τα defaults του xacro ισχύουν **μόνο** σε
+απευθείας render (δηλαδή στα tests). Από τα 30 απλά `getenv`-literals: **καμία**
+διαφωνία. Από τα 22 υπολογιζόμενα βρέθηκαν **7 αποκλίσεις** — δηλαδή ένας
+δεύτερος, σιωπηλά λανθασμένος ορισμός του ρομπότ:
+
+| arg | generator (πραγματικό) | xacro default (ήταν) |
+| --- | --- | --- |
+| `functional_shift_x` | **−0.100** | 0.0 |
+| `intake_cad_alignment_x` | **−0.070** | 0.0 |
+| `intake_parent_link` | **compact_bridge_link** | base_link |
+| `enable_compact_electronics` | **true** | false |
+| `basket_empty_mass` | **1.012** | 0.01 |
+| `basket_floor_thickness` | **0.006** | 0.005 |
+| `basket_cad_support_details` | **true** | false |
+
+Τα δύο πρώτα είναι τα σοβαρά: σε απευθείας render **όλη η λειτουργική αλυσίδα
+έπεφτε 170 mm εκτός** από αυτό που τρέχει το sim. Όλα ευθυγραμμίστηκαν με το ένα
+ρομπότ, και μπήκε ρητή **FALLBACK POLICY** στην κορυφή του xacro: κάθε αλλαγή
+τιμής στον generator συνοδεύεται από αλλαγή του default εδώ, στο ίδιο edit.
+
+**Μηχανισμοί** (από το παραγόμενο μοντέλο):
+
+| Μηχανισμός | Κατάσταση |
+| --- | --- |
+| Drivetrain 4WD skid-steer | 4 revolute joints, `diff_drive_controller` OK |
+| Intake (fixed-motor) | 2 revolute joints + cheeks/ramp/bridge links, controller OK |
+| Flywheel launcher | 2 revolute joints + mount, controller OK |
+| Basket lift | prismatic `basket_joint`, controller OK |
+| Assist wheel / conveyor rollers | **αδρανείς** (`enable_assist`/`enable_conveyor` false) |
+
+Αισθητήρες: `front_lidar`, `front_camera` + `front_depth` (OAK-D),
+`imu_sensor`, 4× IR (`ir_left/right`, `basket_ir_left/right`),
+`intake_debug_camera` + depth, 4× contact (`roller_contact_0/1`,
+`compact_ramp_contact_0`, `basket_handoff_contact_0`).
+
+**Ο conveyor ΔΕΝ είναι νεκρός κώδικας** — είναι το stub ενεργής ράμπας, ο
+φθηνότερος μοχλός για το plough του #63/#63.1 χωρίς να αγγιχτεί παγωμένη
+γεωμετρία. Μένει αδρανής, όχι για αφαίρεση.
+
+Καμία εναπομείνασα surrogate: τα μόνα `NOT_PHYSICAL`/`SURROGATE` που απομένουν
+είναι (α) σχόλιο στο `drivetrain.urdf.xacro` που **τεκμηριώνει την αφαίρεση**
+και (β) μέσα στο αρχειοθετημένο funnel. Ο ball detector δηλώνει ρητά ότι δεν
+έχει classical/no-op fallback.
+
+Suite μετά τις αλλαγές: **920 passed, 0 failed**.
+
+**Παράρτημα #68.2 — legacy conditions (2026-08-27)**
+
+Σάρωση για συνθήκες που δεν έπρεπε να υπάρχουν πια. Βρέθηκαν **δύο κατηγορίες**.
+
+**A. Νεκρές διακλαδώσεις από την κατάρρευση των variants (#68).** Είχαν μείνει
+από εμένα: σταθερές `compact/compact_machine/option_a_collect/launch_configuration`
+που οδηγούσαν 9 ternaries, ένας helper `variant_value(env, baseline, compact)`
+του οποίου το `baseline` αγνοούνταν, και δύο νεκρές μεταβλητές στο
+`sim.launch.py` (`_packaging_variant`, `_launch_configuration`). Όλα αφαιρέθηκαν·
+οι τιμές γράφτηκαν απευθείας. `compact_machine`, `option_a_collect`,
+`launch_configuration`, `variant_value`: **0 refs**.
+Το `intake_frame_offsets` απλοποιήθηκε — το `packaging_shift_x_m` σκάει ήδη σε
+άγνωστο variant, οπότε οι μη-compact κλάδοι ήταν απροσπέλαστοι.
+
+**B. Distro-aware κώδικας — που το CLAUDE.md ΑΠΑΓΟΡΕΥΕΙ ρητά.**
+
+1. `sim.launch.py`: `_stamped_cmd_stack = ROS_DISTRO not in {"humble","iron"}`,
+   με 3 σημεία χρήσης που επέλεγαν stamped vs unstamped cmd_vel wiring. Στο
+   Jazzy πάντα true. Αφαιρέθηκε η συνθήκη και οι νεκροί κλάδοι
+   (`/diff_drive_controller/cmd_vel_unstamped`). Κρατήθηκε μόνο το επεξηγηματικό
+   σχόλιο ιστορικού.
+
+2. **ΖΩΝΤΑΝΟ BUG** — `console/config.py:ROS_PRELUDE` ήταν καρφωμένο σε
+   `source /opt/ros/humble/setup.bash; source /ros2_ws/install/setup.bash;`.
+   **Κανένα από τα δύο paths δεν υπάρχει** στο canonical native Jazzy runtime,
+   και το `ConsoleConfig.ros_prelude` το παίρνει ως dataclass default που
+   **κανείς δεν κάνει override** (`control_panel.py:74`). Χρησιμοποιείται σε
+   κάθε κλήση `ros2` του console (survey launch, nav goal/cancel) μέσω
+   `ros_service.py:316,451`.
+   Φαινόταν να δουλεύει μόνο επειδή το console ξεκινά από ήδη sourced
+   περιβάλλον· ο δηλωμένος σκοπός του («works from a plain non-ROS shell») ήταν
+   σπασμένος. Αντικαταστάθηκε με prelude που ακολουθεί το `ROS_DISTRO`
+   (default jazzy) και παίρνει το πρώτο υπαρκτό overlay
+   (`install_jazzy` για run_pi.sh, `install` για run_native.sh), ανεκτικό σε
+   απόντα αρχεία. **Επαληθεύτηκε με `env -i`: το `ros2` πλέον resolve-άρει.**
+
+**Ό,τι έμεινε είναι σκόπιμα φραγμένο**: οι υπόλοιπες αναφορές σε Humble/Docker
+ζουν στο obsolete Docker μονοπάτι (`run.sh`, `run_ubuntu.sh`,
+`docker_dev_entry.sh`), που ήδη αρνείται να ξεκινήσει χωρίς
+`ALLOW_OBSOLETE_HUMBLE_DOCKER=true`, συν ένα legacy coverage script
+(`run_c2_gazebo_coverage.py`). Το `install_docker` στο `sim.launch.py:55` είναι
+σχόλιο ιστορικού.
+
+Suite μετά από όλα: **920 passed, 0 failed**.
+
+**Παράρτημα #68.3 — suite με sourced ROS: η εκκρεμότητα έκλεισε (2026-08-28)**
+
+Το suite έτρεξε επιτέλους με `source /opt/ros/jazzy/setup.bash` +
+`ros2_ws/install_jazzy/setup.bash`. **986 passed, 2 failed** — και οι δύο
+αποτυχίες ήταν συνέπειες των αλλαγών #66/#68 που κρύβονταν πίσω από τα skips:
+
+1. `test_lidar_optical_centre_is_498_mm_above_ground` — κωδικοποιούσε το ΠΑΛΙΟ
+   datum. Το επίπεδο σάρωσης ανέβηκε σε **0.5535** στο #66 (το LiDAR ήταν
+   θαμμένο 31 mm μέσα στην οροφή). Μετονομάστηκε σε
+   `test_lidar_optical_centre_clears_the_shell_roof` με τη νέα τιμή.
+2. `test_lidar_mast_never_protrudes_below_the_chassis` — είχε μείνει literal
+   `_generate(tmp_path, "baseline")` από το #68· ο generator πλέον απορρίπτει το
+   όνομα (exit 2). Έγινε `VARIANT`.
+
+Μετά: **988 passed, 2 skipped, 0 failed**. Τα 2 skips είναι νόμιμη συνθήκη
+χρόνου εκτέλεσης (`test_collection_route_router`: frontier budget), όχι έλλειψη
+υποδομής.
+
+**ΠΡΟΣΟΧΗ — 6 install spaces στο PC**: `install_jazzy` (23M, ΤΟ ΖΩΝΤΑΝΟ),
+`install_docker` (12M, Humble), και `install` / `install_parity` /
+`install_smoke` / `install_verify` (28M leftovers). Το `run_native.sh` και το
+`run_pi.sh` χτίζουν **και τα δύο** σε `install_jazzy`. Σκέτο `colcon build`
+πάει στο `install` και **αγνοείται** — έτσι ακριβώς ξεκίνησε το πρόβλημα με το
+Pi brain που έτρεχε παλιά μηνύματα.

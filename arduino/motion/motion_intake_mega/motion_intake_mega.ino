@@ -3,14 +3,13 @@
  * --------------------------------------------------------------------------
  * Hardware covered by the common 120x80 mm perfboard:
  *   - 2x BTS7960 drive channels, 4x drive encoders
- *   - dual intake H-bridge control, 2x intake encoders
+ *   - 2x BTS7960 intake channels, 2x intake encoders
  *   - entry/exit IR break beams
  *   - START, E-stop status, armed LED
  *   - GY-521 / MPU6050 over I2C
  *
- * This sketch is a safe integration/bring-up target. The L298N intake driver
- * remains bench-only: FIT0186 stall current exceeds its channel rating.
- * Motor current and 12V never pass through the perfboard.
+ * This sketch is an integration/bring-up target. Each intake BTS7960 drives
+ * one FIT0186. Motor current and 12V never pass through the perfboard.
  *
  * Serial, 115200 baud, newline terminated:
  *   ARM
@@ -50,19 +49,20 @@ const uint8_t DRIVE_RF_ENC_B_PIN = 24;
 const uint8_t DRIVE_RR_ENC_A_PIN = 19;
 const uint8_t DRIVE_RR_ENC_B_PIN = 25;
 
-// Intake H-bridge control.
-const uint8_t INTAKE_LEFT_EN_PIN = 44;
-const uint8_t INTAKE_LEFT_IN1_PIN = 40;
-const uint8_t INTAKE_LEFT_IN2_PIN = 41;
-const uint8_t INTAKE_RIGHT_EN_PIN = 45;
-const uint8_t INTAKE_RIGHT_IN3_PIN = 42;
-const uint8_t INTAKE_RIGHT_IN4_PIN = 43;
+// Intake BTS7960 control; no overlap with the drive BTS7960 pin set.
+const uint8_t INTAKE_LEFT_RPWM_PIN = 44;
+const uint8_t INTAKE_LEFT_LPWM_PIN = 45;
+const uint8_t INTAKE_LEFT_EN_PIN = 40;
+const uint8_t INTAKE_RIGHT_RPWM_PIN = 46;
+const uint8_t INTAKE_RIGHT_LPWM_PIN = 11;
+const uint8_t INTAKE_RIGHT_EN_PIN = 42;
 
 // Intake encoders on Mega port K pin-change interrupts.
-const uint8_t INTAKE_LEFT_ENC_A_PIN = A8;
-const uint8_t INTAKE_LEFT_ENC_B_PIN = A9;
-const uint8_t INTAKE_RIGHT_ENC_A_PIN = A10;
-const uint8_t INTAKE_RIGHT_ENC_B_PIN = A11;
+// As wired: left on A10/A11 (PK2/PK3), right on A8/A9 (PK0/PK1).
+const uint8_t INTAKE_LEFT_ENC_A_PIN = A10;
+const uint8_t INTAKE_LEFT_ENC_B_PIN = A11;
+const uint8_t INTAKE_RIGHT_ENC_A_PIN = A8;
+const uint8_t INTAKE_RIGHT_ENC_B_PIN = A9;
 
 const uint8_t IR_ENTRY_PIN = 36;
 const uint8_t IR_EXIT_PIN = 37;
@@ -83,10 +83,10 @@ const unsigned long INTAKE_STARTUP_GRACE_MS = 300;
 const unsigned long INTAKE_PROGRESS_PERIOD_MS = 250;
 const unsigned long MAX_INTAKE_RUN_MS = 1500;
 const unsigned long MAX_AUTO_RUN_MS = 4000;
-const uint8_t MAX_L298N_TEST_PWM = 90;
+const uint8_t MAX_INTAKE_TEST_PWM = 90;
 const uint8_t MIN_INTAKE_PROGRESS_PWM = 35;
-const int8_t INTAKE_LEFT_INWARD_SIGN = 1;
-const int8_t INTAKE_RIGHT_INWARD_SIGN = -1;
+const int8_t INTAKE_LEFT_INWARD_SIGN = -1;
+const int8_t INTAKE_RIGHT_INWARD_SIGN = 1;
 const float DRIVE_RAMP_PER_TICK = 0.02f;
 const float DRIVE_DEADBAND = 0.02f;
 
@@ -156,13 +156,13 @@ void isrDriveRr() { driveRrCount += digitalRead(DRIVE_RR_ENC_B_PIN) ? 1 : -1; }
 
 ISR(PCINT2_vect) {
   const uint8_t portK = PINK;
-  const bool leftA = (portK & _BV(PK0)) != 0;
-  const bool rightA = (portK & _BV(PK2)) != 0;
+  const bool leftA = (portK & _BV(PK2)) != 0;
+  const bool rightA = (portK & _BV(PK0)) != 0;
   if (leftA && !intakePreviousLeftA) {
-    intakeLeftCount += (portK & _BV(PK1)) ? 1 : -1;
+    intakeLeftCount += (portK & _BV(PK3)) ? 1 : -1;
   }
   if (rightA && !intakePreviousRightA) {
-    intakeRightCount += (portK & _BV(PK3)) ? 1 : -1;
+    intakeRightCount += (portK & _BV(PK1)) ? 1 : -1;
   }
   intakePreviousLeftA = leftA;
   intakePreviousRightA = rightA;
@@ -213,26 +213,22 @@ void stopDrive() {
   applyDriveSide(DRIVE_RIGHT_RPWM_PIN, DRIVE_RIGHT_LPWM_PIN, 0.0f);
 }
 
-void applyIntakeMotor(uint8_t en, uint8_t in1, uint8_t in2, int16_t pwm) {
-  analogWrite(en, 0);
+void applyIntakeMotor(uint8_t en, uint8_t rpwm, uint8_t lpwm, int16_t pwm) {
+  digitalWrite(en, LOW);
+  analogWrite(rpwm, 0);
+  analogWrite(lpwm, 0);
   if (pwm > 0) {
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
-    analogWrite(en, (uint8_t)pwm);
+    analogWrite(rpwm, (uint8_t)pwm);
   } else if (pwm < 0) {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-    analogWrite(en, (uint8_t)(-pwm));
-  } else {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, LOW);
+    analogWrite(lpwm, (uint8_t)(-pwm));
   }
+  if (pwm != 0) digitalWrite(en, HIGH);
 }
 
 void stopIntake() {
   intakeLeftPwm = intakeRightPwm = 0;
-  applyIntakeMotor(INTAKE_LEFT_EN_PIN, INTAKE_LEFT_IN1_PIN, INTAKE_LEFT_IN2_PIN, 0);
-  applyIntakeMotor(INTAKE_RIGHT_EN_PIN, INTAKE_RIGHT_IN3_PIN, INTAKE_RIGHT_IN4_PIN, 0);
+  applyIntakeMotor(INTAKE_LEFT_EN_PIN, INTAKE_LEFT_RPWM_PIN, INTAKE_LEFT_LPWM_PIN, 0);
+  applyIntakeMotor(INTAKE_RIGHT_EN_PIN, INTAKE_RIGHT_RPWM_PIN, INTAKE_RIGHT_LPWM_PIN, 0);
   intakeMode = INTAKE_IDLE;
 }
 
@@ -293,8 +289,8 @@ void startIntake(int16_t leftPwm, int16_t rightPwm,
   intakeDeadlineMs = intakeStartedMs + durationMs;
   intakeLastProgressMs = intakeStartedMs;
   intakeMode = mode;
-  applyIntakeMotor(INTAKE_LEFT_EN_PIN, INTAKE_LEFT_IN1_PIN, INTAKE_LEFT_IN2_PIN, leftPwm);
-  applyIntakeMotor(INTAKE_RIGHT_EN_PIN, INTAKE_RIGHT_IN3_PIN, INTAKE_RIGHT_IN4_PIN, rightPwm);
+  applyIntakeMotor(INTAKE_LEFT_EN_PIN, INTAKE_LEFT_RPWM_PIN, INTAKE_LEFT_LPWM_PIN, leftPwm);
+  applyIntakeMotor(INTAKE_RIGHT_EN_PIN, INTAKE_RIGHT_RPWM_PIN, INTAKE_RIGHT_LPWM_PIN, rightPwm);
 }
 
 bool updateDebounced(DebouncedInput &input, unsigned long now) {
@@ -456,7 +452,7 @@ void handleLine(char *line) {
     if (state != ARMED) {
       Serial.println(F("ERR,NOT_ARMED"));
     } else if (sscanf(line + 2, "%d %d %lu", &left, &right, &duration) != 3 ||
-               abs(left) > MAX_L298N_TEST_PWM || abs(right) > MAX_L298N_TEST_PWM ||
+               abs(left) > MAX_INTAKE_TEST_PWM || abs(right) > MAX_INTAKE_TEST_PWM ||
                duration == 0 || duration > MAX_INTAKE_RUN_MS) {
       Serial.println(F("ERR,I_ARGS"));
     } else {
@@ -470,7 +466,7 @@ void handleLine(char *line) {
     if (state != ARMED) {
       Serial.println(F("ERR,NOT_ARMED"));
     } else if (sscanf(line + 5, "%d %lu", &pwm, &timeoutMs) != 2 ||
-               pwm <= 0 || pwm > MAX_L298N_TEST_PWM || timeoutMs == 0 ||
+               pwm <= 0 || pwm > MAX_INTAKE_TEST_PWM || timeoutMs == 0 ||
                timeoutMs > MAX_AUTO_RUN_MS) {
       Serial.println(F("ERR,AUTO_ARGS"));
     } else if (beamBroken(entryBeam) || beamBroken(exitBeam)) {
@@ -551,8 +547,8 @@ void updateIntake(unsigned long now, bool entryChanged, bool exitChanged) {
 
 void setupIntakePinChangeInterrupts() {
   noInterrupts();
-  intakePreviousLeftA = (PINK & _BV(PK0)) != 0;
-  intakePreviousRightA = (PINK & _BV(PK2)) != 0;
+  intakePreviousLeftA = (PINK & _BV(PK2)) != 0;
+  intakePreviousRightA = (PINK & _BV(PK0)) != 0;
   PCIFR = _BV(PCIF2);
   PCMSK2 |= _BV(PCINT16) | _BV(PCINT18);
   PCICR |= _BV(PCIE2);
@@ -570,9 +566,9 @@ void setup() {
   pinMode(DRIVE_RF_ENC_A_PIN, INPUT_PULLUP); pinMode(DRIVE_RF_ENC_B_PIN, INPUT_PULLUP);
   pinMode(DRIVE_RR_ENC_A_PIN, INPUT_PULLUP); pinMode(DRIVE_RR_ENC_B_PIN, INPUT_PULLUP);
 
-  pinMode(INTAKE_LEFT_EN_PIN, OUTPUT); pinMode(INTAKE_LEFT_IN1_PIN, OUTPUT);
-  pinMode(INTAKE_LEFT_IN2_PIN, OUTPUT); pinMode(INTAKE_RIGHT_EN_PIN, OUTPUT);
-  pinMode(INTAKE_RIGHT_IN3_PIN, OUTPUT); pinMode(INTAKE_RIGHT_IN4_PIN, OUTPUT);
+  pinMode(INTAKE_LEFT_EN_PIN, OUTPUT); pinMode(INTAKE_LEFT_RPWM_PIN, OUTPUT);
+  pinMode(INTAKE_LEFT_LPWM_PIN, OUTPUT); pinMode(INTAKE_RIGHT_EN_PIN, OUTPUT);
+  pinMode(INTAKE_RIGHT_RPWM_PIN, OUTPUT); pinMode(INTAKE_RIGHT_LPWM_PIN, OUTPUT);
   pinMode(INTAKE_LEFT_ENC_A_PIN, INPUT_PULLUP); pinMode(INTAKE_LEFT_ENC_B_PIN, INPUT_PULLUP);
   pinMode(INTAKE_RIGHT_ENC_A_PIN, INPUT_PULLUP); pinMode(INTAKE_RIGHT_ENC_B_PIN, INPUT_PULLUP);
 

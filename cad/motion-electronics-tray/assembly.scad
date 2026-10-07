@@ -1,43 +1,42 @@
 include <params.scad>
 use <tray.scad>
 
-module pcb(size, z, color_name) {
-    color(color_name, 0.72) translate([0, 0, z]) cube([size[0], size[1], 1.6]);
-}
-
-module mega_reference() {
-    pcb(mega_size, tray_t + mega_standoff_h, "RoyalBlue");
-    // USB-B connector points toward the service edge.
-    color("Silver") translate([-6, 32, tray_t + mega_standoff_h + 1.6])
-        cube([16, 13, 11]);
-    color("DimGray") translate([-2, 5, tray_t + mega_standoff_h + 1.6])
-        cube([14, 10, 11]);
-}
-
-module perfboard_reference() {
-    pcb(perf_size, tray_t + perf_standoff_h, "SeaGreen");
-}
-
-module driver_reference() {
-    pcb(driver_size, tray_t + driver_standoff_h, "DarkGreen");
-    color("Silver", 0.85)
-        translate([8, 5, tray_t + driver_standoff_h + 1.6])
-            cube([34, 40, 37]);
-    color("RoyalBlue")
-        translate([10, -3, tray_t + driver_standoff_h + 1.6]) cube([30, 8, 11]);
+module board(size, origin, z, colour) {
+    color(colour, 0.75)
+        translate([origin[0], origin[1], z]) cube([size[0], size[1], 1.6]);
 }
 
 electronics_tray();
 
-translate(mega_origin) mega_reference();
-translate(perf_origin) perfboard_reference();
-for (origin = driver_origins)
-    translate(origin) driver_reference();
+board(perf_size, perf_origin, tray_t + perf_standoff_h, "SeaGreen");
 
-// Reference-only future hardware envelopes.
-color("Orange", 0.25)
-    translate([relay_bay_origin[0], relay_bay_origin[1], tray_t + 0.1])
-        cube([relay_bay_size[0], relay_bay_size[1], 28]);
-color("Gold", 0.22)
-    translate([fuse_bay_origin[0], fuse_bay_origin[1], tray_t + 0.1])
-        cube([fuse_bay_size[0], fuse_bay_size[1], 22]);
+// Transparent acrylic Mega enclosure envelope.
+color("LightCyan", 0.28)
+    translate([mega_case_origin[0], mega_case_origin[1],
+               tray_t + mega_case_standoff_h])
+        cube([mega_case_size[0], mega_case_size[1], 22]);
+
+board(l298_size, l298_origin, tray_t + l298_standoff_h, "FireBrick");
+color("DimGray", 0.85)
+    translate([l298_origin[0] + 15, l298_origin[1] + 15,
+               tray_t + l298_standoff_h + 1.6])
+        cube([23, 30, l298_heatsink_h]);
+
+for (origin = bts_origins) {
+    // Four separate 20 mm spacers sit on the tray's existing low bosses.
+    for (p = bts_holes)
+        color("DarkSlateGray", 0.85)
+            translate([origin[0] + p[0], origin[1] + p[1],
+                       tray_t + bts_standoff_h])
+                difference() {
+                    cylinder(d=10, h=bts_spacer_h);
+                    translate([0, 0, -1]) cylinder(d=3.4, h=bts_spacer_h+2);
+                }
+
+    board(bts_size, origin,
+          tray_t + bts_standoff_h + bts_spacer_h, "SteelBlue");
+    color("Silver", 0.8)
+        translate([origin[0] + 12, origin[1] + 8,
+                   tray_t + bts_standoff_h + bts_spacer_h + 1.6])
+            cube([26, 34, bts_heatsink_h]);
+}

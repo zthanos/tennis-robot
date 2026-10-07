@@ -62,8 +62,12 @@ def test_intake_pin_contract_keeps_i2c_and_spi_available() -> None:
 
     assert not used.intersection({20, 21})  # I2C MPU6050
     assert not used.intersection({50, 51, 52, 53})  # SPI expansion
-    assert intake["LEFT_EN_PIN"] == 44
-    assert intake["RIGHT_EN_PIN"] == 45
+    assert intake["LEFT_RPWM_PIN"] == 44
+    assert intake["LEFT_LPWM_PIN"] == 45
+    assert intake["RIGHT_RPWM_PIN"] == 46
+    assert intake["RIGHT_LPWM_PIN"] == 11
+    assert intake["LEFT_EN_PIN"] == 40
+    assert intake["RIGHT_EN_PIN"] == 42
     assert intake["IR_ENTRY_PIN"] == 36
     assert intake["IR_EXIT_PIN"] == 37
 
@@ -87,16 +91,17 @@ def test_unified_sketch_matches_common_perfboard_pin_contract() -> None:
         "DRIVE_RF_ENC_B_PIN": 24,
         "DRIVE_RR_ENC_A_PIN": 19,
         "DRIVE_RR_ENC_B_PIN": 25,
-        "INTAKE_LEFT_EN_PIN": 44,
-        "INTAKE_LEFT_IN1_PIN": 40,
-        "INTAKE_LEFT_IN2_PIN": 41,
-        "INTAKE_RIGHT_EN_PIN": 45,
-        "INTAKE_RIGHT_IN3_PIN": 42,
-        "INTAKE_RIGHT_IN4_PIN": 43,
-        "INTAKE_LEFT_ENC_A_PIN": 62,
-        "INTAKE_LEFT_ENC_B_PIN": 63,
-        "INTAKE_RIGHT_ENC_A_PIN": 64,
-        "INTAKE_RIGHT_ENC_B_PIN": 65,
+        "INTAKE_LEFT_RPWM_PIN": 44,
+        "INTAKE_LEFT_LPWM_PIN": 45,
+        "INTAKE_LEFT_EN_PIN": 40,
+        "INTAKE_RIGHT_RPWM_PIN": 46,
+        "INTAKE_RIGHT_LPWM_PIN": 11,
+        "INTAKE_RIGHT_EN_PIN": 42,
+        # As-built: left encoder on A10/A11, right on A8/A9.
+        "INTAKE_LEFT_ENC_A_PIN": 64,
+        "INTAKE_LEFT_ENC_B_PIN": 65,
+        "INTAKE_RIGHT_ENC_A_PIN": 62,
+        "INTAKE_RIGHT_ENC_B_PIN": 63,
         "IR_ENTRY_PIN": 36,
         "IR_EXIT_PIN": 37,
         "START_ARM_PIN": 32,
@@ -111,7 +116,7 @@ def test_unified_sketch_matches_common_perfboard_pin_contract() -> None:
     assert "ISR(PCINT2_vect)" in source
     assert "#include <Wire.h>" in source
     assert "HOST_TIMEOUT_MS = 300" in source
-    assert "MAX_L298N_TEST_PWM = 90" in source
+    assert "MAX_INTAKE_TEST_PWM = 90" in source
 
 
 def test_gyro_bench_sketch_uses_mega_i2c_and_probes_both_addresses() -> None:

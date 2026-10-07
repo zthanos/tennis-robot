@@ -29,10 +29,13 @@ fixed bridge/support
 The previous translating-pod guide study is preserved only as historical
 traceability and is now marked `SUPERSEDED_WRONG_COMPLIANCE_ARCHITECTURE`.
 Its rails, springs, hard stops, moving-motor cable loops, and 0–8 mm travel are
-not current physical requirements. The active prismatic Xacro/SDF mechanism is
-a legacy simulation surrogate, not manufacturing geometry or validation
-evidence. It moves the motor collision with the wheel and therefore is not a
-faithful tyre surrogate.
+not current physical requirements. **As of 2026-08-27 the prismatic Xacro/SDF
+carriage no longer exists**: it was removed outright (not set to zero travel)
+together with its SDF spring patch and state interfaces, so it cannot be
+re-enabled by a parameter. Each side of the simulated intake is now one rigid
+coaxial assembly welded to the bridge, matching this architecture. Tyre
+compliance is not represented by any joint; it is measured by the reduced-order
+solver `scripts/run_standalone_intake_handoff_study.py`.
 
 The corrected architecture is selected and unambiguous, but is not frozen.
 Physical tyre testing, direct-drive metrology, and final printed-mount fit-up
@@ -235,8 +238,9 @@ Recommended progression:
 
 A scalar effective radial spring law is acceptable only after calibration and
 must include loading/unloading hysteresis or a measured conservative bound.
-The present 0–8 mm prismatic assembly may reproduce historical simulations,
-but it is not the default contact model. If a numerical fallback is ever used,
+The 0–8 mm prismatic assembly has been removed from the simulation entirely
+(2026-08-27); it survives only in archived run records. If a numerical fallback
+is ever used,
 it must be named `SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE`, leave physical
 CAD/rest centres fixed, and move only a contact-layer degree of freedom—not
 the motor body or manufacturing geometry.
@@ -292,7 +296,12 @@ fixed-centre wheels, calibrated ball and tyre normal laws, measured/bounded
 felt-tread traction, and a non-ideal FIT0186 torque-speed/current model. Record
 contact order, ball path, normal forces, tyre/ball deformation, wheel speed,
 motor torque/current/transient recovery, slip, capture, and downstream release.
-The existing ideal velocity control and `mu=2.5` are not physical evidence.
+The `mu=2.5` tread friction was removed on 2026-08-27: felt/tread friction is
+now a swept bound (0.3 / 0.6 / 0.9) in both instruments, and ball-to-ramp
+friction is swept as a third unmeasured coefficient (0.20 / 0.40 / 0.60).
+`gz_ros2_control` remains an ideal velocity source, so wheel droop, torque and
+current are declared NOT measurable in Gazebo and are never reported from it.
+Neither friction bound is physical evidence.
 
 ## Repository translating-carriage audit
 

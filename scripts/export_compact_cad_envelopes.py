@@ -66,6 +66,12 @@ INTERSECTIONS = (
     "handoff_ramp_left_wheel_intersection",
     "handoff_ramp_right_wheel_intersection",
 )
+# NOTE: the URDF handoff ramp is now
+# meshes/option_a_handoff_ramp.stl (the frozen option-a.scad oa_ramp_z). This
+# table still points at compact_relieved_handoff_ramp.stl because it validates
+# the COMPACT STUDY's own exported artifacts against that study's CAD, not the
+# robot model. The frozen-CAD check on the model is
+# tests/test_intake_frame_alignment.py.
 URDF_MESH_PARTS = {
     "basket_bin_local": ROOT / "ros2_ws/src/tennis_robot/meshes/compact_relieved_bin.stl",
     "basket_hood_local": ROOT / "ros2_ws/src/tennis_robot/meshes/compact_fixed_hood.stl",

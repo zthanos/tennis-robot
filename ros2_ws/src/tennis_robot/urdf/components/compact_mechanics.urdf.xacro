@@ -113,7 +113,7 @@
        Eight convex segments follow the cubic Bezier/smoothstep definitions;
        max chord error is below 1 mm and avoids concave mesh collision. -->
   <xacro:macro name="compact_intake_static_structure"
-      params="parent base_link_height enable_cheeks:=true enable_ramp:=true ramp_mesh:='package://tennis_robot/meshes/compact_relieved_handoff_ramp.stl'">
+      params="parent base_link_height enable_cheeks:=true enable_ramp:=true ramp_mesh:='package://tennis_robot/meshes/option_a_handoff_ramp.stl'">
     <xacro:if value="${enable_cheeks}">
       <joint name="compact_intake_cheeks_joint" type="fixed">
         <parent link="${parent}"/><child link="compact_intake_cheeks_link"/>
@@ -174,9 +174,14 @@
           <inertia ixx="0.000202" ixy="0" ixz="0"
                    iyy="0.000012" iyz="0" izz="0.000211"/>
         </inertial>
-        <!-- Generated from the locally trimmed authoritative ramp.  Keeping
-             one source mesh prevents the contact surface from drifting away
-             from the exact CAD boolean. -->
+        <!-- The AUTHORITATIVE Option A handoff ramp, generated from
+             oa_ramp_z by scripts/generate_intake_ramp_mesh.py: smoothstep
+             520 -> 420 mm, 1.5 -> 35 mm, width 180, walls 18, with the -100 mm
+             compact functional shift baked in (mesh x 320..420 mm).
+             It replaces compact_relieved_handoff_ramp.stl, which was the
+             compact study's own 460 -> 420 mm ramp and contradicted the frozen
+             option-a.scad profile. The collision/visual/sensor names are a
+             contract and stay unchanged. -->
         <collision name="compact_relieved_handoff_ramp_col">
           <origin xyz="0 0 ${-base_link_height}" rpy="0 0 0"/>
           <geometry><mesh filename="${ramp_mesh}" scale="0.001 0.001 0.001"/></geometry>

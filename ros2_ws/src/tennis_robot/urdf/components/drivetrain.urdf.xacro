@@ -57,39 +57,39 @@
        the drive_wheel macro above). The old swivel-caster macro and its scrub
        resistance are gone. -->
 
-  <!-- NOT_PHYSICAL_INTAKE_ARCHITECTURE:
-       LEGACY SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE.
-       Physical architecture: both FIT0186 motors and both wheel centres are
-       fixed to the bridge. Compliance is tennis-ball + Trencher tyre/foam.
-       The prismatic link below moves the motor collision too, so it is not a
-       faithful physical surrogate and is prohibited as validation evidence.
-       It remains temporarily for traceability of older simulation runs.
+  <!-- FIXED-MOTOR, COMPLIANT-TYRE INTAKE (frozen CAD architecture).
+       Sources: cad/standalone-intake-fixed-motor/
+       standalone-intake-fixed-motor-compliant-tyre.scad (wheel/motor/bridge)
+       and cad/collector-intake-v1/option-a/option-a.scad (layout).
+       Both FIT0186 motors and both Raid wheel centres are FIXED to the
+       plywood bridge.  Each side is ONE rigid coaxial assembly: a fixed mount
+       link carrying the adapter + motor envelope, and the wheel spinning on
+       the single 35 degree axis.  There is no carriage, no prismatic DOF, no
+       return spring and no SDF spring patch: the legacy
+       SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE was removed outright rather
+       than zeroed, so it cannot be re-enabled by a parameter.
+       Compliance belongs to the tennis ball and the Trencher tyre/foam and is
+       NOT represented by a joint; tyre radial deflection, wheel droop, torque
+       and current are owned by the reduced-order solver
+       (scripts/run_standalone_intake_handoff_study.py), not by Gazebo.
 
-       Legacy dual-wheel simulation geometry; physical definition:
-       docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md.
-       two side wheels, one each side of a centre corridor, both inner faces
-       driving rearward (-x). Both wheel axes share the same longitudinal X-Z
-       tilt and remain parallel in front view. Each wheel hangs on a passive
-       prismatic y-carriage whose spring is patched into the generated SDF
-       (scripts/generate_robot_urdf.py) — this is the lateral compliance a
-       rigid ball needs to pass a rigid nip (lesson of collect_test1/2, and
-       unlike the old roller orbit the required yield direction here is a
-       constant ±y, which one prismatic DOF covers exactly). -->
+       Wheel axes are parallel and lie in the longitudinal X-Z plane; only the
+       wheel centres are mirrored in Y.  Both inner faces drive rearward (-x).
+
+       tread_mu is a SWEPT bound, injected per run by
+       scripts/generate_robot_urdf.py from INTAKE_TREAD_MU over the same
+       0.3 / 0.6 / 0.9 range as the reduced-order study.  Felt/tread friction
+       is physically unmeasured; no single value may be selected to make a
+       result pass. -->
   <xacro:macro name="intake_side_wheel"
-               params="side y nip_x wheel_z tilt_rad radius height carriage_travel max_vel effort mass sensor_index parent:=base_link">
-    <link name="intake_wheel_${side}_carriage_link">
+               params="side y nip_x wheel_z tilt_rad radius height max_vel effort mass sensor_index tread_mu:=0.6 parent:=base_link">
+    <link name="intake_wheel_${side}_mount_link">
       <inertial>
         <mass value="0.05"/>
         <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/>
       </inertial>
-      <visual name="carriage_vis">
-        <origin xyz="0 0 ${height / 2 + 0.008}" rpy="0 0 0"/>
-        <geometry><box size="0.03 0.03 0.012"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
       <!-- Coaxial purchased direct-drive hardware. Local +Z is wheel->motor;
-           common pitch maps both sides to (sin(tilt), 0, cos(tilt)).
-           Wheel centres are mirrored in Y, but the axes stay parallel. -->
+           common pitch maps both sides to (sin(tilt), 0, cos(tilt)). -->
       <collision name="intake_adapter_col">
         <origin xyz="${sin(tilt_rad) * 0.0435} 0 ${cos(tilt_rad) * 0.0435}"
                 rpy="0 ${tilt_rad} 0"/>
@@ -113,17 +113,12 @@
         <material name="mount_gray"/>
       </visual>
     </link>
-    <!-- LEGACY SURROGATE ONLY. Axis points OUTWARD (away from the corridor): rest position 0 is the
-         inner stop (nominal 3 mm interference per side on a 66 mm ball); a
-         passing ball compresses the "foam" by pushing the carriage outward
-         against the SDF-patched spring. -->
-    <joint name="intake_wheel_${side}_carriage_joint" type="prismatic">
+    <!-- Rigid weld to the bridge. The physical load path is the printed
+         D30 x 10 mm motor collar plus its bridge pad. -->
+    <joint name="intake_wheel_${side}_mount_joint" type="fixed">
       <parent link="${parent}"/>
-      <child link="intake_wheel_${side}_carriage_link"/>
+      <child link="intake_wheel_${side}_mount_link"/>
       <origin xyz="${nip_x} ${y} ${wheel_z}" rpy="0 0 0"/>
-      <axis xyz="0 ${1 if y >= 0 else -1} 0"/>
-      <limit lower="0" upper="${carriage_travel}" effort="200" velocity="1.0"/>
-      <dynamics damping="8.0"/>
     </joint>
     <link name="intake_wheel_${side}_link">
       <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${height}" axis="z"/>
@@ -143,11 +138,14 @@
       </visual>
     </link>
     <!-- GB37Y3530-12V-251R per wheel: no-load 26.3 rad/s, stall 1.77 N.m.
-         NOTE: gz_ros2_control velocity commands act as an ideal velocity
-         source (the effort limit is not a physical stall model) — jam is
-         detected from ball motion + contact, not wheel droop. -->
+         DECLARED LIMITATION (D4): gz_ros2_control velocity commands act as an
+         IDEAL VELOCITY SOURCE — the effort limit is not a physical stall
+         model. Wheel droop, motor torque and motor current are therefore NOT
+         MEASURABLE IN GAZEBO and must not be reported from it; they come from
+         the bounded FIT0186 law in the reduced-order solver. Jam is detected
+         from ball motion + contact, never from wheel droop. -->
     <joint name="intake_wheel_${side}_joint" type="continuous">
-      <parent link="intake_wheel_${side}_carriage_link"/>
+      <parent link="intake_wheel_${side}_mount_link"/>
       <child link="intake_wheel_${side}_link"/>
       <origin xyz="0 0 0" rpy="0 ${tilt_rad} 0"/>
       <axis xyz="0 0 1"/>
@@ -155,8 +153,8 @@
       <dynamics damping="0.005"/>
     </joint>
     <gazebo reference="intake_wheel_${side}_link">
-      <mu1>2.5</mu1>
-      <mu2>2.5</mu2>
+      <mu1>${tread_mu}</mu1>
+      <mu2>${tread_mu}</mu2>
       <!-- 500 Hz: throat transit is impulsive (~tens of ms; the first live
            run at 100 Hz sampled ZERO messages while the ball measurably
            passed through at 0.77 m/s) — sample near the physics rate so
@@ -174,7 +172,7 @@
        deformable belt in Gazebo. Axis is y; positive joint velocity makes the
        lower surface move rearward (-x). -->
   <xacro:macro name="intake_ramp_conveyor_roller"
-               params="name parent x z radius length mass">
+               params="name parent x z radius length mass tread_mu:=0.6">
     <link name="${name}_link">
       <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${length}" axis="y"/>
       <collision name="${name}_col">
@@ -201,8 +199,9 @@
       <dynamics damping="0.005"/>
     </joint>
     <gazebo reference="${name}_link">
-      <mu1>2.5</mu1>
-      <mu2>2.5</mu2>
+      <!-- Swept bound, same range as the reduced-order study (D3). -->
+      <mu1>${tread_mu}</mu1>
+      <mu2>${tread_mu}</mu2>
     </gazebo>
   </xacro:macro>
 
@@ -212,7 +211,7 @@
        This is opt-in via enable_assist so Phases 1-2 and passive ramp tests
        stay comparable. -->
   <xacro:macro name="intake_assist_roller"
-               params="parent x z radius length mass">
+               params="parent x z radius length mass tread_mu:=0.6">
     <link name="intake_assist_wheel_link">
       <xacro:cylinder_inertial mass="${mass}" radius="${radius}" length="${length}" axis="y"/>
       <collision name="assist_wheel_col">
@@ -239,8 +238,9 @@
       <dynamics damping="0.005"/>
     </joint>
     <gazebo reference="intake_assist_wheel_link">
-      <mu1>2.5</mu1>
-      <mu2>2.5</mu2>
+      <!-- Swept bound, same range as the reduced-order study (D3). -->
+      <mu1>${tread_mu}</mu1>
+      <mu2>${tread_mu}</mu2>
     </gazebo>
   </xacro:macro>
 

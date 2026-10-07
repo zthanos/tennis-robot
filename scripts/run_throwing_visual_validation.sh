@@ -6,7 +6,7 @@
 # needs, so nobody has to reconstruct four env vars by hand and then discover
 # afterwards that the intake variant was spawned:
 #
-#   ROBOT_PACKAGING_VARIANT=option-a-launch   launcher present, intake absent
+#   ROBOT_ENABLE_INTAKE=false                 launcher present, intake absent
 #   TENNIS_LAUNCH_BRAIN=false                 brain runs on the Pi (run_pi.sh)
 #   GAZEBO_HEADLESS=false                     the point of this run is to LOOK
 #
@@ -24,7 +24,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$SCRIPT_DIR"
 
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
-export ROBOT_PACKAGING_VARIANT=option-a-launch
+# ONE robot: the compact CAD machine (the only packaging variant left; the
+# option-a-launch launcher-only variant was archived 2026-08-27). It carries
+# the intake AND the launcher, so this visual check simply switches the intake
+# off rather than spawning a different robot.
+export ROBOT_PACKAGING_VARIANT=compact
+export ROBOT_ENABLE_INTAKE=false
+export ROBOT_ENABLE_FLYWHEEL=true
 export TENNIS_LAUNCH_BRAIN=false
 export GAZEBO_HEADLESS=false
 

@@ -1,6 +1,9 @@
-"""Live Gazebo probe for the CURRENT_SIMULATION_SURROGATE intake.
+"""Live Gazebo probe for the frozen fixed-motor intake.
 
-NOT_PHYSICAL_INTAKE_ARCHITECTURE: carriage results are not tyre validation.
+The wheel/motor stack is rigid, so there is no carriage state to probe. Wheel
+droop, motor torque and motor current are NOT measurable here: gz_ros2_control
+velocity commands act as an ideal velocity source (D4). Those quantities come
+from the bounded FIT0186 law in the reduced-order solver.
 """
 
 from __future__ import annotations
@@ -28,10 +31,6 @@ BASE_LINK_HEIGHT_M = 0.045
 BALL_RADIUS_M = 0.033
 BALL_MASS_KG = 0.058
 INTAKE_WHEEL_JOINTS = ("intake_wheel_left_joint", "intake_wheel_right_joint")
-INTAKE_CARRIAGE_JOINTS = (
-    "intake_wheel_left_carriage_joint",
-    "intake_wheel_right_carriage_joint",
-)
 
 
 def _vec_mag(vec) -> float:
@@ -238,7 +237,7 @@ class SimPhysicsProbe(Node):
 
     def _on_joint_states(self, msg: JointState) -> None:
         names = list(msg.name)
-        for joint in (*INTAKE_WHEEL_JOINTS, *INTAKE_CARRIAGE_JOINTS):
+        for joint in INTAKE_WHEEL_JOINTS:
             try:
                 index = names.index(joint)
             except ValueError:
@@ -363,16 +362,6 @@ class SimPhysicsProbe(Node):
             } or None,
             "wheel_commands_rad_s": {
                 j: round(v, 4) for j, v in self._wheel_commands.items()
-            } or None,
-            "carriage_positions_m": {
-                j: round(self._joint_positions[j], 6)
-                for j in INTAKE_CARRIAGE_JOINTS
-                if j in self._joint_positions
-            } or None,
-            "carriage_velocities_m_s": {
-                j: round(self._joint_velocities[j], 6)
-                for j in INTAKE_CARRIAGE_JOINTS
-                if j in self._joint_velocities
             } or None,
             "wheel_joint_efforts": {
                 j: round(self._joint_efforts[j], 4)

@@ -1,10 +1,13 @@
 import json
 import math
 import os
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
@@ -49,6 +52,16 @@ def test_static_design_and_independent_ball_calibration_gate_passes():
     assert result["launcher_physics_trials_authorized"] is True
 
 
+# The rendered-model tests below shell out to `xacro`, which only exists inside
+# a sourced ROS 2 environment. Skip cleanly there rather than failing with
+# PackageNotFoundError, the same way tests/test_intake_frame_alignment.py does.
+requires_ros = pytest.mark.skipif(
+    shutil.which("xacro") is None or not os.environ.get("AMENT_PREFIX_PATH"),
+    reason="ROS 2 environment not sourced (need xacro + AMENT_PREFIX_PATH)",
+)
+
+
+@requires_ros
 def test_rendered_launcher_matches_authoritative_nip_and_cradle():
     root = _render_bench()
     mount = root.find("./joint[@name='flywheel_launcher_mount_joint']/origin")
@@ -77,6 +90,7 @@ def test_rendered_launcher_matches_authoritative_nip_and_cradle():
     assert _floats(collisions["flywheel_cradle_upper_plate_col"].find("origin").attrib["xyz"])[2] == 0.043
 
 
+@requires_ros
 def test_rendered_wheels_have_real_collision_geometry_and_spacing():
     root = _render_bench()
     for side, expected_y in (("left", 0.129), ("right", -0.129)):

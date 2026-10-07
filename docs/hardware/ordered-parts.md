@@ -21,7 +21,7 @@
 |---:|---|---|---:|---:|---:|---|---|---|
 | 7 | Waveshare Slamtec RPLIDAR C1 Laser Ranging Sensor, 360° Omnidirectional Lidar, Millimetre Level High Definition, Anti-Interference and Anti-Adhesion, Compact and Easy to Integrate | Sensors / Navigation LiDAR | 1 | 83,35 € | 83,35 € | TBD | Παρασκευή | Αγοράστηκε — εκκρεμεί παράδοση (δεν έχει έρθει ακόμα) |
 | 8 | HPI Racing Dirt Buster Block Tire S Compound on Black Wheel (Baja 5B Rear, 170x80 mm, mounted w/ foam inserts, 24 mm hex) — 1 ζευγάρι | Drive / Wheels | 2 | TBD | TBD | RC offroad (μεταχειρισμένα) | Παραλήφθηκε | Αγοράστηκε |
-| R1 | DC Motor Driver Breakout with L298N (`19-00010298`) | Collector / Intake | 1 | — | — | Grobotronics | — | Παραλήφθηκε |
+| R1 | DC Motor Driver Breakout with L298N (`19-00010298`) | Collector / Intake — archive, όχι ενεργός driver | 1 | — | — | Grobotronics | — | Παραλήφθηκε |
 
 ## Παραγγελία Grobotronics — 03/07/2026
 
@@ -69,7 +69,11 @@ Snapshot date: `28/06/2026`
 
 ### Motion control board — εκκρεμή
 
-> Ήδη διαθέσιμα (επιβεβαιωμένο): 4× FIT0403 drive μοτέρ, 2× BTS7960/IBT-2 drivers, Arduino Mega 2560. Λείπουν τα παρακάτω για να ολοκληρωθεί η perfboard + safety chain (βλ. `motion-perfboard-wiring-el.md`).
+> Ήδη διαθέσιμα (επιβεβαιωμένο): 4× FIT0403 drive μοτέρ, 2× BTS7960/IBT-2
+> drivers, Arduino Mega 2560. Οι **διαθέσιμοι 2 BTS7960 προορίζονται τώρα για
+> τα δύο intake μοτέρ**· για την κίνηση εκκρεμούν 2 επιπλέον drivers. Λείπουν
+> επίσης τα παρακάτω για την perfboard + safety chain (βλ.
+> `motion-perfboard-wiring-el.md`).
 
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|---|

@@ -122,6 +122,18 @@ else if (part == "handoff_ramp_right_wheel_intersection")
         shifted() translate([470, -90, 70])
             rotate([0, 35, 0]) cylinder(d=124, h=73, center=true);
     }
+else if (part == "handoff_ramp_original_left_wheel_intersection")
+    intersection() {
+        shifted() compact_handoff_ramp_unrelieved();
+        shifted() translate([470, 90, 70])
+            rotate([0, 35, 0]) cylinder(d=124, h=73, center=true);
+    }
+else if (part == "handoff_ramp_original_right_wheel_intersection")
+    intersection() {
+        shifted() compact_handoff_ramp_unrelieved();
+        shifted() translate([470, -90, 70])
+            rotate([0, 35, 0]) cylinder(d=124, h=73, center=true);
+    }
 else if (part == "intake_wheels")
     shifted() {
         // Wheel solids only; pods/motors are a separate assembly envelope.

@@ -18,40 +18,23 @@ module capsule_2d(length, width, horizontal = true) {
     }
 }
 
-module through_capsule(pos, length, width, horizontal = true, zmax = 20) {
+module through_capsule(pos, length, width, horizontal = true, zmax = 30) {
     translate([pos[0], pos[1], -1])
         linear_extrude(height = zmax)
             capsule_2d(length, width, horizontal);
 }
 
-module cross_slot(pos, span = driver_adjust_span, width = m3_clearance_d) {
+module cross_slot(pos, span = board_adjust_span, width = m3_slot_w, zmax = 30) {
     translate([pos[0], pos[1], -1])
-        linear_extrude(height = tray_t + driver_standoff_h + 3)
+        linear_extrude(height = zmax)
             union() {
                 capsule_2d(span, width, true);
                 capsule_2d(span, width, false);
             }
 }
 
-module fixed_standoff(pos, height) {
-    translate([pos[0], pos[1], tray_t])
-        cylinder(d = standoff_d, h = height);
-}
-
-module fixed_standoff_hole(pos, height) {
-    translate([pos[0], pos[1], -1])
-        cylinder(d = m3_clearance_d, h = tray_t + height + 3);
-}
-
-module driver_slot_boss(pos) {
-    translate([pos[0] - 6, pos[1] - 6, tray_t])
-        cube([12, 12, driver_standoff_h]);
-}
-
-module driver_mount_positions(origin) {
-    for (dx = [driver_nominal_inset, driver_size[0] - driver_nominal_inset],
-         dy = [driver_nominal_inset, driver_size[1] - driver_nominal_inset])
-        translate([origin[0] + dx, origin[1] + dy]) children();
+module standoff(pos, height) {
+    translate([pos[0], pos[1], tray_t]) cylinder(d = standoff_d, h = height);
 }
 
 module raised_label(txt, pos, size = label_size, halign = "left") {
@@ -60,11 +43,13 @@ module raised_label(txt, pos, size = label_size, halign = "left") {
             text(txt, size = size, halign = halign, valign = "center");
 }
 
-module divider_ribs() {
-    // Gaps between ribs are deliberate wire crossings. Route encoder/logic
-    // through different gaps from B+/B-/M+/M-.
-    for (segment = [[6, 42], [58, 42], [110, 42], [162, 72]])
-        translate([segment[0], 72, tray_t]) cube([segment[1], 2.5, 4]);
+module add_mounts(origin, holes, height) {
+    for (p = holes) standoff(origin + p, height);
+}
+
+module cut_mounts(origin, holes, height, span = board_adjust_span) {
+    for (p = holes)
+        cross_slot(origin + p, span, m3_slot_w, tray_t + height + 3);
 }
 
 module electronics_tray() {
@@ -73,61 +58,52 @@ module electronics_tray() {
             linear_extrude(height = tray_t)
                 rounded_rect_2d(tray_size, tray_corner_r);
 
-            for (p = mega_holes)
-                fixed_standoff(mega_origin + p, mega_standoff_h);
-            for (p = perf_holes)
-                fixed_standoff(perf_origin + p, perf_standoff_h);
-            for (origin = driver_origins)
-                driver_mount_positions(origin) driver_slot_boss([0, 0]);
+            add_mounts(perf_origin, perf_holes, perf_standoff_h);
+            add_mounts(mega_case_origin, mega_case_holes, mega_case_standoff_h);
+            add_mounts(l298_origin, l298_holes, l298_standoff_h);
+            for (origin = bts_origins)
+                add_mounts(origin, bts_holes, bts_standoff_h);
 
-            divider_ribs();
+            // Separates the lower driver/power wiring zone from upper logic.
+            for (segment = [[6, 48], [66, 48], [126, 48]])
+                translate([segment[0], 84, tray_t]) cube([segment[1], 2.5, 4]);
 
-            raised_label("LEFT BTS", [8, 66]);
-            raised_label("RIGHT BTS", [66, 66]);
-            raised_label("RELAY", [124, 66]);
-            raised_label("FUSE / DIST", [180, 66]);
-            raised_label("MEGA 2560", [6, 103]);
-            raised_label("PERFBOARD", [114, 78]);
-            raised_label("USB", [2, 136], 3);
+            raised_label("L298N INTAKE", [6, 77]);
+            raised_label("LEFT BTS", [66, 77]);
+            raised_label("RIGHT BTS", [124, 77]);
+            raised_label("PERFBOARD", [6, 105]);
+            raised_label("MEGA CASE", [108, 113]);
         }
 
-        // M3 board mounts.
-        for (p = mega_holes)
-            fixed_standoff_hole(mega_origin + p, mega_standoff_h);
-        for (p = perf_holes)
-            fixed_standoff_hole(perf_origin + p, perf_standoff_h);
-        for (origin = driver_origins)
-            driver_mount_positions(origin)
-                cross_slot([0, 0]);
+        cut_mounts(perf_origin, perf_holes, perf_standoff_h, 8);
+        cut_mounts(mega_case_origin, mega_case_holes, mega_case_standoff_h, 6);
+        cut_mounts(l298_origin, l298_holes, l298_standoff_h, 6);
+        for (origin = bts_origins)
+            cut_mounts(origin, bts_holes, bts_standoff_h, 6);
 
-        // M5 chassis attachment slots.
         for (p = chassis_slots)
             through_capsule(p, chassis_slot_len, chassis_slot_w, true);
 
-        // Ventilation below each driver heatsink.
-        for (origin = driver_origins)
-            for (dy = [15, 25, 35])
-                through_capsule(origin + [25, dy], 28, 4.5, true);
+        // Driver ventilation.
+        for (dy = [18, 30, 42, 54])
+            through_capsule(l298_origin + [l298_size[0] / 2, dy], 34, 4.5, true);
+        for (origin = bts_origins)
+            for (dy = [14, 25, 36])
+                through_capsule(origin + [bts_size[0] / 2, dy], 28, 4.5, true);
 
-        // Ventilation under Mega and perfboard; narrow enough to retain a stiff
-        // plate while keeping the solder side visible and serviceable.
-        for (x = [36, 56, 76])
-            through_capsule([mega_origin[0] + x, mega_origin[1] + 27], 34, 4, false);
-        for (x = [24, 48, 72, 96])
-            through_capsule([perf_origin[0] + x, perf_origin[1] + 40], 50, 4, false);
+        // Large open windows preserve airflow and underside access. The Mega
+        // window deliberately covers the enclosure vent field rather than
+        // copying its individual slots.
+        for (x = [22, 42, 62])
+            through_capsule([perf_origin[0] + x, perf_origin[1] + 60], 84, 4, false);
+        for (x = [15, 30, 45])
+            through_capsule([mega_case_origin[0] + x,
+                             mega_case_origin[1] + mega_case_size[1] / 2],
+                            76, 5, false);
 
-        // Universal relay bay: two adjustable M4/M5 bolt or cable-tie slots.
-        for (x = [relay_bay_origin[0] + 10, relay_bay_origin[0] + relay_bay_size[0] - 10])
-            through_capsule([x, relay_bay_origin[1] + relay_bay_size[1] / 2], 32, 5, false);
-
-        // Fuse/distribution reserve: four tie slots accept multiple holder sizes.
-        for (x = [fuse_bay_origin[0] + 10, fuse_bay_origin[0] + fuse_bay_size[0] - 10],
-             y = [fuse_bay_origin[1] + 12, fuse_bay_origin[1] + fuse_bay_size[1] - 12])
-            through_capsule([x, y], 12, 4.5, false);
-
-        // Cable-tie anchors around both wiring domains.
-        for (p = [[55, 78], [105, 78], [175, 78], [232, 78],
-                  [112, 18], [112, 50], [174, 18], [174, 50]])
+        // Cable-tie anchors around the board groups.
+        for (p = [[60, 92], [120, 92], [174, 92],
+                  [94, 128], [94, 166], [94, 204]])
             through_capsule(p, 12, 4, false);
     }
 }

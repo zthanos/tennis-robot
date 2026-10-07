@@ -13,7 +13,7 @@ The invariants:
     make Throwing Mode physics meaningless.
   * The basket lift travel is the CAD baseline 100 mm, not the earlier 450 mm
     that pushed the raised rim through the LiDAR scan plane.
-  * The LiDAR OPTICAL CENTRE (not the link origin) is 498 mm above ground.
+  * The LiDAR OPTICAL CENTRE (not the link origin) is 553.5 mm above ground.
 
 Requires xacro, so the whole module skips when ROS is not sourced.
 """
@@ -43,8 +43,15 @@ pytestmark = pytest.mark.skipif(
     reason="ROS 2 environment not sourced (need xacro + AMENT_PREFIX_PATH)",
 )
 
-COLLECTION_VARIANTS = ("baseline", "option-a-collect")
-LAUNCH_VARIANT = "option-a-launch"
+# ONE robot. The baseline / option-a-collect / option-a-launch packaging
+# variants were archived on 2026-08-27: `compact` is the only machine, and it
+# carries the frozen CAD intake AND the flywheel launcher together. What used
+# to be a variant choice is now an env toggle on the same robot.
+VARIANT = "compact"
+#: launcher off, intake fitted — the collection duty of the one robot.
+COLLECT_ONLY = {"ROBOT_ENABLE_FLYWHEEL": "false"}
+#: intake off, launcher fitted — the throwing duty of the one robot.
+LAUNCH_ONLY = {"ROBOT_ENABLE_INTAKE": "false"}
 
 
 def _generate(tmp_path: Path, variant: str, **env_overrides: str) -> ET.Element:
@@ -87,22 +94,33 @@ def _ground_height(root: ET.Element, link_name: str) -> float:
 
 # ---------------------------------------------------------------- variants
 
-@pytest.mark.parametrize("variant", COLLECTION_VARIANTS)
-def test_collection_configuration_has_intake_and_no_launcher(tmp_path, variant):
-    links = _link_names(_generate(tmp_path, variant))
-    assert {"intake_wheel_left_link", "intake_wheel_right_link", "funnel_link"} <= links
+def test_the_one_robot_carries_intake_and_launcher_together(tmp_path):
+    """The whole point of the compact machine: both mechanisms coexist.
+
+    In the archived variants the launcher frame cut through the intake mouth,
+    so a robot could have one or the other. The corrected compact CAD (bridge,
+    curved cheeks, Option A ramp, two-plate cradle) fits both, and that is the
+    configuration we test.
+    """
+    links = _link_names(_generate(tmp_path, VARIANT))
+    assert {"intake_wheel_left_link", "intake_wheel_right_link"} <= links
+    assert {"flywheel_left_link", "flywheel_right_link",
+            "flywheel_launcher_frame_link"} <= links
+    assert {"compact_intake_cheeks_link", "compact_handoff_ramp_link"} <= links
+
+
+def test_collect_only_drops_the_launcher_but_keeps_the_intake(tmp_path):
+    links = _link_names(_generate(tmp_path, VARIANT, **COLLECT_ONLY))
+    assert {"intake_wheel_left_link", "intake_wheel_right_link"} <= links
     assert not {name for name in links if "flywheel" in name}
 
 
-def test_launch_configuration_has_launcher_and_no_conflicting_intake(tmp_path):
-    root = _generate(tmp_path, LAUNCH_VARIANT)
+def test_launch_only_drops_the_intake_but_keeps_the_launcher(tmp_path):
+    root = _generate(tmp_path, VARIANT, **LAUNCH_ONLY)
     links = _link_names(root)
     assert {"flywheel_left_link", "flywheel_right_link",
             "flywheel_launcher_frame_link"} <= links
-    # The conflicting assembly: driven wheels, funnel cheeks, ramp, deflector.
-    assert "funnel_link" not in links
-    assert not {name for name in links
-                if name.startswith("intake_wheel_")}
+    assert not {name for name in links if name.startswith("intake_wheel_")}
     # ...and its ros2_control joints go with it, or the controller cannot load.
     control_joints = {
         joint.get("name")
@@ -114,7 +132,7 @@ def test_launch_configuration_has_launcher_and_no_conflicting_intake(tmp_path):
 
 
 def test_launcher_keeps_real_collision_geometry(tmp_path):
-    root = _generate(tmp_path, LAUNCH_VARIANT)
+    root = _generate(tmp_path, VARIANT)
     for link_name in ("flywheel_left_link", "flywheel_right_link"):
         link = next(l for l in root.findall("link") if l.get("name") == link_name)
         collisions = link.findall("collision")
@@ -123,31 +141,15 @@ def test_launcher_keeps_real_collision_geometry(tmp_path):
             assert collision.find("geometry") is not None
 
 
-@pytest.mark.parametrize("variant", COLLECTION_VARIANTS)
-def test_flywheel_is_off_by_default_in_every_collection_variant(tmp_path, variant):
-    """A plain run_native.sh must not put the launcher inside the intake."""
-    assert not {n for n in _link_names(_generate(tmp_path, variant)) if "flywheel" in n}
-
-
-def test_launch_variant_is_required_to_get_a_launcher(tmp_path):
-    """The launcher follows the mechanical variant, not an implicit default."""
-    default = _generate(tmp_path, "baseline")
-    assert not {n for n in _link_names(default) if "flywheel" in n}
-    explicit = _generate(tmp_path, LAUNCH_VARIANT)
-    assert {n for n in _link_names(explicit) if "flywheel" in n}
-
-
 # ------------------------------------------------------------------ basket
 
-@pytest.mark.parametrize("variant", (*COLLECTION_VARIANTS, LAUNCH_VARIANT))
-def test_basket_lift_upper_stop_is_one_hundred_millimetres(tmp_path, variant):
-    joint = _joint(_generate(tmp_path, variant), "basket_joint")
+def test_basket_lift_upper_stop_is_one_hundred_millimetres(tmp_path):
+    joint = _joint(_generate(tmp_path, VARIANT), "basket_joint")
     assert joint is not None and joint.get("type") == "prismatic"
     assert float(joint.find("limit").get("upper")) == pytest.approx(0.100, abs=1e-9)
 
 
-@pytest.mark.parametrize("variant", (*COLLECTION_VARIANTS, LAUNCH_VARIANT))
-def test_basket_lower_stop_sits_below_the_parked_position(tmp_path, variant):
+def test_basket_lower_stop_sits_below_the_parked_position(tmp_path):
     """The parked carriage must not rest ON its lower hard stop.
 
     A prismatic joint parked exactly on its limit sits on a permanently active
@@ -156,7 +158,7 @@ def test_basket_lower_stop_sits_below_the_parked_position(tmp_path, variant):
     every other joint in the same model actuates normally. The commanded travel
     is still 0..100 mm; only the modelled hard stop moves below it.
     """
-    limit = _joint(_generate(tmp_path, variant), "basket_joint").find("limit")
+    limit = _joint(_generate(tmp_path, VARIANT), "basket_joint").find("limit")
     lower = float(limit.get("lower"))
     assert lower < 0.0, (
         "basket_joint lower limit coincides with the parked position (0.0); "
@@ -194,15 +196,14 @@ def test_no_stale_450_mm_basket_travel_default_remains():
 
 # ------------------------------------------------------------------- LiDAR
 
-@pytest.mark.parametrize("variant", (*COLLECTION_VARIANTS, LAUNCH_VARIANT))
-def test_lidar_optical_centre_is_498_mm_above_ground(tmp_path, variant):
+def test_lidar_optical_centre_clears_the_shell_roof(tmp_path):
     """The datum is the SCAN PLANE, which is the sensor pose, not lidar_link.
 
     Chain: base_footprint -> base_link (base_link_height) -> lidar_link
     (lidar_xyz.z) -> gpu_lidar <pose> (scan offset). Summing only the first two
     is exactly how the scan plane silently ended up at 578 mm.
     """
-    root = _generate(tmp_path, variant)
+    root = _generate(tmp_path, VARIANT)
     link_height = _ground_height(root, "lidar_link")
 
     sensor_z = None
@@ -215,16 +216,16 @@ def test_lidar_optical_centre_is_498_mm_above_ground(tmp_path, variant):
     assert sensor_z is not None, "front_lidar sensor pose not found on lidar_link"
 
     optical_centre = link_height + sensor_z
-    assert optical_centre == pytest.approx(0.498, abs=1e-6), (
+    assert optical_centre == pytest.approx(0.5535, abs=1e-6), (
         f"LiDAR optical centre is {optical_centre * 1000:.1f} mm above ground; "
-        f"the CAD datum is 498 mm (link {link_height * 1000:.1f} mm "
+        f"the datum is 553.5 mm (link {link_height * 1000:.1f} mm "
         f"+ scan offset {sensor_z * 1000:.1f} mm)"
     )
 
 
 def test_lidar_mast_never_protrudes_below_the_chassis(tmp_path):
     """The mast is derived from the mount height, so the datum can move safely."""
-    root = _generate(tmp_path, "baseline")
+    root = _generate(tmp_path, VARIANT)
     link_height = _ground_height(root, "lidar_link")
     link = next(l for l in root.findall("link") if l.get("name") == "lidar_link")
     mast = next(v for v in link.findall("visual") if v.get("name") == "mast_vis")

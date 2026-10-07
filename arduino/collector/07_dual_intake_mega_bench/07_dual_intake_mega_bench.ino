@@ -2,20 +2,17 @@
  * 07_dual_intake_mega_bench.ino
  * --------------------------------
  * Static bench bring-up for:
- *   Arduino Mega 2560 -> L298N -> 2x DFRobot FIT0186 intake motors
+ *   Arduino Mega 2560 -> 2x BTS7960 -> 2x DFRobot FIT0186 intake motors
  *   2x motor encoders and optional entry/exit IR break beams
  *
  * This sketch deliberately does NOT drive the 4WD base. Disconnect or lift the
  * drive system before uploading it. The selected pins do not overlap the
  * motion pin map, so they can later be merged into motion_mega firmware.
  *
- * L298N LIMIT: the module is rated 2 A/channel while each FIT0186 is specified
- * at 7 A stall. This sketch caps PWM and burst duration, but software cannot
- * limit instantaneous bridge current. Use a current-limited 12 V bench supply.
- * Do not perform stall/jam endurance testing with this driver.
- * Exact red L298N board: leave 5 Volt Select fitted, leave its top 5 V screw
- * terminal disconnected while the Mega is USB-powered, and share GND only.
- * Remove ENA/ENB jumpers so pins 44/45 can provide PWM.
+ * Each BTS7960 drives ONE FIT0186. Motor 12 V and current stay off the Mega.
+ * This sketch caps PWM and burst duration, but software cannot limit motor
+ * current. Use a current-limited 12 V bench supply and a physical E-stop.
+ * Do not perform stall/jam endurance testing.
  *
  * Serial: 115200 baud, newline terminated
  *   HELP
@@ -28,6 +25,7 @@
  *   PULSE L <signed_pwm> <duration_ms>
  *   PULSE R <signed_pwm> <duration_ms>
  *   RUN <pwm> <duration_ms>       (both wheels inward)
+ *   RUN_BENCH <pwm> <duration_ms> (both inward; encoder check disabled)
  *   AUTO <pwm> [timeout_ms]       (one ball cycle using IR beams)
  *   AUTO_BENCH <pwm> [timeout_ms] (IR/timeout test; ignores encoders)
  *
@@ -37,21 +35,20 @@
 #include <Arduino.h>
 #include <avr/interrupt.h>
 
-// L298N channel A: left intake motor.
-const uint8_t LEFT_EN_PIN = 44;  // PWM; remove ENA jumper
-const uint8_t LEFT_IN1_PIN = 40;
-const uint8_t LEFT_IN2_PIN = 41;
-
-// L298N channel B: right intake motor.
-const uint8_t RIGHT_EN_PIN = 45;  // PWM; remove ENB jumper
-const uint8_t RIGHT_IN3_PIN = 42;
-const uint8_t RIGHT_IN4_PIN = 43;
+// Intake-only pins; drive uses D5/D6/D9/D10 and D30/D31.
+const uint8_t LEFT_RPWM_PIN = 44;
+const uint8_t LEFT_LPWM_PIN = 45;
+const uint8_t LEFT_EN_PIN = 40;   // both R_EN and L_EN on left BTS7960
+const uint8_t RIGHT_RPWM_PIN = 46;
+const uint8_t RIGHT_LPWM_PIN = 11;
+const uint8_t RIGHT_EN_PIN = 42;  // both R_EN and L_EN on right BTS7960
 
 // FIT0186 encoders. A8-A11 are ATmega2560 PCINT pins (port K).
-const uint8_t LEFT_ENC_A_PIN = A8;    // PK0 / PCINT16
-const uint8_t LEFT_ENC_B_PIN = A9;    // PK1
-const uint8_t RIGHT_ENC_A_PIN = A10;  // PK2 / PCINT18
-const uint8_t RIGHT_ENC_B_PIN = A11;  // PK3
+// As wired: left on A10/A11, right on A8/A9.
+const uint8_t LEFT_ENC_A_PIN = A10;   // PK2 / PCINT18
+const uint8_t LEFT_ENC_B_PIN = A11;   // PK3
+const uint8_t RIGHT_ENC_A_PIN = A8;   // PK0 / PCINT16
+const uint8_t RIGHT_ENC_B_PIN = A9;   // PK1
 
 // Optional Adafruit-style open-collector IR break beams, active LOW.
 const uint8_t IR_ENTRY_PIN = 36;
@@ -62,7 +59,7 @@ const uint8_t ESTOP_STATUS_PIN = 33;  // active LOW, INPUT_PULLUP
 const uint8_t ARMED_LED_PIN = 34;
 
 const unsigned long BAUD = 115200;
-const uint8_t MAX_L298N_TEST_PWM = 90;
+const uint8_t MAX_INTAKE_TEST_PWM = 90;
 const uint8_t MIN_JAM_CHECK_PWM = 35;
 const unsigned long MAX_BURST_MS = 1500;
 const unsigned long DEFAULT_AUTO_BALL_MS = 4000;
@@ -74,8 +71,8 @@ const unsigned long IR_DEBOUNCE_MS = 25;
 const float ENCODER_COUNTS_PER_OUTPUT_REV = 700.8f;
 
 // Change either sign only after a wheel-off direction check.
-const int8_t LEFT_INWARD_SIGN = 1;
-const int8_t RIGHT_INWARD_SIGN = -1;
+const int8_t LEFT_INWARD_SIGN = -1;
+const int8_t RIGHT_INWARD_SIGN = 1;
 
 enum BenchState : uint8_t {
   DISARMED = 0,
@@ -130,16 +127,16 @@ uint8_t rxLength = 0;
 
 ISR(PCINT2_vect) {
   const uint8_t pins = PINK;
-  const bool leftA = (pins & _BV(0)) != 0;
-  const bool rightA = (pins & _BV(2)) != 0;
+  const bool leftA = (pins & _BV(2)) != 0;
+  const bool rightA = (pins & _BV(0)) != 0;
 
   // Count only rising A edges. Read B for direction. This matches the
   // manufacturer's approximately 700 counts/output-revolution convention.
   if (leftA && !previousLeftA) {
-    leftEncoderCount += ((pins & _BV(1)) != 0) ? 1 : -1;
+    leftEncoderCount += ((pins & _BV(3)) != 0) ? 1 : -1;
   }
   if (rightA && !previousRightA) {
-    rightEncoderCount += ((pins & _BV(3)) != 0) ? 1 : -1;
+    rightEncoderCount += ((pins & _BV(1)) != 0) ? 1 : -1;
   }
 
   previousLeftA = leftA;
@@ -176,32 +173,28 @@ void readEncoderCounts(int32_t &left, int32_t &right) {
 }
 
 int16_t clampTestPwm(int value) {
-  if (value > MAX_L298N_TEST_PWM) return MAX_L298N_TEST_PWM;
-  if (value < -MAX_L298N_TEST_PWM) return -MAX_L298N_TEST_PWM;
+  if (value > MAX_INTAKE_TEST_PWM) return MAX_INTAKE_TEST_PWM;
+  if (value < -MAX_INTAKE_TEST_PWM) return -MAX_INTAKE_TEST_PWM;
   return value;
 }
 
-void applyMotor(uint8_t enablePin, uint8_t inA, uint8_t inB, int16_t pwm) {
-  analogWrite(enablePin, 0);
+void applyMotor(uint8_t enablePin, uint8_t rpwm, uint8_t lpwm, int16_t pwm) {
+  digitalWrite(enablePin, LOW);
+  analogWrite(rpwm, 0);
+  analogWrite(lpwm, 0);
   if (pwm > 0) {
-    digitalWrite(inA, HIGH);
-    digitalWrite(inB, LOW);
-    analogWrite(enablePin, (uint8_t)pwm);
+    analogWrite(rpwm, (uint8_t)pwm);
   } else if (pwm < 0) {
-    digitalWrite(inA, LOW);
-    digitalWrite(inB, HIGH);
-    analogWrite(enablePin, (uint8_t)(-pwm));
-  } else {
-    digitalWrite(inA, LOW);
-    digitalWrite(inB, LOW);
+    analogWrite(lpwm, (uint8_t)(-pwm));
   }
+  if (pwm != 0) digitalWrite(enablePin, HIGH);
 }
 
 void stopOutputs() {
   commandedLeftPwm = 0;
   commandedRightPwm = 0;
-  applyMotor(LEFT_EN_PIN, LEFT_IN1_PIN, LEFT_IN2_PIN, 0);
-  applyMotor(RIGHT_EN_PIN, RIGHT_IN3_PIN, RIGHT_IN4_PIN, 0);
+  applyMotor(LEFT_EN_PIN, LEFT_RPWM_PIN, LEFT_LPWM_PIN, 0);
+  applyMotor(RIGHT_EN_PIN, RIGHT_RPWM_PIN, RIGHT_LPWM_PIN, 0);
   runMode = RUN_NONE;
 }
 
@@ -271,8 +264,8 @@ void beginRun(int16_t leftPwm, int16_t rightPwm,
   runMode = mode;
   state = RUNNING;
 
-  applyMotor(LEFT_EN_PIN, LEFT_IN1_PIN, LEFT_IN2_PIN, commandedLeftPwm);
-  applyMotor(RIGHT_EN_PIN, RIGHT_IN3_PIN, RIGHT_IN4_PIN, commandedRightPwm);
+  applyMotor(LEFT_EN_PIN, LEFT_RPWM_PIN, LEFT_LPWM_PIN, commandedLeftPwm);
+  applyMotor(RIGHT_EN_PIN, RIGHT_RPWM_PIN, RIGHT_LPWM_PIN, commandedRightPwm);
   printEvent(F("RUN_STARTED"));
 }
 
@@ -304,9 +297,10 @@ void printHelp() {
   Serial.println(F("CMD,DIST beam_spacing_mm"));
   Serial.println(F("CMD,PULSE L|R signed_pwm duration_ms"));
   Serial.println(F("CMD,RUN pwm duration_ms"));
+  Serial.println(F("CMD,RUN_BENCH pwm duration_ms (ENCODER CHECK DISABLED)"));
   Serial.println(F("CMD,AUTO pwm [timeout_ms]"));
   Serial.println(F("CMD,AUTO_BENCH pwm [timeout_ms] (ENCODER CHECK DISABLED)"));
-  Serial.println(F("LIMIT,pwm=90,manual_ms=1500,auto_ms=4000"));
+  Serial.println(F("LIMIT,pwm=90,manual_ms=1500,auto_ms=4000,BTS7960"));
 }
 
 void sendStatus() {
@@ -355,17 +349,27 @@ void handleLine(char *line) {
     unsigned long durationMs = 0;
     if (sscanf(line + 6, "%c %d %lu", &side, &pwm, &durationMs) != 3 ||
         (side != 'L' && side != 'R') || pwm == 0 || durationMs == 0 ||
-        abs(pwm) > MAX_L298N_TEST_PWM || durationMs > MAX_BURST_MS) {
+        abs(pwm) > MAX_INTAKE_TEST_PWM || durationMs > MAX_BURST_MS) {
       Serial.println(F("ERR,PULSE_ARGS"));
     } else if (canStartRun()) {
       beginRun(side == 'L' ? pwm : 0, side == 'R' ? pwm : 0,
                durationMs, RUN_TIMED);
     }
+  } else if (strncmp(line, "RUN_BENCH ", 10) == 0) {
+    int pwm = 0;
+    unsigned long durationMs = 0;
+    if (sscanf(line + 10, "%d %lu", &pwm, &durationMs) != 2 || pwm <= 0 ||
+        pwm > MAX_INTAKE_TEST_PWM || durationMs == 0 ||
+        durationMs > MAX_AUTO_BALL_MS) {
+      Serial.println(F("ERR,RUN_BENCH_ARGS"));
+    } else if (canStartRun()) {
+      startInwardRun((uint8_t)pwm, durationMs, RUN_AUTO_BENCH);
+    }
   } else if (strncmp(line, "RUN ", 4) == 0) {
     int pwm = 0;
     unsigned long durationMs = 0;
     if (sscanf(line + 4, "%d %lu", &pwm, &durationMs) != 2 || pwm <= 0 ||
-        pwm > MAX_L298N_TEST_PWM || durationMs == 0 ||
+        pwm > MAX_INTAKE_TEST_PWM || durationMs == 0 ||
         durationMs > MAX_BURST_MS) {
       Serial.println(F("ERR,RUN_ARGS"));
     } else if (canStartRun()) {
@@ -378,7 +382,7 @@ void handleLine(char *line) {
     int pwm = 0;
     unsigned long timeoutMs = DEFAULT_AUTO_BALL_MS;
     const int parsed = sscanf(args, "%d %lu", &pwm, &timeoutMs);
-    if (parsed < 1 || pwm <= 0 || pwm > MAX_L298N_TEST_PWM ||
+    if (parsed < 1 || pwm <= 0 || pwm > MAX_INTAKE_TEST_PWM ||
         timeoutMs == 0 || timeoutMs > MAX_AUTO_BALL_MS) {
       Serial.println(F("ERR,AUTO_ARGS"));
     } else if (canStartRun() &&
@@ -517,8 +521,8 @@ void sendTelemetry(unsigned long now) {
 
 void setupPinChangeInterrupts() {
   noInterrupts();
-  previousLeftA = (PINK & _BV(0)) != 0;
-  previousRightA = (PINK & _BV(2)) != 0;
+  previousLeftA = (PINK & _BV(2)) != 0;
+  previousRightA = (PINK & _BV(0)) != 0;
   PCIFR = _BV(PCIF2);                   // clear pending port-K interrupt
   PCMSK2 |= _BV(PCINT16) | _BV(PCINT18);  // enable A channels only
   PCICR |= _BV(PCIE2);
@@ -529,11 +533,11 @@ void setup() {
   Serial.begin(BAUD);
 
   pinMode(LEFT_EN_PIN, OUTPUT);
-  pinMode(LEFT_IN1_PIN, OUTPUT);
-  pinMode(LEFT_IN2_PIN, OUTPUT);
+  pinMode(LEFT_RPWM_PIN, OUTPUT);
+  pinMode(LEFT_LPWM_PIN, OUTPUT);
   pinMode(RIGHT_EN_PIN, OUTPUT);
-  pinMode(RIGHT_IN3_PIN, OUTPUT);
-  pinMode(RIGHT_IN4_PIN, OUTPUT);
+  pinMode(RIGHT_RPWM_PIN, OUTPUT);
+  pinMode(RIGHT_LPWM_PIN, OUTPUT);
   pinMode(LEFT_ENC_A_PIN, INPUT_PULLUP);
   pinMode(LEFT_ENC_B_PIN, INPUT_PULLUP);
   pinMode(RIGHT_ENC_A_PIN, INPUT_PULLUP);
