@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "source": "Gazebo rigid-body modular chassis integration bench",
+  "load_statistic": "p99.5 after settle; raw maximum retained only for diagnostics",
+  "design_factor": 2.5,
+  "cases": [
+    "payload_0kg",
+    "payload_10kg"
+  ],
+  "interfaces": {
+    "rear_corner_50x50": {
+      "governing_force": {
+        "case": "payload_10kg",
+        "joint": "rear_right_corner",
+        "force_p99_5_n": 68.80101378577349,
+        "torque_p99_5_nm": 11.741284475664736,
+        "raw_force_max_n": 81.58230808217122,
+        "raw_torque_max_nm": 13.929731266982742
+      },
+      "governing_torque": {
+        "case": "payload_0kg",
+        "joint": "rear_left_corner",
+        "force_p99_5_n": 51.04358672005584,
+        "torque_p99_5_nm": 13.765668168791354,
+        "raw_force_max_n": 465.4602125205735,
+        "raw_torque_max_nm": 65.69873772743135
+      },
+      "design_force_n": 172.00253446443372,
+      "design_torque_nm": 34.41417042197838
+    },
+    "straight_motor_splice_50x50": {
+      "governing_force": {
+        "case": "payload_0kg",
+        "joint": "right_motor_splice",
+        "force_p99_5_n": 48.23442456458693,
+        "torque_p99_5_nm": 10.21919090205047,
+        "raw_force_max_n": 243.1797977476046,
+        "raw_torque_max_nm": 48.14504728622712
+      },
+      "governing_torque": {
+        "case": "payload_0kg",
+        "joint": "left_motor_splice",
+        "force_p99_5_n": 47.84591866278767,
+        "torque_p99_5_nm": 11.258753131306516,
+        "raw_force_max_n": 304.53357403932716,
+        "raw_torque_max_nm": 46.61339516926832
+      },
+      "design_force_n": 120.58606141146733,
+      "design_torque_nm": 28.146882828266293
+    },
+    "gamma_socket_50x50": {
+      "governing_force": {
+        "case": "payload_0kg",
+        "joint": "left_gamma_splice",
+        "force_p99_5_n": 24.194353044460794,
+        "torque_p99_5_nm": 1.6196345248644608,
+        "raw_force_max_n": 112.30024840791194,
+        "raw_torque_max_nm": 8.489558247430516
+      },
+      "governing_torque": {
+        "case": "payload_0kg",
+        "joint": "left_gamma_splice",
+        "force_p99_5_n": 24.194353044460794,
+        "torque_p99_5_nm": 1.6196345248644608,
+        "raw_force_max_n": 112.30024840791194,
+        "raw_torque_max_nm": 8.489558247430516
+      },
+      "design_force_n": 60.485882611151986,
+      "design_torque_nm": 4.049086312161152
+    },
+    "gamma_m5_mount": {
+      "governing_force": {
+        "case": "payload_0kg",
+        "joint": "left_intake_mount",
+        "force_p99_5_n": 15.246750321328465,
+        "torque_p99_5_nm": 0.165363904474359,
+        "raw_force_max_n": 71.50383243284297,
+        "raw_torque_max_nm": 2.956947560070228
+      },
+      "governing_torque": {
+        "case": "payload_0kg",
+        "joint": "left_intake_mount",
+        "force_p99_5_n": 15.246750321328465,
+        "torque_p99_5_nm": 0.165363904474359,
+        "raw_force_max_n": 71.50383243284297,
+        "raw_torque_max_nm": 2.956947560070228
+      },
+      "design_force_n": 38.116875803321165,
+      "design_torque_nm": 0.4134097611858975
+    },
+    "electronics_mount": {
+      "governing_force": {
+        "case": "payload_10kg",
+        "joint": "electronics_tray",
+        "force_p99_5_n": 106.14803587814343,
+        "torque_p99_5_nm": 0.9425276624334785,
+        "raw_force_max_n": 154.5051516996017,
+        "raw_torque_max_nm": 3.3770570617676503
+      },
+      "governing_torque": {
+        "case": "payload_10kg",
+        "joint": "electronics_tray",
+        "force_p99_5_n": 106.14803587814343,
+        "torque_p99_5_nm": 0.9425276624334785,
+        "raw_force_max_n": 154.5051516996017,
+        "raw_torque_max_nm": 3.3770570617676503
+      },
+      "design_force_n": 265.37008969535856,
+      "design_torque_nm": 2.3563191560836962
+    }
+  },
+  "status": "CAD_LOADS_AVAILABLE_STRUCTURAL_CAPACITY_PENDING",
+  "limitations": [
+    "Gazebo does not calculate printed-polymer stress or layer separation.",
+    "The 10 kg payload is represented at the electronics tray datum.",
+    "Connector capacity still requires FEA and printed fit/load coupons."
+  ]
+}

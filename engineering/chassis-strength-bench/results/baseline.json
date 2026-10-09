@@ -1,0 +1,524 @@
+{
+  "schema_version": 1,
+  "benchmark_status": "BASELINE_COMPLETE_AWAITING_PHYSICAL_COUPON",
+  "input_classification": "PROVISIONAL_NOT_MEASURED",
+  "geometry_section": {
+    "area_m2": 0.0006705953457063979,
+    "shell_area_m2": 0.00047104000000000004,
+    "internal_web_area_m2": 0.00019955534570639794,
+    "vertical_bending_i_m4": 7.400456531205294e-08,
+    "shell_vertical_bending_i_m4": 6.474253653333333e-08,
+    "internal_web_vertical_bending_i_m4": 9.262028778719615e-09,
+    "lateral_bending_i_m4": 1.494990165333334e-07,
+    "outer_vertical_c_m": 0.015,
+    "outer_lateral_c_m": 0.025,
+    "median_enclosed_area_m2": 0.00125424,
+    "wall_m": 0.0032
+  },
+  "scenarios": {
+    "light_test_fixture": {
+      "description": "Expected no-basket, no-traction-battery test fixture; mass and friction are provisional.",
+      "inputs": {
+        "base_mass_kg": 10.0,
+        "payload_mass_kg": 0.0,
+        "tyre_ground_mu": 0.65,
+        "dynamic_factor": 1.5,
+        "vertical_dynamic_factor": 1.5,
+        "description": "Expected no-basket, no-traction-battery test fixture; mass and friction are provisional."
+      },
+      "loads": {
+        "base_mass_kg": 10.0,
+        "payload_mass_kg": 0.0,
+        "effective_total_mass_kg": 10.0,
+        "normal_static_per_wheel_n": 24.516624999999998,
+        "motor_torque_limited_force_n": 43.882352941176464,
+        "friction_limited_force_n": 15.935806249999999,
+        "turn_contact_force_per_wheel_n": 15.935806249999999,
+        "design_turn_force_per_wheel_n": 23.903709375,
+        "design_vertical_force_per_wheel_n": 36.77493749999999,
+        "design_motor_reaction_torque_nm": 2.031815296875
+      },
+      "materials": {
+        "PLA": {
+          "stress_mpa": {
+            "rail_vertical_bending": 1.6398622603656428,
+            "rail_axial": 0.07129100888649946,
+            "rail_torsion_shear": 0.06849084351193253,
+            "rail_von_mises_screen": 1.715260475206965,
+            "drive_node_bearing": 0.8062759114583333,
+            "drive_node_net_section": 0.11518227306547618,
+            "splice_bearing": 1.5935806249999998
+          },
+          "rail_deflection_mm": 0.7668534628183296,
+          "safety_factors": {
+            "rail_combined": 17.490054970444167,
+            "drive_node_bearing": 37.20810652241635,
+            "drive_node_net_section": 260.45674565691445,
+            "splice_bearing": 18.82553008574637,
+            "rail_wall_shear": 248.20836083057213
+          },
+          "minimum_safety_factor": 17.490054970444167,
+          "numerical_pass": true,
+          "unresolved_local_modes": [
+            "drive-node bolt pull-through and inter-layer peel",
+            "rail-to-crossbar corner stress concentration during chassis yaw",
+            "splice-end stress concentration, bolt preload and hole clearance",
+            "fatigue and impact damage at layer seams"
+          ]
+        },
+        "PETG": {
+          "stress_mpa": {
+            "rail_vertical_bending": 1.6398622603656428,
+            "rail_axial": 0.07129100888649946,
+            "rail_torsion_shear": 0.06849084351193253,
+            "rail_von_mises_screen": 1.715260475206965,
+            "drive_node_bearing": 0.8062759114583333,
+            "drive_node_net_section": 0.11518227306547618,
+            "splice_bearing": 1.5935806249999998
+          },
+          "rail_deflection_mm": 1.1758419763214387,
+          "safety_factors": {
+            "rail_combined": 15.158047641051612,
+            "drive_node_bearing": 32.24702565276083,
+            "drive_node_net_section": 225.72917956932588,
+            "splice_bearing": 16.315459407646856,
+            "rail_wall_shear": 219.007377203446
+          },
+          "minimum_safety_factor": 15.158047641051612,
+          "numerical_pass": false,
+          "unresolved_local_modes": [
+            "drive-node bolt pull-through and inter-layer peel",
+            "rail-to-crossbar corner stress concentration during chassis yaw",
+            "splice-end stress concentration, bolt preload and hole clearance",
+            "fatigue and impact damage at layer seams"
+          ]
+        },
+        "PETG-CF": {
+          "stress_mpa": {
+            "rail_vertical_bending": 1.6398622603656428,
+            "rail_axial": 0.07129100888649946,
+            "rail_torsion_shear": 0.06849084351193253,
+            "rail_von_mises_screen": 1.715260475206965,
+            "drive_node_bearing": 0.8062759114583333,
+            "drive_node_net_section": 0.11518227306547618,
+            "splice_bearing": 1.5935806249999998
+          },
+          "rail_deflection_mm": 0.9798683136011989,
+          "safety_factors": {
+            "rail_combined": 16.32405130574789,
+            "drive_node_bearing": 34.72756608758859,
+            "drive_node_net_section": 243.09296261312016,
+            "splice_bearing": 17.570494746696614,
+            "rail_wall_shear": 204.40688538988294
+          },
+          "minimum_safety_factor": 16.32405130574789,
+          "numerical_pass": true,
+          "unresolved_local_modes": [
+            "drive-node bolt pull-through and inter-layer peel",
+            "rail-to-crossbar corner stress concentration during chassis yaw",
+            "splice-end stress concentration, bolt preload and hole clearance",
+            "fatigue and impact damage at layer seams"
+          ]
+        }
+      }
+    },
+    "conservative_turn": {
+      "description": "High-traction turn-in-place screen with impact/load-transfer allowance; not a measured operating point.",
+      "inputs": {
+        "base_mass_kg": 10.0,
+        "payload_mass_kg": 5.0,
+        "tyre_ground_mu": 0.9,
+        "dynamic_factor": 2.0,
+        "vertical_dynamic_factor": 2.0,
+        "description": "High-traction turn-in-place screen with impact/load-transfer allowance; not a measured operating point."
+      },
+      "loads": {
+        "base_mass_kg": 10.0,
+        "payload_mass_kg": 5.0,
+        "effective_total_mass_kg": 15.0,
+        "normal_static_per_wheel_n": 36.7749375,
+        "motor_torque_limited_force_n": 43.882352941176464,
+        "friction_limited_force_n": 33.097443750000004,
+        "turn_contact_force_per_wheel_n": 33.097443750000004,
+        "design_turn_force_per_wheel_n": 66.19488750000001,
+        "design_vertical_force_per_wheel_n": 73.549875,
+        "design_motor_reaction_torque_nm": 6.062909818762894,
+        "analytical_design_turn_force_per_wheel_n": 66.19488750000001,
+        "analytical_design_motor_reaction_torque_nm": 5.626565437500001,
+        "gazebo_peak_force_norm_n": 66.09959062208281,
+        "gazebo_peak_torque_norm_nm": 6.062909818762894
+      },
+      "materials": {
+        "PLA": {
+          "stress_mpa": {
+            "rail_vertical_bending": 3.279724520731286,
+            "rail_axial": 0.19742125537799854,
+            "rail_torsion_shear": 0.18966695126381317,
+            "rail_von_mises_screen": 3.492629869528085,
+            "drive_node_bearing": 2.4059165947471803,
+            "drive_node_net_section": 0.34370237067816856,
+            "splice_bearing": 4.4129925
+          },
+          "rail_deflection_mm": 1.5337069256366596,
+          "safety_factors": {
+            "rail_combined": 8.589515958086198,
+            "drive_node_bearing": 12.46926018362348,
+            "drive_node_net_section": 87.28482128536437,
+            "splice_bearing": 6.798108086519521,
+            "rail_wall_shear": 89.6307969665955
+          },
+          "minimum_safety_factor": 6.798108086519521,
+          "numerical_pass": false,
+          "unresolved_local_modes": [
+            "drive-node bolt pull-through and inter-layer peel",
+            "rail-to-crossbar corner stress concentration during chassis yaw",
+            "splice-end stress concentration, bolt preload and hole clearance",
+            "fatigue and impact damage at layer seams"
+          ]
+        },
+        "PETG": {
+          "stress_mpa": {
+            "rail_vertical_bending": 3.279724520731286,
+            "rail_axial": 0.19742125537799854,
+            "rail_torsion_shear": 0.18966695126381317,
+            "rail_von_mises_screen": 3.492629869528085,
+            "drive_node_bearing": 2.4059165947471803,
+            "drive_node_net_section": 0.34370237067816856,
+            "splice_bearing": 4.4129925
+          },
+          "rail_deflection_mm": 2.351683952642878,
+          "safety_factors": {
+            "rail_combined": 7.444247163674705,
+            "drive_node_bearing": 10.806692159140349,
+            "drive_node_net_section": 75.64684511398245,
+            "splice_bearing": 5.8916936749835855,
+            "rail_wall_shear": 79.08599732346661
+          },
+          "minimum_safety_factor": 5.8916936749835855,
+          "numerical_pass": false,
+          "unresolved_local_modes": [
+            "drive-node bolt pull-through and inter-layer peel",
+            "rail-to-crossbar corner stress concentration during chassis yaw",
+            "splice-end stress concentration, bolt preload and hole clearance",
+            "fatigue and impact damage at layer seams"
+          ]
+        },
+        "PETG-CF": {
+          "stress_mpa": {
+            "rail_vertical_bending": 3.279724520731286,
+            "rail_axial": 0.19742125537799854,
+            "rail_torsion_shear": 0.18966695126381317,
+            "rail_von_mises_screen": 3.492629869528085,
+            "drive_node_bearing": 2.4059165947471803,
+            "drive_node_net_section": 0.34370237067816856,
+            "splice_bearing": 4.4129925
+          },
+          "rail_deflection_mm": 1.9597366272023982,
+          "safety_factors": {
+            "rail_combined": 8.016881560880451,
+            "drive_node_bearing": 11.637976171381915,
+            "drive_node_net_section": 81.46583319967341,
+            "splice_bearing": 6.3449008807515535,
+            "rail_wall_shear": 73.81359750190218
+          },
+          "minimum_safety_factor": 6.3449008807515535,
+          "numerical_pass": false,
+          "unresolved_local_modes": [
+            "drive-node bolt pull-through and inter-layer peel",
+            "rail-to-crossbar corner stress concentration during chassis yaw",
+            "splice-end stress concentration, bolt preload and hole clearance",
+            "fatigue and impact damage at layer seams"
+          ]
+        }
+      }
+    }
+  },
+  "missing_measurements": [
+    "assembled test-fixture mass and centre of gravity",
+    "tyre-to-court static and sliding friction",
+    "actual four steel mount hole centres and bolt diameter after gauge confirmation",
+    "slicer wall count, infill, layer height and rail print orientation",
+    "same-printer coupons for XY and Z strength",
+    "measured Gazebo or physical peak joint wrench during turn-in-place",
+    "actual motor-centre to 90-degree corner distance after splice/corner CAD",
+    "corner fillet radius, sleeve engagement and fastener preload"
+  ],
+  "payload_sweep": {
+    "base_fixture_mass_kg": 10.0,
+    "assumption": "Payload centred; mass is shared equally by the four wheels. Gazebo peaks are not rescaled across payloads.",
+    "points": [
+      {
+        "payload_mass_kg": 0.0,
+        "effective_total_mass_kg": 10.0,
+        "design_vertical_force_per_wheel_n": 49.033249999999995,
+        "design_turn_force_per_wheel_n": 44.129925,
+        "turn_force_limit": "tyre_friction",
+        "materials": {
+          "PLA": {
+            "rail_deflection_mm": 1.0224712837577727,
+            "minimum_safety_factor": 10.197162129779283,
+            "numerical_pass": false
+          },
+          "PETG": {
+            "rail_deflection_mm": 1.5677893017619184,
+            "minimum_safety_factor": 8.837540512475378,
+            "numerical_pass": false
+          },
+          "PETG-CF": {
+            "rail_deflection_mm": 1.3064910848015985,
+            "minimum_safety_factor": 9.51735132112733,
+            "numerical_pass": false
+          }
+        }
+      },
+      {
+        "payload_mass_kg": 2.0,
+        "effective_total_mass_kg": 12.0,
+        "design_vertical_force_per_wheel_n": 58.8399,
+        "design_turn_force_per_wheel_n": 52.95591,
+        "turn_force_limit": "tyre_friction",
+        "materials": {
+          "PLA": {
+            "rail_deflection_mm": 1.2269655405093274,
+            "minimum_safety_factor": 8.497635108149401,
+            "numerical_pass": false
+          },
+          "PETG": {
+            "rail_deflection_mm": 1.8813471621143025,
+            "minimum_safety_factor": 7.364617093729482,
+            "numerical_pass": false
+          },
+          "PETG-CF": {
+            "rail_deflection_mm": 1.5677893017619187,
+            "minimum_safety_factor": 7.931126100939442,
+            "numerical_pass": false
+          }
+        }
+      },
+      {
+        "payload_mass_kg": 5.0,
+        "effective_total_mass_kg": 15.0,
+        "design_vertical_force_per_wheel_n": 73.549875,
+        "design_turn_force_per_wheel_n": 66.19488750000001,
+        "turn_force_limit": "tyre_friction",
+        "materials": {
+          "PLA": {
+            "rail_deflection_mm": 1.5337069256366596,
+            "minimum_safety_factor": 6.798108086519521,
+            "numerical_pass": false
+          },
+          "PETG": {
+            "rail_deflection_mm": 2.351683952642878,
+            "minimum_safety_factor": 5.8916936749835855,
+            "numerical_pass": false
+          },
+          "PETG-CF": {
+            "rail_deflection_mm": 1.9597366272023982,
+            "minimum_safety_factor": 6.3449008807515535,
+            "numerical_pass": false
+          }
+        }
+      },
+      {
+        "payload_mass_kg": 8.0,
+        "effective_total_mass_kg": 18.0,
+        "design_vertical_force_per_wheel_n": 88.25985,
+        "design_turn_force_per_wheel_n": 79.433865,
+        "turn_force_limit": "tyre_friction",
+        "materials": {
+          "PLA": {
+            "rail_deflection_mm": 1.8404483107639913,
+            "minimum_safety_factor": 5.665090072099601,
+            "numerical_pass": false
+          },
+          "PETG": {
+            "rail_deflection_mm": 2.822020743171454,
+            "minimum_safety_factor": 4.909744729152988,
+            "numerical_pass": false
+          },
+          "PETG-CF": {
+            "rail_deflection_mm": 2.351683952642878,
+            "minimum_safety_factor": 5.287417400626294,
+            "numerical_pass": false
+          }
+        }
+      },
+      {
+        "payload_mass_kg": 10.0,
+        "effective_total_mass_kg": 20.0,
+        "design_vertical_force_per_wheel_n": 98.06649999999999,
+        "design_turn_force_per_wheel_n": 87.76470588235293,
+        "turn_force_limit": "motor_torque",
+        "materials": {
+          "PLA": {
+            "rail_deflection_mm": 2.0449425675155455,
+            "minimum_safety_factor": 5.127345844504022,
+            "numerical_pass": false
+          },
+          "PETG": {
+            "rail_deflection_mm": 3.135578603523837,
+            "minimum_safety_factor": 4.443699731903486,
+            "numerical_pass": false
+          },
+          "PETG-CF": {
+            "rail_deflection_mm": 2.612982169603197,
+            "minimum_safety_factor": 4.785522788203754,
+            "numerical_pass": false
+          }
+        }
+      }
+    ]
+  },
+  "corner_proximity_sweep": {
+    "method": "cantilever root screen with combined vertical/yaw bending and rail torsion",
+    "stress_concentration_factor": 2.5,
+    "assumption": "Conservative turn loads act at one wheel; the printed 90-degree joint is represented by Kt=2.5 until a filleted corner/splice FEM and physical corner coupon exist.",
+    "points": [
+      {
+        "motor_center_to_corner_mm": 50.0,
+        "vertical_root_moment_nm": 9.740403568762893,
+        "yaw_root_moment_nm": 9.267284250000001,
+        "rail_torsion_nm": 1.5224824125,
+        "nominal_von_mises_mpa_before_kt": 3.5392866910443224,
+        "screen_von_mises_mpa_after_kt": 8.848216727610806,
+        "materials": {
+          "PLA": {
+            "screen_safety_factor": 3.3905136959840942
+          },
+          "PETG": {
+            "screen_safety_factor": 2.9384452031862147
+          },
+          "PETG-CF": {
+            "screen_safety_factor": 3.1644794495851545
+          }
+        }
+      },
+      {
+        "motor_center_to_corner_mm": 65.0,
+        "vertical_root_moment_nm": 10.843651693762894,
+        "yaw_root_moment_nm": 9.267284250000001,
+        "rail_torsion_nm": 1.5224824125,
+        "nominal_von_mises_mpa_before_kt": 3.761996174542022,
+        "screen_von_mises_mpa_after_kt": 9.404990436355055,
+        "materials": {
+          "PLA": {
+            "screen_safety_factor": 3.1897959070787354
+          },
+          "PETG": {
+            "screen_safety_factor": 2.764489786134904
+          },
+          "PETG-CF": {
+            "screen_safety_factor": 2.9771428466068195
+          }
+        }
+      },
+      {
+        "motor_center_to_corner_mm": 100.0,
+        "vertical_root_moment_nm": 13.417897318762893,
+        "yaw_root_moment_nm": 9.267284250000001,
+        "rail_torsion_nm": 1.5224824125,
+        "nominal_von_mises_mpa_before_kt": 4.282019749092537,
+        "screen_von_mises_mpa_after_kt": 10.705049372731343,
+        "materials": {
+          "PLA": {
+            "screen_safety_factor": 2.8024158465273517
+          },
+          "PETG": {
+            "screen_safety_factor": 2.428760400323705
+          },
+          "PETG-CF": {
+            "screen_safety_factor": 2.6155881234255283
+          }
+        }
+      },
+      {
+        "motor_center_to_corner_mm": 150.0,
+        "vertical_root_moment_nm": 17.095391068762893,
+        "yaw_root_moment_nm": 9.267284250000001,
+        "rail_torsion_nm": 1.5224824125,
+        "nominal_von_mises_mpa_before_kt": 5.025540195831785,
+        "screen_von_mises_mpa_after_kt": 12.563850489579462,
+        "materials": {
+          "PLA": {
+            "screen_safety_factor": 2.3878030087099646
+          },
+          "PETG": {
+            "screen_safety_factor": 2.069429274215303
+          },
+          "PETG-CF": {
+            "screen_safety_factor": 2.2286161414626338
+          }
+        }
+      },
+      {
+        "motor_center_to_corner_mm": 200.0,
+        "vertical_root_moment_nm": 20.772884818762893,
+        "yaw_root_moment_nm": 9.267284250000001,
+        "rail_torsion_nm": 1.5224824125,
+        "nominal_von_mises_mpa_before_kt": 5.7695436272127125,
+        "screen_von_mises_mpa_after_kt": 14.423859068031783,
+        "materials": {
+          "PLA": {
+            "screen_safety_factor": 2.079887210385346
+          },
+          "PETG": {
+            "screen_safety_factor": 1.8025689156673
+          },
+          "PETG-CF": {
+            "screen_safety_factor": 1.941228063026323
+          }
+        }
+      }
+    ],
+    "limitations": [
+      "does not model the actual 90-degree corner, sleeve contact or fastener preload",
+      "does not resolve printed-layer peel or fillet notch stress",
+      "the motor reaction torque is added to vertical root bending conservatively"
+    ]
+  },
+  "analytical_screen": "FAIL_STIFFNESS_OR_STRENGTH",
+  "decision": "PRINT_LOCAL_COUPON_NOT_FULL_CHASSIS",
+  "decision_reason": "The rail beam screen and local isotropic drive-node FEM pass, but printed-layer peel, washer pull-through, splice behaviour and frame-corner loads still need a physical coupon / later global frame model. Print one short rail plus drive-node coupon before committing to all chassis segments.",
+  "dynamic_input": {
+    "status": "GAZEBO_JAZZY_HARMONIC_CAPTURED",
+    "summary": {
+      "maximum_force_norm_n": 66.09959062208281,
+      "maximum_torque_norm_nm": 6.062909818762894,
+      "maximum_abs_force_z_n": 45.38481996017364
+    },
+    "use": "Conservative scenario takes the maximum of analytical and Gazebo vector-norm peaks."
+  },
+  "local_drive_node_fea": {
+    "status": "SCREEN_PASS",
+    "materials": {
+      "PLA": {
+        "stress_rows": 35374,
+        "maximum_von_mises_pa": 12709246.799584784,
+        "maximum_stress_component_pa": 16227480.0,
+        "maximum_von_mises_mpa": 12.709246799584784,
+        "screen_safety_factor": 2.3604860675913626
+      },
+      "PETG": {
+        "stress_rows": 35374,
+        "maximum_von_mises_pa": 12671107.855624309,
+        "maximum_stress_component_pa": 16875920.0,
+        "maximum_von_mises_mpa": 12.671107855624308,
+        "screen_safety_factor": 2.0519121371427214
+      },
+      "PETG-CF": {
+        "stress_rows": 35374,
+        "maximum_von_mises_pa": 12709246.799584784,
+        "maximum_stress_component_pa": 16227480.0,
+        "maximum_von_mises_mpa": 12.709246799584784,
+        "screen_safety_factor": 2.2031203297519384
+      }
+    },
+    "limitations": [
+      "first-order tetrahedra are a screening mesh; second-order mesh convergence is required",
+      "isotropic material model; printed-layer orthotropy is not represented",
+      "fixed cut faces make this a local submodel",
+      "bolt loads are distributed on hole walls; no washer/contact/preload model",
+      "peak vector norms combine components conservatively"
+    ]
+  }
+}

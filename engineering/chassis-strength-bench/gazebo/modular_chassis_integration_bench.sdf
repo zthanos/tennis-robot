@@ -1,0 +1,893 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.10">
+  <world name="modular_chassis_integration">
+    <physics name="deterministic_1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <gravity>0 0 -9.80665</gravity>
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" />
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands" />
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
+    <plugin filename="gz-sim-forcetorque-system" name="gz::sim::systems::ForceTorque" />
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.9</mu>
+                <mu2>0.9</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+    <model name="modular_test_chassis_v2">
+      <self_collide>false</self_collide>
+      <link name="rear_crossbar">
+        <pose>-0.165 0 0.037 0 0 0</pose>
+        <inertial>
+          <mass>0.45</mass>
+          <inertia>
+            <ixx>0.00729375</ixx>
+            <iyy>0.0001275</iyy>
+            <izz>0.00735375</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="rear_crossbar_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.05 0.44 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="rear_crossbar_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.05 0.44 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.16 0.48 0.78 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="rear_left_motor_module">
+        <pose>-0.065 0.22 0.037 0 0 0</pose>
+        <inertial>
+          <mass>0.32</mass>
+          <inertia>
+            <ixx>9.06666667e-05</ixx>
+            <iyy>0.00109066667</iyy>
+            <izz>0.00113333333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="rear_left_motor_module_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.2 0.05 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="rear_left_motor_module_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.2 0.05 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.16 0.48 0.78 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="front_left_motor_module">
+        <pose>0.135 0.22 0.037 0 0 0</pose>
+        <inertial>
+          <mass>0.32</mass>
+          <inertia>
+            <ixx>9.06666667e-05</ixx>
+            <iyy>0.00109066667</iyy>
+            <izz>0.00113333333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="front_left_motor_module_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.2 0.05 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="front_left_motor_module_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.2 0.05 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.16 0.48 0.78 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="left_gamma_body">
+        <pose>0.3925 0.21 0.037 0 0 0</pose>
+        <inertial>
+          <mass>0.38</mass>
+          <inertia>
+            <ixx>0.000183666667</ixx>
+            <iyy>0.00156116667</iyy>
+            <izz>0.00168783333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="landing_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.125 0.07 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="landing_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.125 0.07 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.14 0.64 0.46 1</diffuse>
+          </material>
+        </visual>
+        <collision name="socket_collision">
+          <pose>-0.125 0.01 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.065 0.05 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="socket_visual">
+          <pose>-0.125 0.01 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.065 0.05 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.14 0.64 0.46 1</diffuse>
+          </material>
+        </visual>
+        <collision name="flare_collision">
+          <pose>-0.0775 0.005 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.03 0.06 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="flare_visual">
+          <pose>-0.0775 0.005 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.03 0.06 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.14 0.64 0.46 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="left_intake_half">
+        <pose>0.3925 0.105 0.09 0 0 0</pose>
+        <inertial>
+          <mass>0.7</mass>
+          <inertia>
+            <ixx>0.00364583333</ixx>
+            <iyy>0.0046725</iyy>
+            <izz>0.00569333333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="gamma_upright_collision">
+          <pose>0 0.1 0.03 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.125 0.018 0.12</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="gamma_upright_visual">
+          <pose>0 0.1 0.03 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.125 0.018 0.12</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.78 0.26 0.08 1</diffuse>
+          </material>
+        </visual>
+        <collision name="ramp_half_collision">
+          <pose>-0.0525 -0.058 -0.053 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.041 0.094 0.025</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="ramp_half_visual">
+          <pose>-0.0525 -0.058 -0.053 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.041 0.094 0.025</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.42 0.72 0.32 1</diffuse>
+          </material>
+        </visual>
+        <collision name="ramp_cradle_collision">
+          <pose>-0.0715 0.0395 -0.043 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.01 0.101 0.01</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="ramp_cradle_visual">
+          <pose>-0.0715 0.0395 -0.043 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.01 0.101 0.01</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.58 0.20 0.76 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name="rear_left_corner_joint" type="fixed">
+        <parent>rear_crossbar</parent>
+        <child>rear_left_motor_module</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <joint name="left_motor_splice_joint" type="fixed">
+        <parent>rear_left_motor_module</parent>
+        <child>front_left_motor_module</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <joint name="left_gamma_splice_joint" type="fixed">
+        <parent>front_left_motor_module</parent>
+        <child>left_gamma_body</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <joint name="left_intake_mount_joint" type="fixed">
+        <parent>left_gamma_body</parent>
+        <child>left_intake_half</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <link name="rear_right_motor_module">
+        <pose>-0.065 -0.22 0.037 0 0 0</pose>
+        <inertial>
+          <mass>0.32</mass>
+          <inertia>
+            <ixx>9.06666667e-05</ixx>
+            <iyy>0.00109066667</iyy>
+            <izz>0.00113333333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="rear_right_motor_module_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.2 0.05 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="rear_right_motor_module_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.2 0.05 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.16 0.48 0.78 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="front_right_motor_module">
+        <pose>0.135 -0.22 0.037 0 0 0</pose>
+        <inertial>
+          <mass>0.32</mass>
+          <inertia>
+            <ixx>9.06666667e-05</ixx>
+            <iyy>0.00109066667</iyy>
+            <izz>0.00113333333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="front_right_motor_module_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.2 0.05 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="front_right_motor_module_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.2 0.05 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.16 0.48 0.78 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="right_gamma_body">
+        <pose>0.3925 -0.21 0.037 0 0 0</pose>
+        <inertial>
+          <mass>0.38</mass>
+          <inertia>
+            <ixx>0.000183666667</ixx>
+            <iyy>0.00156116667</iyy>
+            <izz>0.00168783333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="landing_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.125 0.07 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="landing_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.125 0.07 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.14 0.64 0.46 1</diffuse>
+          </material>
+        </visual>
+        <collision name="socket_collision">
+          <pose>-0.125 -0.01 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.065 0.05 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="socket_visual">
+          <pose>-0.125 -0.01 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.065 0.05 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.14 0.64 0.46 1</diffuse>
+          </material>
+        </visual>
+        <collision name="flare_collision">
+          <pose>-0.0775 -0.005 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.03 0.06 0.03</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="flare_visual">
+          <pose>-0.0775 -0.005 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.03 0.06 0.03</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.14 0.64 0.46 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="right_intake_half">
+        <pose>0.3925 -0.105 0.09 0 0 0</pose>
+        <inertial>
+          <mass>0.7</mass>
+          <inertia>
+            <ixx>0.00364583333</ixx>
+            <iyy>0.0046725</iyy>
+            <izz>0.00569333333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="gamma_upright_collision">
+          <pose>0 -0.1 0.03 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.125 0.018 0.12</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="gamma_upright_visual">
+          <pose>0 -0.1 0.03 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.125 0.018 0.12</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.78 0.26 0.08 1</diffuse>
+          </material>
+        </visual>
+        <collision name="ramp_half_collision">
+          <pose>-0.0525 0.058 -0.053 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.041 0.094 0.025</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="ramp_half_visual">
+          <pose>-0.0525 0.058 -0.053 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.041 0.094 0.025</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.42 0.72 0.32 1</diffuse>
+          </material>
+        </visual>
+        <collision name="ramp_cradle_collision">
+          <pose>-0.0715 -0.0395 -0.043 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.01 0.101 0.01</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="ramp_cradle_visual">
+          <pose>-0.0715 -0.0395 -0.043 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.01 0.101 0.01</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.58 0.20 0.76 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name="rear_right_corner_joint" type="fixed">
+        <parent>rear_crossbar</parent>
+        <child>rear_right_motor_module</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <joint name="right_motor_splice_joint" type="fixed">
+        <parent>rear_right_motor_module</parent>
+        <child>front_right_motor_module</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <joint name="right_gamma_splice_joint" type="fixed">
+        <parent>front_right_motor_module</parent>
+        <child>right_gamma_body</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <joint name="right_intake_mount_joint" type="fixed">
+        <parent>right_gamma_body</parent>
+        <child>right_intake_half</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <link name="rear_left_wheel">
+        <pose>-0.065 0.35 0.085 1.57079633 0 0</pose>
+        <inertial>
+          <mass>0.7</mass>
+          <inertia>
+            <ixx>0.00205916667</ixx>
+            <iyy>0.00205916667</iyy>
+            <izz>0.00337166667</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="rear_left_collision">
+          <geometry>
+            <cylinder>
+              <radius>0.085</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.9</mu>
+                <mu2>0.9</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="rear_left_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.085</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.05 0.06 0.07 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name="rear_left_wheel_joint" type="revolute">
+        <parent>rear_left_motor_module</parent>
+        <child>rear_left_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <effort>3.73</effort>
+            <velocity>13</velocity>
+          </limit>
+        </axis>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <link name="front_left_wheel">
+        <pose>0.135 0.35 0.085 1.57079633 0 0</pose>
+        <inertial>
+          <mass>0.7</mass>
+          <inertia>
+            <ixx>0.00205916667</ixx>
+            <iyy>0.00205916667</iyy>
+            <izz>0.00337166667</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="front_left_collision">
+          <geometry>
+            <cylinder>
+              <radius>0.085</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.9</mu>
+                <mu2>0.9</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="front_left_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.085</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.05 0.06 0.07 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name="front_left_wheel_joint" type="revolute">
+        <parent>front_left_motor_module</parent>
+        <child>front_left_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <effort>3.73</effort>
+            <velocity>13</velocity>
+          </limit>
+        </axis>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <link name="rear_right_wheel">
+        <pose>-0.065 -0.35 0.085 1.57079633 0 0</pose>
+        <inertial>
+          <mass>0.7</mass>
+          <inertia>
+            <ixx>0.00205916667</ixx>
+            <iyy>0.00205916667</iyy>
+            <izz>0.00337166667</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="rear_right_collision">
+          <geometry>
+            <cylinder>
+              <radius>0.085</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.9</mu>
+                <mu2>0.9</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="rear_right_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.085</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.05 0.06 0.07 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name="rear_right_wheel_joint" type="revolute">
+        <parent>rear_right_motor_module</parent>
+        <child>rear_right_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <effort>3.73</effort>
+            <velocity>13</velocity>
+          </limit>
+        </axis>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <link name="front_right_wheel">
+        <pose>0.135 -0.35 0.085 1.57079633 0 0</pose>
+        <inertial>
+          <mass>0.7</mass>
+          <inertia>
+            <ixx>0.00205916667</ixx>
+            <iyy>0.00205916667</iyy>
+            <izz>0.00337166667</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="front_right_collision">
+          <geometry>
+            <cylinder>
+              <radius>0.085</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.9</mu>
+                <mu2>0.9</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="front_right_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.085</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.05 0.06 0.07 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name="front_right_wheel_joint" type="revolute">
+        <parent>front_right_motor_module</parent>
+        <child>front_right_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <effort>3.73</effort>
+            <velocity>13</velocity>
+          </limit>
+        </axis>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <link name="electronics_tray">
+        <pose>-0.025 0 0.06 0 0 0</pose>
+        <inertial>
+          <mass>0.35</mass>
+          <inertia>
+            <ixx>0.00245338333</ixx>
+            <iyy>0.00105338333</iyy>
+            <izz>0.00350583333</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="electronics_tray_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.19 0.29 0.004</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="electronics_tray_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.19 0.29 0.004</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.12 0.55 0.35 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name="electronics_tray_joint" type="fixed">
+        <parent>rear_crossbar</parent>
+        <child>electronics_tray</child>
+        <sensor name="connection_wrench" type="force_torque">
+          <always_on>true</always_on>
+          <update_rate>500</update_rate>
+          <force_torque>
+            <frame>child</frame>
+            <measure_direction>child_to_parent</measure_direction>
+          </force_torque>
+        </sensor>
+      </joint>
+      <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+        <left_joint>front_left_wheel_joint</left_joint>
+        <left_joint>rear_left_wheel_joint</left_joint>
+        <right_joint>front_right_wheel_joint</right_joint>
+        <right_joint>rear_right_wheel_joint</right_joint>
+        <wheel_separation>0.70</wheel_separation>
+        <wheel_radius>0.085</wheel_radius>
+        <topic>/modular_chassis_integration/cmd_vel</topic>
+        <max_linear_acceleration>2.0</max_linear_acceleration>
+        <max_angular_acceleration>4.0</max_angular_acceleration>
+        <odom_publish_frequency>100</odom_publish_frequency>
+      </plugin>
+    </model>
+  </world>
+</sdf>

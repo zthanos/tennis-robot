@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "notes": [
+    "Reference values are comparative starting points, not certified design allowables.",
+    "screen_strength_mpa is deliberately reduced for layer orientation, process scatter and outdoor handling.",
+    "Replace each profile with coupon results from the actual filament, printer and slicer settings before release."
+  ],
+  "materials": {
+    "PLA": {
+      "density_kg_m3": 1240,
+      "reference_tensile_yield_mpa": 51,
+      "reference_elastic_modulus_gpa": 2.3,
+      "screen_strength_mpa": 30,
+      "screen_shear_strength_mpa": 17,
+      "poisson_ratio": 0.36,
+      "toughness_class": "low",
+      "source_note": "Prusament printed-specimen reference; conservative screen values are project assumptions."
+    },
+    "PETG": {
+      "density_kg_m3": 1270,
+      "reference_tensile_yield_mpa": 47,
+      "reference_elastic_modulus_gpa": 1.5,
+      "screen_strength_mpa": 26,
+      "screen_shear_strength_mpa": 15,
+      "poisson_ratio": 0.38,
+      "toughness_class": "high",
+      "source_note": "Prusament PETG TDS printed-specimen reference; conservative screen values are project assumptions."
+    },
+    "PETG-CF": {
+      "density_kg_m3": 1270,
+      "reference_tensile_yield_mpa": 52,
+      "reference_elastic_modulus_gpa": 1.8,
+      "screen_strength_mpa": 28,
+      "screen_shear_strength_mpa": 14,
+      "poisson_ratio": 0.36,
+      "toughness_class": "medium-low",
+      "source_note": "Prusament PETG-CF comparative printed-specimen reference; CF raises stiffness but published manufacturer guidance reports lower toughness than PETG."
+    }
+  }
+}

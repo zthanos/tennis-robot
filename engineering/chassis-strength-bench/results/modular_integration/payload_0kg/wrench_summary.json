@@ -1,0 +1,338 @@
+{
+  "schema_version": 1,
+  "source": "Gazebo ForceTorque joint sensors; vector norms are frame-independent",
+  "joints": {
+    "electronics_tray": {
+      "sample_count": 4453,
+      "time_range_s": [
+        8.534,
+        17.438
+      ],
+      "force_norm_n": {
+        "maximum": 70.12437630963022,
+        "p99_5": 6.24839368620114
+      },
+      "torque_norm_nm": {
+        "maximum": 0.9324011056967889,
+        "p99_5": 0.08541361472905529
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 25.042211535197733,
+        "y": 15.2243232195629,
+        "z": 69.27882167501457
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 0.0624175236712162,
+        "y": 0.6153100718603296,
+        "z": 0.7005464406916145
+      }
+    },
+    "front_left_wheel": {
+      "sample_count": 4421,
+      "time_range_s": [
+        8.6,
+        17.44
+      ],
+      "force_norm_n": {
+        "maximum": 357.8583123857324,
+        "p99_5": 65.62441551083229
+      },
+      "torque_norm_nm": {
+        "maximum": 30.40471773201356,
+        "p99_5": 5.384694041507251
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 301.6527573818932,
+        "y": 202.32205540303391,
+        "z": 132.42999464267663
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 22.979646871802963,
+        "y": 3.7300000000000133,
+        "z": 26.696128045284322
+      }
+    },
+    "front_right_wheel": {
+      "sample_count": 4438,
+      "time_range_s": [
+        8.568,
+        17.442
+      ],
+      "force_norm_n": {
+        "maximum": 313.7753655464247,
+        "p99_5": 61.085309548690404
+      },
+      "torque_norm_nm": {
+        "maximum": 22.902465170512663,
+        "p99_5": 5.054123201122802
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 237.6849683008075,
+        "y": 200.94429158271075,
+        "z": 97.70089781092291
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 10.878097321672712,
+        "y": 3.7300000000000133,
+        "z": 20.419876853744
+      }
+    },
+    "left_gamma_splice": {
+      "sample_count": 4435,
+      "time_range_s": [
+        8.576,
+        17.444
+      ],
+      "force_norm_n": {
+        "maximum": 112.30024840791194,
+        "p99_5": 24.194353044460794
+      },
+      "torque_norm_nm": {
+        "maximum": 8.489558247430516,
+        "p99_5": 1.6196345248644608
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 91.83724914465162,
+        "y": 63.31177551269497,
+        "z": 104.93709908667354
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 6.79794748431974,
+        "y": 5.8106226409103146,
+        "z": 6.140909717864298
+      }
+    },
+    "left_intake_mount": {
+      "sample_count": 4428,
+      "time_range_s": [
+        8.592,
+        17.446
+      ],
+      "force_norm_n": {
+        "maximum": 71.50383243284297,
+        "p99_5": 15.246750321328465
+      },
+      "torque_norm_nm": {
+        "maximum": 2.956947560070228,
+        "p99_5": 0.165363904474359
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 63.02626030769166,
+        "y": 40.8431432363909,
+        "z": 68.014088709127
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 0.09262656806639488,
+        "y": 2.7293351860058634,
+        "z": 1.1376590450471864
+      }
+    },
+    "left_motor_splice": {
+      "sample_count": 4441,
+      "time_range_s": [
+        8.568,
+        17.448
+      ],
+      "force_norm_n": {
+        "maximum": 304.53357403932716,
+        "p99_5": 47.84591866278767
+      },
+      "torque_norm_nm": {
+        "maximum": 46.61339516926832,
+        "p99_5": 11.258753131306516
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 189.13981024013358,
+        "y": 288.85268704488567,
+        "z": 86.34386340726986
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 43.71475789776908,
+        "y": 17.21787123609922,
+        "z": 22.91584696773789
+      }
+    },
+    "rear_left_corner": {
+      "sample_count": 4462,
+      "time_range_s": [
+        8.529,
+        17.45
+      ],
+      "force_norm_n": {
+        "maximum": 465.4602125205735,
+        "p99_5": 51.04358672005584
+      },
+      "torque_norm_nm": {
+        "maximum": 65.69873772743135,
+        "p99_5": 13.765668168791354
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 65.72887047885244,
+        "y": 450.72540307184886,
+        "z": 95.80989537094328
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 38.54910189108802,
+        "y": 18.70312814020245,
+        "z": 55.26033549955146
+      }
+    },
+    "rear_left_wheel": {
+      "sample_count": 4458,
+      "time_range_s": [
+        8.538,
+        17.452
+      ],
+      "force_norm_n": {
+        "maximum": 494.8134654825387,
+        "p99_5": 30.942708987989
+      },
+      "torque_norm_nm": {
+        "maximum": 47.845972710888475,
+        "p99_5": 4.125655154043809
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 421.18938586944546,
+        "y": 223.60961948384704,
+        "z": 140.18499031969787
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 28.45600023170119,
+        "y": 3.7300000000000244,
+        "z": 38.28289768897473
+      }
+    },
+    "rear_right_corner": {
+      "sample_count": 4434,
+      "time_range_s": [
+        8.59,
+        17.456
+      ],
+      "force_norm_n": {
+        "maximum": 429.03088470419635,
+        "p99_5": 51.77811740775584
+      },
+      "torque_norm_nm": {
+        "maximum": 63.94070265778849,
+        "p99_5": 12.686057211884942
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 56.25491302354672,
+        "y": 413.5609580749209,
+        "z": 99.34897456406948
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 38.86573637177366,
+        "y": 8.231491544676171,
+        "z": 50.71951378480795
+      }
+    },
+    "rear_right_wheel": {
+      "sample_count": 4436,
+      "time_range_s": [
+        8.59,
+        17.46
+      ],
+      "force_norm_n": {
+        "maximum": 537.4247730368244,
+        "p99_5": 32.15661467839993
+      },
+      "torque_norm_nm": {
+        "maximum": 35.657111629546264,
+        "p99_5": 3.96358925940531
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 440.933364803029,
+        "y": 227.08369269716653,
+        "z": 206.96896141252657
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 8.029906622206894,
+        "y": 3.7300000000000177,
+        "z": 34.54037216650338
+      }
+    },
+    "right_gamma_splice": {
+      "sample_count": 4425,
+      "time_range_s": [
+        8.614,
+        17.462
+      ],
+      "force_norm_n": {
+        "maximum": 106.2259882009293,
+        "p99_5": 21.045854818560937
+      },
+      "torque_norm_nm": {
+        "maximum": 8.096796312223333,
+        "p99_5": 1.38963080183666
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 72.02996288624796,
+        "y": 63.3186793281775,
+        "z": 104.94172585645357
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 7.485224696512571,
+        "y": 5.307300503796085,
+        "z": 6.0974573166189865
+      }
+    },
+    "right_intake_mount": {
+      "sample_count": 4455,
+      "time_range_s": [
+        8.556000000000001,
+        17.464
+      ],
+      "force_norm_n": {
+        "maximum": 68.87878764017347,
+        "p99_5": 14.070521041145028
+      },
+      "torque_norm_nm": {
+        "maximum": 2.956947560070228,
+        "p99_5": 0.165213506585827
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 53.52961621119677,
+        "y": 40.84645328490992,
+        "z": 68.01630702340512
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 0.09262656806639488,
+        "y": 2.7293351860058634,
+        "z": 1.1376590450471864
+      }
+    },
+    "right_motor_splice": {
+      "sample_count": 4429,
+      "time_range_s": [
+        8.612,
+        17.468
+      ],
+      "force_norm_n": {
+        "maximum": 243.1797977476046,
+        "p99_5": 48.23442456458693
+      },
+      "torque_norm_nm": {
+        "maximum": 48.14504728622712,
+        "p99_5": 10.21919090205047
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 128.5809382941859,
+        "y": 231.7105019059986,
+        "z": 90.75497281432101
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 44.2630423835965,
+        "y": 22.21241442225936,
+        "z": 21.24983142738845
+      }
+    }
+  },
+  "global": {
+    "maximum_force_norm_n": 537.4247730368244,
+    "p99_5_force_norm_n": 65.62441551083229,
+    "maximum_torque_norm_nm": 65.69873772743135,
+    "p99_5_torque_norm_nm": 13.765668168791354,
+    "maximum_abs_force_z_n": 206.96896141252657
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "geometry": {
+    "rail_outer_width_mm": 50.0,
+    "rail_outer_height_mm": 30.0,
+    "rail_wall_mm": 3.2,
+    "internal_web_mm": 2.4,
+    "wheelbase_mm": 440.0,
+    "wheel_radius_mm": 85.0,
+    "wheel_contact_to_rail_centroid_z_mm": 23.0,
+    "wheel_contact_to_rail_centroid_y_mm": 140.0,
+    "drive_node_thickness_mm": 14.0,
+    "drive_node_width_mm": 48.0,
+    "mount_bolt_diameter_mm": 3.0,
+    "mount_torque_row_spacing_mm": 30.0,
+    "mount_bolts_per_row": 2,
+    "splice_bolt_diameter_mm": 5.0,
+    "splice_bolt_count_per_side": 2,
+    "splice_effective_wall_mm": 3.0
+  },
+  "drivetrain": {
+    "motor_count": 4,
+    "motor_mass_kg": 0.205,
+    "motor_cg_offset_from_rail_mm": 50.0,
+    "wheel_assembly_mass_kg": 0.7,
+    "wheel_mass_classification": "PROVISIONAL_GAZEBO_INPUT; weigh the real wheel plus hub",
+    "motor_stall_torque_nm": 3.73,
+    "motor_source": "DFRobot FIT0403, repository purchase record: 38 kg.cm nominal rated/stall label used as a conservative torque ceiling",
+    "wheel_count": 4
+  },
+  "criteria": {
+    "minimum_safety_factor": 2.0,
+    "maximum_rail_deflection_mm": 1.0
+  },
+  "payload_sweep": {
+    "base_fixture_mass_kg": 10.0,
+    "payload_values_kg": [0.0, 2.0, 5.0, 8.0, 10.0],
+    "tyre_ground_mu": 0.9,
+    "dynamic_factor": 2.0,
+    "vertical_dynamic_factor": 2.0,
+    "assumption": "Payload centred; mass is shared equally by the four wheels. Gazebo peaks are not rescaled across payloads."
+  },
+  "corner_proximity_sweep": {
+    "motor_center_to_corner_values_mm": [50.0, 65.0, 100.0, 150.0, 200.0],
+    "stress_concentration_factor": 2.5,
+    "assumption": "Conservative turn loads act at one wheel; the printed 90-degree joint is represented by Kt=2.5 until a filleted corner/splice FEM and physical corner coupon exist."
+  },
+  "scenarios": {
+    "light_test_fixture": {
+      "base_mass_kg": 10.0,
+      "payload_mass_kg": 0.0,
+      "tyre_ground_mu": 0.65,
+      "dynamic_factor": 1.5,
+      "vertical_dynamic_factor": 1.5,
+      "description": "Expected no-basket, no-traction-battery test fixture; mass and friction are provisional."
+    },
+    "conservative_turn": {
+      "base_mass_kg": 10.0,
+      "payload_mass_kg": 5.0,
+      "tyre_ground_mu": 0.90,
+      "dynamic_factor": 2.0,
+      "vertical_dynamic_factor": 2.0,
+      "description": "High-traction turn-in-place screen with impact/load-transfer allowance; not a measured operating point."
+    }
+  },
+  "missing_measurements": [
+    "assembled test-fixture mass and centre of gravity",
+    "tyre-to-court static and sliding friction",
+    "actual four steel mount hole centres and bolt diameter after gauge confirmation",
+    "slicer wall count, infill, layer height and rail print orientation",
+    "same-printer coupons for XY and Z strength",
+    "measured Gazebo or physical peak joint wrench during turn-in-place",
+    "actual motor-centre to 90-degree corner distance after splice/corner CAD",
+    "corner fillet radius, sleeve engagement and fastener preload"
+  ]
+}

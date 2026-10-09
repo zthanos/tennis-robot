@@ -1,0 +1,10 @@
+results/jazzy_harmonic/*.jsonl
+results/jazzy_harmonic/*.log
+results/jazzy_harmonic/topics.txt
+results/jazzy_harmonic/physics_plugins/
+fea/work/
+results/modular_integration/*/*.jsonl
+results/modular_integration/*/*.log
+results/modular_integration/*/topics.txt
+results/modular_integration/*/physics_plugins/
+results/modular_integration/*/modular_chassis_integration_bench.sdf

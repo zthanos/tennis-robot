@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "model": "local isotropic solid drive-node submodel",
+  "solver": "CalculiX 2.21",
+  "mesher": "Gmsh 4.13.1",
+  "loads": {
+    "maximum_force_norm_n": 66.09959062208281,
+    "maximum_torque_norm_nm": 6.062909818762894,
+    "maximum_abs_force_z_n": 45.38481996017364,
+    "wheel_to_rail_lateral_offset_m": 0.14,
+    "motor_gravity_moment_nm": 0.1005181625,
+    "transferred_mount_design_moment_nm": 15.417370668354488,
+    "transfer_rule": "M_mount = |M_joint| + offset*|F_joint| + motor_weight*motor_CG_offset"
+  },
+  "node_set_counts": {
+    "FIXED": 268,
+    "ROW_NEG_X": 130,
+    "ROW_POS_X": 130,
+    "LOAD_NODES": 260
+  },
+  "materials": {
+    "PLA": {
+      "stress_rows": 35374,
+      "maximum_von_mises_pa": 12709246.799584784,
+      "maximum_stress_component_pa": 16227480.0,
+      "maximum_von_mises_mpa": 12.709246799584784,
+      "screen_safety_factor": 2.3604860675913626
+    },
+    "PETG": {
+      "stress_rows": 35374,
+      "maximum_von_mises_pa": 12671107.855624309,
+      "maximum_stress_component_pa": 16875920.0,
+      "maximum_von_mises_mpa": 12.671107855624308,
+      "screen_safety_factor": 2.0519121371427214
+    },
+    "PETG-CF": {
+      "stress_rows": 35374,
+      "maximum_von_mises_pa": 12709246.799584784,
+      "maximum_stress_component_pa": 16227480.0,
+      "maximum_von_mises_mpa": 12.709246799584784,
+      "screen_safety_factor": 2.2031203297519384
+    }
+  },
+  "limitations": [
+    "first-order tetrahedra are a screening mesh; second-order mesh convergence is required",
+    "isotropic material model; printed-layer orthotropy is not represented",
+    "fixed cut faces make this a local submodel",
+    "bolt loads are distributed on hole walls; no washer/contact/preload model",
+    "peak vector norms combine components conservatively"
+  ]
+}
