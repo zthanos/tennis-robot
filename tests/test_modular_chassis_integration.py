@@ -72,6 +72,15 @@ def test_payload_is_optional_and_parameterized():
     assert float(payload.text) == 10.0
 
 
+def test_electronics_are_vertical_at_rear_and_cargo_is_independent():
+    generator = _load("modular_vertical_electronics", BENCH / "generate_modular_integration_sdf.py")
+    model = generator.generate(10).getroot().find('./world/model[@name="modular_test_chassis_v2"]')
+    tray = model.find("link[@name='electronics_tray']")
+    assert tray.find("pose").text.split()[:3] == ["-0.165", "0", "0.147"]
+    assert tray.find("collision/geometry/box/size").text == "0.004 0.29 0.19"
+    assert model.find("joint[@name='payload_joint']/parent").text == "rear_crossbar"
+
+
 def test_integration_summary_uses_filtered_connector_loads(tmp_path):
     summarizer = _load("modular_summary", BENCH / "summarize_modular_integration.py")
     joints = {}

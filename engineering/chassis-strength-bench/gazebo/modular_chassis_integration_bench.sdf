@@ -846,13 +846,13 @@
         </sensor>
       </joint>
       <link name="electronics_tray">
-        <pose>-0.025 0 0.06 0 0 0</pose>
+        <pose>-0.165 0 0.147 0 0 0</pose>
         <inertial>
           <mass>0.35</mass>
           <inertia>
-            <ixx>0.00245338333</ixx>
+            <ixx>0.00350583333</ixx>
             <iyy>0.00105338333</iyy>
-            <izz>0.00350583333</izz>
+            <izz>0.00245338333</izz>
             <ixy>0</ixy>
             <ixz>0</ixz>
             <iyz>0</iyz>
@@ -862,7 +862,7 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.19 0.29 0.004</size>
+              <size>0.004 0.29 0.19</size>
             </box>
           </geometry>
         </collision>
@@ -870,7 +870,7 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.19 0.29 0.004</size>
+              <size>0.004 0.29 0.19</size>
             </box>
           </geometry>
           <material>

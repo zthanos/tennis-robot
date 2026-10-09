@@ -55,7 +55,7 @@ def summarize(paths: list[Path], design_factor: float) -> dict[str, Any]:
         "status": "CAD_LOADS_AVAILABLE_STRUCTURAL_CAPACITY_PENDING",
         "limitations": [
             "Gazebo does not calculate printed-polymer stress or layer separation.",
-            "The 10 kg payload is represented at the electronics tray datum.",
+            "Payload is a generic chassis-mounted cargo mass, not a load on the vertical electronics carrier.",
             "Connector capacity still requires FEA and printed fit/load coupons.",
         ],
     }

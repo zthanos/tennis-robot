@@ -72,7 +72,7 @@ wheel_w = 80;
 wheel_y = 350;
 wheel_z = 85;
 
-electronics_x = -25;
+electronics_x = rear_joint_x; // vertical carrier on the rear crossbar
 electronics_size_x = 190;
 electronics_half_y = 145;
 electronics_plate_t = 4;
@@ -407,21 +407,23 @@ module ramp_cradle(side=1) {
 }
 
 module electronics_tray_positive() {
-    // Half tray fits the print bed. Two integral arms reach the side rail;
-    // their exact M3 board/rail patterns remain a physical-measurement gate.
+    // Vertical Y-Z carrier: centre of chassis remains open for future cargo.
+    // Dimensions are a layout placeholder; board/rail holes are not released.
     union() {
         translate([electronics_x, electronics_half_y/2,
-                   rail_top_z + electronics_plate_t/2])
-            cube([electronics_size_x, electronics_half_y,
-                  electronics_plate_t], center=true);
-        for (xx = [electronics_x-electronics_size_x/2+electronics_arm_x/2,
-                   electronics_x+electronics_size_x/2-electronics_arm_x/2])
-            translate([xx, (electronics_half_y +
-                            drive_center_y + rail_w/2)/2,
-                       rail_top_z + electronics_plate_t/2])
-                cube([electronics_arm_x,
-                      drive_center_y + rail_w/2 - electronics_half_y,
-                      electronics_plate_t], center=true);
+                   rail_top_z + electronics_size_x/2])
+            cube([electronics_plate_t, electronics_half_y,
+                  electronics_size_x], center=true);
+        translate([electronics_x,(drive_center_y+rail_w/2)/2,
+                   rail_top_z+electronics_plate_t/2])
+            cube([rail_w,drive_center_y+rail_w/2,electronics_plate_t],center=true);
+        for (yy = [15,electronics_half_y-15])
+            hull() {
+                translate([electronics_x,yy,rail_top_z+30])
+                    cube([electronics_plate_t,8,4],center=true);
+                translate([electronics_x+20,yy,rail_top_z+electronics_plate_t/2])
+                    cube([4,8,electronics_plate_t],center=true);
+            }
     }
 }
 

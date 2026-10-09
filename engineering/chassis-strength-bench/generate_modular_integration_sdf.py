@@ -225,15 +225,17 @@ def generate(payload_mass_kg: float) -> ET.ElementTree:
         "front_right": add_wheel(model, "front_right", "front_right_motor_module", 0.300, -0.350),
     }
 
-    tray = add_box_link(model, "electronics_tray", (-0.025, 0, 0.060, 0, 0, 0),
-                        (0.19, 0.29, 0.004), 0.35, "0.12 0.55 0.35 1")
+    tray = add_box_link(model, "electronics_tray", (-0.165, 0, 0.147, 0, 0, 0),
+                        (0.004, 0.29, 0.19), 0.35, "0.12 0.55 0.35 1")
     del tray
     add_joint(model, "electronics_tray_joint", "rear_crossbar", "electronics_tray")
 
     if payload_mass_kg > 0:
         add_box_link(model, "payload", (-0.025, 0, 0.090, 0, 0, 0),
                      (0.18, 0.28, 0.05), payload_mass_kg, "0.35 0.36 0.38 1")
-        add_joint(model, "payload_joint", "electronics_tray", "payload", sensed=False)
+        # Generic cargo load, not weight hanging from the vertical PCB carrier.
+        # Basket/battery placement and their physical mounts remain unspecified.
+        add_joint(model, "payload_joint", "rear_crossbar", "payload", sensed=False)
 
     drive = sub(model, "plugin", filename="gz-sim-diff-drive-system",
                 name="gz::sim::systems::DiffDrive")
