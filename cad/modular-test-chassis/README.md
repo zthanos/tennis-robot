@@ -1,5 +1,14 @@
 # Modular open-front test chassis concept
 
+Η τρέχουσα συναρμολόγηση είναι το **`modular-chassis-v2.scad`**.
+Το `modular-open-front-test-chassis-concept.scad` είναι παλιό packaging
+reference και δείχνει προσωρινά motor pads, όχι τα σημερινά mounts.
+
+Στο v2, το `part` δέχεται `motor_left`, `motor_right` και `motor_section`
+για έλεγχο του πραγματικού παραμετρικού mount: επίπεδη κορυφή, ενίσχυση
+μέσα στη δοκό, τέσσερις καθοδηγούμενες φωλιές M3 και υποδοχές splice και
+στα δύο άκρα. Το v2 καλεί απευθείας το source SCAD των motor modules.
+
 This directory contains an early packaging/interface model for the physical
 drivetrain and intake test fixture. It is deliberately not print-ready.
 

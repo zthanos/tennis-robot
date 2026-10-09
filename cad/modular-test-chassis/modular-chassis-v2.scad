@@ -7,8 +7,16 @@
 
 $fn = 48;
 
-part = "assembly";
-// [assembly,frame,straight_sleeve,corner_left,corner_right,crossbar_half,gamma_left,gamma_right,ramp_cradle_left,ramp_cradle_right,electronics_tray_left,electronics_tray_right]
+use <../../engineering/chassis-strength-bench/coupon/drive-motor-inline-module.scad>
+
+part = "assembly"; // [assembly,frame,motor_left,motor_right,motor_section,front_motor_gamma_left,front_motor_gamma_right,rail_extension_left,rail_extension_right,straight_sleeve,corner_left,corner_right,crossbar_half,gamma_left,gamma_right,ramp_cradle_left,ramp_cradle_right,electronics_tray_left,electronics_tray_right]
+
+// Purchased metal bracket: preview reference only, excluded from all STL.
+show_metal_motor_mounts = true;
+show_gamma_mounts = true;
+metal_mount_foot = 40;
+metal_mount_thickness = 2;
+metal_mount_height = 47; // approximate measurement; upright envelope only
 
 rail_w = 50;
 rail_h = 30;
@@ -34,12 +42,13 @@ nut_seat_w = nut_corner_d + 0.20;
 nut_top_cover = 4.0;
 nut_tower_d = 15.0;
 
-// Compact U-frame: two 200 mm motor modules per side.
+// Open U-frame: rear module, extension, unified front motor/Gamma landing.
 rear_joint_x = -165;
 motor_joint_x = 35;
 gamma_joint_x = 235;
 rear_motor_x = -65;
-front_motor_x = 135;
+front_motor_x = 300;
+front_module_x0 = front_motor_x - 100;
 
 // The existing Gamma feet occupy X=330..455 and Y=175..245 on the left.
 gamma_socket_x0 = gamma_joint_x;
@@ -49,6 +58,11 @@ gamma_body_x1 = 455;
 gamma_body_w = 70;
 gamma_body_center_y = 210;
 drive_center_y = 220; // 50 mm rail is flush with the outboard Y=245 face.
+
+assert(front_motor_x + metal_mount_foot/2 <= gamma_flare_x1 - 10,
+       "Keep at least 10 mm between the metal foot and Gamma landing");
+assert(gamma_body_x1 - front_module_x0 <= 256,
+       "Unified front part exceeds the 256 mm nominal build plate");
 
 rear_crossbar_length = 2 * drive_center_y;
 crossbar_half_length = rear_crossbar_length / 2;
@@ -229,13 +243,40 @@ module gamma_body(side=1) {
 }
 
 module motor_module(side=1, xc=0) {
-    // LEFT/RIGHT file names describe the local motor side. World-left needs
-    // the +Y motor-side model and world-right needs its -Y mirror.
+    // Generate from the authoritative source, never from an exported snapshot.
     translate([xc, side*drive_center_y, rail_z0])
-        if (side > 0)
-            import("../../engineering/chassis-strength-bench/coupon/drive-motor-inline-RIGHT-M3-validated-dual-splice.stl");
-        else
-            import("../../engineering/chassis-strength-bench/coupon/drive-motor-inline-LEFT-M3-validated-dual-splice.stl");
+        drive_motor_inline(side);
+}
+
+module metal_motor_mount_positive() {
+    // Foot holes match the physically checked pattern. Local +Y faces the
+    // wheel. The upright motor-hole pattern remains omitted until measured.
+    difference() {
+        translate([-metal_mount_foot/2, -metal_mount_foot/2, 0])
+            cube([metal_mount_foot, metal_mount_foot, metal_mount_thickness]);
+        for (xx = [-15, 15], yy = [metal_mount_foot/2-34,
+                                   metal_mount_foot/2-9])
+            translate([xx, yy, -0.1])
+                cylinder(d=4, h=metal_mount_thickness+0.2);
+    }
+    translate([-metal_mount_foot/2,
+               metal_mount_foot/2-metal_mount_thickness,
+               metal_mount_thickness])
+        cube([metal_mount_foot, metal_mount_thickness,
+              metal_mount_height-metal_mount_thickness]);
+}
+
+module metal_motor_mount_reference(side=1) {
+    // Background geometry appears in F5, but is excluded from F6 and STL.
+    if (show_metal_motor_mounts)
+        %color([0.72, 0.74, 0.78, 0.85])
+            if (side > 0) metal_motor_mount_positive();
+            else mirror([0, 1, 0]) metal_motor_mount_positive();
+}
+
+module motor_part_preview(side=1) {
+    drive_motor_inline(side);
+    translate([0, 0, rail_h]) metal_motor_mount_reference(side);
 }
 
 module rear_crossbar() {
@@ -251,15 +292,15 @@ module frame_structure() {
     color(frame_color) {
         for (side = [-1, 1]) {
             motor_module(side, rear_motor_x);
-            motor_module(side, front_motor_x);
-            gamma_body(side);
+            front_motor_gamma(side);
+            rail_extension(side);
         }
         rear_crossbar();
     }
 
     color(sleeve_color) {
-        // Straight side-rail splices and motor-to-Gamma splices.
-        for (side = [-1, 1], xx = [motor_joint_x, gamma_joint_x])
+        // Rear module -> extension -> unified front motor/Gamma part.
+        for (side = [-1, 1], xx = [motor_joint_x, front_module_x0])
             translate([xx, side*drive_center_y,
                        rail_z0 + (rail_h-sleeve_h)/2])
                 straight_sleeve();
@@ -277,6 +318,34 @@ module frame_structure() {
     }
 }
 
+module rail_extension(side=1) {
+    // Both ends retain 60 mm insertion space for the universal sleeve.
+    difference() {
+        translate([(motor_joint_x+front_module_x0)/2,
+                   side*drive_center_y, rail_z0+rail_h/2])
+            hollow_box_x(front_module_x0-motor_joint_x);
+        for (xx = [motor_joint_x+30, front_module_x0-30], yy = [-lock_y,lock_y])
+            translate([xx,side*drive_center_y+yy,rail_top_z-rail_wall-0.1])
+                cylinder(d=lock_clear_d,h=rail_wall+0.2);
+    }
+}
+
+module front_motor_gamma(side=1) {
+    // Shared housing avoids overlapping separate sockets below the Gamma.
+    difference() {
+        union() {
+            motor_module(side,front_motor_x);
+            intersection() {
+                gamma_body(side);
+                translate([330,-260,rail_z0-1]) cube([126,520,rail_h+2]);
+            }
+        }
+        // Re-cut through the union: the motor rail also crosses this landing.
+        for (xx = [345,440], yy = [188,232])
+            translate([xx,side*yy,rail_z0-1]) cylinder(d=5.5,h=rail_h+2);
+    }
+}
+
 module wheel_context(side=1, xc=0) {
     color(wheel_color)
         translate([xc, side*wheel_y, wheel_z])
@@ -287,11 +356,29 @@ module wheel_context(side=1, xc=0) {
                 }
 }
 
-module intake_context() {
-    color(intake_color) {
-        import("../standalone-intake-fixed-motor/stl/gamma_bracket_left_reinforced_v2.stl");
-        import("../standalone-intake-fixed-motor/stl/gamma_bracket_right_reinforced_v2.stl");
+module gamma_mount_reference(side=1) {
+    if (show_gamma_mounts) color(intake_color) {
+        // Undo the build-plate transforms used by print_oriented().
+        if (side > 0) translate([330,69,52])
+            import("../standalone-intake-fixed-motor/stl/gamma_bracket_left_reinforced_v2.stl");
+        else translate([515,-69,52]) rotate([0,0,180])
+            import("../standalone-intake-fixed-motor/stl/gamma_bracket_right_reinforced_v2.stl");
     }
+}
+
+module front_motor_gamma_preview(side=1) {
+    translate([-front_module_x0,-side*drive_center_y,-rail_z0]) {
+        front_motor_gamma(side);
+        translate([front_motor_x,side*drive_center_y,rail_top_z])
+            metal_motor_mount_reference(side);
+        // Existing printed Gamma is for orientation checking, not re-export.
+        %gamma_mount_reference(side);
+    }
+}
+
+module intake_context() {
+    gamma_mount_reference(1);
+    gamma_mount_reference(-1);
     color([0.42, 0.72, 0.32, 0.92])
         import("../standalone-intake-fixed-motor/stl/intake_handoff_ramp_wheel_first.stl");
 }
@@ -355,10 +442,31 @@ module assembly() {
     }
     for (side = [-1, 1], xx = [rear_motor_x, front_motor_x])
         wheel_context(side, xx);
+    for (side = [-1, 1], xx = [rear_motor_x, front_motor_x])
+        translate([xx, side*drive_center_y, rail_top_z])
+            metal_motor_mount_reference(side);
     intake_context();
 }
 
 if (part == "frame") frame_structure();
+else if (part == "front_motor_gamma_left")
+    front_motor_gamma_preview(1);
+else if (part == "front_motor_gamma_right")
+    front_motor_gamma_preview(-1);
+else if (part == "rail_extension_left")
+    translate([-motor_joint_x,-drive_center_y,-rail_z0]) rail_extension(1);
+else if (part == "rail_extension_right")
+    translate([-motor_joint_x,drive_center_y,-rail_z0]) rail_extension(-1);
+else if (part == "motor_left") motor_part_preview(1);
+else if (part == "motor_right") motor_part_preview(-1);
+else if (part == "motor_section") {
+    intersection() {
+        drive_motor_inline(1);
+        // Longitudinal half-section exposes the reinforced roof and nuts.
+        translate([-101, -26, -1]) cube([202, 26, 32]);
+    }
+    translate([0, 0, rail_h]) metal_motor_mount_reference(1);
+}
 else if (part == "straight_sleeve") straight_sleeve();
 else if (part == "corner_left") corner_sleeve(1);
 else if (part == "corner_right") corner_sleeve(-1);

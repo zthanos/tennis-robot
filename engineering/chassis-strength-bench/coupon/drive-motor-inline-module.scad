@@ -215,6 +215,13 @@ module coupon() {
     }
 }
 
+// Public assembly entry point. side=+1 points the motor toward local +Y;
+// side=-1 mirrors the complete validated nut guides and hole pattern.
+module drive_motor_inline(side=1) {
+    if (side > 0) coupon();
+    else mirror([0, 1, 0]) coupon();
+}
+
 module nut_fit_coupon() {
     // One corner of the real part, preserving one complete side-loaded nut
     // tower and the actual roof/pad thickness. Print this before the 200 mm

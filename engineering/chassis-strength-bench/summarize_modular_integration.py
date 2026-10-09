@@ -12,7 +12,8 @@ from typing import Any
 GROUPS = {
     "rear_corner_50x50": ("rear_left_corner", "rear_right_corner"),
     "straight_motor_splice_50x50": ("left_motor_splice", "right_motor_splice"),
-    "gamma_socket_50x50": ("left_gamma_splice", "right_gamma_splice"),
+    "rear_extension_splice_50x50": ("left_rear_extension_splice", "right_rear_extension_splice"),
+    "unified_front_gamma_section": ("left_gamma_splice", "right_gamma_splice"),
     "gamma_m5_mount": ("left_intake_mount", "right_intake_mount"),
     "electronics_mount": ("electronics_tray",),
 }

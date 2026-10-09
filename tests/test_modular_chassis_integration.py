@@ -32,12 +32,34 @@ def test_generated_sdf_contains_all_modules_and_connection_sensors():
     root = generator.generate(0.0).getroot()
     model = root.find('./world/model[@name="modular_test_chassis_v2"]')
     assert model is not None
-    assert len(model.findall("link")) == 14
-    assert len(model.findall("joint/sensor")) == 13
+    assert len(model.findall("link")) == 16
+    assert len(model.findall("joint/sensor")) == 15
     assert len(model.findall('joint[@type="revolute"]')) == 4
     assert model.find("./link[@name='left_gamma_body']") is not None
     assert model.find("./link[@name='right_gamma_body']") is not None
     assert model.find("./plugin/topic").text == "/modular_chassis_integration/cmd_vel"
+
+
+def test_front_wheels_are_near_gamma_and_axes_are_in_model_frame():
+    generator = _load("modular_sdf_front", BENCH / "generate_modular_integration_sdf.py")
+    model = generator.generate(0).getroot().find('./world/model[@name="modular_test_chassis_v2"]')
+    for side in ("left", "right"):
+        assert float(model.find(f"link[@name='front_{side}_wheel']/pose").text.split()[0]) == 0.300
+        axis = model.find(f"joint[@name='front_{side}_wheel_joint']/axis/xyz")
+        assert axis.attrib["expressed_in"] == "__model__"
+        assert model.find(f"link[@name='{side}_rail_extension']") is not None
+    source = CAD.read_text()
+    assert "front_motor_x = 300;" in source
+    assert "module front_motor_gamma(side=1)" in source
+
+
+def test_gamma_references_restore_assembly_orientation_and_are_preview_only():
+    source = CAD.read_text()
+    assert "translate([330,69,52])" in source
+    assert "translate([515,-69,52]) rotate([0,0,180])" in source
+    assert "%gamma_mount_reference(side);" in source
+    assert "front_motor_gamma_preview(1);" in source
+    assert "front_motor_gamma_preview(-1);" in source
 
 
 def test_payload_is_optional_and_parameterized():

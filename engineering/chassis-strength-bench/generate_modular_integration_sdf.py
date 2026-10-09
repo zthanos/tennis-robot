@@ -93,7 +93,7 @@ def add_joint(
     sub(joint, "child", child)
     if joint_type == "revolute":
         axis = sub(joint, "axis")
-        sub(axis, "xyz", "0 1 0")
+        sub(axis, "xyz", "0 1 0", expressed_in="__model__")
         limit = sub(axis, "limit")
         sub(limit, "effort", "3.73")
         sub(limit, "velocity", "13")
@@ -184,16 +184,14 @@ def generate(payload_mass_kg: float) -> ET.ElementTree:
         add_box_link(model, f"rear_{side_name}_motor_module",
                      (-0.065, y, 0.037, 0, 0, 0), (0.20, 0.05, 0.03), 0.32)
         add_box_link(model, f"front_{side_name}_motor_module",
-                     (0.135, y, 0.037, 0, 0, 0), (0.20, 0.05, 0.03), 0.32)
+                     (0.300, y, 0.037, 0, 0, 0), (0.20, 0.05, 0.03), 0.32)
+        add_box_link(model, f"{side_name}_rail_extension",
+                     (0.1175, y, 0.037, 0, 0, 0), (0.165, 0.05, 0.03), 0.20)
 
         gamma = sub(model, "link", name=f"{side_name}_gamma_body")
         sub(gamma, "pose", pose_text((0.3925, side*0.210, 0.037, 0, 0, 0)))
-        add_inertial(gamma, 0.38, (0.22, 0.07, 0.03))
+        add_inertial(gamma, 0.38, (0.125, 0.07, 0.03))
         add_box(gamma, "landing", (0.125, 0.07, 0.03), color="0.14 0.64 0.46 1")
-        add_box(gamma, "socket", (0.065, 0.05, 0.03),
-                (-0.125, side*0.010, 0, 0, 0, 0), "0.14 0.64 0.46 1")
-        add_box(gamma, "flare", (0.030, 0.060, 0.03),
-                (-0.0775, side*0.005, 0, 0, 0, 0), "0.14 0.64 0.46 1")
 
         # Half of the Gamma/intake/ramp cassette is assigned to each side so
         # both Gamma splices receive realistic static and turning load.
@@ -210,7 +208,11 @@ def generate(payload_mass_kg: float) -> ET.ElementTree:
         add_joint(model, f"rear_{side_name}_corner_joint", "rear_crossbar",
                   f"rear_{side_name}_motor_module")
         add_joint(model, f"{side_name}_motor_splice_joint",
-                  f"rear_{side_name}_motor_module", f"front_{side_name}_motor_module")
+                  f"{side_name}_rail_extension", f"front_{side_name}_motor_module")
+        add_joint(model, f"{side_name}_rear_extension_splice_joint",
+                  f"rear_{side_name}_motor_module", f"{side_name}_rail_extension")
+        # Virtual measurement section within one printed front/Gamma part,
+        # not a physical sleeve joint.
         add_joint(model, f"{side_name}_gamma_splice_joint",
                   f"front_{side_name}_motor_module", f"{side_name}_gamma_body")
         add_joint(model, f"{side_name}_intake_mount_joint",
@@ -218,9 +220,9 @@ def generate(payload_mass_kg: float) -> ET.ElementTree:
 
     wheel_joints = {
         "rear_left": add_wheel(model, "rear_left", "rear_left_motor_module", -0.065, 0.350),
-        "front_left": add_wheel(model, "front_left", "front_left_motor_module", 0.135, 0.350),
+        "front_left": add_wheel(model, "front_left", "front_left_motor_module", 0.300, 0.350),
         "rear_right": add_wheel(model, "rear_right", "rear_right_motor_module", -0.065, -0.350),
-        "front_right": add_wheel(model, "front_right", "front_right_motor_module", 0.135, -0.350),
+        "front_right": add_wheel(model, "front_right", "front_right_motor_module", 0.300, -0.350),
     }
 
     tray = add_box_link(model, "electronics_tray", (-0.025, 0, 0.060, 0, 0, 0),

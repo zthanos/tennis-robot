@@ -11,8 +11,12 @@ parts=(
   corner_left
   corner_right
   crossbar_half
-  gamma_left
-  gamma_right
+  motor_left
+  motor_right
+  front_motor_gamma_left
+  front_motor_gamma_right
+  rail_extension_left
+  rail_extension_right
   ramp_cradle_left
   ramp_cradle_right
   electronics_tray_left
