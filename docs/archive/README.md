@@ -25,8 +25,13 @@ intake / basket v2.1 specs.
 - `mechanical/images/` — matching historical assembly/base/product drawings.
 - `mechanism/flywheel-launcher/` — superseded flywheel v0 exploration and pre-correction/pre-calibration stop reports; replaced by `../mechanism/standalone-flywheel-launcher.md` and its current evidence chain.
 
-## Superseded intake electronics
+## Superseded motion/intake electronics
 
 - `hardware/intake-dual-fit0186-l298n-mega-wiring-el.md` — historical L298N
-  bench wiring only. The active two-BTS7960 pinout is
-  `../hardware/intake-dual-fit0186-bts7960-mega-wiring-el.md`.
+  bench wiring only.
+- `hardware/intake-dual-fit0186-bts7960-mega-wiring-el.md` — historical
+  two-BTS7960 intake bench wiring, not the new board layout.
+- `hardware/motion-perfboard-wiring-el.md` — older drive-only perfboard.
+- `hardware/unified-motion-intake-perfboard-wiring-el.md` — older shared
+  Rev A/B header locations. The active Rev C netlist is
+  `../hardware/unified-keyed-perfboard-wiring-el.md`.

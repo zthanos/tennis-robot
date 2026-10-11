@@ -46,13 +46,20 @@ docs/
 - `standalone-intake-fixed-motor-compliant-tyre.md` - **authoritative current
   intake architecture** and open physical-validation gates.
 - `intake-concept-decision-el.md` - supporting decision evidence.
+- `compact-fixed-basket-transfer-direction-el.md` - **non-authoritative future
+  direction** for a shorter active transfer into a fixed basket; explicitly
+  gated on the physical intake and drivetrain tests.
 - `../archive/mechanism/intake/README.md` - superseded intake reports, CAD/data
   traceability, and the classification ledger.
 - `basket-bin-redesign-spec-el.md`.
 
 ## hardware/
 - Purchase/build: `chassis-layout-4wd-dual-intake-el.md`, `prototype-purchase-list-el.md`, `hardware-bom-el.md`, `ordered-parts.md`.
-- Wiring/setup: `motion-perfboard-wiring-el.md`, `ros2-control-migration-el.md`, `ubuntu-dual-boot-handoff.md`.
+- `modular-open-front-test-chassis-el.md` - current direction and hard
+  open-front constraint for the modular PLA drivetrain/intake test fixture.
+- Wiring/setup: `unified-keyed-perfboard-wiring-el.md` (new Rev C netlist;
+  physical solder-side routing still pending), `ros2-control-migration-el.md`,
+  `ubuntu-dual-boot-handoff.md`. Older perfboard wiring is in `../archive/hardware/`.
 - Contracts: `sensor-topic-contract-el.md`, `hardware-glossary.md`.
 - `../arduino/collector/` - Arduino bring-up sketches (collector motor, encoder, IR beam).
 

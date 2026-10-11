@@ -313,7 +313,7 @@ Driver με δύο πραγματικά ανεξάρτητα κανάλια ή �
 κάθε `FIT0186` έχει δηλωμένο stall current 7 A. Η παλιά bench καλωδίωση
 βρίσκεται στο [archive](../archive/hardware/intake-dual-fit0186-l298n-mega-wiring-el.md).
 Το ενεργό intake χρησιμοποιεί **δύο BTS7960, έναν ανά μοτέρ**. Δες
-[την τρέχουσα καλωδίωση](intake-dual-fit0186-bts7960-mega-wiring-el.md).
+[την τρέχουσα κοινή καλωδίωση Rev C](unified-keyed-perfboard-wiring-el.md).
 
 ## 5. Ασφάλεια Και Ηλεκτρικά
 

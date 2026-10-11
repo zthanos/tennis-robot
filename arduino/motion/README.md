@@ -65,7 +65,8 @@ state: `0`=DISARMED `1`=ARMED `2`=ESTOP · estop: `1`=tripped `0`=ok
 
 ## Pin map
 
-Matches `docs/hardware/motion-perfboard-wiring-el.md §4`:
+Mega pin allocation matches `docs/hardware/unified-keyed-perfboard-wiring-el.md`;
+the old drive-only header layout is archived:
 
 | Function | Mega pin |
 |---|---|

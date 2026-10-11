@@ -2,7 +2,7 @@
 
 > **ARCHIVE — μη χρησιμοποιείται για νέα καλωδίωση.** Το ενεργό intake έχει
 > δύο BTS7960, έναν ανά FIT0186. Δες
-> [το τρέχον pinout](../../hardware/intake-dual-fit0186-bts7960-mega-wiring-el.md).
+> [το νέο pinout Rev C](../../hardware/unified-keyed-perfboard-wiring-el.md).
 
 Η καλωδίωση αυτή προορίζεται για bench bring-up των δύο intake motors
 `FIT0186 / GB37Y3530-12V-251R`. Δεν αποτελεί έγκριση του L298N για το τελικό

@@ -14,8 +14,8 @@ two printed halves with three individual female jumper ends in each row.
 - Nose length, M3 holes and cable routing stay as in v2. The two IS dummies
   are unchanged.
 
-Print one lower and one upper half only for the first dry fit; reuse two v2
-dummy pieces if available. Do not force the female housings into place or use
+Print one lower and one upper half only for the first dry fit, plus two
+`plug-dummy-v3.stl` pieces. Do not force the female housings into place or use
 the bolts to close a remaining gap. Check that the larger 9.8 mm nose clears
 the real driver's nearby components. Because the pocket is more generous,
 also check that the six jumper housings do not rattle or shift relative to the

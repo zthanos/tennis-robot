@@ -1,5 +1,9 @@
 # New unified motion + intake perfboard — mechanical study
 
+> **Παλαιότερη μηχανική μελέτη v1.** Για το τωρινό εκτυπώσιμο cover/ποδιά
+> δες `../UNIFIED-KEYED-FACEPLATE-V2.md`. Για τις νέες ηλεκτρικές θέσεις,
+> δες `docs/hardware/unified-keyed-perfboard-wiring-el.md`.
+
 This is a **new layout study** for one 120 × 80 mm, 42 × 30-hole perfboard.
 It is not a soldering plan or a replacement electrical netlist. Its purpose
 is to test whether the four driver harnesses can use integrated keyed 2+4
@@ -61,13 +65,14 @@ no envelopes overlap. Purchased header dimensions may change that result.
    mechanical prototype, **not yet approved for soldering or operation**.
 4. Draw and audit a new point-to-point netlist for these exact grid positions
    and the four BTS7960/encoder groups. The old
-   `unified-motion-intake-perfboard-wiring-el.md` assigns different header
-   positions and must not be used to solder this new layout.
+   archived `docs/archive/hardware/unified-motion-intake-perfboard-wiring-el.md`
+   assigns different header positions. The new logical netlist is
+   `docs/hardware/unified-keyed-perfboard-wiring-el.md`.
 5. If the full netlist, solder-side wire crossings, service access or
    mounting fail despite the planar fit, split motion and intake into two
    boards. Do not move the throw circuit onto this board by assumption.
 
-`unified-keyed-faceplate-study.scad` is parametric and retains the existing
+`../unified-keyed-faceplate-study.scad` is parametric and retains the existing
 120 × 80 mm board outline and 115 × 75 mm corner mounting pattern. The
 generic female-header height in the visual mockup is 8.5 mm and needs a
 physical check. The faceplate is 1.2 mm thick; each integrated collar reaches

@@ -73,13 +73,13 @@ Snapshot date: `28/06/2026`
 > drivers, Arduino Mega 2560. Οι **διαθέσιμοι 2 BTS7960 προορίζονται τώρα για
 > τα δύο intake μοτέρ**· για την κίνηση εκκρεμούν 2 επιπλέον drivers. Λείπουν
 > επίσης τα παρακάτω για την perfboard + safety chain (βλ.
-> `motion-perfboard-wiring-el.md`).
+> `unified-keyed-perfboard-wiring-el.md`).
 
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|---|
 | 11 | Solderable perfboard (double-sided, πράσινο) | Motion / Board | 2 | — | — | — | ✅ Παραλήφθηκε |
-| 12 | Pin headers 2.54 mm για το παλιό J1-J9 layout | Motion / Board | 4x 1x20 female = 80 θέσεις | 0,25 € | 1,00 € | Grobotronics | ⚠️ Παραλήφθηκαν, αλλά το νέο unified layout απαιτεί 103 θέσεις και keyed harness επιλογή |
-| 13 | 4-pin connectors/headers για encoders (J4-J7) | Motion / Board | 4 | ~1 € | ~4 € | TBD | ⏸ Εκκρεμεί αυτοψία: τι connector έχει το FIT0403 (PH 6-pin; καλώδιο στο κουτί;) πριν αγοραστεί οτιδήποτε |
+| 12 | Pin headers 2.54 mm για το παλιό J1-J9 layout | Motion / Board | 4x 1x20 female = 80 θέσεις | 0,25 € | 1,00 € | Grobotronics | ⚠️ Παραλήφθηκαν. Το Rev C έχει 107 ηλεκτρικές θέσεις διαφορετικών τύπων· οι 80 θηλυκές δεν αντικαθιστούν IDC/male headers |
+| 13 | 4-pin connectors/headers για όλους τους encoders της Rev C | Motion + Intake / Board | 6 | ~1 € | ~6 € | TBD | ⏸ Επιβεβαίωσε τον πραγματικό σύνδεσμο των 4 drive και 2 intake encoder πριν την αγορά/κόλληση |
 | 14 | Hookup wire (solid πράσινο + μαύρο) + 65pcs M-M jumpers | Motion / Board | — | — | — | — | ✅ Παραλήφθηκε |
 | 14b | Copper foil tape (shielding/bus, προαιρετικό) | Motion / Board | 1 | — | — | — | ✅ Παραλήφθηκε |
 | 15 | 12V LiFePO4 μπαταρία (~12.8V, **15-20Ah** — όχι 50Ah, βάρος) + connector | Motion / Power | 1 | ~40-70 € | ~40-70 € | TBD | Προς παραγγελία — μαζί με το #25 (φορτιστή) |
@@ -94,13 +94,13 @@ Snapshot date: `28/06/2026`
 | 26 | 2x Inline ασφαλειοθήκη MINI blade αδιάβροχη (PerVoi) — motor: καλώδιο ≥1.5mm² | Motion / Safety | 2 | ~2-3 € | ~4-6 € | Skroutz | 🛒 Στο καλάθι Skroutz |
 | 27 | Καλώδιο ισχύος πολύκλωνο 1.5-2.5mm² κόκκινο+μαύρο (~2m έκαστο) + USB-C pigtail για buck→Pi | Motion / Wiring | — | ~8-12 € | ~8-12 € | Kafkas/TBD | Προς παραγγελία |
 | 28 | Αντίσταση 470Ω (LED start button) | Motion / Board | 1 | ~0,10 € | ~0,10 € | — | Από απόθεμα ή με επόμενη παραγγελία |
-| 29 | Unified-header συμπλήρωμα: τουλάχιστον 2x επιπλέον 1x20 strips ή πλήρες σετ keyed box headers/plugs | Motion + Intake / Board | 23+ επιπλέον επαφές | TBD | TBD | TBD | Προς επιλογή πριν κολληθούν headers |
-| 30 | Perfboard passives: 11x 100nF ceramic, 1x 220µF ≥10V, 2x 10kΩ, 1x 470Ω | Motion + Intake / Board | 1 σετ | TBD | TBD | TBD | Απαιτούνται πριν την τελική κόλληση |
+| 29 | Rev C headers: 2+4 θηλυκά ανά BTS, 6× encoder, Mega/IR/USER/IMU/JP/PWR | Motion + Intake / Board | 107 ηλεκτρικές θέσεις διαφόρων τύπων· 24 σίγουρα θηλυκές για τους BTS | TBD | TBD | TBD | Μέτρησε ξεχωριστά τους τύπους των mating harnesses και κάνε dry-fit πριν κολληθούν |
+| 30 | Rev C passives: 13× 100nF, 1× 220µF ≥10V, 2× 10kΩ IR, 8× 10kΩ driver-side EN, 1× 470Ω | Motion + Intake / Board | 1 σετ | TBD | TBD | TBD | Φυσική χωροθέτηση/συγκόλληση ακόμη προς έλεγχο |
 | 31 | JP_PWR 1x3 + jumper και πολωμένο PWR_IN 1x2 με mating plug | Motion + Intake / Board | 1 σετ | TBD | TBD | TBD | Απαιτούνται για ασφαλή επιλογή Mega/εξωτερικού 5V |
 
 > ✅ **Άξονας επιβεβαιωμένος:** Το μοτέρ είναι **DFRobot FIT0403** (12V 122RPM w/Encoder, gearbox 90:1) με **6 mm D-shaft**. Το hub πρέπει να γεφυρώνει `6 mm D-shaft → 24 mm hex (Baja 5B)`, με set screw στο flat του shaft. Χρειάζονται 4 (ένα ανά κινητήριο τροχό). Ψάξε: "6mm to 24mm hex hub adapter" ή "24mm hex wheel hub 6mm bore".
 
-> ⚠️ **Safety chain:** το E-stop (#17) πρέπει να κόβει **φυσικά** το +12V στα BTS7960 `B+`, όχι μέσω Arduino. Η main fuse (#16) κοντά στη μπαταρία. Δες `motion-perfboard-wiring-el.md` §2.
+> ⚠️ **Safety chain:** το E-stop (#17) πρέπει να κόβει **φυσικά** το +12V στα BTS7960 `B+`, όχι μέσω Arduino. Η main fuse (#16) κοντά στη μπαταρία. Δες `unified-keyed-perfboard-wiring-el.md`· το παλιό drive-only έγγραφο είναι στο archive.
 
 ## Cost Summary
 

@@ -1,4 +1,8 @@
-# Motion Perfboard Wiring Reference
+# ΑΡΧΕΙΟ — Motion Perfboard Wiring Reference
+
+> **Παλιό 4WD-only πρωτότυπο. Μην το χρησιμοποιήσεις για τη νέα κοινή
+> motion + intake perfboard.** Νέο ενεργό pinout/θέσεις:
+> [Rev C](../../hardware/unified-keyed-perfboard-wiring-el.md).
 
 Αυτό το έγγραφο περιγράφει την πλακέτα perfboard για το πρώτο 4WD motion
 prototype του tennis robot.
@@ -35,11 +39,11 @@ headers και ακριβές template. Για το πρώτο prototype το ξ
 
 Επισκόπηση συστήματος (power domain εκτός perfboard vs logic domain):
 
-![Motion control wiring](images/motion-control-wiring.svg)
+![Motion control wiring](../../images/motion-control-wiring.svg)
 
 Pinout των headers J1-J9 — πώς ενώνεται κάθε component στην perfboard:
 
-![Motion perfboard header pinout](images/motion-perfboard-pinout.svg)
+![Motion perfboard header pinout](../../images/motion-perfboard-pinout.svg)
 
 ## 1. Σημαντικό Όριο Της Perfboard
 

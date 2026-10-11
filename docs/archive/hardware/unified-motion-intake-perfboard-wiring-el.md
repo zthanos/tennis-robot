@@ -1,6 +1,11 @@
-# Ενιαία perfboard motion + intake — σχέδιο κόλλησης Rev A
+# ΑΡΧΕΙΟ — Ενιαία perfboard motion + intake, παλιό Rev A/B
 
-Το παρόν είναι το σημείο αναφοράς για την κοινή perfboard 120 × 80 mm του
+> **Μην το χρησιμοποιήσεις για τη νέα 120 × 80 mm πλακέτα με keyed cover.**
+> Οι θέσεις J_MOTION/J_INTAKE εδώ έχουν αντικατασταθεί από 2+4 βύσματα
+> ανά BTS. Το νέο ενεργό σχέδιο είναι
+> [Rev C](../../hardware/unified-keyed-perfboard-wiring-el.md).
+
+Το παρόν ήταν το σημείο αναφοράς για την τότε κοινή perfboard 120 × 80 mm του
 Arduino Mega. **Rev B intake: δύο BTS7960, όχι L298N.** Αν έχει ήδη κολληθεί
 η παλιά Rev A netlist, δεν συνδέουμε τους BTS πριν γίνει continuity audit και
 επανακαλωδίωση των J_MEGA/J_INTAKE 15–20 / 1–6. Αν κάποιο παλιότερο διάγραμμα

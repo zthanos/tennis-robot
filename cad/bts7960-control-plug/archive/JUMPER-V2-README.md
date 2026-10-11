@@ -1,5 +1,8 @@
 # BTS7960 control plug v2 — individual M–F jumper wires
 
+> **ARCHIVED FIT TEST.** Do not print this version for the Rev C perfboard;
+> use the active [`../JUMPER-V3-README.md`](../JUMPER-V3-README.md).
+
 This **fit prototype** replaces the single soldered 2×4 female PCB header of
 v1 with six separate female ends of 15 cm male-to-female jumper wires. Their
 male ends remain free to plug into female sockets soldered on the perfboard.

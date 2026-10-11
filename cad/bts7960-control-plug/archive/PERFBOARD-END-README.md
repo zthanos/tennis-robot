@@ -1,5 +1,8 @@
 # Perfboard-end 3+2 connector — first fit CAD
 
+> **ARCHIVED 3+2 CONCEPT.** It does not match the current 2+4 Rev C cover.
+> See [`../README.md`](../README.md) for the active print files.
+
 For **each** of four BTS7960 logic harnesses:
 
 - one 1×3 female header for `RPWM`, `LPWM`, `EN`, with a matching 1×3 male

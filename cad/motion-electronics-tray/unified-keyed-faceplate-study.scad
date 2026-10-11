@@ -6,7 +6,7 @@
 
 $fn = 36;
 
-part = "assembly"; // [assembly,faceplate,board,exploded,port_test]
+part = "assembly"; // [assembly,faceplate,board,exploded,port_test,skirt]
 show_perf_holes = false;
 
 board_size = [120, 80];
@@ -16,6 +16,10 @@ mount_hole_d = 4.00;
 faceplate_t = 1.20;
 faceplate_mount_hole_d = 3.40;
 faceplate_corner_r = 1.00;
+header_h = 8.50; // provisional height of the female header above the board
+skirt_h = 0; // the original study has no raised skirt
+skirt_wall = 1.60;
+skirt_corner_pad = 7.50;
 
 pitch = 2.54;
 grid_count = [42, 30];
@@ -34,7 +38,7 @@ key_width = 1.40;
 key_projection = 1.10;
 collar_clearance = 0.55;
 collar_wall = 2.00;
-collar_h = 7.50; // total height above board, including faceplate thickness
+collar_h = 7.50; // total port height from underside of cover
 
 aux_clearance = 0.50;
 idc_body_w = 9.00;
@@ -244,7 +248,7 @@ module female_header_mockup(n, center) {
     body_y = pitch;
     color("DimGray")
         translate([center[0]-body_x/2,center[1]-body_y/2,board_t])
-            cube([body_x,body_y,8.50]);
+            cube([body_x,body_y,header_h]);
 }
 
 module header_mockups() {
@@ -262,21 +266,52 @@ module header_mockups() {
              [h[2]*pitch+idc_end_margin,idc_body_w];
         color("SlateGray")
             translate([center[0]-size[0]/2,center[1]-size[1]/2,board_t])
-                cube([size[0],size[1],8.50]);
+                cube([size[0],size[1],header_h]);
     }
     for (h=straight_headers) {
         size=[(h[2]-1)*pitch+encoder_body_end_margin,pitch];
         color("FireBrick")
             translate([xmid(h[1],h[2])-size[0]/2,
                        gy(h[3])-size[1]/2,board_t])
-                cube([size[0],size[1],8.50]);
+                cube([size[0],size[1],header_h]);
+    }
+}
+
+module skirt() {
+    // A separate open frame leaves the board interior accessible and supports
+    // the cover at all four M3 mounting holes. Its outside matches the board.
+    assert(skirt_h > 0, "Set skirt_h to a positive measured header height");
+    difference() {
+        linear_extrude(skirt_h)
+            intersection() {
+                rounded_plate_2d();
+                union() {
+                    difference() {
+                        rounded_plate_2d();
+                        offset(delta=-skirt_wall) rounded_plate_2d();
+                    }
+                    square([skirt_corner_pad,skirt_corner_pad]);
+                    translate([board_size[0]-skirt_corner_pad,0])
+                        square([skirt_corner_pad,skirt_corner_pad]);
+                    translate([0,board_size[1]-skirt_corner_pad])
+                        square([skirt_corner_pad,skirt_corner_pad]);
+                    translate([board_size[0]-skirt_corner_pad,
+                               board_size[1]-skirt_corner_pad])
+                        square([skirt_corner_pad,skirt_corner_pad]);
+                }
+            }
+        for (p=mount_holes)
+            translate([p[0],p[1],-0.2])
+                cylinder(d=faceplate_mount_hole_d,h=skirt_h+0.4);
     }
 }
 
 module assembly(explode=0) {
     board_mockup();
     header_mockups();
-    translate([0,0,board_t+explode]) faceplate();
+    if (skirt_h > 0)
+        color("Orange") translate([0,0,board_t+explode/2]) skirt();
+    translate([0,0,board_t+skirt_h+explode]) faceplate();
 }
 
 if (part == "assembly") assembly();
@@ -284,4 +319,5 @@ else if (part == "exploded") assembly(12);
 else if (part == "faceplate") faceplate();
 else if (part == "board") {board_mockup();header_mockups();}
 else if (part == "port_test") port_pair_fit_coupon();
+else if (part == "skirt") skirt();
 else assert(false,str("Unknown part: ",part));

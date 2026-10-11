@@ -1,5 +1,8 @@
 # Perfboard-side jumper holders — first 2+4 fit prototype
 
+> **ARCHIVED CABLE-TIE VERSION.** Use the active
+> [`../PERFBOARD-MALE-END-V2-M3.md`](../PERFBOARD-MALE-END-V2-M3.md) instead.
+
 This variant is for the **male ends** of the six M–F jumper wires already
 held at their female ends by the driver-side v3 shell. It replaces the older
 `perfboard-end-v0.scad` concept, which held *female* ends and used 3+2.

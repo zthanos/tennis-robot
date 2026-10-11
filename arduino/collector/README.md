@@ -72,8 +72,10 @@ motor leads `AO1`/`AO2`. Μην αλλάξεις τα καλώδια του enco
 7. `07_dual_intake_mega_bench`
    - Στατικό bench sketch για Mega -> 2x BTS7960 -> 2x FIT0186.
    - Χρησιμοποιεί intake PWM D44/D45/D46/D11, enable D40/D42 και encoders A8-A11,
-     χωρίς να αγγίζει τα pins της κίνησης. Η ενεργή καλωδίωση είναι στο
-     `docs/hardware/intake-dual-fit0186-bts7960-mega-wiring-el.md`.
+     χωρίς να αγγίζει τα pins της κίνησης. Το παλιό bench wiring είναι στο
+     `docs/archive/hardware/intake-dual-fit0186-bts7960-mega-wiring-el.md`·
+     για τη νέα κοινή perfboard ισχύει μόνο το
+     `docs/hardware/unified-keyed-perfboard-wiring-el.md`.
    - Καταγράφει RPM, encoder counts και προαιρετικό χρόνο entry-to-exit από δύο
      IR beams στα D36/D37.
    - Ξεκινά disarmed, περιορίζει PWM σε 90/255, τα χειροκίνητα run σε 1500 ms

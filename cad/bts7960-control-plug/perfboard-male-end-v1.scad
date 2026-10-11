@@ -44,6 +44,14 @@ tie_groove_depth = 0.55;
 tie_groove_width = 2.40;
 tie_z = nose_z + 4.00;
 
+// Optional two-M3 clamp revision. The screws pass through the rear body,
+// outside the cable exit, so both halves remain joined when unplugged.
+clamp_screws = false;
+clamp_hole_d = 3.25;
+clamp_boss_r = 2.80;
+clamp_x = rear_x/2-1.60;
+clamp_z = nose_z+7.50;
+
 key_width = 1.40;
 key_projection = 1.10;
 key_x = contacts == 2 ? 0 : pitch;
@@ -92,7 +100,19 @@ module outer_plug() {
             cube([nose_x, nose_y, nose_z]);
         key_rib();
         rounded_rear();
+        if (clamp_screws)
+            for (x=[-clamp_x,clamp_x])
+                translate([x,0,clamp_z])
+                    rotate([-90,0,0])
+                        cylinder(r=clamp_boss_r,h=rear_y,center=true);
     }
+}
+
+module clamp_holes() {
+    for (x=[-clamp_x,clamp_x])
+        translate([x,-rear_y/2-epsilon,clamp_z])
+            rotate([-90,0,0])
+                cylinder(d=clamp_hole_d,h=rear_y+2*epsilon);
 }
 
 module body_pocket() {
@@ -149,7 +169,8 @@ module whole_plug() {
         wire_comb();
         rear_cable_space();
         pin_pattern();
-        tie_groove();
+        if (clamp_screws) clamp_holes();
+        else tie_groove();
         pin1_mark();
     }
 }

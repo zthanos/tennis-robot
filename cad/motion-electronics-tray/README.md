@@ -1,5 +1,12 @@
 # Motion electronics service tray
 
+> **New perfboard cover:** the current Rev C fit-test files are
+> `unified-keyed-faceplate-v2.stl`, `unified-keyed-skirt-v2.stl` and
+> `keyed-2plus4-port-fit-coupon-v2.stl`; see
+> `UNIFIED-KEYED-FACEPLATE-V2.md`. Old faceplates and their PNG/STL exports
+> have moved to [`archive/`](archive/README.md). The shared
+> `unified-keyed-faceplate-study.scad` source stays here because v2 includes it.
+
 > **Legacy mechanical layout — do not print as the final electronics tray.**
 > It still has one L298N intake bay and only two BTS7960 bays. The active
 > electrical plan uses two BTS7960 for intake, with two additional BTS7960
@@ -52,12 +59,12 @@ carrier; they are not optional electrical components.
   holds the existing 180 x 240 mm tray vertically for wiring and bench tests.
   It uses the tray's two lower M5 slots, supports the tray edge on ledges and
   provides cable-tie slots for a temporary screw/WAGO distribution block.
-- `vertical-service-stand-clips.scad` — **rejected; do not print**. Although the
+- `archive/vertical-service-stand-clips.scad` — **rejected; do not print**. Although the
   clip envelope clears the lower PCB footprints, the populated continuous tray
   blocks the lateral installation path to the two stand uprights.
-- `vertical-service-stand-edge-clip-fit-test.scad` — superseded before print by
+- `archive/vertical-service-stand-edge-clip-fit-test.scad` — superseded before print by
   the unified retainer below; retained only as design history.
-- `vertical-service-stand-unified-retainer-fit-test.scad` — one full-width U
+- `archive/vertical-service-stand-unified-retainer-fit-test.scad` — one full-width U
   concept, **superseded before print** by the front-loaded retainer.
 - `vertical-service-stand-front-retainer-fit-test.scad` — current fit-test:
   slides in from the front, has two cut-outs around the black support blocks,
@@ -134,7 +141,8 @@ docker compose --profile cad run --rm openscad \
 - The printed tray is a mechanical carrier, not an electrical insulator to be
   trusted by itself. Preserve fusing, strain relief, common ground and the
   physical E-stop relay chain described in
-  `docs/hardware/motion-perfboard-wiring-el.md`.
+  `docs/hardware/unified-keyed-perfboard-wiring-el.md` (Rev C; no soldering
+  until the physical routing and four-driver harness are validated).
 
 ## Fit-check gate before final print
 

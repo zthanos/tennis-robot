@@ -84,7 +84,7 @@ wide funnel
 - Mega/perfboard και logic connectors σε προστατευμένο, προσβάσιμο tray.
 - BTS7960 και 40A relay εκτός κλειστού κουτιού, με αερισμό.
 - High-current καλώδια εκτός perfboard, σύμφωνα με
-  `docs/hardware/motion-perfboard-wiring-el.md`.
+  `docs/hardware/unified-keyed-perfboard-wiring-el.md`.
 - Δύο ανεξάρτητα cable looms drive, ένα ανά πλευρά, ώστε τα εμπρός/πίσω μοτέρ
   να αποσυνδέονται χωρίς να λυθεί όλο το robot.
 - Encoder και sensor καλώδια μακριά από `M+`/`M-` και relay wiring.
