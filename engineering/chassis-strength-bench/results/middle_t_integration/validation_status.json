@@ -1,0 +1,10 @@
+{
+  "status": "STRUCTURAL_SIMULATION_NOT_VALIDATED",
+  "cad_meshes": "15 STL measured; every rounded mesh edge has two incident triangles",
+  "dartsim": "Second middle-crossbar weld rejected; captured joint loads are invalid",
+  "bullet_featherstone": "Multiple parent joints rejected in short startup probe",
+  "bullet": "No usable motion/load evidence: yaw about 0.028 degrees and all force/torque norms zero",
+  "decision": "Do not use captured Gazebo summaries as structural design loads or proof of reinforcement",
+  "next_evidence": "Physical T-sleeve fit/racking test or elastic full-frame analysis with real joint stiffness",
+  "internal_web": "Existing motor-centre W retained; main socket zones and sleeve insertion paths must remain clear"
+}

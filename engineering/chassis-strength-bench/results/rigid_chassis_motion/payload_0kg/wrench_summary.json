@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "source": "Gazebo ForceTorque joint sensors; vector norms are frame-independent",
+  "joints": {
+    "front_left_wheel": {
+      "sample_count": 4459,
+      "time_range_s": [
+        8.482,
+        17.398
+      ],
+      "force_norm_n": {
+        "maximum": 28.569760145371266,
+        "p99_5": 28.49714367513355
+      },
+      "torque_norm_nm": {
+        "maximum": 4.168638893068213,
+        "p99_5": 2.23941657594537
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 24.84365775952201,
+        "y": 25.21419334397602,
+        "z": 21.609741033518823
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 2.166126089472309,
+        "y": 2.18783462512668,
+        "z": 3.729999998399499
+      }
+    },
+    "front_right_wheel": {
+      "sample_count": 4451,
+      "time_range_s": [
+        8.5,
+        17.4
+      ],
+      "force_norm_n": {
+        "maximum": 30.797990694362216,
+        "p99_5": 28.739798827418536
+      },
+      "torque_norm_nm": {
+        "maximum": 4.053884425306471,
+        "p99_5": 2.6234296138965454
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 28.105733216152192,
+        "y": 28.25726723521173,
+        "z": 22.187512957498935
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 2.070566392928523,
+        "y": 1.7980632474688267,
+        "z": 3.7300000028313516
+      }
+    },
+    "rear_left_wheel": {
+      "sample_count": 4449,
+      "time_range_s": [
+        8.506,
+        17.402
+      ],
+      "force_norm_n": {
+        "maximum": 19.238029463538254,
+        "p99_5": 19.14880850197966
+      },
+      "torque_norm_nm": {
+        "maximum": 3.8937608488418864,
+        "p99_5": 1.4328073016850813
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 13.06179045888887,
+        "y": 12.557250673816306,
+        "z": 16.953039395484776
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 1.3480571504241927,
+        "y": 1.3436069493187874,
+        "z": 3.7300000012151737
+      }
+    },
+    "rear_right_wheel": {
+      "sample_count": 4468,
+      "time_range_s": [
+        8.471,
+        17.404
+      ],
+      "force_norm_n": {
+        "maximum": 18.354001508358426,
+        "p99_5": 18.300984711608915
+      },
+      "torque_norm_nm": {
+        "maximum": 3.907721950188642,
+        "p99_5": 1.5656708401174506
+      },
+      "maximum_absolute_force_components_n": {
+        "x": 12.113304559274164,
+        "y": 15.278113394069184,
+        "z": 17.129584057971048
+      },
+      "maximum_absolute_torque_components_nm": {
+        "x": 1.540336876911623,
+        "y": 1.5389851290182885,
+        "z": 3.730000001537066
+      }
+    }
+  },
+  "global": {
+    "maximum_force_norm_n": 30.797990694362216,
+    "p99_5_force_norm_n": 28.739798827418536,
+    "maximum_torque_norm_nm": 4.168638893068213,
+    "p99_5_torque_norm_nm": 2.6234296138965454,
+    "maximum_abs_force_z_n": 22.187512957498935
+  }
+}

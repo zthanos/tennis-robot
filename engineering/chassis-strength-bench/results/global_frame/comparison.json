@@ -1,0 +1,661 @@
+{
+  "status": "IDEAL_JOINT_ELASTIC_COMPARISON_NOT_PRINT_CERTIFICATION",
+  "solver": "CalculiX B32R, BOX/RECT beam sections, mm/N/MPa",
+  "force_per_front_mount_n": 10,
+  "moment_per_front_mount_nmm": -1300,
+  "rear_support": "Both rear rail/crossbar nodes clamped in six degrees of freedom",
+  "validation": {
+    "analytic_unbraced_pla_lateral_mm": 0.4087456000338735,
+    "analytic_relative_error": 0.0008506514414949222,
+    "displacement_mesh_convergence": [
+      {
+        "variant": "none",
+        "material": "PLA",
+        "relative_change_finest_two_meshes": 0.0008820957553260753
+      },
+      {
+        "variant": "none",
+        "material": "PETG",
+        "relative_change_finest_two_meshes": 0.0010168624367566737
+      },
+      {
+        "variant": "none",
+        "material": "PETG-CF",
+        "relative_change_finest_two_meshes": 0.0008820424689453597
+      },
+      {
+        "variant": "middle",
+        "material": "PLA",
+        "relative_change_finest_two_meshes": 0.0033018820136098454
+      },
+      {
+        "variant": "middle",
+        "material": "PETG",
+        "relative_change_finest_two_meshes": 0.0038120437938003755
+      },
+      {
+        "variant": "middle",
+        "material": "PETG-CF",
+        "relative_change_finest_two_meshes": 0.003301558243191424
+      },
+      {
+        "variant": "ramp_back",
+        "material": "PLA",
+        "relative_change_finest_two_meshes": 0.0031427356616898867
+      },
+      {
+        "variant": "ramp_back",
+        "material": "PETG",
+        "relative_change_finest_two_meshes": 0.003613724922397243
+      },
+      {
+        "variant": "ramp_back",
+        "material": "PETG-CF",
+        "relative_change_finest_two_meshes": 0.003143090246902649
+      }
+    ]
+  },
+  "cases": [
+    {
+      "variant": "none",
+      "material": "PLA",
+      "mesh_mm": 20,
+      "element_count": 88,
+      "front_displacement_mm": {
+        "49": [
+          -0.004370895,
+          -0.4072335,
+          4.404341e-12
+        ],
+        "116": [
+          0.004370895,
+          -0.4072335,
+          -3.116571e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.40725695604292755,
+      "relative_front_x_mm": 0.00874179,
+      "mean_front_y_mm": -0.4072335,
+      "beam_integration_point_peak_von_mises_mpa": 0.24875846364074347
+    },
+    {
+      "variant": "none",
+      "material": "PETG",
+      "mesh_mm": 20,
+      "element_count": 88,
+      "front_displacement_mm": {
+        "49": [
+          -0.006687616,
+          -0.6235938,
+          5.276244e-12
+        ],
+        "116": [
+          0.006687616,
+          -0.6235938,
+          1.322004e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.6236296590174359,
+      "relative_front_x_mm": 0.013375232,
+      "mean_front_y_mm": -0.6235938,
+      "beam_integration_point_peak_von_mises_mpa": 0.2436692374149318
+    },
+    {
+      "variant": "none",
+      "material": "PETG-CF",
+      "mesh_mm": 20,
+      "element_count": 88,
+      "front_displacement_mm": {
+        "49": [
+          -0.005585033,
+          -0.5203539,
+          -4.339165e-12
+        ],
+        "116": [
+          0.005585033,
+          -0.5203539,
+          -3.655221e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.5203838716167336,
+      "relative_front_x_mm": 0.011170066,
+      "mean_front_y_mm": -0.5203539,
+      "beam_integration_point_peak_von_mises_mpa": 0.24875846364074347
+    },
+    {
+      "variant": "middle",
+      "material": "PLA",
+      "mesh_mm": 20,
+      "element_count": 138,
+      "front_displacement_mm": {
+        "51": [
+          -0.006010333,
+          -0.09783838,
+          4.621127e-13
+        ],
+        "120": [
+          0.006010333,
+          -0.09783838,
+          -4.983381e-13
+        ]
+      },
+      "max_front_displacement_mm": 0.09802281726106064,
+      "relative_front_x_mm": 0.012020666,
+      "mean_front_y_mm": -0.09783838,
+      "beam_integration_point_peak_von_mises_mpa": 0.24875700529543543
+    },
+    {
+      "variant": "middle",
+      "material": "PETG",
+      "mesh_mm": 20,
+      "element_count": 138,
+      "front_displacement_mm": {
+        "51": [
+          -0.009190202,
+          -0.1493015,
+          3.125816e-14
+        ],
+        "120": [
+          0.009190202,
+          -0.1493015,
+          -5.164958e-13
+        ]
+      },
+      "max_front_displacement_mm": 0.1495840824254065,
+      "relative_front_x_mm": 0.018380404,
+      "mean_front_y_mm": -0.1493015,
+      "beam_integration_point_peak_von_mises_mpa": 0.24367666444265457
+    },
+    {
+      "variant": "middle",
+      "material": "PETG-CF",
+      "mesh_mm": 20,
+      "element_count": 138,
+      "front_displacement_mm": {
+        "51": [
+          -0.00767987,
+          -0.1250157,
+          -1.428181e-12
+        ],
+        "120": [
+          0.00767987,
+          -0.1250157,
+          -1.329931e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.1252513698516184,
+      "relative_front_x_mm": 0.01535974,
+      "mean_front_y_mm": -0.1250157,
+      "beam_integration_point_peak_von_mises_mpa": 0.24875700529543543
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PLA",
+      "mesh_mm": 20,
+      "element_count": 132,
+      "front_displacement_mm": {
+        "51": [
+          -0.00561391,
+          -0.1939525,
+          -0.006304771
+        ],
+        "122": [
+          0.00561391,
+          -0.1939525,
+          0.006304771
+        ]
+      },
+      "max_front_displacement_mm": 0.1941361336256096,
+      "relative_front_x_mm": 0.01122782,
+      "mean_front_y_mm": -0.1939525,
+      "beam_integration_point_peak_von_mises_mpa": 0.2824151580800538
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PETG",
+      "mesh_mm": 20,
+      "element_count": 132,
+      "front_displacement_mm": {
+        "51": [
+          -0.008590771,
+          -0.2965549,
+          -0.009746728
+        ],
+        "122": [
+          0.008590771,
+          -0.2965549,
+          0.009746728
+        ]
+      },
+      "max_front_displacement_mm": 0.29683936525853577,
+      "relative_front_x_mm": 0.017181542,
+      "mean_front_y_mm": -0.2965549,
+      "beam_integration_point_peak_von_mises_mpa": 0.28447715992326267
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PETG-CF",
+      "mesh_mm": 20,
+      "element_count": 132,
+      "front_displacement_mm": {
+        "51": [
+          -0.00717333,
+          -0.2478282,
+          -0.008056096
+        ],
+        "122": [
+          0.00717333,
+          -0.2478282,
+          0.008056096
+        ]
+      },
+      "max_front_displacement_mm": 0.24806284296784578,
+      "relative_front_x_mm": 0.01434666,
+      "mean_front_y_mm": -0.2478282,
+      "beam_integration_point_peak_von_mises_mpa": 0.2824151580800538
+    },
+    {
+      "variant": "none",
+      "material": "PLA",
+      "mesh_mm": 10,
+      "element_count": 170,
+      "front_displacement_mm": {
+        "95": [
+          -0.004405161,
+          -0.4080378,
+          -3.846652e-12
+        ],
+        "222": [
+          0.004405161,
+          -0.4080378,
+          2.883227e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.4080615782847926,
+      "relative_front_x_mm": 0.008810322,
+      "mean_front_y_mm": -0.4080378,
+      "beam_integration_point_peak_von_mises_mpa": 0.27599600345711095
+    },
+    {
+      "variant": "none",
+      "material": "PETG",
+      "mesh_mm": 10,
+      "element_count": 170,
+      "front_displacement_mm": {
+        "95": [
+          -0.006735035,
+          -0.6250002,
+          -6.079358e-12
+        ],
+        "222": [
+          0.006735035,
+          -0.6250002,
+          1.110537e-11
+        ]
+      },
+      "max_front_displacement_mm": 0.6250364874921234,
+      "relative_front_x_mm": 0.01347007,
+      "mean_front_y_mm": -0.6250002,
+      "beam_integration_point_peak_von_mises_mpa": 0.2672175454536714
+    },
+    {
+      "variant": "none",
+      "material": "PETG-CF",
+      "mesh_mm": 10,
+      "element_count": 170,
+      "front_displacement_mm": {
+        "95": [
+          -0.005628816,
+          -0.5213817,
+          7.903135e-13
+        ],
+        "222": [
+          0.005628816,
+          -0.5213817,
+          4.174271e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.5214120833510207,
+      "relative_front_x_mm": 0.011257632,
+      "mean_front_y_mm": -0.5213817,
+      "beam_integration_point_peak_von_mises_mpa": 0.27599600345711095
+    },
+    {
+      "variant": "middle",
+      "material": "PLA",
+      "mesh_mm": 10,
+      "element_count": 262,
+      "front_displacement_mm": {
+        "97": [
+          -0.006048609,
+          -0.09851596,
+          -4.936979e-13
+        ],
+        "226": [
+          0.006048609,
+          -0.09851596,
+          -1.051254e-13
+        ]
+      },
+      "max_front_displacement_mm": 0.09870146931812353,
+      "relative_front_x_mm": 0.012097218,
+      "mean_front_y_mm": -0.09851596,
+      "beam_integration_point_peak_von_mises_mpa": 0.2759960072931706
+    },
+    {
+      "variant": "middle",
+      "material": "PETG",
+      "mesh_mm": 10,
+      "element_count": 262,
+      "front_displacement_mm": {
+        "97": [
+          -0.009244438,
+          -0.1504875,
+          -1.565595e-12
+        ],
+        "226": [
+          0.009244438,
+          -0.1504875,
+          5.165747e-13
+        ]
+      },
+      "max_front_displacement_mm": 0.1507711752629986,
+      "relative_front_x_mm": 0.018488876,
+      "mean_front_y_mm": -0.1504875,
+      "beam_integration_point_peak_von_mises_mpa": 0.2672174536228075
+    },
+    {
+      "variant": "middle",
+      "material": "PETG-CF",
+      "mesh_mm": 10,
+      "element_count": 262,
+      "front_displacement_mm": {
+        "97": [
+          -0.007728779,
+          -0.1258815,
+          -4.997009e-13
+        ],
+        "226": [
+          0.007728779,
+          -0.1258815,
+          4.949449e-13
+        ]
+      },
+      "max_front_displacement_mm": 0.1261185397436905,
+      "relative_front_x_mm": 0.015457558,
+      "mean_front_y_mm": -0.1258815,
+      "beam_integration_point_peak_von_mises_mpa": 0.2759960072931706
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PLA",
+      "mesh_mm": 10,
+      "element_count": 248,
+      "front_displacement_mm": {
+        "97": [
+          -0.005620115,
+          -0.1950374,
+          -0.006296161
+        ],
+        "228": [
+          0.005620115,
+          -0.1950374,
+          0.006296161
+        ]
+      },
+      "max_front_displacement_mm": 0.1952199137760058,
+      "relative_front_x_mm": 0.01124023,
+      "mean_front_y_mm": -0.1950374,
+      "beam_integration_point_peak_von_mises_mpa": 0.28595495167793117
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PETG",
+      "mesh_mm": 10,
+      "element_count": 248,
+      "front_displacement_mm": {
+        "97": [
+          -0.008597981,
+          -0.2984443,
+          -0.009732684
+        ],
+        "228": [
+          0.008597981,
+          -0.2984443,
+          0.009732684
+        ]
+      },
+      "max_front_displacement_mm": 0.2987267156074431,
+      "relative_front_x_mm": 0.017195962,
+      "mean_front_y_mm": -0.2984443,
+      "beam_integration_point_peak_von_mises_mpa": 0.2873165442104753
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PETG-CF",
+      "mesh_mm": 10,
+      "element_count": 248,
+      "front_displacement_mm": {
+        "97": [
+          -0.007181258,
+          -0.2492144,
+          -0.008045095
+        ],
+        "228": [
+          0.007181258,
+          -0.2492144,
+          0.008045095
+        ]
+      },
+      "max_front_displacement_mm": 0.24944761211000116,
+      "relative_front_x_mm": 0.014362516,
+      "mean_front_y_mm": -0.2492144,
+      "beam_integration_point_peak_von_mises_mpa": 0.28595495167793117
+    },
+    {
+      "variant": "none",
+      "material": "PLA",
+      "mesh_mm": 5,
+      "element_count": 336,
+      "front_displacement_mm": {
+        "187": [
+          -0.00442257,
+          -0.4083979,
+          -4.166625e-12
+        ],
+        "436": [
+          0.00442257,
+          -0.4083979,
+          -4.009364e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.40842184546105625,
+      "relative_front_x_mm": 0.00884514,
+      "mean_front_y_mm": -0.4083979,
+      "beam_integration_point_peak_von_mises_mpa": 0.302337110202761
+    },
+    {
+      "variant": "none",
+      "material": "PETG",
+      "mesh_mm": 5,
+      "element_count": 336,
+      "front_displacement_mm": {
+        "187": [
+          -0.006759142,
+          -0.6256362,
+          -2.679365e-12
+        ],
+        "436": [
+          0.006759142,
+          -0.6256362,
+          -4.479499e-13
+        ]
+      },
+      "max_front_displacement_mm": 0.6256727105692049,
+      "relative_front_x_mm": 0.013518284,
+      "mean_front_y_mm": -0.6256362,
+      "beam_integration_point_peak_von_mises_mpa": 0.2908756005067015
+    },
+    {
+      "variant": "none",
+      "material": "PETG-CF",
+      "mesh_mm": 5,
+      "element_count": 336,
+      "front_displacement_mm": {
+        "187": [
+          -0.005651061,
+          -0.5218418,
+          -2.525684e-12
+        ],
+        "436": [
+          0.005651061,
+          -0.5218418,
+          2.488658e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.5218723969685173,
+      "relative_front_x_mm": 0.011302122,
+      "mean_front_y_mm": -0.5218418,
+      "beam_integration_point_peak_von_mises_mpa": 0.302337110202761
+    },
+    {
+      "variant": "middle",
+      "material": "PLA",
+      "mesh_mm": 5,
+      "element_count": 514,
+      "front_displacement_mm": {
+        "189": [
+          -0.006068414,
+          -0.09884234,
+          -7.083655e-13
+        ],
+        "440": [
+          0.006068414,
+          -0.09884234,
+          -1.458415e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.0990284495746096,
+      "relative_front_x_mm": 0.012136828,
+      "mean_front_y_mm": -0.09884234,
+      "beam_integration_point_peak_von_mises_mpa": 0.3023370314509952
+    },
+    {
+      "variant": "middle",
+      "material": "PETG",
+      "mesh_mm": 5,
+      "element_count": 514,
+      "front_displacement_mm": {
+        "189": [
+          -0.00927265,
+          -0.1510638,
+          -2.471938e-12
+        ],
+        "440": [
+          0.00927265,
+          -0.1510638,
+          -2.590177e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.15134812092808586,
+      "relative_front_x_mm": 0.0185453,
+      "mean_front_y_mm": -0.1510638,
+      "beam_integration_point_peak_von_mises_mpa": 0.2908755052697669
+    },
+    {
+      "variant": "middle",
+      "material": "PETG-CF",
+      "mesh_mm": 5,
+      "element_count": 514,
+      "front_displacement_mm": {
+        "189": [
+          -0.007754084,
+          -0.1262985,
+          -2.613788e-12
+        ],
+        "440": [
+          0.007754084,
+          -0.1262985,
+          -1.320431e-12
+        ]
+      },
+      "max_front_displacement_mm": 0.12653630673023872,
+      "relative_front_x_mm": 0.015508168,
+      "mean_front_y_mm": -0.1262985,
+      "beam_integration_point_peak_von_mises_mpa": 0.3023370314509952
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PLA",
+      "mesh_mm": 5,
+      "element_count": 488,
+      "front_displacement_mm": {
+        "189": [
+          -0.005628092,
+          -0.1956534,
+          -0.006290056
+        ],
+        "444": [
+          0.005628092,
+          -0.1956534,
+          0.006290056
+        ]
+      },
+      "max_front_displacement_mm": 0.1958353725852498,
+      "relative_front_x_mm": 0.011256184,
+      "mean_front_y_mm": -0.1956534,
+      "beam_integration_point_peak_von_mises_mpa": 0.28480391307617375
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PETG",
+      "mesh_mm": 5,
+      "element_count": 488,
+      "front_displacement_mm": {
+        "189": [
+          -0.00860814,
+          -0.2995288,
+          -0.00972225
+        ],
+        "444": [
+          0.00860814,
+          -0.2995288,
+          0.00972225
+        ]
+      },
+      "max_front_displacement_mm": 0.29981014700767233,
+      "relative_front_x_mm": 0.01721628,
+      "mean_front_y_mm": -0.2995288,
+      "beam_integration_point_peak_von_mises_mpa": 0.28530953980817986
+    },
+    {
+      "variant": "ramp_back",
+      "material": "PETG-CF",
+      "mesh_mm": 5,
+      "element_count": 488,
+      "front_displacement_mm": {
+        "189": [
+          -0.007191452,
+          -0.2500016,
+          -0.008037294
+        ],
+        "444": [
+          0.007191452,
+          -0.2500016,
+          0.008037294
+        ]
+      },
+      "max_front_displacement_mm": 0.25023412053369287,
+      "relative_front_x_mm": 0.014382904,
+      "mean_front_y_mm": -0.2500016,
+      "beam_integration_point_peak_von_mises_mpa": 0.28480391307617375
+    }
+  ],
+  "limitations": [
+    "Ideal rigid joints, no sleeve clearance, slip, bolt preload or glue compliance",
+    "Centreline beam model, not exact CAD; W, local roofs, Gamma plates and PCB omitted",
+    "T rib ends idealized at member centreline; brace vertical offset included",
+    "Isotropic provisional material profiles, no layer separation or fatigue",
+    "Reference force is prescribed, not measured wheel load; stress peaks are not hole/notch allowables"
+  ]
+}

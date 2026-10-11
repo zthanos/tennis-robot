@@ -1,0 +1,577 @@
+{
+  "schema_version": 1,
+  "status": "CAD_MEASURED_FRAME_STIFFNESS_NOT_VALIDATED",
+  "geometry": {
+    "wheelbase_mm": 365,
+    "rail_section_mm": [
+      50,
+      30
+    ],
+    "middle_crossbar_x_mm": 117.5,
+    "middle_crossbar_between_sockets_mm": 270,
+    "middle_half_length_mm": 135,
+    "sleeves_required_total": 8,
+    "sleeves_added": 3,
+    "sleeve_gap_inside_half_mm": 15,
+    "ground_clearance_structure_mm": 22,
+    "metal_foot_to_gamma_gap_mm": 10,
+    "wheel_inner_face_to_rail_outer_face_mm": 65,
+    "frame_length_mm": 645,
+    "wheel_track_mm": 700
+  },
+  "parts": [
+    {
+      "part": "motor_left",
+      "quantity": 1,
+      "triangle_count": 3762,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        100.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        200.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 144.46497628133426,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "motor_right",
+      "quantity": 1,
+      "triangle_count": 3762,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        100.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        200.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 144.46497628133426,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "front_motor_gamma_left",
+      "quantity": 1,
+      "triangle_count": 5146,
+      "bounds_min_mm": [
+        0.0,
+        -45.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        255.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        255.0,
+        70.0,
+        30.0
+      ],
+      "solid_volume_cm3": 191.11004048063702,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "front_motor_gamma_right",
+      "quantity": 1,
+      "triangle_count": 5126,
+      "bounds_min_mm": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        255.0,
+        45.0,
+        30.0
+      ],
+      "envelope_mm": [
+        255.0,
+        70.0,
+        30.0
+      ],
+      "solid_volume_cm3": 191.1100404806378,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rail_extension_left",
+      "quantity": 1,
+      "triangle_count": 1378,
+      "bounds_min_mm": [
+        0.0,
+        -85.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        165.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        165.0,
+        110.0,
+        30.0
+      ],
+      "solid_volume_cm3": 139.0532205531302,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rail_extension_right",
+      "quantity": 1,
+      "triangle_count": 1378,
+      "bounds_min_mm": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        165.0,
+        85.0,
+        30.0
+      ],
+      "envelope_mm": [
+        165.0,
+        110.0,
+        30.0
+      ],
+      "solid_volume_cm3": 139.0532205531302,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "corner_left",
+      "quantity": 1,
+      "triangle_count": 38,
+      "bounds_min_mm": [
+        -21.5,
+        -60.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        23.0
+      ],
+      "envelope_mm": [
+        81.5,
+        81.5,
+        23.0
+      ],
+      "solid_volume_cm3": 118.68,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "corner_right",
+      "quantity": 1,
+      "triangle_count": 38,
+      "bounds_min_mm": [
+        -21.5,
+        -21.5,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        60.0,
+        23.0
+      ],
+      "envelope_mm": [
+        81.5,
+        81.5,
+        23.0
+      ],
+      "solid_volume_cm3": 118.68,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "crossbar_half",
+      "quantity": 2,
+      "triangle_count": 1600,
+      "bounds_min_mm": [
+        -25.0,
+        -110.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        110.0,
+        30.0
+      ],
+      "envelope_mm": [
+        50.0,
+        220.0,
+        30.0
+      ],
+      "solid_volume_cm3": 103.39703560467498,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "middle_crossbar_half",
+      "quantity": 2,
+      "triangle_count": 816,
+      "bounds_min_mm": [
+        -25.0,
+        -67.5,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        67.5,
+        30.0
+      ],
+      "envelope_mm": [
+        50.0,
+        135.0,
+        30.0
+      ],
+      "solid_volume_cm3": 63.474517802337544,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "straight_sleeve",
+      "quantity": 8,
+      "triangle_count": 1968,
+      "bounds_min_mm": [
+        -60.0,
+        -21.5,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        23.0
+      ],
+      "envelope_mm": [
+        120.0,
+        43.0,
+        23.0
+      ],
+      "solid_volume_cm3": 53.35332511623618,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "ramp_cradle_left",
+      "quantity": 1,
+      "triangle_count": 70,
+      "bounds_min_mm": [
+        0.0,
+        -4.5,
+        0.0
+      ],
+      "bounds_max_mm": [
+        10.0,
+        101.0,
+        22.0
+      ],
+      "envelope_mm": [
+        10.0,
+        105.5,
+        22.0
+      ],
+      "solid_volume_cm3": 14.976875000000001,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "ramp_cradle_right",
+      "quantity": 1,
+      "triangle_count": 70,
+      "bounds_min_mm": [
+        0.0,
+        -101.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        10.0,
+        4.5,
+        22.0
+      ],
+      "envelope_mm": [
+        10.0,
+        105.5,
+        22.0
+      ],
+      "solid_volume_cm3": 14.976875000000001,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "electronics_tray_left",
+      "quantity": 1,
+      "triangle_count": 86,
+      "bounds_min_mm": [
+        -25.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        245.0,
+        190.0
+      ],
+      "envelope_mm": [
+        50.0,
+        245.0,
+        190.0
+      ],
+      "solid_volume_cm3": 159.42537142857142,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "electronics_tray_right",
+      "quantity": 1,
+      "triangle_count": 86,
+      "bounds_min_mm": [
+        -25.0,
+        -245.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        0.0,
+        190.0
+      ],
+      "envelope_mm": [
+        50.0,
+        245.0,
+        190.0
+      ],
+      "solid_volume_cm3": 159.42537142857142,
+      "nonmanifold_edge_count": 0
+    }
+  ],
+  "total_solid_volume_cm3": 2295.990675231261,
+  "additional_solid_volume_cm3_vs_2a5fedc": 409.90401645496917,
+  "solid_mass_estimates_g": {
+    "PLA": {
+      "complete_design": 2847.0284372867636,
+      "middle_reinforcement_added": 508.28098040416177
+    },
+    "PETG": {
+      "complete_design": 2915.9081575437012,
+      "middle_reinforcement_added": 520.5781008978108
+    },
+    "PETG-CF": {
+      "complete_design": 2915.9081575437012,
+      "middle_reinforcement_added": 520.5781008978108
+    }
+  },
+  "rail_only_screen": [
+    {
+      "material": "PLA",
+      "base_mass_kg": 10,
+      "payload_kg": 0,
+      "rail_deflection_mm": 0.6671761072017812,
+      "stress_mpa": {
+        "rail_vertical_bending": 2.073266341764214,
+        "rail_axial": 0.18737230383831519,
+        "rail_torsion_shear": 0.20341093323945175,
+        "rail_von_mises_screen": 2.2879281258981177,
+        "drive_node_bearing": 1.7862112499999998,
+        "drive_node_net_section": 0.2551730357142857,
+        "splice_bearing": 4.903325
+      },
+      "safety_factors": {
+        "rail_combined": 13.112300015204198,
+        "drive_node_bearing": 16.795325860812937,
+        "drive_node_net_section": 117.56728102569058,
+        "splice_bearing": 6.118297277867569,
+        "rail_wall_shear": 83.57466203642014
+      }
+    },
+    {
+      "material": "PETG",
+      "base_mass_kg": 10,
+      "payload_kg": 0,
+      "rail_deflection_mm": 1.0230033643760645,
+      "stress_mpa": {
+        "rail_vertical_bending": 2.073266341764214,
+        "rail_axial": 0.18737230383831519,
+        "rail_torsion_shear": 0.20341093323945175,
+        "rail_von_mises_screen": 2.2879281258981177,
+        "drive_node_bearing": 1.7862112499999998,
+        "drive_node_net_section": 0.2551730357142857,
+        "splice_bearing": 4.903325
+      },
+      "safety_factors": {
+        "rail_combined": 11.363993346510306,
+        "drive_node_bearing": 14.555949079371214,
+        "drive_node_net_section": 101.8916435555985,
+        "splice_bearing": 5.302524307485227,
+        "rail_wall_shear": 73.74234885566483
+      }
+    },
+    {
+      "material": "PETG-CF",
+      "base_mass_kg": 10,
+      "payload_kg": 0,
+      "rail_deflection_mm": 0.8525028036467204,
+      "stress_mpa": {
+        "rail_vertical_bending": 2.073266341764214,
+        "rail_axial": 0.18737230383831519,
+        "rail_torsion_shear": 0.20341093323945175,
+        "rail_von_mises_screen": 2.2879281258981177,
+        "drive_node_bearing": 1.7862112499999998,
+        "drive_node_net_section": 0.2551730357142857,
+        "splice_bearing": 4.903325
+      },
+      "safety_factors": {
+        "rail_combined": 12.238146680857252,
+        "drive_node_bearing": 15.675637470092076,
+        "drive_node_net_section": 109.72946229064453,
+        "splice_bearing": 5.710410792676398,
+        "rail_wall_shear": 68.82619226528718
+      }
+    },
+    {
+      "material": "PLA",
+      "base_mass_kg": 10,
+      "payload_kg": 5,
+      "rail_deflection_mm": 1.0007641608026718,
+      "stress_mpa": {
+        "rail_vertical_bending": 3.109899512646322,
+        "rail_axial": 0.28105845575747285,
+        "rail_torsion_shear": 0.3051163998591777,
+        "rail_von_mises_screen": 3.431892188847176,
+        "drive_node_bearing": 2.679316875,
+        "drive_node_net_section": 0.38275955357142855,
+        "splice_bearing": 7.354987500000001
+      },
+      "safety_factors": {
+        "rail_combined": 8.741533343469467,
+        "drive_node_bearing": 11.196883907208624,
+        "drive_node_net_section": 78.37818735046038,
+        "splice_bearing": 4.078864851911712,
+        "rail_wall_shear": 55.71644135761341
+      }
+    },
+    {
+      "material": "PETG",
+      "base_mass_kg": 10,
+      "payload_kg": 5,
+      "rail_deflection_mm": 1.5345050465640968,
+      "stress_mpa": {
+        "rail_vertical_bending": 3.109899512646322,
+        "rail_axial": 0.28105845575747285,
+        "rail_torsion_shear": 0.3051163998591777,
+        "rail_von_mises_screen": 3.431892188847176,
+        "drive_node_bearing": 2.679316875,
+        "drive_node_net_section": 0.38275955357142855,
+        "splice_bearing": 7.354987500000001
+      },
+      "safety_factors": {
+        "rail_combined": 7.575995564340204,
+        "drive_node_bearing": 9.70396605291414,
+        "drive_node_net_section": 67.927762370399,
+        "splice_bearing": 3.535016204990151,
+        "rail_wall_shear": 49.16156590377654
+      }
+    },
+    {
+      "material": "PETG-CF",
+      "base_mass_kg": 10,
+      "payload_kg": 5,
+      "rail_deflection_mm": 1.2787542054700807,
+      "stress_mpa": {
+        "rail_vertical_bending": 3.109899512646322,
+        "rail_axial": 0.28105845575747285,
+        "rail_torsion_shear": 0.3051163998591777,
+        "rail_von_mises_screen": 3.431892188847176,
+        "drive_node_bearing": 2.679316875,
+        "drive_node_net_section": 0.38275955357142855,
+        "splice_bearing": 7.354987500000001
+      },
+      "safety_factors": {
+        "rail_combined": 8.158764453904835,
+        "drive_node_bearing": 10.450424980061383,
+        "drive_node_net_section": 73.15297486042968,
+        "splice_bearing": 3.8069405284509314,
+        "rail_wall_shear": 45.884128176858106
+      }
+    },
+    {
+      "material": "PLA",
+      "base_mass_kg": 10,
+      "payload_kg": 10,
+      "rail_deflection_mm": 1.3343522144035624,
+      "stress_mpa": {
+        "rail_vertical_bending": 4.146532683528428,
+        "rail_axial": 0.3726422634271099,
+        "rail_torsion_shear": 0.4045395664963267,
+        "rail_von_mises_screen": 4.573171654746157,
+        "drive_node_bearing": 3.552380952380951,
+        "drive_node_net_section": 0.5074829931972787,
+        "splice_bearing": 9.751633986928104
+      },
+      "safety_factors": {
+        "rail_combined": 6.559998675944127,
+        "drive_node_bearing": 8.445040214477215,
+        "drive_node_net_section": 59.115281501340505,
+        "splice_bearing": 3.076407506702413,
+        "rail_wall_shear": 42.02308354467069
+      }
+    },
+    {
+      "material": "PETG",
+      "base_mass_kg": 10,
+      "payload_kg": 10,
+      "rail_deflection_mm": 2.046006728752129,
+      "stress_mpa": {
+        "rail_vertical_bending": 4.146532683528428,
+        "rail_axial": 0.3726422634271099,
+        "rail_torsion_shear": 0.4045395664963267,
+        "rail_von_mises_screen": 4.573171654746157,
+        "drive_node_bearing": 3.552380952380951,
+        "drive_node_net_section": 0.5074829931972787,
+        "splice_bearing": 9.751633986928104
+      },
+      "safety_factors": {
+        "rail_combined": 5.685332185818242,
+        "drive_node_bearing": 7.3190348525469195,
+        "drive_node_net_section": 51.233243967828436,
+        "splice_bearing": 2.6662198391420913,
+        "rail_wall_shear": 37.07919136294473
+      }
+    },
+    {
+      "material": "PETG-CF",
+      "base_mass_kg": 10,
+      "payload_kg": 10,
+      "rail_deflection_mm": 1.7050056072934408,
+      "stress_mpa": {
+        "rail_vertical_bending": 4.146532683528428,
+        "rail_axial": 0.3726422634271099,
+        "rail_torsion_shear": 0.4045395664963267,
+        "rail_von_mises_screen": 4.573171654746157,
+        "drive_node_bearing": 3.552380952380951,
+        "drive_node_net_section": 0.5074829931972787,
+        "splice_bearing": 9.751633986928104
+      },
+      "safety_factors": {
+        "rail_combined": 6.1226654308811845,
+        "drive_node_bearing": 7.882037533512067,
+        "drive_node_net_section": 55.174262734584474,
+        "splice_bearing": 2.8713136729222524,
+        "rail_wall_shear": 34.60724527208174
+      }
+    }
+  ],
+  "limitations": [
+    "Mass uses fully dense CAD solids; slicer infill, supports and brim are excluded.",
+    "Material densities/moduli/allowables are provisional project profiles, not measured coupons.",
+    "Rail screen assumes 10 kg base, equally shared wheel loads, centred payload and factor 2.",
+    "The 1-D screen excludes the T ribs, frame racking, joints, screw preload and layer anisotropy.",
+    "DART rejected the second middle-crossbar weld; its captured structural loads are invalid."
+  ]
+}

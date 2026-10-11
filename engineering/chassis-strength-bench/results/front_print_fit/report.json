@@ -1,0 +1,740 @@
+{
+  "status": "CAD_FIT_CHECKED_PHYSICAL_FRONT_SLEEVE_COUPON_REQUIRED",
+  "cad_sha256": "e7fc232a04f03a566b493cde20af76fecf72b681c0c2d50ad4de9402a152b05f",
+  "intersections": [
+    {
+      "check": "qa_front_sleeves",
+      "empty": true
+    },
+    {
+      "check": "qa_front_lock_bores",
+      "empty": true
+    },
+    {
+      "check": "qa_gamma_holes",
+      "empty": true
+    },
+    {
+      "check": "front_brace_wheel_interference",
+      "empty": true
+    },
+    {
+      "check": "front_brace_ramp_interference",
+      "empty": true
+    }
+  ],
+  "stls": [
+    {
+      "part": "corner_left",
+      "sha256": "ce10d85eb1fd44ea38eab940c7e6c99b5f1da30c5a0649f11d5d5712bce4e998",
+      "triangle_count": 38,
+      "bounds_min_mm": [
+        -21.5,
+        -60.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        23.0
+      ],
+      "envelope_mm": [
+        81.5,
+        81.5,
+        23.0
+      ],
+      "solid_volume_cm3": 118.68,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        118.67999999999999
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -21.5,
+            -60.0,
+            0.0
+          ],
+          [
+            60.0,
+            21.5,
+            23.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "corner_right",
+      "sha256": "b3803d5e65f5072ff1538e8d463c048082f4873c12bb7c880c0ba14e968a6161",
+      "triangle_count": 38,
+      "bounds_min_mm": [
+        -21.5,
+        -21.5,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        60.0,
+        23.0
+      ],
+      "envelope_mm": [
+        81.5,
+        81.5,
+        23.0
+      ],
+      "solid_volume_cm3": 118.68,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        118.67999999999999
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -21.5,
+            -21.5,
+            0.0
+          ],
+          [
+            60.0,
+            60.0,
+            23.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "crossbar_half",
+      "sha256": "5c4a2bd1e3a1c8795d0af546f0d6db2ac715588f4fec36f3af2b1111ce8c4e90",
+      "triangle_count": 1600,
+      "bounds_min_mm": [
+        -25.0,
+        -110.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        110.0,
+        30.0
+      ],
+      "envelope_mm": [
+        50.0,
+        220.0,
+        30.0
+      ],
+      "solid_volume_cm3": 103.39703560467498,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        103.39703560467471
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -25.0,
+            -110.0,
+            0.0
+          ],
+          [
+            25.0,
+            110.0,
+            30.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "electronics_tray_left",
+      "sha256": "147cb78207503698aa7756bd17937cb0f8415d5d98b22d224ceffec542a55ce5",
+      "triangle_count": 86,
+      "bounds_min_mm": [
+        -25.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        245.0,
+        190.0
+      ],
+      "envelope_mm": [
+        50.0,
+        245.0,
+        190.0
+      ],
+      "solid_volume_cm3": 159.42537142857142,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        159.42537142857137
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -25.0,
+            0.0,
+            0.0
+          ],
+          [
+            25.0,
+            245.0,
+            190.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "electronics_tray_right",
+      "sha256": "328a95868b63d097a8aa7695b6560fdf04a338cf7bd4ff20305189a058ab667f",
+      "triangle_count": 86,
+      "bounds_min_mm": [
+        -25.0,
+        -245.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        0.0,
+        190.0
+      ],
+      "envelope_mm": [
+        50.0,
+        245.0,
+        190.0
+      ],
+      "solid_volume_cm3": 159.42537142857142,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        159.42537142857137
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -25.0,
+            -245.0,
+            0.0
+          ],
+          [
+            25.0,
+            0.0,
+            190.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "front_connection_coupon",
+      "sha256": "db29a4591ca0ea6f641ae05f9e454625c52d2eae1313714d9a9566c79e928eeb",
+      "triangle_count": 496,
+      "bounds_min_mm": [
+        -26.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        26.0,
+        32.0,
+        20.0
+      ],
+      "envelope_mm": [
+        52.0,
+        32.0,
+        20.0
+      ],
+      "solid_volume_cm3": 13.696227790057625,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        13.696227790057623
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -26.0,
+            0.0,
+            0.0
+          ],
+          [
+            26.0,
+            32.0,
+            20.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "front_motor_gamma_left",
+      "sha256": "4f6495bda44f1aab0d16f1a9cc9a2062bcf4c2b8fcc301bbdbabda7e3e8d5c1d",
+      "triangle_count": 5828,
+      "bounds_min_mm": [
+        0.0,
+        -60.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        255.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        255.0,
+        85.0,
+        30.0
+      ],
+      "solid_volume_cm3": 209.9907216040287,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 2,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        210.51430678999196,
+        -0.5235851859642647
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            0.0,
+            -60.0,
+            0.0
+          ],
+          [
+            255.0,
+            25.0,
+            30.0
+          ]
+        ],
+        [
+          [
+            88.360234,
+            -21.8,
+            6.348624
+          ],
+          [
+            111.639766,
+            -15.856497,
+            16.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "front_motor_gamma_right",
+      "sha256": "ceb716f346b3b6e3706dc52aa659bb5a0f494859d37de773049c952b32ae3274",
+      "triangle_count": 5838,
+      "bounds_min_mm": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        255.0,
+        60.0,
+        30.0
+      ],
+      "envelope_mm": [
+        255.0,
+        85.0,
+        30.0
+      ],
+      "solid_volume_cm3": 209.9907216040293,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 2,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        210.51430678999225,
+        -0.523585185964262
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            0.0,
+            -25.0,
+            0.0
+          ],
+          [
+            255.0,
+            60.0,
+            30.0
+          ]
+        ],
+        [
+          [
+            88.360234,
+            15.856497,
+            6.348624
+          ],
+          [
+            111.639766,
+            21.8,
+            16.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "motor_left",
+      "sha256": "bfbe2f7249f5c586b6ef9318161ec15cb9d56beaf62136425f08da27aa8a475d",
+      "triangle_count": 3762,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        100.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        200.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 144.46497628133426,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 2,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        144.98856146730307,
+        -0.5235851859642582
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -100.0,
+            -25.0,
+            0.0
+          ],
+          [
+            100.0,
+            25.0,
+            30.0
+          ]
+        ],
+        [
+          [
+            -11.639766,
+            -21.8,
+            6.348624
+          ],
+          [
+            11.639766,
+            -15.856497,
+            16.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "motor_right",
+      "sha256": "b7c28b7038c4413c4a31f04997d18d703002d185ee4ed851d6392034c2c5d68b",
+      "triangle_count": 3762,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        100.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        200.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 144.46497628133426,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 2,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        144.98856146730307,
+        -0.5235851859642582
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -100.0,
+            -25.0,
+            0.0
+          ],
+          [
+            100.0,
+            25.0,
+            30.0
+          ]
+        ],
+        [
+          [
+            -11.639766,
+            15.856497,
+            6.348624
+          ],
+          [
+            11.639766,
+            21.8,
+            16.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "rail_extension_left",
+      "sha256": "d84e63eefc35675458f2629f806b4edd36ef7ace7f3853410cd5a7a54c9b41f5",
+      "triangle_count": 816,
+      "bounds_min_mm": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        165.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        165.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 77.60571780233741,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        77.60571780233771
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            0.0,
+            -25.0,
+            0.0
+          ],
+          [
+            165.0,
+            25.0,
+            30.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "rail_extension_right",
+      "sha256": "d84e63eefc35675458f2629f806b4edd36ef7ace7f3853410cd5a7a54c9b41f5",
+      "triangle_count": 816,
+      "bounds_min_mm": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        165.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        165.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 77.60571780233741,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        77.60571780233771
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            0.0,
+            -25.0,
+            0.0
+          ],
+          [
+            165.0,
+            25.0,
+            30.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "ramp_back_half",
+      "sha256": "16100c3ea845921bce33953d9d45e229e24c949924770dbf626990d634f3c7e6",
+      "triangle_count": 816,
+      "bounds_min_mm": [
+        -25.0,
+        -80.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        80.0,
+        20.0
+      ],
+      "envelope_mm": [
+        50.0,
+        160.0,
+        20.0
+      ],
+      "solid_volume_cm3": 65.01051780233755,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        65.01051780233757
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -25.0,
+            -80.0,
+            0.0
+          ],
+          [
+            25.0,
+            80.0,
+            20.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "ramp_back_sleeve",
+      "sha256": "36386f9151822e829b1504fc15b22b68fa32cc34b426f421e4817854d83ca544",
+      "triangle_count": 2820,
+      "bounds_min_mm": [
+        -21.5,
+        -30.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        21.5,
+        30.0,
+        13.0
+      ],
+      "envelope_mm": [
+        43.0,
+        60.0,
+        13.0
+      ],
+      "solid_volume_cm3": 17.024487654667624,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        17.024487654667492
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -21.5,
+            -30.0,
+            0.0
+          ],
+          [
+            21.5,
+            30.0,
+            13.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    },
+    {
+      "part": "straight_sleeve",
+      "sha256": "1b0dd11ac29537b53a46b602bb071ca5c51eebcc909e0e8b577caca8c515a1b8",
+      "triangle_count": 2428,
+      "bounds_min_mm": [
+        -60.0,
+        -21.5,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        23.0
+      ],
+      "envelope_mm": [
+        120.0,
+        43.0,
+        23.0
+      ],
+      "solid_volume_cm3": 53.094122906045065,
+      "nonmanifold_edge_count": 0,
+      "connected_components": 1,
+      "positive_volume_shells": 1,
+      "shell_signed_volume_cm3": [
+        53.09412290604493
+      ],
+      "component_bounds_mm": [
+        [
+          [
+            -60.0,
+            -21.5,
+            0.0
+          ],
+          [
+            60.0,
+            21.5,
+            23.0
+          ]
+        ]
+      ],
+      "degenerate_triangles": 0
+    }
+  ],
+  "nominal_fit": {
+    "main_socket_mm": [
+      43.6,
+      23.6
+    ],
+    "main_sleeve_mm": [
+      43,
+      23
+    ],
+    "front_socket_mm": [
+      43.6,
+      13.6
+    ],
+    "front_sleeve_mm": [
+      43,
+      13
+    ],
+    "clearance_per_face_mm": 0.3,
+    "main_insertion_mm": 60,
+    "front_insertion_mm": 30,
+    "motor_nut_access_vertical_gap_mm": 2.3
+  },
+  "limits": [
+    "No physical sleeve-fit, torque or strength test",
+    "Rear corner sleeves have no locking holes: full chassis is NOT print-released",
+    "Electronics board mounting holes remain a layout placeholder",
+    "255 mm front part leaves only 1 mm on a nominal 256 mm bed; brim and machine exclusion zones need slicer check",
+    "Gamma hole test covers a 1 mm slice above the mating plane, not the full upright",
+    "Wheel checks use specified envelopes, not measured wheel/motor geometry"
+  ]
+}
