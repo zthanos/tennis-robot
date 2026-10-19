@@ -1,4 +1,4 @@
-# Rear pod — ενεργό v2 / P2-81
+# Rear pod — ενεργό v2 / P2-83
 
 Η μοναδική ενεργή print release είναι:
 
@@ -7,9 +7,10 @@
 - πλήρεις οδηγίες/βίδες στο `stl-v2/README.md`,
 - συνολικό manifest στο `../ACTIVE-PRINT-SET.md`.
 
-Το P2-81 πρόσθεσε το κάτω rib grid του control panel και επίπεδους Ø23
-ώμους posts στο Z347. Το P2-79 παραμένει η ενεργή βάση/στήριξη με full-width
-saddle, corner ties και διαμπερείς M4. Τα `stl-v2/mpu6050_mount.stl` και
+Το P2-83 αντικατέστησε το σπασμένο corner tie με μονοκόμματη εσωτερική
+L-γωνία κάτω από τη βάση, με flush φρεζάτη M4 και την υπάρχουσα πλευρική
+M4 του corner clamp. Το P2-81 παραμένει ενεργό για το ribbed control panel
+και τους επίπεδους Ø23 ώμους posts. Τα `stl-v2/mpu6050_mount.stl` και
 `chassis_spacers.stl` δεν είναι ενεργά και έχουν μεταφερθεί στο `archive/`.
 
 Το P2-80 είναι μόνο μελλοντικό concept για πλήρως τυπωμένο stackable PETG

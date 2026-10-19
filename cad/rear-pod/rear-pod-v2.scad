@@ -86,31 +86,39 @@ module base_half_v2(side=1) {
         // below the base, clear of the rear-only stiffening ribs.
         for (x=[panel_center_x-58,panel_center_x+58])
             translate([x,side*54,-20]) cylinder(d=m4_clear,h=40);
-        for (x=[-245,-210,-175,-140])
+        for (x=[-245,-210,-175])
             translate([x,side*145,-20]) linear_extrude(height=40)
-                capsule_2d(14,x==-140?m4_clear:4,true);
+                capsule_2d(14,4,true);
+        // P2-83: round through-hole plus a 90-degree countersink.  In the
+        // Parkside band the local top is Z2.5/global Z57.5, so an M4 flat
+        // head finishes flush and remains 0.5 mm below the drawer sweep.
+        translate([-134,side*145,-20]) cylinder(d=m4_clear,h=22.6);
+        translate([-134,side*145,0.20])
+            cylinder(h=2.35,d1=m4_clear,d2=9.2);
     }
 }
 
-// Reuses the X-135 outer-side M4 of each rear corner clamp.  One vertical M4
-// through the existing X-140/Y+/-145 base slot closes the second attachment
-// line; the same STL is flipped for the opposite side.
+// P2-83: one-piece inside L tie.  It reuses the X-135/Z37 side M4 of each
+// rear corner clamp at the rail inner face Y+/-195.  The horizontal flange
+// bears on the base underside at Z51 and never crosses over the rail.
 module corner_tie() {
     difference() {
         union() {
-            translate([7.5,0,11]) cube([15,30,6],center=true);
-            // Run above the chassis top (global Z52) and turn down only
-            // outside the rail face, avoiding the former diagonal intrusion.
-            translate([7.5,50,17.6]) cube([15,100,5],center=true);
-            translate([7.5,103.1,0]) cube([15,5.8,24],center=true);
+            // Continuous underside flange/bridge: global Z45..51.
+            // X-139.5..-126.5 clears both the rear crossbar (to X-140) and
+            // the corner-clamp arm; the base fastener moves to X-134.
+            translate([7,20.5,19]) cube([13,57,6],center=true);
+            // Inner-face leg: global Y189..194, Z29..51.  A standard 1 mm
+            // M4 washer closes the tolerance gap to the rail face at Y195.
+            translate([7,46.5,11]) cube([13,5,22],center=true);
         }
-        translate([0,0,-2]) cylinder(d=m4_clear,h=24);
-        translate([5,97,0]) rotate([-90,0,0]) cylinder(d=m4_clear,h=16);
+        translate([6,0,14]) cylinder(d=m4_clear,h=10);
+        translate([5,40,8]) rotate([-90,0,0]) cylinder(d=m4_clear,h=14);
     }
 }
 
 module corner_tie_installed(side=1) {
-    translate([-140,side*145,corner_side_bolt_z])
+    translate([-140,side*145,29])
         if (side>0) corner_tie(); else mirror([0,1,0]) corner_tie();
 }
 

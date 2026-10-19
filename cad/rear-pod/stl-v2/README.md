@@ -1,3 +1,37 @@
+# τι διαφέρει από το αναμενόμενο — P2-83 μονοκόμματο corner tie
+
+![P2-83 εσωτερικό corner tie, βάση, frame και fasteners](../p283-corner-tie-detail.png)
+
+Το `corner_tie.stl` του P2-79 ήταν τρία ασύνδετα σώματα και η εγκατεστημένη
+επάνω διαδρομή του έτεμνε τη βάση. Επιπλέον, η κατακόρυφη M4 στο
+`X−140/Y±145` άφηνε κεφαλή μέσα στο Parkside reservation.
+
+Το P2-83 το αντικαθιστά με ένα μονοκόμματο L κάτω από τη βάση:
+
+- flange/bridge `Z45…51`, χωρίς πέρασμα πάνω από τη ράγα,
+- κατακόρυφο σκέλος `Z29…51` στην εσωτερική πλευρά της ράγας,
+- υπάρχουσα πλευρική M4 `X−135/Z37`, χωρίς νέα οπή στο σασί,
+- 1 mm M4 washer shim ανάμεσα στο tie και την παρειά `Y±195`, ώστε το
+  τυπωμένο part να έχει πραγματικό tolerance gap,
+- νέα φρεζάτη M4 βάσης στο `X−134/Y±145`, flush στο τοπικό `Z57,5`, με
+  0,5 mm clearance μέχρι το Parkside drawer sweep.
+
+Βίδες P2-83: 2×M4×20 90° countersunk με ροδέλα/nyloc για βάση→tie και
+2×M4×65 με κεφαλή/ροδέλα εσωτερικά, 1 mm washer shim στην παρειά και nyloc
+εξωτερικά για tie→corner clamp. Επιβεβαίωσε το πραγματικό stack-up πριν την
+τελική σύσφιξη.
+
+Exact-solid empty/PASS: tie–base, tie–πλήρες `frame_assembly` μαζί με rear
+FIT0403/motor/cable/wheel envelopes, tie/κεφαλές βιδών–πλήρες Parkside
+drawer sweep και ζώνη ground `Z<15`. Το χαμηλότερο
+σημείο του tie είναι CAD `Z29`, δηλαδή περίπου physical `Z27` με το σασί
+2 mm χαμηλότερα. Επανεξήχθησαν μόνο `base_left.stl`, `base_right.stl` και
+`corner_tie.stl`· καθένα είναι ακριβώς ένα σώμα.
+
+Τα τέσσερα ενεργά export scripts εκτελούν πλέον μόνιμο STL body-count gate.
+Τα σκόπιμα print plates δηλώνουν 4 posts, 27 pins, 32 clips, 18 BTS spacers
+και 2 coupon pieces· κάθε άλλο ενεργό STL απαιτεί ακριβώς ένα σώμα.
+
 # τι διαφέρει από το αναμενόμενο — P2-81 control panel + κορυφή posts
 
 ![P2-81 panel ribs και επίπεδοι ώμοι](../p281-panel-posts-exploded.png)
@@ -49,8 +83,7 @@ electronics, Parkside, Ugreen, Pi, controls και το παγωμένο envelop
   τραβέρσας και 6,5 mm κάτω από το Parkside sweep. Τέσσερις rear-only
   νευρώσεις ανά μισό κατεβαίνουν έως CAD Z43 / περίπου physical Z41.
 - Η σέλα πατά σε όλο το `X−190…−140` αντί για τέσσερις spacers 3 mm.
-- Δύο `corner_tie.stl` χρησιμοποιούν τις υπάρχουσες πλευρικές M4
-  `X−135/Z37`, περνώντας πάνω από το rail top και χωρίς νέα οπή σασί.
+- Η περιγραφή του P2-79 corner tie έχει αντικατασταθεί από το P2-83 παραπάνω.
 - Side frames, κάτω post clevises και panel retention είναι πλέον
   διαμπερή M4 με ροδέλα/nyloc. Δεν υπάρχει τυπωμένο σπείρωμα σε φέρον κόμβο.
 - Οι τέσσερις post διατομές έγιναν Ø23 και το θετικό detour πήγε στο Y90,
@@ -70,8 +103,7 @@ P2-80 εξετάζει top frame με κοντινότερα control rails.
 ### Βίδες P2-79 (υπερισχύει της παλιάς λίστας P2-76)
 
 - 4×M4×45, μεγάλες ροδέλες και nyloc: base saddle προς rear crossbar,
-- 2×M4×65, μεγάλες ροδέλες και nyloc: corner ties μαζί με τις υπάρχουσες
-  side M4 των corner clamps,
+- για τα corner ties ισχύει αποκλειστικά η λίστα P2-83 παραπάνω,
 - 4×M4×25 με ροδέλες/nyloc: side frames διαμπερώς προς τις βάσεις,
 - 4×M4×30 με ροδέλες/nyloc: κάτω clevis των panel posts,
 - 4×M4×20 με ροδέλες/nyloc: panel προς τα άνω post pegs,

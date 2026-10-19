@@ -4,6 +4,7 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 release_dir="$here/stl-v3"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
+component_check="$here/../check-stl-components.py"
 if [[ "${DRY_RUN:-0}" == "1" ]]; then
   out="$(mktemp -d "$here/.dry-run-v3.XXXXXX")"
   trap 'rm -rf "$out"' EXIT
@@ -35,6 +36,7 @@ for name in "${parts[@]}"; do
   "$openscad_bin" -q -D "part=\"$name\"" \
     -o "$out/$name.stl" "$here/modular-chassis-v3.scad"
   [[ -s "$out/$name.stl" ]] || { echo "Missing export: $name" >&2; exit 1; }
+  python3 "$component_check" "$out/$name.stl" 1
 done
 
 for view in top side; do

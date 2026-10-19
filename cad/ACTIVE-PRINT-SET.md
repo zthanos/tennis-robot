@@ -1,4 +1,4 @@
-# Ενεργό σύνολο εκτύπωσης — P2-82
+# Ενεργό σύνολο εκτύπωσης — P2-83
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
@@ -56,15 +56,15 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 γεωμετρία είναι ένα σώμα: κάθε boss επικαλύπτει κατά 0,5 mm το sidewall και
 αφήνει 0,5 mm προς το bracket.
 
-## Rear pod v2 — κατάσταση P2-81
+## Rear pod v2 — κατάσταση P2-83
 
 Κύριες πηγές: `rear-pod/rear-pod-v2.scad`, `rear-pod/params-v2.scad`.
 Ενεργός κατάλογος: `rear-pod/stl-v2/`.
 
 | Φυσικό κομμάτι | Ενεργό STL (ποσότητα) | P2 | Βίδες / σύνδεση | Κατάσταση |
 |---|---|---:|---|---|
-| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79 | 4×M4×45 προς rear crossbar, μεγάλες ροδέλες/nyloc | Προς εκτύπωση |
-| Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-79 | 2×M4×65 μαζί με τις side M4 των corner clamps | Προς εκτύπωση |
+| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83 | 4×M4×45 προς rear crossbar· 2×M4×20 90° countersunk προς ties, ροδέλες/nyloc | Προς εκτύπωση |
+| Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83 | 2×M4×65 στις υπάρχουσες side M4 `X−135/Z37`, 1 mm M4 washer shim στην παρειά `Y±195`· 2×M4×20 countersunk προς βάση | Προς εκτύπωση |
 | Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | Προς εκτύπωση |
 | Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | Προς εκτύπωση |
 | Side frames | `stl-v2/side_frame.stl` ×2 | P2-79 | 4×M4×25 διαμπερώς, ροδέλες/nyloc | Προς εκτύπωση |
@@ -78,6 +78,11 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 Τα `rear-pod/stl-v2/mpu6050_mount.stl` και
 `rear-pod/stl-v2/chassis_spacers.stl` δεν είναι ενεργά και αρχειοθετούνται.
 Δεν υπάρχει M3 self-tap σε φέρον σημείο.
+
+Το P2-83 `corner_tie.stl` είναι ακριβώς ένα σώμα. Βρίσκεται κάτω από τη
+βάση (`Z≤51`), στην εσωτερική παρειά της ράγας, και δεν περνά πάνω από τη
+ράγα ή μέσα στο Parkside sweep. Τα print plates έχουν δηλωμένο αναμενόμενο
+πλήθος: posts 4, pins 27, clips 32, BTS spacers 18 και jaw coupon 2.
 
 ## Ενεργά test fixtures
 

@@ -3802,3 +3802,29 @@ smoke-check: 13/13 ενεργά CAD/concept sources PASS. Δεν βρέθηκε 
 token δεν έχει `read:project`, άρα δεν δημοσιεύτηκε status comment σε άσχετο
 issue. Χωρίς firmware upload, Gazebo, PR, merge ή force push. Κατάσταση:
 `P2_82_ACTIVE_PRINT_MANIFEST_ARCHIVE_RENDER_EXPORT_PASS`. ΠΑΥΣΗ.
+
+### P2-83 — επισκευή corner tie και μόνιμος έλεγχος STL bodies
+
+τι διαφέρει από το αναμενόμενο: το release `corner_tie.stl` του P2-79
+επιβεβαιώθηκε ότι είχε τρία θετικά, ασύνδετα σώματα. Η επάνω διαδρομή του
+έτεμνε τη βάση και η κεφαλή της κατακόρυφης M4 βρισκόταν μέσα στο Parkside
+reservation. Η πρώτη εσωτερική L εκδοχή αποκάλυψε επίσης exact-solid τομές
+με το crossbar arm του corner clamp και με το άκρο της πίσω τραβέρσας.
+
+Η τελική μονοκόμματη L βρίσκεται κάτω από τη βάση, `X−139,5…−126,5`,
+`Z29…51`, και χρησιμοποιεί την υπάρχουσα πλευρική M4 `X−135/Z37`. Ένα
+τυπικό M4 washer shim 1 mm γεφυρώνει το tolerance gap μέχρι την εσωτερική
+παρειά `Y±195`. Η νέα M4 βάσης είναι στο `X−134/Y±145`, με 90° countersink
+flush στο τοπικό top `Z57,5`, 0,5 mm κάτω από το Parkside sweep. Δεν
+προστέθηκε οπή στο σασί. Physical ground clearance είναι περίπου 27 mm.
+
+Exact-solid `tie_base`, `tie_chassis` με πλήρες frame και rear
+FIT0403/motor/cable/wheel envelopes, `drawers` με κεφαλές/ροδέλες/nyloc και
+`ground Z<15`: empty/PASS. Επανεξήχθησαν μόνο `base_left.stl`,
+`base_right.stl`, `corner_tie.stl`, όλα ένα σώμα. Προστέθηκε κοινός
+`cad/check-stl-components.py` στα rear-pod v2, chassis v3, ski-mount και
+P2-77 MPU exports. Full dry-run: rear pod 12 generated + 2 retained, chassis
+18, ski 4, MPU 1 PASS. Όλα τα πρόσθετα ενεργά fixtures του manifest PASS.
+Τα δηλωμένα print plates είναι 4/27/32/18/2 bodies· κάθε άλλο ενεργό STL
+είναι ένα body. Χωρίς firmware, Gazebo ή PR. Κατάσταση:
+`P2_83_ONE_BODY_INNER_CORNER_TIE_EXACT_SOLID_AND_EXPORT_GATE_PASS`. ΠΑΥΣΗ.

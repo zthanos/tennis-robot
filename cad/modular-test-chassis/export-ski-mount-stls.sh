@@ -5,6 +5,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_scad="$here/shared-flywheel-p273-bolted-ski.scad"
 release_dir="$here/stl-ski-mount"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
+component_check="$here/../check-stl-components.py"
 
 if [[ "${DRY_RUN:-0}" == "1" ]]; then
   out_dir="$(mktemp -d "$here/.dry-run-ski.XXXXXX")"
@@ -22,6 +23,7 @@ for i in "${!parts[@]}"; do
   [[ -s "$out_dir/${outputs[$i]}.stl" ]] || {
     echo "Missing ski export: ${outputs[$i]}" >&2; exit 1;
   }
+  python3 "$component_check" "$out_dir/${outputs[$i]}.stl" 1
 done
 
 echo "Validated ${#parts[@]} active P2-73 ski-mount meshes"
