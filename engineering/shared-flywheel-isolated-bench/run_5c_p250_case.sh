@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ $# -ne 2 ]]; then echo "usage: $0 SURFACE_SPEED LATERAL" >&2; exit 2; fi
+speed="$1"; lateral="$2"
+case "$speed" in 2.8|3.0|3.2) ;; *) exit 2;; esac
+case "$lateral" in -0.05|0.0|0.05) ;; *) exit 2;; esac
+
+bench=engineering/shared-flywheel-isolated-bench
+speed_tag="${speed/./p}"; lateral_tag="${lateral/-/m}"; lateral_tag="${lateral_tag/./p}"
+out="engineering/chassis-strength-bench/results/shared_flywheel_phase2/gazebo_5c_p250/v_${speed_tag}/y_${lateral_tag}"
+mkdir -p "$out"
+telemetry="$(pwd)/$out/telemetry.csv"; native="$(pwd)/$out/native_contacts.csv"; ball_contacts="$(pwd)/$out/ball_contacts.csv"
+rm -f "$telemetry" "$telemetry.done" "$native" "$ball_contacts"
+mass_args=(base_mass:=7.404 base_com_x:=0.09386412749865 base_com_z:=0.13227174500270 base_ixx:=0.38652546 base_iyy:=0.35877559 base_izz:=0.54328377 base_ixz:=-0.05214756 drive_wheel_mass:=0.65 drive_wheel_ixx:=0.00154721666667 drive_wheel_iyy:=0.002348125 drive_wheel_izz:=0.00154721666667)
+xacro "$bench/v3_chassis_flywheel_bench.urdf.xacro" sim_mode:=false validation_fixtures_enabled:=true five_c_enabled:=true five_c_design:=p244 five_c_p244_ramp_enabled:=true five_c_ramp_tip_clearance:=0.008 five_c_cheek_variant:=exposed_shallow five_c_basket_variant:=p249_separated tilt_angle_rad:=-0.052359877560 "${mass_args[@]}" > "$out/model.urdf"
+gz sdf -p "$out/model.urdf" > "$out/model.sdf"
+python3 "$bench/make_5c_p244_world.py" --model-sdf "$out/model.sdf" --ball-model gazebo/models/tennis_ball_compliant/model.sdf --output "$out/world.sdf" --telemetry "$telemetry" --contacts "$native" --ball-contacts "$ball_contacts" --approach 0.6 --lateral "$lateral" --surface-speed "$speed" --tread-mu 0.6 --cheek-mu 0.35 --duration 10.0 > "$out/world_build.stdout"
+
+export GZ_CONFIG_PATH=/usr/share/gz
+physics_dir="$out/physics_plugins"; mkdir -p "$physics_dir"
+ln -sfn /usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/libgz-physics7-dartsim-plugin.so.7 "$physics_dir/libgz-physics7-dartsim-plugin.so"
+export GZ_SIM_PHYSICS_ENGINE_PATH="$(pwd)/$physics_dir"
+export GZ_SIM_SYSTEM_PLUGIN_PATH="$(pwd)/$bench/build_5b:$(pwd)/$bench/build_contact_5c:${GZ_SIM_SYSTEM_PLUGIN_PATH:-}"
+export GZ_SIM_RESOURCE_PATH="$(pwd)/gazebo/models:$(pwd)/ros2_ws/src:${GZ_SIM_RESOURCE_PATH:-}"
+export GZ_PARTITION="p250_${$}_${RANDOM}"
+engine=/usr/lib/x86_64-linux-gnu/gz-physics-7/engine-plugins/libgz-physics7-dartsim-plugin.so.7
+pid=""
+cleanup(){ if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; fi; }
+trap cleanup EXIT INT TERM
+timeout --signal=TERM --kill-after=3 150 /usr/bin/gz sim -r -s -v 1 --physics-engine "$engine" "$out/world.sdf" > "$out/gazebo.log" 2>&1 & pid=$!
+for _ in $(seq 1 1200); do [[ -f "$telemetry.done" ]] && break; kill -0 "$pid" 2>/dev/null || break; sleep .1; done
+[[ -f "$telemetry.done" ]] || { tail -80 "$out/gazebo.log" >&2; exit 1; }
+cleanup; pid=""
+python3 "$bench/analyze_5c_p250_run.py" "$telemetry" "$ball_contacts" "$native" --criteria "$bench/criteria_5c_p250.json" --surface-speed "$speed" --lateral "$lateral" --output "$out/summary.json" > "$out/analysis.stdout"
+sha256sum "$out/model.urdf" > "$out/model.urdf.sha256"
+python3 - "$out/summary.json" <<'PY'
+import json,sys
+p=json.load(open(sys.argv[1]))
+print('PASS' if p['pass'] else 'FAIL')
+PY

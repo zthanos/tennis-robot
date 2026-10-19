@@ -1,0 +1,32 @@
+{
+  "phase": "P2-66",
+  "source": "user-specified acceptance criteria, encoded in analyze_p266_run.py before the full campaign",
+  "scope": "one ball, empty basket, collection at -3 degrees, corrected P2-61 contact model",
+  "frozen": {
+    "geometric_angle_deg": [70, 75, 80],
+    "ski_radius_mm": [75, 110],
+    "tangent_length_mm": 52,
+    "surface_speed_m_s": [5, 6, 8],
+    "tread_mu": [0.6, 0.9],
+    "lateral_mm": [-100, -50, 0, 50, 100],
+    "deflector_restitution": [0.1, 0.3, 0.5],
+    "contact_step_s": 0.00025,
+    "basket_front_closed": true,
+    "front_wall_top_target_mm": 240,
+    "deflector_top_mm": 375,
+    "closed_overhead_corridor": "REJECTED_NOT_TESTED",
+    "pile_simulation": "PROHIBITED_NOT_RUN"
+  },
+  "hard_criteria": [
+    {"name": "ski_takeoff", "rule": "measurable upward/rearward takeoff after final ski contact"},
+    {"name": "deflector_contact", "rule": "ball reaches the soft deflector"},
+    {"name": "basket_entry", "rule": "ball centre enters empty-basket bounds"},
+    {"name": "retained_empty_basket", "rule": "ball remains inside empty basket"},
+    {"name": "front_wall_clearance", "rule": "no front-wall contact; at least 15 mm geometric margin is required for selection"},
+    {"name": "forbidden_contact", "rule": "no contact with chassis, arch, LiDAR, camera, actuator, FIT0186, arm or stops"},
+    {"name": "pre_deflector_ball_top", "rule": "ball top <= Z380 mm before deflector"},
+    {"name": "final_speed", "rule": "final mean speed <= 0.25 m/s"},
+    {"name": "finite_state", "rule": "no NaN or Inf telemetry"}
+  ],
+  "required_physical_gate": "measure actual EVA/net restitution before release"
+}

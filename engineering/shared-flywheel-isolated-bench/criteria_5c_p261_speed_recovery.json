@@ -1,0 +1,9 @@
+{
+  "phase": "P2-61",
+  "frozen_before_first_speed_recovery_run": true,
+  "inherits_checks_from": "criteria_5c_p251_delivery_matrix.json",
+  "candidate_surface_speed_m_s_in_order": [5.0, 4.5, 4.0],
+  "matrix_per_speed": {"tread_mu": [0.6,0.9], "ramp_mu": [0.15,0.25,0.4], "lateral_m": [-0.1,-0.05,0,0.05,0.1], "conditions": 30},
+  "selection_rule": "first (highest) candidate with 30/30 passes",
+  "timestep_s": 0.00025
+}

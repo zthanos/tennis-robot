@@ -1,0 +1,188 @@
+{
+  "status": "P2_48_STATIC_PASS_HEIGHT_260_DEPENDENT_PHYSICAL_TEST_REQUIRED",
+  "acceptance_rule": {
+    "required_ball_count": 40,
+    "best_effort_ball_range": [
+      41,
+      45
+    ]
+  },
+  "geometry": {
+    "interior_plan_mm": [
+      287,
+      344
+    ],
+    "floor_world_z_rear_front_mm": [
+      54,
+      42
+    ],
+    "rim_z_mm": 335,
+    "lidar_scan_z_mm": 390
+  },
+  "piles": {
+    "40": {
+      "count": 40,
+      "solid_volume_l": 6.021302143576342,
+      "packing_sweep": [
+        {
+          "packing_fraction": 0.56,
+          "mean_height_mm": 108.9085695687781,
+          "local_top_world_z_mm": 228.90856956877812
+        },
+        {
+          "packing_fraction": 0.6,
+          "mean_height_mm": 101.6479982641929,
+          "local_top_world_z_mm": 221.6479982641929
+        },
+        {
+          "packing_fraction": 0.64,
+          "mean_height_mm": 95.29499837268085,
+          "local_top_world_z_mm": 215.29499837268085
+        }
+      ],
+      "conservative_local_top_world_z_mm": 228.90856956877812
+    },
+    "45": {
+      "count": 45,
+      "solid_volume_l": 6.773964911523384,
+      "packing_sweep": [
+        {
+          "packing_fraction": 0.56,
+          "mean_height_mm": 122.52214076487536,
+          "local_top_world_z_mm": 242.52214076487536
+        },
+        {
+          "packing_fraction": 0.6,
+          "mean_height_mm": 114.35399804721702,
+          "local_top_world_z_mm": 234.353998047217
+        },
+        {
+          "packing_fraction": 0.64,
+          "mean_height_mm": 107.20687316926596,
+          "local_top_world_z_mm": 227.20687316926598
+        }
+      ],
+      "conservative_local_top_world_z_mm": 242.52214076487536
+    }
+  },
+  "bridge_options": [
+    {
+      "surface_z_mm": 247.0,
+      "margin_over_40_mm": 18.09143043122188,
+      "required_40_margin_pass": false,
+      "margin_over_45_mm": 4.47785923512464,
+      "rise_from_ramp_start_mm": 237.0,
+      "lossless_minimum_speed_m_s": 2.1560037337630007,
+      "speed_for_25_percent_margin_m_s": 2.695004667203751,
+      "d200_rpm_for_25_percent_margin": 257.3539886647232,
+      "inclined_board_release_height_with_12_percent_loss_allowance_mm": 691.2500000000001,
+      "surface_to_rim_mm": 88.00000000000003,
+      "ball_top_to_rim_mm": 22.00000000000002,
+      "surface_to_lidar_scan_mm": 143.00000000000003,
+      "ball_top_to_lidar_scan_mm": 77.00000000000001
+    },
+    {
+      "surface_z_mm": 260.0,
+      "margin_over_40_mm": 31.09143043122188,
+      "required_40_margin_pass": true,
+      "margin_over_45_mm": 17.47785923512464,
+      "rise_from_ramp_start_mm": 250.0,
+      "lossless_minimum_speed_m_s": 2.2143452756966333,
+      "speed_for_25_percent_margin_m_s": 2.7679315946207916,
+      "d200_rpm_for_25_percent_margin": 264.3179972544787,
+      "inclined_board_release_height_with_12_percent_loss_allowance_mm": 729.1666666666667,
+      "surface_to_rim_mm": 75.00000000000001,
+      "ball_top_to_rim_mm": 9.000000000000007,
+      "surface_to_lidar_scan_mm": 130.0,
+      "ball_top_to_lidar_scan_mm": 64.0
+    },
+    {
+      "surface_z_mm": 275.0,
+      "margin_over_40_mm": 46.09143043122188,
+      "required_40_margin_pass": true,
+      "margin_over_45_mm": 32.47785923512464,
+      "rise_from_ramp_start_mm": 265.0,
+      "lossless_minimum_speed_m_s": 2.279807996301443,
+      "speed_for_25_percent_margin_m_s": 2.849759995376804,
+      "d200_rpm_for_25_percent_margin": 272.13203393385305,
+      "inclined_board_release_height_with_12_percent_loss_allowance_mm": 772.916666666667,
+      "surface_to_rim_mm": 60.0,
+      "ball_top_to_rim_mm": -6.000000000000005,
+      "surface_to_lidar_scan_mm": 114.99999999999999,
+      "ball_top_to_lidar_scan_mm": 48.999999999999986
+    }
+  ],
+  "selected_reference_surface_z_mm": 260,
+  "mass": {
+    "effective_density_g_cm3": 0.72,
+    "solid_shell_plus_interfaces_g": 1318.72512,
+    "grid_shell_plus_interfaces_g": 692.4338544,
+    "filament_saved_g": 626.2912656000001,
+    "saving_percent": 47.49217680785516,
+    "uncertainty": "plus/minus 15 percent until sliced with the selected walls, infill and hardware"
+  },
+  "panelization": {
+    "print_bed_mm": [
+      256,
+      256
+    ],
+    "largest_main_panel_mm": [
+      175,
+      146.5
+    ],
+    "wall_clear_opening_mm": 38,
+    "floor_clear_opening_mm": 18,
+    "solid_feed_lane_mm": 86,
+    "chassis_mount_grid": "M4 at X=240/300 mm, Y=+/-100/150 mm"
+  },
+  "feed_interface": {
+    "port_clear_mm": [
+      80,
+      80
+    ],
+    "port_frame_mm": [
+      120,
+      120
+    ],
+    "port_ball_center_mm": [
+      278.0,
+      0.0,
+      75.0
+    ],
+    "paths": {
+      "launch_15_deg": {
+        "mouth_ball_center_mm": [
+          329.183,
+          0.0,
+          59.062999999999995
+        ],
+        "delta_x_mm": 51.18299999999998,
+        "drop_mm": 15.937,
+        "centreline_length_mm": 53.606785559292746,
+        "downward_angle_deg": 17.29517395649951
+      },
+      "launch_20_deg": {
+        "mouth_ball_center_mm": [
+          331.475,
+          0.0,
+          54.115
+        ],
+        "delta_x_mm": 53.474999999999994,
+        "drop_mm": 20.884999999999994,
+        "centreline_length_mm": 57.408700124632674,
+        "downward_angle_deg": 21.333445824234868
+      }
+    },
+    "floor_slope_deg": 2.345274119904529,
+    "ideal_solid_sphere_acceleration_m_s2": 0.28664365693196553,
+    "ideal_speed_over_293_mm_m_s": 0.4098453158962925,
+    "claim_limit": "Interface/keep-out only; feeder and singulator remain Phase 5d."
+  },
+  "inclined_board": {
+    "thin_shell_lossless_height_for_2p7_m_s_mm": 619.4775993840915,
+    "recommended_initial_vertical_drop_mm": 700,
+    "example_board_length_mm": 1200,
+    "example_angle_deg": 35.68533471265206,
+    "method": "Measure speed over the last 300 mm by video; adjust release height rather than treating the energy estimate as calibration."
+  }
+}

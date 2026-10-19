@@ -1,0 +1,191 @@
+{
+  "status": "P2_40_SELECTED_GEOMETRY_STATIC_PASS",
+  "selected_geometry": {
+    "pivot_behind_nip_mm": 55.0,
+    "pivot_x_mm": 387.0,
+    "collection_deg": -3.0,
+    "tread_width_mm": 60.0,
+    "edge_round_mm": 2.0,
+    "adjustment_travel_mm": 23.0
+  },
+  "edge_definition": "usable lower edge = physical axial edge + 2 mm rounded-edge reserve",
+  "grid": [
+    {
+      "drive_radius_mm": 82.0,
+      "axle_above_foot_mm": 26.0,
+      "pivot_down_mm": 14.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    },
+    {
+      "drive_radius_mm": 82.0,
+      "axle_above_foot_mm": 29.0,
+      "pivot_down_mm": 11.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    },
+    {
+      "drive_radius_mm": 82.0,
+      "axle_above_foot_mm": 33.0,
+      "pivot_down_mm": 7.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    },
+    {
+      "drive_radius_mm": 85.0,
+      "axle_above_foot_mm": 26.0,
+      "pivot_down_mm": 17.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    },
+    {
+      "drive_radius_mm": 85.0,
+      "axle_above_foot_mm": 29.0,
+      "pivot_down_mm": 14.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    },
+    {
+      "drive_radius_mm": 85.0,
+      "axle_above_foot_mm": 33.0,
+      "pivot_down_mm": 10.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    },
+    {
+      "drive_radius_mm": 90.0,
+      "axle_above_foot_mm": 26.0,
+      "pivot_down_mm": 22.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    },
+    {
+      "drive_radius_mm": 90.0,
+      "axle_above_foot_mm": 29.0,
+      "pivot_down_mm": 19.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    },
+    {
+      "drive_radius_mm": 90.0,
+      "axle_above_foot_mm": 33.0,
+      "pivot_down_mm": 15.462636364,
+      "adjusted_pivot_ground_z_mm": 53.837363636,
+      "physical_lower_edge_ground_z_mm": 21.0,
+      "usable_lower_edge_ground_z_mm": 23.0,
+      "ball_center_ground_z_mm": 33.0,
+      "ball_center_above_usable_lower_edge_mm": 10.0,
+      "criterion_mm": 10.0,
+      "pass": true
+    }
+  ],
+  "summary": {
+    "all_pass": true,
+    "pivot_down_range_mm": [
+      7.462636364,
+      22.462636364
+    ],
+    "ball_center_above_usable_edge_range_mm": [
+      10.0,
+      10.0
+    ],
+    "note": "P2-42 reference update: the corresponding positive-locked shim/slot adjustment deliberately makes every grid point land on the 10 mm target; the physical acceptance minimum remains 8 mm"
+  },
+  "arch_clearance": {
+    "crossbar_and_lidar_x_mm": 330.0,
+    "side_leg_x_before_mm": 330.0,
+    "side_leg_x_after_mm": 318.0,
+    "dogleg_setback_mm": 12.0,
+    "directional_exact_solid_clear_through_mm": 14.0,
+    "first_tested_collision_mm": 15.0,
+    "tolerance_and_elastic_budget_mm": 3.0,
+    "residual_clearance_lower_bound_mm": 11.0,
+    "required_residual_mm": 8.0,
+    "method": "translate the fixed arch toward the full -3..+20 moving-module sweep; 1 mm probe increments"
+  },
+  "printed_flywheel": {
+    "construction": "8-spoke PETG core, 60 mm x 4 mm radial TPU tread, aluminium clamp hub",
+    "mass_kg_each_including_hub": 0.8789771335033256,
+    "polar_inertia_kg_m2_each_including_hub": 0.005089815828974581,
+    "transverse_inertia_kg_m2_each_including_hub": 0.002678081659549769,
+    "com_offset_m_assumed": 0.0,
+    "parts": [
+      {
+        "name": "rim",
+        "mass_kg": 0.34472067869310075,
+        "polar_inertia_kg_m2": 0.002804647441847068,
+        "transverse_inertia_kg_m2": 0.001448286478082614
+      },
+      {
+        "name": "centre",
+        "mass_kg": 0.13645193531601907,
+        "polar_inertia_kg_m2": 8.139357941600538e-05,
+        "transverse_inertia_kg_m2": 5.88903810834719e-05
+      },
+      {
+        "name": "spokes",
+        "mass_kg": 0.1422660096,
+        "polar_inertia_kg_m2": 0.0004785828562944,
+        "transverse_inertia_kg_m2": 0.000252996387072
+      },
+      {
+        "name": "tread",
+        "mass_kg": 0.17733662210983703,
+        "polar_inertia_kg_m2": 0.0017038502652313146,
+        "transverse_inertia_kg_m2": 0.0009051261192486084
+      },
+      {
+        "name": "hub",
+        "mass_kg": 0.07820188778436878,
+        "polar_inertia_kg_m2": 2.134168618579316e-05,
+        "transverse_inertia_kg_m2": 1.2782294063074537e-05
+      }
+    ],
+    "limitation": "primitive-volume estimate; replace with slicer and assembled measurement"
+  },
+  "module_mass_kg_with_unchanged_fixed_lump": 4.609957627006651,
+  "limitations": [
+    "R and h remain measurement-gated",
+    "CAD clearance is nominal exact-solid directional QA, not physical metrology"
+  ]
+}

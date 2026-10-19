@@ -1,0 +1,54 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_P2_44_GAZEBO_RUN",
+  "scope": "P2-44 diagnostic subset: one-ball capture through nip and open ramp to the basket entrance; no basket retention, multi-ball or launch claim",
+  "matrix": {
+    "approach_speed_m_s": [0.6],
+    "ball_lateral_offset_m": [-0.1, -0.05, 0.0, 0.05, 0.1],
+    "cheek_variant": ["exposed_short", "exposed_shallow", "exposed_shallow_lowfriction"],
+    "ball_tread_mu": [0.6],
+    "flywheel_surface_speed_m_s": [2.5],
+    "ground_mu": 0.7,
+    "repeats_per_condition": 5,
+    "condition_count": 15,
+    "run_count": 75
+  },
+  "geometry": {
+    "frozen_launcher_angle_deg": -3.0,
+    "frozen_launcher_pivot_m": [0.387, 0.0, 0.049837363636],
+    "ramp_attachment": "fixed to base/chassis; the launcher moves independently",
+    "ramp_top_path_base_frame_m": [
+      [0.402, 0.003],
+      [0.377, 0.008],
+      [0.352, 0.021],
+      [0.328, 0.036],
+      [0.315, 0.046],
+      [0.305, 0.052],
+      [0.298, 0.054],
+      [0.278, 0.054]
+    ],
+    "ramp_width_m": [0.056, 0.066, 0.078, 0.086, 0.090, 0.093, 0.095, 0.096],
+    "basket_entry_base_frame": {
+      "x_plane_m": 0.278,
+      "ball_center_abs_y_max_m": 0.015,
+      "ball_center_z_range_m": [0.075, 0.125],
+      "basis": "Existing basket front floor Z=54 mm plus a 33 mm ball radius; 96 mm clear opening leaves +/-15 mm centre travel for a 66 mm ball."
+    },
+    "cheek_variants": {
+      "exposed_short": {"front_point_m": [0.180, 0.125], "rear_point_m": [0.105, 0.080], "taper_angle_deg": 30.96, "cheek_mu": 0.35},
+      "exposed_shallow": {"front_point_m": [0.220, 0.125], "rear_point_m": [0.105, 0.080], "taper_angle_deg": 21.37, "cheek_mu": 0.35},
+      "exposed_shallow_lowfriction": {"front_point_m": [0.220, 0.125], "rear_point_m": [0.105, 0.080], "taper_angle_deg": 21.37, "cheek_mu": 0.10}
+    }
+  },
+  "criteria": [
+    {"name": "condition_success_count", "threshold": 4, "comparison": "min_ge", "unit": "successful repeats of 5", "hard_fail": true, "rationale": "Retains the accepted repeatability gate while reducing the matrix to the requested diagnostic subset."},
+    {"name": "basket_entry_reached", "comparison": "ball_centre_crosses_base-frame entrance volume", "threshold": {"x_max_m": 0.278, "abs_y_max_m": 0.015, "z_min_m": 0.075, "z_max_m": 0.125}, "hard_fail": true, "rationale": "Success now requires the complete ball centre to reach the physical basket mouth, not merely the previous guide datum."},
+    {"name": "fully_through_nip", "threshold": -0.033, "comparison": "launcher_x_min_le", "unit": "m", "hard_fail": true, "rationale": "Separates capture failure from ramp/entry failure."},
+    {"name": "plough", "threshold": 0.1, "comparison": "pre_nip_forward_ball_displacement_max_le", "unit": "m", "hard_fail": true, "rationale": "Same frozen P2-43 definition; prevents a pushed ball from being counted as capture."},
+    {"name": "jam", "threshold": 0.75, "comparison": "post_contact_low_speed_duration_max_le", "unit": "s", "hard_fail": true, "rationale": "The longer 124 mm curved ramp path justifies 0.75 s, but persistent wedges remain failures."},
+    {"name": "d5065_current", "threshold": 20.0, "comparison": "abs_max_le", "unit": "A per motor", "hard_fail": true, "rationale": "Existing provisional analytical-model gate."},
+    {"name": "d5065_torque", "threshold": 0.62, "comparison": "abs_max_le", "unit": "N m per motor", "hard_fail": true, "rationale": "20 A times the frozen Kt=0.031 N m/A."},
+    {"name": "forbidden_launcher_contact_count", "threshold": 0, "comparison": "eq", "unit": "contact samples", "hard_fail": true, "rationale": "P2-40 launcher/pivot/arch geometry remains frozen; any new launcher-to-ramp/chassis/ground contact stops the campaign."}
+  ],
+  "diagnostics": ["nip exit speed", "ramp/flap contact forces", "D5065 voltage/current/torque", "ball path and final failure owner"],
+  "prohibitions": ["no artificial ball transfer", "no forced ball velocity", "no refit of tennis_ball_compliant", "no P2-40 pivot/angle/arch changes", "no 5c-2/5c-3/5d claim"]
+}

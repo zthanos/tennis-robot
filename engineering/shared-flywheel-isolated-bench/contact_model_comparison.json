@@ -1,0 +1,7 @@
+{
+  "main_robot": {"wheel_mass_kg": 0.25, "radius_m": 0.085, "width_m": 0.080, "track_m": 0.700, "mu1": 1.2, "mu2": 1.2, "fdir1": "unset", "slip1": 0.0, "slip2": 0.0, "controller": "ros2_control velocity interface"},
+  "old_modular_chassis_integration_bench": {"wheel_mass_kg": 0.70, "radius_m": 0.085, "width_m": 0.080, "track_m": 0.700, "mu1": 0.9, "mu2": 0.9, "fdir1": "unset", "contact_settings": "engine defaults", "controller": "Gazebo DiffDrive velocity plugin", "reported_spin_deg_in_4s": 528},
+  "phase2_5a_original": {"wheel_mass_kg": 0.001, "radius_m": 0.085, "width_m": 0.083, "track_m": 0.594, "mu1_mu2_sweep": [0.5,0.7,0.9], "fdir1": "unset", "contact_settings": "DART defaults", "controller": "3.73 N m torque-limited wheel-speed PI"},
+  "phase2_turn_diagnostic": {"wheel_mass_kg": 0.65, "radius_m": 0.085, "width_m": 0.083, "track_m": 0.594, "mu1_mu2_sweep": [0.5,0.7,0.9], "fdir1": "unset", "contact_settings": "DART defaults", "controller": "same 3.73 N m torque-limited wheel-speed PI; optional gyro outer loop"},
+  "alignment_decision": "Align the suspect wheel mass with the old physical-scale bench. Retain the v3 measured track/width and mandatory mu sweep. Do not copy the old DiffDrive controller because it imposes velocity without the FIT0403 torque ceiling; its 528 degree result is a kinematic regression reference, not physical validation."
+}

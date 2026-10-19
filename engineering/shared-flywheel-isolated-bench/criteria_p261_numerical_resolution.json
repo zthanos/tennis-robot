@@ -1,0 +1,9 @@
+{
+  "phase": "P2-61",
+  "frozen_before_resolution_runs": true,
+  "reason": "Corrected contact lasts about 4.7 ms; the predeclared legacy 1/0.5/0.25 ms convergence gate failed and remains recorded.",
+  "timesteps_s": [0.00025, 0.000125, 0.0000625],
+  "rebound_acceptance_m": [1.35, 1.47],
+  "maximum_rebound_relative_spread": 0.005,
+  "production_timestep_s": 0.00025
+}

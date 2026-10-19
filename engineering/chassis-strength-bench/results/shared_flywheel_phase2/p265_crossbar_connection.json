@@ -1,0 +1,98 @@
+{
+  "status": "P2_65_T_CONNECTION_FEA_PASS",
+  "model": "released combined topology; 195 mm X240/X300 halves; 24x6 and 11x6 PETG T-upright load paths; bolt stiffness omitted",
+  "material": "PETG isotropic screen, E=1.5 GPa, nu=0.38",
+  "comparison": {
+    "vertical_2g": {
+      "old_ideal_overlap_mm": 0.6444354782568961,
+      "p265_t_connection_mm": 0.6455188490962454,
+      "change_percent": 0.16811160712002504,
+      "mesh_change_10_to_5_percent": 0.895174543013479,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6446831799575221,
+      "beam_integration_point_peak_von_mises_mpa": 1.1359975761430192
+    },
+    "launch_reaction": {
+      "old_ideal_overlap_mm": 1.9400930111550323,
+      "p265_t_connection_mm": 2.2118413360915947,
+      "change_percent": 14.006974066401966,
+      "mesh_change_10_to_5_percent": 0.4424555275936513,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4744212575269156,
+      "beam_integration_point_peak_von_mises_mpa": 8.615916345197212
+    },
+    "antisymmetric_racking": {
+      "old_ideal_overlap_mm": 1.9811470587030258,
+      "p265_t_connection_mm": 2.1953988671826923,
+      "change_percent": 10.8145333047577,
+      "mesh_change_10_to_5_percent": 0.4145266352914173,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4150061368422978,
+      "beam_integration_point_peak_von_mises_mpa": 5.763802023574398
+    }
+  },
+  "cases": [
+    {
+      "load_case": "vertical_2g",
+      "mesh_mm": 10.0,
+      "element_count": 551,
+      "max_bearing_displacement_mm": 0.6397403286887822,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6389130558041596,
+      "relative_bearing_x_mm": 0.004927500000000001,
+      "relative_bearing_z_mm": 0.0,
+      "beam_integration_point_peak_von_mises_mpa": 1.0991263316116868
+    },
+    {
+      "load_case": "launch_reaction",
+      "mesh_mm": 10.0,
+      "element_count": 551,
+      "max_bearing_displacement_mm": 2.202054921838456,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4693663762493539,
+      "relative_bearing_x_mm": 2.10191748,
+      "relative_bearing_z_mm": 0.09501839999999999,
+      "beam_integration_point_peak_von_mises_mpa": 7.483344279433804
+    },
+    {
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 10.0,
+      "element_count": 551,
+      "max_bearing_displacement_mm": 2.186298354127334,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4122103617439311,
+      "relative_bearing_x_mm": 2.238769,
+      "relative_bearing_z_mm": 0.23791869999999998,
+      "beam_integration_point_peak_von_mises_mpa": 4.9439657467790346
+    },
+    {
+      "load_case": "vertical_2g",
+      "mesh_mm": 5.0,
+      "element_count": 1086,
+      "max_bearing_displacement_mm": 0.6455188490962454,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6446831799575221,
+      "relative_bearing_x_mm": 0.00497439999999999,
+      "relative_bearing_z_mm": 0.0,
+      "beam_integration_point_peak_von_mises_mpa": 1.1359975761430192
+    },
+    {
+      "load_case": "launch_reaction",
+      "mesh_mm": 5.0,
+      "element_count": 1086,
+      "max_bearing_displacement_mm": 2.2118413360915947,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4744212575269156,
+      "relative_bearing_x_mm": 2.11050028,
+      "relative_bearing_z_mm": 0.0957943,
+      "beam_integration_point_peak_von_mises_mpa": 8.615916345197212
+    },
+    {
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 5.0,
+      "element_count": 1086,
+      "max_bearing_displacement_mm": 2.1953988671826923,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4150061368422978,
+      "relative_bearing_x_mm": 2.2481012,
+      "relative_bearing_z_mm": 0.23972939999999998,
+      "beam_integration_point_peak_von_mises_mpa": 5.763802023574398
+    }
+  ],
+  "limitations": [
+    "centreline beam comparison, not printed-layer/fastener/contact certification",
+    "T-clamp ties are ideal at their endpoints; M4 preload, hole bearing, slip and fatigue require physical inspection",
+    "the X300 C-hook relief is too local for this beam mesh and is not represented"
+  ]
+}

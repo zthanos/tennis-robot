@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+import argparse
+from pathlib import Path
+def main():
+ a=argparse.ArgumentParser(); a.add_argument('--output',type=Path,required=True); a.add_argument('--telemetry',required=True); a.add_argument('--contacts',required=True); a.add_argument('--dt',type=float,required=True); x=a.parse_args()
+ x.output.write_text(f'''<?xml version="1.0"?><sdf version="1.10"><world name="p261_rebound"><gravity>0 0 -9.80665</gravity><physics name="p" type="ignored"><max_step_size>{x.dt}</max_step_size><real_time_factor>0</real_time_factor></physics><plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/><plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/><model name="ball"><pose>0 0 2.573 0 0 0</pose><link name="ball_link"><inertial><mass>0.058</mass><inertia><ixx>4.2108e-5</ixx><iyy>4.2108e-5</iyy><izz>4.2108e-5</izz></inertia></inertial></link><plugin filename="tennis_ball_compliant_contact_system" name="tennis_ball_contact_system::TennisBallContactSystem"><ball_link>ball_link</ball_link><ball_radius>0.033</ball_radius><enable_ground>true</enable_ground><ground_height>0</ground_height><diametral_compression_scale>2</diametral_compression_scale><dynamic_damping>2356.929198779746</dynamic_damping><telemetry_csv>{x.contacts}</telemetry_csv></plugin><plugin filename="v3_rebound_p261_observer" name="phase2_v3::ReboundP261Observer"><ball_link>ball_link</ball_link><output_csv>{x.telemetry}</output_csv><duration_s>1.8</duration_s></plugin></model></world></sdf>''')
+if __name__=='__main__':main()

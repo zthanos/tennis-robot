@@ -1,0 +1,195 @@
+{
+  "status": "P2_53_EXACT_GEOMETRY_REAUDIT_PASS_WITH_ARM_FIT_GATE",
+  "basis": {
+    "angle_sweep_deg": [
+      -10,
+      20,
+      1
+    ],
+    "clearance_method": "exact-solid zero-intersection plus symmetric VTK vertex-to-triangulated-surface distance",
+    "reported_distance_uncertainty_mm": 0.5,
+    "frame_rails": "Y +/-220, width 50",
+    "flywheels": "centres Y +/-129, D200x60, axes local Z",
+    "pivot_xyz_mm": [
+      387.0,
+      0.0,
+      51.837363636
+    ],
+    "basket": "P2-51 exact panels/ski values",
+    "no_stl_release": true
+  },
+  "superseded_p252_findings": [
+    "drum-axis flywheels and Y +/-235 / 30 mm rails",
+    "coaxial FIT0186 body falsely reported clear",
+    "AS5600 at Y216 and straight moving arm",
+    "all P2-52 clearances derived from the surrogate assembly"
+  ],
+  "corrections": {
+    "fit0186": "same Tr8/linkage, but motor is offset +37 mm Y/+50 mm Z on the rocking carrier and drives Tr8 through a short 1:1 toothed belt",
+    "moving_arm": "rises from upper-plate edge and stays above tread; old Z45 straight root removed",
+    "stops": "mandatory symmetric tongues at local [20,+/-205,115], with fixed lower -10..-3 and upper +15..+20 stop ranges",
+    "as5600": "board integrated into +Y guard at Y244; magnet Y240.5",
+    "side_projection": "rotate -90 deg about X; +Z up, ground line, labels and FRONT +X arrow"
+  },
+  "linkage": {
+    "fixed_xyz_mm": [
+      310.0,
+      -205.0,
+      120.0
+    ],
+    "moving_local_xyz_mm": [
+      50.0,
+      -205.0,
+      90.0
+    ],
+    "rows": [
+      {
+        "angle_deg": -10,
+        "pin_spacing_mm": 142.358,
+        "effective_arm_mm": 74.304,
+        "force_5p3Nm_N": 71.33,
+        "force_8Nm_N": 107.67
+      },
+      {
+        "angle_deg": -3,
+        "pin_spacing_mm": 133.02,
+        "effective_arm_mm": 78.511,
+        "force_5p3Nm_N": 67.51,
+        "force_8Nm_N": 101.9
+      },
+      {
+        "angle_deg": 0,
+        "pin_spacing_mm": 128.864,
+        "effective_arm_mm": 80.225,
+        "force_5p3Nm_N": 66.06,
+        "force_8Nm_N": 99.72
+      },
+      {
+        "angle_deg": 15,
+        "pin_spacing_mm": 106.818,
+        "effective_arm_mm": 87.949,
+        "force_5p3Nm_N": 60.26,
+        "force_8Nm_N": 90.96
+      },
+      {
+        "angle_deg": 20,
+        "pin_spacing_mm": 99.044,
+        "effective_arm_mm": 90.195,
+        "force_5p3Nm_N": 58.76,
+        "force_8Nm_N": 88.7
+      }
+    ],
+    "travel_minus3_to_plus20_mm": 33.976,
+    "p16_full_range_mm": [
+      99.044,
+      142.358
+    ]
+  },
+  "mandatory_symmetric_stops": {
+    "y_mm": [
+      -205,
+      205
+    ],
+    "lower_range_deg": [
+      -10,
+      -3
+    ],
+    "upper_range_deg": [
+      15,
+      20
+    ],
+    "second_actuator": false
+  },
+  "reaudit_after_p254_arm_fit_and_second_stop": true,
+  "zero_intersection_pass": {
+    "fit_motor_to_launcher": true,
+    "fit_motor_to_drive": true,
+    "fit_motor_to_arch_excluding_mount": true,
+    "tr8_to_launcher": true,
+    "tr8_to_drive": true,
+    "moving_arm_to_launcher_excluding_mount": true,
+    "moving_arm_to_drive": true,
+    "whole_actuator_to_frame": true,
+    "whole_actuator_to_sensor_stack": true,
+    "whole_actuator_to_basket_ski_feed": true,
+    "whole_actuator_to_power_electronics": true,
+    "as5600_to_launcher_excluding_trunnion_interface": true,
+    "as5600_to_drive": true,
+    "cam_to_launcher": true,
+    "cam_to_frame_ski_feed": true,
+    "stops_to_launcher": true,
+    "cables_to_launcher": true,
+    "cables_to_fixed_world": true
+  },
+  "clearances": {
+    "fit_motor_to_launcher": {
+      "minimum_nominal_mm": 17.405,
+      "governing_angle_deg": 20
+    },
+    "tr8_to_launcher": {
+      "minimum_nominal_mm": 32.708,
+      "governing_angle_deg": -10
+    },
+    "moving_arm_to_launcher_excluding_mount": {
+      "minimum_nominal_mm": 14.0,
+      "governing_angle_deg": 2
+    },
+    "cam_to_launcher": {
+      "minimum_nominal_mm": 19.0,
+      "governing_angle_deg": 16
+    },
+    "cables_to_launcher": {
+      "minimum_nominal_mm": 24.004,
+      "governing_angle_deg": -8
+    },
+    "fit_motor_to_drive": {
+      "minimum_nominal_mm": 10.426
+    },
+    "fit_motor_to_arch_excluding_mount": {
+      "minimum_nominal_mm": 10.932
+    },
+    "tr8_to_drive": {
+      "minimum_nominal_mm": 19.222
+    },
+    "moving_arm_to_drive": {
+      "minimum_nominal_mm": 33.432
+    },
+    "whole_actuator_to_frame": {
+      "minimum_nominal_mm": 54.0
+    },
+    "whole_actuator_to_sensor_stack": {
+      "minimum_nominal_mm": 31.733
+    },
+    "whole_actuator_to_basket_ski_feed": {
+      "minimum_nominal_mm": 11.557
+    },
+    "whole_actuator_to_power_electronics": {
+      "minimum_nominal_mm": 162.841
+    },
+    "as5600_to_launcher_excluding_trunnion_interface": {
+      "minimum_nominal_mm": 18.818
+    },
+    "as5600_to_drive": {
+      "minimum_nominal_mm": 9.0
+    },
+    "cam_to_frame_ski_feed": {
+      "minimum_nominal_mm": 21.337
+    },
+    "stops_to_launcher": {
+      "minimum_nominal_mm": 39.0
+    },
+    "cables_to_fixed_world": {
+      "minimum_nominal_mm": 11.414
+    }
+  },
+  "design_effects": {
+    "fit_drive": "1:1 belt adds two pulleys, tensioner/guard and an assumed 0.90 efficiency; continuous motor torque screen must be divided by measured belt efficiency",
+    "time": "1:1 ratio leaves ideal Tr8 speed unchanged; loaded time remains measurement-gated",
+    "p16": "retains direct slim-body fallback on the Tr8/P16 axis; it does not use the FIT offset carrier"
+  },
+  "limitations": [
+    "nominal exact solids; no print tolerances, belt deflection or cable bend stiffness",
+    "Parkside pack/adapter remains an assumed envelope",
+    "no Gazebo, ROS, STL, Arduino or electronics changes"
+  ]
+}

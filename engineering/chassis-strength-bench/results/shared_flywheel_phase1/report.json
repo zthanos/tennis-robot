@@ -1,0 +1,2927 @@
+{
+  "status": "PHASE_1_REVIEWED_NOT_APPROVED_FOR_PHASE_2",
+  "approval_gates": [
+    "caliper-verify FIT0403, tyre, hub and radial cable bend envelopes; tape data are +/-2..3 mm",
+    "choose and detail spherical or locating/floating pivot bearings and validate bolts/trunnions",
+    "weigh the selected \u00d8200 wheel and measure its inertia, pneumatic stiffness and dynamic ball traction",
+    "close total-current, braking-energy, encoder and controller gates before purchase",
+    "obtain explicit approval before any xacro/Gazebo Phase-2 work"
+  ],
+  "mass": {
+    "printed_d200": {
+      "construction": "8-spoke PETG core, replaceable 4 mm radial TPU 95A tread, aluminium clamp hub",
+      "assumed_densities_kg_m3": {
+        "PETG": 1270.0,
+        "TPU_95A": 1200.0,
+        "aluminium": 2700.0
+      },
+      "estimated_mass_kg_each": 0.8375985883443636,
+      "primitive_polar_inertia_kg_m2_each": 0.004692250767087274,
+      "inertia_bounds_kg_m2_each": [
+        0.004187992941721819,
+        0.008375985883443638
+      ],
+      "limit": "not weighed; slicer and assembled measurement required"
+    },
+    "pneumatic_d200": {
+      "seller_listed_tyre_mass_kg_each": 0.9,
+      "mass_measurement_status": "UNMEASURED",
+      "assumed_hub_mass_kg_each": 0.026764,
+      "rotating_mass_kg_each": 0.926764,
+      "tyre_inertia_bounds_kg_m2_each": [
+        0.004500000000000001,
+        0.009000000000000003
+      ],
+      "inertia_basis": "0.5*m*R^2 .. m*R^2; hub inertia additional and small"
+    },
+    "module_mass_kg": {
+      "printed_d200": 4.527200536688727,
+      "pneumatic_d200": 4.70553136
+    },
+    "structural_design_module_mass_kg": 4.70553136,
+    "module_mass_breakdown_kg": {
+      "upper_aluminium_plate": 1.17945936,
+      "outboard_aluminium_yokes": 0.212544,
+      "two_D5065": 0.98,
+      "trunnions_bearings_fasteners_gate_guide": 0.48
+    }
+  },
+  "geometry": {
+    "angle_convention": "positive raises the front/local +U mouth",
+    "pivot_mm": [
+      397.0,
+      0,
+      64.3
+    ],
+    "nip_offset_from_pivot_mm": 45.0,
+    "endpoint_datums": {
+      "intake_-10deg": {
+        "nip_mm": [
+          441.31634888554936,
+          0,
+          56.48583200498813
+        ],
+        "rear_throat_mm": [
+          337.91153481926756,
+          0,
+          74.71889066001582
+        ]
+      },
+      "launch_+20deg": {
+        "nip_mm": [
+          439.2861679353659,
+          0,
+          79.69090644965509
+        ],
+        "rear_throat_mm": [
+          340.6184427528455,
+          0,
+          43.77879140045987
+        ]
+      }
+    },
+    "variants": {
+      "d200_main": {
+        "variant": "d200_main",
+        "wheel_envelope_mm": [
+          200,
+          50
+        ],
+        "wheel_centres_y_mm": [
+          -129.0,
+          129.0
+        ],
+        "endpoint_dimensions": {
+          "intake_-10deg": {
+            "overall_length_mm": 709.1383286284434,
+            "overall_width_mm": 677,
+            "overall_height_mm": 222,
+            "wheel_ground_clearance_mm": 14.500820412989901,
+            "rear_wheel_to_rail_end_x_clearance_mm": 8.494369142655334
+          },
+          "launch_+20deg": {
+            "overall_length_mm": 706.8059335970984,
+            "overall_width_mm": 677,
+            "overall_height_mm": 222,
+            "wheel_ground_clearance_mm": 21.996576597440498,
+            "rear_wheel_to_rail_end_x_clearance_mm": 6.766402273633288
+          }
+        },
+        "minimum_wheel_ground_clearance_mm": 14.500820412989901,
+        "minimum_rear_wheel_to_rail_end_x_clearance_mm": 6.766402273633288,
+        "flywheel_outer_y_mm": 229.0,
+        "flywheel_to_drive_tyre_inner_face_lateral_clearance_mm": 26.5,
+        "openscad_drive_clearance_bracket_mm": [
+          8.625,
+          8.75
+        ],
+        "sweep": [
+          {
+            "angle_deg": -10,
+            "nip_z_mm": 56.48583200498813,
+            "wheel_min_z_mm": 14.500820412989901,
+            "wheel_front_x_mm": 544.1383286284434,
+            "wheel_rear_x_mm": 338.49436914265533,
+            "rear_wheel_to_rail_end_x_clearance_mm": 8.494369142655334,
+            "rear_throat_ball_center_z_mm": 74.71889066001582
+          },
+          {
+            "angle_deg": -9,
+            "nip_z_mm": 57.260449073189605,
+            "wheel_min_z_mm": 16.924794054288075,
+            "wheel_front_x_mm": 544.1256710123007,
+            "wheel_rear_x_mm": 338.76627964126163,
+            "rear_wheel_to_rail_end_x_clearance_mm": 8.766279641261644,
+            "rear_throat_ball_center_z_mm": 73.68606790241384
+          },
+          {
+            "angle_deg": -8,
+            "nip_z_mm": 58.03721045679705,
+            "wheel_min_z_mm": 19.363198642251245,
+            "wheel_front_x_mm": 544.0681974915293,
+            "wheel_rear_x_mm": 339.055928695212,
+            "rear_wheel_to_rail_end_x_clearance_mm": 9.055928695211989,
+            "rear_throat_ball_center_z_mm": 72.65038605760392
+          },
+          {
+            "angle_deg": -7,
+            "nip_z_mm": 58.815879546768365,
+            "wheel_min_z_mm": 21.815291415220567,
+            "wheel_front_x_mm": 543.9659255731203,
+            "wheel_rear_x_mm": 339.3632280745986,
+            "rear_wheel_to_rail_end_x_clearance_mm": 9.363228074598606,
+            "rear_throat_ball_center_z_mm": 71.61216060430884
+          },
+          {
+            "angle_deg": -6,
+            "nip_z_mm": 59.59621915295559,
+            "wheel_min_z_mm": 24.280325441983415,
+            "wheel_front_x_mm": 543.8188864100911,
+            "wheel_rear_x_mm": 339.6880841730537,
+            "rear_wheel_to_rail_end_x_clearance_mm": 9.688084173053667,
+            "rear_throat_ball_center_z_mm": 70.5717077960592
+          },
+          {
+            "angle_deg": -5,
+            "nip_z_mm": 60.37799157635538,
+            "wheel_min_z_mm": 26.75754984929592,
+            "wheel_front_x_mm": 543.6271247919946,
+            "wheel_rear_x_mm": 340.03039803626257,
+            "rear_wheel_to_rail_end_x_clearance_mm": 10.030398036262545,
+            "rear_throat_ball_center_z_mm": 69.52934456485949
+          },
+          {
+            "angle_deg": -4,
+            "nip_z_mm": 61.16095868151436,
+            "wheel_min_z_mm": 29.246210050606223,
+            "wheel_front_x_mm": 543.3906991312775,
+            "wheel_rear_x_mm": 340.3900653921065,
+            "rear_wheel_to_rail_end_x_clearance_mm": 10.390065392106518,
+            "rear_throat_ball_center_z_mm": 68.48538842464752
+          },
+          {
+            "angle_deg": -3,
+            "nip_z_mm": 61.944881969067524,
+            "wheel_min_z_mm": 31.745547975908796,
+            "wheel_front_x_mm": 543.1096814454869,
+            "wheel_rear_x_mm": 340.7669766824249,
+            "rear_wheel_to_rail_end_x_clearance_mm": 10.766976682424879,
+            "rear_throat_ball_center_z_mm": 67.44015737457661
+          },
+          {
+            "angle_deg": -2,
+            "nip_z_mm": 62.72952264838745,
+            "wheel_min_z_mm": 34.254802302659954,
+            "wheel_front_x_mm": 542.7841573353313,
+            "wheel_rear_x_mm": 341.1610170963872,
+            "rear_wheel_to_rail_end_x_clearance_mm": 11.161017096387171,
+            "rear_throat_ball_center_z_mm": 66.39396980215005
+          },
+          {
+            "angle_deg": -1,
+            "nip_z_mm": 63.514641710322245,
+            "wheel_min_z_mm": 36.773208687684104,
+            "wheel_front_x_mm": 542.4142259586088,
+            "wheel_rear_x_mm": 341.57206660546643,
+            "rear_wheel_to_rail_end_x_clearance_mm": 11.572066605466391,
+            "rear_throat_ball_center_z_mm": 65.347144386237
+          },
+          {
+            "angle_deg": 0,
+            "nip_z_mm": 64.3,
+            "wheel_min_z_mm": 39.3,
+            "wheel_front_x_mm": 542.0,
+            "wheel_rear_x_mm": 341.99999999999994,
+            "rear_wheel_to_rail_end_x_clearance_mm": 11.999999999999956,
+            "rear_throat_ball_center_z_mm": 64.3
+          },
+          {
+            "angle_deg": 1,
+            "nip_z_mm": 65.08535828967776,
+            "wheel_min_z_mm": 38.343925267039616,
+            "wheel_front_x_mm": 542.4142259586088,
+            "wheel_rear_x_mm": 341.57206660546643,
+            "rear_wheel_to_rail_end_x_clearance_mm": 11.572066605466391,
+            "rear_throat_ball_center_z_mm": 63.25285561376298
+          },
+          {
+            "angle_deg": 2,
+            "nip_z_mm": 65.87047735161254,
+            "wheel_min_z_mm": 37.395757005885045,
+            "wheel_front_x_mm": 542.7841573353313,
+            "wheel_rear_x_mm": 341.1610170963872,
+            "rear_wheel_to_rail_end_x_clearance_mm": 11.161017096387171,
+            "rear_throat_ball_center_z_mm": 62.20603019784994
+          },
+          {
+            "angle_deg": 3,
+            "nip_z_mm": 66.65511803093247,
+            "wheel_min_z_mm": 36.45578403777373,
+            "wheel_front_x_mm": 543.1096814454869,
+            "wheel_rear_x_mm": 340.7669766824249,
+            "rear_wheel_to_rail_end_x_clearance_mm": 10.766976682424879,
+            "rear_throat_ball_center_z_mm": 61.159842625423366
+          },
+          {
+            "angle_deg": 4,
+            "nip_z_mm": 67.43904131848564,
+            "wheel_min_z_mm": 35.52429268757749,
+            "wheel_front_x_mm": 543.3906991312775,
+            "wheel_rear_x_mm": 340.3900653921065,
+            "rear_wheel_to_rail_end_x_clearance_mm": 10.390065392106518,
+            "rear_throat_ball_center_z_mm": 60.11461157535248
+          },
+          {
+            "angle_deg": 5,
+            "nip_z_mm": 68.22200842364462,
+            "wheel_min_z_mm": 34.60156669658517,
+            "wheel_front_x_mm": 543.6271247919946,
+            "wheel_rear_x_mm": 340.03039803626257,
+            "rear_wheel_to_rail_end_x_clearance_mm": 10.030398036262545,
+            "rear_throat_ball_center_z_mm": 59.07065543514051
+          },
+          {
+            "angle_deg": 6,
+            "nip_z_mm": 69.00378084704441,
+            "wheel_min_z_mm": 33.68788713607223,
+            "wheel_front_x_mm": 543.8188864100911,
+            "wheel_rear_x_mm": 339.6880841730537,
+            "rear_wheel_to_rail_end_x_clearance_mm": 9.688084173053667,
+            "rear_throat_ball_center_z_mm": 58.028292203940794
+          },
+          {
+            "angle_deg": 7,
+            "nip_z_mm": 69.78412045323164,
+            "wheel_min_z_mm": 32.783532321683836,
+            "wheel_front_x_mm": 543.9659255731203,
+            "wheel_rear_x_mm": 339.3632280745986,
+            "rear_wheel_to_rail_end_x_clearance_mm": 9.363228074598606,
+            "rear_throat_ball_center_z_mm": 56.98783939569115
+          },
+          {
+            "angle_deg": 8,
+            "nip_z_mm": 70.56278954320294,
+            "wheel_min_z_mm": 31.888777728657136,
+            "wheel_front_x_mm": 544.0681974915293,
+            "wheel_rear_x_mm": 339.055928695212,
+            "rear_wheel_to_rail_end_x_clearance_mm": 9.055928695211989,
+            "rear_throat_ball_center_z_mm": 55.94961394239607
+          },
+          {
+            "angle_deg": 9,
+            "nip_z_mm": 71.33955092681038,
+            "wheel_min_z_mm": 31.00389590790884,
+            "wheel_front_x_mm": 544.1256710123007,
+            "wheel_rear_x_mm": 338.76627964126163,
+            "rear_wheel_to_rail_end_x_clearance_mm": 8.766279641261644,
+            "rear_throat_ball_center_z_mm": 54.91393209758615
+          },
+          {
+            "angle_deg": 10,
+            "nip_z_mm": 72.11416799501185,
+            "wheel_min_z_mm": 30.129156403013624,
+            "wheel_front_x_mm": 544.1383286284434,
+            "wheel_rear_x_mm": 338.49436914265533,
+            "rear_wheel_to_rail_end_x_clearance_mm": 8.494369142655334,
+            "rear_throat_ball_center_z_mm": 53.88110933998418
+          },
+          {
+            "angle_deg": 11,
+            "nip_z_mm": 72.88640479194451,
+            "wheel_min_z_mm": 29.26482566809843,
+            "wheel_front_x_mm": 544.1061664843248,
+            "wheel_rear_x_mm": 338.24028002596486,
+            "rear_wheel_to_rail_end_x_clearance_mm": 8.24028002596483,
+            "rear_throat_ball_center_z_mm": 52.851460277407305
+          },
+          {
+            "angle_deg": 12,
+            "nip_z_mm": 73.65602608679916,
+            "wheel_min_z_mm": 28.411166986678086,
+            "wheel_front_x_mm": 544.0291943768458,
+            "wheel_rear_x_mm": 338.0040896891967,
+            "rear_wheel_to_rail_end_x_clearance_mm": 8.004089689196691,
+            "rear_throat_ball_center_z_mm": 51.825298550934434
+          },
+          {
+            "angle_deg": 13,
+            "nip_z_mm": 74.42279744547392,
+            "wheel_min_z_mm": 27.568440391456537,
+            "wheel_front_x_mm": 543.9074357524559,
+            "wheel_rear_x_mm": 337.7858700782154,
+            "rear_wheel_to_rail_end_x_clearance_mm": 7.785870078215407,
+            "rear_throat_ball_center_z_mm": 50.80293673936809
+          },
+          {
+            "angle_deg": 14,
+            "nip_z_mm": 75.18648530198504,
+            "wheel_min_z_mm": 26.736902585118365,
+            "wheel_front_x_mm": 543.7409277000112,
+            "wheel_rear_x_mm": 337.58568766482847,
+            "rear_wheel_to_rail_end_x_clearance_mm": 7.585687664828478,
+            "rear_throat_ball_center_z_mm": 49.78468626401993
+          },
+          {
+            "angle_deg": 15,
+            "nip_z_mm": 75.94685702961343,
+            "wheel_min_z_mm": 25.916806862134646,
+            "wheel_front_x_mm": 543.5297209394779,
+            "wheel_rear_x_mm": 337.40360342653827,
+            "rear_wheel_to_rail_end_x_clearance_mm": 7.40360342653823,
+            "rear_throat_ball_center_z_mm": 48.77085729384875
+          },
+          {
+            "angle_deg": 16,
+            "nip_z_mm": 76.70368101176496,
+            "wheel_min_z_mm": 25.108403031607068,
+            "wheel_front_x_mm": 543.2738798064812,
+            "wheel_rear_x_mm": 337.23967282796747,
+            "rear_wheel_to_rail_end_x_clearance_mm": 7.239672827967447,
+            "rear_throat_ball_center_z_mm": 47.76175865098005
+          },
+          {
+            "angle_deg": 17,
+            "nip_z_mm": 77.45672671252315,
+            "wheel_min_z_mm": 24.31193734117359,
+            "wheel_front_x_mm": 542.9734822327085,
+            "wheel_rear_x_mm": 337.0939458039647,
+            "rear_wheel_to_rail_end_x_clearance_mm": 7.0939458039646635,
+            "rear_throat_ball_center_z_mm": 46.757697716635796
+          },
+          {
+            "angle_deg": 18,
+            "nip_z_mm": 78.20576474687263,
+            "wheel_min_z_mm": 23.527652401999053,
+            "wheel_front_x_mm": 542.6286197221709,
+            "wheel_rear_x_mm": 336.9664667443929,
+            "rear_wheel_to_rail_end_x_clearance_mm": 6.966466744392886,
+            "rear_throat_ball_center_z_mm": 45.758980337503154
+          },
+          {
+            "angle_deg": 19,
+            "nip_z_mm": 78.95056695057205,
+            "wheel_min_z_mm": 22.75578711487346,
+            "wheel_front_x_mm": 542.23939732333,
+            "wheel_rear_x_mm": 336.8572744806087,
+            "rear_wheel_to_rail_end_x_clearance_mm": 6.857274480608688,
+            "rear_throat_ball_center_z_mm": 44.765910732570596
+          },
+          {
+            "angle_deg": 20,
+            "nip_z_mm": 79.69090644965509,
+            "wheel_min_z_mm": 21.996576597440498,
+            "wheel_front_x_mm": 541.8059335970984,
+            "wheel_rear_x_mm": 336.7664022736333,
+            "rear_wheel_to_rail_end_x_clearance_mm": 6.766402273633288,
+            "rear_throat_ball_center_z_mm": 43.77879140045987
+          }
+        ]
+      },
+      "d160_comparison": {
+        "variant": "d160_comparison",
+        "wheel_envelope_mm": [
+          160,
+          44
+        ],
+        "wheel_centres_y_mm": [
+          -109.0,
+          109.0
+        ],
+        "endpoint_dimensions": {
+          "intake_-10deg": {
+            "overall_length_mm": 688.9212290351985,
+            "overall_width_mm": 677,
+            "overall_height_mm": 222,
+            "wheel_ground_clearance_mm": 20.928207225365135,
+            "rear_wheel_to_rail_end_x_clearance_mm": 28.711468735900247
+          },
+          "launch_+20deg": {
+            "overall_length_mm": 686.9860207514033,
+            "overall_width_mm": 677,
+            "overall_height_mm": 222,
+            "wheel_ground_clearance_mm": 31.656057326311604,
+            "rear_wheel_to_rail_end_x_clearance_mm": 26.586315119328518
+          }
+        },
+        "minimum_wheel_ground_clearance_mm": 20.928207225365135,
+        "minimum_rear_wheel_to_rail_end_x_clearance_mm": 26.586315119328518,
+        "flywheel_outer_y_mm": 189.0,
+        "flywheel_to_drive_tyre_inner_face_lateral_clearance_mm": 66.5,
+        "openscad_drive_clearance_bracket_mm": [
+          8.0,
+          8.25
+        ],
+        "sweep": [
+          {
+            "angle_deg": -10,
+            "nip_z_mm": 56.48583200498813,
+            "wheel_min_z_mm": 20.928207225365135,
+            "wheel_front_x_mm": 523.9212290351985,
+            "wheel_rear_x_mm": 358.71146873590027,
+            "rear_wheel_to_rail_end_x_clearance_mm": 28.711468735900247,
+            "rear_throat_ball_center_z_mm": 74.71889066001582
+          },
+          {
+            "angle_deg": -9,
+            "nip_z_mm": 57.260449073189605,
+            "wheel_min_z_mm": 23.016548376878102,
+            "wheel_front_x_mm": 523.9026008052773,
+            "wheel_rear_x_mm": 358.9893498482851,
+            "rear_wheel_to_rail_end_x_clearance_mm": 28.989349848285052,
+            "rear_throat_ball_center_z_mm": 73.68606790241384
+          },
+          {
+            "angle_deg": -8,
+            "nip_z_mm": 58.03721045679705,
+            "wheel_min_z_mm": 25.117464867677267,
+            "wheel_front_x_mm": 523.8453168138177,
+            "wheel_rear_x_mm": 359.2788093729236,
+            "rear_wheel_to_rail_end_x_clearance_mm": 29.278809372923597,
+            "rear_throat_ball_center_z_mm": 72.65038605760392
+          },
+          {
+            "angle_deg": -7,
+            "nip_z_mm": 58.815879546768365,
+            "wheel_min_z_mm": 27.230316738247485,
+            "wheel_front_x_mm": 523.7493945100786,
+            "wheel_rear_x_mm": 359.5797591376405,
+            "rear_wheel_to_rail_end_x_clearance_mm": 29.579759137640494,
+            "rear_throat_ball_center_z_mm": 71.61216060430884
+          },
+          {
+            "angle_deg": -6,
+            "nip_z_mm": 59.59621915295559,
+            "wheel_min_z_mm": 29.354460393441304,
+            "wheel_front_x_mm": 523.6148631129226,
+            "wheel_rear_x_mm": 359.8921074702221,
+            "rear_wheel_to_rail_end_x_clearance_mm": 29.89210747022203,
+            "rear_throat_ball_center_z_mm": 70.5717077960592
+          },
+          {
+            "angle_deg": -5,
+            "nip_z_mm": 60.37799157635538,
+            "wheel_min_z_mm": 31.48924879852433,
+            "wheel_front_x_mm": 523.4417636019166,
+            "wheel_rear_x_mm": 360.2157592263404,
+            "rear_wheel_to_rail_end_x_clearance_mm": 30.2157592263404,
+            "rear_throat_ball_center_z_mm": 69.52934456485949
+          },
+          {
+            "angle_deg": -4,
+            "nip_z_mm": 61.16095868151436,
+            "wheel_min_z_mm": 33.6340316762682,
+            "wheel_front_x_mm": 523.2301487048487,
+            "wheel_rear_x_mm": 360.5506158185354,
+            "rear_wheel_to_rail_end_x_clearance_mm": 30.550615818535356,
+            "rear_throat_ball_center_z_mm": 68.48538842464752
+          },
+          {
+            "angle_deg": -3,
+            "nip_z_mm": 61.944881969067524,
+            "wheel_min_z_mm": 35.78815570503139,
+            "wheel_front_x_mm": 522.9800828816665,
+            "wheel_rear_x_mm": 360.89657524624516,
+            "rear_wheel_to_rail_end_x_clearance_mm": 30.896575246245174,
+            "rear_throat_ball_center_z_mm": 67.44015737457661
+          },
+          {
+            "angle_deg": -2,
+            "nip_z_mm": 62.72952264838745,
+            "wheel_min_z_mm": 37.95096471776726,
+            "wheel_front_x_mm": 522.691642304842,
+            "wheel_rear_x_mm": 361.2535321268766,
+            "rear_wheel_to_rail_end_x_clearance_mm": 31.253532126876593,
+            "rear_throat_ball_center_z_mm": 66.39396980215005
+          },
+          {
+            "angle_deg": -1,
+            "nip_z_mm": 63.514641710322245,
+            "wheel_min_z_mm": 40.12179990189896,
+            "wheel_front_x_mm": 522.3649148361691,
+            "wheel_rear_x_mm": 361.62137772790607,
+            "rear_wheel_to_rail_end_x_clearance_mm": 31.621377727906076,
+            "rear_throat_ball_center_z_mm": 65.347144386237
+          },
+          {
+            "angle_deg": 0,
+            "nip_z_mm": 64.3,
+            "wheel_min_z_mm": 42.3,
+            "wheel_front_x_mm": 522.0,
+            "wheel_rear_x_mm": 362.0,
+            "rear_wheel_to_rail_end_x_clearance_mm": 31.99999999999997,
+            "rear_throat_ball_center_z_mm": 64.3
+          },
+          {
+            "angle_deg": 1,
+            "nip_z_mm": 65.08535828967776,
+            "wheel_min_z_mm": 41.69251648125446,
+            "wheel_front_x_mm": 522.3649148361691,
+            "wheel_rear_x_mm": 361.62137772790607,
+            "rear_wheel_to_rail_end_x_clearance_mm": 31.621377727906076,
+            "rear_throat_ball_center_z_mm": 63.25285561376298
+          },
+          {
+            "angle_deg": 2,
+            "nip_z_mm": 65.87047735161254,
+            "wheel_min_z_mm": 41.091919420992355,
+            "wheel_front_x_mm": 522.691642304842,
+            "wheel_rear_x_mm": 361.2535321268766,
+            "rear_wheel_to_rail_end_x_clearance_mm": 31.253532126876593,
+            "rear_throat_ball_center_z_mm": 62.20603019784994
+          },
+          {
+            "angle_deg": 3,
+            "nip_z_mm": 66.65511803093247,
+            "wheel_min_z_mm": 40.49839176689633,
+            "wheel_front_x_mm": 522.9800828816665,
+            "wheel_rear_x_mm": 360.89657524624516,
+            "rear_wheel_to_rail_end_x_clearance_mm": 30.896575246245174,
+            "rear_throat_ball_center_z_mm": 61.159842625423366
+          },
+          {
+            "angle_deg": 4,
+            "nip_z_mm": 67.43904131848564,
+            "wheel_min_z_mm": 39.91211431323948,
+            "wheel_front_x_mm": 523.2301487048487,
+            "wheel_rear_x_mm": 360.5506158185354,
+            "rear_wheel_to_rail_end_x_clearance_mm": 30.550615818535356,
+            "rear_throat_ball_center_z_mm": 60.11461157535248
+          },
+          {
+            "angle_deg": 5,
+            "nip_z_mm": 68.22200842364462,
+            "wheel_min_z_mm": 39.33326564581356,
+            "wheel_front_x_mm": 523.4417636019166,
+            "wheel_rear_x_mm": 360.2157592263404,
+            "rear_wheel_to_rail_end_x_clearance_mm": 30.2157592263404,
+            "rear_throat_ball_center_z_mm": 59.07065543514051
+          },
+          {
+            "angle_deg": 6,
+            "nip_z_mm": 69.00378084704441,
+            "wheel_min_z_mm": 38.76202208753011,
+            "wheel_front_x_mm": 523.6148631129226,
+            "wheel_rear_x_mm": 359.8921074702221,
+            "rear_wheel_to_rail_end_x_clearance_mm": 29.89210747022203,
+            "rear_throat_ball_center_z_mm": 58.028292203940794
+          },
+          {
+            "angle_deg": 7,
+            "nip_z_mm": 69.78412045323164,
+            "wheel_min_z_mm": 38.19855764471075,
+            "wheel_front_x_mm": 523.7493945100786,
+            "wheel_rear_x_mm": 359.5797591376405,
+            "rear_wheel_to_rail_end_x_clearance_mm": 29.579759137640494,
+            "rear_throat_ball_center_z_mm": 56.98783939569115
+          },
+          {
+            "angle_deg": 8,
+            "nip_z_mm": 70.56278954320294,
+            "wheel_min_z_mm": 37.64304395408316,
+            "wheel_front_x_mm": 523.8453168138177,
+            "wheel_rear_x_mm": 359.2788093729236,
+            "rear_wheel_to_rail_end_x_clearance_mm": 29.278809372923597,
+            "rear_throat_ball_center_z_mm": 55.94961394239607
+          },
+          {
+            "angle_deg": 9,
+            "nip_z_mm": 71.33955092681038,
+            "wheel_min_z_mm": 37.095650230498876,
+            "wheel_front_x_mm": 523.9026008052773,
+            "wheel_rear_x_mm": 358.9893498482851,
+            "rear_wheel_to_rail_end_x_clearance_mm": 28.989349848285052,
+            "rear_throat_ball_center_z_mm": 54.91393209758615
+          },
+          {
+            "angle_deg": 10,
+            "nip_z_mm": 72.11416799501185,
+            "wheel_min_z_mm": 36.55654321538886,
+            "wheel_front_x_mm": 523.9212290351985,
+            "wheel_rear_x_mm": 358.71146873590027,
+            "rear_wheel_to_rail_end_x_clearance_mm": 28.711468735900247,
+            "rear_throat_ball_center_z_mm": 53.88110933998418
+          },
+          {
+            "angle_deg": 11,
+            "nip_z_mm": 72.88640479194451,
+            "wheel_min_z_mm": 36.025887125972325,
+            "wheel_front_x_mm": 523.9011958292419,
+            "wheel_rear_x_mm": 358.44525068104775,
+            "rear_wheel_to_rail_end_x_clearance_mm": 28.445250681047753,
+            "rear_throat_ball_center_z_mm": 52.851460277407305
+          },
+          {
+            "angle_deg": 12,
+            "nip_z_mm": 73.65602608679916,
+            "wheel_min_z_mm": 35.50384360523469,
+            "wheel_front_x_mm": 523.8425072897165,
+            "wheel_rear_x_mm": 358.1907767763261,
+            "rear_wheel_to_rail_end_x_clearance_mm": 28.19077677632609,
+            "rear_throat_ball_center_z_mm": 51.825298550934434
+          },
+          {
+            "angle_deg": 13,
+            "nip_z_mm": 74.42279744547392,
+            "wheel_min_z_mm": 34.99057167268955,
+            "wheel_front_x_mm": 523.7451812937195,
+            "wheel_rear_x_mm": 357.94812453695175,
+            "rear_wheel_to_rail_end_x_clearance_mm": 27.948124536951724,
+            "rear_throat_ball_center_z_mm": 50.80293673936809
+          },
+          {
+            "angle_deg": 14,
+            "nip_z_mm": 75.18648530198504,
+            "wheel_min_z_mm": 34.4862276759397,
+            "wheel_front_x_mm": 523.6092474876922,
+            "wheel_rear_x_mm": 357.7173678771474,
+            "rear_wheel_to_rail_end_x_clearance_mm": 27.717367877147403,
+            "rear_throat_ball_center_z_mm": 49.78468626401993
+          },
+          {
+            "angle_deg": 15,
+            "nip_z_mm": 75.94685702961343,
+            "wheel_min_z_mm": 33.99096524305227,
+            "wheel_front_x_mm": 523.4347472783891,
+            "wheel_rear_x_mm": 357.49857708762715,
+            "rear_wheel_to_rail_end_x_clearance_mm": 27.49857708762715,
+            "rear_throat_ball_center_z_mm": 48.77085729384875
+          },
+          {
+            "angle_deg": 16,
+            "nip_z_mm": 76.70368101176496,
+            "wheel_min_z_mm": 33.504935235762005,
+            "wheel_front_x_mm": 523.2217338202638,
+            "wheel_rear_x_mm": 357.29181881418486,
+            "rear_wheel_to_rail_end_x_clearance_mm": 27.291818814184854,
+            "rear_throat_ball_center_z_mm": 47.76175865098005
+          },
+          {
+            "angle_deg": 17,
+            "nip_z_mm": 77.45672671252315,
+            "wheel_min_z_mm": 33.02828570351744,
+            "wheel_front_x_mm": 522.9702719992797,
+            "wheel_rear_x_mm": 357.09715603739363,
+            "rear_wheel_to_rail_end_x_clearance_mm": 27.0971560373936,
+            "rear_throat_ball_center_z_mm": 46.757697716635796
+          },
+          {
+            "angle_deg": 18,
+            "nip_z_mm": 78.20576474687263,
+            "wheel_min_z_mm": 32.561161838383455,
+            "wheel_front_x_mm": 522.6804384131431,
+            "wheel_rear_x_mm": 356.91464805342076,
+            "rear_wheel_to_rail_end_x_clearance_mm": 26.914648053420752,
+            "rear_throat_ball_center_z_mm": 45.758980337503154
+          },
+          {
+            "angle_deg": 19,
+            "nip_z_mm": 78.95056695057205,
+            "wheel_min_z_mm": 32.10370593081455,
+            "wheel_front_x_mm": 522.3523213479722,
+            "wheel_rear_x_mm": 356.74435045596647,
+            "rear_wheel_to_rail_end_x_clearance_mm": 26.744350455966458,
+            "rear_throat_ball_center_z_mm": 44.765910732570596
+          },
+          {
+            "angle_deg": 20,
+            "nip_z_mm": 79.69090644965509,
+            "wheel_min_z_mm": 31.656057326311604,
+            "wheel_front_x_mm": 521.9860207514033,
+            "wheel_rear_x_mm": 356.58631511932856,
+            "rear_wheel_to_rail_end_x_clearance_mm": 26.586315119328518,
+            "rear_throat_ball_center_z_mm": 43.77879140045987
+          }
+        ]
+      }
+    },
+    "launch_rear_throat_ball_ground_clearance_mm": 10.778791400459873,
+    "drive_measurement_basis": {
+      "uncertainty_mm": "+/-2..3 tape measurement",
+      "drive_axle_y_mm": "295..298; CAD nominal 297",
+      "tyre_width_mm": 83,
+      "rail_outer_y_mm": 245,
+      "tyre_inner_y_mm": 255.5,
+      "rail_to_tyre_gap_mm": 10.5,
+      "overall_width_mm": 677,
+      "FIT0403_face_to_encoder_mm": "77..78 inward",
+      "outer_hex_beyond_plate_mm": "47..49",
+      "cable": "radial near encoder end, routed downward; no axial connector envelope"
+    },
+    "lateral_clearances_d200_mm": {
+      "flywheel_outer_to_tyre_inner": 26.5,
+      "fixed_bearing_outer_to_tyre_inner": 10.5,
+      "moving_trunnion_outer_to_tyre_inner": 8.5,
+      "moving_trunnion_worst_with_measurement_uncertainty": 5.5
+    },
+    "launch_port_contamination": {
+      "ground_clearance_mm": 10.778791400459873,
+      "decision": "4.3 mm is unsuitable as an unsealed clay-court opening",
+      "unapplied_alternative": "raise the launch-side dock or use an elevated internal feed shoe plus replaceable brush/labyrinth flap"
+    },
+    "side_cheek_variants_for_phase3": {
+      "narrow_default_half_width_mm": [
+        72,
+        46
+      ],
+      "wide_entry_half_width_mm": [
+        110,
+        46
+      ],
+      "tradeoff": "narrow limits side strikes near the drive package; wide admits larger lateral error and relies more on counter-rotating-wheel self-centring"
+    },
+    "front_entry": "side cheeks only; no transverse lip or ramp ahead of first wheel contact",
+    "full_lower_plate_result": "REJECTED: no full-length lower plate at W=-43 mm clears both endpoints",
+    "accepted_connection": "forward/elevated supports at X=397, |Y|=237; no member passes through a flywheel",
+    "bearing_arrangement_requirement": "self-aligning spherical bearings, or one locating and one floating bearing, because lifted-wheel frame twist must not preload both bearings",
+    "main_xacro_observation_no_edit": {
+      "wheel_y_m": 0.35,
+      "geometric_wheel_separation_m": 0.7,
+      "measured_real_track_m": "about 0.58..0.59",
+      "status": "finding only; Phase-1 CAD/bench alternative changed, xacro untouched"
+    }
+  },
+  "traction": {
+    "ball_tread_contact": [
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "rigid",
+        "case_family": "bound",
+        "tread_assumption": "rigid tread; all 8 mm diametric closure assigned to ball",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 8.0,
+        "tread_compression_per_contact_mm": 0.0,
+        "normal_force_n_per_wheel": 76.78406995120798,
+        "two_wheel_tangential_force_cap_n": 46.07044197072479,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.788449526519669,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "rigid",
+        "case_family": "bound",
+        "tread_assumption": "rigid tread; all 8 mm diametric closure assigned to ball",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 8.0,
+        "tread_compression_per_contact_mm": 0.0,
+        "normal_force_n_per_wheel": 76.78406995120798,
+        "two_wheel_tangential_force_cap_n": 92.14088394144957,
+        "ideal_constant_force_energy_screen_delta_v_mps": 13.842958075008616,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "rigid",
+        "case_family": "bound",
+        "tread_assumption": "rigid tread; all 8 mm diametric closure assigned to ball",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 8.0,
+        "tread_compression_per_contact_mm": 0.0,
+        "normal_force_n_per_wheel": 76.78406995120798,
+        "two_wheel_tangential_force_cap_n": 138.21132591217437,
+        "ideal_constant_force_energy_screen_delta_v_mps": 16.954091907255588,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "rigid",
+        "case_family": "bound",
+        "tread_assumption": "rigid tread; all 8 mm diametric closure assigned to ball",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 8.0,
+        "tread_compression_per_contact_mm": 0.0,
+        "normal_force_n_per_wheel": 76.78406995120798,
+        "two_wheel_tangential_force_cap_n": 46.07044197072479,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.286138579619669,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "rigid",
+        "case_family": "bound",
+        "tread_assumption": "rigid tread; all 8 mm diametric closure assigned to ball",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 8.0,
+        "tread_compression_per_contact_mm": 0.0,
+        "normal_force_n_per_wheel": 76.78406995120798,
+        "two_wheel_tangential_force_cap_n": 92.14088394144957,
+        "ideal_constant_force_energy_screen_delta_v_mps": 13.132583121374166,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "rigid",
+        "case_family": "bound",
+        "tread_assumption": "rigid tread; all 8 mm diametric closure assigned to ball",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 8.0,
+        "tread_compression_per_contact_mm": 0.0,
+        "normal_force_n_per_wheel": 76.78406995120798,
+        "two_wheel_tangential_force_cap_n": 138.21132591217437,
+        "ideal_constant_force_energy_screen_delta_v_mps": 16.084063826026757,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_low",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=10 MPa, A=100 mm2, t=4 mm => k=250 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.4481754905884845,
+        "tread_compression_per_contact_mm": 0.2759122547057579,
+        "normal_force_n_per_wheel": 68.9780636764395,
+        "two_wheel_tangential_force_cap_n": 41.386838205863704,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.277561481800593,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_low",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=10 MPa, A=100 mm2, t=4 mm => k=250 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.4481754905884845,
+        "tread_compression_per_contact_mm": 0.2759122547057579,
+        "normal_force_n_per_wheel": 68.9780636764395,
+        "two_wheel_tangential_force_cap_n": 82.77367641172741,
+        "ideal_constant_force_energy_screen_delta_v_mps": 13.120453273312627,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_low",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=10 MPa, A=100 mm2, t=4 mm => k=250 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.4481754905884845,
+        "tread_compression_per_contact_mm": 0.2759122547057579,
+        "normal_force_n_per_wheel": 68.9780636764395,
+        "two_wheel_tangential_force_cap_n": 124.1605146175911,
+        "ideal_constant_force_energy_screen_delta_v_mps": 16.069207856822626,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_low",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=10 MPa, A=100 mm2, t=4 mm => k=250 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.4481754905884845,
+        "tread_compression_per_contact_mm": 0.2759122547057579,
+        "normal_force_n_per_wheel": 68.9780636764395,
+        "two_wheel_tangential_force_cap_n": 41.386838205863704,
+        "ideal_constant_force_energy_screen_delta_v_mps": 8.801467624420999,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_low",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=10 MPa, A=100 mm2, t=4 mm => k=250 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.4481754905884845,
+        "tread_compression_per_contact_mm": 0.2759122547057579,
+        "normal_force_n_per_wheel": 68.9780636764395,
+        "two_wheel_tangential_force_cap_n": 82.77367641172741,
+        "ideal_constant_force_energy_screen_delta_v_mps": 12.447154883243883,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_low",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=10 MPa, A=100 mm2, t=4 mm => k=250 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.4481754905884845,
+        "tread_compression_per_contact_mm": 0.2759122547057579,
+        "normal_force_n_per_wheel": 68.9780636764395,
+        "two_wheel_tangential_force_cap_n": 124.1605146175911,
+        "ideal_constant_force_energy_screen_delta_v_mps": 15.244589106669718,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_nominal",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=25 MPa, A=160 mm2, t=4 mm => k=1000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.85071039169339,
+        "tread_compression_per_contact_mm": 0.07464480415330516,
+        "normal_force_n_per_wheel": 74.64480415330428,
+        "two_wheel_tangential_force_cap_n": 44.78688249198257,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.6511292781628,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_nominal",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=25 MPa, A=160 mm2, t=4 mm => k=1000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.85071039169339,
+        "tread_compression_per_contact_mm": 0.07464480415330516,
+        "normal_force_n_per_wheel": 74.64480415330428,
+        "two_wheel_tangential_force_cap_n": 89.57376498396513,
+        "ideal_constant_force_energy_screen_delta_v_mps": 13.648757917393892,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_nominal",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=25 MPa, A=160 mm2, t=4 mm => k=1000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.85071039169339,
+        "tread_compression_per_contact_mm": 0.07464480415330516,
+        "normal_force_n_per_wheel": 74.64480415330428,
+        "two_wheel_tangential_force_cap_n": 134.3606474759477,
+        "ideal_constant_force_energy_screen_delta_v_mps": 16.716246260193515,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_nominal",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=25 MPa, A=160 mm2, t=4 mm => k=1000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.85071039169339,
+        "tread_compression_per_contact_mm": 0.07464480415330516,
+        "normal_force_n_per_wheel": 74.64480415330428,
+        "two_wheel_tangential_force_cap_n": 44.78688249198257,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.155865153519361,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_nominal",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=25 MPa, A=160 mm2, t=4 mm => k=1000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.85071039169339,
+        "tread_compression_per_contact_mm": 0.07464480415330516,
+        "normal_force_n_per_wheel": 74.64480415330428,
+        "two_wheel_tangential_force_cap_n": 89.57376498396513,
+        "ideal_constant_force_energy_screen_delta_v_mps": 12.948348675366299,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_nominal",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=25 MPa, A=160 mm2, t=4 mm => k=1000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.85071039169339,
+        "tread_compression_per_contact_mm": 0.07464480415330516,
+        "normal_force_n_per_wheel": 74.64480415330428,
+        "two_wheel_tangential_force_cap_n": 134.3606474759477,
+        "ideal_constant_force_energy_screen_delta_v_mps": 15.858423633144952,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_high",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=50 MPa, A=400 mm2, t=4 mm => k=5000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.969462066099594,
+        "tread_compression_per_contact_mm": 0.015268966950202773,
+        "normal_force_n_per_wheel": 76.3448347510147,
+        "two_wheel_tangential_force_cap_n": 45.80690085060882,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.76041247501228,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_high",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=50 MPa, A=400 mm2, t=4 mm => k=5000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.969462066099594,
+        "tread_compression_per_contact_mm": 0.015268966950202773,
+        "normal_force_n_per_wheel": 76.3448347510147,
+        "two_wheel_tangential_force_cap_n": 91.61380170121764,
+        "ideal_constant_force_energy_screen_delta_v_mps": 13.803307696517916,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "TPU_high",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=50 MPa, A=400 mm2, t=4 mm => k=5000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.969462066099594,
+        "tread_compression_per_contact_mm": 0.015268966950202773,
+        "normal_force_n_per_wheel": 76.3448347510147,
+        "two_wheel_tangential_force_cap_n": 137.42070255182648,
+        "ideal_constant_force_energy_screen_delta_v_mps": 16.905530309550368,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_high",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=50 MPa, A=400 mm2, t=4 mm => k=5000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.969462066099594,
+        "tread_compression_per_contact_mm": 0.015268966950202773,
+        "normal_force_n_per_wheel": 76.3448347510147,
+        "two_wheel_tangential_force_cap_n": 45.80690085060882,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.259540297128028,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_high",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=50 MPa, A=400 mm2, t=4 mm => k=5000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.969462066099594,
+        "tread_compression_per_contact_mm": 0.015268966950202773,
+        "normal_force_n_per_wheel": 76.3448347510147,
+        "two_wheel_tangential_force_cap_n": 91.61380170121764,
+        "ideal_constant_force_energy_screen_delta_v_mps": 13.094967469538657,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "TPU_high",
+        "case_family": "realistic_order_screen",
+        "tread_assumption": "E=50 MPa, A=400 mm2, t=4 mm => k=5000 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 7.969462066099594,
+        "tread_compression_per_contact_mm": 0.015268966950202773,
+        "normal_force_n_per_wheel": 76.3448347510147,
+        "two_wheel_tangential_force_cap_n": 137.42070255182648,
+        "ideal_constant_force_energy_screen_delta_v_mps": 16.037994249357165,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "legacy_foam_reference",
+        "case_family": "non_candidate_reference",
+        "tread_assumption": "k=3 N/mm/contact; reproduces the requested foam-like reference only",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 1.9307526238128139,
+        "tread_compression_per_contact_mm": 3.034623688093593,
+        "normal_force_n_per_wheel": 9.10387106428078,
+        "two_wheel_tangential_force_cap_n": 5.462322638568468,
+        "ideal_constant_force_energy_screen_delta_v_mps": 3.3704771777947022,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "legacy_foam_reference",
+        "case_family": "non_candidate_reference",
+        "tread_assumption": "k=3 N/mm/contact; reproduces the requested foam-like reference only",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 1.9307526238128139,
+        "tread_compression_per_contact_mm": 3.034623688093593,
+        "normal_force_n_per_wheel": 9.10387106428078,
+        "two_wheel_tangential_force_cap_n": 10.924645277136936,
+        "ideal_constant_force_energy_screen_delta_v_mps": 4.766574536506261,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "legacy_foam_reference",
+        "case_family": "non_candidate_reference",
+        "tread_assumption": "k=3 N/mm/contact; reproduces the requested foam-like reference only",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 1.9307526238128139,
+        "tread_compression_per_contact_mm": 3.034623688093593,
+        "normal_force_n_per_wheel": 9.10387106428078,
+        "two_wheel_tangential_force_cap_n": 16.386967915705405,
+        "ideal_constant_force_energy_screen_delta_v_mps": 5.837837717691785,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "legacy_foam_reference",
+        "case_family": "non_candidate_reference",
+        "tread_assumption": "k=3 N/mm/contact; reproduces the requested foam-like reference only",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 1.9307526238128139,
+        "tread_compression_per_contact_mm": 3.034623688093593,
+        "normal_force_n_per_wheel": 9.10387106428078,
+        "two_wheel_tangential_force_cap_n": 5.462322638568468,
+        "ideal_constant_force_energy_screen_delta_v_mps": 3.1975154050342662,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "legacy_foam_reference",
+        "case_family": "non_candidate_reference",
+        "tread_assumption": "k=3 N/mm/contact; reproduces the requested foam-like reference only",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 1.9307526238128139,
+        "tread_compression_per_contact_mm": 3.034623688093593,
+        "normal_force_n_per_wheel": 9.10387106428078,
+        "two_wheel_tangential_force_cap_n": 10.924645277136936,
+        "ideal_constant_force_energy_screen_delta_v_mps": 4.5219696516963594,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "legacy_foam_reference",
+        "case_family": "non_candidate_reference",
+        "tread_assumption": "k=3 N/mm/contact; reproduces the requested foam-like reference only",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 1.9307526238128139,
+        "tread_compression_per_contact_mm": 3.034623688093593,
+        "normal_force_n_per_wheel": 9.10387106428078,
+        "two_wheel_tangential_force_cap_n": 16.386967915705405,
+        "ideal_constant_force_energy_screen_delta_v_mps": 5.538259139503527,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_very_soft",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=10 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 3.5192832980738356,
+        "tread_compression_per_contact_mm": 2.2403583509630822,
+        "normal_force_n_per_wheel": 22.403583509630817,
+        "two_wheel_tangential_force_cap_n": 13.44215010577849,
+        "ideal_constant_force_energy_screen_delta_v_mps": 5.287338154564906,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_very_soft",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=10 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 3.5192832980738356,
+        "tread_compression_per_contact_mm": 2.2403583509630822,
+        "normal_force_n_per_wheel": 22.403583509630817,
+        "two_wheel_tangential_force_cap_n": 26.88430021155698,
+        "ideal_constant_force_energy_screen_delta_v_mps": 7.477425327038422,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_very_soft",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=10 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 3.5192832980738356,
+        "tread_compression_per_contact_mm": 2.2403583509630822,
+        "normal_force_n_per_wheel": 22.403583509630817,
+        "two_wheel_tangential_force_cap_n": 40.32645031733547,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.157938320503883,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_very_soft",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=10 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 3.5192832980738356,
+        "tread_compression_per_contact_mm": 2.2403583509630822,
+        "normal_force_n_per_wheel": 22.403583509630817,
+        "two_wheel_tangential_force_cap_n": 13.44215010577849,
+        "ideal_constant_force_energy_screen_delta_v_mps": 5.016009398380953,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_very_soft",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=10 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 3.5192832980738356,
+        "tread_compression_per_contact_mm": 2.2403583509630822,
+        "normal_force_n_per_wheel": 22.403583509630817,
+        "two_wheel_tangential_force_cap_n": 26.88430021155698,
+        "ideal_constant_force_energy_screen_delta_v_mps": 7.093708520181252,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_very_soft",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=10 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 3.5192832980738356,
+        "tread_compression_per_contact_mm": 2.2403583509630822,
+        "normal_force_n_per_wheel": 22.403583509630817,
+        "two_wheel_tangential_force_cap_n": 40.32645031733547,
+        "ideal_constant_force_energy_screen_delta_v_mps": 8.687983129238807,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_medium",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=30 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 5.2661144519605925,
+        "tread_compression_per_contact_mm": 1.3669427740197038,
+        "normal_force_n_per_wheel": 41.008283220591096,
+        "two_wheel_tangential_force_cap_n": 24.604969932354656,
+        "ideal_constant_force_energy_screen_delta_v_mps": 7.153426772581487,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_medium",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=30 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 5.2661144519605925,
+        "tread_compression_per_contact_mm": 1.3669427740197038,
+        "normal_force_n_per_wheel": 41.008283220591096,
+        "two_wheel_tangential_force_cap_n": 49.20993986470931,
+        "ideal_constant_force_energy_screen_delta_v_mps": 10.116473159227537,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_medium",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=30 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 5.2661144519605925,
+        "tread_compression_per_contact_mm": 1.3669427740197038,
+        "normal_force_n_per_wheel": 41.008283220591096,
+        "two_wheel_tangential_force_cap_n": 73.81490979706398,
+        "ideal_constant_force_energy_screen_delta_v_mps": 12.390098618334592,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_medium",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=30 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 5.2661144519605925,
+        "tread_compression_per_contact_mm": 1.3669427740197038,
+        "normal_force_n_per_wheel": 41.008283220591096,
+        "two_wheel_tangential_force_cap_n": 24.604969932354656,
+        "ideal_constant_force_energy_screen_delta_v_mps": 6.786336502975447,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_medium",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=30 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 5.2661144519605925,
+        "tread_compression_per_contact_mm": 1.3669427740197038,
+        "normal_force_n_per_wheel": 41.008283220591096,
+        "two_wheel_tangential_force_cap_n": 49.20993986470931,
+        "ideal_constant_force_energy_screen_delta_v_mps": 9.59732912133548,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_medium",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=30 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 5.2661144519605925,
+        "tread_compression_per_contact_mm": 1.3669427740197038,
+        "normal_force_n_per_wheel": 41.008283220591096,
+        "two_wheel_tangential_force_cap_n": 73.81490979706398,
+        "ideal_constant_force_energy_screen_delta_v_mps": 11.754279620412776,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_firm",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=100 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 6.797270478315598,
+        "tread_compression_per_contact_mm": 0.6013647608422009,
+        "normal_force_n_per_wheel": 60.136476084220064,
+        "two_wheel_tangential_force_cap_n": 36.08188565053204,
+        "ideal_constant_force_energy_screen_delta_v_mps": 8.662581415348216,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_firm",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=100 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 6.797270478315598,
+        "tread_compression_per_contact_mm": 0.6013647608422009,
+        "normal_force_n_per_wheel": 60.136476084220064,
+        "two_wheel_tangential_force_cap_n": 72.16377130106407,
+        "ideal_constant_force_energy_screen_delta_v_mps": 12.250740122746569,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 200,
+        "tread_compliance_case": "pneumatic_firm",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=100 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 6.797270478315598,
+        "tread_compression_per_contact_mm": 0.6013647608422009,
+        "normal_force_n_per_wheel": 60.136476084220064,
+        "two_wheel_tangential_force_cap_n": 108.24565695159612,
+        "ideal_constant_force_energy_screen_delta_v_mps": 15.004031136085025,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_firm",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=100 N/mm/contact",
+        "ball_tread_mu_assumed": 0.3,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 6.797270478315598,
+        "tread_compression_per_contact_mm": 0.6013647608422009,
+        "normal_force_n_per_wheel": 60.136476084220064,
+        "two_wheel_tangential_force_cap_n": 36.08188565053204,
+        "ideal_constant_force_energy_screen_delta_v_mps": 8.218046306743632,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_firm",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=100 N/mm/contact",
+        "ball_tread_mu_assumed": 0.6,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 6.797270478315598,
+        "tread_compression_per_contact_mm": 0.6013647608422009,
+        "normal_force_n_per_wheel": 60.136476084220064,
+        "two_wheel_tangential_force_cap_n": 72.16377130106407,
+        "ideal_constant_force_energy_screen_delta_v_mps": 11.62207254320697,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": false
+      },
+      {
+        "wheel_diameter_mm": 160,
+        "tread_compliance_case": "pneumatic_firm",
+        "case_family": "unknown_scan",
+        "tread_assumption": "unknown pressure/carcass; k=100 N/mm/contact",
+        "ball_tread_mu_assumed": 0.9,
+        "nominal_diametral_closure_mm": 8.0,
+        "ball_compression_per_contact_mm": 6.797270478315598,
+        "tread_compression_per_contact_mm": 0.6013647608422009,
+        "normal_force_n_per_wheel": 60.136476084220064,
+        "two_wheel_tangential_force_cap_n": 108.24565695159612,
+        "ideal_constant_force_energy_screen_delta_v_mps": 14.23407374223374,
+        "collection_0p8_mps_within_cap": true,
+        "guided_lift_collection_1p9_mps_within_cap": true,
+        "launch_12_mps_within_cap": true
+      }
+    ],
+    "surface_speed_mps_to_rpm": {
+      "d200": {
+        "0.6": 57.29577951308232,
+        "1.2": 114.59155902616465,
+        "1.5": 143.2394487827058,
+        "1.9": 181.43663512476067,
+        "6": 572.9577951308232,
+        "8": 763.9437268410977,
+        "10": 954.929658551372,
+        "12": 1145.9155902616465,
+        "30": 2864.788975654116
+      },
+      "d160": {
+        "0.6": 71.61972439135289,
+        "1.2": 143.23944878270578,
+        "1.5": 179.04931097838224,
+        "1.9": 226.79579390595083,
+        "6": 716.197243913529,
+        "8": 954.929658551372,
+        "10": 1193.6620731892149,
+        "12": 1432.394487827058,
+        "30": 3580.986219567645
+      }
+    },
+    "normal_force_basis": {
+      "law": "F=107309*delta^1.5, SI, per ball contact",
+      "nip_gap_mm": 58.0,
+      "ball_diameter_mm": 66.0,
+      "diametral_closure_mm": 8.0,
+      "equilibrium": "delta_ball + 2*delta_tread = 8 mm; F_ball(delta_ball)=k_tread*delta_tread for each tread",
+      "warning": "TPU E/A contact area and pneumatic stiffness are estimates, not measurements"
+    },
+    "slip_and_motor_limit": {
+      "root_cause_observation": "30 m/s circumference produced 8.25 m/s exit at mu=0.9 with traction saturation",
+      "interpretation": "one saturated simulation datum only; 0.275 is explicitly not used as a predictive ratio",
+      "D5065_no_load_rpm_at_12p8v": 3456.0,
+      "diameter_160_mm": {
+        "surface_speed_mps": 28.952917895483534,
+        "rpm_required_for_30_mps": 3580.986219567645,
+        "margin_to_30_mps_reference_mps": -1.0470821045164662
+      },
+      "diameter_200_mm": {
+        "surface_speed_mps": 36.19114736935442,
+        "rpm_required_for_30_mps": 2864.788975654116,
+        "margin_to_30_mps_reference_mps": 6.191147369354418
+      },
+      "diameter_160_loss_vs_200_at_same_rpm": {
+        "surface_speed_percent": 20.000000000000007,
+        "surface_speed_mps": 7.238229473870884
+      },
+      "warning": "exit speed requires dynamic traction validation; no zero-slip or empirical-ratio launch prediction is accepted"
+    },
+    "ground_contact_separate": {
+      "statement": "wheel-ground friction is not reused as ball-tread friction",
+      "screen_range": [
+        0.5,
+        0.7,
+        0.9
+      ],
+      "status": "reserved for drive/braking tests after phase-1 approval"
+    },
+    "direction_control": {
+      "intake": "+Y wheel negative omega, -Y wheel positive omega; ball travels local -U; deep-guide search uses controlled 1.5..1.9 m/s surface speed",
+      "launch": "both wheel signs reverse; ball travels local +U; zero-speed confirmation and closed isolation gate required before reversal"
+    }
+  },
+  "collection_delivery": {
+    "unconstrained_ballistic_delivery": [
+      {
+        "exit_speed_mps": 0.6,
+        "flight_time_s": 0.13539021491809936,
+        "vertical_change_over_80mm_mm": -75.7742909383443
+      },
+      {
+        "exit_speed_mps": 0.9,
+        "flight_time_s": 0.09026014327873289,
+        "vertical_change_over_80mm_mm": -25.840707941110132
+      },
+      {
+        "exit_speed_mps": 1.2,
+        "flight_time_s": 0.06769510745904968,
+        "vertical_change_over_80mm_mm": -8.363953892078177
+      }
+    ],
+    "decision": "use an intake-only high contained guide; keep the basket front floor open",
+    "reason": "80 mm free flight varies by about 68 mm vertically across the collection speed band; sqrt(2*g*dh) alone cannot establish capture",
+    "high_guide": {
+      "ball_center_path_mm": [
+        [
+          329,
+          0,
+          78
+        ],
+        [
+          305,
+          0,
+          82
+        ],
+        [
+          281,
+          0,
+          94
+        ],
+        [
+          257,
+          0,
+          111
+        ],
+        [
+          233,
+          0,
+          128
+        ],
+        [
+          209,
+          0,
+          136
+        ],
+        [
+          187,
+          0,
+          132
+        ],
+        [
+          163,
+          0,
+          132
+        ],
+        [
+          132,
+          0,
+          132
+        ]
+      ],
+      "peak_lift_mm": 58,
+      "ideal_minimum_entry_speed_mps": 1.0665699226961165,
+      "minimum_with_50_percent_energy_transfer_mps": 1.5083576498960716,
+      "controlled_surface_speed_search_mps": [
+        1.5,
+        1.7,
+        1.9
+      ],
+      "entry_tangent_deg": 9.5,
+      "maximum_segment_slope_deg": 35.3,
+      "function": "197 mm deep contained path, gradual rise and final 4 mm descent into the basket"
+    },
+    "guide_geometry": "short moving twin-rail handoff docks tangentially into a deep fixed roofed guide; tapered/shorter basket upper front creates the required curvature space",
+    "retention": "basket has 141 mm wall height above its front floor, but rebound/escape is not validated until Gazebo/physical tests",
+    "single_ball_feed": "fixed sloped pocket and reserved rotary singulator feed the low +20 degree port; detailed escapement remains open",
+    "transition_interlock": [
+      "close basket/feed isolation gate",
+      "command both flywheels to zero",
+      "verify speed below threshold",
+      "rotate module at limited rate",
+      "verify endpoint latch",
+      "select opposite wheel direction",
+      "open only the endpoint-appropriate gate"
+    ]
+  },
+  "cg_and_wheel_loads": {
+    "assumptions": {
+      "bare_mobile_base_mass_kg": 10.0,
+      "bare_mobile_base_cg_m": [
+        0.1,
+        0,
+        0.08
+      ],
+      "basket_support_mass_kg": 1.5,
+      "capacity_ball_count": 28,
+      "capacity_basis": "8.15 L gross CAD cavity; 24-28 practical estimate after guide and packing; 28 used for load screen",
+      "drive_axles_x_m": [
+        -0.065,
+        0.3
+      ]
+    },
+    "variants": {
+      "printed_d200": {
+        "empty_basket": {
+          "total_mass_kg": 21.617200536688728,
+          "cg_m": [
+            0.13291104110773963,
+            0.0,
+            0.1030978110495755
+          ],
+          "static_axle_loads_n": {
+            "rear_total": 97.04541365020259,
+            "front_total": 114.9469059929159,
+            "rear_each": 48.522706825101295,
+            "front_each": 57.47345299645795
+          }
+        },
+        "full_28_balls": {
+          "total_mass_kg": 23.23280053668873,
+          "cg_m": [
+            0.1351424949483761,
+            0.0,
+            0.10462088083242092
+          ],
+          "static_axle_loads_n": {
+            "rear_total": 102.90538407458617,
+            "front_total": 124.93055930853232,
+            "rear_each": 51.45269203729308,
+            "front_each": 62.46527965426616
+          }
+        }
+      },
+      "pneumatic_d200": {
+        "empty_basket": {
+          "total_mass_kg": 21.79553136,
+          "cg_m": [
+            0.13531727407814848,
+            0.0,
+            0.10311337474086708
+          ],
+          "static_axle_loads_n": {
+            "rear_total": 96.43691734338056,
+            "front_total": 117.30423026816341,
+            "rear_each": 48.21845867169028,
+            "front_each": 58.652115134081704
+          }
+        },
+        "full_28_balls": {
+          "total_mass_kg": 23.41113136,
+          "cg_m": [
+            0.1373656762361612,
+            0.0,
+            0.10462376871648976
+          ],
+          "static_axle_loads_n": {
+            "rear_total": 102.29688776776412,
+            "front_total": 127.28788358377984,
+            "rear_each": 51.14844388388206,
+            "front_each": 63.64394179188992
+          }
+        }
+      }
+    },
+    "battery_choice": "rear-centred upright placement x=-55 mm keeps y=0 and avoids the strong lateral imbalance of the prior side location",
+    "battery_support": "two transverse tray rails and side restraints are packaging envelopes only; retention and local strength remain open"
+  },
+  "pivot_and_support_loads": {
+    "module_cg_local_assumption_m": [
+      0.03,
+      0,
+      0.025
+    ],
+    "module_pitch_inertia_assumption_kg_m2": 0.115,
+    "endpoint_cases": [
+      {
+        "angle_deg": -10,
+        "gravity_torque_nm": 1.5636604044562588,
+        "mu_0p9_ball_reaction_torque_nm": 6.219509666047847,
+        "30deg_s2_transition_torque_nm": 0.06021385919380436,
+        "combined_actuator_hold_screen_nm": 7.84338392969791
+      },
+      {
+        "angle_deg": 20,
+        "gravity_torque_nm": 0.9063102944288978,
+        "mu_0p9_ball_reaction_torque_nm": 6.219509666047847,
+        "30deg_s2_transition_torque_nm": 0.06021385919380436,
+        "combined_actuator_hold_screen_nm": 7.186033819670548
+      }
+    ],
+    "module_weight_n": 46.145499111544,
+    "bearing_vertical_design_load_n_each": 46.145499111544,
+    "basis": "2g vertical shared equally by two side bearings",
+    "bearing_fore_aft_design_load_n_each": 69.10566295608719,
+    "launch_ball_reaction_torque_nm": 6.219509666047847,
+    "actuator_selection_load_nm": 11.765075894546865,
+    "note": "old 9 N m and 0.413 N m Gamma values are neither capacity nor reused proof"
+  },
+  "cad_collision_qa": {
+    "status": "NO_HARD_INTERSECTION_IN_SAMPLED_SWEEP",
+    "sample_step_deg": 2,
+    "endpoint_angles_included": true,
+    "angles": [
+      {
+        "angle_deg": -10,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": -8,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": -6,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": -4,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": -2,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 0,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 2,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 4,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 6,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 8,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 10,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 12,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 14,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 16,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 18,
+        "hard_intersection": false
+      },
+      {
+        "angle_deg": 20,
+        "hard_intersection": false
+      }
+    ],
+    "minimum_clearance_brackets_mm": {
+      "d200": [
+        8.625,
+        8.75
+      ],
+      "d160": [
+        8.0,
+        8.25
+      ]
+    },
+    "method": "Minkowski-expand measured/assumed drive envelopes until first non-empty intersection",
+    "other_empty_intersections": [
+      "moving-vs-frame",
+      "moving-vs-basket/battery",
+      "moving-vs-high-guide",
+      "wheel-vs-yoke"
+    ],
+    "measurement_gate": "tape measurements carry +/-2..3 mm; verify with calipers and full cable bend radius before release",
+    "reproduction": "openscad-nightly -D view=qa_drive_at_angle -D qa_angle=<angle> -o <output.stl> shared-flywheel-intake-launcher-phase1.scad"
+  },
+  "local_bearing_arm_screen": {
+    "status": "SEPARATE_IDEAL_CANTILEVER_SCREEN_ONLY",
+    "assumed_arm_mm": {
+      "length": 70,
+      "width": 45,
+      "thickness": 12,
+      "material": "aluminium E=69 GPa"
+    },
+    "resultant_design_load_n": 83.09632808285711,
+    "root_moment_nm": 5.816742965799999,
+    "nominal_bending_stress_mpa": 5.385873116481481,
+    "tip_deflection_mm": 0.02124861374457267,
+    "not_covered": "bearing fit, bolt holes, weld/printed interfaces, bearing rating, fatigue and trunnion shoulder"
+  },
+  "D5065_purchase_criteria": {
+    "decision": "DO_NOT_SELECT_CONTROLLER_OR_RELEASE_PURCHASE_YET",
+    "speed": {
+      "D5065_no_load_rpm_at_12p8v": 3456.0,
+      "d200_rpm_for_30_mps": 2864.788975654116,
+      "d200_fraction_of_no_load": 0.8289319952702882,
+      "d160_rpm_for_30_mps": 3580.986219567645,
+      "d160_fraction_of_no_load": 1.0361649940878603,
+      "d200_voltage_needed_at_20A_existing_model_v": 11.390329539459687,
+      "model": "rpm=Kv*(V-I*R), Kv=270 rpm/V, R=0.039 ohm; validate hot winding and loaded Kv"
+    },
+    "spinup_at_30mps_reference": {
+      "printed_d200_seconds_at_8A": [
+        5.066120494018329,
+        10.132240988036658
+      ],
+      "pneumatic_d200_seconds_at_8A": [
+        5.443548387096775,
+        10.88709677419355
+      ],
+      "acceptance": "reach command in <=12 s with robot stationary; no BMS trip; record current and temperature"
+    },
+    "droop_recovery": {
+      "single_ball_peak_droop_percent_max": 5,
+      "recovery_s_max": 1.0,
+      "requirement": "closed-loop speed telemetry on both independent axes"
+    },
+    "battery_current": {
+      "battery": "12.8 V 20 Ah, BMS >=20 A listed",
+      "four_FIT0403_stall_screen_a": 28,
+      "two_D5065_provisional_20A_each_a": 40,
+      "finding": "either combination can exceed the BMS before auxiliaries",
+      "acceptance": "measured total peak <=20 A and continuous <=16 A, or upgrade battery/BMS; interlock launch spin-up against traction/stall"
+    },
+    "low_speed_intake": {
+      "d200_rpm_for_1p5_to_1p9_mps": [
+        143.2394487827058,
+        181.43663512476067
+      ],
+      "d160_rpm_for_1p5_to_1p9_mps": [
+        179.04931097838224,
+        226.79579390595083
+      ],
+      "corrected_normal_force_n_per_wheel_at_mu_scan_basis": {
+        "rigid": 76.78406995120798,
+        "TPU_low": 68.9780636764395,
+        "TPU_nominal": 74.64480415330428,
+        "TPU_high": 76.3448347510147,
+        "legacy_foam_reference": 9.10387106428078,
+        "pneumatic_very_soft": 22.403583509630817,
+        "pneumatic_medium": 41.008283220591096,
+        "pneumatic_firm": 60.136476084220064
+      },
+      "acceptance": "stable encoder-controlled rotation through ball entry at <=10 A/motor (0.31 Nm); no stall or rebound"
+    },
+    "braking": {
+      "two_wheel_energy_j": {
+        "printed_d200": [
+          376.9193647549636,
+          753.8387295099272
+        ],
+        "pneumatic_d200": [
+          405.0,
+          810.0
+        ]
+      },
+      "average_absorption_w_for_5s_stop": {
+        "printed_d200": [
+          75.38387295099272,
+          150.76774590198545
+        ],
+        "pneumatic_d200": [
+          81.0,
+          162.0
+        ]
+      },
+      "requirement": "controller must safely coast or manage regenerative bus rise with validated dump/brake path; direction reversal only below 50 rpm"
+    },
+    "encoder_and_controller_requirements": [
+      "one shaft encoder per D5065, AMT-102 class or equivalent, mechanically compatible second-shaft mounting",
+      "resolution adequate at 140..230 rpm intake and ~2865 rpm launch; index and direction validation",
+      "independent closed-loop current/speed control for both motors, encoder input and speed/current telemetry",
+      "12.8 V operation, safe disable, current limits, bus over-voltage handling and braking/dump support",
+      "controller selection deliberately deferred until bench data closes these gates"
+    ]
+  },
+  "ideal_beam_fea": {
+    "status": "IDEAL_JOINT_ELASTIC_COMPARISON_NOT_PRINT_CERTIFICATION",
+    "supersedes": "rear-X=-165 six-DOF clamp/cantilever results (12.9-19.8 mm)",
+    "support_model": {
+      "vertical": "U3 at X=-65 and X=300 drive mounts on both sides; front-right U3 released only for wheel-lift case",
+      "in_plane": "rear-left U1/U2 pin plus front-left U2 roller to remove rigid modes",
+      "rotations": "all support rotations free; no six-DOF clamp"
+    },
+    "load_cases": {
+      "vertical_2g": "symmetric 2g module weight at the two trunnions",
+      "launch_reaction": "fore-aft mu=0.9 rigid-tread reaction plus ball-force pitch moment at the trunnions",
+      "one_wheel_lift": "1g module weight with front-right vertical support released",
+      "antisymmetric_racking": "opposite fore-aft trunnion forces; crossbar assessed by relative bearing-X motion"
+    },
+    "retained_crossbar_x_mm": 240,
+    "maximum_relative_displacement_change_10_to_5mm_mesh": {
+      "vertical_2g": 0.013432301165164525,
+      "launch_reaction": 0.0036648328954726967,
+      "one_wheel_lift": 0.0030002256836535457,
+      "antisymmetric_racking": 0.0041382948256828075
+    },
+    "finest_mesh_comparison": [
+      {
+        "load_case": "vertical_2g",
+        "material": "PLA",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 0.6688686357191895,
+        "x240_crossbar_response_mm": 0.6089125581334605,
+        "response_reduction_percent": 8.963804607351985,
+        "x240_crossbar_peak_beam_stress_mpa": 1.5007645610554095
+      },
+      {
+        "load_case": "vertical_2g",
+        "material": "PETG",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 1.0221382683389806,
+        "x240_crossbar_response_mm": 0.9251209587265549,
+        "response_reduction_percent": 9.49160330041092,
+        "x240_crossbar_peak_beam_stress_mpa": 1.5077877124217953
+      },
+      {
+        "load_case": "vertical_2g",
+        "material": "PETG-CF",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 0.8546654943020983,
+        "x240_crossbar_response_mm": 0.7780549787518104,
+        "response_reduction_percent": 8.963801166776527,
+        "x240_crossbar_peak_beam_stress_mpa": 1.5007645610554095
+      },
+      {
+        "load_case": "launch_reaction",
+        "material": "PLA",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 29.7831155163806,
+        "x240_crossbar_response_mm": 1.7931500333993922,
+        "response_reduction_percent": 93.97930672359256,
+        "x240_crossbar_peak_beam_stress_mpa": 5.690591987161517
+      },
+      {
+        "load_case": "launch_reaction",
+        "material": "PETG",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 45.61316560799235,
+        "x240_crossbar_response_mm": 2.740917847157732,
+        "response_reduction_percent": 93.99095017716229,
+        "x240_crossbar_peak_beam_stress_mpa": 5.534440665410772
+      },
+      {
+        "load_case": "launch_reaction",
+        "material": "PETG-CF",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 38.05620070409132,
+        "x240_crossbar_response_mm": 2.2912469280438637,
+        "response_reduction_percent": 93.97930722023563,
+        "x240_crossbar_peak_beam_stress_mpa": 5.690591987161517
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "material": "PLA",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 29.585304188340736,
+        "x240_crossbar_response_mm": 7.755984300069321,
+        "response_reduction_percent": 73.78433478089477,
+        "x240_crossbar_peak_beam_stress_mpa": 1.6158987526739104
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "material": "PETG",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 45.653109046751666,
+        "x240_crossbar_response_mm": 11.980831642920457,
+        "response_reduction_percent": 73.75681110644331,
+        "x240_crossbar_peak_beam_stress_mpa": 1.6276076350206308
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "material": "PETG-CF",
+        "comparison_metric": "max_bearing_displacement_mm",
+        "no_crossbar_response_mm": 37.8034347835692,
+        "x240_crossbar_response_mm": 9.91042471273377,
+        "response_reduction_percent": 73.7843273515421,
+        "x240_crossbar_peak_beam_stress_mpa": 1.6158987526739104
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "material": "PLA",
+        "comparison_metric": "relative_bearing_x_mm",
+        "no_crossbar_response_mm": 15.87881939,
+        "x240_crossbar_response_mm": 1.9357495,
+        "response_reduction_percent": 87.80923535650845,
+        "x240_crossbar_peak_beam_stress_mpa": 1.8168293421778081
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "material": "PETG",
+        "comparison_metric": "relative_bearing_x_mm",
+        "no_crossbar_response_mm": 24.32171633,
+        "x240_crossbar_response_mm": 2.9587718,
+        "response_reduction_percent": 87.8348560609168,
+        "x240_crossbar_peak_beam_stress_mpa": 1.8177872870170466
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "material": "PETG-CF",
+        "comparison_metric": "relative_bearing_x_mm",
+        "no_crossbar_response_mm": 20.28960422,
+        "x240_crossbar_response_mm": 2.4734578999999997,
+        "response_reduction_percent": 87.80923534446352,
+        "x240_crossbar_peak_beam_stress_mpa": 1.8168293421778081
+      }
+    ],
+    "cases": [
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 0.6565497339688898,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.3199071849408266
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 1.0003790200672642,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.3286244261604412
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 0.8389246387439101,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.3199071849408266
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 29.680981369827705,
+        "relative_bearing_x_mm": 16.9904059,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.31841252053218
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 45.434413181329035,
+        "relative_bearing_x_mm": 26.012633,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.336644995525931
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 37.92570175052929,
+        "relative_bearing_x_mm": 21.709968,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.31841252053218
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 29.500922569140688,
+        "relative_bearing_x_mm": 1.9406017899999999,
+        "relative_bearing_z_mm": 29.39923907,
+        "beam_integration_point_peak_von_mises_mpa": 2.437620228932581
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 45.50252839127053,
+        "relative_bearing_x_mm": 2.99159652,
+        "relative_bearing_z_mm": 45.34685786,
+        "beam_integration_point_peak_von_mises_mpa": 2.444472754595677
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 37.69561605839623,
+        "relative_bearing_x_mm": 2.47965757,
+        "relative_bearing_z_mm": 37.56568715,
+        "beam_integration_point_peak_von_mises_mpa": 2.437620228932581
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 27.13533175889825,
+        "relative_bearing_x_mm": 15.81685126,
+        "relative_bearing_z_mm": 0.4621808,
+        "beam_integration_point_peak_von_mises_mpa": 5.301635936521783
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 41.54504646173493,
+        "relative_bearing_x_mm": 24.21355102,
+        "relative_bearing_z_mm": 0.7026194,
+        "beam_integration_point_peak_von_mises_mpa": 5.314427123944326
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 20.0,
+        "element_count": 100,
+        "max_bearing_displacement_mm": 34.67292321453928,
+        "relative_bearing_x_mm": 20.21042605,
+        "relative_bearing_z_mm": 0.5905644,
+        "beam_integration_point_peak_von_mises_mpa": 5.301635936521783
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 0.5899784643140392,
+        "relative_bearing_x_mm": 0.008481799999999984,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.3199050178614689
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 0.8915804246629072,
+        "relative_bearing_x_mm": 0.01300960000000001,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.328622298208535
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 0.7538614421105836,
+        "relative_bearing_x_mm": 0.010837800000000009,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.3199050178614689
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 1.7764128084474922,
+        "relative_bearing_x_mm": 1.74910485,
+        "relative_bearing_z_mm": 0.018767279999999997,
+        "beam_integration_point_peak_von_mises_mpa": 4.574247094676718
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 2.7121314334814572,
+        "relative_bearing_x_mm": 2.67092118,
+        "relative_bearing_z_mm": 0.02869456999999999,
+        "beam_integration_point_peak_von_mises_mpa": 4.546925279001385
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 2.2698611434752,
+        "relative_bearing_x_mm": 2.23496765,
+        "relative_bearing_z_mm": 0.023980419999999995,
+        "beam_integration_point_peak_von_mises_mpa": 4.574247094676718
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 7.699068112937477,
+        "relative_bearing_x_mm": 0.53436884,
+        "relative_bearing_z_mm": 7.58633941,
+        "beam_integration_point_peak_von_mises_mpa": 1.4287779069924613
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 11.878672035511288,
+        "relative_bearing_x_mm": 0.82503528,
+        "relative_bearing_z_mm": 11.7149913,
+        "beam_integration_point_peak_von_mises_mpa": 1.4448860795524239
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 9.83769819685262,
+        "relative_bearing_x_mm": 0.68280463,
+        "relative_bearing_z_mm": 9.693656,
+        "beam_integration_point_peak_von_mises_mpa": 1.4287779069924613
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 1.9029919370527086,
+        "relative_bearing_x_mm": 1.91465822,
+        "relative_bearing_z_mm": 0.4238577,
+        "beam_integration_point_peak_von_mises_mpa": 1.8533054377692344
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 2.905119662362184,
+        "relative_bearing_x_mm": 2.922206,
+        "relative_bearing_z_mm": 0.6398735,
+        "beam_integration_point_peak_von_mises_mpa": 1.8628044194418865
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 20.0,
+        "element_count": 140,
+        "max_bearing_displacement_mm": 2.4316009002384007,
+        "relative_bearing_x_mm": 2.4465078,
+        "relative_bearing_z_mm": 0.5415958000000001,
+        "beam_integration_point_peak_von_mises_mpa": 1.8533054377692344
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 0.6649832716539718,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.45422186520099
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 1.0152515256482355,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.4607923493950623
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 0.8497008501365289,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.45422186520099
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 29.75192701694381,
+        "relative_bearing_x_mm": 17.0324879,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.180827099948198
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 45.55821651916008,
+        "relative_bearing_x_mm": 26.085959199999998,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.198893106980265
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 38.01633957663141,
+        "relative_bearing_x_mm": 21.763726100000003,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.180827099948198
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 29.557987457668656,
+        "relative_bearing_x_mm": 1.94372944,
+        "relative_bearing_z_mm": 29.4515744,
+        "beam_integration_point_peak_von_mises_mpa": 2.4861996416141907
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 45.60422180721458,
+        "relative_bearing_x_mm": 2.99717951,
+        "relative_bearing_z_mm": 45.440204650000005,
+        "beam_integration_point_peak_von_mises_mpa": 2.4957614855155796
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 37.76853677139681,
+        "relative_bearing_x_mm": 2.4836544999999997,
+        "relative_bearing_z_mm": 37.63256451,
+        "beam_integration_point_peak_von_mises_mpa": 2.4861996416141907
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 27.20043960815753,
+        "relative_bearing_x_mm": 15.85960724,
+        "relative_bearing_z_mm": 0.46947,
+        "beam_integration_point_peak_von_mises_mpa": 5.20906583136933
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 41.65859707662755,
+        "relative_bearing_x_mm": 24.28798564,
+        "relative_bearing_z_mm": 0.7155284,
+        "beam_integration_point_peak_von_mises_mpa": 5.209317563521469
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 10.0,
+        "element_count": 190,
+        "max_bearing_displacement_mm": 34.756116373527824,
+        "relative_bearing_x_mm": 20.26505369,
+        "relative_bearing_z_mm": 0.5998782,
+        "beam_integration_point_peak_von_mises_mpa": 5.20906583136933
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 0.6019300747350779,
+        "relative_bearing_x_mm": 0.008528399999999992,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.454220771931537
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 0.912694455394734,
+        "relative_bearing_x_mm": 0.013092500000000007,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.460791111041698
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 0.7691329524223365,
+        "relative_bearing_x_mm": 0.010897400000000002,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.454220771931537
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 1.7873108713242474,
+        "relative_bearing_x_mm": 1.7591346799999998,
+        "relative_bearing_z_mm": 0.018895580000000002,
+        "beam_integration_point_peak_von_mises_mpa": 5.154737881879023
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 2.73087284126768,
+        "relative_bearing_x_mm": 2.68826228,
+        "relative_bearing_z_mm": 0.02892852,
+        "beam_integration_point_peak_von_mises_mpa": 5.0915816771975075
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 2.2837863208601763,
+        "relative_bearing_x_mm": 2.24778342,
+        "relative_bearing_z_mm": 0.024144349999999995,
+        "beam_integration_point_peak_von_mises_mpa": 5.154737881879023
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 7.735957342712731,
+        "relative_bearing_x_mm": 0.53687278,
+        "relative_bearing_z_mm": 7.61790051,
+        "beam_integration_point_peak_von_mises_mpa": 1.560154912123527
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 11.944886444113838,
+        "relative_bearing_x_mm": 0.8295802299999999,
+        "relative_bearing_z_mm": 11.7718557,
+        "beam_integration_point_peak_von_mises_mpa": 1.5779275183550516
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 9.884834160121258,
+        "relative_bearing_x_mm": 0.6860040599999999,
+        "relative_bearing_z_mm": 9.733983799999999,
+        "beam_integration_point_peak_von_mises_mpa": 1.560154912123527
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 1.915452761864351,
+        "relative_bearing_x_mm": 1.92820356,
+        "relative_bearing_z_mm": 0.4336656,
+        "beam_integration_point_peak_von_mises_mpa": 1.8548528643145248
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 2.926704027376267,
+        "relative_bearing_x_mm": 2.945659,
+        "relative_bearing_z_mm": 0.6572638,
+        "beam_integration_point_peak_von_mises_mpa": 1.8626935540386067
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 10.0,
+        "element_count": 264,
+        "max_bearing_displacement_mm": 2.447522625889283,
+        "relative_bearing_x_mm": 2.4638153000000003,
+        "relative_bearing_z_mm": 0.5541282999999999,
+        "beam_integration_point_peak_von_mises_mpa": 1.8548528643145248
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 0.6688686357191895,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.5007655201922803
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 1.0221382683389806,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.507788750578267
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 0.8546654943020983,
+        "relative_bearing_x_mm": 0.0,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.5007655201922803
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 29.7831155163806,
+        "relative_bearing_x_mm": 17.0513896,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.094558055300538
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 45.61316560799235,
+        "relative_bearing_x_mm": 26.1191957,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.094030203695031
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 38.05620070409132,
+        "relative_bearing_x_mm": 21.787885600000003,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 6.094558055300538
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 29.585304188340736,
+        "relative_bearing_x_mm": 1.9452223800000001,
+        "relative_bearing_z_mm": 29.47669525,
+        "beam_integration_point_peak_von_mises_mpa": 2.5058612814493157
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 45.653109046751666,
+        "relative_bearing_x_mm": 2.9998578599999997,
+        "relative_bearing_z_mm": 45.48520031,
+        "beam_integration_point_peak_von_mises_mpa": 2.5091427895178557
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 37.8034347835692,
+        "relative_bearing_x_mm": 2.48556143,
+        "relative_bearing_z_mm": 37.66465671,
+        "beam_integration_point_peak_von_mises_mpa": 2.5058612814493157
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PLA",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 27.229372082100586,
+        "relative_bearing_x_mm": 15.87881939,
+        "relative_bearing_z_mm": 0.4727748,
+        "beam_integration_point_peak_von_mises_mpa": 5.1955375767071015
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 41.70955854355262,
+        "relative_bearing_x_mm": 24.32171633,
+        "relative_bearing_z_mm": 0.7214096,
+        "beam_integration_point_peak_von_mises_mpa": 5.196813873322566
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": false,
+        "material": "PETG-CF",
+        "mesh_mm": 5.0,
+        "element_count": 368,
+        "max_bearing_displacement_mm": 34.79308977727546,
+        "relative_bearing_x_mm": 20.28960422,
+        "relative_bearing_z_mm": 0.604101,
+        "beam_integration_point_peak_von_mises_mpa": 5.195537575720601
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 0.6089125581334605,
+        "relative_bearing_x_mm": 0.008552100000000007,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.5007645610554095
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 0.9251209587265549,
+        "relative_bearing_x_mm": 0.013135000000000008,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.5077877124217953
+      },
+      {
+        "load_case": "vertical_2g",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 0.7780549787518104,
+        "relative_bearing_x_mm": 0.010927700000000012,
+        "relative_bearing_z_mm": 0.0,
+        "beam_integration_point_peak_von_mises_mpa": 1.5007645610554095
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 1.7931500333993922,
+        "relative_bearing_x_mm": 1.7648047100000002,
+        "relative_bearing_z_mm": 0.01899604,
+        "beam_integration_point_peak_von_mises_mpa": 5.690591987161517
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 2.740917847157732,
+        "relative_bearing_x_mm": 2.69808398,
+        "relative_bearing_z_mm": 0.02911074999999999,
+        "beam_integration_point_peak_von_mises_mpa": 5.534440665410772
+      },
+      {
+        "load_case": "launch_reaction",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 2.2912469280438637,
+        "relative_bearing_x_mm": 2.25502791,
+        "relative_bearing_z_mm": 0.02427271000000001,
+        "beam_integration_point_peak_von_mises_mpa": 5.690591987161517
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 7.755984300069321,
+        "relative_bearing_x_mm": 0.53821599,
+        "relative_bearing_z_mm": 7.6347884,
+        "beam_integration_point_peak_von_mises_mpa": 1.6158987526739104
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 11.980831642920457,
+        "relative_bearing_x_mm": 0.8320158000000001,
+        "relative_bearing_z_mm": 11.8022423,
+        "beam_integration_point_peak_von_mises_mpa": 1.6276076350206308
+      },
+      {
+        "load_case": "one_wheel_lift",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 9.91042471273377,
+        "relative_bearing_x_mm": 0.68772037,
+        "relative_bearing_z_mm": 9.7555633,
+        "beam_integration_point_peak_von_mises_mpa": 1.6158987526739104
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PLA",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 1.922451989497605,
+        "relative_bearing_x_mm": 1.9357495,
+        "relative_bearing_z_mm": 0.4392239,
+        "beam_integration_point_peak_von_mises_mpa": 1.8168293421778081
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 2.9388659210105605,
+        "relative_bearing_x_mm": 2.9587718,
+        "relative_bearing_z_mm": 0.6671834,
+        "beam_integration_point_peak_von_mises_mpa": 1.8177872870170466
+      },
+      {
+        "load_case": "antisymmetric_racking",
+        "front_structural_crossbar_retained": true,
+        "material": "PETG-CF",
+        "mesh_mm": 5.0,
+        "element_count": 514,
+        "max_bearing_displacement_mm": 2.4564666256618937,
+        "relative_bearing_x_mm": 2.4734578999999997,
+        "relative_bearing_z_mm": 0.5612305,
+        "beam_integration_point_peak_von_mises_mpa": 1.8168293421778081
+      }
+    ],
+    "limitations": [
+      "ideal bonded beam joints; bearing block, bolts and printed layer interfaces omitted",
+      "loads are phase-1 estimates, not measured dynamics",
+      "beam peak stress is not a hole/notch allowable or fatigue result",
+      "local arm screen is reported separately; bearing fit, bolts, trunnion shoulder and fatigue remain open"
+    ]
+  }
+}

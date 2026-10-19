@@ -1,0 +1,49 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_TURN_DIAGNOSTIC_RUN",
+  "frozen_at": "2026-10-12",
+  "cases": ["empty", "full45", "ballast"],
+  "ground_friction_mu": [0.5, 0.7, 0.9],
+  "wheel_model": {
+    "mass_each_kg": 0.65,
+    "radius_m": 0.085,
+    "width_m": 0.083,
+    "base_mass_kg": 7.404,
+    "base_com_m": [0.09386412749865, 0.0, 0.13227174500270],
+    "base_inertia_kg_m2": {"ixx": 0.38652546, "iyy": 0.35877559, "izz": 0.54328377, "ixz": -0.05214756},
+    "invariance": "base plus four wheel links preserves the original 10.004 kg mass, CG and aggregate inertia"
+  },
+  "variants": {
+    "open_yaw": {"description": "unchanged wheel-speed loop with kinematic open-loop yaw target"},
+    "gyro_yaw": {
+      "description": "body angular velocity is the simulated gyro signal; PI yaw-rate outer loop commands the existing wheel-speed loops",
+      "kp": 2.0,
+      "ki": 0.8,
+      "integral_limit_rad": 1.5,
+      "correction_limit_rad_s": 1.5
+    }
+  },
+  "scenarios": [
+    {"name": "spin_0p5", "target_v_m_s": 0.0, "target_w_rad_s": 0.5, "steady_start_s": 4.0},
+    {"name": "spin_1p0", "target_v_m_s": 0.0, "target_w_rad_s": 1.0, "steady_start_s": 11.0},
+    {"name": "moving_turn", "target_v_m_s": 0.4, "target_w_rad_s": 0.6, "steady_start_s": 18.0}
+  ],
+  "pass_criteria": {
+    "spin_yaw_rate_relative_error_max": 0.15,
+    "spin_centre_translation_m_max": 0.10,
+    "moving_linear_speed_relative_error_max": 0.15,
+    "moving_yaw_rate_relative_error_max": 0.15,
+    "absolute_roll_deg_max": 3.0,
+    "absolute_pitch_deg_max": 3.0,
+    "max_wheel_centre_rise_m": 0.005,
+    "torque_limit_nm": 3.73,
+    "steady_torque_saturation_fraction_max": 0.10,
+    "saturation_threshold_fraction": 0.99
+  },
+  "interpretation_rules": [
+    "all mu values are reported; no convenient value is selected",
+    "a Coulomb pass is only a necessary quasi-static screen, not proof of turning",
+    "wheel spin below motor saturation is expected when commanded tyre torque exceeds mu*Nwheel*radius",
+    "gyro feedback may improve tracking but cannot create missing tyre friction",
+    "Gazebo joint wrench is a load input for FEA; it is not a printed-strength result"
+  ]
+}

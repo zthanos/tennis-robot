@@ -1,0 +1,40 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_P2_45_GAZEBO_RUN",
+  "scope": "P2-45 ramp-tip ground-clearance sweep to basket entrance; no retention, multi-ball or launch claim",
+  "matrix": {
+    "ramp_tip_underside_ground_clearance_mm": [3, 5, 8],
+    "approach_speed_m_s": [0.6],
+    "ball_lateral_offset_m": [-0.05, 0.0, 0.05],
+    "cheek_variant": ["exposed_short", "exposed_shallow", "exposed_shallow_lowfriction"],
+    "ball_tread_mu": [0.6],
+    "flywheel_surface_speed_m_s": [2.5],
+    "ground_mu": 0.7,
+    "repeats_per_condition": 5,
+    "condition_count": 27,
+    "run_count": 135
+  },
+  "ramp_height_rule": {
+    "sheet_thickness_mm": 2,
+    "top_z_first_three_points_mm": "[clearance+2, 8+0.75*(clearance-1), 21+0.35*(clearance-1)]",
+    "remaining_top_path_mm": [[328, 36], [315, 46], [305, 52], [298, 54], [278, 54]],
+    "rationale": "Raises and blends the tangent tongue without creating a downward step; the basket end and frozen chassis/module geometry remain unchanged."
+  },
+  "success_definition": {
+    "collection_success": "ball fully crosses the nip and its centre enters the 96 mm basket mouth",
+    "condition_gate": "5/5 successful repeats",
+    "path_diagnostics": ["pre-nip forward displacement", "lateral displacement", "front-wall contact"],
+    "plough_policy": "reported as path information; it does not override a successful capture in P2-45"
+  },
+  "criteria": [
+    {"name": "condition_success_count", "threshold": 5, "comparison": "eq", "unit": "successful repeats of 5", "hard_fail": true, "rationale": "The user explicitly requested basket entrance 5/5 for this reduced height sweep."},
+    {"name": "basket_entry_reached", "comparison": "ball centre crosses base-frame entrance volume", "threshold": {"x_max_m": 0.278, "abs_y_max_m": 0.015, "z_min_m": 0.075, "z_max_m": 0.125}, "hard_fail": true, "rationale": "Same physical 96 mm central basket opening as corrected P2-44 r2."},
+    {"name": "fully_through_nip", "threshold": -0.033, "comparison": "launcher_x_min_le", "unit": "m", "hard_fail": true, "rationale": "Separates capture from downstream ramp failure."},
+    {"name": "jam", "threshold": 0.75, "comparison": "post-contact low-speed duration max_le", "unit": "s", "hard_fail": true, "rationale": "Retains the P2-44 persistent-wedge screen."},
+    {"name": "d5065_current", "threshold": 20.0, "comparison": "abs_max_le", "unit": "A per motor", "hard_fail": true, "rationale": "Existing provisional analytical-model gate; spin-up and contact windows are reported separately."},
+    {"name": "d5065_torque", "threshold": 0.62, "comparison": "abs_max_le", "unit": "N m per motor", "hard_fail": true, "rationale": "20 A times frozen Kt=0.031 N m/A."},
+    {"name": "forbidden_launcher_contact_count", "threshold": 0, "comparison": "eq", "unit": "contact samples", "hard_fail": true, "rationale": "Any launcher-to-ramp/chassis/ground contact invalidates the height candidate."},
+    {"name": "finite_state", "threshold": 0, "comparison": "nonfinite_count_eq", "hard_fail": true, "rationale": "Numerical validity gate."},
+    {"name": "plough", "threshold": null, "unit": "m", "hard_fail": false, "rationale": "P2-45 explicitly separates successful collection from forward/lateral push path diagnostics."}
+  ],
+  "prohibitions": ["no artificial ball transfer", "no forced ball velocity", "no refit of tennis_ball_compliant", "no P2-40 pivot/angle/arch change", "no 5c-2/5c-3/5d claim"]
+}

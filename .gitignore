@@ -55,3 +55,5 @@ engineering/shared-flywheel-isolated-bench/*.csg
 engineering/chassis-strength-bench/results/shared_flywheel_phase2/gazebo_*/
 engineering/chassis-strength-bench/results/shared_flywheel_phase2/physical_drive_*/
 engineering/chassis-strength-bench/results/shared_flywheel_phase2/xacro_validation*/
+engineering/chassis-strength-bench/results/shared_flywheel_phase2/p244_static/
+engineering/chassis-strength-bench/results/shared_flywheel_phase2/p267_pilot*/

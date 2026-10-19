@@ -1,0 +1,58 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_P2_47_GAZEBO_RUN",
+  "scope": "Comparative Gazebo 5c-2 basket-entry redesign only; no absolute physical-capacity claim and no 5c-3/5d",
+  "reference_geometry": {
+    "ramp_tip_underside_clearance_mm": 8,
+    "intake_angle_deg": -3,
+    "approach_speed_m_s": 0.6,
+    "flywheel_surface_speed_m_s": 2.5,
+    "ball_tread_mu": 0.6,
+    "ground_mu": 0.7
+  },
+  "historical_source": {
+    "basket_v2_log": "docs/archive/mechanism/intake/intake-debug-log-el.md sections 54-56",
+    "transferred_features": [
+      "40 mm hood rear overhang",
+      "hood clear height scaled from old floor Z=25 mm to new floor Z=54 mm",
+      "controlled upward entry profile",
+      "front retention independent of the low floor-to-launch feed path"
+    ]
+  },
+  "variants": {
+    "high_hood": "controlled-rise ramp to Z=92 mm plus covered high entry; roof clear plane approximately Z=160-178 mm",
+    "one_way_flap": "80 g top-hinged 96x90 mm flap, joint range 0..70 deg opening only into the basket",
+    "lip_cover": "16 mm fixed centre lip above basket floor plus light cover/cheeks; low ramp unchanged"
+  },
+  "delivery_matrix": {
+    "existing_ball_count": [0, 25, 40, 44],
+    "repeats_per_condition": 3,
+    "variants": ["high_hood", "one_way_flap", "lip_cover"],
+    "run_count": 36,
+    "preload_method": "dynamic fall from identical deterministic low-discrepancy release points in the common unobstructed open-top region; no final grid placement"
+  },
+  "motion_retention": {
+    "preloaded_ball_count": 45,
+    "repeats_per_variant": 3,
+    "variants": ["high_hood", "one_way_flap", "lip_cover"],
+    "run_count": 9
+  },
+  "criteria": [
+    {"name": "delivery_success_count", "threshold": 3, "comparison": "eq", "hard_fail": true, "rationale": "Every comparative condition must retain the new ball in all three deterministic repeats."},
+    {"name": "collection_success", "threshold": true, "comparison": "eq", "hard_fail": true},
+    {"name": "bounce_out", "threshold": false, "comparison": "eq", "hard_fail": true},
+    {"name": "entrance_blocked", "threshold": false, "comparison": "eq", "hard_fail": true},
+    {"name": "preload_retained_before_and_after", "threshold": true, "comparison": "eq", "hard_fail": true},
+    {"name": "motion_ball_loss_count", "threshold": 0, "comparison": "eq", "hard_fail": true},
+    {"name": "d5065_current", "threshold": 20.0, "comparison": "abs_max_le", "unit": "A per motor", "hard_fail": true},
+    {"name": "forbidden_launcher_contact_count", "threshold": 0, "comparison": "eq", "hard_fail": true},
+    {"name": "finite_state", "threshold": 0, "comparison": "nonfinite_count_eq", "hard_fail": true}
+  ],
+  "ranking_rule": "Rank by number of fully passing conditions, then total successful delivery repeats, then fewer preload-spill runs, entrance-blocked runs and motion losses. Do not choose a convenient subset.",
+  "physics_limitations": [
+    "Incoming ball ground/flywheel contact retains the unchanged calibrated tennis_ball_compliant law.",
+    "Basket, entry device and ball-to-ball contacts use uncalibrated native DART rigid contact; only relative comparison is claimed.",
+    "Passive flap hinge damping/friction are design assumptions, not measurements.",
+    "Absolute capacity and rebound retention require the P2-47 physical mock-up test."
+  ],
+  "prohibitions": ["no artificial transfer", "no final grid placement", "no forced ball velocity", "no ball-contact refit", "no frozen P2-40 CAD change", "no 5c-3 or 5d run"]
+}

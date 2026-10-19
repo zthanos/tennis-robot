@@ -1,0 +1,568 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Phase-2 isolated v3 bench. PRE-EXECUTION ONLY.
+  Do not include this file from the production tennis_robot description.
+  Expansion / ROS / Gazebo execution requires explicit user approval.
+-->
+<robot name="phase2_v3_isolated_bench" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="../../ros2_ws/src/tennis_robot/urdf/components/flywheel_launcher_module.urdf.xacro"/>
+  <xacro:include filename="cad_v3_flywheel_launcher_module.urdf.xacro"/>
+
+  <xacro:arg name="sim_mode" default="true"/>
+  <xacro:arg name="drive_test_ballast" default="false"/>
+  <xacro:arg name="basket_full_45" default="false"/>
+  <xacro:arg name="tilt_angle_rad" default="-0.052359877560"/>
+  <xacro:arg name="controllers_config" default="engineering/shared-flywheel-isolated-bench/v3_controllers.yaml"/>
+  <xacro:arg name="ground_mu" default="0.7"/>
+  <xacro:arg name="five_a_enabled" default="false"/>
+  <xacro:arg name="five_a_case" default="empty"/>
+  <xacro:arg name="five_a_output_csv" default="/tmp/v3_5a.csv"/>
+  <xacro:arg name="five_b_enabled" default="false"/>
+  <xacro:arg name="validation_fixtures_enabled" default="$(arg five_b_enabled)"/>
+  <xacro:arg name="five_b_case" default="empty"/>
+  <xacro:arg name="five_b_dynamic_tilt" default="true"/>
+  <xacro:arg name="five_b_output_csv" default="/tmp/v3_5b.csv"/>
+  <xacro:arg name="five_b_contacts_csv" default="/tmp/v3_5b_contacts.csv"/>
+  <xacro:arg name="five_c_enabled" default="false"/>
+  <xacro:arg name="five_c_cheek_variant" default="narrow"/>
+  <xacro:arg name="five_c_design" default="legacy"/>
+  <xacro:arg name="five_c_p244_ramp_enabled" default="false"/>
+  <!-- P2-47 dependent basket/entry comparison.  p246_open preserves the
+       accepted P2-46 model; the other values are isolated-bench concepts. -->
+  <xacro:arg name="five_c_basket_variant" default="p246_open"/>
+  <!-- P2-45 selected reference: 8 mm underside clearance.  The explicit
+       3/5/8 mm validation sweep remains reproducible through this argument. -->
+  <xacro:arg name="five_c_ramp_tip_clearance" default="0.008"/>
+  <!-- Defaults preserve the accepted 5a baseline.  The turn diagnostic passes
+       the compensated values below explicitly, so total mass, CG and aggregate
+       inertia remain identical while each tyre receives a physical mass. -->
+  <xacro:arg name="base_mass" default="10.0"/>
+  <xacro:arg name="base_com_x" default="0.100"/>
+  <xacro:arg name="base_com_z" default="0.120"/>
+  <xacro:arg name="base_ixx" default="0.62"/>
+  <xacro:arg name="base_iyy" default="0.45"/>
+  <xacro:arg name="base_izz" default="0.86"/>
+  <xacro:arg name="base_ixz" default="-0.05"/>
+  <xacro:arg name="drive_wheel_mass" default="0.001"/>
+  <xacro:arg name="drive_wheel_ixx" default="0.0015"/>
+  <xacro:arg name="drive_wheel_iyy" default="0.0025"/>
+  <xacro:arg name="drive_wheel_izz" default="0.0015"/>
+  <!-- R remains unmeasured under load.  85 mm is a reference point inside
+       the 82..90 mm sweep, not a released nominal radius. -->
+  <xacro:arg name="drive_wheel_radius" default="0.085"/>
+  <xacro:arg name="drive_axle_above_mount_foot" default="0.029"/>
+  <xacro:arg name="drive_axle_z" default="0.081"/>
+  <xacro:arg name="turns_only" default="false"/>
+  <xacro:arg name="retention_only" default="false"/>
+  <xacro:arg name="yaw_feedback_enabled" default="false"/>
+  <xacro:arg name="yaw_kp" default="2.0"/>
+  <xacro:arg name="yaw_ki" default="0.8"/>
+  <xacro:arg name="yaw_correction_limit" default="1.5"/>
+  <xacro:arg name="tilt_hold_enabled" default="false"/>
+
+  <material name="frame_blue"><color rgba="0.16 0.48 0.78 1"/></material>
+  <material name="mount_gray"><color rgba="0.42 0.44 0.47 1"/></material>
+  <material name="safety_orange"><color rgba="0.95 0.45 0.06 1"/></material>
+  <material name="electronics_blue"><color rgba="0.10 0.42 0.76 1"/></material>
+  <material name="anthracite"><color rgba="0.12 0.13 0.15 1"/></material>
+  <material name="battery_green"><color rgba="0.10 0.52 0.18 1"/></material>
+  <xacro:property name="p247_basket_variant" value="$(arg five_c_basket_variant)"/>
+
+  <xacro:macro name="box_inertia" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${mass*(y*y+z*z)/12}" ixy="0" ixz="0"
+               iyy="${mass*(x*x+z*z)/12}" iyz="0"
+               izz="${mass*(x*x+y*y)/12}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- P2-44 chassis-fixed open ramp.  The listed points are its top surface;
+       2 mm overlapping plates approximate a smooth cubic rise from a 3 mm
+       tangent tongue to the existing basket-front floor at Z=54 mm. -->
+  <xacro:macro name="p244_ramp_segment" params="index xf zf xr zr width">
+    <xacro:property name="seg_dx" value="${xf-xr}"/>
+    <xacro:property name="seg_dz" value="${zr-zf}"/>
+    <xacro:property name="seg_len" value="${sqrt(seg_dx*seg_dx+seg_dz*seg_dz)}"/>
+    <xacro:property name="seg_pitch" value="${atan2(seg_dz,seg_dx)}"/>
+    <collision name="intake_fixed_ramp_floor_${index}_col"><origin xyz="${(xf+xr)/2} 0 ${(zf+zr)/2-0.001} " rpy="0 ${seg_pitch} 0"/><geometry><box size="${seg_len+0.004} ${width} 0.002"/></geometry></collision>
+    <visual name="intake_fixed_ramp_floor_${index}_vis"><origin xyz="${(xf+xr)/2} 0 ${(zf+zr)/2-0.001}" rpy="0 ${seg_pitch} 0"/><geometry><box size="${seg_len+0.004} ${width} 0.002"/></geometry><material name="frame_blue"/></visual>
+  </xacro:macro>
+  <xacro:macro name="p244_ramp_rail" params="index side xf zf xr zr width">
+    <xacro:property name="rail_dx" value="${xf-xr}"/>
+    <xacro:property name="rail_dz" value="${zr-zf}"/>
+    <xacro:property name="rail_len" value="${sqrt(rail_dx*rail_dx+rail_dz*rail_dz)}"/>
+    <xacro:property name="rail_pitch" value="${atan2(rail_dz,rail_dx)}"/>
+    <collision name="intake_fixed_ramp_rail_${index}_${side}_col"><origin xyz="${(xf+xr)/2} ${side*(width/2+0.0015)} ${(zf+zr)/2+0.010}" rpy="0 ${rail_pitch} 0"/><geometry><box size="${rail_len+0.004} 0.003 0.020"/></geometry></collision>
+    <visual name="intake_fixed_ramp_rail_${index}_${side}_vis"><origin xyz="${(xf+xr)/2} ${side*(width/2+0.0015)} ${(zf+zr)/2+0.010}" rpy="0 ${rail_pitch} 0"/><geometry><box size="${rail_len+0.004} 0.003 0.020"/></geometry><material name="electronics_blue"/></visual>
+  </xacro:macro>
+
+  <!-- The 10 kg base datum includes the printed frame, FIT0403 packages and
+       drive-wheel masses used by the Phase-1 bookkeeping. The four wheel links
+       therefore carry only a 1 g numerical mass, avoiding double count.  Their
+       rotational inertia about Y is retained explicitly (2.5e-3 kg m2 per
+       pneumatic wheel); otherwise the torque/slip transient is non-physical. -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="$(arg base_com_x) 0 $(arg base_com_z)" rpy="0 0 0"/>
+      <mass value="$(arg base_mass)"/>
+      <inertia ixx="$(arg base_ixx)" ixy="0" ixz="$(arg base_ixz)" iyy="$(arg base_iyy)" iyz="0" izz="$(arg base_izz)"/>
+    </inertial>
+    <visual name="left_rail"><origin xyz="0.0825 0.220 0.037"/><geometry><box size="0.495 0.050 0.030"/></geometry><material name="frame_blue"/></visual>
+    <visual name="right_rail"><origin xyz="0.0825 -0.220 0.037"/><geometry><box size="0.495 0.050 0.030"/></geometry><material name="frame_blue"/></visual>
+    <visual name="rear_crossbar"><origin xyz="-0.165 0 0.037"/><geometry><box size="0.050 0.440 0.030"/></geometry><material name="frame_blue"/></visual>
+    <visual name="x240_crossbar"><origin xyz="0.240 0 0.032"/><geometry><box size="0.050 0.440 0.020"/></geometry><material name="frame_blue"/></visual>
+    <visual name="x300_crossbar"><origin xyz="0.300 0 0.032"/><geometry><box size="0.020 0.440 0.020"/></geometry><material name="frame_blue"/></visual>
+    <!-- CAD-local rail underside is 22 mm in the previous h=33 mm datum.
+         With the measured-reference h=29 mm, local axle Z becomes 81 mm and
+         the settled rail clearance at reference R=85 mm becomes 26 mm.
+         With different measured values the settled clearance is
+         R - axle_to_foot - 30 mm. -->
+    <xacro:unless value="$(arg validation_fixtures_enabled)">
+      <collision name="base_envelope"><origin xyz="0.0825 0 0.057"/><geometry><box size="0.495 0.440 0.070"/></geometry></collision>
+    </xacro:unless>
+    <!-- P2-42 collision-only validation fixtures.  These do not modify the
+         frozen CAD.  Chassis members replace the coarse 5a base envelope so
+         a launcher/chassis contact cannot be an empty-space false positive. -->
+    <xacro:if value="$(arg validation_fixtures_enabled)">
+      <collision name="chassis_left_rail_col"><origin xyz="0.0825 0.220 0.037"/><geometry><box size="0.495 0.050 0.030"/></geometry></collision>
+      <collision name="chassis_right_rail_col"><origin xyz="0.0825 -0.220 0.037"/><geometry><box size="0.495 0.050 0.030"/></geometry></collision>
+      <collision name="chassis_rear_crossbar_col"><origin xyz="-0.165 0 0.037"/><geometry><box size="0.050 0.440 0.030"/></geometry></collision>
+      <collision name="chassis_x240_crossbar_col"><origin xyz="0.240 0 0.032"/><geometry><box size="0.050 0.440 0.020"/></geometry></collision>
+      <collision name="chassis_x300_crossbar_col"><origin xyz="0.300 0 0.032"/><geometry><box size="0.020 0.440 0.020"/></geometry></collision>
+      <collision name="fixture_arch_left_leg_col"><origin xyz="0.318 0.220 0.1485"/><geometry><box size="0.030 0.050 0.193"/></geometry></collision>
+      <collision name="fixture_arch_right_leg_col"><origin xyz="0.318 -0.220 0.1485"/><geometry><box size="0.030 0.050 0.193"/></geometry></collision>
+      <collision name="fixture_arch_left_dogleg_col"><origin xyz="0.324 0.220 0.245"/><geometry><box size="0.042 0.030 0.020"/></geometry></collision>
+      <collision name="fixture_arch_right_dogleg_col"><origin xyz="0.324 -0.220 0.245"/><geometry><box size="0.042 0.030 0.020"/></geometry></collision>
+      <collision name="fixture_arch_x330_crossmember_col"><origin xyz="0.330 0 0.245"/><geometry><box size="0.050 0.440 0.030"/></geometry></collision>
+      <collision name="fixture_lidar_body_col"><origin xyz="0.330 0 0.374"/><geometry><cylinder radius="0.038" length="0.032"/></geometry></collision>
+      <collision name="fixture_camera_body_col"><origin xyz="0.350 0 0.305" rpy="0 0.872665 0"/><geometry><box size="0.082 0.032 0.028"/></geometry></collision>
+    </xacro:if>
+    <xacro:if value="$(arg five_c_p244_ramp_enabled)">
+      <xacro:property name="p245_clearance" value="${float('$(arg five_c_ramp_tip_clearance)')}"/>
+      <xacro:property name="p245_delta" value="${p245_clearance-0.001}"/>
+      <xacro:property name="p245_z0" value="${p245_clearance+0.002}"/>
+      <xacro:property name="p245_z1" value="${0.008+0.75*p245_delta}"/>
+      <xacro:property name="p245_z2" value="${0.021+0.35*p245_delta}"/>
+      <!-- The R125 variant replaces the complete throat-to-sill floor.  Do
+           not leave the legacy first two facets underneath it: overlapping
+           DART contacts would make the transition result meaningless. -->
+      <xacro:unless value="${p247_basket_variant == 'p249_r125' or p247_basket_variant == 'p249_r125_rails' or p247_basket_variant.startswith('p251_ski_')}">
+        <xacro:p244_ramp_segment index="0" xf="0.402" zf="${p245_z0}" xr="0.377" zr="${p245_z1}" width="0.061"/>
+        <xacro:p244_ramp_segment index="1" xf="0.377" zf="${p245_z1}" xr="0.352" zr="${p245_z2}" width="0.072"/>
+      </xacro:unless>
+      <xacro:unless value="${p247_basket_variant == 'high_hood' or p247_basket_variant == 'tall_open_drop' or p247_basket_variant == 'p249_separated' or p247_basket_variant == 'p249_r125' or p247_basket_variant == 'p249_r125_rails' or p247_basket_variant.startswith('p251_ski_')}">
+        <xacro:p244_ramp_segment index="2" xf="0.352" zf="${p245_z2}" xr="0.328" zr="0.036" width="0.082"/>
+        <xacro:p244_ramp_segment index="3" xf="0.328" zf="0.036" xr="0.315" zr="0.046" width="0.088"/>
+        <xacro:p244_ramp_segment index="4" xf="0.315" zf="0.046" xr="0.305" zr="0.052" width="0.0915"/>
+        <xacro:unless value="${p247_basket_variant == 'lip_cover'}">
+          <xacro:p244_ramp_segment index="5" xf="0.305" zf="0.052" xr="0.298" zr="0.054" width="0.094"/>
+          <xacro:p244_ramp_segment index="6" xf="0.298" zf="0.054" xr="0.278" zr="0.054" width="0.0955"/>
+        </xacro:unless>
+        <!-- The fixed lip needs the same lesson as basket-v2: the incoming
+             ball must be lifted over it rather than asked to climb a wall. -->
+      <xacro:if value="${p247_basket_variant == 'lip_cover'}">
+          <xacro:p244_ramp_segment index="5l" xf="0.305" zf="0.052" xr="0.290" zr="0.056" width="0.094"/>
+          <xacro:p244_ramp_segment index="6l" xf="0.290" zf="0.056" xr="0.278" zr="0.060" width="0.0955"/>
+        </xacro:if>
+      </xacro:unless>
+      <!-- Variant A: a short controlled-rise profile presents the ball above
+           the floor pile before it reaches the hooded basket entrance. -->
+      <xacro:if value="${p247_basket_variant == 'high_hood'}">
+        <xacro:p244_ramp_segment index="2h" xf="0.352" zf="${p245_z2}" xr="0.330" zr="0.030" width="0.082"/>
+        <xacro:p244_ramp_segment index="3h" xf="0.330" zf="0.030" xr="0.305" zr="0.040" width="0.088"/>
+        <xacro:p244_ramp_segment index="4h" xf="0.305" zf="0.040" xr="0.280" zr="0.052" width="0.094"/>
+        <xacro:p244_ramp_segment index="5h" xf="0.280" zf="0.052" xr="0.250" zr="0.065" width="0.096"/>
+      </xacro:if>
+      <!-- P2-47 extension: the simplest candidate is an uncovered overhead
+           bridge.  It raises the incoming ball above the conservative local
+           three-layer pile and releases it near the rear of a taller basket.
+           There is no entry flap, roof or compliant liner. -->
+      <xacro:if value="${p247_basket_variant == 'tall_open_drop'}">
+        <xacro:p244_ramp_segment index="2t" xf="0.352" zf="${p245_z2}" xr="0.330" zr="0.031" width="0.082"/>
+        <xacro:p244_ramp_segment index="3t" xf="0.330" zf="0.031" xr="0.305" zr="0.048" width="0.086"/>
+        <xacro:p244_ramp_segment index="4t" xf="0.305" zf="0.048" xr="0.280" zr="0.069" width="0.090"/>
+        <xacro:p244_ramp_segment index="5t" xf="0.280" zf="0.069" xr="0.250" zr="0.095" width="0.094"/>
+        <xacro:p244_ramp_segment index="6t" xf="0.250" zf="0.095" xr="0.220" zr="0.121" width="0.096"/>
+        <xacro:p244_ramp_segment index="7t" xf="0.220" zf="0.121" xr="0.190" zr="0.147" width="0.096"/>
+        <xacro:p244_ramp_segment index="8t" xf="0.190" zf="0.147" xr="0.160" zr="0.173" width="0.096"/>
+        <xacro:p244_ramp_segment index="9t" xf="0.160" zf="0.173" xr="0.130" zr="0.199" width="0.096"/>
+        <xacro:p244_ramp_segment index="10t" xf="0.130" zf="0.199" xr="0.110" zr="0.218" width="0.096"/>
+        <xacro:p244_ramp_segment index="11t" xf="0.110" zf="0.218" xr="0.090" zr="0.247" width="0.096"/>
+        <xacro:p244_ramp_rail index="2t" side="1" xf="0.352" zf="${p245_z2}" xr="0.330" zr="0.031" width="0.082"/>
+        <xacro:p244_ramp_rail index="2t" side="-1" xf="0.352" zf="${p245_z2}" xr="0.330" zr="0.031" width="0.082"/>
+        <xacro:p244_ramp_rail index="7t" side="1" xf="0.220" zf="0.121" xr="0.190" zr="0.147" width="0.096"/>
+        <xacro:p244_ramp_rail index="7t" side="-1" xf="0.220" zf="0.121" xr="0.190" zr="0.147" width="0.096"/>
+        <xacro:p244_ramp_rail index="11t" side="1" xf="0.110" zf="0.218" xr="0.090" zr="0.247" width="0.096"/>
+        <xacro:p244_ramp_rail index="11t" side="-1" xf="0.110" zf="0.218" xr="0.090" zr="0.247" width="0.096"/>
+      </xacro:if>
+      <!-- P2-50 first-run geometry: the P2-49 piecewise common throat and
+           external collection ramp.  This intentionally preserves the sharp
+           polyline transition for the frozen impact/bounce diagnostic. -->
+      <xacro:if value="${p247_basket_variant == 'p249_separated'}">
+        <xacro:p244_ramp_segment index="2p249" xf="0.352" zf="${p245_z2}" xr="0.3247" zr="0.0451" width="0.078"/>
+        <xacro:p244_ramp_segment index="3p249" xf="0.3247" zf="0.0451" xr="0.285" zr="0.065" width="0.080"/>
+        <xacro:p244_ramp_segment index="4p249" xf="0.285" zf="0.065" xr="0.245" zr="0.105" width="0.080"/>
+        <xacro:p244_ramp_segment index="5p249" xf="0.245" zf="0.105" xr="0.205" zr="0.150" width="0.080"/>
+        <xacro:p244_ramp_segment index="6p249" xf="0.205" zf="0.150" xr="0.155" zr="0.215" width="0.080"/>
+        <xacro:p244_ramp_segment index="7p249" xf="0.155" zf="0.215" xr="0.100" zr="0.285" width="0.080"/>
+        <xacro:p244_ramp_rail index="2p249" side="1" xf="0.352" zf="${p245_z2}" xr="0.3247" zr="0.0451" width="0.078"/>
+        <xacro:p244_ramp_rail index="2p249" side="-1" xf="0.352" zf="${p245_z2}" xr="0.3247" zr="0.0451" width="0.078"/>
+        <xacro:p244_ramp_rail index="4p249" side="1" xf="0.285" zf="0.065" xr="0.245" zr="0.105" width="0.080"/>
+        <xacro:p244_ramp_rail index="4p249" side="-1" xf="0.285" zf="0.065" xr="0.245" zr="0.105" width="0.080"/>
+        <xacro:p244_ramp_rail index="7p249" side="1" xf="0.155" zf="0.215" xr="0.100" zr="0.285" width="0.080"/>
+        <xacro:p244_ramp_rail index="7p249" side="-1" xf="0.155" zf="0.215" xr="0.100" zr="0.285" width="0.080"/>
+      </xacro:if>
+      <!-- P2-50 r2: R=125 mm circular lower transition, chorded every 8 deg,
+           tangent to the approximately 48 deg climb toward sill Z285. -->
+      <xacro:if value="${p247_basket_variant == 'p249_r125' or p247_basket_variant == 'p249_r125_rails'}">
+        <xacro:p244_ramp_segment index="0r125" xf="0.402000" zf="0.010000" xr="0.384603" zr="0.011216" width="0.061"/>
+        <xacro:p244_ramp_segment index="1r125" xf="0.384603" zf="0.011216" xr="0.367545" zr="0.014842" width="0.068"/>
+        <xacro:p244_ramp_segment index="2r125" xf="0.367545" zf="0.014842" xr="0.351158" zr="0.020807" width="0.074"/>
+        <xacro:p244_ramp_segment index="3r125" xf="0.351158" zf="0.020807" xr="0.335760" zr="0.028994" width="0.078"/>
+        <xacro:p244_ramp_segment index="4r125" xf="0.335760" zf="0.028994" xr="0.321652" zr="0.039244" width="0.080"/>
+        <xacro:p244_ramp_segment index="5r125" xf="0.321652" zf="0.039244" xr="0.309107" zr="0.051359" width="0.080"/>
+        <xacro:p244_ramp_segment index="6r125" xf="0.309107" zf="0.051359" xr="0.270" zr="0.09510" width="0.080"/>
+        <xacro:p244_ramp_segment index="7r125" xf="0.270" zf="0.09510" xr="0.220" zr="0.15105" width="0.080"/>
+        <xacro:p244_ramp_segment index="8r125" xf="0.220" zf="0.15105" xr="0.170" zr="0.20700" width="0.080"/>
+        <xacro:p244_ramp_segment index="9r125" xf="0.170" zf="0.20700" xr="0.120" zr="0.26295" width="0.080"/>
+        <xacro:p244_ramp_segment index="10r125" xf="0.120" zf="0.26295" xr="0.100" zr="0.285" width="0.080"/>
+        <xacro:if value="${p247_basket_variant == 'p249_r125'}">
+          <xacro:p244_ramp_rail index="2r125" side="1" xf="0.367545" zf="0.014842" xr="0.351158" zr="0.020807" width="0.074"/>
+          <xacro:p244_ramp_rail index="2r125" side="-1" xf="0.367545" zf="0.014842" xr="0.351158" zr="0.020807" width="0.074"/>
+          <xacro:p244_ramp_rail index="6r125" side="1" xf="0.309107" zf="0.051359" xr="0.270" zr="0.09510" width="0.080"/>
+          <xacro:p244_ramp_rail index="6r125" side="-1" xf="0.309107" zf="0.051359" xr="0.270" zr="0.09510" width="0.080"/>
+          <xacro:p244_ramp_rail index="10r125" side="1" xf="0.120" zf="0.26295" xr="0.100" zr="0.285" width="0.080"/>
+          <xacro:p244_ramp_rail index="10r125" side="-1" xf="0.120" zf="0.26295" xr="0.100" zr="0.285" width="0.080"/>
+        </xacro:if>
+        <!-- R3 keeps a continuous 20 mm rail on both sides.  R2 demonstrated
+             that balls arriving centred could leave through the unmodelled
+             gaps while rolling back; a printable ramp cannot have those gaps. -->
+        <xacro:if value="${p247_basket_variant == 'p249_r125_rails'}">
+          <xacro:p244_ramp_rail index="0r125" side="1" xf="0.402000" zf="0.010000" xr="0.384603" zr="0.011216" width="0.061"/>
+          <xacro:p244_ramp_rail index="0r125" side="-1" xf="0.402000" zf="0.010000" xr="0.384603" zr="0.011216" width="0.061"/>
+          <xacro:p244_ramp_rail index="1r125" side="1" xf="0.384603" zf="0.011216" xr="0.367545" zr="0.014842" width="0.068"/>
+          <xacro:p244_ramp_rail index="1r125" side="-1" xf="0.384603" zf="0.011216" xr="0.367545" zr="0.014842" width="0.068"/>
+          <xacro:p244_ramp_rail index="2r125" side="1" xf="0.367545" zf="0.014842" xr="0.351158" zr="0.020807" width="0.074"/>
+          <xacro:p244_ramp_rail index="2r125" side="-1" xf="0.367545" zf="0.014842" xr="0.351158" zr="0.020807" width="0.074"/>
+          <xacro:p244_ramp_rail index="3r125" side="1" xf="0.351158" zf="0.020807" xr="0.335760" zr="0.028994" width="0.078"/>
+          <xacro:p244_ramp_rail index="3r125" side="-1" xf="0.351158" zf="0.020807" xr="0.335760" zr="0.028994" width="0.078"/>
+          <xacro:p244_ramp_rail index="4r125" side="1" xf="0.335760" zf="0.028994" xr="0.321652" zr="0.039244" width="0.080"/>
+          <xacro:p244_ramp_rail index="4r125" side="-1" xf="0.335760" zf="0.028994" xr="0.321652" zr="0.039244" width="0.080"/>
+          <xacro:p244_ramp_rail index="5r125" side="1" xf="0.321652" zf="0.039244" xr="0.309107" zr="0.051359" width="0.080"/>
+          <xacro:p244_ramp_rail index="5r125" side="-1" xf="0.321652" zf="0.039244" xr="0.309107" zr="0.051359" width="0.080"/>
+          <xacro:p244_ramp_rail index="6r125" side="1" xf="0.309107" zf="0.051359" xr="0.270" zr="0.09510" width="0.080"/>
+          <xacro:p244_ramp_rail index="6r125" side="-1" xf="0.309107" zf="0.051359" xr="0.270" zr="0.09510" width="0.080"/>
+          <xacro:p244_ramp_rail index="7r125" side="1" xf="0.270" zf="0.09510" xr="0.220" zr="0.15105" width="0.080"/>
+          <xacro:p244_ramp_rail index="7r125" side="-1" xf="0.270" zf="0.09510" xr="0.220" zr="0.15105" width="0.080"/>
+          <xacro:p244_ramp_rail index="8r125" side="1" xf="0.220" zf="0.15105" xr="0.170" zr="0.20700" width="0.080"/>
+          <xacro:p244_ramp_rail index="8r125" side="-1" xf="0.220" zf="0.15105" xr="0.170" zr="0.20700" width="0.080"/>
+          <xacro:p244_ramp_rail index="9r125" side="1" xf="0.170" zf="0.20700" xr="0.120" zr="0.26295" width="0.080"/>
+          <xacro:p244_ramp_rail index="9r125" side="-1" xf="0.170" zf="0.20700" xr="0.120" zr="0.26295" width="0.080"/>
+          <xacro:p244_ramp_rail index="10r125" side="1" xf="0.120" zf="0.26295" xr="0.100" zr="0.285" width="0.080"/>
+          <xacro:p244_ramp_rail index="10r125" side="-1" xf="0.120" zf="0.26295" xr="0.100" zr="0.285" width="0.080"/>
+        </xacro:if>
+      </xacro:if>
+      <!-- P2-51 r2 passive ski jump: 52 mm tangent plus R75, faceted every
+           five degrees. It redirects the ball only; there is no powered
+           belt or roller and no surface after the selected take-off. R125
+           was stopped after its first run because the 35 deg tip at X305
+           put the ball into the frozen X300 crossbar. -->
+      <xacro:if value="${p247_basket_variant.startswith('p251_ski_')}">
+        <xacro:property name="p251_exit_angle" value="${int(p247_basket_variant.rsplit('_',1)[1])}"/>
+        <xacro:p244_ramp_segment index="p251_flat" xf="0.435000" zf="0.010000" xr="0.383000" zr="0.010000" width="0.061"/>
+        <xacro:p244_ramp_rail index="p251_flat" side="1" xf="0.435000" zf="0.010000" xr="0.383000" zr="0.010000" width="0.061"/>
+        <xacro:p244_ramp_rail index="p251_flat" side="-1" xf="0.435000" zf="0.010000" xr="0.383000" zr="0.010000" width="0.061"/>
+        <xacro:p244_ramp_segment index="p251_05" xf="0.383000" zf="0.010000" xr="0.376463" zr="0.010285" width="0.066"/>
+        <xacro:p244_ramp_segment index="p251_10" xf="0.376463" zf="0.010285" xr="0.369976" zr="0.011139" width="0.072"/>
+        <xacro:p244_ramp_segment index="p251_15" xf="0.369976" zf="0.011139" xr="0.363589" zr="0.012556" width="0.078"/>
+        <xacro:p244_ramp_segment index="p251_20" xf="0.363589" zf="0.012556" xr="0.357348" zr="0.014523" width="0.084"/>
+        <xacro:p244_ramp_segment index="p251_25" xf="0.357348" zf="0.014523" xr="0.351304" zr="0.017027" width="0.090"/>
+        <xacro:p244_ramp_segment index="p251_30" xf="0.351304" zf="0.017027" xr="0.345500" zr="0.020048" width="0.094"/>
+        <xacro:p244_ramp_segment index="p251_35" xf="0.345500" zf="0.020048" xr="0.339982" zr="0.023564" width="0.094"/>
+        <xacro:if value="${p251_exit_angle >= 40}"><xacro:p244_ramp_segment index="p251_40" xf="0.339982" zf="0.023564" xr="0.334791" zr="0.027547" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 42}"><xacro:p244_ramp_segment index="p251_42" xf="0.334791" zf="0.027547" xr="0.332815" zr="0.029264" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 45}"><xacro:p244_ramp_segment index="p251_45" xf="0.332815" zf="0.029264" xr="0.329967" zr="0.031967" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 50}"><xacro:p244_ramp_segment index="p251_50" xf="0.329967" zf="0.031967" xr="0.325547" zr="0.036791" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 55}"><xacro:p244_ramp_segment index="p251_55" xf="0.325547" zf="0.036791" xr="0.321564" zr="0.041982" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 60}"><xacro:p244_ramp_segment index="p251_60" xf="0.321564" zf="0.041982" xr="0.318048" zr="0.047500" width="0.094"/></xacro:if>
+        <xacro:p244_ramp_rail index="p251_05" side="1" xf="0.383000" zf="0.010000" xr="0.376463" zr="0.010285" width="0.066"/>
+        <xacro:p244_ramp_rail index="p251_05" side="-1" xf="0.383000" zf="0.010000" xr="0.376463" zr="0.010285" width="0.066"/>
+        <xacro:p244_ramp_rail index="p251_10" side="1" xf="0.376463" zf="0.010285" xr="0.369976" zr="0.011139" width="0.072"/>
+        <xacro:p244_ramp_rail index="p251_10" side="-1" xf="0.376463" zf="0.010285" xr="0.369976" zr="0.011139" width="0.072"/>
+        <xacro:p244_ramp_rail index="p251_15" side="1" xf="0.369976" zf="0.011139" xr="0.363589" zr="0.012556" width="0.078"/>
+        <xacro:p244_ramp_rail index="p251_15" side="-1" xf="0.369976" zf="0.011139" xr="0.363589" zr="0.012556" width="0.078"/>
+        <xacro:p244_ramp_rail index="p251_20" side="1" xf="0.363589" zf="0.012556" xr="0.357348" zr="0.014523" width="0.084"/>
+        <xacro:p244_ramp_rail index="p251_20" side="-1" xf="0.363589" zf="0.012556" xr="0.357348" zr="0.014523" width="0.084"/>
+        <xacro:p244_ramp_rail index="p251_25" side="1" xf="0.357348" zf="0.014523" xr="0.351304" zr="0.017027" width="0.090"/>
+        <xacro:p244_ramp_rail index="p251_25" side="-1" xf="0.357348" zf="0.014523" xr="0.351304" zr="0.017027" width="0.090"/>
+        <xacro:p244_ramp_rail index="p251_30" side="1" xf="0.351304" zf="0.017027" xr="0.345500" zr="0.020048" width="0.094"/>
+        <xacro:p244_ramp_rail index="p251_30" side="-1" xf="0.351304" zf="0.017027" xr="0.345500" zr="0.020048" width="0.094"/>
+        <xacro:p244_ramp_rail index="p251_35" side="1" xf="0.345500" zf="0.020048" xr="0.339982" zr="0.023564" width="0.094"/>
+        <xacro:p244_ramp_rail index="p251_35" side="-1" xf="0.345500" zf="0.020048" xr="0.339982" zr="0.023564" width="0.094"/>
+        <xacro:if value="${p251_exit_angle >= 40}"><xacro:p244_ramp_rail index="p251_40" side="1" xf="0.339982" zf="0.023564" xr="0.334791" zr="0.027547" width="0.094"/><xacro:p244_ramp_rail index="p251_40" side="-1" xf="0.339982" zf="0.023564" xr="0.334791" zr="0.027547" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 42}"><xacro:p244_ramp_rail index="p251_42" side="1" xf="0.334791" zf="0.027547" xr="0.332815" zr="0.029264" width="0.094"/><xacro:p244_ramp_rail index="p251_42" side="-1" xf="0.334791" zf="0.027547" xr="0.332815" zr="0.029264" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 45}"><xacro:p244_ramp_rail index="p251_45" side="1" xf="0.332815" zf="0.029264" xr="0.329967" zr="0.031967" width="0.094"/><xacro:p244_ramp_rail index="p251_45" side="-1" xf="0.332815" zf="0.029264" xr="0.329967" zr="0.031967" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 50}"><xacro:p244_ramp_rail index="p251_50" side="1" xf="0.329967" zf="0.031967" xr="0.325547" zr="0.036791" width="0.094"/><xacro:p244_ramp_rail index="p251_50" side="-1" xf="0.329967" zf="0.031967" xr="0.325547" zr="0.036791" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 55}"><xacro:p244_ramp_rail index="p251_55" side="1" xf="0.325547" zf="0.036791" xr="0.321564" zr="0.041982" width="0.094"/><xacro:p244_ramp_rail index="p251_55" side="-1" xf="0.325547" zf="0.036791" xr="0.321564" zr="0.041982" width="0.094"/></xacro:if>
+        <xacro:if value="${p251_exit_angle >= 60}"><xacro:p244_ramp_rail index="p251_60" side="1" xf="0.321564" zf="0.041982" xr="0.318048" zr="0.047500" width="0.094"/><xacro:p244_ramp_rail index="p251_60" side="-1" xf="0.321564" zf="0.041982" xr="0.318048" zr="0.047500" width="0.094"/></xacro:if>
+      </xacro:if>
+      <xacro:unless value="${p247_basket_variant == 'tall_open_drop' or p247_basket_variant == 'p249_separated' or p247_basket_variant == 'p249_r125' or p247_basket_variant == 'p249_r125_rails' or p247_basket_variant.startswith('p251_ski_')}">
+        <xacro:p244_ramp_rail index="2" side="1" xf="0.352" zf="${p245_z2}" xr="0.328" zr="0.036" width="0.082"/>
+        <xacro:p244_ramp_rail index="2" side="-1" xf="0.352" zf="${p245_z2}" xr="0.328" zr="0.036" width="0.082"/>
+        <xacro:p244_ramp_rail index="3" side="1" xf="0.328" zf="0.036" xr="0.315" zr="0.046" width="0.088"/>
+        <xacro:p244_ramp_rail index="3" side="-1" xf="0.328" zf="0.036" xr="0.315" zr="0.046" width="0.088"/>
+        <xacro:p244_ramp_rail index="4" side="1" xf="0.315" zf="0.046" xr="0.305" zr="0.052" width="0.0915"/>
+        <xacro:p244_ramp_rail index="4" side="-1" xf="0.315" zf="0.046" xr="0.305" zr="0.052" width="0.0915"/>
+        <xacro:p244_ramp_rail index="5" side="1" xf="0.305" zf="0.052" xr="0.298" zr="0.054" width="0.094"/>
+        <xacro:p244_ramp_rail index="5" side="-1" xf="0.305" zf="0.052" xr="0.298" zr="0.054" width="0.094"/>
+        <xacro:p244_ramp_rail index="6" side="1" xf="0.298" zf="0.054" xr="0.278" zr="0.054" width="0.0955"/>
+        <xacro:p244_ramp_rail index="6" side="-1" xf="0.298" zf="0.054" xr="0.278" zr="0.054" width="0.0955"/>
+      </xacro:unless>
+      <!-- The original P2-44 flap remains only in the preserved open entry.
+           Every P2-47 candidate supplies its own hood/flap and must not stack
+           a second obstruction in the same volume. -->
+      <xacro:if value="${p247_basket_variant == 'p246_open'}">
+        <collision name="intake_fixed_ramp_flap_col"><origin xyz="0.296 0 0.128" rpy="0 0.20 0"/><geometry><box size="0.040 0.100 0.002"/></geometry></collision>
+        <visual name="intake_fixed_ramp_flap_vis"><origin xyz="0.296 0 0.128" rpy="0 0.20 0"/><geometry><box size="0.040 0.100 0.002"/></geometry><material name="safety_orange"/></visual>
+      </xacro:if>
+    </xacro:if>
+  </link>
+
+  <xacro:macro name="drive_wheel" params="name x y">
+    <link name="${name}_wheel_link">
+      <inertial><mass value="$(arg drive_wheel_mass)"/><inertia ixx="$(arg drive_wheel_ixx)" ixy="0" ixz="0" iyy="$(arg drive_wheel_iyy)" iyz="0" izz="$(arg drive_wheel_izz)"/></inertial>
+      <visual><origin rpy="1.57079632679 0 0"/><geometry><cylinder radius="$(arg drive_wheel_radius)" length="0.083"/></geometry><material name="anthracite"/></visual>
+      <collision><origin rpy="1.57079632679 0 0"/><geometry><cylinder radius="$(arg drive_wheel_radius)" length="0.083"/></geometry></collision>
+    </link>
+    <joint name="${name}_wheel_joint" type="continuous">
+      <parent link="base_link"/><child link="${name}_wheel_link"/>
+      <origin xyz="${x} ${y} $(arg drive_axle_z)"/><axis xyz="0 1 0"/>
+      <limit effort="3.73" velocity="20"/><dynamics damping="0.02" friction="0.02"/>
+    </joint>
+    <gazebo reference="${name}_wheel_link"><mu1>$(arg ground_mu)</mu1><mu2>$(arg ground_mu)</mu2></gazebo>
+  </xacro:macro>
+  <xacro:drive_wheel name="rear_left" x="-0.065" y="0.297"/>
+  <xacro:drive_wheel name="rear_right" x="-0.065" y="-0.297"/>
+  <xacro:drive_wheel name="front_left" x="0.300" y="0.297"/>
+  <xacro:drive_wheel name="front_right" x="0.300" y="-0.297"/>
+
+  <link name="basket_support_link">
+    <inertial><origin xyz="0.120 0 0.130"/><mass value="1.70"/><inertia ixx="0.030" ixy="0" ixz="0" iyy="0.020" iyz="0" izz="0.040"/></inertial>
+    <visual><origin xyz="0.130 0 0.130"/><geometry><box size="0.290 0.350 0.170"/></geometry><material name="mount_gray"/></visual>
+    <xacro:unless value="$(arg five_c_p244_ramp_enabled)"><collision><origin xyz="0.130 0 0.130"/><geometry><box size="0.290 0.350 0.170"/></geometry></collision></xacro:unless>
+    <xacro:if value="$(arg five_c_p244_ramp_enabled)">
+      <xacro:unless value="${p247_basket_variant == 'p249_separated' or p247_basket_variant == 'p249_r125' or p247_basket_variant == 'p249_r125_rails' or p247_basket_variant.startswith('p251_ski_')}">
+        <collision name="basket_floor_col"><origin xyz="0.130 0 0.0525"/><geometry><box size="0.290 0.350 0.003"/></geometry></collision>
+      </xacro:unless>
+      <xacro:if value="${p247_basket_variant == 'p249_separated' or p247_basket_variant == 'p249_r125' or p247_basket_variant == 'p249_r125_rails'}">
+        <!-- Only the rear storage floor appears on centreline.  The external
+             ramp bay X100..278 is not storage and contains no basket floor. -->
+        <collision name="basket_p249_rear_floor_col"><origin xyz="0.0425 0 0.0465" rpy="0 -0.07854 0"/><geometry><box size="0.116 0.344 0.003"/></geometry></collision>
+        <collision name="basket_p249_divider_mid_col"><origin xyz="0.100 0 0.2035"/><geometry><box size="0.003 0.100 0.163"/></geometry></collision>
+      </xacro:if>
+      <xacro:if value="${p247_basket_variant.startswith('p251_ski_')}">
+        <!-- Full-width floor is recovered because no deep ramp bay enters
+             storage.  A central rear extension stops before Parkside and
+             leaves the FIT0403 corner envelopes outside its ±140 mm width. -->
+        <collision name="basket_p251_center_floor_col"><origin xyz="0.0965 0 0.056" rpy="0 -0.07854 0"/><geometry><box size="0.363 0.280 0.003"/></geometry></collision>
+        <collision name="basket_p251_left_floor_wing_col"><origin xyz="0.1315 0.156 0.051" rpy="0 -0.07854 0"/><geometry><box size="0.293 0.032 0.003"/></geometry></collision>
+        <collision name="basket_p251_right_floor_wing_col"><origin xyz="0.1315 -0.156 0.051" rpy="0 -0.07854 0"/><geometry><box size="0.293 0.032 0.003"/></geometry></collision>
+        <collision name="basket_p251_rear_backboard_col"><origin xyz="-0.051 0 0.210" rpy="0 0.20944 0"/><geometry><box size="0.004 0.280 0.330"/></geometry></collision>
+        <collision name="basket_p251_rear_left_side_col"><origin xyz="-0.050 0.1415 0.190"/><geometry><box size="0.070 0.003 0.290"/></geometry></collision>
+        <collision name="basket_p251_rear_right_side_col"><origin xyz="-0.050 -0.1415 0.190"/><geometry><box size="0.070 0.003 0.290"/></geometry></collision>
+        <collision name="basket_p251_upper_left_wall_col"><origin xyz="0.1315 0.1735 0.2675"/><geometry><box size="0.293 0.003 0.105"/></geometry></collision>
+        <collision name="basket_p251_upper_right_wall_col"><origin xyz="0.1315 -0.1735 0.2675"/><geometry><box size="0.293 0.003 0.105"/></geometry></collision>
+        <collision name="basket_p251_front_left_post_col"><origin xyz="0.277 0.156 0.190"/><geometry><box size="0.004 0.032 0.270"/></geometry></collision>
+        <collision name="basket_p251_front_right_post_col"><origin xyz="0.277 -0.156 0.190"/><geometry><box size="0.004 0.032 0.270"/></geometry></collision>
+      </xacro:if>
+      <collision name="basket_left_wall_col"><origin xyz="0.130 0.1735 0.130"/><geometry><box size="0.290 0.003 0.170"/></geometry></collision>
+      <collision name="basket_right_wall_col"><origin xyz="0.130 -0.1735 0.130"/><geometry><box size="0.290 0.003 0.170"/></geometry></collision>
+      <xacro:unless value="${p247_basket_variant.startswith('p251_ski_')}">
+        <collision name="basket_rear_wall_col"><origin xyz="-0.0135 0 0.130"/><geometry><box size="0.003 0.350 0.170"/></geometry></collision>
+      </xacro:unless>
+      <!-- Front wall retained outside the 96 mm central entrance. -->
+      <xacro:unless value="${p247_basket_variant.startswith('p251_ski_')}">
+        <collision name="basket_front_left_wall_col"><origin xyz="0.2735 0.1115 0.130"/><geometry><box size="0.003 0.127 0.170"/></geometry></collision>
+        <collision name="basket_front_right_wall_col"><origin xyz="0.2735 -0.1115 0.130"/><geometry><box size="0.003 0.127 0.170"/></geometry></collision>
+      </xacro:unless>
+      <!-- Taller open-drop basket: upper wall extensions only.  The lower
+           central launch-feed interface stays geometrically available below
+           the overhead bridge; its future singulator remains dependent. -->
+      <xacro:if value="${p247_basket_variant == 'tall_open_drop'}">
+        <collision name="basket_tall_left_wall_col"><origin xyz="0.130 0.1735 0.275"/><geometry><box size="0.290 0.003 0.120"/></geometry></collision>
+        <collision name="basket_tall_right_wall_col"><origin xyz="0.130 -0.1735 0.275"/><geometry><box size="0.290 0.003 0.120"/></geometry></collision>
+        <collision name="basket_tall_rear_wall_col"><origin xyz="-0.0135 0 0.275"/><geometry><box size="0.003 0.350 0.120"/></geometry></collision>
+        <collision name="basket_tall_front_wall_col"><origin xyz="0.2735 0 0.275"/><geometry><box size="0.003 0.350 0.120"/></geometry></collision>
+      </xacro:if>
+      <!-- P2-47 A: basket-v2 proportions transferred to the floor at Z=54
+           mm.  Roof rear overhang is 40+ mm and the clear plane rises from
+           160 to 178 mm; cheeks keep a 96 mm central channel. -->
+      <xacro:if value="${p247_basket_variant == 'high_hood'}">
+        <collision name="basket_high_hood_roof_col"><origin xyz="0.261 0 0.1705" rpy="0 -0.17467 0"/><geometry><box size="0.104 0.110 0.003"/></geometry></collision>
+        <collision name="basket_high_hood_left_cheek_col"><origin xyz="0.261 0.0565 0.126"/><geometry><box size="0.104 0.003 0.090"/></geometry></collision>
+        <collision name="basket_high_hood_right_cheek_col"><origin xyz="0.261 -0.0565 0.126"/><geometry><box size="0.104 0.003 0.090"/></geometry></collision>
+      </xacro:if>
+      <!-- P2-47 C revision 3: a 6 mm centre lip retains stored balls; the
+           short rise above lifts the incoming ball over it.  A light cover
+           suppresses bounce and redirects it behind the front pile. -->
+      <xacro:if value="${p247_basket_variant == 'lip_cover'}">
+        <collision name="basket_center_retention_lip_col"><origin xyz="0.2725 0 0.057"/><geometry><box size="0.005 0.096 0.006"/></geometry></collision>
+        <collision name="basket_light_cover_roof_col"><origin xyz="0.261 0 0.1565" rpy="0 -0.145 0"/><geometry><box size="0.104 0.110 0.003"/></geometry></collision>
+        <collision name="basket_light_cover_left_cheek_col"><origin xyz="0.261 0.0565 0.111"/><geometry><box size="0.104 0.003 0.096"/></geometry></collision>
+        <collision name="basket_light_cover_right_cheek_col"><origin xyz="0.261 -0.0565 0.111"/><geometry><box size="0.104 0.003 0.096"/></geometry></collision>
+      </xacro:if>
+    </xacro:if>
+  </link>
+  <joint name="basket_support_joint" type="fixed"><parent link="base_link"/><child link="basket_support_link"/></joint>
+
+  <!-- P2-47 B: passive top-hinged one-way flap.  The 0..70 deg joint opens
+       only toward -X (into the basket); outward motion is stopped at 0 deg.
+       This is a comparative rigid-body abstraction, not a released hinge. -->
+  <xacro:if value="${p247_basket_variant == 'one_way_flap'}">
+    <link name="basket_one_way_flap_link">
+      <inertial><origin xyz="0 0 -0.0425"/><mass value="0.025"/><inertia ixx="0.000032" ixy="0" ixz="0" iyy="0.000015" iyz="0" izz="0.000018"/></inertial>
+      <collision name="basket_one_way_flap_col"><origin xyz="0 0 -0.0425"/><geometry><box size="0.002 0.096 0.085"/></geometry></collision>
+      <visual name="basket_one_way_flap_vis"><origin xyz="0 0 -0.0425"/><geometry><box size="0.002 0.096 0.085"/></geometry><material name="safety_orange"/></visual>
+    </link>
+    <joint name="basket_one_way_flap_joint" type="revolute">
+      <parent link="basket_support_link"/><child link="basket_one_way_flap_link"/>
+      <origin xyz="0.305 0 0.165"/><axis xyz="0 1 0"/>
+      <limit lower="0" upper="1.396263402" effort="20" velocity="12"/>
+      <dynamics damping="0.005" friction="0"/>
+    </joint>
+  </xacro:if>
+
+  <xacro:if value="$(arg basket_full_45)">
+    <link name="basket_ball_payload_link">
+      <inertial><origin xyz="0.105 0 0.135"/><mass value="2.565"/><inertia ixx="0.028" ixy="0" ixz="0" iyy="0.020" iyz="0" izz="0.042"/></inertial>
+      <visual><origin xyz="0.105 0 0.135"/><geometry><box size="0.210 0.310 0.120"/></geometry><material name="safety_orange"/></visual>
+      <collision><origin xyz="0.105 0 0.135"/><geometry><box size="0.210 0.310 0.120"/></geometry></collision>
+    </link>
+    <joint name="basket_ball_payload_joint" type="fixed"><parent link="base_link"/><child link="basket_ball_payload_link"/></joint>
+  </xacro:if>
+
+  <xacro:macro name="fixed_payload" params="name mass xyz size material">
+    <link name="${name}_link"><xacro:box_inertia mass="${mass}" x="${size[0]}" y="${size[1]}" z="${size[2]}"/><visual><geometry><box size="${size[0]} ${size[1]} ${size[2]}"/></geometry><material name="${material}"/></visual><collision><geometry><box size="${size[0]} ${size[1]} ${size[2]}"/></geometry></collision></link>
+    <joint name="${name}_joint" type="fixed"><parent link="base_link"/><child link="${name}_link"/><origin xyz="${xyz}"/></joint>
+  </xacro:macro>
+  <xacro:fixed_payload name="parkside_left" mass="0.650" xyz="-0.165 0.110 0.112" size="${[0.135,0.085,0.075]}" material="battery_green"/>
+  <xacro:fixed_payload name="parkside_right" mass="0.650" xyz="-0.165 -0.110 0.112" size="${[0.135,0.085,0.075]}" material="battery_green"/>
+  <xacro:fixed_payload name="ugreen_logic_power" mass="0.309" xyz="-0.100 0 0.145" size="${[0.115,0.046,0.0455]}" material="anthracite"/>
+
+  <link name="launcher_yoke_link">
+    <inertial><mass value="0.001"/><inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/></inertial>
+    <visual><geometry><box size="0.080 0.468 0.030"/></geometry><material name="mount_gray"/></visual>
+  </link>
+  <joint name="launcher_tilt_joint" type="revolute">
+    <parent link="base_link"/><child link="launcher_yoke_link"/>
+    <!-- CAD convention is rotate([0,-theta,0]): positive theta raises the
+         front/local +X mouth.  The isolated joint axis must therefore be -Y. -->
+    <!-- P2-42 reference adds 2 mm positive-locked downward adjustment so the
+         ground-ball centre is 10 mm above the usable W60/r2 tread edge. -->
+    <origin xyz="0.387 0 0.049837363636"/><axis xyz="0 -1 0"/>
+    <limit lower="-0.052359877560" upper="0.349065850399" effort="150" velocity="0.09"/>
+    <dynamics damping="1.5" friction="0.8"/>
+  </joint>
+
+  <!-- The selected lower seat is -3 degrees; its replaceable indexed rail
+       permits -10..-3 degrees.  The upper seat remains adjustable +15..+20
+       degrees and the URDF validation reference uses +20.  At launch the P16
+       commands a small preload; reaction is transmitted by seat/joint limit. -->
+  <link name="launcher_endpoint_stops_link">
+    <!-- Stop/yoke mass is already inside the 4.60996 kg P2-40 module
+         allowance; 1 g here is numerical only and avoids double counting. -->
+    <xacro:box_inertia mass="0.001" x="0.060" y="0.080" z="0.030"/>
+    <visual name="collection_stop"><origin xyz="0.454907 -0.205 0.048279"/><geometry><box size="0.020 0.024 0.020"/></geometry><material name="safety_orange"/></visual>
+    <collision name="collection_stop_col"><origin xyz="0.454907 -0.205 0.048279"/><geometry><box size="0.020 0.024 0.020"/></geometry></collision>
+    <visual name="launch_stop"><origin xyz="0.450899 -0.205 0.075095"/><geometry><box size="0.020 0.024 0.020"/></geometry><material name="safety_orange"/></visual>
+    <collision name="launch_stop_col"><origin xyz="0.450899 -0.205 0.075095"/><geometry><box size="0.020 0.024 0.020"/></geometry></collision>
+  </link>
+  <joint name="launcher_endpoint_stops_joint" type="fixed"><parent link="base_link"/><child link="launcher_endpoint_stops_link"/></joint>
+
+  <link name="p16_body_link"><xacro:box_inertia mass="0.095" x="0.120" y="0.025" z="0.025"/><visual><geometry><box size="0.120 0.025 0.025"/></geometry><material name="anthracite"/></visual><collision><geometry><box size="0.120 0.025 0.025"/></geometry></collision></link>
+  <joint name="p16_body_joint" type="fixed"><parent link="base_link"/><child link="p16_body_link"/><origin xyz="0.320 -0.190 0.120"/></joint>
+
+  <xacro:unless value="$(arg drive_test_ballast)">
+    <!-- Parameter override makes the complete module 4.60996 kg while retaining
+         the accepted printed TPU 60 mm/r2 wheel estimate. fixed_com_x keeps
+         the unchanged upper-plate/yoke/motor lump. -->
+    <xacro:cad_v3_flywheel_launcher_module
+        parent="launcher_yoke_link" origin_xyz="0.055 0 0"
+        fixed_mass="2.85200336" fixed_com_x="-0.025"
+        fixed_ixx="0.03695" fixed_iyy="0.01935"
+        fixed_izz="0.04147" fixed_ixz="-0.00023"
+        include_intake_guides="$(arg five_c_enabled)"
+        cheek_variant="$(arg five_c_cheek_variant)"
+        guide_design="$(arg five_c_design)"/>
+  </xacro:unless>
+  <xacro:if value="$(arg drive_test_ballast)">
+    <link name="drive_test_ballast_link">
+      <inertial><origin xyz="0.360 0 0.105"/><mass value="5.44788235294"/><inertia ixx="0.013" ixy="0" ixz="0" iyy="0.013" iyz="0" izz="0.020"/></inertial>
+      <visual><origin xyz="0.360 0 0.058"/><geometry><box size="0.160 0.480 0.012"/></geometry><material name="mount_gray"/></visual>
+      <collision><origin xyz="0.360 0 0.058"/><geometry><box size="0.160 0.480 0.012"/></geometry></collision>
+    </link>
+    <joint name="drive_test_ballast_joint" type="fixed"><parent link="base_link"/><child link="drive_test_ballast_link"/></joint>
+  </xacro:if>
+
+  <!-- D5065 electrical constants are frozen to the existing analytical model:
+       Kt=0.031 N m/A, Rphase-neutral=0.039 ohm, Kv=270 rpm/V, 20 A/motor.
+       The ODrive Motor Guide gives 32 V and 65 A maximum.  The 20 A value is
+       still the provisional controller/pack gate, not a motor maximum.
+       Propulsion is 15..21 V but the comparison model remains the documented
+       12.8 V gate until the controller and pack limits are measured. -->
+  <ros2_control name="Phase2V3IsolatedSystem" type="system">
+    <hardware><xacro:if value="$(arg sim_mode)"><plugin>gz_ros2_control/GazeboSimSystem</plugin></xacro:if></hardware>
+    <xacro:macro name="drive_interface" params="joint"><joint name="${joint}"><command_interface name="velocity"/><state_interface name="position"/><state_interface name="velocity"/><state_interface name="effort"/></joint></xacro:macro>
+    <xacro:drive_interface joint="rear_left_wheel_joint"/><xacro:drive_interface joint="rear_right_wheel_joint"/>
+    <xacro:drive_interface joint="front_left_wheel_joint"/><xacro:drive_interface joint="front_right_wheel_joint"/>
+    <joint name="launcher_tilt_joint"><command_interface name="effort"><param name="min">-12.6</param><param name="max">12.6</param></command_interface><state_interface name="position"><param name="initial_value">$(arg tilt_angle_rad)</param></state_interface><state_interface name="velocity"/><state_interface name="effort"/></joint>
+    <xacro:unless value="$(arg drive_test_ballast)">
+      <joint name="flywheel_left_joint"><command_interface name="effort"><param name="min">-0.62</param><param name="max">0.62</param></command_interface><state_interface name="position"/><state_interface name="velocity"/><state_interface name="effort"/></joint>
+      <joint name="flywheel_right_joint"><command_interface name="effort"><param name="min">-0.62</param><param name="max">0.62</param></command_interface><state_interface name="position"/><state_interface name="velocity"/><state_interface name="effort"/></joint>
+    </xacro:unless>
+  </ros2_control>
+
+  <xacro:if value="$(arg sim_mode)"><gazebo><plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin"><parameters>$(arg controllers_config)</parameters></plugin></gazebo></xacro:if>
+  <xacro:if value="$(arg five_a_enabled)">
+    <gazebo>
+      <plugin filename="v3_drive_5a_system" name="phase2_v3::Drive5aSystem">
+        <output_csv>$(arg five_a_output_csv)</output_csv>
+        <case_name>$(arg five_a_case)</case_name>
+        <ground_mu>$(arg ground_mu)</ground_mu>
+        <wheel_radius>$(arg drive_wheel_radius)</wheel_radius>
+        <half_track>0.297</half_track>
+        <torque_limit>3.73</torque_limit>
+        <speed_kp>0.80</speed_kp>
+        <speed_ki>0.35</speed_ki>
+        <sample_period>0.01</sample_period>
+        <turns_only>$(arg turns_only)</turns_only>
+        <retention_only>$(arg retention_only)</retention_only>
+        <yaw_feedback_enabled>$(arg yaw_feedback_enabled)</yaw_feedback_enabled>
+        <yaw_kp>$(arg yaw_kp)</yaw_kp>
+        <yaw_ki>$(arg yaw_ki)</yaw_ki>
+        <yaw_correction_limit>$(arg yaw_correction_limit)</yaw_correction_limit>
+        <tilt_hold_enabled>$(arg tilt_hold_enabled)</tilt_hold_enabled>
+        <tilt_target_rad>$(arg tilt_angle_rad)</tilt_target_rad>
+        <tilt_hold_kp>80.0</tilt_hold_kp>
+        <tilt_hold_kd>8.0</tilt_hold_kd>
+        <tilt_torque_limit>12.6</tilt_torque_limit>
+      </plugin>
+    </gazebo>
+  </xacro:if>
+  <xacro:if value="$(arg five_b_enabled)">
+    <gazebo>
+      <plugin filename="v3_tilt_5b_system" name="phase2_v3::Tilt5bSystem">
+        <output_csv>$(arg five_b_output_csv)</output_csv>
+        <contacts_csv>$(arg five_b_contacts_csv)</contacts_csv>
+        <case_name>$(arg five_b_case)</case_name>
+        <dynamic_tilt>$(arg five_b_dynamic_tilt)</dynamic_tilt>
+        <sample_period>0.01</sample_period>
+        <dwell_s>3.0</dwell_s>
+        <angular_rate_rad_s>0.04836115082</angular_rate_rad_s>
+        <tilt_kp>240.0</tilt_kp><tilt_ki>80.0</tilt_ki><tilt_kd>12.0</tilt_kd>
+        <tilt_torque_limit>12.6</tilt_torque_limit>
+      </plugin>
+    </gazebo>
+  </xacro:if>
+</robot>

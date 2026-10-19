@@ -1,0 +1,187 @@
+{
+  "status": "P2_54_CLEARANCE_PASS_ST_VENANT_TORSION_PASS_SECOND_STOP_MANDATORY",
+  "scope": "focused exact CAD pairs plus analytical St-Venant upper-plate torsion; no Gazebo/FEA/STL",
+  "supersedes": "plate-strip transverse bending model in the first P2-54 report",
+  "cad_changes": {
+    "p2_40_changed": false,
+    "moving_arm_root_local_mm": [
+      -10,
+      -160,
+      68
+    ],
+    "moving_arm_high_local_mm": [
+      -10,
+      -205,
+      135
+    ],
+    "fit0186_parallel_offset_from_fixed_pin_mm": [
+      0,
+      40.5,
+      60
+    ],
+    "symmetric_stops_y_mm": [
+      -205,
+      205
+    ],
+    "second_stop_baseline": "mandatory"
+  },
+  "clearances": {
+    "moving_arm_to_launcher_excluding_mount": {
+      "minimum_nominal_mm": 14.0,
+      "governing_angle_deg": 2
+    },
+    "moving_arm_to_drive": {
+      "minimum_nominal_mm": 33.432
+    },
+    "fit_motor_to_launcher": {
+      "minimum_nominal_mm": 17.405,
+      "governing_angle_deg": 20
+    },
+    "fit_motor_to_drive": {
+      "minimum_nominal_mm": 10.426
+    },
+    "fit_motor_to_arch_excluding_mount": {
+      "minimum_nominal_mm": 10.932
+    }
+  },
+  "clearance_criteria": {
+    "moving_arm_to_launcher_minimum_mm": 12.0,
+    "fit_motor_to_drive_minimum_mm": 10.0,
+    "fit_motor_to_arch_minimum_mm": 10.0,
+    "pass": true
+  },
+  "st_venant_torsion": {
+    "axis": "hinge Y",
+    "plate_cross_section_mm": [
+      195.0,
+      8.0
+    ],
+    "J_formula": "(1/3)*b*t^3*(1-0.63*t/b)",
+    "J_m4": 3.2419840000000004e-08,
+    "petg_E_gpa": 1.5,
+    "petg_nu": 0.38,
+    "petg_G_gpa": 0.5434782608695653,
+    "module_mass_kg": 4.609957627006651,
+    "module_cg_local_xz_mm": [
+      39.5335,
+      11.449
+    ],
+    "wheel_planes_y_mm": [
+      -129,
+      129
+    ],
+    "actuator_stop_y_mm": -205,
+    "second_stop_y_mm": 205,
+    "nip_lever_mm": 55,
+    "rows": [
+      {
+        "angle_deg": -3,
+        "module_cg_world_x_mm": 40.0785,
+        "plus_y_half_gravity_torque_nm": 0.905939,
+        "without_second_stop": {
+          "torque_path_between_wheels_mm": 258.0,
+          "differential_wheel_angle_deg": 0.76006,
+          "delta_nip_mm": 0.729606,
+          "pass_le_1mm": true
+        },
+        "with_symmetric_second_stop": {
+          "plus_y_wheel_to_stop_path_mm": 76.0,
+          "torque_crossing_between_wheels_nm": 0.0,
+          "differential_wheel_angle_deg": 0.0,
+          "delta_nip_mm": 0.0,
+          "pass_le_1mm": true
+        }
+      },
+      {
+        "angle_deg": 0,
+        "module_cg_world_x_mm": 39.5335,
+        "plus_y_half_gravity_torque_nm": 0.893619,
+        "without_second_stop": {
+          "torque_path_between_wheels_mm": 258.0,
+          "differential_wheel_angle_deg": 0.749725,
+          "delta_nip_mm": 0.719684,
+          "pass_le_1mm": true
+        },
+        "with_symmetric_second_stop": {
+          "plus_y_wheel_to_stop_path_mm": 76.0,
+          "torque_crossing_between_wheels_nm": 0.0,
+          "differential_wheel_angle_deg": 0.0,
+          "delta_nip_mm": 0.0,
+          "pass_le_1mm": true
+        }
+      },
+      {
+        "angle_deg": 20,
+        "module_cg_world_x_mm": 33.2335,
+        "plus_y_half_gravity_torque_nm": 0.751214,
+        "without_second_stop": {
+          "torque_path_between_wheels_mm": 258.0,
+          "differential_wheel_angle_deg": 0.63025,
+          "delta_nip_mm": 0.604997,
+          "pass_le_1mm": true
+        },
+        "with_symmetric_second_stop": {
+          "plus_y_wheel_to_stop_path_mm": 76.0,
+          "torque_crossing_between_wheels_nm": 0.0,
+          "differential_wheel_angle_deg": 0.0,
+          "delta_nip_mm": 0.0,
+          "pass_le_1mm": true
+        }
+      }
+    ],
+    "worst_without_second_stop": {
+      "angle_deg": -3,
+      "module_cg_world_x_mm": 40.0785,
+      "plus_y_half_gravity_torque_nm": 0.905939,
+      "without_second_stop": {
+        "torque_path_between_wheels_mm": 258.0,
+        "differential_wheel_angle_deg": 0.76006,
+        "delta_nip_mm": 0.729606,
+        "pass_le_1mm": true
+      },
+      "with_symmetric_second_stop": {
+        "plus_y_wheel_to_stop_path_mm": 76.0,
+        "torque_crossing_between_wheels_nm": 0.0,
+        "differential_wheel_angle_deg": 0.0,
+        "delta_nip_mm": 0.0,
+        "pass_le_1mm": true
+      }
+    },
+    "worst_with_symmetric_second_stop": {
+      "angle_deg": -3,
+      "module_cg_world_x_mm": 40.0785,
+      "plus_y_half_gravity_torque_nm": 0.905939,
+      "without_second_stop": {
+        "torque_path_between_wheels_mm": 258.0,
+        "differential_wheel_angle_deg": 0.76006,
+        "delta_nip_mm": 0.729606,
+        "pass_le_1mm": true
+      },
+      "with_symmetric_second_stop": {
+        "plus_y_wheel_to_stop_path_mm": 76.0,
+        "torque_crossing_between_wheels_nm": 0.0,
+        "differential_wheel_angle_deg": 0.0,
+        "delta_nip_mm": 0.0,
+        "pass_le_1mm": true
+      }
+    },
+    "criterion_delta_nip_mm": 1.0,
+    "baseline_pass": true,
+    "interpretation": "the +Y-half gravity torque crosses the wheel span only in the one-stop layout; symmetric endpoint stops cancel first-order differential twist between wheel planes"
+  },
+  "decision": {
+    "second_stop_at_y_plus205": "mandatory baseline for both -10..-3 and +15..+20 endpoint ranges",
+    "single_actuator": "retained; the second element is a passive positive stop, not a second actuator",
+    "measurement_gates": [
+      "printed PETG coupon and layer-dependent shear modulus",
+      "upper-plate/yoke joint compliance",
+      "physical differential nip under gravity and seated actuator preload",
+      "stop contact compression and current cut-off timing"
+    ]
+  },
+  "limitations": [
+    "linear St-Venant torsion of a uniform rectangular plate, not nonlinear joint/contact FEA",
+    "ideal symmetric two-stop load sharing gives zero first-order differential; manufacturing/load imbalance remains a physical measurement gate",
+    "local fastener, bearing and stop contact stresses are outside this global twist screen"
+  ]
+}

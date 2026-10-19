@@ -1,0 +1,667 @@
+{
+  "status": "PASS",
+  "scope": "P2-57 printed cheeks/shields only; P2-40 core and P2-51 ski/basket frozen",
+  "angle_sweep_deg": [
+    -10,
+    20,
+    1
+  ],
+  "variants": {
+    "p257_shield_m90": {
+      "angles": [
+        {
+          "angle_deg": -10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 0,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 11,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 12,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 13,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 14,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 15,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 16,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 17,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 18,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 19,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 20,
+          "zero_intersection": true
+        }
+      ],
+      "zero_intersection_all_angles": true,
+      "minimum_ground_clearance_mm": 10.733,
+      "governing_ground_angle_deg": -10
+    },
+    "p257_shield_m100": {
+      "angles": [
+        {
+          "angle_deg": -10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 0,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 11,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 12,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 13,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 14,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 15,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 16,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 17,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 18,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 19,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 20,
+          "zero_intersection": true
+        }
+      ],
+      "zero_intersection_all_angles": true,
+      "minimum_ground_clearance_mm": 10.733,
+      "governing_ground_angle_deg": -10
+    },
+    "p257_shield_m110": {
+      "angles": [
+        {
+          "angle_deg": -10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 0,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 11,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 12,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 13,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 14,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 15,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 16,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 17,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 18,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 19,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 20,
+          "zero_intersection": true
+        }
+      ],
+      "zero_intersection_all_angles": true,
+      "minimum_ground_clearance_mm": 10.733,
+      "governing_ground_angle_deg": -10
+    },
+    "p257_stagger_open": {
+      "angles": [
+        {
+          "angle_deg": -10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 0,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 11,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 12,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 13,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 14,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 15,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 16,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 17,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 18,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 19,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 20,
+          "zero_intersection": true
+        }
+      ],
+      "zero_intersection_all_angles": true,
+      "minimum_ground_clearance_mm": 10.733,
+      "governing_ground_angle_deg": -10
+    },
+    "p257_stagger_shield": {
+      "angles": [
+        {
+          "angle_deg": -10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": -1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 0,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 1,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 2,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 3,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 4,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 5,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 6,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 7,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 8,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 9,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 10,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 11,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 12,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 13,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 14,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 15,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 16,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 17,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 18,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 19,
+          "zero_intersection": true
+        },
+        {
+          "angle_deg": 20,
+          "zero_intersection": true
+        }
+      ],
+      "zero_intersection_all_angles": true,
+      "minimum_ground_clearance_mm": 10.733,
+      "governing_ground_angle_deg": -10
+    }
+  },
+  "no_stl_release": true
+}

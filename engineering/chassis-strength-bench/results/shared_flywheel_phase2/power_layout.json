@@ -1,0 +1,350 @@
+{
+  "status": "PHASE_2_POWER_LAYOUT_PARAMETRIC_PRE_PURCHASE",
+  "geometry": {
+    "rear_axle_x_m": -0.065,
+    "front_axle_x_m": 0.3,
+    "track_m": 0.594,
+    "wheel_radius_m": 0.085
+  },
+  "power_architecture": {
+    "baseline": "two Parkside X20V Team 4 Ah packs, individually ideal-diode ORed into one 15..21 V propulsion bus",
+    "parkside_pack_current_limit_a_each": null,
+    "parkside_energy_wh": {
+      "nominal_18v_pair": 144,
+      "20v_max_label_pair": 160
+    },
+    "FIT0403_pwm_duty_ceiling_for_12v_average": {
+      "15v_bus": 0.8,
+      "18v_bus": 0.6666666666666666,
+      "21v_bus": 0.5714285714285714
+    },
+    "logic_power": "separate UGREEN 12000 mAh 100 W USB-PD power bank; 309 g",
+    "redodo_comparison": "12.8 V 50 Ah, 195x166x172 mm, 5.29 kg official listing, 50 A continuous BMS"
+  },
+  "assumptions": [
+    "Parkside pair centres reserved at X=-165 mm on external-access rear quick-change docks; exact pack/adapter dimensions remain a measurement gate",
+    "UGREEN centre X=-100 mm; manufacturer dimensions 45.5x46x115 mm and mass 309 g",
+    "module uses conservative 4.706 kg design mass; basket/supports 1.50 kg",
+    "no mass allowance yet for ideal diodes, adapters, fuses, XT60, buck converter, docks or guards"
+  ],
+  "cad_packaging_qa": {
+    "parkside_pair": {
+      "battery_vs_frame": "empty intersection",
+      "battery_vs_D5065_controllers": "empty intersection",
+      "battery_vs_rear_electronics": "empty intersection"
+    },
+    "redodo": {
+      "battery_vs_frame": "empty intersection",
+      "battery_vs_D5065_controllers": "empty intersection",
+      "battery_vs_rear_electronics": "empty intersection"
+    },
+    "method": "OpenSCAD positive-solid intersection views; Parkside result remains provisional because pack/adapter dimensions are unmeasured"
+  },
+  "scenarios": {
+    "parkside_pair": {
+      "empty_basket": {
+        "mass_kg": 17.815,
+        "cg_x_m": 0.16904642155486949,
+        "front_axle_fraction": 0.6412230727530671,
+        "axle_load_n": {
+          "rear_total": 62.680291610136976,
+          "front_total": 112.02517813986302,
+          "rear_each": 31.340145805068488,
+          "front_each": 56.01258906993151
+        },
+        "traction_caps": {
+          "0.3": {
+            "rear_each_friction_n": 9.402043741520545,
+            "front_each_friction_n": 16.803776720979453,
+            "rear_each_effective_cap_n": 9.402043741520545,
+            "front_each_effective_cap_n": 16.803776720979453,
+            "all_wheels_n": 52.41164092499999,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "tyre"
+          },
+          "0.6": {
+            "rear_each_friction_n": 18.80408748304109,
+            "front_each_friction_n": 33.607553441958906,
+            "rear_each_effective_cap_n": 18.80408748304109,
+            "front_each_effective_cap_n": 33.607553441958906,
+            "all_wheels_n": 104.82328184999999,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "tyre"
+          },
+          "0.9": {
+            "rear_each_friction_n": 28.20613122456164,
+            "front_each_friction_n": 50.411330162938356,
+            "rear_each_effective_cap_n": 28.20613122456164,
+            "front_each_effective_cap_n": 43.882352941176464,
+            "all_wheels_n": 157.234922775,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "motor"
+          }
+        },
+        "pivot_turn_screen": {
+          "available_longitudinal_yaw_moment_per_mu_nm": 51.887524515749995,
+          "lateral_scrub_moment_per_mu_nm": 29.34019590673654,
+          "available_to_scrub_ratio_if_mu_long_equals_mu_lat": 1.7684791431074447,
+          "warning": "comparative Coulomb screen only; tyre deformation, surface and dynamic load transfer dominate real skid steer"
+        },
+        "parts": [
+          {
+            "name": "bare_mobile_base",
+            "mass_kg": 10.0,
+            "x_m": 0.1
+          },
+          {
+            "name": "shared_flywheel_module_design",
+            "mass_kg": 4.706,
+            "x_m": 0.427
+          },
+          {
+            "name": "basket_and_supports",
+            "mass_kg": 1.5,
+            "x_m": 0.165
+          },
+          {
+            "name": "two_Parkside_X20V_4Ah",
+            "mass_kg": 1.3,
+            "x_m": -0.165
+          },
+          {
+            "name": "UGREEN_12000mAh_100W",
+            "mass_kg": 0.309,
+            "x_m": -0.1
+          }
+        ]
+      },
+      "full_28_balls": {
+        "mass_kg": 19.411,
+        "cg_x_m": 0.16871371902529492,
+        "front_axle_fraction": 0.6403115589734107,
+        "axle_load_n": {
+          "rear_total": 68.46917053890412,
+          "front_total": 121.88771261109589,
+          "rear_each": 34.23458526945206,
+          "front_each": 60.943856305547946
+        },
+        "traction_caps": {
+          "0.3": {
+            "rear_each_friction_n": 10.270375580835617,
+            "front_each_friction_n": 18.283156891664383,
+            "rear_each_effective_cap_n": 10.270375580835617,
+            "front_each_effective_cap_n": 18.283156891664383,
+            "all_wheels_n": 57.107064945000005,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "tyre"
+          },
+          "0.6": {
+            "rear_each_friction_n": 20.540751161671235,
+            "front_each_friction_n": 36.566313783328766,
+            "rear_each_effective_cap_n": 20.540751161671235,
+            "front_each_effective_cap_n": 36.566313783328766,
+            "all_wheels_n": 114.21412989000001,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "tyre"
+          },
+          "0.9": {
+            "rear_each_friction_n": 30.811126742506858,
+            "front_each_friction_n": 54.84947067499315,
+            "rear_each_effective_cap_n": 30.811126742506858,
+            "front_each_effective_cap_n": 43.882352941176464,
+            "all_wheels_n": 171.32119483500003,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "motor"
+          }
+        },
+        "pivot_turn_screen": {
+          "available_longitudinal_yaw_moment_per_mu_nm": 56.535994295550005,
+          "lateral_scrub_moment_per_mu_nm": 32.00436897044888,
+          "available_to_scrub_ratio_if_mu_long_equals_mu_lat": 1.766508639734541,
+          "warning": "comparative Coulomb screen only; tyre deformation, surface and dynamic load transfer dominate real skid steer"
+        },
+        "parts": [
+          {
+            "name": "bare_mobile_base",
+            "mass_kg": 10.0,
+            "x_m": 0.1
+          },
+          {
+            "name": "shared_flywheel_module_design",
+            "mass_kg": 4.706,
+            "x_m": 0.427
+          },
+          {
+            "name": "basket_and_supports",
+            "mass_kg": 1.5,
+            "x_m": 0.165
+          },
+          {
+            "name": "two_Parkside_X20V_4Ah",
+            "mass_kg": 1.3,
+            "x_m": -0.165
+          },
+          {
+            "name": "UGREEN_12000mAh_100W",
+            "mass_kg": 0.309,
+            "x_m": -0.1
+          },
+          {
+            "name": "28_tennis_balls",
+            "mass_kg": 1.596,
+            "x_m": 0.165
+          }
+        ]
+      }
+    },
+    "redodo": {
+      "empty_basket": {
+        "mass_kg": 21.496000000000002,
+        "cg_x_m": 0.1379797171566803,
+        "front_axle_fraction": 0.5561088141278913,
+        "axle_load_n": {
+          "rear_total": 93.57392586356166,
+          "front_total": 117.22982253643836,
+          "rear_each": 46.78696293178083,
+          "front_each": 58.61491126821918
+        },
+        "traction_caps": {
+          "0.3": {
+            "rear_each_friction_n": 14.036088879534248,
+            "front_each_friction_n": 17.584473380465752,
+            "rear_each_effective_cap_n": 14.036088879534248,
+            "front_each_effective_cap_n": 17.584473380465752,
+            "all_wheels_n": 63.24112452,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "tyre"
+          },
+          "0.6": {
+            "rear_each_friction_n": 28.072177759068495,
+            "front_each_friction_n": 35.168946760931505,
+            "rear_each_effective_cap_n": 28.072177759068495,
+            "front_each_effective_cap_n": 35.168946760931505,
+            "all_wheels_n": 126.48224904,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "tyre"
+          },
+          "0.9": {
+            "rear_each_friction_n": 42.10826663860274,
+            "front_each_friction_n": 52.753420141397264,
+            "rear_each_effective_cap_n": 42.10826663860274,
+            "front_each_effective_cap_n": 43.882352941176464,
+            "all_wheels_n": 189.72337356000003,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "motor"
+          }
+        },
+        "pivot_turn_screen": {
+          "available_longitudinal_yaw_moment_per_mu_nm": 62.6087132748,
+          "lateral_scrub_moment_per_mu_nm": 37.98721801005183,
+          "available_to_scrub_ratio_if_mu_long_equals_mu_lat": 1.6481521036426794,
+          "warning": "comparative Coulomb screen only; tyre deformation, surface and dynamic load transfer dominate real skid steer"
+        },
+        "parts": [
+          {
+            "name": "bare_mobile_base",
+            "mass_kg": 10.0,
+            "x_m": 0.1
+          },
+          {
+            "name": "shared_flywheel_module_design",
+            "mass_kg": 4.706,
+            "x_m": 0.427
+          },
+          {
+            "name": "basket_and_supports",
+            "mass_kg": 1.5,
+            "x_m": 0.165
+          },
+          {
+            "name": "Redodo_12V_50Ah",
+            "mass_kg": 5.29,
+            "x_m": -0.055
+          }
+        ]
+      },
+      "full_28_balls": {
+        "mass_kg": 23.092,
+        "cg_x_m": 0.13984721981638665,
+        "front_axle_fraction": 0.5612252597709223,
+        "axle_load_n": {
+          "rear_total": 99.36280479232875,
+          "front_total": 127.09235700767124,
+          "rear_each": 49.68140239616437,
+          "front_each": 63.54617850383562
+        },
+        "traction_caps": {
+          "0.3": {
+            "rear_each_friction_n": 14.90442071884931,
+            "front_each_friction_n": 19.063853551150686,
+            "rear_each_effective_cap_n": 14.90442071884931,
+            "front_each_effective_cap_n": 19.063853551150686,
+            "all_wheels_n": 67.93654853999999,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "tyre"
+          },
+          "0.6": {
+            "rear_each_friction_n": 29.80884143769862,
+            "front_each_friction_n": 38.12770710230137,
+            "rear_each_effective_cap_n": 29.80884143769862,
+            "front_each_effective_cap_n": 38.12770710230137,
+            "all_wheels_n": 135.87309707999998,
+            "rear_each_limited_by": "tyre",
+            "front_each_limited_by": "tyre"
+          },
+          "0.9": {
+            "rear_each_friction_n": 44.713262156547934,
+            "front_each_friction_n": 57.19156065345206,
+            "rear_each_effective_cap_n": 43.882352941176464,
+            "front_each_effective_cap_n": 43.882352941176464,
+            "all_wheels_n": 203.80964562,
+            "rear_each_limited_by": "motor",
+            "front_each_limited_by": "motor"
+          }
+        },
+        "pivot_turn_screen": {
+          "available_longitudinal_yaw_moment_per_mu_nm": 67.25718305459999,
+          "lateral_scrub_moment_per_mu_nm": 40.70838862973377,
+          "available_to_scrub_ratio_if_mu_long_equals_mu_lat": 1.6521701132988287,
+          "warning": "comparative Coulomb screen only; tyre deformation, surface and dynamic load transfer dominate real skid steer"
+        },
+        "parts": [
+          {
+            "name": "bare_mobile_base",
+            "mass_kg": 10.0,
+            "x_m": 0.1
+          },
+          {
+            "name": "shared_flywheel_module_design",
+            "mass_kg": 4.706,
+            "x_m": 0.427
+          },
+          {
+            "name": "basket_and_supports",
+            "mass_kg": 1.5,
+            "x_m": 0.165
+          },
+          {
+            "name": "Redodo_12V_50Ah",
+            "mass_kg": 5.29,
+            "x_m": -0.055
+          },
+          {
+            "name": "28_tennis_balls",
+            "mass_kg": 1.596,
+            "x_m": 0.165
+          }
+        ]
+      }
+    }
+  },
+  "electrical_gates": [
+    "one fuse and one ideal-diode path per Parkside pack before the common bus; packs must not be hard-paralleled",
+    "ideal diodes prevent reverse current but do not guarantee equal sharing; log current and voltage per pack branch",
+    "pack current/BMS limit and connector temperature are unknown parameters until bench measurement",
+    "FIT0403 duty clamp alone is not stall protection; require current limit, ramp and measured 12 V-equivalent behaviour",
+    "P16 requires a regulated 12 V buck sized from measured peak current and protected against propulsion-bus transients",
+    "propulsion bus needs low-voltage cutoff with hysteresis validated under sag and a master disconnect",
+    "Pi/Mega/sensors stay galvanically on the USB power branch; Mega is never connected directly to 15..21 V"
+  ]
+}
