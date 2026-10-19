@@ -3,8 +3,8 @@
 // mm; +X forward, +Y left, +Z up. All new coordinates are candidate positions.
 $fn=32;
 use <modular-chassis-v2.scad>
-use <../flywheel-launcher-v0/direct-drive-mechanical-definition-study.scad>
-use <../flywheel-launcher-v0/provisional-cradle-exit-clearance.scad>
+use <../../../flywheel-launcher-v0/direct-drive-mechanical-definition-study.scad>
+use <../../../flywheel-launcher-v0/provisional-cradle-exit-clearance.scad>
 
 view="assembly"; // [assembly,body,launcher,launcher_cover,plate_connections,socket_detail,qa_exit_structure,qa_motor_support_hardware,qa_motor_support_cover,qa_plate_lock_bores]
 show_cover_reference=true;

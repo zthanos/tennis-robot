@@ -164,5 +164,5 @@ fit coupon πριν εκτυπωθεί όλο το σασί.
 Εξαγωγή:
 
 ```bash
-cad/modular-test-chassis/export-v2-stls.sh
+cad/modular-test-chassis/archive/v2-chassis/export-v2-stls.sh
 ```

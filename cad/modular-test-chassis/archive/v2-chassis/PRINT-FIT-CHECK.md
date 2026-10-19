@@ -60,5 +60,6 @@
 
 Αναλυτική καταγραφή, SHA-256 και διαστάσεις:
 `engineering/chassis-strength-bench/results/front_print_fit/report.json`.
-Αναπαραγωγή: πρώτα `bash cad/modular-test-chassis/export-v2-stls.sh`, μετά
+Αναπαραγωγή ιστορικού set: πρώτα
+`bash cad/modular-test-chassis/archive/v2-chassis/export-v2-stls.sh`, μετά
 `python3 engineering/chassis-strength-bench/check_front_print_fit.py`.

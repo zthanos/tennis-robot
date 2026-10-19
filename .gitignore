@@ -47,3 +47,11 @@ ros2_ws/log_jazzy/
 # Pinned external ROS source imported by ros2_ws/lidar.repos. The manifest is
 # the source of truth; do not vendor the upstream checkout or colcon artifacts.
 ros2_ws/src/sllidar_ros2/
+
+# Shared-flywheel bench build trees and raw Gazebo/replay campaigns. Commit
+# source, criteria and compact top-level summaries only.
+engineering/shared-flywheel-isolated-bench/build_*/
+engineering/shared-flywheel-isolated-bench/*.csg
+engineering/chassis-strength-bench/results/shared_flywheel_phase2/gazebo_*/
+engineering/chassis-strength-bench/results/shared_flywheel_phase2/physical_drive_*/
+engineering/chassis-strength-bench/results/shared_flywheel_phase2/xacro_validation*/

@@ -7,7 +7,7 @@ modified by the solver.
 
 ## Geometry and materials
 
-Source: `cad/modular-test-chassis/height-infrastructure-study.scad`. Whole
+Source: `cad/modular-test-chassis/archive/v2-chassis/height-infrastructure-study.scad`. Whole
 launcher pitch 20°, nip (410,0,298) mm. Two 8 mm plate midplanes at local Z=±43,
 plate bolts at local X=±115 / Y=±145, four metal spacers Ø12 / pilot Ø3.3.
 The extra upper 50×20 motor bridge has been removed; it is **not** analysed.

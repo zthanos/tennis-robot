@@ -4,7 +4,7 @@
 $fn=32;
 use <modular-chassis-v2.scad>
 use <height-infrastructure-study.scad>
-use <../flywheel-launcher-v0/direct-drive-mechanical-definition-study.scad>
+use <../../../flywheel-launcher-v0/direct-drive-mechanical-definition-study.scad>
 
 view="assembly"; // [assembly,side,top,launcher,qa_battery_hopper,qa_launcher_battery,qa_launcher_hopper,qa_exit_frame,qa_feed_hardware,qa_feed_battery,qa_chute_hardware]
 battery_layout="center"; // [center,side_l]

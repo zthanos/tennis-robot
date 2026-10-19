@@ -1,5 +1,19 @@
 # Active CAD status
 
+## Physical print manifest
+
+Το μοναδικό ευρετήριο για τη σημερινή φυσική κατασκευή είναι το
+[`ACTIVE-PRINT-SET.md`](ACTIVE-PRINT-SET.md). Περιλαμβάνει ενεργά STL,
+παραμετρικές πηγές, P2 προέλευση, βίδες και κατάσταση εκτύπωσης. Αρχεία σε
+`archive/` δεν τυπώνονται.
+
+Για το current shared-flywheel build οι ενεργές releases είναι:
+
+- `modular-test-chassis/modular-chassis-v3.scad` + `stl-v3/` (P2-78),
+- `modular-test-chassis/stl-ski-mount/` (P2-73 fix 2026-10-19),
+- `rear-pod/rear-pod-v2.scad` + `rear-pod/stl-v2/` (P2-81),
+- τα test fixtures που αναφέρονται στο manifest.
+
 Active model: **`basket-bin-v2/`** — the sim-validated basket bin v2.1 +
 entry hood (debug log #45-#56), parametric OpenSCAD with all dimensions in
 `basket-bin-v2/params.scad`. Renders/exports run through the

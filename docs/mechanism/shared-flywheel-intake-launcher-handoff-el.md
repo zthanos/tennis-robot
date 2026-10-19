@@ -76,9 +76,9 @@ Docker Compose. Rigid-body Gazebo δεν αποδεικνύει αντοχή τ�
 
 ## Βασικές αναφορές
 
-- `cad/modular-test-chassis/rear-corner-launcher-study.scad`
+- `cad/modular-test-chassis/archive/v2-chassis/rear-corner-launcher-study.scad`
 - `cad/modular-test-chassis/REAR-CORNER-LAUNCHER-STUDY.md`
-- `cad/modular-test-chassis/modular-chassis-v2.scad`
+- `cad/modular-test-chassis/modular-chassis-v2.scad` (QA compatibility only)
 - `docs/mechanism/standalone-flywheel-launcher.md`
 - `docs/mechanism/flywheel-wheel-candidate-provisional-gate-a.md`
 - `docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md`
