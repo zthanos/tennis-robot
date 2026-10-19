@@ -7,6 +7,12 @@
   motion, intake, 6 encoders, 2 IR beams, safety inputs και GY-521/MPU6050.
 - `08_mpu6050_mega_bench/08_mpu6050_mega_bench.ino`: gyro-only test χωρίς
   τροφοδοσία των motor drivers.
+- `drive_test_mega/drive_test_mega.ino`: απομονωμένο P2-64 sketch με 100 Hz
+  voltage-domain wheel PI, 40 ms encoder-speed filter, no-load-speed
+  feed-forward, προαιρετικό gyro loop, 500000-baud/50 Hz telemetry και
+  host/NC-E-stop/run-limit safety. Απαιτεί measured `CFG CPR` και lifted-wheel
+  `CFG NOLOAD` πριν από floor bring-up και δεν αντικαθιστά το integration
+  sketch.
 
 Για την πρώτη θέση σε λειτουργία της κοινής perfboard εκτελείται πρώτα το
 gyro-only test, μετά τα ξεχωριστά motion/intake tests και τελευταίο το ενιαίο

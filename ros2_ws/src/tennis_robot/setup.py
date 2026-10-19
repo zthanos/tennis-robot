@@ -39,6 +39,7 @@ setup(
             "court_landmarks_node = tennis_robot.court_landmarks_node:main",
             "court_survey_mission_node = tennis_robot.court_survey_mission_node:main",
             "gazebo_covariance_recorder = tennis_robot.gazebo_covariance_recorder:main",
+            "base_serial_bridge = tennis_robot.base_serial_bridge:main",
         ],
     },
 )
