@@ -16,7 +16,7 @@ struct Parameters
   double loadingExponent{1.5};
   double unloadingExponent{1.9866353710127362};
   double loadingStiffness{107309.29404174259};
-  double dynamicDamping{4692.375890562493};
+  double dynamicDamping{2356.929198779746};
   double maximumCompression{0.035};
   double forceCap{5000.0};
 };

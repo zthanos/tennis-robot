@@ -1,5 +1,52 @@
 # Tennis-ball compliant-contact calibration report
 
+## P2-61 correction — current authoritative calibration (2026-10-14)
+
+> **ΑΝΤΙΚΑΤΑΣΤΑΘΗΚΕ:** the original text and numbers below this addendum are
+> retained as historical evidence. They used one-sided Gazebo penetration `p`
+> directly as the ITF diametral deformation `delta` and are not current
+> Gazebo/contact-performance evidence.
+
+The ITF platen law remains unchanged: `F=K*delta^1.5`, with
+`K=107309.29404174259` and `delta` the physical diametral deformation. Gazebo
+sphere geometry reports one-sided penetration `p`; every analytical wheel,
+ground and platen contact now explicitly evaluates the law at `delta=2p` and
+`delta_dot=2p_dot`. The SDF parameter is
+`diametral_compression_scale=2.0`; scale 1 is retained only for the P2-61
+historical reproduction.
+
+The two-rigid-platen Gazebo gate reproduced the defect at 13.000001 mm forward
+deformation between 15.57 and 95.64 N. With the corrected mapping it measured
+6.500001 mm, matching the 6.5 mm calibrated target without changing `K`, the
+loading exponent, unloading exponent or platen calibration.
+
+Only rigid-ground damping was refitted. The current value is
+`C=2356.929198779746 N*s/m^1.5` (historical: 4692.375890562493). At the 0.25 ms
+production step, standalone RK4 gives 1.411986 m ball-bottom rebound and the
+Gazebo/DART bench gives 1.410390 m; both are inside 1.35–1.47 m and differ by
+0.113%. The corrected contact lasts about 4.63 ms, so the historical
+1/0.5/0.25 ms screen is retained as a failed coarse-resolution check
+(1.37961/1.41805/1.41039 m; 2.74% spread). The predeclared fine screen at
+0.25/0.125/0.0625 ms gives 1.41039/1.41100/1.41051 m in Gazebo, a 0.043%
+spread. Production benches therefore use 0.25 ms.
+
+The current standalone convergence triplet is:
+
+| dt (ms) | max one-side p (mm) | peak force (N) | duration (ms) | rebound (m) | dissipated (J) |
+|---:|---:|---:|---:|---:|---:|
+| 0.2500 | 9.9435 | 314.175 | 4.750 | 1.411986 | 0.641325 |
+| 0.1250 | 9.9739 | 312.219 | 4.625 | 1.410018 | 0.642701 |
+| 0.0625 | 9.9740 | 312.193 | 4.625 | 1.410027 | 0.642709 |
+
+Observed relative spreads are 0.306% penetration, 0.633% peak force, 2.679%
+duration (one-sample quantization), 0.139% rebound and 0.216% dissipation.
+Energy-balance residual is at most 0.0189%. All current calibration
+classifications pass; tyre friction remains an independent unresolved input.
+
+Current evidence commands/results are `run_p261_platen_case.sh historical`,
+`run_p261_platen_case.sh corrected`, `run_p261_rebound_case.sh <dt>`, and
+`config/tennis_ball_compliance_calibration_results.json`.
+
 Date: 2026-08-25
 Gate scope: independent ball calibration only; no launcher RPM, nip, trajectory, or performance trials were run.
 

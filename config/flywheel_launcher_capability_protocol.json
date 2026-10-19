@@ -3,6 +3,16 @@
   "frozen_before_campaign_results": true,
   "frozen_on": "2026-08-26",
   "scope": "standalone_flywheel_launcher_capability_validation_after_exit_corridor_pass",
+  "d5065_reference_update_not_a_campaign_rebaseline": {
+    "source": "https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y",
+    "maximum_voltage_v": 32,
+    "maximum_current_a": 65,
+    "conservative_mass_kg": 0.49,
+    "guide_mass_kg": 0.42,
+    "red_5065_calculated_rotor_inertia_kg_m2": 0.00009259233848,
+    "continuous_torque_fraction": {"no_airflow": 0.30, "good_airflow": 0.50},
+    "note": "The frozen campaign's 20 A current limit is retained as an operating assumption; it is not the motor maximum."
+  },
   "immutable_inputs": {
     "ball_calibration_results": {
       "path": "config/tennis_ball_compliance_calibration_results.json",

@@ -20,7 +20,7 @@
     "launcher_contact": "analytical sphere-to-finite-cylinder contact evaluated independently for each flywheel",
     "normal_force_law": "stateful nonlinear loading/unloading penalty law plus compression-dependent viscous damping; coefficients are in tennis_ball_compliance_calibration_results.json",
     "tangential_force_law": "regularized Coulomb traction and equal/opposite wheel torque are implemented, but remain disabled (zero traction) until tyre friction is measured",
-    "ground_contact": "analytical rigid-plane contact using the same calibrated ball constitutive law, with independent contact state",
+    "ground_contact": "analytical rigid-plane contact using delta=2p, where p is one-sided rigid-plane penetration and delta is calibrated diametral deformation, with independent contact state",
     "collision_filtering": "native rigid flywheel/ball response disabled only for the analytically handled pair; cradle and ground collisions remain physical",
     "reason": "installed Gazebo Harmonic uses DART; ODE surface kp/kd tags do not define a portable calibrated DART ball deformation model"
   },
@@ -50,7 +50,7 @@
     "launcher_tyre_friction_measurement": false,
     "finite_cylinder_edge_contact_verification": true,
     "energy_accounting_verification": true,
-    "time_step_convergence_1ms_0_5ms_0_25ms": true,
+    "time_step_convergence_0_25ms_0_125ms_0_0625ms": true,
     "bilateral_contact_symmetry_verification": true
   },
   "evidence_limit": "The three-axis curves are axisymmetric protocol simulations fitted to published ITF bands, not measurements of an individual physical ball; ball-specific characterization remains unresolved.",
@@ -65,8 +65,10 @@
   },
   "calibration_result": {
     "path": "config/tennis_ball_compliance_calibration_results.json",
-    "gazebo_dart_first_rebound_bottom_height_m": 1.410931181794,
-    "standalone_rk4_first_rebound_bottom_height_m": 1.4099735972615135,
-    "gazebo_to_standalone_relative_difference": 0.0006791506836343287
+    "gazebo_dart_first_rebound_bottom_height_m": 1.41039,
+    "standalone_rk4_first_rebound_bottom_height_m": 1.4119857789761106,
+    "gazebo_to_standalone_relative_difference": 0.0011301679,
+    "diametral_compression_scale": 2.0,
+    "p261_note": "Historical scale=1 results are superseded; see P2-61 report."
   }
 }

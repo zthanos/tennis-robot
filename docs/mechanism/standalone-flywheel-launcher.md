@@ -1,5 +1,10 @@
 # Standalone flywheel launcher — provisional frozen baseline
 
+> **ΑΝΤΙΚΑΤΑΣΤΑΘΗΚΕ από P2-61 για contact-limited exit speed:** οι παλιές
+> τιμές κορεσμού βασίστηκαν στην ιστορική χρήση `law(p)` αντί `law(2p)`.
+> Δεν αποτελούν πλέον evidence για απαίτηση μικρότερου nip. Δες
+> `shared-flywheel-contact-correction-p261-el.md`.
+
 Checkpoint date: 2026-08-26
 Scope: isolated launcher module; not the complete robot
 Status: **AUTHORITATIVE provisional architecture, SIMULATION_VALIDATED evidence, PHYSICAL_VALIDATION_PENDING hardware**
@@ -49,7 +54,7 @@ The direct-panel mount is **SIMULATION_VALIDATED** for geometry and has passed a
 
 Repository-captured manufacturer evidence for the D5065 includes:
 
-- 50 mm body diameter, 65 mm body length and approximately 0.49 kg mass;
+- 50 mm body diameter and 65 mm body length; Motor Guide mass 0.42 kg, with conservative 0.49 kg retained until the delivered motor is weighed;
 - 8 mm primary shaft with flat, 30 mm projection, 24 mm flat length and 0.5 mm flat depth;
 - dual-shaft construction with an 8 mm secondary shaft;
 - 12N14P winding/rotor arrangement, or 7 pole pairs;
@@ -57,7 +62,7 @@ Repository-captured manufacturer evidence for the D5065 includes:
 - 270 rpm/V, torque constant 0.031 N·m/A and phase-neutral resistance 0.039 Ω;
 - NTC 10 kΩ thermistor and phase leads with 4 mm bullet connectors.
 
-The bench uses a **PROVISIONAL** 12.8 V bus and 20 A limit per motor, corresponding to 0.62 N·m. The effort-limited native capability controller models speed, current/back-EMF, droop and recovery. Motor rotor inertia, inverter losses, battery sag and thermal accumulation remain unmeasured.
+The bench uses a **PROVISIONAL** 12.8 V bus and 20 A limit per motor, corresponding to 0.62 N·m. This is an operating gate, not the motor maximum: the ODrive Motor Guide lists 32 V and 65 A, so Parkside 15–21 V is within the voltage limit. The effort-limited native capability controller models speed, current/back-EMF, droop and recovery. The Guide's calculated `Red 5065` rotor inertia is `9.259e-5 kg·m²`, not a measurement; inverter losses, battery sag and thermal accumulation remain unmeasured. Continuous torque is limited to 30% of maximum without airflow or 50% with good airflow, so the installation must keep an open cooling path.
 
 ## Wheel and hub interface
 
@@ -94,7 +99,7 @@ The CAD cylinder downstream of the wheels is an exit/reference keep-out only. It
 
 The current isolated model is [`flywheel_launcher_module.urdf.xacro`](../../ros2_ws/src/tennis_robot/urdf/components/flywheel_launcher_module.urdf.xacro), instantiated by [`flywheel_launcher_bench.urdf.xacro`](../../ros2_ws/src/tennis_robot/urdf/flywheel_launcher_bench.urdf.xacro). It owns the provisional wheel mass/inertia, motor bodies, shafts, hub envelopes, relieved panels and effort-limited joints.
 
-The nominal wheel mass is the seller-listed 0.90 kg and remains explicitly provisional. Polar inertia is bounded from `0.5mR²` to `mR²`; the nominal model uses the midpoint law plus the analysis hub. D5065 rotor inertia remains a separate sensitivity because no manufacturer-backed value was found.
+The nominal wheel mass is the seller-listed 0.90 kg and remains explicitly provisional. Polar inertia is bounded from `0.5mR²` to `mR²`; the nominal model uses the midpoint law plus the analysis hub. D5065 rotor inertia remains a separate sensitivity: the available `Red 5065` value is calculated rather than measured.
 
 No complete-robot Xacro or geometry is an input to this checkpoint. Complete-robot packaging studies are separate and must not silently override standalone datums.
 

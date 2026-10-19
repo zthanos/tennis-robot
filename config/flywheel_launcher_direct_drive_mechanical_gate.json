@@ -17,6 +17,23 @@
     "ASSUMED / PROVISIONAL",
     "MISSING"
   ],
+  "d5065_motor_guide_update": {
+    "source": "https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y",
+    "source_tab": "Motor Guide / Torque derating / Motor Inertia",
+    "maximum_voltage_v": 32,
+    "parkside_operating_range_v": [15, 21],
+    "parkside_within_voltage_limit": true,
+    "maximum_current_a": 65,
+    "repository_previous_peak_current_a": 85,
+    "repository_previous_peak_duration_s": 3,
+    "guide_mass_kg": 0.42,
+    "conservative_design_mass_kg_until_measurement": 0.49,
+    "calculated_red_5065_rotor_inertia_kg_m2": 0.00009259233848,
+    "rotor_inertia_classification": "DERIVED FROM RED 5065 GEOMETRY IN GUIDE; NOT MEASURED",
+    "continuous_torque_fraction_of_max": {"no_airflow": 0.30, "good_airflow": 0.50},
+    "conservative_design_policy": "Use 65 A maximum and 0.49 kg motor mass until delivered hardware is measured. The existing 20 A launcher model remains a separate controller/pack operating gate.",
+    "cooling_reservation": "Keep an open airflow path around each body; do not enclose either motor. Credit the 50% continuous-torque curve only after forced/cross-flow and temperature validation."
+  },
   "authoritative_launcher_datums": {
     "flywheel_diameter_m": 0.2,
     "flywheel_width_m": 0.05,
@@ -150,7 +167,8 @@
       "static_gravity_moment_without_hub_nm": 0.32484528125,
       "radial_screen_moment_nm": 11.339244675511043,
       "motor_torque_at_provisional_20a_nm": 0.62,
-      "motor_torque_at_manufacturer_85a_3s_nm": 2.635,
+      "motor_torque_at_superseded_repository_85a_3s_nm": 2.635,
+      "motor_torque_at_motor_guide_65a_max_nm": 2.015,
       "worst_case_bolt_tension_n": 388.80299855870146,
       "radial_shear_per_bolt_n": 65.92584113669211,
       "torque_shear_per_bolt_n": 43.916666666666664,
@@ -167,7 +185,8 @@
     "flywheel_inertia_kg_m2": null,
     "hub_mass_kg": null,
     "hub_inertia_kg_m2": null,
-    "motor_rotor_inertia_kg_m2": null,
+    "motor_rotor_inertia_kg_m2": 0.00009259233848,
+    "motor_rotor_inertia_classification": "DERIVED for Red 5065 in ODrive Motor Guide; not measured and retained as a sensitivity input",
     "provisional_simulation_wheel_mass_kg": 0.4,
     "provisional_solid_cylinder_spin_inertia_kg_m2": 0.002,
     "provisional_values_accepted_for_capability_simulation": false

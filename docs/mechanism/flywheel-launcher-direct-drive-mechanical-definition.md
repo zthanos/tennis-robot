@@ -24,7 +24,7 @@ This decision uses the following labels literally:
 - `ASSUMED / PROVISIONAL`: screening values that cannot release hardware or capability simulation.
 - `MISSING`: a required fact with no acceptable evidence.
 
-The D5065 body diameter 50 mm, body length 65 mm, mass 0.49 kg, primary shaft diameter 8 mm, 30 mm projection, 24 mm flat length, 0.5 mm flat depth, and four 4 mm mounting features on a 30 mm PCD are manufacturer data from the [ODrive D5065 product page](https://shop.odriverobotics.com/products/odrive-custom-motor-d5065) and [ODrive motor documentation](https://docs.odriverobotics.com/v/latest/hardware/odrive-motors.html). The captured evidence does not establish whether the four mounting features are threaded or clearance holes, their thread designation, or usable engagement depth. Motor rotor inertia is not published in the captured evidence.
+The D5065 body diameter 50 mm, body length 65 mm, primary shaft diameter 8 mm, 30 mm projection, 24 mm flat length, 0.5 mm flat depth, and four 4 mm mounting features on a 30 mm PCD are manufacturer data from the [ODrive D5065 product page](https://shop.odriverobotics.com/products/odrive-custom-motor-d5065) and [ODrive motor documentation](https://docs.odriverobotics.com/v/latest/hardware/odrive-motors.html). The [ODrive Motor Guide](https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y) lists 32 V, 65 A and 0.42 kg; the repo keeps the conservative 0.49 kg until hardware is weighed. The mounting-thread details remain unconfirmed.
 
 ## Authoritative standalone geometry retained
 
@@ -84,7 +84,7 @@ This is a deterministic screening calculation, not FEA and not physical validati
 - Conservative radial screening reaction: `263.70 N`, defined as `1.25 ×` the largest independent rebound-calibration peak. It is deliberately conservative and is not a measured launcher reaction.
 - Radial moment at the panel centre plane: `263.70 N × 0.043 m = 11.34 N·m`.
 - Static gravity moment excluding the unknown hub: `0.325 N·m`, using the manufacturer motor mass and the provisional 0.40 kg wheel mass.
-- D5065 torque screens using published `Kt = 0.031 N·m/A`: `0.62 N·m` at the provisional 20 A point and `2.635 N·m` at the published 85 A / 3 s peak-current point.
+- D5065 torque screens using `Kt = 0.031 N·m/A`: `0.62 N·m` at the provisional 20 A operating point and `2.015 N·m` at the Motor Guide 65 A maximum. The former 85 A/3 s, 2.635 N·m repo value is superseded for conservative design.
 - Four-bolt, 15 mm-radius screen: worst cardinal two-bolt-couple tension `388.8 N`; radial shear `65.9 N/bolt`; peak-torque shear `43.9 N/bolt`; combined shear `79.2 N/bolt`.
 - 8 mm panel nominal bearing stress at a 4 mm feature: `12.15 MPa`.
 - Simple panel-strip bending stress: `36.45 MPa` for 30 mm effective width and `21.87 MPa` for 50 mm effective width.
@@ -95,7 +95,7 @@ Vibration and resonance remain unresolved because rotating inertia, balance/runo
 
 ## Rotating mass and inertia stop
 
-The standalone Xacro currently carries a provisional `wheel_mass = 0.40 kg` and the corresponding solid-cylinder spin inertia `I = ½mr² = 0.002 kg·m²`. These are model placeholders, not physical mass properties. The actual wheel mass/material/density distribution, hub mass/inertia and D5065 rotor inertia are all missing. Total drive inertia must include motor rotor + hub + wheel about the shaft axis.
+The standalone Xacro currently carries a provisional `wheel_mass = 0.40 kg` and the corresponding solid-cylinder spin inertia `I = ½mr² = 0.002 kg·m²`. These are model placeholders, not physical mass properties. The actual wheel mass/material/density distribution and hub mass/inertia remain missing. The Motor Guide's `Red 5065` sheet calculates rotor inertia as `9.259e-5 kg·m²`; this is not a measurement and remains a sensitivity input. Total drive inertia must include motor rotor + hub + wheel about the shaft axis.
 
 Accordingly, no plausible-density replacement was promoted and no launcher capability simulation was run. The standalone Xacro remains the owner of this isolated model, but it was intentionally left unchanged. No complete-robot URDF/Xacro file was changed by this gate.
 
@@ -116,7 +116,7 @@ The OpenSCAD study [`direct-drive-mechanical-definition-study.scad`](../../cad/f
 1. Select or provide the real 200 × 50 mm flywheel. Measure total mass, centre bore/hex, concentric recesses, face thicknesses, all bolt-circle diameters and hole sizes, axial datum, material, tread construction and balance/runout specification.
 2. On a delivered D5065, identify the four mounting features as threaded or clearance; measure thread specification and usable depth. Record lead and thermistor exits, connector envelope, bend radius and acceptable clocking.
 3. Match a metal hub to the measured wheel interface. Record its controlled drawing, shaft engagement, wheel-fastener engagement, rated torque and axial capacity, mass, axial stop, removable retention hardware and assembly/tool path.
-4. Obtain the D5065 rotor inertia from the manufacturer or measure it independently. Measure or calculate hub and wheel polar inertias, then produce the complete rotor + hub + wheel value.
+4. Measure D5065 rotor inertia independently or confirm whether the calculated `Red 5065` value applies. Measure or calculate hub and wheel polar inertias, then produce the complete rotor + hub + wheel value.
 5. Verify panel alloy/temper, thickness around both mounts, flatness and actual boundary restraint. After machining the final cutout, weigh the finished rotating assembly and verify balance, shaft/hub runout, fastener retention and vibration across the intended speed range.
 
 ## Final classifications

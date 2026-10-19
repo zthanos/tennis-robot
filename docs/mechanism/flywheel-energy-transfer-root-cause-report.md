@@ -1,5 +1,11 @@
 # Standalone flywheel energy-transfer root-cause report
 
+> **ΑΝΤΙΚΑΤΑΣΤΑΘΗΚΕ από P2-61:** το κείμενο συνέδεε 7,994 mm diametral
+> deformation με 27,265 N, ενώ ο δεύτερος αριθμός είναι `K*p^1.5` για
+> μονοπλευρικό p≈4 mm. Η σωστή per-contact αξιολόγηση είναι
+> `K*(2p)^1.5`, περίπου 76,8 N στο 58 mm nip. Τα παλιά runs παραμένουν
+> ιστορικά και δεν στηρίζουν τρέχουσα επιλογή nip.
+
 Date: 2026-08-26
 Scope: frozen standalone launcher only
 Decision: **Case B — the accepted geometry has sufficient kinematic potential, but the traction required for 14 m/s is not physically validated.**

@@ -43,6 +43,15 @@ public:
         "right_wheel_link", "flywheel_right_link").first;
     this->groundEnabled = _sdf->Get<bool>("enable_ground", true).first;
     this->groundHeight = _sdf->Get<double>("ground_height", 0.0).first;
+    this->diametralCompressionScale = _sdf->Get<double>(
+        "diametral_compression_scale", 2.0).first;
+    if (_sdf->HasElement("upper_platen_link"))
+    {
+      this->upperPlatenLinkName = _sdf->Get<std::string>("upper_platen_link");
+      this->upperPlatenEnabled = true;
+    }
+    this->upperPlatenOffsetZ = _sdf->Get<double>(
+        "upper_platen_offset_z", 0.0).first;
     this->topic = _sdf->Get<std::string>(
         "telemetry_topic", "/tennis_ball/compliant_contacts").first;
     if (_sdf->HasElement("telemetry_csv"))
@@ -52,12 +61,17 @@ public:
         "tangential_speed_m_s,tangential_force_x_n,tangential_force_y_n,tangential_force_z_n,"
         "friction_limit_n,ball_torque_x_nm,ball_torque_y_nm,ball_torque_z_nm,"
         "wheel_torque_x_nm,wheel_torque_y_nm,wheel_torque_z_nm,contact_x_m,contact_y_m,contact_z_m,"
-        "normal_x,normal_y,normal_z,compression_m,compression_rate_m_s\n";
+        "normal_x,normal_y,normal_z,compression_m,compression_rate_m_s,"
+        "law_compression_m,law_compression_rate_m_s\n";
     }
     if (_sdf->HasElement("friction_coefficient"))
       this->frictionCoefficient = _sdf->Get<double>("friction_coefficient");
 
     this->parameters.radius = _sdf->Get<double>("ball_radius", 0.033).first;
+    // Optional geometry parameters preserve the calibrated force law while
+    // allowing isolated benches to use their actual frozen tread envelope.
+    this->wheelRadius = _sdf->Get<double>("wheel_radius", 0.100).first;
+    this->wheelHalfWidth = _sdf->Get<double>("wheel_half_width", 0.025).first;
     this->parameters.loadingExponent = _sdf->Get<double>(
         "loading_exponent", 1.5).first;
     this->parameters.unloadingExponent = _sdf->Get<double>(
@@ -65,7 +79,7 @@ public:
     this->parameters.loadingStiffness = _sdf->Get<double>(
         "loading_stiffness", 107309.29404174259).first;
     this->parameters.dynamicDamping = _sdf->Get<double>(
-        "dynamic_damping", 4692.375890562493).first;
+        "dynamic_damping", 2356.929198779746).first;
     this->parameters.maximumCompression = _sdf->Get<double>(
         "maximum_compression", 0.035).first;
     this->parameters.forceCap = _sdf->Get<double>("force_cap", 5000.0).first;
@@ -109,7 +123,7 @@ public:
       const auto axis = wheelPose->Rot().RotateVector(gz::math::Vector3d::UnitZ);
       const auto geometry = SphereFiniteCylinder(
           ballPose->Pos(), this->parameters.radius,
-          wheelPose->Pos(), axis, 0.100, 0.025);
+          wheelPose->Pos(), axis, this->wheelRadius, this->wheelHalfWidth);
       if (!geometry.active)
       {
         this->wheelStates[index] = State{};
@@ -124,7 +138,8 @@ public:
       const double compressionRate = -relative.Dot(geometry.normal);
       const auto normal = StepNormal(
           this->parameters, this->wheelStates[index],
-          geometry.compression, compressionRate);
+          this->diametralCompressionScale * geometry.compression,
+          this->diametralCompressionScale * compressionRate);
 
       const auto tangentialVelocity = relative - relative.Dot(geometry.normal) * geometry.normal;
       gz::math::Vector3d tangentialForce = gz::math::Vector3d::Zero;
@@ -158,7 +173,9 @@ public:
           (ballPose->Pos().Z() - this->groundHeight);
       const double compressionRate = -ballLinear->Z();
       const auto normal = StepNormal(
-          this->parameters, this->groundState, compression, compressionRate);
+          this->parameters, this->groundState,
+          this->diametralCompressionScale * compression,
+          this->diametralCompressionScale * compressionRate);
       if (normal.force > 0.0)
       {
         ball.AddWorldForce(_ecm, gz::math::Vector3d(0, 0, normal.force));
@@ -175,6 +192,40 @@ public:
             gz::math::Vector3d::Zero, gz::math::Vector3d::Zero,
             std::numeric_limits<double>::quiet_NaN(),
             gz::math::Vector3d::Zero, gz::math::Vector3d::Zero);
+      }
+    }
+    if (this->upperPlatenEnabled && this->upperPlatenEntity != gz::sim::kNullEntity)
+    {
+      gz::sim::Link upper(this->upperPlatenEntity);
+      const auto upperPose = upper.WorldPose(_ecm);
+      const auto upperLinear = upper.WorldLinearVelocity(_ecm);
+      if (upperPose && upperLinear)
+      {
+        const double planeHeight = upperPose->Pos().Z() + this->upperPlatenOffsetZ;
+        const double penetration = ballPose->Pos().Z() + this->parameters.radius - planeHeight;
+        const double penetrationRate = ballLinear->Z() - upperLinear->Z();
+        const auto normal = StepNormal(
+            this->parameters, this->upperPlatenState,
+            this->diametralCompressionScale * penetration,
+            this->diametralCompressionScale * penetrationRate);
+        if (normal.force > 0.0)
+        {
+          ball.AddWorldForce(_ecm, gz::math::Vector3d(0, 0, -normal.force));
+          upper.AddWorldForce(_ecm, gz::math::Vector3d(0, 0, normal.force));
+          Geometry geometry;
+          geometry.active = true;
+          geometry.compression = std::max(penetration, 0.0);
+          geometry.point = gz::math::Vector3d(
+              ballPose->Pos().X(), ballPose->Pos().Y(), planeHeight);
+          geometry.normal = -gz::math::Vector3d::UnitZ;
+          geometry.region = "upper_platen";
+          this->AppendTelemetry(
+              telemetry, std::chrono::duration<double>(_info.simTime).count(),
+              3.0, normal, geometry,
+              gz::math::Vector3d::Zero, gz::math::Vector3d::Zero,
+              std::numeric_limits<double>::quiet_NaN(),
+              gz::math::Vector3d::Zero, gz::math::Vector3d::Zero);
+        }
       }
     }
     if (telemetry.data_size() > 0)
@@ -215,6 +266,14 @@ private:
         }
       }
     }
+    if (this->upperPlatenEnabled && this->upperPlatenEntity == gz::sim::kNullEntity)
+    {
+      this->upperPlatenEntity = _ecm.EntityByComponents(
+          gz::sim::components::Link(),
+          gz::sim::components::Name(this->upperPlatenLinkName));
+      if (this->upperPlatenEntity != gz::sim::kNullEntity)
+        gz::sim::Link(this->upperPlatenEntity).EnableVelocityChecks(_ecm);
+    }
     return true;
   }
 
@@ -244,6 +303,8 @@ private:
     this->AppendVector(_message, _geometry.point);
     this->AppendVector(_message, _geometry.normal);
     _message.add_data(_geometry.compression);
+    _message.add_data(_normal.compressionRate / this->diametralCompressionScale);
+    _message.add_data(_normal.compression);
     _message.add_data(_normal.compressionRate);
     if (this->telemetryCsv)
     {
@@ -256,21 +317,34 @@ private:
         << _wheelTorque.X() << ',' << _wheelTorque.Y() << ',' << _wheelTorque.Z() << ','
         << _geometry.point.X() << ',' << _geometry.point.Y() << ',' << _geometry.point.Z() << ','
         << _geometry.normal.X() << ',' << _geometry.normal.Y() << ',' << _geometry.normal.Z() << ','
-        << _geometry.compression << ',' << _normal.compressionRate << '\n';
+        << _geometry.compression << ','
+        << _normal.compressionRate / this->diametralCompressionScale << ','
+        << _normal.compression << ',' << _normal.compressionRate << '\n';
     }
   }
 
   Parameters parameters;
   State groundState;
+  State upperPlatenState;
   std::array<State, 2> wheelStates;
   gz::sim::Entity ballEntity{gz::sim::kNullEntity};
+  gz::sim::Entity upperPlatenEntity{gz::sim::kNullEntity};
   std::array<gz::sim::Entity, 2> wheelEntities{
       gz::sim::kNullEntity, gz::sim::kNullEntity};
   std::string ballLinkName{"ball_link"};
   std::array<std::string, 2> wheelLinkNames{
       "flywheel_left_link", "flywheel_right_link"};
   bool groundEnabled{true};
+  bool upperPlatenEnabled{false};
+  std::string upperPlatenLinkName{"upper_platen_link"};
   double groundHeight{0.0};
+  double upperPlatenOffsetZ{0.0};
+  // Geometry reports one-sided rigid-surface penetration p.  The calibrated
+  // ITF law consumes total diametral deformation delta, hence delta=2p for a
+  // symmetric rigid constraint.  Scale=1 reproduces the historical bug only.
+  double diametralCompressionScale{2.0};
+  double wheelRadius{0.100};
+  double wheelHalfWidth{0.025};
   std::optional<double> frictionCoefficient;
   std::string topic{"/tennis_ball/compliant_contacts"};
   gz::transport::Node node;

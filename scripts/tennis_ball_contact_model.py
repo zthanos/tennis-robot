@@ -70,7 +70,7 @@ class NormalParameters:
     loading_exponent: float = 1.5
 
     # CALIBRATED_PARAMETER: fitted to the 2.54 m -> 1.41 m rigid-surface drop.
-    dynamic_damping_n_s_m_pow: float = 4692.375890562493
+    dynamic_damping_n_s_m_pow: float = 2356.929198779746
 
     # NUMERICAL_PARAMETER: guard outside the calibration domain.
     max_supported_compression_m: float = 0.035
