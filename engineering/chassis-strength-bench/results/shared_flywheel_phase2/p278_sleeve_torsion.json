@@ -1,0 +1,461 @@
+{
+  "status": "P2_78_SLEEVE_SOCKET_TORSION_SCREEN",
+  "model": "full-section hollow X240/X300 terminal sockets; no bolt/contact stiffness; 20x15 torsion members",
+  "selected_variant": "paired_short_inboard",
+  "selection": "X240/Y+/-150 to X300/Y+/-125: best variant that passes exact-solid; paired_short_outboard was slightly stiffer but intersects the future basket floor",
+  "p277_single_diagonal_reference_mm": {
+    "vertical_2g": 0.6454265055731803,
+    "launch_reaction": 2.3754331838128766,
+    "antisymmetric_racking": 2.354186401705328
+  },
+  "comparison": {
+    "vertical_2g": {
+      "none": {
+        "max_bearing_displacement_mm": 0.6454065375867912,
+        "change_vs_one_diagonal_percent": 0.07381315816772371,
+        "change_vs_p277_single_percent": -0.0030937660936758427,
+        "mesh_change_10_to_5_percent": 0.8963563805233595,
+        "beam_integration_point_peak_von_mises_mpa": 1.1359208432530035
+      },
+      "single_diagonal": {
+        "max_bearing_displacement_mm": 0.6449304940211675,
+        "change_vs_one_diagonal_percent": 0.0,
+        "change_vs_p277_single_percent": -0.07685019870267151,
+        "mesh_change_10_to_5_percent": 0.8962513251522514,
+        "beam_integration_point_peak_von_mises_mpa": 1.135914384716404
+      },
+      "paired_short_inboard": {
+        "max_bearing_displacement_mm": 0.6426962580225237,
+        "change_vs_one_diagonal_percent": -0.3464305098543674,
+        "change_vs_p277_single_percent": -0.4230144760218546,
+        "mesh_change_10_to_5_percent": 0.8886384992973295,
+        "beam_integration_point_peak_von_mises_mpa": 1.1356365550410812
+      },
+      "paired_short_outboard": {
+        "max_bearing_displacement_mm": 0.6425041606996754,
+        "change_vs_one_diagonal_percent": -0.3762162502758737,
+        "change_vs_p277_single_percent": -0.45277732604266374,
+        "mesh_change_10_to_5_percent": 0.8872341674433739,
+        "beam_integration_point_peak_von_mises_mpa": 1.135554683669153
+      },
+      "paired_short_near_rail": {
+        "max_bearing_displacement_mm": 0.6418098540616733,
+        "change_vs_one_diagonal_percent": -0.4838722914211835,
+        "change_vs_p277_single_percent": -0.560350633306439,
+        "mesh_change_10_to_5_percent": 0.8872233144485747,
+        "beam_integration_point_peak_von_mises_mpa": 1.135437086897537
+      }
+    },
+    "launch_reaction": {
+      "none": {
+        "max_bearing_displacement_mm": 2.312115674773027,
+        "change_vs_one_diagonal_percent": 17.089915273844824,
+        "change_vs_p277_single_percent": -2.6655142090006745,
+        "mesh_change_10_to_5_percent": 0.40354260781196477,
+        "beam_integration_point_peak_von_mises_mpa": 5.452209419641017
+      },
+      "single_diagonal": {
+        "max_bearing_displacement_mm": 1.9746497120316049,
+        "change_vs_one_diagonal_percent": 0.0,
+        "change_vs_p277_single_percent": -16.872016207922236,
+        "mesh_change_10_to_5_percent": 0.3562227672238637,
+        "beam_integration_point_peak_von_mises_mpa": 5.4506305823593255
+      },
+      "paired_short_inboard": {
+        "max_bearing_displacement_mm": 2.176977473171519,
+        "change_vs_one_diagonal_percent": 10.24626088906424,
+        "change_vs_p277_single_percent": -8.354506116766913,
+        "mesh_change_10_to_5_percent": 0.44199898196682785,
+        "beam_integration_point_peak_von_mises_mpa": 5.451450481607421
+      },
+      "paired_short_outboard": {
+        "max_bearing_displacement_mm": 2.154430665312386,
+        "change_vs_one_diagonal_percent": 9.104447851452836,
+        "change_vs_p277_single_percent": -9.303672273608344,
+        "mesh_change_10_to_5_percent": 0.06975463085672902,
+        "beam_integration_point_peak_von_mises_mpa": 5.451218166433959
+      },
+      "paired_short_near_rail": {
+        "max_bearing_displacement_mm": 2.2220698700309964,
+        "change_vs_one_diagonal_percent": 12.52982523897035,
+        "change_vs_p277_single_percent": -6.456225114095282,
+        "mesh_change_10_to_5_percent": 0.4362567586776482,
+        "beam_integration_point_peak_von_mises_mpa": 5.45161726335306
+      }
+    },
+    "antisymmetric_racking": {
+      "none": {
+        "max_bearing_displacement_mm": 2.307713739677694,
+        "change_vs_one_diagonal_percent": 13.816360314397635,
+        "change_vs_p277_single_percent": -1.9740434314789224,
+        "mesh_change_10_to_5_percent": 0.4031021849852866,
+        "beam_integration_point_peak_von_mises_mpa": 1.3515437482138146
+      },
+      "single_diagonal": {
+        "max_bearing_displacement_mm": 2.027576469062129,
+        "change_vs_one_diagonal_percent": 0.0,
+        "change_vs_p277_single_percent": -13.873579951299053,
+        "mesh_change_10_to_5_percent": 0.3723926689624964,
+        "beam_integration_point_peak_von_mises_mpa": 1.4792520609727229
+      },
+      "paired_short_inboard": {
+        "max_bearing_displacement_mm": 2.1840255958779418,
+        "change_vs_one_diagonal_percent": 7.716065421107365,
+        "change_vs_p277_single_percent": -7.228009035483551,
+        "mesh_change_10_to_5_percent": 0.4380581288572684,
+        "beam_integration_point_peak_von_mises_mpa": 1.3284324668007057
+      },
+      "paired_short_outboard": {
+        "max_bearing_displacement_mm": 2.1664712770628327,
+        "change_vs_one_diagonal_percent": 6.850287035780722,
+        "change_vs_p277_single_percent": -7.973672964320833,
+        "mesh_change_10_to_5_percent": 0.09915958639747925,
+        "beam_integration_point_peak_von_mises_mpa": 1.3256104996327027
+      },
+      "paired_short_near_rail": {
+        "max_bearing_displacement_mm": 2.2273241719915893,
+        "change_vs_one_diagonal_percent": 9.85154966914048,
+        "change_vs_p277_single_percent": -5.388792901948724,
+        "mesh_change_10_to_5_percent": 0.4330098809546146,
+        "beam_integration_point_peak_von_mises_mpa": 1.3375453256962246
+      }
+    }
+  },
+  "cases": [
+    {
+      "variant": "none",
+      "load_case": "vertical_2g",
+      "mesh_mm": 10.0,
+      "element_count": 489,
+      "max_bearing_displacement_mm": 0.6396213949068171,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6390508672253123,
+      "relative_bearing_x_mm": 0.0038901000000000074,
+      "relative_bearing_z_mm": 1.0500000000024379e-05,
+      "beam_integration_point_peak_von_mises_mpa": 1.0990635673660787
+    },
+    {
+      "variant": "none",
+      "load_case": "launch_reaction",
+      "mesh_mm": 10.0,
+      "element_count": 489,
+      "max_bearing_displacement_mm": 2.302785302883419,
+      "max_bearing_relative_to_local_front_mount_mm": 0.43086820245662133,
+      "relative_bearing_x_mm": 2.2186362099999997,
+      "relative_bearing_z_mm": 0.13774617,
+      "beam_integration_point_peak_von_mises_mpa": 5.149459404638269
+    },
+    {
+      "variant": "none",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 10.0,
+      "element_count": 489,
+      "max_bearing_displacement_mm": 2.2984112951698474,
+      "max_bearing_relative_to_local_front_mount_mm": 0.36901325446261646,
+      "relative_bearing_x_mm": 2.35488148,
+      "relative_bearing_z_mm": 0.19030287,
+      "beam_integration_point_peak_von_mises_mpa": 1.2782914236699927
+    },
+    {
+      "variant": "none",
+      "load_case": "vertical_2g",
+      "mesh_mm": 5.0,
+      "element_count": 962,
+      "max_bearing_displacement_mm": 0.6454065375867912,
+      "max_bearing_relative_to_local_front_mount_mm": 0.644833053591489,
+      "relative_bearing_x_mm": 0.003916799999999998,
+      "relative_bearing_z_mm": 7.899999999949614e-06,
+      "beam_integration_point_peak_von_mises_mpa": 1.1359208432530035
+    },
+    {
+      "variant": "none",
+      "load_case": "launch_reaction",
+      "mesh_mm": 5.0,
+      "element_count": 962,
+      "max_bearing_displacement_mm": 2.312115674773027,
+      "max_bearing_relative_to_local_front_mount_mm": 0.43519433592482565,
+      "relative_bearing_x_mm": 2.2273174,
+      "relative_bearing_z_mm": 0.13901018999999998,
+      "beam_integration_point_peak_von_mises_mpa": 5.452209419641017
+    },
+    {
+      "variant": "none",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 5.0,
+      "element_count": 962,
+      "max_bearing_displacement_mm": 2.307713739677694,
+      "max_bearing_relative_to_local_front_mount_mm": 0.37105443939113,
+      "relative_bearing_x_mm": 2.36461004,
+      "relative_bearing_z_mm": 0.1915407,
+      "beam_integration_point_peak_von_mises_mpa": 1.3515437482138146
+    },
+    {
+      "variant": "single_diagonal",
+      "load_case": "vertical_2g",
+      "mesh_mm": 10.0,
+      "element_count": 520,
+      "max_bearing_displacement_mm": 0.6391502959221919,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6398234762051767,
+      "relative_bearing_x_mm": 5.559999999998899e-05,
+      "relative_bearing_z_mm": 0.0023719999999999297,
+      "beam_integration_point_peak_von_mises_mpa": 1.0990637225966937
+    },
+    {
+      "variant": "single_diagonal",
+      "load_case": "launch_reaction",
+      "mesh_mm": 10.0,
+      "element_count": 520,
+      "max_bearing_displacement_mm": 1.9676155601844278,
+      "max_bearing_relative_to_local_front_mount_mm": 0.42981312955594186,
+      "relative_bearing_x_mm": 1.9004112579999999,
+      "relative_bearing_z_mm": 0.0649402,
+      "beam_integration_point_peak_von_mises_mpa": 5.148464080471284
+    },
+    {
+      "variant": "single_diagonal",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 10.0,
+      "element_count": 520,
+      "max_bearing_displacement_mm": 2.020025922933733,
+      "max_bearing_relative_to_local_front_mount_mm": 0.3921634565489152,
+      "relative_bearing_x_mm": 2.0884535,
+      "relative_bearing_z_mm": 0.24995089999999998,
+      "beam_integration_point_peak_von_mises_mpa": 1.432771428497672
+    },
+    {
+      "variant": "single_diagonal",
+      "load_case": "vertical_2g",
+      "mesh_mm": 5.0,
+      "element_count": 1024,
+      "max_bearing_displacement_mm": 0.6449304940211675,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6456164279495952,
+      "relative_bearing_x_mm": 7.289999999998686e-05,
+      "relative_bearing_z_mm": 0.0024223999999999357,
+      "beam_integration_point_peak_von_mises_mpa": 1.135914384716404
+    },
+    {
+      "variant": "single_diagonal",
+      "load_case": "launch_reaction",
+      "mesh_mm": 5.0,
+      "element_count": 1024,
+      "max_bearing_displacement_mm": 1.9746497120316049,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4340125110531396,
+      "relative_bearing_x_mm": 1.906940528,
+      "relative_bearing_z_mm": 0.06520109999999998,
+      "beam_integration_point_peak_von_mises_mpa": 5.4506305823593255
+    },
+    {
+      "variant": "single_diagonal",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 5.0,
+      "element_count": 1024,
+      "max_bearing_displacement_mm": 2.027576469062129,
+      "max_bearing_relative_to_local_front_mount_mm": 0.3945540840929067,
+      "relative_bearing_x_mm": 2.0965258,
+      "relative_bearing_z_mm": 0.2519847,
+      "beam_integration_point_peak_von_mises_mpa": 1.4792520609727229
+    },
+    {
+      "variant": "paired_short_inboard",
+      "load_case": "vertical_2g",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 0.6369850116401923,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6364152490276417,
+      "relative_bearing_x_mm": 0.003814800000000007,
+      "relative_bearing_z_mm": 4.499999999996174e-05,
+      "beam_integration_point_peak_von_mises_mpa": 1.0988110110344727
+    },
+    {
+      "variant": "paired_short_inboard",
+      "load_case": "launch_reaction",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 2.1673552549024535,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4326833875410518,
+      "relative_bearing_x_mm": 2.0850565,
+      "relative_bearing_z_mm": 0.1069587,
+      "beam_integration_point_peak_von_mises_mpa": 5.148909890683056
+    },
+    {
+      "variant": "paired_short_inboard",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 2.174458294218875,
+      "max_bearing_relative_to_local_front_mount_mm": 0.38291629960665363,
+      "relative_bearing_x_mm": 2.23198746,
+      "relative_bearing_z_mm": 0.2165483,
+      "beam_integration_point_peak_von_mises_mpa": 1.271447001606368
+    },
+    {
+      "variant": "paired_short_inboard",
+      "load_case": "vertical_2g",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 0.6426962580225237,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6421243737419732,
+      "relative_bearing_x_mm": 0.003840200000000016,
+      "relative_bearing_z_mm": 5.119999999991798e-05,
+      "beam_integration_point_peak_von_mises_mpa": 1.1356365550410812
+    },
+    {
+      "variant": "paired_short_inboard",
+      "load_case": "launch_reaction",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 2.176977473171519,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4368392569358436,
+      "relative_bearing_x_mm": 2.0940418800000002,
+      "relative_bearing_z_mm": 0.1081292,
+      "beam_integration_point_peak_von_mises_mpa": 5.451450481607421
+    },
+    {
+      "variant": "paired_short_inboard",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 2.1840255958779418,
+      "max_bearing_relative_to_local_front_mount_mm": 0.38491634618668524,
+      "relative_bearing_x_mm": 2.2419808,
+      "relative_bearing_z_mm": 0.2178395,
+      "beam_integration_point_peak_von_mises_mpa": 1.3284324668007057
+    },
+    {
+      "variant": "paired_short_outboard",
+      "load_case": "vertical_2g",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 0.6368036442587026,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6361827179926779,
+      "relative_bearing_x_mm": 0.003980000000000011,
+      "relative_bearing_z_mm": 4.209999999993386e-05,
+      "beam_integration_point_peak_von_mises_mpa": 1.0987452511489657
+    },
+    {
+      "variant": "paired_short_outboard",
+      "load_case": "launch_reaction",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 2.1529278501547333,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4387313180224202,
+      "relative_bearing_x_mm": 2.0709953700000003,
+      "relative_bearing_z_mm": 0.0956341,
+      "beam_integration_point_peak_von_mises_mpa": 5.148703435400434
+    },
+    {
+      "variant": "paired_short_outboard",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 2.164323013105077,
+      "max_bearing_relative_to_local_front_mount_mm": 0.3928163057675426,
+      "relative_bearing_x_mm": 2.2215553,
+      "relative_bearing_z_mm": 0.2248278,
+      "beam_integration_point_peak_von_mises_mpa": 1.2784180989330225
+    },
+    {
+      "variant": "paired_short_outboard",
+      "load_case": "vertical_2g",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 0.6425041606996754,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6418791415544859,
+      "relative_bearing_x_mm": 0.004011600000000004,
+      "relative_bearing_z_mm": 4.8599999999954235e-05,
+      "beam_integration_point_peak_von_mises_mpa": 1.135554683669153
+    },
+    {
+      "variant": "paired_short_outboard",
+      "load_case": "launch_reaction",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 2.154430665312386,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4428971728979538,
+      "relative_bearing_x_mm": 2.07192381,
+      "relative_bearing_z_mm": 0.09497529999999998,
+      "beam_integration_point_peak_von_mises_mpa": 5.451218166433959
+    },
+    {
+      "variant": "paired_short_outboard",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 2.1664712770628327,
+      "max_bearing_relative_to_local_front_mount_mm": 0.3955714795923919,
+      "relative_bearing_x_mm": 2.2241446000000002,
+      "relative_bearing_z_mm": 0.2277254,
+      "beam_integration_point_peak_von_mises_mpa": 1.3256104996327027
+    },
+    {
+      "variant": "paired_short_near_rail",
+      "load_case": "vertical_2g",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 0.6361155674020098,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6354097382704924,
+      "relative_bearing_x_mm": 0.004183999999999993,
+      "relative_bearing_z_mm": 4.579999999998474e-05,
+      "beam_integration_point_peak_von_mises_mpa": 1.0986424080212942
+    },
+    {
+      "variant": "paired_short_near_rail",
+      "load_case": "launch_reaction",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 2.2123759400404466,
+      "max_bearing_relative_to_local_front_mount_mm": 0.4358099700052421,
+      "relative_bearing_x_mm": 2.12998158,
+      "relative_bearing_z_mm": 0.10991487999999999,
+      "beam_integration_point_peak_von_mises_mpa": 5.148955611968282
+    },
+    {
+      "variant": "paired_short_near_rail",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 10.0,
+      "element_count": 503,
+      "max_bearing_displacement_mm": 2.217679638245975,
+      "max_bearing_relative_to_local_front_mount_mm": 0.38411008831194415,
+      "relative_bearing_x_mm": 2.27464196,
+      "relative_bearing_z_mm": 0.2116674,
+      "beam_integration_point_peak_von_mises_mpa": 1.262883109664983
+    },
+    {
+      "variant": "paired_short_near_rail",
+      "load_case": "vertical_2g",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 0.6418098540616733,
+      "max_bearing_relative_to_local_front_mount_mm": 0.6410991473033656,
+      "relative_bearing_x_mm": 0.004218300000000008,
+      "relative_bearing_z_mm": 4.9100000000024124e-05,
+      "beam_integration_point_peak_von_mises_mpa": 1.135437086897537
+    },
+    {
+      "variant": "paired_short_near_rail",
+      "load_case": "launch_reaction",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 2.2220698700309964,
+      "max_bearing_relative_to_local_front_mount_mm": 0.43998352039525296,
+      "relative_bearing_x_mm": 2.13905124,
+      "relative_bearing_z_mm": 0.11110873000000002,
+      "beam_integration_point_peak_von_mises_mpa": 5.45161726335306
+    },
+    {
+      "variant": "paired_short_near_rail",
+      "load_case": "antisymmetric_racking",
+      "mesh_mm": 5.0,
+      "element_count": 988,
+      "max_bearing_displacement_mm": 2.2273241719915893,
+      "max_bearing_relative_to_local_front_mount_mm": 0.38610889467676024,
+      "relative_bearing_x_mm": 2.2847100599999997,
+      "relative_bearing_z_mm": 0.2128971,
+      "beam_integration_point_peak_von_mises_mpa": 1.3375453256962246
+    }
+  ],
+  "limitations": [
+    "linear isotropic PETG beam screen; not printed-layer, bolt-bearing, clamp-slip or fatigue certification",
+    "socket-to-terminal and sleeve preload are ideal at the beam endpoints",
+    "local M4 holes and the X300 C-hook relief are not represented by the centreline mesh"
+  ]
+}

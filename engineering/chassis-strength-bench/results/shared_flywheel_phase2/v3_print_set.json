@@ -1,0 +1,526 @@
+{
+  "status": "V3_CAD_LOCKED_PHYSICAL_COUPON_FIRST",
+  "density_g_cm3": 0.72,
+  "parts": [
+    {
+      "part": "sleeve_fit_coupon",
+      "quantity": 1,
+      "mass_each_g": 26.985748079418887,
+      "mass_total_g": 26.985748079418887,
+      "orientation": "rail bottom on bed",
+      "state": "LOCKED",
+      "dependency": "print first with one clamp sleeve; physical fit gate",
+      "triangle_count": 816,
+      "bounds_min_mm": [
+        -40.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        40.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        80.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 37.480205665859565,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "clamp_sleeve",
+      "quantity": 5,
+      "mass_each_g": 42.36451286724224,
+      "mass_total_g": 211.8225643362112,
+      "orientation": "43 mm face on bed",
+      "state": "LOCKED",
+      "dependency": "four rail joints plus rear-centre splice; print one with coupon first",
+      "triangle_count": 2136,
+      "bounds_min_mm": [
+        -60.0,
+        -21.5,
+        -11.5
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        11.5
+      ],
+      "envelope_mm": [
+        120.0,
+        43.0,
+        23.0
+      ],
+      "solid_volume_cm3": 58.83960120450311,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "corner_clamp_left",
+      "quantity": 1,
+      "mass_each_g": 104.73063205264191,
+      "mass_total_g": 104.73063205264191,
+      "orientation": "23 mm broad face on bed",
+      "state": "LOCKED",
+      "dependency": "rear-left corner; coupon M4 nut fit applies",
+      "triangle_count": 1212,
+      "bounds_min_mm": [
+        -25.0,
+        -85.0,
+        -11.5
+      ],
+      "bounds_max_mm": [
+        60.0,
+        25.0,
+        11.5
+      ],
+      "envelope_mm": [
+        85.0,
+        110.0,
+        23.0
+      ],
+      "solid_volume_cm3": 145.45921118422487,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "corner_clamp_right",
+      "quantity": 1,
+      "mass_each_g": 104.73063205264191,
+      "mass_total_g": 104.73063205264191,
+      "orientation": "23 mm broad face on bed",
+      "state": "LOCKED",
+      "dependency": "rear-right corner; coupon M4 nut fit applies",
+      "triangle_count": 1212,
+      "bounds_min_mm": [
+        -25.0,
+        -25.0,
+        -11.5
+      ],
+      "bounds_max_mm": [
+        60.0,
+        85.0,
+        11.5
+      ],
+      "envelope_mm": [
+        85.0,
+        110.0,
+        23.0
+      ],
+      "solid_volume_cm3": 145.45921118422487,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rear_motor_left",
+      "quantity": 1,
+      "mass_each_g": 103.7224710813986,
+      "mass_total_g": 103.7224710813986,
+      "orientation": "rail bottom on bed",
+      "state": "LOCKED",
+      "dependency": "validated FIT0403 land; v3 adds M4 clamp holes",
+      "triangle_count": 5330,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        100.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        200.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 144.0589876130536,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rear_motor_right",
+      "quantity": 1,
+      "mass_each_g": 103.86862700197982,
+      "mass_total_g": 103.86862700197982,
+      "orientation": "rail bottom on bed",
+      "state": "LOCKED",
+      "dependency": "validated FIT0403 land; v3 adds M4 clamp holes",
+      "triangle_count": 4546,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        100.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        200.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 144.2619819471942,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rail_extension_left",
+      "quantity": 1,
+      "mass_each_g": 64.63488804551069,
+      "mass_total_g": 64.63488804551069,
+      "orientation": "rail bottom on bed",
+      "state": "LOCKED",
+      "dependency": "M4 grid only outside both 60 mm insertion zones",
+      "triangle_count": 3936,
+      "bounds_min_mm": [
+        -82.5,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        82.5,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        165.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 89.77067784098708,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rail_extension_right",
+      "quantity": 1,
+      "mass_each_g": 65.83578129739664,
+      "mass_total_g": 65.83578129739664,
+      "orientation": "rail bottom on bed",
+      "state": "LOCKED",
+      "dependency": "M4 grid only outside both 60 mm insertion zones",
+      "triangle_count": 2376,
+      "bounds_min_mm": [
+        -82.5,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        82.5,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        165.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 91.4385851352731,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "front_terminal_left",
+      "quantity": 1,
+      "mass_each_g": 104.88976168725834,
+      "mass_total_g": 104.88976168725834,
+      "orientation": "rail bottom on bed",
+      "state": "LOCKED",
+      "dependency": "P2-78 integrated X240/X300 hollow sockets",
+      "triangle_count": 7696,
+      "bounds_min_mm": [
+        -100.0,
+        -90.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        30.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        130.0,
+        115.0,
+        30.0
+      ],
+      "solid_volume_cm3": 145.6802245656366,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "front_terminal_right",
+      "quantity": 1,
+      "mass_each_g": 104.93094108972153,
+      "mass_total_g": 104.93094108972153,
+      "orientation": "rail bottom on bed",
+      "state": "LOCKED",
+      "dependency": "P2-78 integrated X240/X300 hollow sockets",
+      "triangle_count": 7274,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        30.0,
+        90.0,
+        30.0
+      ],
+      "envelope_mm": [
+        130.0,
+        115.0,
+        30.0
+      ],
+      "solid_volume_cm3": 145.7374181801688,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rear_crossbar_half",
+      "quantity": 2,
+      "mass_each_g": 79.29318732550682,
+      "mass_total_g": 158.58637465101364,
+      "orientation": "long flat bottom on bed",
+      "state": "LOCKED",
+      "dependency": "two halves; M4 accessory grid y75..150",
+      "triangle_count": 5104,
+      "bounds_min_mm": [
+        -25.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        195.0,
+        30.0
+      ],
+      "envelope_mm": [
+        50.0,
+        195.0,
+        30.0
+      ],
+      "solid_volume_cm3": 110.12942684098171,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "x240_crossbar_half",
+      "quantity": 2,
+      "mass_each_g": 37.514320317674915,
+      "mass_total_g": 75.02864063534983,
+      "orientation": "long flat bottom on bed",
+      "state": "LOCKED",
+      "dependency": "P2-78: two 130 mm 50x20 halves at X240",
+      "triangle_count": 3168,
+      "bounds_min_mm": [
+        -25.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        130.0,
+        20.0
+      ],
+      "envelope_mm": [
+        50.0,
+        130.0,
+        20.0
+      ],
+      "solid_volume_cm3": 52.103222663437386,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "x240_clamp_sleeve",
+      "quantity": 1,
+      "mass_each_g": 11.877024314527748,
+      "mass_total_g": 11.877024314527748,
+      "orientation": "43 mm face on bed",
+      "state": "LOCKED",
+      "dependency": "centre splice for X240",
+      "triangle_count": 1600,
+      "bounds_min_mm": [
+        -60.0,
+        -21.5,
+        -6.5
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        6.5
+      ],
+      "envelope_mm": [
+        120.0,
+        43.0,
+        13.0
+      ],
+      "solid_volume_cm3": 16.49586710351076,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "x240_terminal_sleeve",
+      "quantity": 2,
+      "mass_each_g": 11.698896786319278,
+      "mass_total_g": 23.397793572638555,
+      "orientation": "43 mm face on bed",
+      "state": "LOCKED",
+      "dependency": "P2-78 socket/crossbar splice; 60 mm per side",
+      "triangle_count": 3952,
+      "bounds_min_mm": [
+        -60.0,
+        -21.5,
+        -6.5
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        6.5
+      ],
+      "envelope_mm": [
+        120.0,
+        43.0,
+        13.0
+      ],
+      "solid_volume_cm3": 16.248467758776776,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "x300_crossbar_half",
+      "quantity": 2,
+      "mass_each_g": 19.54312031767516,
+      "mass_total_g": 39.08624063535032,
+      "orientation": "long flat bottom on bed",
+      "state": "LOCKED",
+      "dependency": "P2-78: two 130 mm 20x20 halves; grid retained",
+      "triangle_count": 3168,
+      "bounds_min_mm": [
+        -10.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        10.0,
+        130.0,
+        20.0
+      ],
+      "envelope_mm": [
+        20.0,
+        130.0,
+        20.0
+      ],
+      "solid_volume_cm3": 27.143222663437722,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "x300_clamp_sleeve",
+      "quantity": 1,
+      "mass_each_g": 5.137824314527686,
+      "mass_total_g": 5.137824314527686,
+      "orientation": "13 mm face on bed",
+      "state": "LOCKED",
+      "dependency": "centre splice for X300",
+      "triangle_count": 1600,
+      "bounds_min_mm": [
+        -60.0,
+        -6.5,
+        -6.5
+      ],
+      "bounds_max_mm": [
+        60.0,
+        6.5,
+        6.5
+      ],
+      "envelope_mm": [
+        120.0,
+        13.0,
+        13.0
+      ],
+      "solid_volume_cm3": 7.135867103510675,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "x300_terminal_sleeve",
+      "quantity": 2,
+      "mass_each_g": 4.959696786319323,
+      "mass_total_g": 9.919393572638645,
+      "orientation": "13 mm face on bed",
+      "state": "LOCKED",
+      "dependency": "P2-78 socket/crossbar splice; 60 mm per side",
+      "triangle_count": 3952,
+      "bounds_min_mm": [
+        -60.0,
+        -6.5,
+        -6.5
+      ],
+      "bounds_max_mm": [
+        60.0,
+        6.5,
+        6.5
+      ],
+      "envelope_mm": [
+        120.0,
+        13.0,
+        13.0
+      ],
+      "solid_volume_cm3": 6.888467758776837,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "torsion_side_brace",
+      "quantity": 2,
+      "mass_each_g": 7.8732214810641,
+      "mass_total_g": 15.7464429621282,
+      "orientation": "broad face on bed",
+      "state": "LOCKED",
+      "dependency": "P2-78 paired short X240/Y150 to X300/Y125 braces",
+      "triangle_count": 466,
+      "bounds_min_mm": [
+        -8.131727983645296,
+        -11.667261889578036,
+        0.0
+      ],
+      "bounds_max_mm": [
+        43.34564568673537,
+        11.525840533340725,
+        23.0
+      ],
+      "envelope_mm": [
+        51.477373670380665,
+        23.193102422918763,
+        23.0
+      ],
+      "solid_volume_cm3": 10.93502983481125,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "ballast_tab",
+      "quantity": 4,
+      "mass_each_g": 11.821957648910155,
+      "mass_total_g": 47.28783059564062,
+      "orientation": "70x30 face on bed",
+      "state": "TEMPORARY",
+      "dependency": "bolt plywood/metal ballast decks to M4 grid",
+      "triangle_count": 600,
+      "bounds_min_mm": [
+        -35.0,
+        -15.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        35.0,
+        15.0,
+        8.0
+      ],
+      "envelope_mm": [
+        70.0,
+        30.0,
+        8.0
+      ],
+      "solid_volume_cm3": 16.419385623486328,
+      "nonmanifold_edge_count": 0
+    }
+  ],
+  "total_estimated_mass_g": 1382.2196119779949,
+  "locked_mass_excluding_coupon_and_temporary_g": 1307.9460333029353,
+  "limits": [
+    "0.72 g/cm3 is the user slicer-derived effective value; re-slice with the final profile",
+    "OpenSCAD/manifold checks do not prove M4 nut fit, clamp preload, layer adhesion or fatigue",
+    "Print sleeve_fit_coupon plus one clamp_sleeve before long parts"
+  ]
+}
