@@ -3828,3 +3828,44 @@ P2-77 MPU exports. Full dry-run: rear pod 12 generated + 2 retained, chassis
 Τα δηλωμένα print plates είναι 4/27/32/18/2 bodies· κάθε άλλο ενεργό STL
 είναι ένα body. Χωρίς firmware, Gazebo ή PR. Κατάσταση:
 `P2_83_ONE_BODY_INNER_CORNER_TIE_EXACT_SOLID_AND_EXPORT_GATE_PASS`. ΠΑΥΣΗ.
+
+### P2-84 — πίσω panels F πάνω στο rear pod v2
+
+τι διαφέρει από το αναμενόμενο: το παλιό F δεν ήταν release geometry για το
+v2. Το `rear_lo` περίμενε τα καταργημένα P2-70 feet/ears και το ονομαστικό
+`R424,5` με πάχος προς τα μέσα άφηνε μόνο περίπου 0,6 mm στις γωνίες. Το
+P2-84 κρατά το `R424,5` ως εσωτερικό datum και χτίζει τα 2,5 mm PETG προς τα
+έξω (`R427` ορατή εξωτερική ακτίνα), χωρίς καμία αλλαγή στο frozen envelope
+του pod. Το exact-solid 3 mm keepout είναι empty/PASS.
+
+Παρήχθησαν οκτώ release-candidate, single-body STL κάτω από 250×250 mm:
+`rear_lo` L/R με ενσωματωμένα Parkside frames, `rear_hi` L/R με παράθυρο και
+πλέγμα ±60°, `deck_rear` L/R και ανοιγόμενες Parkside doors L/R. Οι πρώτοι
+μεντεσέδες βγήκαν ως τρία σώματα και το σταθερό knuckle ακουμπούσε
+συνεπίπεδα το drawer boundary `Y161`. Διορθώθηκαν σε ενιαίο φύλλο/knuckles,
+με άξονα `Y±165,5`, radial offset και θετικό κενό 0,5 mm από το exact sweep.
+Τα `rear_hi` έχουν δύο κάτω locating tongues ανά μισό και τέσσερις συνολικά
+top-access M3 σε captive nuts κάτω από το deck· αφαιρούνται χωρίς λύσιμο του
+pod και αποκαλύπτουν Mega/perfboard.
+
+Στο pod άλλαξαν μόνο τα επιτρεπόμενα interfaces: δύο rear-facing captive M3
+ανά `base_left/right`, δύο lands κάτω από το πίσω χείλος του control panel,
+και οπή status LED Ø8 στο local `X+42/Y+70`. Οι Ø22,5/12,3/16,3 και οι
+τέσσερις οπές στήριξης έμειναν αμετάβλητες. Επανεξήχθησαν μόνο
+`base_left.stl`, `base_right.stl`, `control_panel.stl`, όλα ένα σώμα.
+
+Exact-solid empty/PASS: F↔pod 3 mm, frame/chassis, FIT0403/wheels, moving
+mechanism `−10…+20°`, fixed drawer sweep, doors ανοικτές 110°, ground `Z<15`,
+control bodies/LED, Ugreen, posts, carrier και base interfaces έναντι
+Parkside. Το γενικό `qa_all_reserved_collision` δεν χρησιμοποιείται ως
+P2-84 gate επειδή περιλαμβάνει την εκ προθέσεως επαφή των Pi support bosses
+με το Pi reservation· ο ειδικός νέος `qa_base_parkside_collision` είναι
+empty/PASS. Οι εικόνες assembly, rear και service βρίσκονται στο
+`cad/body-panels/p284-rear-f-*.png`.
+
+Τα STL σημειώνονται **σχεδιασμένο, αναμονή / ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ**. Για
+P2-85 μένει νέα στήριξη του `c2`, επειδή το T-clamp `X240` καταργήθηκε στο
+P2-78, και τα πλαϊνά/εμπρός περιμένουν basket mockup και pile-retention test.
+Χωρίς firmware, Gazebo ή PR. Κατάσταση:
+`P2_84_REAR_F_RELEASE_CANDIDATE_EXACT_SOLID_PASS_NOT_FOR_PRINT_YET`.
+ΠΑΥΣΗ.

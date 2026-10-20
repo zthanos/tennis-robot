@@ -6,6 +6,7 @@ include <params-v2.scad>
 part = "assembly";
 show_ghosts = true;
 show_panel = true;
+status_led_hole = 8;
 
 module rounded_rect_2d(size, r=5) {
     hull()
@@ -68,6 +69,13 @@ module base_half_v2(side=1) {
             for (x=[pi_center_x-42,pi_center_x+42])
                 small_mount_boss(x,side*32,5,10);
             for (y=[side*18,side*54,side*96,side*142]) base_rear_rib(y);
+            // P2-84 rear-skin interface.  These two pads stay inside the
+            // frozen base envelope and receive externally driven horizontal
+            // M3 screws.  Y45 is below the Parkside band; Y164 is 3 mm
+            // outside it.  Nuts load from the open underside.
+            translate([pod_x_rear,side*45-6,base_bottom_local]) cube([22,12,base_t]);
+            translate([pod_x_rear,side>0?161.25:-167,base_bottom_local])
+                cube([22,5.75,base_t]);
         }
         // A 1 mm underside relief leaves a seven-millimetre saddle bearing on
         // the full rear-crossbar width instead of four 3 mm spacers.
@@ -95,6 +103,17 @@ module base_half_v2(side=1) {
         translate([-134,side*145,-20]) cylinder(d=m4_clear,h=22.6);
         translate([-134,side*145,0.20])
             cylinder(h=2.35,d1=m4_clear,d2=9.2);
+        // P2-84: rear-facing M3 clearance and captive hex nut pocket.  The
+        // underside loading slot is non-structural and leaves material above
+        // and on both sides of the nut.
+        for (y=[side*45,side*164]) {
+            translate([pod_x_rear-1,y,0]) rotate([0,90,0])
+                cylinder(d=m3_clear,h=24);
+            translate([pod_x_rear+14,y,0]) rotate([0,90,0])
+                cylinder(d=6.6,h=3.4,$fn=6);
+            translate([pod_x_rear+13.8,y-3.3,base_bottom_local-1])
+                cube([3.8,6.6,3.2]);
+        }
     }
 }
 
@@ -164,6 +183,9 @@ module control_panel_v2() {
         union() {
             linear_extrude(height=plate_t) rounded_rect_2d([138,190],6);
             translate([0,0,-8]) linear_extrude(height=8) control_panel_ribs_2d();
+            // P2-84 rear deck lands: within the existing rib depth and plan
+            // envelope.  Captive nuts load from below; screws face rearward.
+            for (y=[-80,80]) translate([-69,y-6,-8]) cube([18,12,12]);
         }
         // Existing four Ø8.6 locating holes; the P2-79 fastener is through-M4.
         for (x=[-58,58],y=[-56,56])
@@ -173,6 +195,18 @@ module control_panel_v2() {
         translate([0,32,-9]) cylinder(d=arm_hole,h=14);
         translate([-42,70,-9]) linear_extrude(height=14)
             capsule_2d(24,8,true);
+        // Additional status LED requested by P2-84, on the +X side of the
+        // cable slot.  It misses the X52 collector rib and rear post pocket.
+        translate([42,70,-9]) cylinder(d=status_led_hole,h=14);
+
+        // P2-84 deck interface: rear-facing M3 and underside-loaded captive
+        // nut.  The slot is open only below the panel and does not touch the
+        // top skin.
+        for (y=[-80,80]) {
+            translate([-70,y,-2]) rotate([0,90,0]) cylinder(d=m3_clear,h=21);
+            translate([-57,y,-2]) rotate([0,90,0]) cylinder(d=6.6,h=3.4,$fn=6);
+            translate([-57.2,y-3.3,-9]) cube([3.8,6.6,7.1]);
+        }
 
         // Underside keepouts: actual ghost body plus 1.5 mm per side.
         translate([-19,-74.5,-9]) cube([38,33,10]);
@@ -431,6 +465,7 @@ module controls_ghosts() {
     color([.85,.08,.08,.65]) translate([panel_center_x,-58,panel_z-25]) cube([35,30,50],center=true);
     color([.30,.30,.32,.60]) translate([panel_center_x,-12,panel_z-15]) cube([27,15,30],center=true);
     color([.18,.70,.25,.60]) translate([panel_center_x,32,panel_z-12.5]) cylinder(d=15,h=25,center=true);
+    color([.15,.65,.95,.65]) translate([panel_center_x+42,70,panel_z-6]) cylinder(d=7.8,h=12,center=true);
     color([.86,.08,.08,.80]) translate([panel_center_x,-58,panel_z+14.5]) cylinder(d=38,h=21,center=true);
 }
 
@@ -469,6 +504,7 @@ module control_body_solids() {
     translate([panel_center_x,-58,panel_z-25]) cube([35,30,50],center=true);
     translate([panel_center_x,-12,panel_z-15]) cube([27,15,30],center=true);
     translate([panel_center_x,32,panel_z-12.5]) cylinder(d=15,h=25,center=true);
+    translate([panel_center_x+42,70,panel_z-6]) cylinder(d=7.8,h=12,center=true);
     translate([panel_center_x,-58,panel_z+14.5]) cylinder(d=38,h=21,center=true);
 }
 
@@ -481,6 +517,8 @@ module control_body_penetration_solids(eps=0.01) {
         cube([27,15,30-eps],center=true);
     translate([panel_center_x,32,panel_z-12.5-eps/2])
         cylinder(d=15,h=25-eps,center=true);
+    translate([panel_center_x+42,70,panel_z-6-eps/2])
+        cylinder(d=7.8,h=12-eps,center=true);
     translate([panel_center_x,-58,panel_z+14.5+eps/2])
         cylinder(d=38,h=21-eps,center=true);
 }
@@ -585,6 +623,18 @@ module qa_all_reserved_collision() {
     }
 }
 
+module qa_base_parkside_collision() {
+    intersection() {
+        union() {
+            translate([0,0,pod_z_bottom]) base_half_v2(-1);
+            translate([0,0,pod_z_bottom]) base_half_v2(1);
+        }
+        for (side=[-1,1])
+            translate([parkside_center_x,side*parkside_center_y,parkside_center_z])
+                cube(parkside_clear,center=true);
+    }
+}
+
 module assembly() {
     color([.80,.55,.12]) {
         translate([0,0,pod_z_bottom]) base_half_v2(-1);
@@ -638,6 +688,8 @@ assert(8.2 < 8.6,
        "P2-81 locating peg must remain smaller than mounting aperture");
 assert(estop_hole == 22.5 && toggle_hole == 12.3 && arm_hole == 16.3,
        "P2-81 control apertures must remain frozen");
+assert(status_led_hole == 8,
+       "P2-84 status LED aperture must remain Ø8");
 
 if (part=="base_left") base_half_v2(1);
 else if (part=="base_right") base_half_v2(-1);
@@ -654,6 +706,7 @@ else if (part=="control_panel") control_panel_v2();
 else if (part=="qa_priority_collision") qa_priority_collision();
 else if (part=="qa_pi_collision") qa_pi_collision();
 else if (part=="qa_all_reserved_collision") qa_all_reserved_collision();
+else if (part=="qa_base_parkside_collision") qa_base_parkside_collision();
 else if (part=="qa_control_bodies_collision") qa_control_bodies_collision();
 else if (part=="qa_control_ugreen_collision") qa_control_ugreen_collision();
 else if (part=="qa_control_posts_collision") qa_control_posts_collision();

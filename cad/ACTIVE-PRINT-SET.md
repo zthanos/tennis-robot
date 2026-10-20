@@ -1,4 +1,4 @@
-# Ενεργό σύνολο εκτύπωσης — P2-83
+# Ενεργό σύνολο εκτύπωσης — P2-84
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
@@ -56,20 +56,20 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 γεωμετρία είναι ένα σώμα: κάθε boss επικαλύπτει κατά 0,5 mm το sidewall και
 αφήνει 0,5 mm προς το bracket.
 
-## Rear pod v2 — κατάσταση P2-83
+## Rear pod v2 — κατάσταση P2-84
 
 Κύριες πηγές: `rear-pod/rear-pod-v2.scad`, `rear-pod/params-v2.scad`.
 Ενεργός κατάλογος: `rear-pod/stl-v2/`.
 
 | Φυσικό κομμάτι | Ενεργό STL (ποσότητα) | P2 | Βίδες / σύνδεση | Κατάσταση |
 |---|---|---:|---|---|
-| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83 | 4×M4×45 προς rear crossbar· 2×M4×20 90° countersunk προς ties, ροδέλες/nyloc | Προς εκτύπωση |
+| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83/P2-84 | 4×M4×45 προς rear crossbar· 2×M4×20 90° countersunk προς ties· P2-84 rear M3 captive-nut lands | Προς εκτύπωση |
 | Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83 | 2×M4×65 στις υπάρχουσες side M4 `X−135/Z37`, 1 mm M4 washer shim στην παρειά `Y±195`· 2×M4×20 countersunk προς βάση | Προς εκτύπωση |
 | Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | Προς εκτύπωση |
 | Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | Προς εκτύπωση |
 | Side frames | `stl-v2/side_frame.stl` ×2 | P2-79 | 4×M4×25 διαμπερώς, ροδέλες/nyloc | Προς εκτύπωση |
 | Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81 | κάτω 4×M4×30, επάνω 4×M4×20, ροδέλες/nyloc | Προς εκτύπωση |
-| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81 | 4×M4×20, ροδέλες/nyloc | Προς εκτύπωση· physical proof-load 30 N πριν τη χρήση |
+| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84 | 4×M4×20, ροδέλες/nyloc· 2×M3×20 προς F deck· νέα οπή LED Ø8 | Προς εκτύπωση· physical proof-load 30 N πριν τη χρήση |
 | Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | Προς εκτύπωση |
 | BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | Προς εκτύπωση |
 | Cable bulkhead + feet | `stl-v2/cable_bulkhead.stl` ×1, `bulkhead_foot.stl` ×2 | P2-75 retained in v2 | Υπάρχουσες M4, ροδέλες/παξιμάδια | Προς εκτύπωση |
@@ -96,13 +96,23 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Drive-motor hole gauge | `drive-motor-mount/37mm-mount-hole-gauge.stl` | `drive-motor-mount/37mm-mount-hole-gauge.scad` | Πραγματικές βίδες steel mount μόνο για fit | Τυπωμένο· μόνο δοκιμή, fit-checked σε 1/4 mounts |
 | M3 nut-keeper sleeve | `drive-motor-mount/nut-keeper-stl/sleeve.stl` | `drive-motor-mount/m3-side-nut-keeper.scad` | Δεν φέρει preload· συγκρατεί μόνο M3 nut | Μόνο δοκιμή εφαρμογής· physical retention εκκρεμεί |
 
+## Panels F rear — σχεδιασμένο, αναμονή / ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ
+
+Πηγή: `body-panels/body-panels-f-rear-v2.scad`. Release-candidate κατάλογος:
+`body-panels/stl-f-rear/`. Τα οκτώ STL (`rear_lo` L/R, `rear_hi` L/R,
+`deck_rear` L/R και Parkside doors L/R) είναι manifold, ένα σώμα και κάτω
+από 250×250 mm, αλλά μένουν σε κατάσταση **σχεδιασμένο, αναμονή** μέχρι το
+P2-85 και το basket mockup. Βίδες και σειρά συναρμολόγησης βρίσκονται στο
+`body-panels/stl-f-rear/README.md`.
+
 ## Concepts — παραμένουν, χωρίς ενεργό STL
 
 - **P2-80 rear cage:** μελλοντικό πλήρως τυπωμένο stackable PETG cage,
   χωρίς αλουμίνιο. Box sections περίπου 35×35 mm δεν χωρούν στη λωρίδα
   `Y161…167`, άρα θέσεις/διατομές κολονών θα ξανακριθούν με τα panels F.
-- **Body panels F:** `body-panels/body-panels-f.scad` και renders/QA είναι
-  concept, όχι print release.
+- **Body panels F πλαϊνά/εμπρός:** `body-panels/body-panels-f.scad` και τα
+  παλιά renders/QA παραμένουν concept. Το rear subset έχει πλέον ξεχωριστή
+  release-candidate γεωμετρία παραπάνω, αλλά δεν έχει εγκριθεί για εκτύπωση.
 - **Full robot v3:** `modular-test-chassis/full-robot-v3.scad` είναι assembly
   concept/check, όχι πηγή ενεργών STL.
 

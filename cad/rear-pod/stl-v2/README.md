@@ -1,3 +1,17 @@
+# τι διαφέρει από το αναμενόμενο — P2-84 interface panels F
+
+Το pod δεν άλλαξε envelope. Τα `base_left/right` απέκτησαν από δύο
+οριζόντιες M3 με underside captive nuts στα `Y±45/±164`, έξω από το
+Parkside sweep. Το `control_panel` απέκτησε δύο rear lands με captive M3
+κάτω από το υπάρχον πίσω χείλος και νέα οπή status LED Ø8 στο local
+`X+42/Y+70`, συμμετρικά της καλωδιακής σχισμής. Η οπή καθαρίζει ribs,
+control bodies, Ugreen, posts και carrier.
+
+Πρόσθετο hardware pod→F: 2×M3×50, 2×M3×25 και 2×M3×20, με ροδέλες και
+M3 nuts όπως αναλύεται στο `../../body-panels/stl-f-rear/README.md`.
+Δεν υπάρχει self-tap ή insert. Επανεξήχθησαν μόνο `base_left.stl`,
+`base_right.stl` και `control_panel.stl`, όλα ένα σώμα.
+
 # τι διαφέρει από το αναμενόμενο — P2-83 μονοκόμματο corner tie
 
 ![P2-83 εσωτερικό corner tie, βάση, frame και fasteners](../p283-corner-tie-detail.png)
