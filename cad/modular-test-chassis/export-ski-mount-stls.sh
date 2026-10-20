@@ -30,4 +30,6 @@ for i in "${!parts[@]}"; do
   python3 "$component_check" "$out_dir/${outputs[$i]}.stl" 1
 done
 
+bash "$here/../check-active-chassis-hole-alignment.sh" ski_brackets
+
 echo "Validated ${#parts[@]} active P2-85 ski-mount meshes"

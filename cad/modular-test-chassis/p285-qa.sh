@@ -70,4 +70,5 @@ run_panel() {
 }
 run_panel rear
 run_panel concept_f
+bash "$here/../check-active-chassis-hole-alignment.sh" ski_brackets
 exit $fail

@@ -472,9 +472,9 @@ module frame_assembly() {
         translate([x300,0,rail_z+20/2]) rotate([0,0,90]) low_clamp_sleeve(13,13);
         for(side=[-1,1]) {
             translate([x240,side*p278_crossbar_len,rail_z+10])
-                rotate([0,0,90]) p278_terminal_sleeve(43,13);
+                rotate([0,0,side>0?90:-90]) p278_terminal_sleeve(43,13);
             translate([x300,side*p278_crossbar_len,rail_z+10])
-                rotate([0,0,90]) p278_terminal_sleeve(13,13);
+                rotate([0,0,side>0?90:-90]) p278_terminal_sleeve(13,13);
         }
         translate([rear_x,rail_y,rail_z+rail_h/2]) corner_clamp(1);
         translate([rear_x,-rail_y,rail_z+rail_h/2]) corner_clamp(-1);

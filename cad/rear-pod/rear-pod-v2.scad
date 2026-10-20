@@ -86,6 +86,11 @@ module base_half_v2(side=1) {
                        s*parkside_center_y-parkside_clear[1]/2-0.5,2.5])
                 cube([parkside_center_x+parkside_clear[0]/2-(pod_x_rear-0.5),
                       parkside_clear[1]+1,plate_t]);
+        // P2-86b: the rear-panel stay now replaces this local base strip and
+        // shares the existing rear-crossbar top/side M4 at Y+/-165.  The
+        // stay top is flush at Z57.5 under the Parkside reservation; no
+        // chassis drilling and no pod-envelope growth.
+        translate([-198,side>0?156.8:-168.5,-4.1]) cube([59,11.7,8.2]);
         for (y=[75,125])
             translate([rear_crossbar_x,side*y,-20]) cylinder(d=m4_clear,h=40);
         // Through-M4 side-frame fasteners; nuts and washers stay accessible
@@ -113,22 +118,21 @@ module base_half_v2(side=1) {
     }
 }
 
-// P2-83: one-piece inside L tie.  It reuses the X-135/Z37 side M4 of each
-// rear corner clamp at the rail inner face Y+/-195.  The horizontal flange
-// bears on the base underside at Z51 and never crosses over the rail.
+// P2-86b one-piece inside L tie. The P2-83 rail-side datum was not mirrored
+// as a through bore in the printed -Y rail. Both ties now share the existing
+// rear-crossbar transverse M4 at Y+/-165/Z37 with the P2-86b panel stay:
+// tie on the front face, stay on the rear face, one longer through bolt.
+// The horizontal flange still bears on the base underside at Z51.
 module corner_tie() {
     difference() {
         union() {
-            // Continuous underside flange/bridge: global Z45..51.
-            // X-139.5..-126.5 clears both the rear crossbar (to X-140) and
-            // the corner-clamp arm; the base fastener moves to X-134.
-            translate([7,20.5,19]) cube([13,57,6],center=true);
-            // Inner-face leg: global Y189..194, Z29..51.  A standard 1 mm
-            // M4 washer closes the tolerance gap to the rail face at Y195.
-            translate([7,46.5,11]) cube([13,5,22],center=true);
+            // Underside bridge: installed global Y139..171, Z45..51.
+            translate([7,10,19]) cube([13,32,6],center=true);
+            // Front-face leg touches the rear crossbar at X-140.
+            translate([3,20,11]) cube([6,16,22],center=true);
         }
         translate([6,0,14]) cylinder(d=m4_clear,h=10);
-        translate([5,40,8]) rotate([-90,0,0]) cylinder(d=m4_clear,h=14);
+        translate([-2,20,8]) rotate([0,90,0]) cylinder(d=m4_clear,h=20);
     }
 }
 

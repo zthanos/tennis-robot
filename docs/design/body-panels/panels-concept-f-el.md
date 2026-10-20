@@ -23,7 +23,8 @@ bot. Η ερμηνεία βασίζεται στη μία εικόνα που έ
 |---|---|
 | `cad/body-panels/body-panels-f.scad` | Concept F: λεκάνη, κολάρο, πλέγμα, decks, κομμάτια εκτύπωσης, QA views |
 | `cad/body-panels/body-panels-f-support.scad` | Κοινό full-robot context/keep-outs του ενεργού F, αποσπασμένο από τα archived concepts A–E στο P2-86 |
-| `cad/body-panels/body-panels-f-rear-v2.scad` | P2-86 release geometry πίσω panels/corners/stays για rear pod v2 |
+| `cad/body-panels/body-panels-f-rear-v2.scad` | P2-86b release geometry πίσω panels, tangent R60, stays και center splices για rear pod v2 |
+| `docs/design/body-panels/p286b-perimeter-map-el.md` | Περιμετρικός χάρτης seams/supports και ανοικτά interfaces αψίδας για P2-87 |
 | `cad/body-panels/stl-f-rear/README.md` | Βίδες, συναρμολόγηση, αντοχή και P2-87 interface· **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ** |
 | `cad/body-panels/render-f.sh` | Renders (μόνο PNG) |
 | `cad/body-panels/qa-clearance-f.py` | Exact-solid gates, διάκενα, ακτίνα κάτοψης, μάζα |

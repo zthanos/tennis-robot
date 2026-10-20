@@ -20,7 +20,22 @@ rear_hi και 4×M3 περίπου 30 mm deck, όλα με ροδέλες/nyloc
 self-tap ή insert. Επανεξήχθησαν μόνο `base_left.stl`, `base_right.stl` και
 `control_panel.stl`, όλα ακριβώς ένα σώμα.
 
-# τι διαφέρει από το αναμενόμενο — P2-83 μονοκόμματο corner tie
+# τι διαφέρει από το αναμενόμενο — P2-86b base/stay/corner tie
+
+Ο μόνιμος axis probe έδειξε ότι η P2-83 rail-side παραδοχή δεν ήταν
+συμμετρική στο πραγματικό/assembly frame. Το tie δεν χρησιμοποιεί πλέον
+`X−135/Y±195`. Μένει μονοκόμματο κάτω από τη βάση, αλλά το front leg του
+μοιράζεται τώρα την **υπάρχουσα rear-crossbar transverse M4
+`Y±165/Z37`** με το P2-86b corner stay στην πίσω παρειά. Μία μακρύτερη
+through-M4 σφίγγει tie → crossbar → stay. Η φρεζάτη base M4
+`X−134/Y±145` παραμένει.
+
+Οι `base_left/right` έχουν μόνο τοπική εγκοπή `X−198…−139/Y±156,8…168,5`
+για τη flush stay saddle `Z52…57,5`. Δεν αλλάζει το pod envelope και δεν
+ανοίγεται τρύπα σασί. **Τα P2-86 base exports είναι superseded· τύπωσε μόνο
+τα P2-86b STL.**
+
+# Ιστορικό — P2-83 μονοκόμματο corner tie (superseded fastener axis)
 
 ![P2-83 εσωτερικό corner tie, βάση, frame και fasteners](../p283-corner-tie-detail.png)
 
@@ -28,20 +43,19 @@ self-tap ή insert. Επανεξήχθησαν μόνο `base_left.stl`, `base_r
 επάνω διαδρομή του έτεμνε τη βάση. Επιπλέον, η κατακόρυφη M4 στο
 `X−140/Y±145` άφηνε κεφαλή μέσα στο Parkside reservation.
 
-Το P2-83 το αντικαθιστά με ένα μονοκόμματο L κάτω από τη βάση:
+Το P2-83 το αντικατέστησε αρχικά με ένα μονοκόμματο L κάτω από τη βάση:
 
 - flange/bridge `Z45…51`, χωρίς πέρασμα πάνω από τη ράγα,
 - κατακόρυφο σκέλος `Z29…51` στην εσωτερική πλευρά της ράγας,
-- υπάρχουσα πλευρική M4 `X−135/Z37`, χωρίς νέα οπή στο σασί,
+- παλιά παραδοχή πλευρικής M4 `X−135/Z37` (**superseded από P2-86b**),
 - 1 mm M4 washer shim ανάμεσα στο tie και την παρειά `Y±195`, ώστε το
   τυπωμένο part να έχει πραγματικό tolerance gap,
 - νέα φρεζάτη M4 βάσης στο `X−134/Y±145`, flush στο τοπικό `Z57,5`, με
   0,5 mm clearance μέχρι το Parkside drawer sweep.
 
-Βίδες P2-83: 2×M4×20 90° countersunk με ροδέλα/nyloc για βάση→tie και
-2×M4×65 με κεφαλή/ροδέλα εσωτερικά, 1 mm washer shim στην παρειά και nyloc
-εξωτερικά για tie→corner clamp. Επιβεβαίωσε το πραγματικό stack-up πριν την
-τελική σύσφιξη.
+Βίδες ενεργού P2-86b: 2×M4×20 90° countersunk για βάση→tie και 2× through-M4
+στο `Y±165/Z37`, μήκος από το πραγματικό tie+50 mm crossbar+stay stack-up,
+με ροδέλα/locknut. Η παλιά M4×65/washer-shim λίστα δεν ισχύει.
 
 Exact-solid empty/PASS: tie–base, tie–πλήρες `frame_assembly` μαζί με rear
 FIT0403/motor/cable/wheel envelopes, tie/κεφαλές βιδών–πλήρες Parkside
@@ -125,7 +139,7 @@ P2-80 εξετάζει top frame με κοντινότερα control rails.
 ### Βίδες P2-79 (υπερισχύει της παλιάς λίστας P2-76)
 
 - 4×M4×45, μεγάλες ροδέλες και nyloc: base saddle προς rear crossbar,
-- για τα corner ties ισχύει αποκλειστικά η λίστα P2-83 παραπάνω,
+- για τα corner ties ισχύει αποκλειστικά η λίστα P2-86b παραπάνω,
 - 4×M4×25 με ροδέλες/nyloc: side frames διαμπερώς προς τις βάσεις,
 - 4×M4×30 με ροδέλες/nyloc: κάτω clevis των panel posts,
 - 4×M4×20 με ροδέλες/nyloc: panel προς τα άνω post pegs,

@@ -59,8 +59,8 @@ module brace_drill_jig() {
     }
 }
 
-// MPU6050 carrier for the inner face of the +Y longitudinal rail.  Its two
-// chassis holes reuse the existing X100/X125 side-grid holes at global Z47.
+// MPU6050 carrier for the inner face of the +Y longitudinal rail. Its two
+// chassis holes reuse the existing X100/X125 side-grid holes at global Z37.
 // The four cross slots accept the existing MPU board screws.
 module mpu6050_rail_side_mount() {
     difference() {
@@ -133,7 +133,7 @@ module assembly() {
     color([0.15,0.15,0.17]) repair_structure();
     color([0.9,0.55,0.05]) translate([270,0,node_z]) torsion_centre_node();
     color([0.65,0.2,0.75])
-        translate([112.5,195,47]) rotate([90,0,0]) mpu6050_rail_side_mount();
+    translate([112.5,195,37]) rotate([90,0,0]) mpu6050_rail_side_mount();
 }
 
 module print_set() {

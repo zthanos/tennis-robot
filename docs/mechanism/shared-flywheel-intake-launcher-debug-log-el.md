@@ -3966,3 +3966,68 @@ through-M3 `Z112/152` και κοινό corner-stay load path. Τα πλαϊνά
 σε αναμονή για basket mockup. Panels: **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ**. Κατάσταση:
 `P2_86_F_SELECTED_R60_CORNERS_STRUCTURAL_CONNECTIONS_EXACT_SOLID_PASS`.
 ΠΑΥΣΗ.
+
+### P2-86b — πραγματικά chassis axes, tangent R60 και χάρτης περιμέτρου
+
+τι διαφέρει από το αναμενόμενο: ο P2-86 corner stay είχε μετακινηθεί στο
+`Y±177,5` για να παρακάμψει τη βάση, αλλά και η top και η transverse Ø2
+probe τέμναν συμπαγές υλικό. Οι πραγματικές υπάρχουσες οπές είναι
+`X−165/Y±165` και `Y±165/Z37`. Επίσης το προηγούμενο «R60 corner» ήταν
+ουσιαστικά το άκρο του `R424,5`, όχι εφαπτόμενο fillet, ενώ τα νέα rear
+skin STL έδειξαν στο export 252 mm span εξαιτίας του center under-lap.
+
+Ο stay έγινε flush L-saddle στο υπάρχον top M4 `X−165/Y±165`, με φρεζάτη
+κεφαλή κάτω από το Parkside `Z58`, low locknut έως CAD `Z22` και δεύτερη
+στήριξη στην υπάρχουσα transverse M4 `Y±165/Z37`. Το P2-83 tie μεταφέρθηκε
+στην εμπρός παρειά της rear crossbar και μοιράζεται την ίδια μακρύτερη M4
+με το stay στην πίσω παρειά. Η base απέκτησε μόνο τοπική εγκοπή μέσα στο
+ίδιο pod envelope. Δεν προστέθηκε οπή στο ήδη τυπωμένο σασί. Άλλαξαν και
+επανεξήχθησαν `base_left/right.stl` και `corner_tie.stl`.
+
+Δύο 12 mm diagonal chords κάνουν τον stay τριγωνικό load path. Με 50 N
+στο skin ή συντηρητικά 100 N στον άνω corner node, `A≥192 mm²`: axial
+`≤0,52 MPa`, local bending με 10 mm eccentricity `≤1,95 MPa`, torsion
+1,2 N·m με `J≈1,29×10⁴ mm⁴` `≤1,4 MPa`, combined in-layer `<4 MPa` και
+worst printed M4 bearing `≈2,1 MPa` across-layer. Είναι κάτω από τα όρια
+10/5 MPa. Το low locknut αφήνει 15,1 mm πραγματικό ground clearance όταν
+το chassis βρίσκεται 2 mm χαμηλότερα από CAD.
+
+Το πραγματικό internal tangent `R60` έχει κέντρο
+`X−197,3565/Y±184,5`, εφαπτομένη στο rear arc στο
+`X−249,1024/Y±214,8704` και στην πλευρά στο `X−197,3565/Y±244,5`.
+Η P2-87 seam βρίσκεται μετά το fillet, `X−185/Y±244,5`. Τα rear skin
+halves δεν χρησιμοποιούν πλέον το 5 mm integral center lap: δύο χωριστές
+εσωτερικές splice plates με 4×through-M3 η καθεμία κρατούν κάθε skin STL
+στα 246,85 mm. Τα deck STL έχουν επίπεδη print orientation 45° και
+footprint `≤185×185 mm`. Όλα τα νέα/αλλαγμένα STL είναι ακριβώς ένα σώμα.
+
+Προστέθηκε μόνιμο `check-active-chassis-hole-alignment.sh`. Λεπτές Ø2
+probes έναντι `frame_assembly()` περνούν EMPTY για pod base, corner ties,
+corner stays, P2-85 ski brackets, MPU και όλα τα χαρτογραφημένα perimeter
+axes. Ο έλεγχος αποκάλυψε και διόρθωσε δύο προϋπάρχοντα model-datum λάθη:
+η −Y P2-78 socket sleeve είχε λάθος φορά μόνο στο assembly και το ενεργό
+MPU interface είναι `Z37`, όχι το παλιό `Z47`. Δεν άλλαξε STL σασί ή MPU.
+
+Ο περιμετρικός χάρτης χωρίζει κάθε πλευρά σε S1 225 mm, S2 190 mm, S3
+170 mm και S4 111 mm, με rear/front halves επίσης κάτω από 250 mm. S1/S2
+χρησιμοποιούν υπάρχουσες rail M4, S3 τα P2-78 X240/X300 socket nodes και
+side brace. Το πέρασμα τροχού κρατά 11 mm και τα P2-85/FIT0403/moving
+envelopes περνούν. S4 και τα front halves μένουν **ΑΝΟΙΧΤΑ**: το released
+P2-67 arch CAD δεν έχει υπάρχουσες οπές. Πρόταση μόνο για επόμενο βήμα:
+διμερές through-bolted clamp πάνω στην αψίδα, χωρίς τρύπα σε chassis/arch,
+μετά από φυσική μέτρηση και basket mockup.
+
+Οι ράγες είναι PETG και δεν αποτελούν λαβή. Μελλοντικό dedicated
+load-spreader μπορεί να πατήσει στις τέσσερις υπάρχουσες rear-crossbar top
+M4 `X−165/Y±75,±125`: για 10 kg στα 2 g, 196 N συνολικά, 49,1 N/βίδα,
+ονομαστική M4 shear `≈3,9 MPa` και bearing σε 6,5 mm PETG `≈1,9 MPa`.
+Απαιτεί νέο κομμάτι/packaging και proof-load 200 N. Μέχρι τότε deck, skins
+και rails σημειώνονται ρητά «όχι λαβή».
+
+Exact-solid PASS: F↔pod ≥3 mm εκτός interfaces, full frame/corner clamps,
+τροχοί/FIT0403, moving −10…+20°, drawer fixed/open με screw heads, ground,
+stay↔pod και όλα τα pod control/Ugreen/carrier/posts/Parkside checks.
+Το `p285-qa.sh` και το global chassis-hole gate περνούν επίσης. Panels:
+**ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ**. Κατάσταση:
+`P2_86B_EXISTING_HOLES_TANGENT_R60_PERIMETER_MAP_EXACT_SOLID_PASS`.
+ΠΑΥΣΗ.

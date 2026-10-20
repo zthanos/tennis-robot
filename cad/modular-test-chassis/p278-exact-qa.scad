@@ -113,7 +113,7 @@ else if(qa=="terminal_ski_brackets") intersection() {
 }
 else if(qa=="side_braces_mpu") intersection() {
     p278_side_braces_assembly();
-    translate([112.5,195,47]) rotate([90,0,0]) mpu6050_rail_side_mount();
+    translate([112.5,195,37]) rotate([90,0,0]) mpu6050_rail_side_mount();
 }
 else if(qa=="side_braces_fit0403_cable") intersection() {
     p278_side_braces_assembly(); p278_fit0403_and_cable();

@@ -23,3 +23,4 @@ fi
 python3 "$component_check" "$out_dir/mpu6050_rail_side_mount.stl" 1
 
 echo "Validated active P2-77 MPU mount"
+bash "$here/../check-active-chassis-hole-alignment.sh" mpu

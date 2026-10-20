@@ -52,3 +52,4 @@ for part_name in cable_bulkhead bulkhead_foot; do
 done
 
 echo "Validated ${#parts[@]} generated parts; retained cable parts present"
+bash "$root_dir/../check-active-chassis-hole-alignment.sh" pod_base corner_ties

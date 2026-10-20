@@ -56,19 +56,19 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
 αναμένει πλέον 5 STL αντί για 4, όλα ακριβώς ένα σώμα.
 
-## Rear pod v2 — κατάσταση P2-86
+## Rear pod v2 — κατάσταση P2-86b
 
-> **ΠΡΟΣΟΧΗ — ΜΗΝ ΤΥΠΩΣΕΙΣ ΠΑΛΙΑ EXPORT:** στο P2-86 άλλαξαν τα
-> `base_left.stl`, `base_right.stl` και `control_panel.stl`. Χρησιμοποίησε
-> μόνο τα τρέχοντα αρχεία του `stl-v2/` (export 2026-10-20).
+> **ΠΡΟΣΟΧΗ — ΜΗΝ ΤΥΠΩΣΕΙΣ ΠΑΛΙΑ EXPORT:** στο P2-86b άλλαξαν ξανά τα
+> `base_left.stl`, `base_right.stl` και `corner_tie.stl`. Τα P2-86 base STL
+> είναι superseded. Χρησιμοποίησε μόνο τα τρέχοντα αρχεία του `stl-v2/`.
 
 Κύριες πηγές: `rear-pod/rear-pod-v2.scad`, `rear-pod/params-v2.scad`.
 Ενεργός κατάλογος: `rear-pod/stl-v2/`.
 
 | Φυσικό κομμάτι | Ενεργό STL (ποσότητα) | P2 | Βίδες / σύνδεση | Κατάσταση |
 |---|---|---:|---|---|
-| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83/P2-86 | 4×M4×45 προς rear crossbar· 2×M4×20 90° countersunk προς ties· 4×M3 rear lands Y±45/±145 | **ΝΕΟ P2-86 export — προς εκτύπωση** |
-| Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83 | 2×M4×65 στις υπάρχουσες side M4 `X−135/Z37`, 1 mm M4 washer shim στην παρειά `Y±195`· 2×M4×20 countersunk προς βάση | Προς εκτύπωση |
+| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83/P2-86b | 4×M4×45 προς rear crossbar· 2×M4×20 countersunk προς ties· 4×M3 rear lands· τοπική flush-stay εγκοπή Y±165 | **ΝΕΟ P2-86b export — προς εκτύπωση** |
+| Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83/P2-86b | 2×M4×20 countersunk προς βάση· κοινή μακρύτερη through-M4 tie→rear crossbar→stay στο `Y±165/Z37` | **ΝΕΟ P2-86b export — προς εκτύπωση** |
 | Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | Προς εκτύπωση |
 | Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | Προς εκτύπωση |
 | Side frames | `stl-v2/side_frame.stl` ×2 | P2-79 | 4×M4×25 διαμπερώς, ροδέλες/nyloc | Προς εκτύπωση |
@@ -100,16 +100,22 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Drive-motor hole gauge | `drive-motor-mount/37mm-mount-hole-gauge.stl` | `drive-motor-mount/37mm-mount-hole-gauge.scad` | Πραγματικές βίδες steel mount μόνο για fit | Τυπωμένο· μόνο δοκιμή, fit-checked σε 1/4 mounts |
 | M3 nut-keeper sleeve | `drive-motor-mount/nut-keeper-stl/sleeve.stl` | `drive-motor-mount/m3-side-nut-keeper.scad` | Δεν φέρει preload· συγκρατεί μόνο M3 nut | Μόνο δοκιμή εφαρμογής· physical retention εκκρεμεί |
 
-## Panels F rear — σχεδιασμένο, αναμονή / ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ
+## Panels F rear — P2-86b, αναμονή / ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ
 
 Πηγή: `body-panels/body-panels-f-rear-v2.scad`. Release-candidate κατάλογος:
-`body-panels/stl-f-rear/`. Τα έντεκα STL (`rear_lo` L/R, `rear_hi` L/R,
-`deck_rear` L/R, Parkside doors L/R, corner stays L/R και turn-button που
-τυπώνεται ×2) είναι manifold, ένα σώμα και με print footprint έως
+`body-panels/stl-f-rear/`. Τα δεκατρία STL (`rear_lo` L/R, `rear_hi` L/R,
+`deck_rear` L/R, Parkside doors L/R, corner stays L/R, δύο εσωτερικά
+center splices και turn-button που τυπώνεται ×2) είναι manifold, ένα σώμα και με print footprint έως
 250×250 mm, αλλά μένουν σε κατάσταση **σχεδιασμένο, αναμονή** μέχρι το
 μελλοντικό βήμα πλαϊνών/εμπρός και το basket mockup. Βίδες και σειρά
 συναρμολόγησης βρίσκονται στο
 `body-panels/stl-f-rear/README.md`.
+Το πραγματικό R60 είναι εφαπτόμενο στο R424,5 και στη Y±244,5, με P2-87
+ραφή μετά το fillet στο X−185. Τα `rear_lo`, `rear_hi`, `deck_rear` και
+`corner_stay` και `center_splice` STL είναι νέα P2-86b exports. Τα skin
+halves είναι 246,85 mm στη μεγάλη print διάσταση και τα deck halves
+δίνονται επίπεδα σε 45° orientation (≤185×185 mm). Ο περιμετρικός χάρτης βρίσκεται
+στο `docs/design/body-panels/p286b-perimeter-map-el.md`.
 
 ## Concepts — F επιλεγμένο, χωρίς ενεργό STL πλαϊνών/εμπρός
 
