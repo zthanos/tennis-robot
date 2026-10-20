@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# P2-85 replacement for export-ski-mount-stls.sh: exports the active ski-mount
+# set and fails unless every STL is exactly one body.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,10 +17,12 @@ else
   mkdir -p "$out_dir"
 fi
 
-parts=(ski bracket_left bracket_right boss_spacer)
-outputs=(r75-75-ski x300-ski-bracket-left x300-ski-bracket-right ski-boss-spacer)
+parts=(ski print_p285_bracket_left print_p285_bracket_right
+       print_p285_fork_left print_p285_fork_right)
+outputs=(r75-75-ski x300-ski-bracket-left x300-ski-bracket-right
+         p285-ski-wall-fork-left p285-ski-wall-fork-right)
 for i in "${!parts[@]}"; do
-  "$openscad_bin" -q -o "$out_dir/${outputs[$i]}.stl" \
+  "$openscad_bin" -q --backend=manifold -o "$out_dir/${outputs[$i]}.stl" \
     -D "p273_part=\"${parts[$i]}\"" "$source_scad"
   [[ -s "$out_dir/${outputs[$i]}.stl" ]] || {
     echo "Missing ski export: ${outputs[$i]}" >&2; exit 1;
@@ -26,4 +30,4 @@ for i in "${!parts[@]}"; do
   python3 "$component_check" "$out_dir/${outputs[$i]}.stl" 1
 done
 
-echo "Validated ${#parts[@]} active P2-73 ski-mount meshes"
+echo "Validated ${#parts[@]} active P2-85 ski-mount meshes"

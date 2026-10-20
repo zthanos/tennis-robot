@@ -3864,8 +3864,51 @@ empty/PASS. Οι εικόνες assembly, rear και service βρίσκοντα
 `cad/body-panels/p284-rear-f-*.png`.
 
 Τα STL σημειώνονται **σχεδιασμένο, αναμονή / ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ**. Για
-P2-85 μένει νέα στήριξη του `c2`, επειδή το T-clamp `X240` καταργήθηκε στο
-P2-78, και τα πλαϊνά/εμπρός περιμένουν basket mockup και pile-retention test.
+το μελλοντικό βήμα πλαϊνών/εμπρός χρειάζεται νέα στήριξη του `c2`, επειδή το
+T-clamp `X240` καταργήθηκε στο P2-78, και περιμένει basket mockup και
+pile-retention test.
 Χωρίς firmware, Gazebo ή PR. Κατάσταση:
 `P2_84_REAR_F_RELEASE_CANDIDATE_EXACT_SOLID_PASS_NOT_FOR_PRINT_YET`.
 ΠΑΥΣΗ.
+
+### P2-85 — στήριξη βατήρα: κλειστή σχισμή και διχάλα τοιχώματος
+
+τι διαφέρει από το αναμενόμενο: η ζητούμενη δεύτερη βίδα ανά πλευρά μέσα
+από τον βατήρα δεν χωρά. Δοκιμή X≈347/Z≈26 (t32°): η κεφαλή μέσα στον βατήρα
+τέμνει τους οδηγούς throat (Y41,5…46,5, 1104 mm³) και το nyloc τέμνει το
+D200 sweep (83 mm³). Πιο πίσω, το boss πέφτει στα rails Y±55. Ο οδηγός throat
+απέχει 0,5 mm από το τοίχωμα σε όλο το τόξο.
+
+Αιτία της φυσικής θραύσης του P2-73 bracket: η σχισμή `mount_z+10±10`, Ø4,5,
+έφτανε στο +22,25 πάνω από web που τελείωνε στο +16. Έμεναν δόντια
+2,75×6 mm τυπωμένα όρθια (στρώσεις κάθετα), και μόνο μία M4 ανά πλευρά, που
+λειτουργούσε ως άξονας περιστροφής.
+
+Λύση: bracket με κλειστή σχισμή (κέντρα Z64,3…98,3, ≥6 mm πάνω/κάτω,
+10/12 mm πίσω/εμπρός), web 8 mm (Y61 κρατήθηκε), R2/R4 ακτίνες, νευρώσεις
+πέλμα→web. Τυπώνεται στην παρειά Y61. Συν μία διχάλα ανά πλευρά: hub στη M4
+X315 (αντικαθιστά τον retrofit spacer), χείλη στις δύο ακμές του τοιχώματος
+στο t26…35° (διάκενο 0,3 mm, μοχλοβραχίονας 48,1 mm), κλείδωμα με M4×30
+DIN 933 στην ίδια σχισμή, 14 mm πάνω. Ο ήδη τυπωμένος βατήρας χωρίς bosses
+δουλεύει χωρίς τρύπημα. Ο ενεργός βατήρας είναι πλέον χωρίς bosses.
+
+Exact-solid, ονομαστικό και coupled h 0…20 / −10…+20°: selector Y±55
+(σταθερό και κινούμενο), hard sweep, throat, πλήρης launcher, drive, feed,
+frame, ground, P2-78 braces: EMPTY. Περιθώρια ≥3 mm (hard/drive/feed),
+≥2 mm (selector), 1,5 mm (throat, εκ σχεδιασμού). Αντοχή 50 N μπάλα (t=0) +
+30 N στη μύτη: 3,67 N·m ανά πλευρά. Bracket in-layer ≤10,4 MPa (έδραση
+συντηρητικά), across-layers 0,9 MPa. Διχάλα 6,8 / 1,8 MPa. Τριβή Z SF≈13.
+
+Επανεξήχθησαν ski, brackets L/R και νέες διχάλες L/R, όλα ένα σώμα.
+`ski-boss-spacer` καταργείται. Αναφορά: `docs/mechanism/p285-ski-bracket-el.md`.
+Χωρίς firmware, Gazebo ή PR. Κατάσταση:
+`P2_85_CLOSED_SLOT_WALL_FORK_EXACT_SOLID_AND_STRENGTH_PASS_PAUSED`. ΠΑΥΣΗ.
+
+#### Ενσωμάτωση P2-85
+
+Ο ενεργός exporter αντικαταστάθηκε από το P2-85 script και το
+`ski-boss-spacer.stl` αφαιρέθηκε. Export/component gate: 5/5 STL ακριβώς
+ένα σώμα. Το `p285-qa.sh` πέρασε όλα τα nominal/coupled probes και τα νέα
+integration probes: brackets/nyloc envelope (bracket έως Z106,6, nyloc έως
+Y82) έναντι P2-84 rear panels και πλήρους F concept front/side/rear:
+EMPTY/PASS. Τα δύο 3MF slicer projects του χρήστη έμειναν εκτός commit.

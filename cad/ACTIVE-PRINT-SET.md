@@ -1,4 +1,4 @@
-# Ενεργό σύνολο εκτύπωσης — P2-84
+# Ενεργό σύνολο εκτύπωσης — P2-85
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
@@ -41,20 +41,20 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 Αυτό είναι το μόνο ενεργό MPU mount. Το `rear-pod/stl-v2/mpu6050_mount.stl`
 δεν χρησιμοποιείται.
 
-## Βατήρας R75/75° — P2-73 με διόρθωση 2026-10-19
+## Βατήρας R75/75° — P2-85
 
 Πηγή: `modular-test-chassis/shared-flywheel-p273-bolted-ski.scad`.
 Ενεργός κατάλογος: `modular-test-chassis/stl-ski-mount/`.
 
 | Φυσικό κομμάτι | Ενεργό STL (ποσότητα) | P2 | Βίδες / σύνδεση | Κατάσταση |
 |---|---|---:|---|---|
-| Βατήρας R75/75° | `stl-ski-mount/r75-75-ski.stl` ×1 | P2-73 + fix 2026-10-19 | Κανονικά 2×M4×25 στους X315 bosses | Ήδη τυπωμένος χωρίς bosses· ενεργό STL είναι η διορθωμένη ενιαία έκδοση με bosses Y49,5…60,5 |
-| Αριστερό/δεξί bracket X300 | `stl-ski-mount/x300-ski-bracket-left.stl` ×1, `x300-ski-bracket-right.stl` ×1 | P2-73 | 4×M4×35 στο X300 Y±75/±100, ροδέλες/nyloc | Προς εκτύπωση |
-| Retrofit αποστάτες boss | `stl-ski-mount/ski-boss-spacer.stl` ×2 | P2-73 fix 2026-10-19 | 2×M4×30: χαμηλή κεφαλή μέσα, τοίχωμα, spacer, bracket, ροδέλα/nyloc έξω | Προς εκτύπωση για τον ήδη τυπωμένο βατήρα |
+| Βατήρας R75/75° | `stl-ski-mount/r75-75-ski.stl` ×1 | P2-73, P2-85 χωρίς bosses | 2×M4×30 χαμηλής κεφαλής στο X315 (κεφαλή μέσα) | Ήδη τυπωμένος — ο ενεργός STL είναι πλέον γεωμετρικά ο ίδιος· δεν ξανατυπώνεται |
+| Αριστερό/δεξί bracket X300 | `stl-ski-mount/x300-ski-bracket-left.stl` ×1, `x300-ski-bracket-right.stl` ×1 | P2-85 | 4×M4×35 στο X300 Y±75/±100, ροδέλες/nyloc | Προς εκτύπωση, ξαπλωμένο στην παρειά Y61 (όπως το STL), χωρίς supports· το P2-73 bracket καταργείται (έσπασε) |
+| Διχάλα τοιχώματος βατήρα | `stl-ski-mount/p285-ski-wall-fork-left.stl` ×1, `p285-ski-wall-fork-right.stl` ×1 | P2-85 | Hub στη M4×30 του X315· κλείδωμα 2×M4×30 DIN 933 (κεφαλή στο hex pocket) + ροδέλα Ø12/nyloc | Προς εκτύπωση, εξωτερική παρειά στο bed, χωρίς supports· αντικαθιστά τους `ski-boss-spacer` |
 
-Το STL της 2026-10-18 με αιωρούμενα bosses δεν είναι ενεργό. Η τρέχουσα
-γεωμετρία είναι ένα σώμα: κάθε boss επικαλύπτει κατά 0,5 mm το sidewall και
-αφήνει 0,5 mm προς το bracket.
+Το `ski-boss-spacer.stl` (P2-73 fix 2026-10-19) είναι superseded από το hub
+της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
+αναμένει πλέον 5 STL αντί για 4, όλα ακριβώς ένα σώμα.
 
 ## Rear pod v2 — κατάσταση P2-84
 
@@ -102,7 +102,8 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 `body-panels/stl-f-rear/`. Τα οκτώ STL (`rear_lo` L/R, `rear_hi` L/R,
 `deck_rear` L/R και Parkside doors L/R) είναι manifold, ένα σώμα και κάτω
 από 250×250 mm, αλλά μένουν σε κατάσταση **σχεδιασμένο, αναμονή** μέχρι το
-P2-85 και το basket mockup. Βίδες και σειρά συναρμολόγησης βρίσκονται στο
+μελλοντικό βήμα πλαϊνών/εμπρός και το basket mockup. Βίδες και σειρά
+συναρμολόγησης βρίσκονται στο
 `body-panels/stl-f-rear/README.md`.
 
 ## Concepts — παραμένουν, χωρίς ενεργό STL

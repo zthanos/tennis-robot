@@ -1,7 +1,7 @@
 # P2-84 — πίσω panels F για rear pod v2
 
 > **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ.** Τα STL είναι release-ready CAD για έλεγχο και
-> slicing, αλλά η φυσική εκτύπωση περιμένει την ολοκλήρωση P2-85 και το
+> slicing, αλλά η φυσική εκτύπωση περιμένει το βήμα πλαϊνών/εμπρός και το
 > basket mockup/pile-retention test.
 
 Πηγή: `../body-panels-f-rear-v2.scad`. Export:
@@ -72,7 +72,7 @@ drawer sweep, ground `Z<15`, control bodies/νέο LED, Ugreen, carrier, posts
 και νέα base lands έναντι Parkside. Το χαμηλότερο F feature είναι CAD
 `Z54`, άρα περίπου physical `Z52` με το σασί 2 mm χαμηλότερα.
 
-## P2-85 — δεν σχεδιάστηκε εδώ
+## Μελλοντικά πλαϊνά/εμπρός — δεν σχεδιάστηκαν εδώ
 
 Το παλιό F στήριζε το `c2` στο T-clamp `X240`, το οποίο καταργήθηκε στο
 P2-78. Τα πλαϊνά/εμπρός χρειάζονται νέο interface στις ενεργές δοκούς και

@@ -10,7 +10,7 @@
 Για το current shared-flywheel build οι ενεργές releases είναι:
 
 - `modular-test-chassis/modular-chassis-v3.scad` + `stl-v3/` (P2-78),
-- `modular-test-chassis/stl-ski-mount/` (P2-73 fix 2026-10-19),
+- `modular-test-chassis/stl-ski-mount/` (P2-85 bracket + wall forks),
 - `rear-pod/rear-pod-v2.scad` + `rear-pod/stl-v2/` (P2-84 interface),
 - `body-panels/stl-f-rear/` (P2-84 σχεδιασμένο, αναμονή — δεν τυπώνεται),
 - τα test fixtures που αναφέρονται στο manifest.

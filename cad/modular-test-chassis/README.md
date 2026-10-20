@@ -8,7 +8,7 @@ P2-77 centre node με ενσωματωμένα terminal sockets, μανίκια
 Συμπληρωματικά ενεργά:
 
 - `stl-p277/mpu6050_rail_side_mount.stl` — το μοναδικό ενεργό MPU mount,
-- `stl-ski-mount/` — ο P2-73 βατήρας R75/75°, brackets και retrofit spacers,
+- `stl-ski-mount/` — ο P2-85 βατήρας R75/75°, κλειστά brackets και wall forks,
 - `full-robot-v3.scad` — concept/assembly check, όχι STL release.
 
 Το ακριβές print status, ποσότητες και βίδες είναι στο
