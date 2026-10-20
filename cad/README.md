@@ -11,8 +11,8 @@
 
 - `modular-test-chassis/modular-chassis-v3.scad` + `stl-v3/` (P2-78),
 - `modular-test-chassis/stl-ski-mount/` (P2-85 bracket + wall forks),
-- `rear-pod/rear-pod-v2.scad` + `rear-pod/stl-v2/` (P2-84 interface),
-- `body-panels/stl-f-rear/` (P2-84 σχεδιασμένο, αναμονή — δεν τυπώνεται),
+- `rear-pod/rear-pod-v2.scad` + `rear-pod/stl-v2/` (P2-86 panel interface),
+- `body-panels/stl-f-rear/` (P2-86 σχεδιασμένο, αναμονή — δεν τυπώνεται),
 - τα test fixtures που αναφέρονται στο manifest.
 
 Active model: **`basket-bin-v2/`** — the sim-validated basket bin v2.1 +

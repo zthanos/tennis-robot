@@ -69,13 +69,11 @@ module base_half_v2(side=1) {
             for (x=[pi_center_x-42,pi_center_x+42])
                 small_mount_boss(x,side*32,5,10);
             for (y=[side*18,side*54,side*96,side*142]) base_rear_rib(y);
-            // P2-84 rear-skin interface.  These two pads stay inside the
-            // frozen base envelope and receive externally driven horizontal
-            // M3 screws.  Y45 is below the Parkside band; Y164 is 3 mm
-            // outside it.  Nuts load from the open underside.
-            translate([pod_x_rear,side*45-6,base_bottom_local]) cube([22,12,base_t]);
-            translate([pod_x_rear,side>0?161.25:-167,base_bottom_local])
-                cube([22,5.75,base_t]);
+            // P2-86 rear-skin interfaces: both are full 12 mm lands.  Their
+            // forward noses sit at local Z-7.5..2.5 (global Z47.5..57.5),
+            // below the Parkside sweep, with >=3 mm around the Ø3.4 bore.
+            for (y=[side*45,side*145])
+                translate([pod_x_rear,y-6,-7.5]) cube([22,12,10]);
         }
         // A 1 mm underside relief leaves a seven-millimetre saddle bearing on
         // the full rear-crossbar width instead of four 3 mm spacers.
@@ -103,16 +101,14 @@ module base_half_v2(side=1) {
         translate([-134,side*145,-20]) cylinder(d=m4_clear,h=22.6);
         translate([-134,side*145,0.20])
             cylinder(h=2.35,d1=m4_clear,d2=9.2);
-        // P2-84: rear-facing M3 clearance and captive hex nut pocket.  The
-        // underside loading slot is non-structural and leaves material above
-        // and on both sides of the nut.
-        for (y=[side*45,side*164]) {
-            translate([pod_x_rear-1,y,0]) rotate([0,90,0])
+        // P2-86: rear-facing M3 at Z52.5 global. Captive nut loads from the
+        // open underside; both Y45/Y145 lands retain at least 3 mm material.
+        for (y=[side*45,side*145]) {
+            translate([pod_x_rear-1,y,-2.5]) rotate([0,90,0])
                 cylinder(d=m3_clear,h=24);
-            translate([pod_x_rear+14,y,0]) rotate([0,90,0])
+            translate([pod_x_rear+14,y,-2.5]) rotate([0,90,0])
                 cylinder(d=6.6,h=3.4,$fn=6);
-            translate([pod_x_rear+13.8,y-3.3,base_bottom_local-1])
-                cube([3.8,6.6,3.2]);
+            translate([pod_x_rear+13.8,y-3.3,-8.5]) cube([3.8,6.6,6]);
         }
     }
 }
@@ -183,9 +179,11 @@ module control_panel_v2() {
         union() {
             linear_extrude(height=plate_t) rounded_rect_2d([138,190],6);
             translate([0,0,-8]) linear_extrude(height=8) control_panel_ribs_2d();
-            // P2-84 rear deck lands: within the existing rib depth and plan
-            // envelope.  Captive nuts load from below; screws face rearward.
-            for (y=[-80,80]) translate([-69,y-6,-8]) cube([18,12,12]);
+            // P2-86 continuous rear beam.  Four M3 per Z row tie deck and
+            // rear_hi independently to a structural member.  It stays inside
+            // the existing X/Y panel envelope; the deep leg is rear of all
+            // control bodies and forms the deck's L-section support.
+            translate([-69,-91,-20]) cube([20,182,24]);
         }
         // Existing four Ø8.6 locating holes; the P2-79 fastener is through-M4.
         for (x=[-58,58],y=[-56,56])
@@ -199,14 +197,11 @@ module control_panel_v2() {
         // cable slot.  It misses the X52 collector rib and rear post pocket.
         translate([42,70,-9]) cylinder(d=status_led_hole,h=14);
 
-        // P2-84 deck interface: rear-facing M3 and underside-loaded captive
-        // nut.  The slot is open only below the panel and does not touch the
-        // top skin.
-        for (y=[-80,80]) {
-            translate([-70,y,-2]) rotate([0,90,0]) cylinder(d=m3_clear,h=21);
-            translate([-57,y,-2]) rotate([0,90,0]) cylinder(d=6.6,h=3.4,$fn=6);
-            translate([-57.2,y-3.3,-9]) cube([3.8,6.6,7.1]);
-        }
+        // P2-86 through-M3 rows; externally driven screws and +X washers/
+        // nylocs. Hole centres are 10 mm apart vertically so each retains
+        // at least 3 mm of PETG to the neighbouring bore.
+        for (y=[-85,-20,20,85],z=[-13,-3])
+            translate([-70,y,z]) rotate([0,90,0]) cylinder(d=m3_clear,h=23);
 
         // Underside keepouts: actual ghost body plus 1.5 mm per side.
         translate([-19,-74.5,-9]) cube([38,33,10]);
@@ -214,7 +209,14 @@ module control_panel_v2() {
         translate([0,32,-9]) cylinder(d=18,h=10);
         // P2-79 Ø23 post end / washer access around every mounting land.
         for (x=[-58,58],y=[-56,56])
-            translate([x,y,-9]) cylinder(d=25,h=10);
+            // P2-86 extends the same access cylinder down through the new
+            // rear beam; this preserves shoulder-only post/panel contact.
+            translate([x,y,-21]) cylinder(d=25,h=22);
+        // The +Y rear post finishes its obstacle-avoidance dogleg below the
+        // shoulder.  Extend only the deep-beam relief to follow that path;
+        // the top skin/shoulder datum and the Y85 fastening land remain.
+        hull() for (y=[56,65])
+            translate([-58,y,-21]) cylinder(d=25,h=12.5);
     }
 }
 

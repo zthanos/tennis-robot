@@ -11,23 +11,27 @@ Gates (exact-solid zero intersection, OpenSCAD Manifold):
   feed path; plan outside the R421 keep circle about X117.
 Numeric minimum distances per piece, plan radius, bbox, mass.
 
-Usage: python3 qa-clearance-v3.py [curved faceted]
+Usage: python3 qa-clearance-f.py
 """
 import importlib.util, json, os, sys
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-spec = importlib.util.spec_from_file_location("q1", os.path.join(HERE, "qa-clearance.py"))
+spec = importlib.util.spec_from_file_location("q1", os.path.join(HERE, "qa-mesh-utils.py"))
 q1 = importlib.util.module_from_spec(spec); spec.loader.exec_module(q1)
 load, sample, min_dist, volume_cm3 = q1.load, q1.sample, q1.min_dist, q1.volume_cm3
 
 SCAD = os.path.join(HERE, "body-panels-f.scad")
-SCAD_V3 = os.path.join(HERE, "body-panels-v3.scad")   # targets/keep-outs live there
+SCAD_SUPPORT = os.path.join(HERE, "body-panels-f-support.scad")
 BUILD = os.path.join(HERE, "_build", "qaf")
 OPENSCAD = os.environ.get("OPENSCAD_BIN", "/snap/bin/openscad-nightly")
 ANGLES = list(range(-10, 21))
 ICR = np.array([117.0, 0.0]); R_TURN = 425.0; R_KEEP = 424.5   # tub rear arc wraps the P2-70 pod corners (R421.4)
-PIECES = ["rear_lo", "rear_hi", "c1_lo", "c1_hi", "c2", "c3", "l1", "l2", "l3", "deck_rear", "deck_side"]
+PIECES = [
+    "rear_lo", "rear_hi", "c1_lo", "c1_hi", "c2", "c3",
+    "l1", "l2", "l3", "deck_rear", "drawer_face",
+    "deck_s1", "deck_s2", "deck_s3",
+]
 RHO = 1.27
 os.makedirs(BUILD, exist_ok=True)
 
@@ -47,13 +51,13 @@ def targets():
         for name, view in [("moving", "mesh_moving"), ("d5065_airflow", "mesh_airflow")]:
             f = os.path.join(BUILD, f"{name}_{a}.stl")
             if not os.path.exists(f):
-                scad(f, {"bp_view": view, "bp_angle": a}, src=SCAD_V3)
+                scad(f, {"bp_support_view": view, "bp_angle": a}, src=SCAD_SUPPORT)
             tg.setdefault(name, []).append((a, load(f)))
     for name, view in [("tyres", "mesh_tyres"), ("stops", "mesh_stops"),
                        ("fixed", "mesh_fixed"), ("console_temp", "mesh_console")]:
         f = os.path.join(BUILD, f"{name}.stl")
         if not os.path.exists(f):
-            scad(f, {"bp_view": view}, src=SCAD_V3)
+            scad(f, {"bp_support_view": view}, src=SCAD_SUPPORT)
         tg[name] = [(None, load(f))]
     for name, mod in [("launch_cone", "ko_launch_cone()"), ("camera_fov", "ko_camera_fov()"),
                       ("ball_path", "ko_ball_path()"), ("feed_path_temp", "ko_feed_path()"),
@@ -61,7 +65,7 @@ def targets():
         f = os.path.join(BUILD, f"ko_{name}.stl")
         if not os.path.exists(f):
             w = os.path.join(BUILD, f"ko_{name}.scad")
-            open(w, "w").write(f"use <{SCAD_V3}>\n{mod};\n")
+            open(w, "w").write(f"use <{SCAD_SUPPORT}>\n{mod};\n")
             scad(f, {}, src=w)
         tg[name] = [(None, load(f))]
     return tg

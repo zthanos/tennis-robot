@@ -18,7 +18,7 @@ P2-55 stops και AS5600.
 
 | Αρχείο | Περιεχόμενο |
 |---|---|
-| `cad/body-panels/body-panels-concepts.scad` | Τρεις παραμετρικές προτάσεις `concept="A"/"B"/"C"`, keep-outs, προσωρινές ζώνες, QA views |
+| `cad/body-panels/archive/concepts-a-e/body-panels-concepts.scad` | Τρεις παραμετρικές προτάσεις `concept="A"/"B"/"C"`, keep-outs, προσωρινές ζώνες, QA views |
 | `cad/body-panels/render-concepts.sh` | Όλα τα renders (μόνο PNG) |
 | `cad/body-panels/qa-clearance.py` | Exact-solid gates και αριθμητικά ελάχιστα διάκενα ανά panel |
 | `cad/body-panels/qa-results.json` | Πλήρη αποτελέσματα QA (A, B, C) |
@@ -52,10 +52,10 @@ P2-55 stops και AS5600.
 δύο κοντά controller pods ανάμεσα στους τροχούς. Το καλάθι grid αποτελεί
 το «σώμα». Τίποτα εμπρός από το X215. 11 κομμάτια, **≈1,40 kg PETG**.
 
-![A εμπρός-δεξιά](../../../cad/body-panels/renders/concept-A-iso-front-right.png)
-![A πίσω-αριστερά](../../../cad/body-panels/renders/concept-A-iso-rear-left.png)
-![A πλάγια](../../../cad/body-panels/renders/concept-A-side.png)
-![A κάτοψη](../../../cad/body-panels/renders/concept-A-top.png)
+![A εμπρός-δεξιά](../../../cad/body-panels/archive/concepts-a-e/renders/concept-A-iso-front-right.png)
+![A πίσω-αριστερά](../../../cad/body-panels/archive/concepts-a-e/renders/concept-A-iso-rear-left.png)
+![A πλάγια](../../../cad/body-panels/archive/concepts-a-e/renders/concept-A-side.png)
+![A κάτοψη](../../../cad/body-panels/archive/concepts-a-e/renders/concept-A-top.png)
 
 ### B — Pods + fenders (ΠΡΟΤΕΙΝΟΜΕΝΗ)
 
@@ -69,10 +69,10 @@ P2-55 stops και AS5600.
 
 21 κομμάτια, **≈2,16 kg PETG / ≈1,82 kg ASA**.
 
-![B εμπρός-δεξιά](../../../cad/body-panels/renders/concept-B-iso-front-right.png)
-![B πίσω-αριστερά](../../../cad/body-panels/renders/concept-B-iso-rear-left.png)
-![B πλάγια](../../../cad/body-panels/renders/concept-B-side.png)
-![B κάτοψη](../../../cad/body-panels/renders/concept-B-top.png)
+![B εμπρός-δεξιά](../../../cad/body-panels/archive/concepts-a-e/renders/concept-B-iso-front-right.png)
+![B πίσω-αριστερά](../../../cad/body-panels/archive/concepts-a-e/renders/concept-B-iso-rear-left.png)
+![B πλάγια](../../../cad/body-panels/archive/concepts-a-e/renders/concept-B-side.png)
+![B κάτοψη](../../../cad/body-panels/archive/concepts-a-e/renders/concept-B-top.png)
 
 ### C — Shell (συνεχές περίβλημα)
 
@@ -81,10 +81,10 @@ tumblehome top deck έως Z313, οπές Ø52 γύρω από τους άξον
 καπάκι, ψηλά shoulders έως Z300 και μεγαλύτερα guards έως Z190. Κρύβει όλη
 την πλευρά του καλαθιού. 21 κομμάτια, **≈2,45 kg PETG**.
 
-![C εμπρός-δεξιά](../../../cad/body-panels/renders/concept-C-iso-front-right.png)
-![C πίσω-αριστερά](../../../cad/body-panels/renders/concept-C-iso-rear-left.png)
-![C πλάγια](../../../cad/body-panels/renders/concept-C-side.png)
-![C κάτοψη](../../../cad/body-panels/renders/concept-C-top.png)
+![C εμπρός-δεξιά](../../../cad/body-panels/archive/concepts-a-e/renders/concept-C-iso-front-right.png)
+![C πίσω-αριστερά](../../../cad/body-panels/archive/concepts-a-e/renders/concept-C-iso-rear-left.png)
+![C πλάγια](../../../cad/body-panels/archive/concepts-a-e/renders/concept-C-side.png)
+![C κάτοψη](../../../cad/body-panels/archive/concepts-a-e/renders/concept-C-top.png)
 
 ### Σύγκριση
 
@@ -160,8 +160,8 @@ brow 68 g, guards 56 g. Κανένα κομμάτι δεν απαιτεί νέα
 2. Το inner wall γίνεται ανοιχτό lattice, αφού δίπλα υπάρχει ήδη το grid του καλαθιού.
 3. Τοιχώματα 1,8 mm με νευρώσεις 1,6×8 mm στις μεγάλες επιφάνειες.
 
-![B μόνο panels εμπρός](../../../cad/body-panels/renders/B-panels-only-iso.png)
-![B μόνο panels πίσω](../../../cad/body-panels/renders/B-panels-only-rear.png)
+![B μόνο panels εμπρός](../../../cad/body-panels/archive/concepts-a-e/renders/B-panels-only-iso.png)
+![B μόνο panels πίσω](../../../cad/body-panels/archive/concepts-a-e/renders/B-panels-only-rear.png)
 
 ### Πρόσβαση χωρίς εργαλεία
 
@@ -282,16 +282,16 @@ Y173,5 είναι 4,4 mm. Είναι κενό συναρμολόγησης στ�
 
 ### Οι τρεις καταστάσεις λειτουργίας (B, τομή Y=0, φαίνονται τα αριστερά panels)
 
-![B −3° συλλογή](../../../cad/body-panels/renders/B-section--3deg.png)
-![B 0° μεταφορά](../../../cad/body-panels/renders/B-section-0deg.png)
-![B +20° εκτόξευση](../../../cad/body-panels/renders/B-section-20deg.png)
+![B −3° συλλογή](../../../cad/body-panels/archive/concepts-a-e/renders/B-section--3deg.png)
+![B 0° μεταφορά](../../../cad/body-panels/archive/concepts-a-e/renders/B-section-0deg.png)
+![B +20° εκτόξευση](../../../cad/body-panels/archive/concepts-a-e/renders/B-section-20deg.png)
 
 Keep-outs: κώνος εκτόξευσης με κόκκινο, FOV κάμερας με κυανό, διαδρομή
 μπάλας με κίτρινο, όλα στις +20°.
 
-![B keep-outs τομή](../../../cad/body-panels/renders/B-keepouts-section-20deg.png)
-![B keep-outs iso](../../../cad/body-panels/renders/B-keepouts-iso.png)
-![B sweep overlay −10/−3/0/+20](../../../cad/body-panels/renders/B-sweep-iso.png)
+![B keep-outs τομή](../../../cad/body-panels/archive/concepts-a-e/renders/B-keepouts-section-20deg.png)
+![B keep-outs iso](../../../cad/body-panels/archive/concepts-a-e/renders/B-keepouts-iso.png)
+![B sweep overlay −10/−3/0/+20](../../../cad/body-panels/archive/concepts-a-e/renders/B-sweep-iso.png)
 
 ### Απεμπλοκή και απορριπτόμενες μπάλες
 
@@ -312,7 +312,7 @@ Keep-outs: κώνος εκτόξευσης με κόκκινο, FOV κάμερα
 
 ## 6. Προσωρινές ζώνες (σημειωμένες, όχι κλειδωμένες)
 
-![B προσωρινές ζώνες και πρόταση θέσης controllers](../../../cad/body-panels/renders/B-zones-iso.png)
+![B προσωρινές ζώνες και πρόταση θέσης controllers](../../../cad/body-panels/archive/concepts-a-e/renders/B-zones-iso.png)
 
 | Ζώνη | Όγκος | Panels |
 |---|---|---|

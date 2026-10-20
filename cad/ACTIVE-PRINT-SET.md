@@ -56,20 +56,24 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
 αναμένει πλέον 5 STL αντί για 4, όλα ακριβώς ένα σώμα.
 
-## Rear pod v2 — κατάσταση P2-84
+## Rear pod v2 — κατάσταση P2-86
+
+> **ΠΡΟΣΟΧΗ — ΜΗΝ ΤΥΠΩΣΕΙΣ ΠΑΛΙΑ EXPORT:** στο P2-86 άλλαξαν τα
+> `base_left.stl`, `base_right.stl` και `control_panel.stl`. Χρησιμοποίησε
+> μόνο τα τρέχοντα αρχεία του `stl-v2/` (export 2026-10-20).
 
 Κύριες πηγές: `rear-pod/rear-pod-v2.scad`, `rear-pod/params-v2.scad`.
 Ενεργός κατάλογος: `rear-pod/stl-v2/`.
 
 | Φυσικό κομμάτι | Ενεργό STL (ποσότητα) | P2 | Βίδες / σύνδεση | Κατάσταση |
 |---|---|---:|---|---|
-| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83/P2-84 | 4×M4×45 προς rear crossbar· 2×M4×20 90° countersunk προς ties· P2-84 rear M3 captive-nut lands | Προς εκτύπωση |
+| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83/P2-86 | 4×M4×45 προς rear crossbar· 2×M4×20 90° countersunk προς ties· 4×M3 rear lands Y±45/±145 | **ΝΕΟ P2-86 export — προς εκτύπωση** |
 | Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83 | 2×M4×65 στις υπάρχουσες side M4 `X−135/Z37`, 1 mm M4 washer shim στην παρειά `Y±195`· 2×M4×20 countersunk προς βάση | Προς εκτύπωση |
 | Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | Προς εκτύπωση |
 | Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | Προς εκτύπωση |
 | Side frames | `stl-v2/side_frame.stl` ×2 | P2-79 | 4×M4×25 διαμπερώς, ροδέλες/nyloc | Προς εκτύπωση |
 | Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81 | κάτω 4×M4×30, επάνω 4×M4×20, ροδέλες/nyloc | Προς εκτύπωση |
-| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84 | 4×M4×20, ροδέλες/nyloc· 2×M3×20 προς F deck· νέα οπή LED Ø8 | Προς εκτύπωση· physical proof-load 30 N πριν τη χρήση |
+| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΝΕΟ P2-86 export — προς εκτύπωση**· physical proof-load 30 N πριν τη χρήση |
 | Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | Προς εκτύπωση |
 | BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | Προς εκτύπωση |
 | Cable bulkhead + feet | `stl-v2/cable_bulkhead.stl` ×1, `bulkhead_foot.stl` ×2 | P2-75 retained in v2 | Υπάρχουσες M4, ροδέλες/παξιμάδια | Προς εκτύπωση |
@@ -99,21 +103,24 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 ## Panels F rear — σχεδιασμένο, αναμονή / ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ
 
 Πηγή: `body-panels/body-panels-f-rear-v2.scad`. Release-candidate κατάλογος:
-`body-panels/stl-f-rear/`. Τα οκτώ STL (`rear_lo` L/R, `rear_hi` L/R,
-`deck_rear` L/R και Parkside doors L/R) είναι manifold, ένα σώμα και κάτω
-από 250×250 mm, αλλά μένουν σε κατάσταση **σχεδιασμένο, αναμονή** μέχρι το
+`body-panels/stl-f-rear/`. Τα έντεκα STL (`rear_lo` L/R, `rear_hi` L/R,
+`deck_rear` L/R, Parkside doors L/R, corner stays L/R και turn-button που
+τυπώνεται ×2) είναι manifold, ένα σώμα και με print footprint έως
+250×250 mm, αλλά μένουν σε κατάσταση **σχεδιασμένο, αναμονή** μέχρι το
 μελλοντικό βήμα πλαϊνών/εμπρός και το basket mockup. Βίδες και σειρά
 συναρμολόγησης βρίσκονται στο
 `body-panels/stl-f-rear/README.md`.
 
-## Concepts — παραμένουν, χωρίς ενεργό STL
+## Concepts — F επιλεγμένο, χωρίς ενεργό STL πλαϊνών/εμπρός
 
 - **P2-80 rear cage:** μελλοντικό πλήρως τυπωμένο stackable PETG cage,
   χωρίς αλουμίνιο. Box sections περίπου 35×35 mm δεν χωρούν στη λωρίδα
   `Y161…167`, άρα θέσεις/διατομές κολονών θα ξανακριθούν με τα panels F.
 - **Body panels F πλαϊνά/εμπρός:** `body-panels/body-panels-f.scad` και τα
-  παλιά renders/QA παραμένουν concept. Το rear subset έχει πλέον ξεχωριστή
+  F renders/QA παραμένουν concept. Το rear subset έχει πλέον ξεχωριστή
   release-candidate γεωμετρία παραπάνω, αλλά δεν έχει εγκριθεί για εκτύπωση.
+- **Concepts A–E:** superseded από F στο P2-86 και μεταφέρθηκαν σε
+  `body-panels/archive/concepts-a-e/` με σήμανση **ΜΗΝ ΤΥΠΩΣΕΙΣ**.
 - **Full robot v3:** `modular-test-chassis/full-robot-v3.scad` είναι assembly
   concept/check, όχι πηγή ενεργών STL.
 

@@ -1,80 +1,103 @@
-# P2-84 — πίσω panels F για rear pod v2
+# P2-86 — πίσω panels F για rear pod v2
 
-> **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ.** Τα STL είναι release-ready CAD για έλεγχο και
-> slicing, αλλά η φυσική εκτύπωση περιμένει το βήμα πλαϊνών/εμπρός και το
-> basket mockup/pile-retention test.
+> **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ.** Είναι release-ready CAD/STL, αλλά η φυσική
+> κατασκευή περιμένει P2-87 και basket mockup/pile-retention test.
 
-Πηγή: `../body-panels-f-rear-v2.scad`. Export:
-`../export-f-rear-stls.sh`. Exact-solid suite: `../qa-p284-rear-f.sh`.
+Πηγές: `../body-panels-f-rear-v2.scad`, `../body-panels-f.scad` και
+`../body-panels-f-support.scad`. Export: `../export-f-rear-stls.sh`.
+Exact-solid suite: `../qa-p286-rear-f.sh`.
+
+![P2-86 rear-F isometric](../p286-rear-f-isometric.png)
+
+![P2-86 service view](../p286-rear-f-service.png)
 
 ## Τι διαφέρει από το αναμενόμενο
 
-Το παλιό concept F δεν μπορούσε να κουμπώσει στο v2: το `rear_lo` περίμενε
-τα καταργημένα «πόδια/αυτιά P2-70» και στις πίσω γωνίες έμεναν μόνο 0,6 mm.
-Το P2-84 κρατά το τόξο `R424,5` ως **εσωτερικό datum** και χτίζει το PETG
-πάχος 2,5 mm προς τα έξω. Έτσι το pod δεν αλλάζει envelope και το πραγματικό
-ελάχιστο keepout γίνεται τουλάχιστον 3 mm. Η ορατή εξωτερική επιφάνεια είναι
-συνεπώς `R427`, η μόνη αισθητική απόκλιση από το concept.
+Το P2-84 ήταν οπτικά σωστό αλλά όχι φέρον: το deck είχε ένα μικρό tab/M3 ανά
+μισό, το `rear_hi` κρεμόταν από άλλα panels, το `rear_lo` είχε ελεύθερη πάνω
+ακμή, το land `Y164` άφηνε περίπου 1,2 mm τοίχωμα, δεν υπήρχε splice στο
+`Y=0` και οι πόρτες δεν είχαν κλείστρο.
 
-Οι Parkside frames είναι πλέον ενιαίο μέρος των `rear_lo`. Οι πόρτες είναι
-ξεχωριστά, ανοιγόμενα φύλλα με αφαιρούμενο διαμπερή M4 άξονα. Τα
-`rear_hi` έχουν ενσωματωμένο παράθυρο με πλέγμα ±60°, δύο κάτω locating
-tongues ανά μισό και captive-nut bosses κάτω από το deck. Αφαιρούνται με
-τέσσερις βίδες από επάνω, χωρίς λύσιμο pod, και ανοίγουν την πίσω service
-όψη Mega/perfboard.
+Στο P2-86 το τόξο συνεχίζεται μέχρι τη ραφή των μελλοντικών πλαϊνών
+`Y±244,5` (R60 corner του F). Κάθε `rear_lo` πατά σε δύο 12 mm base lands
+και σε δύο M4 ενός corner stay. Κάθε `rear_hi` έχει δύο ανεξάρτητες M3 προς
+τη συνεχή φέρουσα πίσω δοκό του control panel. Κάθε deck half είναι L-section
+4+12 mm και δένει με δύο δικές του M3 στην ίδια δοκό (4 συνολικά, πάνω από
+το ελάχιστο 3). Υπάρχουν κρυφά center laps με through M3 και 0,3 mm seam.
+
+Τα corner stays χρησιμοποιούν την υπάρχουσα top M4 και την ορθογώνια side
+M4 του rear corner clamp· δεν ανοίγεται τρύπα στο σασί. Η εξωτερική στήλη
+τους δίνει δύο M4 στα rear panels. Οι πόρτες έχουν τυπωμένο περιστροφικό
+turn-button, χωρίς αγοραζόμενο μαγνήτη. Όλα τα φέροντα fasteners είναι
+captured/through, ποτέ self-tap ή insert.
 
 ## Κομμάτια
 
-| STL | Ποσότητα | Bounding box εκτύπωσης | Περιγραφή |
+| STL | Ποσότητα | Μέγιστο print footprint | Ρόλος |
 |---|---:|---:|---|
-| `rear_lo_left.stl`, `rear_lo_right.stl` | 1+1 | 146×171×44,5 mm | κάτω collar, Parkside frame, base lands, σταθερά hinge knuckles |
-| `rear_hi_left.stl`, `rear_hi_right.stl` | 1+1 | 153×171×42,1 mm | αφαιρούμενο πλαίσιο/πλέγμα ±60°, locating tongues, nut bosses |
-| `deck_rear_left.stl`, `deck_rear_right.stl` | 1+1 | 9×171×50 mm | deck στο Z350 και σύνδεση με control panel |
-| `parkside_door_left.stl`, `parkside_door_right.stl` | 1+1 | 80×98,5×30 mm | ανοιγόμενη πόρτα, εξωτερικό pull, κινητά hinge knuckles |
+| `rear_lo_left/right.stl` | 1+1 | ≤250×153 mm | collar, Parkside frame, ribs, base/corner interfaces |
+| `rear_hi_left/right.stl` | 1+1 | ≤250×153 mm | removable grille, ribs, 2× structural panel ties |
+| `deck_rear_left/right.stl` | 1+1 | ≤250×86 mm | 4 mm deck, 12 mm total L-section depth, center under-lap |
+| `parkside_door_left/right.stl` | 1+1 | 98×80 mm | hinged drawer closures |
+| `corner_stay_left/right.stl` | 1+1 | 163×83 mm | existing-clamp M4 → two panel M4 load path |
+| `door_turn_button.stl` | 2 prints | 34×12 mm | printed latch, rotate 90° before opening |
 
-Όλα είναι κάτω από 250×250 mm, manifold και ακριβώς ένα σώμα. Η export
-orientation βάζει το μεγάλο `Y/Z` περίγραμμα στο bed και κρατά το καμπύλο
-βάθος ως τρίτη διάσταση. PETG, 4 perimeters και brim συνιστώνται για τα
-ψηλά καμπύλα frames· δεν απαιτούνται supports στη σχεδιασμένη orientation.
+Όλα τα STL είναι manifold και ακριβώς ένα σώμα. PETG: 4–5 perimeters,
+5 top/bottom layers και 35–45% gyroid στα stays/lands. Δεν απαιτούνται
+supports στη δοσμένη orientation. Επιβεβαίωσε τα μήκη στο πραγματικό
+stack-up πριν από αγορά.
 
-## Βίδες / παξιμάδια
+## Βίδες
 
-- 2×M3×50, ροδέλα και M3 nut: εσωτερικά base lands `Y±45`.
-- 2×M3×25, ροδέλα και M3 nut: εξωτερικά base lands `Y±164`.
-- 2×M3×20, ροδέλα και M3 nut: deck προς τα δύο rear lands του control panel.
-- 4×M3×12, ροδέλα: deck προς captive M3 nuts των δύο `rear_hi`.
-- 2×M4×105 με ροδέλες/nyloc, ή M4 rod κομμένο στο πραγματικό stack-up:
-  αφαιρούμενοι κατακόρυφοι άξονες πορτών.
+- Rear skin → base: 4×M3×45 περίπου, ροδέλα + captive M3 nut.
+- Corner stays → υπάρχον corner clamp: ανά πλευρά 1×M4 top και 1×M4 side,
+  μακρύτερες κατά το πραγματικό stack-up, ροδέλες/nyloc· 0,2 mm shim πάνω.
+- Rear-lo corners → stays: 4×M4×20, ροδέλες/nyloc.
+- Rear-hi → control-panel beam: 4×M3×35 περίπου, ροδέλες/nyloc.
+- Deck → control-panel beam: 4×M3×30 περίπου, ροδέλες/nyloc.
+- Center laps: 5×M3×12 (2 rear_lo, 2 rear_hi, 1 deck), ροδέλες/nyloc.
+- Door hinges: 2×M4 rod/bolt περίπου 105 mm, ροδέλες/nyloc.
+- Turn buttons: 2×M4×16, ροδέλα και nyloc με ελεύθερη περιστροφή.
 
-Δεν υπάρχει self-tap ή heat-set insert. Τα M3 nuts της βάσης/control panel
-φορτώνονται από κάτω πριν την τοποθέτηση. Τα τέσσερα nuts των `rear_hi`
-φορτώνονται στις εξαγωνικές θήκες από την κάτω πλευρά του άνω rail.
-Επιβεβαίωσε μήκη στο πραγματικό stack-up πριν από αγορά/κοπή.
+## Συναρμολόγηση / service
 
-## Σειρά συναρμολόγησης και service
+1. Βίδωσε τα corner stays στις δύο κοινές M4 του corner clamp.
+2. Βίδωσε `rear_lo` στις βάσεις, στα stays και στα center laps.
+3. Πέρασε τις πόρτες/άξονες και τα turn-buttons. Για συρτάρι: turn-button
+   90°, πόρτα 110°, μετά καθαρή εξαγωγή προς −X.
+4. Βίδωσε `rear_hi` στη δοκό του control panel και στο center lap.
+5. Βίδωσε τα deck halves στη δεύτερη σειρά της δοκού και στο deck lap.
 
-1. Βάλε τα captive nuts στις δύο βάσεις και στα δύο control-panel lands.
-2. Βίδωσε τα `rear_lo` από έξω προς τις βάσεις.
-3. Πέρασε κάθε πόρτα ανάμεσα στα εναλλάξ knuckles και βάλε τον M4 άξονα.
-4. Βίδωσε τα δύο deck halves στο control panel.
-5. Βάλε τα `rear_hi` πρώτα στα κάτω tongues, κατέβασέ τα κάτω από το deck
-   και κλείδωσε τις τέσσερις M3 από επάνω.
+Το `rear_hi` αφαιρείται χωρίς λύσιμο pod, deck ή άλλου panel και αποκαλύπτει
+Mega/perfboard. Η εξωτερική πρόσβαση σε όλες τις κεφαλές παραμένει ανοικτή.
 
-Για service Mega/perfboard αφαιρούνται μόνο οι τέσσερις επάνω M3 και τα δύο
-`rear_hi`. Οι πόρτες ανοίγουν 110° και τα συρτάρια βγαίνουν ευθεία προς
-`−X` χωρίς λύσιμο panel ή pod.
+## Αντοχή και χρήση
 
-## Έλεγχοι P2-84
+Συντηρητικό PETG `E=1,8 GPa`, effective width 20 mm:
 
-Empty/PASS: 3 mm F↔pod keepout, σασί/frame, drive wheels/FIT0403, πλήρες
-moving sweep `−10…+20°`, fixed drawer sweep, doors ανοικτές 110° έναντι
-drawer sweep, ground `Z<15`, control bodies/νέο LED, Ugreen, carrier, posts
-και νέα base lands έναντι Parkside. Το χαμηλότερο F feature είναι CAD
-`Z54`, άρα περίπου physical `Z52` με το σασί 2 mm χαμηλότερα.
+- Deck L-section, `h=12 mm`, `L=40 mm`, 100 N στο χείλος:
+  `σ≈8,3 MPa`, `δ≈0,42 mm`. Δύο κοντινές M3 παίρνουν έως 50 N η καθεμία,
+  bearing περίπου `3,3 MPa` σε 5 mm land.
+- Rear skins, ribbed effective section `h=12 mm`, span 120 mm, 50 N:
+  `σ≈2,5 MPa`, `δ≈0,28 mm` (<2 mm).
+- Corner-stay worst shared 50 N ανά πλευρά: M4 shear <4 MPa και printed
+  bearing <4,2 MPa. Οι τιμές είναι κάτω από 10 MPa in-layer και 5 MPa
+  across-layer. Τα 2 g/.5 g skin inertia loads είναι μικρότερα από τα
+  παραπάνω hand loads.
 
-## Μελλοντικά πλαϊνά/εμπρός — δεν σχεδιάστηκαν εδώ
+**ΜΗΝ ΣΗΚΩΝΕΙΣ ΑΠΟ DECK/SKINS.** Για μεταφορά πιάσε με δύο χέρια τις
+μεταλλικές διαμήκεις ράγες δίπλα στις πίσω γωνίες ή την πίσω μεταλλική
+τραβέρσα, αφού απομονωθεί η τροφοδοσία. Δεν προστέθηκε cosmetic handle που
+θα μπορούσε να παρερμηνευτεί ως φέρον.
 
-Το παλιό F στήριζε το `c2` στο T-clamp `X240`, το οποίο καταργήθηκε στο
-P2-78. Τα πλαϊνά/εμπρός χρειάζονται νέο interface στις ενεργές δοκούς και
-δεν κλειδώνουν πριν από το cardboard basket mockup και το pile-retention
-test. Το P2-84 δεν σχεδιάζει ούτε υπονοεί αυτή τη στήριξη.
+## QA / P2-87 interface
+
+Exact-solid empty/PASS: F↔pod ≥3 mm εκτός δηλωμένων interfaces, πλήρες
+frame/corner clamps, τροχοί/FIT0403, moving sweep −10…+20°, fixed/open
+drawer sweep με screw heads, ground `<Z17` CAD (=≥15 mm με το σασί 2 mm
+χαμηλότερα), controls/Ugreen/carrier/posts και base↔Parkside. Τα center
+halves έχουν μόνο μηδενικού όγκου mating contact· δεν έχουν solid overlap.
+
+Η P2-87 ραφή είναι η κατακόρυφη land στο `Y±244,5`, γύρω από `X−230`, με
+δύο through M3 ανά πλευρά (`Z112/152`) και κοινή στήριξη από το corner stay.
+Τα πλαϊνά δεν σχεδιάζονται πριν από το basket mockup.

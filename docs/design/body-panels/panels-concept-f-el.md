@@ -22,6 +22,9 @@ bot. Η ερμηνεία βασίζεται στη μία εικόνα που έ
 | Αρχείο | Περιεχόμενο |
 |---|---|
 | `cad/body-panels/body-panels-f.scad` | Concept F: λεκάνη, κολάρο, πλέγμα, decks, κομμάτια εκτύπωσης, QA views |
+| `cad/body-panels/body-panels-f-support.scad` | Κοινό full-robot context/keep-outs του ενεργού F, αποσπασμένο από τα archived concepts A–E στο P2-86 |
+| `cad/body-panels/body-panels-f-rear-v2.scad` | P2-86 release geometry πίσω panels/corners/stays για rear pod v2 |
+| `cad/body-panels/stl-f-rear/README.md` | Βίδες, συναρμολόγηση, αντοχή και P2-87 interface· **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ** |
 | `cad/body-panels/render-f.sh` | Renders (μόνο PNG) |
 | `cad/body-panels/qa-clearance-f.py` | Exact-solid gates, διάκενα, ακτίνα κάτοψης, μάζα |
 | `cad/body-panels/qa-results-f.json` | Αποτελέσματα |
@@ -187,11 +190,11 @@ bot. Η ερμηνεία βασίζεται στη μία εικόνα που έ
    πλενόμενο. Οι controllers στα πλαϊνά διαμερίσματα θέλουν δικό τους
    drip-shield από πάνω, αν το rim deck δεν κλείνει τέλεια.
 4. **Ο πραγματικός κύκλος στροφής είναι ~432 mm λόγω τροχών** (βλ.
-   `panels-concept-v3-el.md` §1). Το πίσω τόξο κρατά 424,5, μέσα στο R425
+   [`panels-concept-v3-el.md`](../../archive/body-panels/panels-concept-v3-el.md) §1). Το πίσω τόξο κρατά 424,5, μέσα στο R425
    του P2-70.
 5. **Ράγα συρταριού P2-70.** Στο F η πίσω καμπύλη είναι 17 mm πίσω από το
    pod, οπότε η κληρονομημένη επαφή της D εδώ δεν υπάρχει. Το ίδιο το
-   κέλυφος του P2-70 όμως έχει ακόμα το θέμα (`panels-concept-v3-el.md` §6.1).
+   κέλυφος του P2-70 όμως έχει ακόμα το θέμα ([archived v3](../../archive/body-panels/panels-concept-v3-el.md) §6.1).
 6. **Συρτάρια μέσα από την καμπύλη.** Η πρόσοψη του συρταριού πρέπει να
    επεκταθεί ~17–20 mm ώστε να φτάνει στην επιφάνεια. Διάσταση συρταριού
    ΜΕΤΡΗΣΗ ΧΡΗΣΤΗ μετά την αγορά.

@@ -3912,3 +3912,57 @@ frame, ground, P2-78 braces: EMPTY. Περιθώρια ≥3 mm (hard/drive/feed)
 integration probes: brackets/nyloc envelope (bracket έως Z106,6, nyloc έως
 Y82) έναντι P2-84 rear panels και πλήρους F concept front/side/rear:
 EMPTY/PASS. Τα δύο 3MF slicer projects του χρήστη έμειναν εκτός commit.
+
+### P2-86 — πίσω panels F: φέρουσες συνδέσεις και R60 γωνίες
+
+τι διαφέρει από το αναμενόμενο: τα release-candidate panels P2-84 ήταν
+γεωμετρικά καθαρά αλλά όχι επαρκώς δεμένα. Το deck είχε μία M3 ανά half, το
+rear_hi στηριζόταν μόνο σε panels, το rear_lo είχε ελεύθερη άνω ακμή, το
+land Y164 είχε περίπου 1,2 mm τοίχωμα, δεν υπήρχε center splice και οι
+Parkside doors δεν είχαν κλείστρο. Επιπλέον, η πρώτη P2-86 center-lap
+παραλλαγή έβγαζε print footprint 256,5–258,5 mm· διορθώθηκε σε κρυφό 5 mm
+overlap με ≥3 mm υλικό γύρω από τη M3 και τελικό footprint ≤250 mm.
+
+Το F είναι πλέον το μόνο ενεργό body concept. Τα A–E, τα SCAD/QA/results/
+renders τους και τα δύο παλιά concept docs μεταφέρθηκαν σε archive με
+σήμανση «superseded, ΜΗΝ ΤΥΠΩΣΕΙΣ». Τα κοινά robot-context/keep-out modules
+αποσπάστηκαν πρώτα στο ενεργό `body-panels-f-support.scad`, οπότε F και
+P2-80 δεν εξαρτώνται από το archived v3.
+
+Τα rear_lo/rear_hi/deck συνεχίζονται πάνω στο R424,5 μέχρι `Y±244,5`, δηλαδή
+στην αρχή του μελλοντικού side wall μετά το R60 corner. Νέα corner stays
+πατούν στην υπάρχουσα top και side M4 του rear corner clamp, χωρίς νέα τρύπα
+σασί, και δίνουν δύο M4 ανά γωνία. Τα rear_lo έχουν δύο πλήρη 12 mm base
+lands και δύο corner M4. Τα rear_hi έχουν δύο through-M3 ανά half προς νέα
+συνεχή φέρουσα δοκό του control panel. Τα 4 mm decks έχουν 12 mm συνολικό ύψος L-section
+και δύο δικές τους M3 ανά half στην ίδια δοκό. Υπάρχουν center laps με
+through-M3 και 0,3 mm service seam. Οι πόρτες απέκτησαν τυπωμένο M4
+turn-button χωρίς μαγνήτη.
+
+Συντηρητικό screen PETG E=1,8 GPa: deck L-section, effective width 20 mm,
+100 N/40 mm δίνει συντηρητικά περίπου 8,3 MPa και 0,42 mm. Ribbed skin section h=12 mm,
+span 120 mm, 50 N δίνει περίπου 2,5 MPa και 0,28 mm. Worst shared fastener
+loads δίνουν printed bearing έως περίπου 4,2 MPa, κάτω από τα όρια 10 MPa
+in-layer / 5 MPa across-layer. Τα inertia loads 2 g και 0,5 g είναι
+χαμηλότερα από τα hand-load cases. Deck/skins σημειώνονται ρητά «όχι
+λαβή»· για μεταφορά χρησιμοποιούνται οι μεταλλικές πίσω ράγες/τραβέρσα.
+
+Άλλαξαν και επανεξήχθησαν μόνο τα pod `base_left.stl`, `base_right.stl` και
+`control_panel.stl`. Η επιβεβαιωμένη φυσικά σιαγόνα 4,8 mm, γλωττίδα 4 mm
+και θέση M4 σε side frame/vertical plate δεν άλλαξαν. Τα νέα base lands
+είναι Y±45/±145 και η panel beam έχει δύο ανεξάρτητες σειρές M3. Το ACTIVE
+manifest τα επισημαίνει έντονα ώστε να μη χρησιμοποιηθεί παλιό export.
+
+Παρήχθησαν 11 rear-F STL: rear_lo L/R, rear_hi L/R, deck L/R, Parkside
+doors L/R, corner stays L/R και ένα turn-button STL που τυπώνεται δύο φορές.
+Όλα είναι manifold και ακριβώς ένα σώμα. Exact-solid empty/PASS: F↔pod 3 mm
+εκτός interfaces, πλήρες frame/corner clamps, τροχοί/FIT0403, moving sweep
+−10…+20°, fixed/open drawer sweep με screw heads, ground Z<17 CAD, control
+bodies/Ugreen/carrier/posts και base↔Parkside. Η center seam έχει μηδενικού
+όγκου mating contact και κανένα solid overlap.
+
+Η P2-87 side interface ορίζεται στο `Y±244,5`, γύρω από `X−230`, με δύο
+through-M3 `Z112/152` και κοινό corner-stay load path. Τα πλαϊνά παραμένουν
+σε αναμονή για basket mockup. Panels: **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ**. Κατάσταση:
+`P2_86_F_SELECTED_R60_CORNERS_STRUCTURAL_CONNECTIONS_EXACT_SOLID_PASS`.
+ΠΑΥΣΗ.

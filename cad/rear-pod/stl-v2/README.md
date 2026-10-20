@@ -1,16 +1,24 @@
-# τι διαφέρει από το αναμενόμενο — P2-84 interface panels F
+# τι διαφέρει από το αναμενόμενο — P2-86 φέρον interface panels F
 
-Το pod δεν άλλαξε envelope. Τα `base_left/right` απέκτησαν από δύο
-οριζόντιες M3 με underside captive nuts στα `Y±45/±164`, έξω από το
-Parkside sweep. Το `control_panel` απέκτησε δύο rear lands με captive M3
-κάτω από το υπάρχον πίσω χείλος και νέα οπή status LED Ø8 στο local
-`X+42/Y+70`, συμμετρικά της καλωδιακής σχισμής. Η οπή καθαρίζει ribs,
-control bodies, Ugreen, posts και carrier.
+> **ΜΗΝ ΤΥΠΩΣΕΙΣ τα παλιά P2-84 exports** των `base_left/right` και
+> `control_panel`. Τα τρία τρέχοντα STL είναι νέο export P2-86.
 
-Πρόσθετο hardware pod→F: 2×M3×50, 2×M3×25 και 2×M3×20, με ροδέλες και
-M3 nuts όπως αναλύεται στο `../../body-panels/stl-f-rear/README.md`.
-Δεν υπάρχει self-tap ή insert. Επανεξήχθησαν μόνο `base_left.stl`,
-`base_right.stl` και `control_panel.stl`, όλα ένα σώμα.
+Το pod δεν άλλαξε envelope, control apertures, οπές σασί ή την επιβεβαιωμένη
+σιαγόνα 4,8 mm/γλωττίδα 4 mm/θέση M4. Τα στενά lands `Y±164` αντικαταστάθηκαν
+από πλήρη 12 mm lands `Y±145`, με τον φέροντα διάδρομο στο `Z47,5…57,5`
+κάτω από το Parkside sweep και σύνδεση προς το skin έξω από `Y161`.
+
+Το `control_panel` κρατά την οπή LED Ø8 και αποκτά συνεχή πίσω δοκό εντός
+του ίδιου X/Y envelope. Δύο ανεξάρτητες σειρές through-M3 (`Z334` rear_hi,
+`Z344` deck) δίνουν δύο φέροντα σημεία ανά panel half. Το βαθύ beam relief
+ακολουθεί το πραγματικό dogleg του +Y rear post· η επαφή post–panel μένει
+μόνο στους τέσσερις επίπεδους ώμους P2-81.
+
+Hardware pod→F: 4×M3 περίπου 45 mm προς τις βάσεις, 4×M3 περίπου 35 mm
+rear_hi και 4×M3 περίπου 30 mm deck, όλα με ροδέλες/nyloc ή captive nuts
+όπως αναλύεται στο `../../body-panels/stl-f-rear/README.md`. Δεν υπάρχει
+self-tap ή insert. Επανεξήχθησαν μόνο `base_left.stl`, `base_right.stl` και
+`control_panel.stl`, όλα ακριβώς ένα σώμα.
 
 # τι διαφέρει από το αναμενόμενο — P2-83 μονοκόμματο corner tie
 

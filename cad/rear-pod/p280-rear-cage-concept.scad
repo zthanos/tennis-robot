@@ -3,7 +3,7 @@
 
 use <rear-pod-v2.scad>
 use <../modular-test-chassis/modular-chassis-v3.scad>
-use <../body-panels/body-panels-v3.scad>
+use <../body-panels/body-panels-f-support.scad>
 use <../body-panels/body-panels-f.scad>
 
 p280_view = "assembly";

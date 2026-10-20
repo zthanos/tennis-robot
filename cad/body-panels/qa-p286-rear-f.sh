@@ -5,7 +5,7 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
 scad_file="$root_dir/body-panels-f-rear-v2.scad"
 pod_scad="$root_dir/../rear-pod/rear-pod-v2.scad"
-qa_dir="$(mktemp -d "$root_dir/.qa-p284.XXXXXX")"
+qa_dir="$(mktemp -d "$root_dir/.qa-p286.XXXXXX")"
 trap 'rm -rf "$qa_dir"' EXIT
 
 expect_empty() {
@@ -17,15 +17,15 @@ expect_empty() {
     >"$log" 2>&1 || status=$?
   if [[ -s "$out" ]]; then
     cat "$log" >&2
-    echo "P2-84 $label exact-solid FAIL: $selector produced geometry" >&2
+    echo "P2-86 $label exact-solid FAIL: $selector produced geometry" >&2
     exit 1
   fi
   if ((status != 0)) && ! grep -q "Current top level object is empty" "$log"; then
     cat "$log" >&2
-    echo "P2-84 $label render FAIL: $selector (status $status)" >&2
+    echo "P2-86 $label render FAIL: $selector (status $status)" >&2
     exit 1
   fi
-  echo "P2-84 $label exact-solid PASS (empty): $selector"
+  echo "P2-86 $label exact-solid PASS (empty): $selector"
 }
 
 empty_checks=(
@@ -45,4 +45,4 @@ for check in "${pod_checks[@]}"; do
   expect_empty "$pod_scad" "$check" "pod"
 done
 
-echo "P2-84 exact-solid suite passed"
+echo "P2-86 exact-solid suite passed"

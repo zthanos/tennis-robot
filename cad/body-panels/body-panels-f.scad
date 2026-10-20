@@ -21,7 +21,7 @@
 //     above; between pod and wall the deck follows the diagonal; the P2-70
 //     top panel (E-stop etc.) stays flush at Z350.
 
-use <body-panels-v3.scad>
+use <body-panels-f-support.scad>
 use <../modular-test-chassis/modular-chassis-v3.scad>
 use <../modular-test-chassis/shared-flywheel-transition-p252.scad>
 use <../modular-test-chassis/shared-flywheel-p267-tilted-arch.scad>

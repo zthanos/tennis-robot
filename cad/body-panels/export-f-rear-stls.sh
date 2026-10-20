@@ -18,6 +18,7 @@ fi
 all_parts=(
   rear_lo_left rear_lo_right rear_hi_left rear_hi_right
   deck_rear_left deck_rear_right parkside_door_left parkside_door_right
+  corner_stay_left corner_stay_right door_turn_button
 )
 parts=("${all_parts[@]}")
 if (($#)); then parts=("$@"); fi
@@ -31,4 +32,4 @@ for part_name in "${parts[@]}"; do
   python3 "$component_check" "$out_dir/${part_name}.stl" 1
 done
 
-echo "Validated ${#parts[@]} P2-84 rear-F single-body parts"
+echo "Validated ${#parts[@]} P2-86 rear-F single-body parts"

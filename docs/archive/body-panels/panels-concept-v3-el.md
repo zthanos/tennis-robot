@@ -28,11 +28,11 @@ read-only με `use` από το ίδιο σύνολο αρχείων που σ�
 
 | Αρχείο | Περιεχόμενο |
 |---|---|
-| `cad/body-panels/body-panels-v3.scad` | Πρόταση D, `style="curved"` ή `"faceted"`, keep-outs και QA views |
-| `cad/body-panels/render-v3.sh` | Όλα τα renders (μόνο PNG, πλήρες Manifold render) |
+| `cad/body-panels/archive/concepts-a-e/body-panels-v3.scad` | Πρόταση D, `style="curved"` ή `"faceted"`, keep-outs και QA views |
+| `cad/body-panels/archive/concepts-a-e/render-v3.sh` | Όλα τα renders (μόνο PNG, πλήρες Manifold render) |
 | `cad/body-panels/qa-clearance-v3.py` | Exact-solid gates, αριθμητικά διάκενα, ακτίνα κάτοψης, μάζα |
-| `cad/body-panels/qa-results-v3.json` | Πλήρη αποτελέσματα και των δύο στυλ |
-| `cad/body-panels/renders-v3/*.png` | Ισομετρικά, πλάγιες, κατόψεις, τομές, keep-outs |
+| `cad/body-panels/archive/concepts-a-e/qa-results-v3.json` | Πλήρη αποτελέσματα και των δύο στυλ |
+| `cad/body-panels/archive/concepts-a-e/renders-v3/*.png` | Ισομετρικά, πλάγιες, κατόψεις, τομές, keep-outs |
 
 Σύμβαση όψεων: +X μπροστά, +Y αριστερά, +Z πάνω. Οι πλάγιες όψεις κοιτούν από
 το −Y, με το μπροστά δεξιά. Κάθε render ελέγχθηκε οπτικά.
@@ -91,34 +91,34 @@ R425. Οι εξωτερικές γωνίες των τροχών κίνησης 
 
 ### Curved (προτεινόμενη)
 
-![D curved εμπρός-δεξιά](../../../cad/body-panels/renders-v3/D-curved-iso-front-right.png)
-![D curved πίσω-αριστερά](../../../cad/body-panels/renders-v3/D-curved-iso-rear-left.png)
-![D curved πλάγια](../../../cad/body-panels/renders-v3/D-curved-side.png)
-![D curved κάτοψη με τον κύκλο R425](../../../cad/body-panels/renders-v3/D-curved-top.png)
-![D curved μόνο panels](../../../cad/body-panels/renders-v3/D-curved-panels-only.png)
+![D curved εμπρός-δεξιά](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-iso-front-right.png)
+![D curved πίσω-αριστερά](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-iso-rear-left.png)
+![D curved πλάγια](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-side.png)
+![D curved κάτοψη με τον κύκλο R425](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-top.png)
+![D curved μόνο panels](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-panels-only.png)
 
 ### Faceted (εναλλακτική)
 
-![D faceted εμπρός-δεξιά](../../../cad/body-panels/renders-v3/D-faceted-iso-front-right.png)
-![D faceted πίσω-αριστερά](../../../cad/body-panels/renders-v3/D-faceted-iso-rear-left.png)
-![D faceted πλάγια](../../../cad/body-panels/renders-v3/D-faceted-side.png)
-![D faceted κάτοψη](../../../cad/body-panels/renders-v3/D-faceted-top.png)
-![D faceted μόνο panels](../../../cad/body-panels/renders-v3/D-faceted-panels-only.png)
+![D faceted εμπρός-δεξιά](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-faceted-iso-front-right.png)
+![D faceted πίσω-αριστερά](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-faceted-iso-rear-left.png)
+![D faceted πλάγια](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-faceted-side.png)
+![D faceted κάτοψη](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-faceted-top.png)
+![D faceted μόνο panels](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-faceted-panels-only.png)
 
 ### Τρεις καταστάσεις λειτουργίας (τομή Y=0, φαίνονται τα αριστερά panels)
 
-![−3° συλλογή](../../../cad/body-panels/renders-v3/D-curved-section--3deg.png)
-![0° μεταφορά](../../../cad/body-panels/renders-v3/D-curved-section-0deg.png)
-![+20° εκτόξευση](../../../cad/body-panels/renders-v3/D-curved-section-20deg.png)
+![−3° συλλογή](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-section--3deg.png)
+![0° μεταφορά](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-section-0deg.png)
+![+20° εκτόξευση](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-section-20deg.png)
 
 Keep-outs στις +20°: κώνος εκτόξευσης ±10°/±10° με κόκκινο, FOV κάμερας
 P2-67 με κυανό.
 
-![keep-outs](../../../cad/body-panels/renders-v3/D-curved-keepouts-20deg.png)
+![keep-outs](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-keepouts-20deg.png)
 
 Η σύγκρουση με την προσωρινή κονσόλα δοκιμών (κίτρινη) φαίνεται εδώ:
 
-![κονσόλα](../../../cad/body-panels/renders-v3/D-curved-console-conflict.png)
+![κονσόλα](../../../cad/body-panels/archive/concepts-a-e/renders-v3/D-curved-console-conflict.png)
 
 ## 4. Λίστα panels (curved)
 
@@ -279,7 +279,7 @@ Faceted: ίδια νούμερα ±1,6 mm. Brow FOV 13,6 mm, fender_front κιν
 ## 7. Αναπαραγωγή
 
 ```bash
-cad/body-panels/render-v3.sh
+cad/body-panels/archive/concepts-a-e/render-v3.sh
 ```
 
 ```bash
