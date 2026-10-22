@@ -1,5 +1,9 @@
 # Standalone flywheel launcher — provisional frozen baseline
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 > **ΑΝΤΙΚΑΤΑΣΤΑΘΗΚΕ από P2-61 για contact-limited exit speed:** οι παλιές
 > τιμές κορεσμού βασίστηκαν στην ιστορική χρήση `law(p)` αντί `law(2p)`.
 > Δεν αποτελούν πλέον evidence για απαίτηση μικρότερου nip. Δες

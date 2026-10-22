@@ -1,5 +1,9 @@
 # τι διαφέρει από το αναμενόμενο — P2-74 Y±55 / P2-73 stop
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 ![Πλάγια τομή της πρώτης σύγκρουσης, +Z επάνω](../../cad/modular-test-chassis/p274-y55-p273-failure-side.png)
 
 ![Κάτοψη της πρώτης σύγκρουσης](../../cad/modular-test-chassis/p274-y55-p273-failure-top.png)

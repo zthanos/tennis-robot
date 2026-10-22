@@ -1,5 +1,9 @@
 # Standalone intake — fixed motor, compliant tyre checkpoint
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Date: 2026-08-27
 Physical architecture: **`FIXED_MOTOR_COMPLIANT_TYRE`**
 Decision: **architecture corrected; tyre model and direct-drive metrology still block static/dynamic validation**

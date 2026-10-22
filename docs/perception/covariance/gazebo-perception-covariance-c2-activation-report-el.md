@@ -1,5 +1,9 @@
 # C2 Gazebo producer activation report — blocked
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 ## Executed checks
 
 - Linux `run_ubuntu.sh` headless Gazebo environment rebuilt both

@@ -1,5 +1,9 @@
 # C2 Gazebo covariance evidence report — corrected coverage passed
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 ## Controlled repeat run identity
 
 - Environment: Linux `run_ubuntu.sh`, ROS 2 Humble, headless software renderer.

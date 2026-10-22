@@ -1,5 +1,9 @@
 # Authoritative standalone flywheel launcher reconstruction and compliant-ball design gate
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Date: 2026-08-25
 
 > **Evidence-chain status:** preserved supporting evidence for the standalone reconstruction and independent ball-model gate. Its provisional 0.40 kg wheel placeholder records this earlier stage and is superseded by the current wheel-candidate Gate A and [`standalone-flywheel-launcher.md`](standalone-flywheel-launcher.md). The calibrated-ball conclusions remain current.

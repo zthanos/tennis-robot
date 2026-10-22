@@ -17,16 +17,10 @@
   `../docs/design/body-panels/p286b-perimeter-map-el.md` (P2-87 interface map),
 - τα test fixtures που αναφέρονται στο manifest.
 
-Active model: **`basket-bin-v2/`** — the sim-validated basket bin v2.1 +
-entry hood (debug log #45-#56), parametric OpenSCAD with all dimensions in
-`basket-bin-v2/params.scad`. Renders/exports run through the
-`docker compose --profile cad` services.
-
-Active intake work is **`collector-intake-v1/option-a/`**. This self-contained
-directory holds the curved-cheek, plywood-bridge, 124 x 73 mm RC-wheel assembly,
-previews, export script and all currently exportable Option A solids. Provisional bearing,
-hub, IR-sensor and motor interfaces are called out in its README rather than
-being mixed with the earlier straight-cheek/rail exports.
+Το `basket-bin-v2/` και το `collector-intake-v1/option-a/` είναι ιστορικά
+predecessors. Δεν είναι active models και δεν πρέπει να χρησιμοποιούνται για
+νέα export. Η σημερινή διαδρομή μπάλας/καλαθιού ορίζεται από τα P2-40,
+P2-67…P2-74 και το physical basket mockup gate.
 
 The previous `3d-printable-base` and `cyber-shell` models described superseded
 single-roller, scoop, launcher, 760 x 430 mm chassis, and cosmetic-shell
@@ -37,20 +31,14 @@ concepts. They were removed from the working tree on the
 rejected one-motor gear-train option. The active intake has two independent
 motors, one per side-pinch wheel.
 
-Exploratory launcher packaging lives in **`flywheel-launcher-v0/`**. It is an
-envelope-only, non-printable study for a guarded, pitch-adjustable dual
-flywheel module and its feed interface; it does not supersede the active intake
-or basket geometry.
+Το `flywheel-launcher-v0/` είναι ιστορικό standalone-launcher workspace.
 
 Current mechanical sources of truth:
 
-- `ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro`
-- `ros2_ws/src/tennis_robot/urdf/components/basket.urdf.xacro`
-- `docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md`
-- `docs/mechanism/basket-bin-redesign-spec-el.md`
-- `docs/archive/mechanism/intake/README.md` (historical intake index only)
-- `docs/hardware/chassis-layout-4wd-dual-intake-el.md`
-
-The next SCAD model should be generated from the validated 920 x 580 mm 4WD
-chassis, dual-wheel intake, and basket v2.1 dimensions. Do not restore an old
-model as the default without reconciling it against those sources.
+- `ACTIVE-PRINT-SET.md`
+- `modular-test-chassis/modular-chassis-v3.scad`
+- `modular-test-chassis/full-robot-v3.scad` (assembly/check only)
+- `rear-pod/rear-pod-v2.scad`
+- `body-panels/body-panels-f-rear-v2.scad`
+- `../docs/current-design-el.md`
+- `../docs/mechanism/shared-flywheel-intake-launcher-debug-log-el.md`

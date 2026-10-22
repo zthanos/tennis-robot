@@ -1,5 +1,9 @@
 # C2 scenario: Gazebo perception measurement covariance calibration
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 ## Σκοπός και όρια
 
 Το scenario αυτό παράγει **evidence**, όχι downstream spatial target. Κατά την

@@ -1,5 +1,9 @@
 # Collector Motor Driver Test Cheat Sheet
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Validated on `28/06/2026` with:
 
 ```text

@@ -1,5 +1,9 @@
 # Intake bench web panel στο Raspberry Pi
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Το `scripts/intake_bench_panel.py` σερβίρει το
 `scripts/intake_bench_panel.html` στη θύρα `8082` και ελέγχει αποκλειστικά το
 firmware `arduino/collector/07_dual_intake_mega_bench`.

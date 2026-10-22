@@ -1,5 +1,9 @@
 # Compact packaging: αντιστοίχιση CAD ↔ URDF
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 > **`CURRENT_SUPPORTING_EVIDENCE`.** Fixed-rest bounds and alignment deltas are
 > useful integration evidence. Any carriage/pod wording below describes the
 > retained `NOT_PHYSICAL_INTAKE_ARCHITECTURE` simulator and does not define the

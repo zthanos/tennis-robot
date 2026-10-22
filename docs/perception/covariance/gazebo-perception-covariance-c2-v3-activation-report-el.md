@@ -1,5 +1,9 @@
 # Gazebo perception covariance C2 v3 — activation report
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 > Ημερομηνία: 2026-07-22 — **ACTIVE / PASS για Gazebo perception**
 
 ## Artifact και evidence

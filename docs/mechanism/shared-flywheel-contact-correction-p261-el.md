@@ -1,5 +1,9 @@
 # P2-61 — διόρθωση contact model και επανέλεγχος
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Η P2-61 επιβεβαιώνει το suspected factor-of-two bug και αντικαθιστά τα
 Gazebo performance numbers που παρήχθησαν με αυτό. Δεν άλλαξε κανένα frozen
 στοιχείο P2-40/P2-51: pivot X387, τροχοί Ø200×60 σε Y±129, nip 58 mm, rails,

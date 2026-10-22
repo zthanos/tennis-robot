@@ -1,5 +1,9 @@
 # Tennis Robot Hardware List
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Last checked: 2026-05-16
 
 Prices are approximate and exclude shipping, VAT/import duties, and local reseller markups. Treat this as a living bill of materials, not a final purchase order.

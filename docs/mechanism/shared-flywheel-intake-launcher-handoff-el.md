@@ -1,5 +1,9 @@
 # Handoff: κοινό περιστρεφόμενο flywheel για συλλογή και εκτόξευση
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 ## Prompt για νέο chat
 
 Εργάσου στο `/home/thanosz/projects/diy/tennis-robot`, στο branch

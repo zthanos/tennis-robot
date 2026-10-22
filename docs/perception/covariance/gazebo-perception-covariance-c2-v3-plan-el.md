@@ -1,5 +1,9 @@
 # C2 Gazebo v3 plan — επέκταση spatial-target range
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 > Κατάσταση: **evidence PASS και ενεργοποιημένο για Gazebo perception** στις
 > 2026-07-22. Operational domain: `1.0218–6.7653 m`, quality `0.8889–1.0`.
 

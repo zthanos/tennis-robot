@@ -3,7 +3,8 @@
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
 «concept» **δεν τυπώνονται**. Η κατάσταση αποτυπώνει όσα είναι γνωστά στις
-2026-10-19· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το αρχείο.
+2026-10-22 (P2-88)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
+αρχείο.
 
 ## Σασί v3 — P2-78 sockets και πλευρικές διαγώνιες
 
@@ -14,18 +15,18 @@
 |---|---|---:|---|---|
 | Fit coupon μανικιού | `stl-v3/sleeve_fit_coupon.stl` ×1 | pre-P2-78 fit gate | M4 δοκιμής | Τυπωμένο· μόνο δοκιμή |
 | Κύρια μανίκια 50×30 | `stl-v3/clamp_sleeve.stl` ×5 | v3/P2-78 retained | M4×40 top, M4×60 side, ροδέλες/παξιμάδια | Τυπωμένα |
-| Πίσω γωνίες | `stl-v3/corner_clamp_left.stl` ×1, `corner_clamp_right.stl` ×1 | P2-78 retained/fixed | M4×40 top, M4×60 side | Προς εκτύπωση |
+| Πίσω γωνίες | `stl-v3/corner_clamp_left.stl` ×1, `corner_clamp_right.stl` ×1 | P2-78 retained/fixed | M4×40 top, M4×60 side | Τυπωμένα |
 | Πίσω δοκοί κινητήρων | `stl-v3/rear_motor_left.stl` ×1, `rear_motor_right.stl` ×1 | v3/P2-78 retained | Hardware FIT0403 + joint M4 | Τυπωμένα |
 | Μεσαίες πλευρικές δοκοί | `stl-v3/rail_extension_left.stl` ×1, `rail_extension_right.stl` ×1 | v3/P2-78 retained | Joint M4×40/60 | Τυπωμένα |
-| Εμπρός terminal δοκοί με sockets | `stl-v3/front_terminal_left.stl` ×1, `front_terminal_right.stl` ×1 | P2-78 | Joint M4 + socket locks | Προς εκτύπωση |
-| Πίσω τραβέρσα | `stl-v3/rear_crossbar_half.stl` ×2 | v3 corner fix/P2-78 retained | M4×40/60 | Τυπωμένη παλιότερη έκδοση· διορθωμένη προς εκτύπωση |
-| Τραβέρσα X240 | `stl-v3/x240_crossbar_half.stl` ×2 | P2-78 | 4×M4×30 top + 4×M4×60 transverse συνολικά | Προς εκτύπωση |
+| Εμπρός terminal δοκοί με sockets | `stl-v3/front_terminal_left.stl` ×1, `front_terminal_right.stl` ×1 | P2-78 | Joint M4 + socket locks | Τυπωμένα |
+| Πίσω τραβέρσα | `stl-v3/rear_crossbar_half.stl` ×2 | v3 corner fix/P2-78 retained | M4×40/60 | Τυπωμένη διορθωμένη έκδοση |
+| Τραβέρσα X240 | `stl-v3/x240_crossbar_half.stl` ×2 | P2-78 | 4×M4×30 top + 4×M4×60 transverse συνολικά | Τυπωμένη |
 | Κεντρικό μανίκι X240 | `stl-v3/x240_clamp_sleeve.stl` ×1 | v3/P2-78 retained | M4×30/60 | Τυπωμένο |
-| Terminal μανίκια X240 | `stl-v3/x240_terminal_sleeve.stl` ×2 | P2-78 | M4 locks Y75/100/125/150 | Προς εκτύπωση |
-| Τραβέρσα X300 | `stl-v3/x300_crossbar_half.stl` ×2 | P2-78 | 2×M4×30 top + 4×M4×30 transverse συνολικά | Προς εκτύπωση |
+| Terminal μανίκια X240 | `stl-v3/x240_terminal_sleeve.stl` ×2 | P2-78 | M4 locks Y75/100/125/150 | Τυπωμένα |
+| Τραβέρσα X300 | `stl-v3/x300_crossbar_half.stl` ×2 | P2-78 | 2×M4×30 top + 4×M4×30 transverse συνολικά | Τυπωμένη |
 | Κεντρικό μανίκι X300 | `stl-v3/x300_clamp_sleeve.stl` ×1 | v3/P2-78 retained | M4×30 | Τυπωμένο |
-| Terminal μανίκια X300 | `stl-v3/x300_terminal_sleeve.stl` ×2 | P2-78 | M4 locks Y100/160 | Προς εκτύπωση |
-| Πλευρικές torsion διαγώνιες | `stl-v3/torsion_side_brace.stl` ×2 | P2-78 | ανά brace M4×65 στο X240/Y150 + M4×35 στο X300/Y125, μεγάλες ροδέλες/παξιμάδια | Προς εκτύπωση |
+| Terminal μανίκια X300 | `stl-v3/x300_terminal_sleeve.stl` ×2 | P2-78 | M4 locks Y100/160 | Τυπωμένα |
+| Πλευρικές torsion διαγώνιες | `stl-v3/torsion_side_brace.stl` ×2 | P2-78 | ανά brace M4×65 στο X240/Y150 + M4×35 στο X300/Y125, μεγάλες ροδέλες/παξιμάδια | Τυπωμένες |
 
 Το `stl-v3/ballast_tab.stl` δεν είναι ενεργό: ανήκε στην καταργημένη
 plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
@@ -49,8 +50,8 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Φυσικό κομμάτι | Ενεργό STL (ποσότητα) | P2 | Βίδες / σύνδεση | Κατάσταση |
 |---|---|---:|---|---|
 | Βατήρας R75/75° | `stl-ski-mount/r75-75-ski.stl` ×1 | P2-73, P2-85 χωρίς bosses | 2×M4×30 χαμηλής κεφαλής στο X315 (κεφαλή μέσα) | Ήδη τυπωμένος — ο ενεργός STL είναι πλέον γεωμετρικά ο ίδιος· δεν ξανατυπώνεται |
-| Αριστερό/δεξί bracket X300 | `stl-ski-mount/x300-ski-bracket-left.stl` ×1, `x300-ski-bracket-right.stl` ×1 | P2-85 | 4×M4×35 στο X300 Y±75/±100, ροδέλες/nyloc | Προς εκτύπωση, ξαπλωμένο στην παρειά Y61 (όπως το STL), χωρίς supports· το P2-73 bracket καταργείται (έσπασε) |
-| Διχάλα τοιχώματος βατήρα | `stl-ski-mount/p285-ski-wall-fork-left.stl` ×1, `p285-ski-wall-fork-right.stl` ×1 | P2-85 | Hub στη M4×30 του X315· κλείδωμα 2×M4×30 DIN 933 (κεφαλή στο hex pocket) + ροδέλα Ø12/nyloc | Προς εκτύπωση, εξωτερική παρειά στο bed, χωρίς supports· αντικαθιστά τους `ski-boss-spacer` |
+| Αριστερό/δεξί bracket X300 | `stl-ski-mount/x300-ski-bracket-left.stl` ×1, `x300-ski-bracket-right.stl` ×1 | P2-85 | 4×M4×35 στο X300 Y±75/±100, ροδέλες/nyloc | **Τυπώνονται τώρα**, ξαπλωμένα στην παρειά Y61, χωρίς supports· το P2-73 bracket καταργείται (έσπασε) |
+| Διχάλα τοιχώματος βατήρα | `stl-ski-mount/p285-ski-wall-fork-left.stl` ×1, `p285-ski-wall-fork-right.stl` ×1 | P2-85 | Hub στη M4×30 του X315· κλείδωμα 2×M4×30 DIN 933 (κεφαλή στο hex pocket) + ροδέλα Ø12/nyloc | **Τυπώνονται τώρα**, εξωτερική παρειά στο bed, χωρίς supports· αντικαθιστούν τους `ski-boss-spacer` |
 
 Το `ski-boss-spacer.stl` (P2-73 fix 2026-10-19) είναι superseded από το hub
 της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
@@ -81,11 +82,14 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | Προς εκτύπωση |
 | BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | Προς εκτύπωση |
 | Cable bulkhead + feet | `stl-v2/cable_bulkhead.stl` ×1, `bulkhead_foot.stl` ×2 | P2-75 retained in v2 | Υπάρχουσες M4, ροδέλες/παξιμάδια | Προς εκτύπωση |
-| Upright jaw coupon | `stl-v2/upright_mount_fit_coupon.stl` ×1 | P2-76 | M4 δοκιμής | Μόνο δοκιμή· τυπώνεται πρώτο |
+| Upright jaw coupon | `stl-v2/upright_mount_fit_coupon.stl` ×1 | P2-76 | M4 δοκιμής | **Τυπωμένο, fit PASS**· η σιαγόνα 4,8 mm/γλωττίδα 4 mm/M4 θέση κλειδώνουν |
 
 Τα `rear-pod/stl-v2/mpu6050_mount.stl` και
 `rear-pod/stl-v2/chassis_spacers.stl` δεν είναι ενεργά και αρχειοθετούνται.
 Δεν υπάρχει M3 self-tap σε φέρον σημείο.
+
+Τα παλιά P2-79 side frames έχουν τυπωθεί αλλά είναι **superseded**: οι τέσσερις
+M4 δεν συναρμολογούνται. Δεν χρησιμοποιούνται· απαιτείται το νέο P2-88 STL.
 
 Το P2-83 `corner_tie.stl` είναι ακριβώς ένα σώμα. Βρίσκεται κάτω από τη
 βάση (`Z≤51`), στην εσωτερική παρειά της ράγας, και δεν περνά πάνω από τη

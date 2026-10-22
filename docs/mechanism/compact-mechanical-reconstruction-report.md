@@ -1,5 +1,9 @@
 # Compact mechanical reconstruction and validation
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 > **`CURRENT_SIMULATION_SURROGATE` — `NOT_PHYSICAL_INTAKE_ARCHITECTURE`.**
 > Intake carriage claims below describe the retained legacy simulator only.
 > The current physical FIT0186 motors and wheel centres are fixed; see

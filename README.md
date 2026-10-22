@@ -1,13 +1,28 @@
-# Tennis Robot Simulation Starter
+# Tennis Robot
 
-## Architecture Reset Notice
+Το τρέχον project είναι 4WD skid-steer tennis robot με modular PETG chassis,
+ROS 2 Jazzy/Gazebo Harmonic και **ένα κοινό περιστρεφόμενο dual flywheel** για
+συλλογή και εκτόξευση. Ξεκίνα από:
 
-The current Webots controller and world are now treated as **legacy reference**
-for the next implementation phase. New work should follow
-`docs/process/architecture-implementation-guide-el.md` and the active baseline plans in
-`docs/` before extending the existing controller behavior.
+- [`docs/current-design-el.md`](docs/current-design-el.md) — σημερινή
+  αρχιτεκτονική, physical status και ανοικτά gates,
+- [`cad/ACTIVE-PRINT-SET.md`](cad/ACTIVE-PRINT-SET.md) — μοναδικό active
+  print manifest,
+- [`docs/decisions/decision-log-el.md`](docs/decisions/decision-log-el.md) —
+  ιστορικό αποφάσεων,
+- [`CLAUDE.md`](CLAUDE.md) — ενεργοί κανόνες ανάπτυξης/runtime.
 
-This is a first simulation-first experiment for a tennis-ball collecting and serving robot.
+Canonical runtime είναι native Ubuntu 24.04 + ROS 2 Jazzy. Σε Ubuntu 26.04
+χρησιμοποιείται [`docker/jazzy/run.sh`](docker/jazzy/run.sh). Το παλιό
+Docker/Humble και ο Webots runtime δεν είναι ενεργά fallbacks.
+
+## Ιστορικό — αρχικό Webots starter
+
+> Η υπόλοιπη ενότητα διατηρείται ως ιστορικό της πρώτης υλοποίησης και δεν
+> περιγράφει το σημερινό robot. Δες
+> [`docs/current-design-el.md`](docs/current-design-el.md).
+
+This was the first simulation-first experiment for a tennis-ball collecting and serving robot.
 
 The initial goal is intentionally small:
 

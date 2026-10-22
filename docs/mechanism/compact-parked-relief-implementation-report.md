@@ -1,5 +1,9 @@
 # Compact PARKED local-relief implementation report
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Date: 2026-08-25
 
 ## Outcome

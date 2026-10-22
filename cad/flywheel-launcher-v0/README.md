@@ -1,5 +1,9 @@
 # Flywheel launcher CAD workspace
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../docs/current-design-el.md).
+
 The current standalone architecture and evidence status are defined by
 `docs/mechanism/standalone-flywheel-launcher.md`. The active standalone CAD
 inputs in this directory are `launcher-envelope.scad`,

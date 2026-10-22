@@ -1,5 +1,9 @@
 # τι διαφέρει από το αναμενόμενο — P2-77
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 ![P2-77 κάτω όψη: τα τέσσερα υπάρχοντα μισά τερματίζουν στον νέο κοινό κόμβο](../../cad/modular-test-chassis/archive/p277-torsion-node/p277-torsion-node-underside.png)
 
 ![P2-77 τελική πρόταση service rear pod· η P2-76 v2 δεν αλλάζει](../../cad/rear-pod/archive/p277-service-proposal/p277-final-service-proposal.png)

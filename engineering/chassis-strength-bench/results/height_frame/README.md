@@ -1,5 +1,9 @@
 # Height-frame screen — current bolted plate architecture
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../../../docs/current-design-el.md).
+
 2026-10-11. This is a **new ideal-joint structural model**, not a rerun of an
 unchanged low chassis advertised as validation of its upper frame. The CAD
 study, low-chassis manufacturing STLs, and standalone launcher source are not

@@ -1,5 +1,9 @@
 # Flywheel wheel-candidate provisional mechanical Gate A
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Date: 2026-08-26
 
 Scope: isolated standalone launcher only. This is a **simulation-ready provisional engineering baseline**, not a procurement freeze, manufacturing release or physical validation.

@@ -1,5 +1,9 @@
 # Φάση 2 — isolated xacro validation και Gazebo 5a
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 > **Αναθεώρηση στροφών:** τα straight/braking συμπεράσματα παραμένουν. Τα
 > turn results επαναλήφθηκαν με 0,650 kg τροχούς και gyro variant· δείτε
 > `shared-flywheel-phase2-turn-diagnostic-el.md`. Το gyro κλείνει το yaw

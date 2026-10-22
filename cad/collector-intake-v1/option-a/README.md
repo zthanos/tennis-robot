@@ -1,5 +1,9 @@
 # Collector intake — fixed-motor Option A supporting CAD
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../../docs/current-design-el.md).
+
 This directory supports the current fixed-motor, direct-drive,
 compliant-tyre architecture. The authoritative architecture and open gates are
 in [`standalone-intake-fixed-motor-compliant-tyre.md`](../../../docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md).

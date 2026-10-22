@@ -1,5 +1,9 @@
 # τι διαφέρει από το αναμενόμενο — P2-73
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 ![P2-73 +15 selector-rail conflict](../../cad/modular-test-chassis/p273-ski-selector-rails-15-side.png)
 
 ![P2-73 +20 selector-rail conflict](../../cad/modular-test-chassis/p273-ski-selector-rails-20-side.png)
@@ -59,4 +63,3 @@ clearance τυπώσιμου εξαρτήματος, επειδή η κατασ�
 Κατάσταση: `P2_73_FAIL_FROZEN_SKI_INTERSECTS_SELECTOR_RAILS_PAUSED`.
 
 ΠΑΥΣΗ.
-

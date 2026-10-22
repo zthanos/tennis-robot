@@ -1,5 +1,9 @@
 # Collector Arduino Bring-Up Sketches
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../docs/current-design-el.md).
+
 Αυτός ο φάκελος έχει τα Arduino sketches για το πρώτο bench bring-up του
 collector:
 

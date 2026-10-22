@@ -1,5 +1,9 @@
 # Basket bin v2.1 + entry hood — OpenSCAD
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../docs/current-design-el.md).
+
 Manufacturing-reference model of the sim-validated basket (debug log
 #45-#56): sunken removable wire-mesh bin, load-management tray, receiving
 chute, front retention (corner guards + centre lip) and the chassis-mounted

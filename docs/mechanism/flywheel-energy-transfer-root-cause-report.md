@@ -1,5 +1,9 @@
 # Standalone flywheel energy-transfer root-cause report
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 > **ΑΝΤΙΚΑΤΑΣΤΑΘΗΚΕ από P2-61:** το κείμενο συνέδεε 7,994 mm diametral
 > deformation με 27,265 N, ενώ ο δεύτερος αριθμός είναι `K*p^1.5` για
 > μονοπλευρικό p≈4 mm. Η σωστή per-contact αξιολόγηση είναι

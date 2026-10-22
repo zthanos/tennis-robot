@@ -1,5 +1,9 @@
 # C2 native-q100 calibration amendment coverage report
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 ## Coverage result
 
 - Gate: **PASS**

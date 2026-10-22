@@ -1,5 +1,9 @@
 # C2 Gazebo covariance evidence report
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 - Evidence directory: `runtime/c2_controlled_coverage` (only associated target JSONL rows)
 - Accepted samples: 270
 - Range domain (m): [1.021574547701437, 2.9799470906893557]

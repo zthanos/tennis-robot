@@ -1,5 +1,9 @@
 # Standalone fixed-motor intake handoff capability
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Date: 2026-08-27 · schema 2 · **supersedes the flat-ground revision**
 
 Evidence class: **SIMULATION_BOUNDED — not physical validation**

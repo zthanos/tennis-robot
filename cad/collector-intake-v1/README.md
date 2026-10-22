@@ -1,5 +1,9 @@
 # Collector intake v1 CAD
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../docs/current-design-el.md).
+
 ## Active design
 
 The current physical collector is the fixed-motor, direct-drive,

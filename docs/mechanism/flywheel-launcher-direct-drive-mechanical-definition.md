@@ -1,5 +1,9 @@
 # Flywheel launcher direct-drive mechanical definition and Gate A decision
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Date: 2026-08-26
 Scope: isolated, standalone flywheel launcher only
 

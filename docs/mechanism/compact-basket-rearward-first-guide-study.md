@@ -1,4 +1,8 @@
 # Compact basket rearward-first two-guide design study
+
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
 Date: 2026-08-25
 
 ## Study outcome

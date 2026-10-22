@@ -1,5 +1,9 @@
 # P2-59 — 5d-1 μονή εκτόξευση, τροφοδοσία και break-beam
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 > **ΑΝΤΙΚΑΤΑΣΤΑΘΗΚΕ από P2-61 ως προς launch/contact αριθμούς:** το plateau
 > 6,2/7,7 m/s προήλθε από το λανθασμένο per-contact compression mapping.
 > Break-beam X320, T=100 ms, pins και fail-closed feed baseline παραμένουν·

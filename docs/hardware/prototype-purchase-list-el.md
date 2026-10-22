@@ -529,9 +529,12 @@ Active cooler (υποχρεωτικός σε αυτό το φορτίο)
 | 1 set | ξυλόβιδες 3.5x30 ή 4x30 | ξύλινα rails/νευρώσεις |
 | 1 | D4 wood glue | μόνιμες ξύλινες ενισχύσεις |
 
-## 8. Standalone Flywheel Launcher
+## 8. Common Rotating Flywheel
 
-Authoritative module status: [`standalone-flywheel-launcher.md`](../mechanism/standalone-flywheel-launcher.md). The architecture is provisionally frozen; no physical speed, range, spin, tread or final hub has been validated.
+Current architecture: [`../current-design-el.md`](../current-design-el.md). The
+standalone launcher report is historical evidence. The P2-40 shared-flywheel
+geometry is frozen, but no physical speed, range, spin, tread or final hub has
+been validated.
 
 ### ALREADY OWNED
 
@@ -542,9 +545,12 @@ No launcher-specific motor, wheel or high-speed hub is confirmed as received. Do
 | Qty | Item | Evidence currently available | Source/status |
 |---:|---|---|---|
 | 2 | **ODrive Dual Shaft Motor D5065-270KV** | Manufacturer evidence: 50 mm body diameter, 65 mm body length, mass approximately 0.49 kg; 8 mm primary shaft with flat, 30 mm projection, 24 mm flat length and 0.5 mm flat depth; 8 mm secondary shaft; 12N14P / 7 pole pairs; four nominal 4 mm mounting features on 30 mm PCD; 270 rpm/V; `Kt=0.031 N·m/A`; phase-neutral resistance `0.039 Ω`; NTC 10 kΩ thermistor; 4 mm bullet phase connectors. Mount-feature thread/depth and rotor inertia are not published in the captured evidence. | [Hellas Digital — D5065 270KV](https://www.hellasdigital.gr/electronics/motors-and-drivers/stepper/dual-shaft-motor-d5065-270kv/). Selected, not ordered. Snapshot 22/08/2026: €98.99 incl. VAT each, €197.98/pair before shipping. |
-| 2 | **Provisional AliExpress flywheel candidate** | `USER_SUPPLIED_SELLER_DATA`: nominal 200 mm diameter, 50 mm width, nominal 10 mm axle/bore, aluminium-alloy hub plus rubber tyre, seller-listed mass approximately 900 g. None of these values is measured hardware. | AliExpress candidate already evaluated in the project. Exact listing/order status must be confirmed at purchase. |
+| 2 | **AliExpress pneumatic flywheel wheel, nominal 200×50** | `SELLER_DATA_NOT_MEASURED`: outer diameter 192 mm, tread width 48 mm, mass 760 g, nominal 10 mm interface/6200 bearings, aluminium-alloy split hub. | **Παραγγέλθηκαν 2 τεμ. 22/10/2026** για το κοινό flywheel (βλ. `ordered-parts.md` A1). Η τελική ρυθμιζόμενη απόσταση αξόνων D5065 μένει ΑΝΟΙΧΤΗ μέχρι μέτρηση στην παραλαβή. |
 
-One D5065 directly drives each wheel. The standalone simulation uses a provisional 12.8 V bus and 20 A operating limit per motor, corresponding to 0.62 N·m. Theoretical no-load speed is not a ball-speed claim. Motor controllers, high-speed guarding and power hardware remain separate selections.
+One D5065 directly drives each wheel. The existing simulation uses a provisional
+12.8 V bus and 20 A operating limit per motor, corresponding to 0.62 N·m.
+Theoretical no-load speed is not a ball-speed claim. Motor controllers,
+high-speed guarding and power hardware remain separate selections.
 
 Critical receiving inspection for each wheel: verify whether the nominal 10 mm datum is a rigid, concentric through-bore in the aluminium hub. If it is a bearing inner race, removable bearing stack, sleeve or another non-rigid torque interface, reopen mechanical Gate A before manufacturing the final arbor.
 

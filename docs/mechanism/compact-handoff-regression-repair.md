@@ -1,5 +1,9 @@
 # Compact ramp-to-receiving-chute handoff repair
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 > **`CURRENT_SIMULATION_SURROGATE` — `NOT_PHYSICAL_INTAKE_ARCHITECTURE`.**
 > Carriage telemetry in this report belongs to the retained legacy simulator
 > and does not define physical intake compliance.
