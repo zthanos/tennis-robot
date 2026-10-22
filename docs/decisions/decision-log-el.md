@@ -195,16 +195,21 @@
 - **Κατάσταση:** **ΑΠΟΦΑΣΙΣΜΕΝΟ, ΥΛΟΠΟΙΗΣΗ ΕΚΚΡΕΜΕΙ**. Δεν αλλάζει ακόμη
   firmware, Rev-C netlist ή harness· απαιτείται νέα ρητή έγκριση μετά το
   drive test.
-- **Απαιτήσεις υλοποίησης:** encoder σε Mega pin-change pins, δύο endpoint
-  switches `−3°/+20°` με homing, direction-specific hardware interruption
-  του αντίστοιχου R_EN/L_EN, stall detection από R_IS/L_IS, αρχικό PWM cap
-  περίπου 60% στα 18–20 V Parkside και μηχανικά emergency stops
-  `−12°/+22°`.
-- **Pin audit:** `A8…A15` είναι `PCINT16…23`. Τα A10/A11 και A8/A9
-  απελευθερώνονται από τα παλιά intake encoders· A10/A11 είναι ήδη στο
-  `J_ENC_IL`. Τα A12…A15 είναι firmware-free αλλά όχι στο σημερινό 34-pin
-  harness. Η Rev-C γεφυρώνει τα R_EN/L_EN και δεν δρομολογεί IS, επομένως
-  το hardware-limit/current-sense κύκλωμα χρειάζεται μελλοντική netlist.
+- **Feedback θέσης:** primary είναι AS5600 `0x36` στο hinge για απόλυτη
+  γωνία, με δύο endpoint switches `−3°/+20°` για ανεξάρτητο homing/reference
+  και επιβεβαίωση. Ο FIT0186 encoder είναι προαιρετικό diagnostic.
+- **Απαιτήσεις υλοποίησης:** direction-specific hardware interruption του
+  αντίστοιχου R_EN/L_EN, stall detection από R_IS/L_IS, μηχανικά emergency
+  stops `−12°/+22°` και ξεχωριστή fused regulated 12 V rail για BTS #3. Το
+  IS απαιτεί bench calibration και συμπληρώνει fuse/timeout· δεν θεωρείται
+  precision closed-loop current measurement.
+- **Pin/power audit:** το AS5600 μοιράζεται I²C D20/D21 χωρίς address conflict
+  με MPU6050. Μόνο αν χρησιμοποιηθεί ο diagnostic encoder, τα `A8…A15` είναι
+  `PCINT16…23`: A10/A11 είναι ήδη στο `J_ENC_IL`, A8/A9 απελευθερώνονται και
+  A12…A15 δεν υπάρχουν στο σημερινό harness. Η Rev-C γεφυρώνει R_EN/L_EN,
+  δεν δρομολογεί IS και δεν μεταφέρει motor power. Το P2-52/P2-70 power tree
+  προβλέπει Parkside→regulated 12 V DC-DC, αλλά δεν έχει αγοραστεί. Raw
+  Parkside+duty cap παραμένει μόνο contingency, όχι baseline.
 - **Μηχανικό load path:** preload στα συμμετρικά +20° stops και launch
   reaction `yoke→stops→arch`, όχι μέσω actuator/Tr8. Manual transport pin
   μόνο χωρίς τροφοδοσία.

@@ -1,6 +1,6 @@
 # Τρέχον design του tennis robot
 
-Κατάσταση: **P2-89b — 2026-10-22**. Αυτό είναι το κεντρικό σημείο εκκίνησης
+Κατάσταση: **P2-89c — 2026-10-22**. Αυτό είναι το κεντρικό σημείο εκκίνησης
 για τη σημερινή αρχιτεκτονική. Το φυσικό print status παραμένει στο
 [`cad/ACTIVE-PRINT-SET.md`](../cad/ACTIVE-PRINT-SET.md), ενώ το πλήρες ιστορικό
 πειραμάτων βρίσκεται στο
@@ -59,6 +59,11 @@ traction/contact gates.
 ΑΝΟΙΧΤΗ μέχρι να μετρηθούν και οι δύο τροχοί στην παραλαβή. Το `Y≈±125 mm`
 είναι μόνο πρώτη γεωμετρική εκτίμηση, όχι release dimension.
 
+Το exact geometry audit P2-53 χρησιμοποίησε frozen τροχούς `Ø200×60 mm`.
+Οι παραγγελμένοι έχουν seller-reported πέλμα 48 mm, δηλαδή είναι 12 mm
+στενότεροι από αυτό το surrogate. Αυτό ανοίγει ξανά lateral hub/cheek,
+service-loop και wheel-position checks μετά τη φυσική μέτρηση.
+
 ## Μηχανισμός κλίσης
 
 Η αποφασισμένη baseline μετά τα P2-53/P2-54 είναι ένας υπάρχων
@@ -78,10 +83,18 @@ stops. Το δεύτερο συμμετρικό stop είναι υποχρεωτ
 switches στα `−3°/+20°` παρέχουν homing και επιβεβαίωση θέσης. Ανεξάρτητα
 μηχανικά emergency stops περιορίζουν τη διαδρομή στα `−12°/+22°`.
 
+Primary feedback είναι **AS5600 στο hinge**, fixed I²C address `0x36`, για
+απόλυτη γωνία. Τα endpoint switches `−3°/+20°` παρέχουν ανεξάρτητο
+homing/reference και επιβεβαίωση. Ο encoder του FIT0186 είναι
+προαιρετικός/διαγνωστικός για screw/motor motion, stall και backlash· δεν
+είναι το authoritative position feedback.
+
 Επιτρέπεται manual, spring-retained transport pin μόνο με τη μονάδα ακίνητη
-και χωρίς τροφοδοσία· δεν είναι runtime lock. Έχουν παραληφθεί δύο FIT0186,
-αλλά η αγορά/παραλαβή Tr8, belt hardware, switches και τελικών stops απαιτεί
-**ΕΠΙΒΕΒΑΙΩΣΗ ΧΡΗΣΤΗ**.
+και χωρίς τροφοδοσία· δεν είναι runtime lock. Έχουν παραληφθεί δύο FIT0186.
+Tr8×2/nut, pulleys/belt/tensioner, AS5600/magnet, endpoint switches και το
+ρυθμιζόμενο 12 V power stage **δεν έχουν αγοραστεί**· βρίσκονται στο
+[`ordered-parts.md`](hardware/ordered-parts.md) ως Parts To Order μετά το
+drive test.
 
 ## Διαδρομή μπάλας και καλάθι
 
@@ -145,19 +158,26 @@ jaw coupon τυπώθηκε και πέρασε, άρα η σιαγόνα `4,8 m
 
 Οι απαιτήσεις της μελλοντικής netlist/firmware υλοποίησης είναι:
 
-- quadrature encoder του FIT0186 σε pin-change pins· τα `A8…A15` είναι
-  `PCINT16…23`. Προτιμώμενος υποψήφιος είναι `A10/A11`, ήδη δρομολογημένος
-  ως `J_ENC_IL`. Τα `A8/A9` επίσης απελευθερώνονται· τα `A12…A15` είναι
-  ελεύθερα στο firmware αλλά δεν υπάρχουν στο σημερινό 34-pin harness,
+- primary absolute angle από AS5600 `0x36` στο κοινό I²C `D20/D21`, μαζί
+  με το MPU6050 `0x68/0x69`, αφού ελεγχθούν breakout voltage/pull-ups,
+- προαιρετικός FIT0186 quadrature encoder μόνο για diagnostics. Αν
+  χρησιμοποιηθεί, τα `A8…A15` είναι `PCINT16…23`: το `A10/A11` είναι ήδη
+  δρομολογημένο ως `J_ENC_IL`, τα `A8/A9` επίσης απελευθερώνονται, ενώ τα
+  `A12…A15` δεν υπάρχουν στο σημερινό 34-pin harness,
 - δύο endpoint switches `−3°/+20°` και deterministic homing,
 - direction-specific hardware limit: κάθε endpoint αποκόπτει μόνο το
   `R_EN` ή `L_EN` της κίνησης προς το αντίστοιχο όριο. Η σημερινή Rev-C
   γεφυρώνει R_EN/L_EN, άρα αυτό απαιτεί νέα, ελεγμένη netlist,
 - stall detection από τα BTS `R_IS/L_IS`, τα οποία επίσης δεν δρομολογούνται
-  στο σημερινό control harness· ADC pins και thresholds μένουν να οριστούν,
-- αρχικό PWM cap περίπου 60% με Parkside 18–20 V. Αυτό είναι safety/design
-  requirement, όχι ισοδύναμο ρυθμισμένης 12 V τροφοδοσίας, και απαιτεί
-  current/thermal validation πριν release.
+  στο σημερινό control harness· ADC pins και thresholds μένουν να οριστούν.
+  Το IS χρειάζεται bench calibration και λειτουργεί μαζί με fuse/timeout,
+  όχι ως τεκμηριωμένο precision closed-loop current limit.
+
+Το BTS #3/FIT0186 τροφοδοτείται από **ξεχωριστή fused regulated 12 V rail**
+από το Parkside power tree. Το P2-70 έχει δεσμεύσει χώρο για αυτό το DC-DC,
+αλλά ο converter δεν έχει αγοραστεί/επιλεγεί και η Rev-C δεν μεταφέρει motor
+power. Direct raw Parkside 15–21 V με duty cap είναι μόνο προσωρινό contingency
+του P2-52, όχι η αποφασισμένη tilt τροφοδοσία.
 
 Firmware και Rev-C/netlist δεν αλλάζουν πριν ολοκληρωθεί το drive test και
 δοθεί νέα ρητή έγκριση χρήστη. Οι D5065 controllers παραμένουν ξεχωριστή,
@@ -215,8 +235,8 @@ docks μέτριου φορτίου. Δεν χρησιμοποιούνται σ�
 - ski hand test,
 - proof-load 30 N του control panel,
 - tilt implementation: νέα netlist/harness, firmware, homing/endpoints,
-  direction-specific hardware limits, IS stall thresholds και FIT0186/Tr8
-  current/thermal/backdrive test,
+  AS5600 calibration, direction-specific hardware limits, IS stall thresholds,
+  regulated 12 V stage και FIT0186/Tr8 current/thermal/backdrive test,
 - μετρήσεις των AliExpress flywheel wheels και των μελλοντικών Parkside.
 
 Με απόφαση χρήστη, δεν γίνονται άλλες κύριες αγορές πριν επιβεβαιωθεί η φυσική

@@ -4124,3 +4124,25 @@ design για −3→+20°. Manual transport pin επιτρέπεται μόνο
 τροφοδοσία. Δεν άλλαξε firmware, netlist, CAD ή STL. Κατάσταση:
 `P2_89B_TILT_CHANNEL_DECIDED_IMPLEMENTATION_PENDING`.
 ΠΑΥΣΗ.
+
+### P2-89c — tilt power, primary feedback και Parts To Order
+
+τι διαφέρει από το αναμενόμενο: το P2-52 δεν όριζε raw Parkside+60% PWM ως
+baseline. Όριζε BTS #3/FIT0186 από regulated 12 V και κρατούσε raw-bus duty
+cap μόνο ως προσωρινό contingency. Η Rev-C μεταφέρει μόνο 5 V logic/signals,
+όχι motor power, ενώ το P2-70 power tree δεσμεύει χώρο για DC-DC 12 V του
+FIT0186. Ο κατάλληλος converter δεν έχει αγοραστεί.
+
+Primary position feedback είναι το AS5600 `0x36` στο hinge, όχι ο encoder του
+FIT0186. Τα endpoint switches −3°/+20° δίνουν independent homing/reference και
+confirmation. Ο motor encoder μένει προαιρετικός diagnostic και χρειάζεται
+PCINT pins μόνο αν τελικά χρησιμοποιηθεί.
+
+Στο `ordered-parts.md` προστέθηκαν ως μη αγορασμένα/μετά το drive test:
+Tr8×2+nut/thrust/coupling, δύο 1:1 pulleys και belt με 6 mm D motor bore,
+tensioner/guard, AS5600+Ø6×2,5 magnet, δύο dual-contact endpoint switches και
+Parkside→regulated 12 V DC-DC. Η A1 σημειώνει ότι το P2-53 χρησιμοποίησε
+Ø200×60 surrogate ενώ το seller-reported tread των παραγγελμένων είναι 48 mm.
+Δεν άλλαξε firmware, netlist, CAD ή STL. Κατάσταση:
+`P2_89C_TILT_POWER_FEEDBACK_AND_PURCHASE_PLAN_CORRECTED`.
+ΠΑΥΣΗ.

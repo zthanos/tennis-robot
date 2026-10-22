@@ -69,6 +69,10 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 > **Στοιχεία πωλητή (ΟΧΙ μετρημένα):** εξωτερική διάμετρος **192 mm** (όχι 200), πλάτος πέλματος
 > 48 mm, μάζα **760 g**/τεμ., πίεση 36 PSI (2,5 bar), ζάντα δύο κομματιών με βίδες/παξιμάδια,
 > κατευθυντικό πέλμα (V) — ο δεύτερος τροχός τοποθετείται κατοπτρικά.
+> Το frozen exact-geometry audit P2-53 χρησιμοποίησε τροχούς **Ø200×60 mm**:
+> το seller-reported πέλμα 48 mm είναι 12 mm στενότερο. Επομένως hub/cheek,
+> lateral wheel datum, service loops και clearances ξαναελέγχονται μετά τη
+> φυσική μέτρηση· το P2-53 width δεν αποτελεί receiving dimension.
 >
 > **Επίπτωση στον σχεδιασμό:** το CAD έχει άξονες στο Y±129 (απόσταση 258 mm) για D200 → nip 58 mm,
 > συμπίεση μπάλας ~9 mm. Με D192 το nip γίνεται ~66 mm (σχεδόν μηδενική συμπίεση) → οι άξονες των
@@ -86,6 +90,17 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 |---:|---|---|---:|---:|---:|---|---|
 | 9 | 24 mm hex wheel hub / adapter, **6 mm bore (D-shaft)** → Baja 5B 24 mm hex | Drive / Wheels | 4 | TBD | TBD | Grobotronics | ✅ Λύθηκε — βλ. G3 + printed 12→24 hex adapter |
 | 10 | MPU-6050 IMU module (6-axis gyro + accel, GY-521, I2C) | Sensors / Odometry | 1 | 3,60 € | 3,60 € | Grobotronics | ✅ Παραγγέλθηκε — βλ. G2 |
+
+### Tilt mechanism — μετά το physical drive test, δεν έχουν αγοραστεί
+
+| # | Part | Προδιαγραφή / interface | Ποσότητα | Κατάσταση |
+|---:|---|---|---:|---|
+| T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Ωφέλιμο thread travel ≥60 mm: 34–35 mm λειτουργική διαδρομή + ≥25 mm περιθώριο για end/adjustment· τελικό overall/cut length μετά το clevis/carriage dry-fit. Μαζί thrust bearing, flexible coupling και anti-rotation nut carriage | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
+| T2 | Δύο timing pulleys + toothed belt 1:1 | Ίδιο tooth count· motor pulley για **FIT0186 6 mm D-shaft** με θετικό κλείδωμα στο flat. Screw-side bore και belt length κλειδώνουν μετά τη φυσική center-distance μέτρηση | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
+| T3 | Belt tensioner + guard hardware | Ρύθμιση τάσης χωρίς να παραβιάζει τα P2-54 clearances· captive hardware και guard γύρω από pulleys/belt | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
+| T4 | AS5600 board + diametric magnet | I²C `0x36`, magnet `Ø6×2,5 mm`, non-magnetic cap, adjustable air gap 0,5–2,5 mm (στόχος 1,5 mm)· έλεγχος breakout voltage/pull-ups πριν κοινό D20/D21 με MPU6050 | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
+| T5 | Endpoint switches −3°/+20° | 2 switches με ανεξάρτητες επαφές για Mega sense/homing και NC direction-specific hardware cutoff προς το αντίστοιχο R_EN/L_EN· τελικός τύπος μετά stop/bracket fit | 2 | **Δεν έχουν αγοραστεί — μετά το drive test** |
+| T6 | Parkside→regulated 12 V DC-DC για BTS #3/FIT0186 | Input να καλύπτει το πραγματικό Parkside range 15–21 V, regulated 12 V output, fused motor branch· current/transient rating κλειδώνει μετά το FIT0186 current/thermal test | 1 | **Δεν έχει αγοραστεί — μετά το drive test** |
 
 ### Current compute basket — not yet ordered
 
