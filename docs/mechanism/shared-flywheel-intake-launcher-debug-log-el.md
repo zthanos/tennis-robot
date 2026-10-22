@@ -4099,3 +4099,28 @@ banner και σύνδεσμο προς το current design. Οι ημερομη
 firmware ή Gazebo. Κατάσταση:
 `P2_89_CURRENT_DESIGN_AND_DECISION_HISTORY_DOCUMENTED`.
 ΠΑΥΣΗ.
+
+### P2-89b — μηχανισμός κλίσης και αποφασισμένη κατανομή BTS
+
+τι διαφέρει από το αναμενόμενο: τα P2-11/P2-12 είχαν το
+`P16-50-256-12-S` ως baseline με 8,3 s no-load, αλλά τα νεότερα P2-53/P2-54
+το αντικατέστησαν με υπάρχον FIT0186+Tr8×2 και κράτησαν το P16 μόνο ως
+compact direct fallback. Επίσης η σημερινή Rev-C γεφυρώνει R_EN/L_EN ανά
+BTS και δεν δρομολογεί R_IS/L_IS, actuator endpoints ή A12…A15 στο 34-pin
+harness· συνεπώς δεν υλοποιεί direction-specific limit ή stall detection.
+
+Απόφαση χρήστη: BTS #1/#2 μένουν drive left/right, BTS #3
+`D44/D45/D40` γίνεται tilt FIT0186+Tr8×2 και BTS #4 `D46/D11/D42` γίνεται
+ρεζέρβα. Η απόφαση είναι κλειστή, αλλά η υλοποίηση περιμένει drive test και
+νέα ρητή έγκριση. Καταγράφηκαν encoder σε PCINT pins (προτιμώμενα A10/A11),
+endpoint switches −3°/+20° με homing, hardware directional EN cutoff,
+R_IS/L_IS stall detection, αρχικό PWM cap περίπου 60% στα 18–20 V Parkside
+και μηχανικά emergency stops −12°/+22°.
+
+Ο μηχανικός baseline κρατά έναν FIT0186/Tr8 actuator, υποχρεωτικά συμμετρικά
+seating stops, ελεγχόμενη προφόρτιση στο +20° και launch load path
+`yoke→stops→arch`. Ο υπολογισμένος χρόνος είναι 4,20 s no-load και 4,5…6 s
+design για −3→+20°. Manual transport pin επιτρέπεται μόνο ακίνητο και χωρίς
+τροφοδοσία. Δεν άλλαξε firmware, netlist, CAD ή STL. Κατάσταση:
+`P2_89B_TILT_CHANNEL_DECIDED_IMPLEMENTATION_PENDING`.
+ΠΑΥΣΗ.

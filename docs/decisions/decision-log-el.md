@@ -183,3 +183,30 @@
 - **Ανοιχτή απόφαση:** Ø192 οδηγεί σε ρυθμιζόμενη απόσταση αξόνων D5065, αλλά
   η τελική διαδρομή/θέση μένει **ΑΝΟΙΧΤΗ μέχρι μέτρηση**.
 - **Evidence:** `ordered-parts.md` A1.
+
+## 2026-10-22 — actuator κλίσης και κατανομή BTS7960
+
+- **Πλαίσιο:** τα P2-53/P2-54 έκαναν baseline το υπάρχον FIT0186+Tr8×2 και
+  άφησαν το P16 ως compact direct fallback. Η Rev-C εξακολουθεί να είναι
+  καλωδιωμένη/προγραμματισμένη για δύο drive και δύο intake κανάλια.
+- **Απόφαση χρήστη:** BTS #1/#2 παραμένουν drive left/right για τα ζεύγη
+  μοτέρ κάθε πλευράς. Το BTS #3 (`D44/D45`, EN `D40`) γίνεται tilt
+  FIT0186+Tr8×2. Το BTS #4 (`D46/D11`, EN `D42`) γίνεται ρεζέρβα.
+- **Κατάσταση:** **ΑΠΟΦΑΣΙΣΜΕΝΟ, ΥΛΟΠΟΙΗΣΗ ΕΚΚΡΕΜΕΙ**. Δεν αλλάζει ακόμη
+  firmware, Rev-C netlist ή harness· απαιτείται νέα ρητή έγκριση μετά το
+  drive test.
+- **Απαιτήσεις υλοποίησης:** encoder σε Mega pin-change pins, δύο endpoint
+  switches `−3°/+20°` με homing, direction-specific hardware interruption
+  του αντίστοιχου R_EN/L_EN, stall detection από R_IS/L_IS, αρχικό PWM cap
+  περίπου 60% στα 18–20 V Parkside και μηχανικά emergency stops
+  `−12°/+22°`.
+- **Pin audit:** `A8…A15` είναι `PCINT16…23`. Τα A10/A11 και A8/A9
+  απελευθερώνονται από τα παλιά intake encoders· A10/A11 είναι ήδη στο
+  `J_ENC_IL`. Τα A12…A15 είναι firmware-free αλλά όχι στο σημερινό 34-pin
+  harness. Η Rev-C γεφυρώνει τα R_EN/L_EN και δεν δρομολογεί IS, επομένως
+  το hardware-limit/current-sense κύκλωμα χρειάζεται μελλοντική netlist.
+- **Μηχανικό load path:** preload στα συμμετρικά +20° stops και launch
+  reaction `yoke→stops→arch`, όχι μέσω actuator/Tr8. Manual transport pin
+  μόνο χωρίς τροφοδοσία.
+- **Evidence:** debug P2-11/P2-12/P2-53/P2-54, Rev-C wiring και
+  `motion_intake_mega.ino` pin audit.

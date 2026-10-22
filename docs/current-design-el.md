@@ -1,6 +1,6 @@
 # Τρέχον design του tennis robot
 
-Κατάσταση: **P2-89 — 2026-10-22**. Αυτό είναι το κεντρικό σημείο εκκίνησης
+Κατάσταση: **P2-89b — 2026-10-22**. Αυτό είναι το κεντρικό σημείο εκκίνησης
 για τη σημερινή αρχιτεκτονική. Το φυσικό print status παραμένει στο
 [`cad/ACTIVE-PRINT-SET.md`](../cad/ACTIVE-PRINT-SET.md), ενώ το πλήρες ιστορικό
 πειραμάτων βρίσκεται στο
@@ -59,6 +59,30 @@ traction/contact gates.
 ΑΝΟΙΧΤΗ μέχρι να μετρηθούν και οι δύο τροχοί στην παραλαβή. Το `Y≈±125 mm`
 είναι μόνο πρώτη γεωμετρική εκτίμηση, όχι release dimension.
 
+## Μηχανισμός κλίσης
+
+Η αποφασισμένη baseline μετά τα P2-53/P2-54 είναι ένας υπάρχων
+**FIT0186 με μονόσπειρη Tr8×2**, offset 1:1 toothed-belt drive και anti-rotation
+nut carriage. Το παλιότερο Actuonix `P16-50-256-12-S` των P2-11/P2-12
+παραμένει compact direct fallback, όχι current actuator.
+
+Η λειτουργική διαδρομή είναι `−3°` συλλογή → `0°` μεταφορά → `+15…+20°`
+εκτόξευση. Για το FIT0186/Tr8 η υπολογισμένη διαδρομή `−3→+20°` είναι
+33,976 mm: 4,20 s ideal/no-load και **4,5…6 s design range** μέχρι να
+μετρηθούν continuous torque, θερμοκρασία, πραγματική απόδοση ιμάντα,
+backdrive και backlash. Ένας actuator αρκεί στο analytical screen.
+
+Στο `+20°` ο actuator κρατά μικρή ελεγχόμενη προφόρτιση πάνω στα seating
+stops. Το δεύτερο συμμετρικό stop είναι υποχρεωτικό: η αντίδραση εκτόξευσης
+περνά `yoke → stops → arch`, όχι από Tr8/actuator. Δύο εξωτερικά endpoint
+switches στα `−3°/+20°` παρέχουν homing και επιβεβαίωση θέσης. Ανεξάρτητα
+μηχανικά emergency stops περιορίζουν τη διαδρομή στα `−12°/+22°`.
+
+Επιτρέπεται manual, spring-retained transport pin μόνο με τη μονάδα ακίνητη
+και χωρίς τροφοδοσία· δεν είναι runtime lock. Έχουν παραληφθεί δύο FIT0186,
+αλλά η αγορά/παραλαβή Tr8, belt hardware, switches και τελικών stops απαιτεί
+**ΕΠΙΒΕΒΑΙΩΣΗ ΧΡΗΣΤΗ**.
+
 ## Διαδρομή μπάλας και καλάθι
 
 - P2-73/P2-85: τυπωμένος βατήρας R75/75° με νέα brackets και wall forks.
@@ -100,8 +124,8 @@ P2-77 rail-side mount.
 jaw coupon τυπώθηκε και πέρασε, άρα η σιαγόνα `4,8 mm`, η γλωττίδα `4 mm`
 και η αντίστοιχη M4 θέση δεν αλλάζουν.
 
-Η ενεργή Rev-C perfboard και το επαληθευμένο firmware
-`motion_intake_mega.ino` αντιστοιχούν τα τέσσερα BTS7960 ως:
+Η σημερινή, **μη τροποποιημένη** Rev-C perfboard και το επαληθευμένο firmware
+`motion_intake_mega.ino` εξακολουθούν να αντιστοιχούν τα τέσσερα BTS7960 ως:
 
 1. drive left — `D5/D6`, enable `D30`,
 2. drive right — `D9/D10`, enable `D31`,
@@ -109,8 +133,35 @@ jaw coupon τυπώθηκε και πέρασε, άρα η σιαγόνα `4,8 m
 4. intake right — `D46/D11`, enable `D42`.
 
 Τα δύο intake BTS οδηγούν από ένα FIT0186 στο σημερινό bring-up firmware.
-Το throw/launcher δεν περιλαμβάνεται στη Rev-C netlist. Οι D5065 controllers
-είναι ξεχωριστή, μη επιλεγμένη ακόμη αγορά και δεν ταυτίζονται με BTS7960.
+Το tilt actuator και οι endpoint sensors **δεν υπάρχουν** στη Rev-C netlist.
+
+Η αποφασισμένη τελική κατανομή καναλιών, της οποίας η υλοποίηση εκκρεμεί,
+είναι:
+
+1. BTS #1 — drive left, `D5/D6`, EN `D30`, ζεύγος μοτέρ αριστερής πλευράς,
+2. BTS #2 — drive right, `D9/D10`, EN `D31`, ζεύγος μοτέρ δεξιάς πλευράς,
+3. BTS #3 — tilt FIT0186+Tr8×2, `D44/D45`, EN `D40`,
+4. BTS #4 — ρεζέρβα, σημερινά `D46/D11`, EN `D42`.
+
+Οι απαιτήσεις της μελλοντικής netlist/firmware υλοποίησης είναι:
+
+- quadrature encoder του FIT0186 σε pin-change pins· τα `A8…A15` είναι
+  `PCINT16…23`. Προτιμώμενος υποψήφιος είναι `A10/A11`, ήδη δρομολογημένος
+  ως `J_ENC_IL`. Τα `A8/A9` επίσης απελευθερώνονται· τα `A12…A15` είναι
+  ελεύθερα στο firmware αλλά δεν υπάρχουν στο σημερινό 34-pin harness,
+- δύο endpoint switches `−3°/+20°` και deterministic homing,
+- direction-specific hardware limit: κάθε endpoint αποκόπτει μόνο το
+  `R_EN` ή `L_EN` της κίνησης προς το αντίστοιχο όριο. Η σημερινή Rev-C
+  γεφυρώνει R_EN/L_EN, άρα αυτό απαιτεί νέα, ελεγμένη netlist,
+- stall detection από τα BTS `R_IS/L_IS`, τα οποία επίσης δεν δρομολογούνται
+  στο σημερινό control harness· ADC pins και thresholds μένουν να οριστούν,
+- αρχικό PWM cap περίπου 60% με Parkside 18–20 V. Αυτό είναι safety/design
+  requirement, όχι ισοδύναμο ρυθμισμένης 12 V τροφοδοσίας, και απαιτεί
+  current/thermal validation πριν release.
+
+Firmware και Rev-C/netlist δεν αλλάζουν πριν ολοκληρωθεί το drive test και
+δοθεί νέα ρητή έγκριση χρήστη. Οι D5065 controllers παραμένουν ξεχωριστή,
+μη επιλεγμένη αγορά και δεν ταυτίζονται με BTS7960.
 
 Άλλα βασικά στοιχεία: Mega 2560, keyed perfboard, Pi 5, UGREEN power bank,
 MPU6050, PCA9685, E-stop `D33`, START `D32`, ARMED LED `D34` και break beams
@@ -163,6 +214,9 @@ docks μέτριου φορτίου. Δεν χρησιμοποιούνται σ�
 - basket mockup και pile retention 40/45,
 - ski hand test,
 - proof-load 30 N του control panel,
+- tilt implementation: νέα netlist/harness, firmware, homing/endpoints,
+  direction-specific hardware limits, IS stall thresholds και FIT0186/Tr8
+  current/thermal/backdrive test,
 - μετρήσεις των AliExpress flywheel wheels και των μελλοντικών Parkside.
 
 Με απόφαση χρήστη, δεν γίνονται άλλες κύριες αγορές πριν επιβεβαιωθεί η φυσική
