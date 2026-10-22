@@ -1,4 +1,4 @@
-# Ενεργό σύνολο εκτύπωσης — P2-85
+# Ενεργό σύνολο εκτύπωσης — P2-88
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
@@ -56,7 +56,7 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
 αναμένει πλέον 5 STL αντί για 4, όλα ακριβώς ένα σώμα.
 
-## Rear pod v2 — κατάσταση P2-86b
+## Rear pod v2 — κατάσταση P2-88
 
 > **ΠΡΟΣΟΧΗ — ΜΗΝ ΤΥΠΩΣΕΙΣ ΠΑΛΙΑ EXPORT:** στο P2-86b άλλαξαν ξανά τα
 > `base_left.stl`, `base_right.stl` και `corner_tie.stl`. Τα P2-86 base STL
@@ -67,11 +67,15 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 
 | Φυσικό κομμάτι | Ενεργό STL (ποσότητα) | P2 | Βίδες / σύνδεση | Κατάσταση |
 |---|---|---:|---|---|
-| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83/P2-86b | 4×M4×45 προς rear crossbar· 2×M4×20 countersunk προς ties· 4×M3 rear lands· τοπική flush-stay εγκοπή Y±165 | **ΝΕΟ P2-86b export — προς εκτύπωση** |
+| Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83/P2-86b | 4×M4×45 προς rear crossbar· 2×M4×20 countersunk προς ties· 4×M3 rear lands· τοπική flush-stay εγκοπή Y±165 | **ΤΥΠΩΜΕΝΕΣ P2-86b — ΚΛΕΙΔΩΜΕΝΕΣ, δεν επανεξήχθησαν στο P2-88** |
 | Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83/P2-86b | 2×M4×20 countersunk προς βάση· κοινή μακρύτερη through-M4 tie→rear crossbar→stay στο `Y±165/Z37` | **ΝΕΟ P2-86b export — προς εκτύπωση** |
 | Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | Προς εκτύπωση |
 | Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | Προς εκτύπωση |
-| Side frames | `stl-v2/side_frame.stl` ×2 | P2-79 | 4×M4×25 διαμπερώς, ροδέλες/nyloc | Προς εκτύπωση |
+| Side frames | `stl-v2/side_frame.stl` ×2 | P2-88 | εμπρός 2×M4×25 στο νέο X−132, πίσω 2×M4×35 με wedge, ροδέλες/nyloc | **ΝΕΟ P2-88 export — ξανατύπωμα· το P2-79 STL superseded** |
+| Jig εμπρός οπής βάσης | `stl-v2/side_frame_base_drill_jig.stl` ×1 | P2-88 | εντοπισμός στις δύο παλιές Ø4,5· τρυπάνι Ø4,5 | Προς εκτύπωση· υποχρεωτικό για τις τυπωμένες βάσεις |
+| Σφηνοειδείς πίσω ροδέλες | `stl-v2/rear_foot_wedge_washer.stl` ×2 | P2-88 | κάτω από την πίσω M4 | Προς εκτύπωση |
+| Parkside docks/drawers | `stl-v2/parkside_dock_left/right.stl`, `parkside_drawer_left/right.stl` ×1 | P2-88 provisional | 4×M3×12 προς υπάρχουσες slots + 2×M3 rear locks, Ruthex RX-M3x5.7 | **Σχεδιασμένο· αναμονή πραγματικής μπαταρίας/dock — ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ** |
+| Θήκη UGREEN | `stl-v2/ugreen_post_holder.stl` ×1 | P2-88 | 2×M3×20 + Ruthex RX-M3x5.7, προαιρετικό λουράκι | Προς εκτύπωση μετά από dry fit 110×40×40 |
 | Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81 | κάτω 4×M4×30, επάνω 4×M4×20, ροδέλες/nyloc | Προς εκτύπωση |
 | Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΝΕΟ P2-86 export — προς εκτύπωση**· physical proof-load 30 N πριν τη χρήση |
 | Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | Προς εκτύπωση |

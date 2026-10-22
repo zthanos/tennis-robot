@@ -4031,3 +4031,35 @@ stay↔pod και όλα τα pod control/Ugreen/carrier/posts/Parkside checks.
 **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ**. Κατάσταση:
 `P2_86B_EXISTING_HOLES_TANGENT_R60_PERIMETER_MAP_EXACT_SOLID_PASS`.
 ΠΑΥΣΗ.
+
+### P2-88 — συναρμολογήσιμα side frames, Parkside/UGREEN και tool-access gate
+
+τι διαφέρει από το αναμενόμενο: οι τέσσερις P2-79 side-frame M4 δεν ήταν
+συναρμολογήσιμες. Η εμπρός `X−140,5` έπεφτε μέσα στην πίσω τραβέρσα, η πίσω
+έδραση ήταν κεκλιμένη και τα screw axes κλείνονταν από τις κολόνες. Οι ήδη
+τυπωμένες P2-86b βάσεις έμειναν αμετάβλητες και δεν επανεξήχθησαν.
+
+Το νέο side frame κρατά τη δοκιμασμένη σιαγόνα 4,8 mm, γλωττίδα 4 mm, jaw
+M4 και post cross-bolts. Πίσω επαναχρησιμοποιεί το `X−256,5` με flat-bottom
+wedge και βίδα από κάτω. Εμπρός μεταφέρεται στο `X−132`, με νέα Ø4,5 μόνο
+μέσω locating jig στις δύο παλιές οπές. Το exact gate βρήκε και διορθώθηκαν
+ένα κλειστό rear wrench pocket και η ανάγκη Ø7 tool chimney εμπρός.
+
+Προστέθηκαν provisional Parkside fixed docks/drawers μέσα στο 141×91×81
+reservation, με δύο υπάρχουσες slots ανά πλευρά, θετικό rear M3 lock,
+οδηγούς/+X stop και carrier ηλεκτρικών επαφών. Για 0,65 kg, τα loads είναι
+12,8 N στα 2 g και 3,2 N στα 0,5 g· worst single-M3 nominal shear ≈1,8 MPa
+και 10 mm PETG bearing ≈0,43 MPa. Δεν τυπώνονται πριν μετρηθούν πραγματική
+μπαταρία, rails/latch/contacts/cable/CG.
+
+Η UGREEN 110×40×40 απέκτησε ανοικτή αφαιρούμενη θήκη στους δύο +Y posts,
+με 2×Ruthex RX-M3x5.7 και ανοικτά άκρα για καλώδιο/κουμπί. Το insert είναι
+παραμετρικό L5,7/OD4,6/pilot Ø4,0/depth≥6,7/wall≥2 mm. Καμία κύρια M4
+σύνδεση δεν χρησιμοποιεί insert.
+
+Το μόνιμο `check-active-assemblability.sh` μοντελοποιεί hardware και ≥60 mm
+driver paths. PASS_EMPTY: νέα joints, chassis-axis probes pod/ties/stays/ski
+P2-85/MPU, πλήρες P2-85 QA και P2-86 rear-F suite. Όλα τα νέα STL είναι
+manifold και ένα σώμα. Κατάσταση:
+`P2_88_PRINTED_BASE_LOCKED_ASSEMBLABILITY_EXACT_SOLID_PASS`.
+ΠΑΥΣΗ.

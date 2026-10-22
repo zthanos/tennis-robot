@@ -23,6 +23,15 @@ m4_clear = 4.5;
 m3_clear = 3.4;
 m3_pilot = 2.7;
 
+// P2-88 purchased heat-set insert.  This is the only insert family approved
+// for the pod: Ruthex RX-M3x5.7.  M4 joints remain through-bolted.
+ruthex_m3_length = 5.7;
+ruthex_m3_od = 4.6;
+ruthex_m3_hole = 4.0;
+ruthex_m3_depth = 6.7;
+ruthex_m3_min_wall = 2.0;
+ruthex_m3_boss_d = ruthex_m3_od + 2*ruthex_m3_min_wall;
+
 rear_crossbar_x = -165;
 rear_crossbar_w = 50;
 rear_crossbar_top_z = 52;
@@ -42,6 +51,21 @@ parkside_center_z = 98.5;
 
 ugreen_clear = [121,52,52];
 ugreen_center = [-195,42,258];
+ugreen_actual = [110,40,40];
+
+// P2-88 field-drilled front side-frame axis.  The rear axis is an existing
+// P2-79 through-hole in the printed base.  The new front Ø4.5 hole is made
+// only with side_frame_base_drill_jig.stl.
+side_frame_rear_x = panel_center_x-58; // -256.5
+side_frame_front_x = -132;
+side_frame_mount_y = 54;
+
+// Parkside X20V packaging is provisional until a real battery/contact dock
+// is measured.  The drawer remains inside the accepted P2-70 reservation.
+parkside_drawer_outer = [133,67,67];
+parkside_battery_provisional = [125,59,59];
+parkside_drawer_floor_z = 68;
+parkside_mount_x = [-245,-210];
 
 pi_clear = [98,74,46];
 pi_center_x = -212;

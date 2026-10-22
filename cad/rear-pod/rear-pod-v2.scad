@@ -283,15 +283,20 @@ module vertical_electronics_plate() {
     }
 }
 
-// Side frame: print two. It bolts to the revised base bosses at Y+/-54,
-// supports the old panel datum, and clamps a carrier tongue in a 4.8 mm jaw.
+// P2-88 side frame: print two.  The jaw, tongue datum and all upper post
+// cross-bolts are frozen.  Both base fasteners now sit outside the lower
+// columns, so the head/nut and a 60 mm tool path are physically reachable.
 module frame_web_2d() {
     union() {
-        for (x=[-58,58]) translate([x-4,4]) square([8,86]);
+        // Upper column datums are unchanged.  The lower 28 mm doglegs leave
+        // the rear nyloc and front screw head completely exposed.
+        for (x=[-58,58]) translate([x-4,30]) square([8,60]);
+        polygon(points=[[-45,4],[-37,4],[-37,25],[-54,34],[-62,34],[-45,25]]);
+        polygon(points=[[45,4],[53,4],[62,34],[54,34]]);
         polygon(points=[[-58,4],[-50,4],[24,76],[16,84]]);
         polygon(points=[[58,4],[50,4],[15,76],[23,84]]);
         translate([12,75]) square([15,31]);
-        translate([-58,4]) square([116,7]);
+        translate([-58,4]) square([124.5,7]);
     }
 }
 
@@ -299,9 +304,20 @@ module side_frame() {
     difference() {
         union() {
             rotate([90,0,0]) linear_extrude(height=8,center=true) frame_web_2d();
-            for (x=[-58,58]) translate([x,0,2]) cylinder(d=12,h=4,center=true);
+            // Rear pad reuses X-256.5. Front pad moves to X-132, local 66.5.
+            for (x=[-58,side_frame_front_x-panel_center_x])
+                translate([x,0,2]) cylinder(d=14,h=4,center=true);
+            // Low bridge keeps the rear pad integral below the open wrench
+            // pocket and overlaps the inward dogleg by 1 mm.
+            translate([-49.5,0,2.5]) cube([17,8,5],center=true);
         }
-        for (x=[-58,58]) translate([x,0,-1]) cylinder(d=m4_clear,h=8);
+        for (x=[-58,side_frame_front_x-panel_center_x])
+            translate([x,0,-1]) cylinder(d=m4_clear,h=8);
+        // Ø7 vertical tool chimney above the moved front screw head.
+        translate([side_frame_front_x-panel_center_x,0,4]) cylinder(d=7,h=28);
+        // Rear nyloc pocket/open-ended wrench space; the rear bolt enters
+        // from below through the wedge washer.
+        translate([-58,0,4]) cylinder(d=18,h=23);
         // Carrier plate is X17.5..21.5 relative to panel center.
         translate([17.1,-6,74]) cube([4.8,12,34]);
         // M4 transverse clamp screw through jaw and carrier tongue.
@@ -309,6 +325,133 @@ module side_frame() {
         // Through-M4 cross-bolts for the two upper-panel posts.
         for (x=[-58,58]) translate([x,-6,90]) rotate([-90,0,0])
             cylinder(d=m4_clear,h=12);
+    }
+}
+
+// Flat-bottom wedge follows the piecewise underside of the printed rear rib
+// at X-256.5.  Installed bottom is global Z39; top seats exactly on the rib.
+module rear_foot_wedge_washer() {
+    difference() {
+        polyhedron(
+          points=[[-8,-7,0],[8,-7,0],[8,7,0],[-8,7,0],
+                  [-8,-7,10.4615],[2.5,-7,4],[8,-7,4],
+                  [-8,7,10.4615],[2.5,7,4],[8,7,4]],
+          faces=[[0,1,2,3],[0,4,5,1],[1,5,6],[1,6,2],
+                 [3,2,6,9],[3,9,8,7],[0,3,7,4],
+                 [4,7,8,5],[5,8,9,6]]);
+        translate([0,0,-1]) cylinder(d=m4_clear,h=14);
+    }
+}
+
+module rear_foot_wedge_installed(side=1) {
+    translate([side_frame_rear_x,side*side_frame_mount_y,39])
+        rear_foot_wedge_washer();
+}
+
+// Locates from both original P2-79 Ø4.5 holes/bosses.  The guide tube is at
+// X-132 and is the only approved way to drill the already-printed base.
+module side_frame_base_drill_jig() {
+    difference() {
+        union() {
+            translate([(side_frame_rear_x+side_frame_front_x)/2,0,4])
+                cube([side_frame_front_x-side_frame_rear_x+18,18,8],center=true);
+            // The guide nose reaches the base top, 5 mm below the old boss
+            // tops on which the jig beam sits.
+            translate([side_frame_front_x,0,-5]) cylinder(d=13,h=21);
+        }
+        for (x=[side_frame_rear_x,panel_center_x+58])
+            translate([x,0,-1]) cylinder(d=m4_clear,h=12);
+        translate([side_frame_front_x,0,-6]) cylinder(d=m4_clear,h=23);
+    }
+}
+
+module ruthex_m3_vertical_bore(z_top=0,through=20) {
+    // Insert enters from +Z; the smaller continuation opens to the screw
+    // below.  Tensile clamp load therefore pulls the insert into the part.
+    translate([0,0,z_top-ruthex_m3_depth])
+        cylinder(d=ruthex_m3_hole,h=ruthex_m3_depth+0.2);
+    translate([0,0,z_top-through])
+        cylinder(d=m3_clear,h=through-ruthex_m3_depth+0.2);
+}
+
+// Fixed Parkside rail/dock.  It uses two existing base slots at Y±145,
+// biased 1.5 mm outward so the screw heads clear the Y142 rear rib.  The
+// drawer and battery dimensions remain explicit provisional parameters.
+module parkside_dock(side=1) {
+    sy=side;
+    difference() {
+        union() {
+            // Outer structural spine and inner guide, joined at +X stop.
+            translate([parkside_center_x,sy*151,64]) cube([133,7,13],center=true);
+            translate([parkside_center_x,sy*80,64]) cube([133,5,13],center=true);
+            translate([-132,sy*115.5,75]) cube([7,76,35],center=true);
+            // Electrical contact carrier with two parametric M3 lands.
+            translate([-136,sy*115.5,98]) cube([10,42,38],center=true);
+            // Rear positive-lock boss, accessible from the open Parkside door.
+            translate([-260,sy*153,76]) cube([16,10,16],center=true);
+        }
+        // Main mounting inserts are installed from above before the drawer.
+        for (x=parkside_mount_x)
+            translate([x,sy*146.5,70.5])
+                ruthex_m3_vertical_bore(0,14);
+        // Contact-module adjustment slots (module TBD after measurement).
+        for (z=[88,108]) translate([-142,sy*115.5,z]) rotate([0,90,0])
+            cylinder(d=m3_clear,h=16);
+        // Horizontal Ruthex lock insert; moderate-load retention only.
+        translate([-268,sy*153,76]) rotate([0,90,0])
+            cylinder(d=ruthex_m3_hole,h=ruthex_m3_depth+0.2);
+    }
+}
+
+module parkside_drawer(side=1) {
+    sy=side;
+    difference() {
+        union() {
+            translate([parkside_center_x,sy*115.5,parkside_drawer_floor_z+2])
+                cube([parkside_drawer_outer[0],parkside_drawer_outer[1],4],center=true);
+            for (yy=[-1,1])
+                translate([parkside_center_x,sy*115.5+yy*sy*32,
+                           parkside_drawer_floor_z+33.5])
+                    cube([parkside_drawer_outer[0],3,67],center=true);
+            // Rear pull/lock ear, kept inside the accepted envelope.
+            translate([-264,sy*153,76]) cube([8,10,16],center=true);
+        }
+        // Rear-to-front M3 lock screw access.
+        translate([-273,sy*153,76]) rotate([0,90,0]) cylinder(d=m3_clear,h=22);
+        // +X contact opening and cable relief.
+        translate([-139,sy*115.5,98]) cube([18,36,34],center=true);
+    }
+}
+
+// UGREEN tray clamps to the two +Y panel posts at Y90.  It opens toward +Y
+// for service; two M3 clamp screws use the purchased Ruthex inserts.  A strap
+// slot is secondary retention only.
+module ugreen_post_holder() {
+    difference() {
+        union() {
+            translate([ugreen_center[0],ugreen_center[1],235])
+                cube([116,46,6],center=true);
+            for (x=[panel_center_x-58,panel_center_x+58]) {
+                translate([x,77,249]) cube([16,28,34],center=true);
+                translate([x,70,249]) cube([28,12,14],center=true);
+            }
+            translate([ugreen_center[0],21,250]) cube([116,6,34],center=true);
+        }
+        // Actual 110x40x40 device cavity, open at both X ends for cable/button.
+        translate([ugreen_center[0],ugreen_center[1],258])
+            cube([ugreen_actual[0]+0.8,ugreen_actual[1]+0.8,ugreen_actual[2]+0.8],center=true);
+        // Ø23 post clamp seats, split open toward +Y.
+        for (x=[panel_center_x-58,panel_center_x+58]) {
+            translate([x,90,249]) cylinder(d=23.6,h=36,center=true);
+            translate([x,90,249]) cube([7,30,38],center=true);
+            translate([x-14,70,249]) rotate([0,90,0])
+                cylinder(d=m3_clear,h=28);
+            translate([x+4,70,249]) rotate([0,90,0])
+                cylinder(d=ruthex_m3_hole,h=ruthex_m3_depth+0.2);
+        }
+        // Two strap passages, not credited structurally.
+        for (x=[ugreen_center[0]-38,ugreen_center[0]+38])
+            translate([x,18,250]) cube([12,12,4],center=true);
     }
 }
 
@@ -494,6 +637,75 @@ module installed_structure_without_panel_or_base() {
     panel_post_installed(panel_center_x+58,-1,"front_negative");
     panel_post_installed(panel_center_x-58,1,"positive");
     panel_post_installed(panel_center_x+58,1,"positive");
+}
+
+module p288_access_hardware() {
+    // Side-frame front: head/washer above, nyloc below, 60 mm Allen path.
+    for (side=[-1,1]) {
+        color([.75,.75,.78]) {
+            translate([side_frame_front_x,side*side_frame_mount_y,68])
+                cylinder(d=9,h=4);
+            translate([side_frame_front_x,side*side_frame_mount_y,44])
+                cylinder(d=8,h=7);
+            translate([side_frame_front_x,side*side_frame_mount_y,72])
+                cylinder(d=6,h=60);
+            // Rear: low head below wedge, nyloc and wrench space above pad.
+            translate([side_frame_rear_x,side*side_frame_mount_y,35])
+                cylinder(d=9,h=4);
+            translate([side_frame_rear_x,side*side_frame_mount_y,68])
+                cylinder(d=8,h=7);
+            translate([side_frame_rear_x,side*side_frame_mount_y,68])
+                cylinder(d=18,h=20);
+        }
+        // Dock M3 heads/washers below the two existing slots and tool path.
+        for (x=parkside_mount_x) {
+            translate([x,side*146.5,46]) cylinder(d=6.5,h=4);
+            translate([x,side*146.5,-14]) cylinder(d=5,h=60);
+        }
+        // Positive drawer lock and 60 mm driver path from the rear.
+        translate([-273,side*153,76]) rotate([0,90,0]) cylinder(d=6,h=5);
+        translate([-333,side*153,76]) rotate([0,90,0]) cylinder(d=5,h=60);
+    }
+    // UGREEN clamp screws: approach each clamp from its nearest X end.
+    translate([-288.5,70,249]) rotate([0,90,0]) cylinder(d=5,h=60);
+    translate([-108.5,70,249]) rotate([0,-90,0]) cylinder(d=5,h=60);
+}
+
+module p288_new_parts_installed() {
+    for (side=[-1,1]) {
+        rear_foot_wedge_installed(side);
+        parkside_dock(side);
+        parkside_drawer(side);
+    }
+    ugreen_post_holder();
+}
+
+module p288_battery_ghosts() {
+    for (side=[-1,1]) color([.2,.7,.2,.45])
+        translate([parkside_center_x,side*parkside_center_y,
+                   parkside_drawer_floor_z+4+parkside_battery_provisional[2]/2])
+            cube(parkside_battery_provisional,center=true);
+    color([.15,.2,.3,.55]) translate(ugreen_center)
+        cube(ugreen_actual,center=true);
+}
+
+module qa_p288_reservation_overflow() {
+    difference() {
+        union() { for (side=[-1,1]) { parkside_dock(side); parkside_drawer(side); } }
+        union() { for (side=[-1,1])
+            translate([parkside_center_x,side*parkside_center_y,parkside_center_z-0.25])
+                cube([parkside_clear[0],parkside_clear[1],parkside_clear[2]+0.5],center=true); }
+    }
+}
+
+module qa_p288_ugreen_device_collision() {
+    intersection() { ugreen_post_holder(); translate(ugreen_center) cube(ugreen_actual,center=true); }
+}
+
+module p288_preview() {
+    assembly();
+    color([.75,.38,.08]) p288_new_parts_installed();
+    p288_battery_ghosts();
 }
 
 module installed_p279_structure() {
@@ -696,12 +908,24 @@ assert(estop_hole == 22.5 && toggle_hole == 12.3 && arm_hole == 16.3,
        "P2-81 control apertures must remain frozen");
 assert(status_led_hole == 8,
        "P2-84 status LED aperture must remain Ø8");
+assert(ruthex_m3_length == 5.7 && ruthex_m3_od == 4.6 &&
+       ruthex_m3_hole == 4.0 && ruthex_m3_depth >= 6.7,
+       "P2-88 purchased Ruthex RX-M3x5.7 dimensions changed");
+assert(ruthex_m3_boss_d >= ruthex_m3_od+4,
+       "P2-88 needs >=2 mm PETG around every M3 insert");
 
 if (part=="base_left") base_half_v2(1);
 else if (part=="base_right") base_half_v2(-1);
 else if (part=="pi_shelf") pi_shelf_v2();
 else if (part=="vertical_electronics_plate") vertical_electronics_plate();
 else if (part=="side_frame") rotate([90,0,0]) side_frame();
+else if (part=="rear_foot_wedge_washer") rear_foot_wedge_washer();
+else if (part=="side_frame_base_drill_jig") side_frame_base_drill_jig();
+else if (part=="parkside_dock_left") rotate([0,0,0]) parkside_dock(1);
+else if (part=="parkside_dock_right") rotate([0,0,0]) parkside_dock(-1);
+else if (part=="parkside_drawer_left") parkside_drawer(1);
+else if (part=="parkside_drawer_right") parkside_drawer(-1);
+else if (part=="ugreen_post_holder") ugreen_post_holder();
 else if (part=="panel_posts") panel_posts_print_set();
 else if (part=="corner_tie") corner_tie();
 else if (part=="component_pins") component_pin_plate();
@@ -720,6 +944,9 @@ else if (part=="qa_control_posts_penetration") qa_control_posts_penetration();
 else if (part=="qa_control_carrier_collision") qa_control_carrier_collision();
 else if (part=="p281_post_collision_debug") p281_post_collision_debug();
 else if (part=="p281_exploded_preview") p281_exploded_preview();
+else if (part=="qa_p288_reservation_overflow") qa_p288_reservation_overflow();
+else if (part=="qa_p288_ugreen_device_collision") qa_p288_ugreen_device_collision();
+else if (part=="p288_preview") p288_preview();
 else if (part=="envelope") envelope_ghost();
 else if (part=="assembly") assembly();
 else { envelope_ghost(); assembly(); }

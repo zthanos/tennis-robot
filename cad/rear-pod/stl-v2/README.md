@@ -1,3 +1,58 @@
+# τι διαφέρει από το αναμενόμενο — P2-88 συναρμολογήσιμο side frame και power docks
+
+![P2-88 rear pod, docks, UGREEN και panels F](../p288-assembly-isometric.png)
+
+![P2-88 side-frame πόδια, wedge, hardware/tool paths και drill jig](../p288-side-frame-detail.png)
+
+![P2-88 πίσω service όψη με ανοικτές πόρτες F](../p288-service-rear.png)
+
+Οι `base_left/right` είναι ήδη τυπωμένες P2-86b και **δεν άλλαξαν ούτε
+επανεξήχθησαν**. Το παλιό `side_frame.stl` P2-79 καταργείται: οι δύο
+κατακόρυφες M4 του δεν μπορούσαν να συναρμολογηθούν. Το P2-88 κρατά ακριβώς
+τη δοκιμασμένη σιαγόνα 4,8 mm, γλωττίδα 4 mm, jaw M4 και τα cross-bolts των
+posts, αλλά αλλάζει μόνο τα κάτω πόδια:
+
+- πίσω M4 στην υπάρχουσα οπή `X−256,5/Y±54`, βίδα από κάτω, επίπεδη
+  `rear_foot_wedge_washer.stl`, ροδέλα/nyloc στο ανοικτό επάνω pocket,
+- εμπρός M4 στη νέα θέση `X−132/Y±54`, έξω από την τραβέρσα, κεφαλή από
+  πάνω και ροδέλα/nyloc από κάτω,
+- η νέα Ø4,5 οπή της ήδη τυπωμένης βάσης ανοίγεται **μόνο** με
+  `side_frame_base_drill_jig.stl`, το οποίο εντοπίζεται από τις δύο παλιές
+οπές με δύο προσωρινές M4. Αφαιρείται η βάση από το σασί πριν το τρύπημα.
+
+Βίδες side frames: 2×M4×25 εμπρός και 2×M4×35 πίσω, με μεγάλες ροδέλες και
+nyloc· επιβεβαίωση μήκους στο πραγματικό stack-up. Δεν υπάρχει M4 insert.
+
+## Parkside X20V — provisional, ΔΕΝ ΤΥΠΩΝΕΤΑΙ πριν από μέτρηση
+
+Τα `parkside_dock_left/right.stl` και `parkside_drawer_left/right.stl`
+είναι παραμετρικό packaging prototype μέσα στο reservation 141×91×81. Κάθε
+dock χρησιμοποιεί τις υπάρχουσες base slots `X−245` και `X−210`, με άξονα
+`Y±146,5` για επίπεδη έδραση έξω από τη νεύρωση. Δύο M3×12 από κάτω
+βιδώνουν σε Ruthex RX-M3x5.7. Μία rear-access M3 κλειδώνει θετικά το drawer·
+οι οδηγοί και το +X stop παίρνουν τα φορτία. Το ηλεκτρικό carrier έχει δύο
+M3 slots και έξοδο καλωδίου προς τον εσωτερικό καλωδιοδιάδρομο.
+
+Για μπαταρία 0,65 kg: 2 g κατακόρυφα = 12,8 N, 0,5 g = 3,2 N. Worst
+single-M3 nominal shear ≈1,8 MPa και bearing σε 10 mm PETG ≈0,43 MPa. Πριν
+από εκτύπωση μετρώνται πραγματικά: L/W/H, ράγες/κωνικότητα, release tabs και
+διαδρομή, επαφές/contact module, bend radius καλωδίου και κέντρο μάζας.
+
+## UGREEN 110×40×40
+
+Το `ugreen_post_holder.stl` είναι μονοκόμματη ανοικτή θήκη στους δύο +Y Ø23
+posts, με 2×M3×20 και Ruthex RX-M3x5.7. Αφαιρείται προς +Y χωρίς λύσιμο pod,
+με ανοικτά άκρα X για κουμπί/καλώδιο. Το λουράκι είναι μόνο δευτερεύον.
+
+Ruthex datum: `L=5,7`, `OD=4,6`, pilot `Ø4,0`, βάθος `≥6,7`, PETG γύρω από
+insert `≥2,0 mm`. Τα inserts είναι μόνο για docks/θήκη, ποτέ για κύρια M4.
+
+Σειρά: (1) βγάζεις τις βάσεις, (2) στερεώνεις το jig στις παλιές οπές και
+τρυπάς Ø4,5 στο X−132, (3) τοποθετείς rear wedge/βίδες, (4) βιδώνεις τα νέα
+side frames, (5) επανατοποθετείς carrier/posts, (6) τοποθετείς inserts και
+docks/UGREEN holder. Το permanent QA μοντελοποιεί hardware και ≥60 mm tool
+paths. Τα P2-88 paths, chassis axes, P2-85 ski και P2-86 panels είναι EMPTY.
+
 # τι διαφέρει από το αναμενόμενο — P2-86 φέρον interface panels F
 
 > **ΜΗΝ ΤΥΠΩΣΕΙΣ τα παλιά P2-84 exports** των `base_left/right` και

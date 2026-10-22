@@ -19,6 +19,9 @@ all_parts=(
   base_left base_right pi_shelf vertical_electronics_plate side_frame
   panel_posts corner_tie component_pins component_clips bts_spacers
   upright_mount_fit_coupon control_panel
+  rear_foot_wedge_washer side_frame_base_drill_jig
+  parkside_dock_left parkside_dock_right
+  parkside_drawer_left parkside_drawer_right ugreen_post_holder
 )
 parts=("${all_parts[@]}")
 if (($#)); then
@@ -29,6 +32,10 @@ declare -A expected_components=(
   [vertical_electronics_plate]=1 [side_frame]=1 [panel_posts]=4
   [corner_tie]=1 [component_pins]=27 [component_clips]=32
   [bts_spacers]=18 [upright_mount_fit_coupon]=2 [control_panel]=1
+  [rear_foot_wedge_washer]=1 [side_frame_base_drill_jig]=1
+  [parkside_dock_left]=1 [parkside_dock_right]=1
+  [parkside_drawer_left]=1 [parkside_drawer_right]=1
+  [ugreen_post_holder]=1
 )
 
 for part_name in "${parts[@]}"; do
@@ -53,3 +60,4 @@ done
 
 echo "Validated ${#parts[@]} generated parts; retained cable parts present"
 bash "$root_dir/../check-active-chassis-hole-alignment.sh" pod_base corner_ties
+bash "$root_dir/../check-active-assemblability.sh" p288
