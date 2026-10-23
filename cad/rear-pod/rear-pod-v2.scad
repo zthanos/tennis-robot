@@ -288,15 +288,10 @@ module vertical_electronics_plate() {
 // columns, so the head/nut and a 60 mm tool path are physically reachable.
 module frame_web_2d() {
     union() {
-        // P2-90b external post forks.  The printed post clevis is blind below
-        // local Z-1 and its M4 bore is along X, so the former centre column
-        // could neither enter nor share the bolt.  Paired ears remain outside
-        // Ø23 and preserve the existing post bore centre (local Z90).
-        for (x=[-58,58],e=[-1,1])
-            translate([x,0]) scale([e,1]) polygon(points=[
-                [2,30],[6,30],[17,78],[17,100],
-                [12,100],[12,75],[2,40]
-            ]);
+        // P2-90c: columns terminate below the closed spherical end of each
+        // printed post.  The separate 3-D cups below carry the post; no rib
+        // attempts to enter the physically closed clevis.
+        for (x=[-58,58]) translate([x-4,30]) square([8,47]);
         polygon(points=[[-45,4],[-37,4],[-37,25],[-54,34],[-62,34],[-45,25]]);
         polygon(points=[[45,4],[53,4],[62,34],[54,34]]);
         polygon(points=[[-58,4],[-50,4],[24,76],[16,84]]);
@@ -310,6 +305,9 @@ module side_frame() {
     difference() {
         union() {
             rotate([90,0,0]) linear_extrude(height=8,center=true) frame_web_2d();
+            // P2-90c open-top cups.  X stays compact for the through-M4;
+            // Y flares to clear the front_negative 45-degree departure.
+            for (x=[-58,58]) post_socket_cup(x);
             // Rear pad reuses X-256.5. Front pad moves to X-132, local 66.5.
             for (x=[-58,side_frame_front_x-panel_center_x])
                 translate([x,0,2]) cylinder(d=14,h=4,center=true);
@@ -319,9 +317,8 @@ module side_frame() {
         }
         for (x=[-58,side_frame_front_x-panel_center_x])
             translate([x,0,-1]) cylinder(d=m4_clear,h=8);
-        // Ø7 vertical tool chimney above the moved front screw head. P2-90b
-        // extends it through the new external-fork diagonal while retaining
-        // the outer ear above local Z75.
+        // Ø7 vertical tool chimney above the moved P2-88 base screw head;
+        // the P2-90c cup change does not alter this lower access path.
         translate([side_frame_front_x-panel_center_x,0,4]) cylinder(d=7,h=66);
         // Rear nyloc pocket/open-ended wrench space; the rear bolt enters
         // from below through the wedge washer.
@@ -331,8 +328,34 @@ module side_frame() {
         // M4 transverse clamp screw through jaw and carrier tongue.
         translate([8,0,95]) rotate([0,90,0]) cylinder(d=m4_clear,h=24);
         // Through-M4 along X, matching the already-printed post bore exactly.
-        for (x=[-58,58]) translate([x-22,0,90]) rotate([0,90,0])
-            cylinder(d=m4_clear,h=44);
+        for (x=[-58,58]) translate([x-25,0,90]) rotate([0,90,0])
+            cylinder(d=m4_clear,h=50);
+    }
+}
+
+module elliptical_frustum(z0,h,rx0,ry0,rx1,ry1) {
+    hull() {
+        translate([0,0,z0]) scale([rx0,ry0,1]) cylinder(d=2,h=0.2);
+        translate([0,0,z0+h-0.2]) scale([rx1,ry1,1]) cylinder(d=2,h=0.2);
+    }
+}
+
+module post_socket_cup(x=0) {
+    difference() {
+        union() {
+            translate([x,0,0])
+                // Eight millimetres of radial wall at the M4 plane.  The
+                // Y flare follows the immediately departing diagonal posts.
+                elliptical_frustum(75,19.5,19.8,19.8,20.0,30.0);
+            // Broad flat washer/nut lands merge 4 mm into the cup wall.
+            // The 48 mm face-to-face stack uses M4x60 + washers + nyloc.
+            for (sx=[-1,1]) translate([x+sx*20,0,90])
+                cube([8,18,18],center=true);
+        }
+        // Final post bottom is local Z79.5; 0.3 mm axial clearance.  The
+        // cavity continues above the rim so the exported STL is truly open.
+        translate([x,0,0])
+            elliptical_frustum(79.2,17,11.8,11.8,12.0,22.0);
     }
 }
 

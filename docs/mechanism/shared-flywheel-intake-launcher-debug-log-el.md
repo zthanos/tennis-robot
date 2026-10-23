@@ -4213,3 +4213,44 @@ panel→docks από πίσω→holder από πίσω→caps από έξω→st
 static pod/F/Parkside/electronics/ground και όλα τα chassis-hole probes.
 Κατάσταση: `P2_90B_SPLIT_CLAMPS_AND_ALL_PART_INSTALL_PATHS_PASS`.
 ΠΑΥΣΗ.
+
+### P2-90c — cup joint panel_post→side_frame και exported-STL joint gate
+
+τι διαφέρει από το αναμενόμενο: τα external forks του P2-90b ήταν πλέον
+συναρμολογήσιμα και ευθυγραμμισμένα με την παγωμένη οπή του τυπωμένου post,
+αλλά τα αυτιά ~5×8 mm και ~70 mm ύψους έδιναν περίπου 35–40 MPa στη ρίζα
+για 20 N πλάγια στο panel. Με το `side_frame` ξαπλωμένο, το Y φορτίζει επίσης
+κάθετα στις στρώσεις. Το exported-STL QA αποκάλυψε δεύτερο πρόβλημα στον ίδιο
+έλεγχο: το `side_frame.stl` αποθηκεύεται γυρισμένο +90° για εκτύπωση. Αν ο
+importer δεν αναιρέσει τη στροφή, pair/axis checks μπορούν να περάσουν
+ψευδώς. Με τη σωστή installed pose βρέθηκε και πραγματικό κλειστό υπόλοιπο
+1 mm στα άκρα της M4, επειδή τα νέα lands προεξείχαν περισσότερο από την
+αρχική διαμπερή οπή. Η οπή επεκτάθηκε πλήρως· τα τυπωμένα posts δεν άλλαξαν.
+
+Το νέο side frame αντικαθιστά κάθε fork με ανοικτό επάνω cup. Η κοιλότητα
+ξεκινά 0,3 mm κάτω/γύρω από το Ø23 άκρο, ανοίγει προς Y για τον άμεσο λοξό
+κλάδο `front_negative`/`positive`, έχει 8 mm wall στο επίπεδο `Z154` και
+πλατιά 8×18 mm washer/nut lands. Η M4 παραμένει ακριβώς κατά X στην παγωμένη
+post οπή, περνά και από τα δύο τοιχώματα και χρησιμοποιεί M4×60 με ροδέλες/
+nyloc. Κεφαλή: εξωτερική X παρειά. Nyloc: εσωτερική X παρειά, με ανοικτό
+κλειδί από την εξωτερική πλευρά Y. Δηλωμένη σειρά: bases + carrier + side
+frames, μετά posts/cup bolts, και μόνο μετά electronics/docks/panel. Οι
+διαδρομές Allen 59–60 mm και open-wrench είναι `PASS_EMPTY` σε αυτή τη σειρά.
+
+Αντοχή, δυσμενής χωρίς κατανομή: 20 N × 200 mm = 4.000 Nmm σε έναν post.
+Με ενεργό couple 15,3 mm, `F=261,4 N`. Bearing σε δύο τοιχώματα `8×4 mm`:
+`4,09 MPa`. Για δύο side walls `8×19,5 mm`, `Z=1.014 mm³` και root bending
+`3,94 MPa`. Και τα δύο είναι κάτω από 5 MPa ακόμη και κάθετα στις στρώσεις·
+με κατανομή σε δύο ή τέσσερα posts υπάρχει πρόσθετο περιθώριο. Η M4 double
+shear είναι 14,9 MPa. Worst 30 N vertical σε έναν post: M4 shear 1,71 MPa,
+printed bearing 0,47 MPa. Τα 2 g σε ~1 kg είναι 19,6 N και το 0,5 g 4,9 N.
+
+Μόνιμο gate `p290c-printed-joint-qa.scad`, πάνω στα πραγματικά STL και με
+αναίρεση του print rotation: pair intersection, Ø2 axis probe, insertion
+sweep, open-top probe και nominal ≥2 mm ligament (1,9 mm solid probe με
+0,1 mm αριθμητική ανοχή). Όλα `PASS_EMPTY`. Τα UGREEN split clamps P2-90b,
+βάσεις, panel_posts, control_panel, jaw 4,8/tongue 4/jaw M4 και pod envelope
+έμειναν αμετάβλητα. Επανεξήχθη μόνο `side_frame.stl`.
+
+Κατάσταση: `P2_90C_POST_CUPS_EXPORTED_STL_AND_TOOL_PATHS_PASS`.
+ΠΑΥΣΗ.

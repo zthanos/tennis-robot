@@ -9,7 +9,8 @@ trap 'rm -rf "$out"' EXIT
 
 checks=(side_frame_front_driver side_frame_rear_wrench
         side_frame_front_nut side_frame_rear_driver dock_mount_driver
-        parkside_lock_driver ugreen_driver)
+        parkside_lock_driver ugreen_driver post_cup_driver
+        post_cup_nyloc_wrench)
 
 for name in "${checks[@]}"; do
   mesh="$out/$name.stl"
@@ -107,6 +108,32 @@ for selector in corner_ties bases plate side_frames posts panel docks holder \
     exit 1
   fi
   echo "PART_INSTALL_PATH PASS_EMPTY: $selector"
+done
+
+# P2-90c: imported/exported STL checks for the post-to-side-frame joint.
+# Export scripts may point this at their temporary side_frame output.
+p290c_side_frame_stl="${P290C_SIDE_FRAME_STL:-$here/rear-pod/stl-v2/side_frame.stl}"
+p290c_panel_posts_stl="${P290C_PANEL_POSTS_STL:-$here/rear-pod/stl-v2/panel_posts.stl}"
+for selector in pair_clearance post_bolt_axes post_insertion cups_open \
+                cup_ligament; do
+  mesh="$out/printed-joint-$selector.stl"
+  log="$out/printed-joint-$selector.log"
+  status=0
+  "$openscad_bin" -o "$mesh" -D "check=\"$selector\"" \
+    -D "side_frame_stl=\"$p290c_side_frame_stl\"" \
+    -D "panel_posts_stl=\"$p290c_panel_posts_stl\"" \
+    "$here/p290c-printed-joint-qa.scad" >"$log" 2>&1 || status=$?
+  if [[ -s "$mesh" ]]; then
+    cat "$log" >&2
+    echo "PRINTED_JOINT FAIL: $selector" >&2
+    exit 1
+  fi
+  if ((status != 0)) && ! grep -qi "top level object is empty" "$log"; then
+    cat "$log" >&2
+    echo "PRINTED_JOINT ERROR: $selector (status $status)" >&2
+    exit 1
+  fi
+  echo "PRINTED_JOINT PASS_EMPTY: $selector"
 done
 
 # Every chassis-sharing screw also passes the permanent thin-axis probe.

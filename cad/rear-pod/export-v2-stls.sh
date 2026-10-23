@@ -61,4 +61,9 @@ done
 
 echo "Validated ${#parts[@]} generated parts; retained cable parts present"
 bash "$root_dir/../check-active-chassis-hole-alignment.sh" pod_base corner_ties
-bash "$root_dir/../check-active-assemblability.sh" p288
+qa_side_frame="$release_dir/side_frame.stl"
+qa_panel_posts="$release_dir/panel_posts.stl"
+[[ -f "$out_dir/side_frame.stl" ]] && qa_side_frame="$out_dir/side_frame.stl"
+[[ -f "$out_dir/panel_posts.stl" ]] && qa_panel_posts="$out_dir/panel_posts.stl"
+P290C_SIDE_FRAME_STL="$qa_side_frame" P290C_PANEL_POSTS_STL="$qa_panel_posts" \
+  bash "$root_dir/../check-active-assemblability.sh" p288
