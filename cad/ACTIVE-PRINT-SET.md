@@ -1,9 +1,9 @@
-# Ενεργό σύνολο εκτύπωσης — P2-90
+# Ενεργό σύνολο εκτύπωσης — P2-90b
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
 «concept» **δεν τυπώνονται**. Η κατάσταση αποτυπώνει όσα είναι γνωστά στις
-2026-10-23 (P2-90)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
+2026-10-23 (P2-90b)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
 αρχείο.
 
 ## Σασί v3 — P2-78 sockets και πλευρικές διαγώνιες
@@ -72,12 +72,12 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83/P2-86b | 2×M4×20 countersunk προς βάση· κοινή μακρύτερη through-M4 tie→rear crossbar→stay στο `Y±165/Z37` | **ΝΕΟ P2-86b export — προς εκτύπωση** |
 | Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | Προς εκτύπωση |
 | Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | Προς εκτύπωση |
-| Side frames | `stl-v2/side_frame.stl` ×2 | P2-88 | εμπρός 2×M4×25 στο νέο X−132, πίσω 2×M4×35 με wedge, ροδέλες/nyloc | **ΝΕΟ P2-88 export — ξανατύπωμα· το P2-79 STL superseded** |
+| Side frames | `stl-v2/side_frame.stl` ×2 | P2-88/P2-90b | εμπρός 2×M4×25 στο X−132, πίσω 2×M4×35 με wedge· εξωτερικά post forks 4×M4×45 στον υπάρχοντα άξονα X, ροδέλες/nyloc | **ΝΕΟ P2-90b export — ξανατύπωμα· τα P2-79/P2-88 STL superseded** |
 | Jig εμπρός οπής βάσης | `stl-v2/side_frame_base_drill_jig.stl` ×1 | P2-88 | εντοπισμός στις δύο παλιές Ø4,5· τρυπάνι Ø4,5 | Προς εκτύπωση· υποχρεωτικό για τις τυπωμένες βάσεις |
 | Σφηνοειδείς πίσω ροδέλες | `stl-v2/rear_foot_wedge_washer.stl` ×2 | P2-88 | κάτω από την πίσω M4 | Προς εκτύπωση |
 | Parkside docks/drawers | `stl-v2/parkside_dock_left/right.stl`, `parkside_drawer_left/right.stl` ×1 | P2-88 provisional | 4×M3×12 προς υπάρχουσες slots + 2×M3 rear locks, Ruthex RX-M3x5.7 | **Σχεδιασμένο· αναμονή πραγματικής μπαταρίας/dock — ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ** |
-| Θήκη UGREEN + πίσω retainer | `stl-v2/ugreen_post_holder.stl`, `ugreen_rear_retainer.stl` ×1 | P2-90, πραγματικό 115×45×45 | 2×M3×20 collars + 2×M3×12 retainer, Ruthex RX-M3x5.7, προαιρετικό λουράκι | **ΝΕΟ export 23/10 — κεντρική εισαγωγή από −X· η ενδιάμεση +6 mm έκδοση superseded** |
-| Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81 | κάτω 4×M4×30, επάνω 4×M4×20, ροδέλες/nyloc | **ΤΥΠΩΜΕΝΑ — κλειδωμένα στο P2-90** |
+| Θήκη UGREEN + split caps + πίσω retainer | `stl-v2/ugreen_post_holder.stl`, `ugreen_clamp_caps.stl` ×1 print plate / 2 caps, `ugreen_rear_retainer.stl` ×1 | P2-90/P2-90b, πραγματικό 115×45×45 | 4×M3×30 caps + 2×M3×12 retainer, 6× Ruthex RX-M3x5.7, προαιρετικό λουράκι | **ΝΕΟ P2-90b export holder+caps — πλάγια τοποθέτηση caps, κεντρική εισαγωγή συσκευής από −X· κλειστά P2-90 collars superseded** |
+| Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81 | κάτω/external-fork 4×M4×45, επάνω 4×M4×20, ροδέλες/nyloc | **ΤΥΠΩΜΕΝΑ — κλειδωμένα στο P2-90b, καμία μεταβολή STL** |
 | Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΤΥΠΩΜΕΝΟ — κλειδωμένο στο P2-90**· physical proof-load 30 N πριν τη χρήση |
 | Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | Προς εκτύπωση |
 | BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | Προς εκτύπωση |

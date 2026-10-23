@@ -4179,3 +4179,37 @@ carrier/electronics/controls/posts, panels F, ground, tool approaches
 `ugreen_rear_retainer.stl`. Κατάσταση:
 `P2_90_UGREEN_115X45X45_REAR_INSERTION_EXACT_SOLID_PASS`.
 ΠΑΥΣΗ.
+
+### P2-90b — πλευρικά συναρμολογήσιμα UGREEN clamps και καθολικό installation gate
+
+τι διαφέρει από το αναμενόμενο: τα P2-90 collars ήταν κλειστά δαχτυλίδια
+Ø31/Ø23,6 με σχισμή 7 mm. Δεν μπορούσαν να μπουν πλάγια σε Ø23 post, ο
+rear-negative απαιτούσε λύσιμο του τυπωμένου panel και ο λυγισμένος positive
+δεν επέτρεπε καθόλου ολίσθηση από άκρο. Επιπλέον, το πρώτο split σχέδιο
+έβαζε τις M3 στα Y±11, δηλαδή μέσα στη διατομή του post, και το ημικυκλικό
+cap απαιτούσε προσέγγιση μέσα από την electronics plate. Αυτά εντοπίστηκαν
+από πραγματικό swept-solid έλεγχο πριν το STL release.
+
+Η τελική θήκη κρατά την ίδια θέση UGREEN και την ίδια πίσω service διαδρομή.
+Κάθε post έχει πίσω ημικύκλιο ενσωματωμένο στο holder και ξεχωριστό επίπεδο
+εφαπτομενικό cap. Το cap μένει 0,5 mm έξω από τον Ø23 post, μπαίνει κατά Y
+από την εξωτερική πλευρά και κλείνει με 2×M3×30 στα Y±15 σε Ruthex
+RX-M3x5.7. Τα clamp centres ανέβηκαν μόνο 1 mm για 0,5 mm clearance από το
+rear-electronics envelope· device centre/height, retainer και insertion path
+δεν άλλαξαν. Επανεξήχθησαν holder και νέο two-body cap print plate· ο
+retainer δεν άλλαξε.
+
+Ο νέος installation gate βρήκε και προϋπάρχουσα αστοχία: η clevis των
+τυπωμένων panel posts είναι τυφλή κάτω από Z148 και η M4 της είναι στον X,
+ενώ το P2-88 side frame είχε κεντρικό rib που την τέμνει και οπή στον Y.
+Τα κλειδωμένα posts δεν άλλαξαν. Μόνο το επανεκτυπώσιμο side frame απέκτησε
+δύο εξωτερικά forks ανά post, έξω από Ø23, με through-M4 στον υπάρχοντα άξονα
+X και εκτεταμένο front-driver chimney. Η επιβεβαιωμένη jaw 4,8 mm, η tongue
+4 mm, η jaw M4, οι base holes και το pod envelope έμειναν ίδια.
+
+Δηλωμένη σειρά: ties→bases→side frames/plate ως raised subassembly→posts→
+panel→docks από πίσω→holder από πίσω→caps από έξω→stays. `PASS_EMPTY` για
+και τις 10 part-install paths, τις 4 service paths, tool access ≥60 mm,
+static pod/F/Parkside/electronics/ground και όλα τα chassis-hole probes.
+Κατάσταση: `P2_90B_SPLIT_CLAMPS_AND_ALL_PART_INSTALL_PATHS_PASS`.
+ΠΑΥΣΗ.

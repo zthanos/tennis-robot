@@ -88,6 +88,27 @@ for selector in ugreen parkside carrier pi; do
   echo "INSERTION_PATH PASS_EMPTY: $selector"
 done
 
+# P2-90b: installation sweep for every rear-pod part in declared order.
+for selector in corner_ties bases plate side_frames posts panel docks holder \
+                clamp_caps corner_stays; do
+  mesh="$out/part-install-$selector.stl"
+  log="$out/part-install-$selector.log"
+  status=0
+  "$openscad_bin" -o "$mesh" -D "check=\"$selector\"" \
+    "$here/p290b-part-installation-qa.scad" >"$log" 2>&1 || status=$?
+  if [[ -s "$mesh" ]]; then
+    cat "$log" >&2
+    echo "PART_INSTALL_PATH FAIL: $selector" >&2
+    exit 1
+  fi
+  if ((status != 0)) && ! grep -qi "top level object is empty" "$log"; then
+    cat "$log" >&2
+    echo "PART_INSTALL_PATH ERROR: $selector (status $status)" >&2
+    exit 1
+  fi
+  echo "PART_INSTALL_PATH PASS_EMPTY: $selector"
+done
+
 # Every chassis-sharing screw also passes the permanent thin-axis probe.
 bash "$here/check-active-chassis-hole-alignment.sh" \
   pod_base corner_ties corner_stays ski_brackets mpu all

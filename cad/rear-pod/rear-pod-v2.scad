@@ -288,9 +288,15 @@ module vertical_electronics_plate() {
 // columns, so the head/nut and a 60 mm tool path are physically reachable.
 module frame_web_2d() {
     union() {
-        // Upper column datums are unchanged.  The lower 28 mm doglegs leave
-        // the rear nyloc and front screw head completely exposed.
-        for (x=[-58,58]) translate([x-4,30]) square([8,60]);
+        // P2-90b external post forks.  The printed post clevis is blind below
+        // local Z-1 and its M4 bore is along X, so the former centre column
+        // could neither enter nor share the bolt.  Paired ears remain outside
+        // Ø23 and preserve the existing post bore centre (local Z90).
+        for (x=[-58,58],e=[-1,1])
+            translate([x,0]) scale([e,1]) polygon(points=[
+                [2,30],[6,30],[17,78],[17,100],
+                [12,100],[12,75],[2,40]
+            ]);
         polygon(points=[[-45,4],[-37,4],[-37,25],[-54,34],[-62,34],[-45,25]]);
         polygon(points=[[45,4],[53,4],[62,34],[54,34]]);
         polygon(points=[[-58,4],[-50,4],[24,76],[16,84]]);
@@ -313,8 +319,10 @@ module side_frame() {
         }
         for (x=[-58,side_frame_front_x-panel_center_x])
             translate([x,0,-1]) cylinder(d=m4_clear,h=8);
-        // Ø7 vertical tool chimney above the moved front screw head.
-        translate([side_frame_front_x-panel_center_x,0,4]) cylinder(d=7,h=28);
+        // Ø7 vertical tool chimney above the moved front screw head. P2-90b
+        // extends it through the new external-fork diagonal while retaining
+        // the outer ear above local Z75.
+        translate([side_frame_front_x-panel_center_x,0,4]) cylinder(d=7,h=66);
         // Rear nyloc pocket/open-ended wrench space; the rear bolt enters
         // from below through the wedge washer.
         translate([-58,0,4]) cylinder(d=18,h=23);
@@ -322,9 +330,9 @@ module side_frame() {
         translate([17.1,-6,74]) cube([4.8,12,34]);
         // M4 transverse clamp screw through jaw and carrier tongue.
         translate([8,0,95]) rotate([0,90,0]) cylinder(d=m4_clear,h=24);
-        // Through-M4 cross-bolts for the two upper-panel posts.
-        for (x=[-58,58]) translate([x,-6,90]) rotate([-90,0,0])
-            cylinder(d=m4_clear,h=12);
+        // Through-M4 along X, matching the already-printed post bore exactly.
+        for (x=[-58,58]) translate([x-22,0,90]) rotate([0,90,0])
+            cylinder(d=m4_clear,h=44);
     }
 }
 
@@ -428,6 +436,48 @@ module parkside_drawer(side=1) {
 // slides +X from the removable rear_hi opening, beside both rear posts.  Ports
 // face -X and the button faces +Y.  One collar on each rear post carries the
 // saddle; the rear retainer is removable and the strap is secondary only.
+module ugreen_fixed_clamp_half_local() {
+    difference() {
+        union() {
+            intersection() {
+                translate([0,0,9]) cylinder(d=31,h=18,center=true);
+                translate([-20,0,9]) cube([40,40,20],center=true);
+            }
+            for (y=[-15,15]) translate([-5,y,9]) cube([10,9,18],center=true);
+        }
+        translate([0,0,9]) cylinder(d=23.6,h=20,center=true);
+        // M3 clearance from the rear; screws engage inserts in the cap.
+        for (y=[-15,15]) translate([-12,y,9]) rotate([0,90,0])
+            cylinder(d=m3_clear,h=13);
+    }
+}
+
+module ugreen_clamp_cap_local() {
+    difference() {
+        // Tangential closing bar: its inner face is 0.3 mm beyond the Ø23
+        // post, so it can enter from the outside in Y without crossing the
+        // post, its bends or the electronics plate.
+        translate([16.25,0,9]) cube([8.5,39,18],center=true);
+        // Screws at Y+/-15 stay fully outside the Ø23 post. Purchased Ruthex
+        // RX-M3x5.7 inserts enter from the rear face toward +X.
+        for (y=[-15,15]) translate([12.0,y,9]) rotate([0,90,0])
+            cylinder(d=ruthex_m3_hole,h=ruthex_m3_depth+0.2);
+    }
+}
+
+module ugreen_clamp_cap_installed(side=1) {
+    // Z241 is wholly on the straight Y90 section of the positive post.  The
+    // rear-negative post slopes only 2 mm over its full height; its local
+    // centre at this height is Y-0.9, hence global Y-54.9.
+    py = side>0 ? 90 : -54.9;
+    translate([panel_center_x-58,py,232]) ugreen_clamp_cap_local();
+}
+
+module ugreen_clamp_caps_print_set() {
+    ugreen_clamp_cap_local();
+    translate([42,0,0]) ugreen_clamp_cap_local();
+}
+
 module ugreen_post_holder() {
     difference() {
         union() {
@@ -440,12 +490,15 @@ module ugreen_post_holder() {
             translate([-152,42,233]) cube([5,28,5],center=true);
             translate([-150,42,248.5]) cube([3,28,36],center=true);
 
-            // One lower collar on each rear post; wide Y spacing reacts the
-            // saddle moment while all connecting arms remain below Z235.5.
-            for (s=[-1,1]) let(py=s>0?90:-56) {
-                translate([panel_center_x-58,py,225]) cylinder(d=31,h=18,center=true);
+            // Fixed rear half on each post; separate front caps close them
+            // laterally without threading over either printed post path.
+            for (s=[-1,1]) let(py=s>0?90:-54.9) {
+                translate([panel_center_x-58,py,232])
+                    ugreen_fixed_clamp_half_local();
                 hull() {
-                    translate([panel_center_x-58,py-s*12,230]) cube([18,10,8],center=true);
+                    // Arm meets the outside of the ring; it must not cross
+                    // the post cylinder inside the semicircle.
+                    translate([panel_center_x-58,py-s*19.5,237]) cube([18,8,8],center=true);
                     translate([panel_center_x-58,ugreen_center[1]+s*25,230])
                         cube([28,5,8],center=true);
                 }
@@ -462,16 +515,6 @@ module ugreen_post_holder() {
         // Entire -X face stays open until the separate retainer is fitted.
         translate([-274,ugreen_center[1],258]) cube([18,47,47],center=true);
 
-        // Rear printed-post seats split outward.  Clamp screws approach from
-        // X and terminate in purchased Ruthex RX-M3x5.7 inserts.
-        for (s=[-1,1]) let(py=s>0?90:-56) {
-            translate([panel_center_x-58,py,225]) cylinder(d=23.6,h=20,center=true);
-            translate([panel_center_x-58,py+s*8,225]) cube([7,22,22],center=true);
-            translate([panel_center_x-72,py-s*12,230]) rotate([0,90,0])
-                cylinder(d=m3_clear,h=28);
-            translate([panel_center_x-54,py-s*12,230]) rotate([0,90,0])
-                cylinder(d=ruthex_m3_hole,h=ruthex_m3_depth+0.2);
-        }
         // M3 rear-retainer screws and two strap passages.  Neither strap is
         // credited as the primary structural attachment.
         for (sy=[-1,1]) {
@@ -709,10 +752,10 @@ module p288_access_hardware() {
         translate([-273,side*153,76]) rotate([0,90,0]) cylinder(d=6,h=5);
         translate([-333,side*153,76]) rotate([0,90,0]) cylinder(d=5,h=60);
     }
-    // UGREEN: two post collars plus two rear-retainer screws, all approached
-    // through the removable rear_hi aperture.
-    for (p=[[78,230],[-44,230]])
-        translate([-332,p[0],p[1]]) rotate([0,90,0]) cylinder(d=5,h=59.9);
+    // UGREEN: four split-clamp screws (two per post) plus two rear-retainer
+    // screws, all approached through the removable rear_hi aperture.
+    for (p=[[75,241],[105,241],[-69.9,241],[-39.9,241]])
+        translate([-327,p[0],p[1]]) rotate([0,90,0]) cylinder(d=5,h=60.4);
     for (p=[[3,242],[65,242]])
         translate([-332,p[0],p[1]]) rotate([0,90,0]) cylinder(d=5,h=62.3);
 }
@@ -724,6 +767,8 @@ module p288_new_parts_installed() {
         parkside_drawer(side);
     }
     ugreen_post_holder();
+    ugreen_clamp_cap_installed(-1);
+    ugreen_clamp_cap_installed(1);
     ugreen_rear_retainer();
 }
 
@@ -747,7 +792,8 @@ module qa_p288_reservation_overflow() {
 
 module qa_p288_ugreen_device_collision() {
     intersection() {
-        union(){ ugreen_post_holder(); ugreen_rear_retainer(); }
+        union(){ ugreen_post_holder(); ugreen_clamp_cap_installed(-1);
+                 ugreen_clamp_cap_installed(1); ugreen_rear_retainer(); }
         translate(ugreen_center) cube(ugreen_installed_size,center=true);
     }
 }
@@ -976,6 +1022,7 @@ else if (part=="parkside_dock_right") rotate([0,0,0]) parkside_dock(-1);
 else if (part=="parkside_drawer_left") parkside_drawer(1);
 else if (part=="parkside_drawer_right") parkside_drawer(-1);
 else if (part=="ugreen_post_holder") ugreen_post_holder();
+else if (part=="ugreen_clamp_caps") ugreen_clamp_caps_print_set();
 else if (part=="ugreen_rear_retainer") ugreen_rear_retainer();
 else if (part=="panel_posts") panel_posts_print_set();
 else if (part=="corner_tie") corner_tie();

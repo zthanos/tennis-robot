@@ -1,11 +1,25 @@
+> **P2-90b / 2026-10-23:** τα κλειστά P2-90 collars με σχισμή 7 mm δεν
+> μπορούσαν να περάσουν πλάγια πάνω από Ø23 post ούτε να συρθούν πάνω στον
+> λυγισμένο +Y post. Αντικαταστάθηκαν από πίσω ημικύκλιο ενσωματωμένο στη
+> θήκη και δύο ξεχωριστά εφαπτομενικά caps, 2×M3/Ruthex ανά post. Τα caps
+> μπαίνουν από την εξωτερική πλευρά χωρίς λύσιμο panel/posts. Ο καθολικός
+> installation-path gate αποκάλυψε επίσης ότι το παλιό side-frame centre rib
+> δεν μπορούσε να μπει στην τυφλή clevis του τυπωμένου post και είχε οπή M4
+> στον λάθος άξονα. Το νέο `side_frame.stl` χρησιμοποιεί εξωτερικά forks με
+> την ίδια, ήδη τυπωμένη M4 θέση στον X. **Οι τυπωμένες βάσεις, panel_posts
+> και control_panel δεν άλλαξαν ούτε επανεξήχθησαν.**
+>
 > **P2-90 / 2026-10-23:** η πραγματική συσκευή μετρήθηκε **115×45×45 mm**.
 > Η ενδιάμεση διεύρυνση 46,8 mm δεν λύνει τη συναρμολόγηση: οι ήδη τυπωμένοι
 > +Y posts αφήνουν περίπου 93 mm και εμποδίζουν εισαγωγή του μήκους 115 mm.
 > Η τελική θήκη μετακινεί το UGREEN στον κεντρικό διάδρομο, με θύρες προς −X
 > και κουμπί προς +Y, και το εισάγει από πίσω με αφαιρεμένο μόνο το `rear_hi`.
 > **Δεν άλλαξαν ούτε επανεξήχθησαν οι τυπωμένες βάσεις, posts ή control panel.**
-> Τύπωσε `ugreen_post_holder.stl` και `ugreen_rear_retainer.stl` από το παρόν
+> Τύπωσε `ugreen_post_holder.stl`, `ugreen_clamp_caps.stl` (print plate δύο
+> caps) και `ugreen_rear_retainer.stl` από το παρόν
 > release· μην τυπώσεις την ενδιάμεση έκδοση +6 mm.
+
+![P2-90b split clamps και πλευρική τοποθέτηση caps](../p290b-split-clamps.png)
 
 ![P2-90 UGREEN στη νέα κεντρική θήκη, rear_hi αφαιρεμένο](../p290-ugreen-service-isometric.png)
 
@@ -51,10 +65,14 @@ single-M3 nominal shear ≈1,8 MPa και bearing σε 10 mm PETG ≈0,43 MPa. �
 από εκτύπωση μετρώνται πραγματικά: L/W/H, ράγες/κωνικότητα, release tabs και
 διαδρομή, επαφές/contact module, bend radius καλωδίου και κέντρο μάζας.
 
-## UGREEN 115×45×45 — P2-90
+## UGREEN 115×45×45 — P2-90/P2-90b
 
-Το `ugreen_post_holder.stl` είναι μονοκόμματη σέλα που σφίγγει στους δύο
-πίσω Ø23 posts, έναν σε κάθε πλευρά. Η συσκευή εγκαθίσταται κατά X στο
+Το `ugreen_post_holder.stl` είναι μονοκόμματη σέλα με ένα πίσω ημικύκλιο
+ανά πίσω Ø23 post. Το `ugreen_clamp_caps.stl` περιέχει δύο ανεξάρτητα
+εφαπτομενικά caps. Κάθε cap μπαίνει από την εξωτερική πλευρά σε σταθερό X,
+χωρίς να περάσει πάνω από καμπύλη post ή electronics, και κλείνει με δύο
+M3 σε Ruthex RX-M3x5.7. Οι άξονες M3 είναι στα ±15 mm από το post centre,
+άρα δεν διαπερνούν τον Ø23 στύλο. Η συσκευή εγκαθίσταται κατά X στο
 `[-266,5…−151,5]`, `Y11,5…56,5`, `Z235,5…280,5`: θύρες προς −X, πλαϊνό
 κουμπί προς +Y. Η φυσική συσκευή έχει 4 mm από το ψηλότερο rear-electronics
 envelope και τουλάχιστον 3 mm από τα υπόλοιπα μη επιτρεπόμενα solids.
@@ -67,24 +85,28 @@ Service χωρίς λύσιμο του pod: (1) αφαιρείς μόνο το `
 frame και των panels F σε service κατάσταση. Το λουράκι είναι μόνο
 δευτερεύον.
 
-Βίδες: 2×M3×20 για τους post collars και 2×M3×12 για τον πίσω retainer,
-όλες σε Ruthex RX-M3x5.7. Οι οδηγοί εργαλείου έχουν 59,9/62,3 mm
+Βίδες: 4×M3×30 για τα δύο clamp caps και 2×M3×12 για τον πίσω retainer,
+σε συνολικά 6× Ruthex RX-M3x5.7. Οι οδηγοί εργαλείου έχουν ≥60 mm
 καθαρή πίσω προσέγγιση. Δεν χρησιμοποιείται M3 σε κύρια M4 φέρουσα ένωση.
 
 Το μόνιμο insertion gate ελέγχει επίσης Parkside drawer extraction. Για
 service της γυμνής όρθιας πλάκας απαιτείται πρώτα αφαίρεση rear_hi, control
 panel, posts και side frames, επειδή τα integral rear bosses δεν περνούν από
 τις παγωμένες σιαγόνες 4,8 mm. Το Pi αφαιρείται κατακόρυφα μετά την πλάκα.
-Και οι τέσσερις δηλωμένες διαδρομές (`UGREEN`, `Parkside`, plate, `Pi`)
-περνούν EMPTY.
+Και οι τέσσερις service διαδρομές (`UGREEN`, `Parkside`, plate, `Pi`) και
+οι δέκα installation διαδρομές (ties, bases, plate/frame subassembly,
+posts, panel, docks, holder, caps, stays) περνούν EMPTY.
 
 Ruthex datum: `L=5,7`, `OD=4,6`, pilot `Ø4,0`, βάθος `≥6,7`, PETG γύρω από
 insert `≥2,0 mm`. Τα inserts είναι μόνο για docks/θήκη, ποτέ για κύρια M4.
 
-Σειρά P2-88: (1) βγάζεις τις βάσεις, (2) στερεώνεις το jig στις παλιές οπές και
-τρυπάς Ø4,5 στο X−132, (3) τοποθετείς rear wedge/βίδες, (4) βιδώνεις τα νέα
-side frames, (5) επανατοποθετείς carrier/posts, (6) τοποθετείς inserts και
-docks/UGREEN holder. Το permanent QA μοντελοποιεί hardware, ≥59,9 mm tool
+Σειρά P2-90b: (1) βγάζεις τις βάσεις, (2) στερεώνεις το jig στις παλιές οπές
+και τρυπάς Ø4,5 στο X−132, (3) επανατοποθετείς bases/ties, (4) συναρμολογείς
+carrier+side frames ως υποσύνολο 100 mm πάνω από το pod, (5) το κατεβάζεις
+μαζί και στερεώνεις front M4/rear wedge+M4, (6) τοποθετείς posts/panel,
+(7) σύρεις docks και UGREEN holder από πίσω, (8) εισάγεις τα caps από έξω
+και τα βιδώνεις από πίσω, (9) βάζεις retainer. Το permanent QA μοντελοποιεί
+hardware, ≥60 mm tool
 paths και τα P2-90 swept solids. Τα P2-88 paths, chassis axes, P2-85 ski,
 P2-86 panels και P2-90 insertion paths είναι EMPTY.
 

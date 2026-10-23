@@ -32,7 +32,8 @@ module qa_docks_panels_service() {
 
 module qa_ugreen_surroundings() {
   intersection() {
-    union(){ ugreen_post_holder(); ugreen_rear_retainer(); }
+    union(){ ugreen_post_holder(); ugreen_clamp_cap_installed(-1);
+             ugreen_clamp_cap_installed(1); ugreen_rear_retainer(); }
     union() {
       carrier_installed();
       electronics_ghosts();
@@ -44,7 +45,8 @@ module qa_ugreen_surroundings() {
 
 module qa_ugreen_panels() {
   intersection() {
-    union(){ ugreen_post_holder(); ugreen_rear_retainer(); }
+    union(){ ugreen_post_holder(); ugreen_clamp_cap_installed(-1);
+             ugreen_clamp_cap_installed(1); ugreen_rear_retainer(); }
     all_f_rear(0);
   }
 }
