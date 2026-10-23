@@ -8,6 +8,26 @@ show_ghosts = true;
 show_panel = true;
 status_led_hole = 8;
 
+// P2-90d load-path geometry and conservative beam-model assumptions.
+p290d_spine_x = 36;
+p290d_spine_y = 24;
+p290d_rear_slot_x = 18;
+p290d_post_span = 193;      // cup M4 Z154 -> panel underside Z347
+p290d_spine_span = 90;      // base foot -> cup M4
+p290d_e_perp = 1200;        // MPa, conservative printed-PETG Z modulus
+p290d_post_i = 3.14159265*pow(post_d,4)/64;
+p290d_post_z = p290d_post_i/(post_d/2);
+p290d_spine_i_min = (p290d_spine_x-p290d_rear_slot_x)*pow(p290d_spine_y,3)/12;
+p290d_spine_z_min = (p290d_spine_x-p290d_rear_slot_x)*pow(p290d_spine_y,2)/6;
+p290d_base_tension = 20*(p290d_post_span+p290d_spine_span)/(p290d_spine_y/2);
+p290d_washer_area = (3.14159265/4)*(pow(14,2)-pow(m4_clear,2));
+p290d_single_delta =
+    20*pow(p290d_post_span,3)/(3*p290d_e_perp*p290d_post_i) +
+    20*pow(p290d_spine_span,3)/(3*p290d_e_perp*p290d_spine_i_min) +
+    (p290d_base_tension*8/(p290d_washer_area*p290d_e_perp)) *
+      (p290d_post_span+p290d_spine_span)/12;
+p290d_frame_delta = p290d_single_delta/4;
+
 module rounded_rect_2d(size, r=5) {
     hull()
         for (x=[-size[0]/2+r,size[0]/2-r], y=[-size[1]/2+r,size[1]/2-r])
@@ -301,6 +321,16 @@ module frame_web_2d() {
     }
 }
 
+// P2-90d three-dimensional load spine.  The 36 mm X depth and 24 mm Y
+// depth carry both panel bending directions from each cup directly into its
+// base foot; the hull also follows the moved front fastener at local X66.5.
+module cup_load_spine(x_top=0,x_foot=0) {
+    hull() {
+        translate([x_foot,0,8]) cube([p290d_spine_x,p290d_spine_y,16],center=true);
+        translate([x_top,0,74]) cube([p290d_spine_x,p290d_spine_y,4],center=true);
+    }
+}
+
 module side_frame() {
     difference() {
         union() {
@@ -308,6 +338,10 @@ module side_frame() {
             // P2-90c open-top cups.  X stays compact for the through-M4;
             // Y flares to clear the front_negative 45-degree departure.
             for (x=[-58,58]) post_socket_cup(x);
+            // P2-90d: continuous deep sections cup -> foot.  The rear is
+            // vertical; the front tapers onto the P2-88 X66.5 foot.
+            cup_load_spine(-58,-58);
+            cup_load_spine(58,side_frame_front_x-panel_center_x);
             // Rear pad reuses X-256.5. Front pad moves to X-132, local 66.5.
             for (x=[-58,side_frame_front_x-panel_center_x])
                 translate([x,0,2]) cylinder(d=14,h=4,center=true);
@@ -319,10 +353,12 @@ module side_frame() {
             translate([x,0,-1]) cylinder(d=m4_clear,h=8);
         // Ø7 vertical tool chimney above the moved P2-88 base screw head;
         // the P2-90c cup change does not alter this lower access path.
-        translate([side_frame_front_x-panel_center_x,0,4]) cylinder(d=7,h=66);
+        translate([side_frame_front_x-panel_center_x,0,4]) cylinder(d=7,h=100);
         // Rear nyloc pocket/open-ended wrench space; the rear bolt enters
-        // from below through the wedge washer.
+        // from below through the wedge washer.  The 18 mm lateral slot keeps
+        // the socket/wrench route open through the new 24 mm-deep spine.
         translate([-58,0,4]) cylinder(d=18,h=23);
+        translate([-58,0,15.5]) cube([18,30,23],center=true);
         // Carrier plate is X17.5..21.5 relative to panel center.
         translate([17.1,-6,74]) cube([4.8,12,34]);
         // M4 transverse clamp screw through jaw and carrier tongue.
@@ -753,16 +789,16 @@ module p288_access_hardware() {
     for (side=[-1,1]) {
         color([.75,.75,.78]) {
             translate([side_frame_front_x,side*side_frame_mount_y,68])
-                cylinder(d=9,h=4);
+                cylinder(d=14,h=4);
             translate([side_frame_front_x,side*side_frame_mount_y,44])
-                cylinder(d=8,h=7);
+                cylinder(d=14,h=7);
             translate([side_frame_front_x,side*side_frame_mount_y,72])
                 cylinder(d=6,h=60);
             // Rear: low head below wedge, nyloc and wrench space above pad.
             translate([side_frame_rear_x,side*side_frame_mount_y,35])
-                cylinder(d=9,h=4);
+                cylinder(d=14,h=4);
             translate([side_frame_rear_x,side*side_frame_mount_y,68])
-                cylinder(d=8,h=7);
+                cylinder(d=14,h=7);
             translate([side_frame_rear_x,side*side_frame_mount_y,68])
                 cylinder(d=18,h=20);
         }
@@ -1032,12 +1068,24 @@ assert(ruthex_m3_length == 5.7 && ruthex_m3_od == 4.6 &&
        "P2-88 purchased Ruthex RX-M3x5.7 dimensions changed");
 assert(ruthex_m3_boss_d >= ruthex_m3_od+4,
        "P2-88 needs >=2 mm PETG around every M3 insert");
+assert(20*(p290d_post_span+p290d_spine_span) /
+       p290d_spine_z_min <= 5,
+       "P2-90d single-post spine stress must stay <=5 MPa");
+assert(20*p290d_post_span/p290d_post_z <= 5,
+       "P2-90d single-post column stress must stay <=5 MPa");
+assert(p290d_base_tension/p290d_washer_area <= 5,
+       "P2-90d OD14 base washer bearing must stay <=5 MPa");
+assert(p290d_frame_delta <= 1,
+       "P2-90d four-post frame top displacement must stay <=1 mm");
 
 if (part=="base_left") base_half_v2(1);
 else if (part=="base_right") base_half_v2(-1);
 else if (part=="pi_shelf") pi_shelf_v2();
 else if (part=="vertical_electronics_plate") vertical_electronics_plate();
-else if (part=="side_frame") rotate([90,0,0]) side_frame();
+// P2-90d exports upright on the two 36x24 mm load-spine feet.  The former
+// broad-face orientation would leave the 8 mm web bridging between the new
+// 24 mm-deep spines.
+else if (part=="side_frame") side_frame();
 else if (part=="rear_foot_wedge_washer") rear_foot_wedge_washer();
 else if (part=="side_frame_base_drill_jig") side_frame_base_drill_jig();
 else if (part=="parkside_dock_left") rotate([0,0,0]) parkside_dock(1);

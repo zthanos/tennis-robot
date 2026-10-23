@@ -10,14 +10,12 @@ check = "pair_clearance";
 panel_center_x = -198.5;
 
 module exported_side_frame_installed(side=1) {
-  // The release STL is deliberately laid on its broad face (+90 deg about X).
-  // Undo that print transform before applying the installed coordinates.
-  translate([panel_center_x,side*54,64]) rotate([-90,0,0])
-    import(side_frame_stl,convexity=20);
+  // P2-90d release STL is exported directly in its upright/design pose.
+  translate([panel_center_x,side*54,64]) import(side_frame_stl,convexity=20);
 }
 
 module exported_side_frame_design_pose() {
-  rotate([-90,0,0]) import(side_frame_stl,convexity=20);
+  import(side_frame_stl,convexity=20);
 }
 
 // Isolate one body from the four-body panel_posts print plate, then restore
@@ -96,10 +94,30 @@ module qa_cup_ligament() {
     exported_side_frame_design_pose();
   }
 }
+
+module required_load_spine_corners() {
+  // P2-90d: verify the exported STL carries four solid corner rails from
+  // each cup to its foot.  The probes intentionally avoid the central rear
+  // wrench slot and front Ø7 driver chimney.
+  for(pair=[[-58,-58],[58,66.5]],z=[15,30,50,72]) {
+    xtop=pair[0]; xfoot=pair[1];
+    xc=xfoot+(xtop-xfoot)*(z-8)/(74-8);
+    for(dx=[-14,14],dy=[-8,8])
+      translate([xc+dx,dy,z]) cube([3,3,2],center=true);
+  }
+}
+
+module qa_load_spines() {
+  difference() {
+    required_load_spine_corners();
+    exported_side_frame_design_pose();
+  }
+}
 if(check=="pair_clearance") qa_pair_clearance();
 else if(check=="post_bolt_axes") qa_post_bolt_axes();
 else if(check=="post_insertion") qa_post_insertion();
 else if(check=="cups_open") qa_cups_open();
 else if(check=="cup_ligament") qa_cup_ligament();
+else if(check=="load_spines") qa_load_spines();
 else union(){ qa_pair_clearance(); qa_post_bolt_axes(); qa_post_insertion();
-              qa_cups_open(); qa_cup_ligament(); }
+              qa_cups_open(); qa_cup_ligament(); qa_load_spines(); }

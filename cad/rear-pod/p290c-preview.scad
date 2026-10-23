@@ -1,4 +1,4 @@
-// P2-90c review views. Not a printable part.
+// P2-90c/P2-90d review views. Not a printable part.
 use <rear-pod-v2.scad>
 
 view = "installed";

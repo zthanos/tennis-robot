@@ -4254,3 +4254,57 @@ sweep, open-top probe και nominal ≥2 mm ligament (1,9 mm solid probe με
 
 Κατάσταση: `P2_90C_POST_CUPS_EXPORTED_STL_AND_TOOL_PATHS_PASS`.
 ΠΑΥΣΗ.
+
+### P2-90d — πλήρης load path cup→spine→πόδι→βάση
+
+τι διαφέρει από το αναμενόμενο: τα cups του P2-90c περνούσαν τοπικά
+≤5 MPa, αλλά πατούσαν σε παλιό web column μόνο 8×8 mm. Με `Z≈85 mm³`, τα
+20 N × ~200 mm έδιναν περίπου 45 MPa πριν καν προστεθεί το χαμηλότερο
+μοχλοβραχίονα προς το πόδι. Άρα το P2-90c local calculation δεν περιέγραφε
+ολόκληρη τη διαδρομή φορτίου. Τα τυπωμένα posts/control panel/bases και η
+επιβεβαιωμένη jaw 4,8/tongue 4/jaw M4 δεν αλλάζουν.
+
+Κάθε cup απέκτησε continuous tapered solid spine 36 mm κατά X ×24 mm κατά Y
+μέχρι το αντίστοιχο foot. Το rear spine είναι κατακόρυφο στο `X−256,5` και
+κρατά πλευρικά ανοικτό slot 18 mm για rear nyloc/wrench. Το front spine
+καταλήγει στο P2-88 foot `X−132` και η Ø7 chimney επεκτείνεται έως την
+ανοικτή cup cavity, ώστε το front base screw να παραμένει προσβάσιμο πριν
+μπουν τα posts. Τα spines μένουν σε `Y±42…66`, δηλαδή 4 mm μέσα από το
+Parkside reservation που αρχίζει στο `|Y|=70`. Static exact-solid με
+carrier/BTS, Parkside sweep, UGREEN holder/clamps και panels F είναι empty.
+
+Η παλιά broad-face εκτύπωση απορρίφθηκε για το νέο geometry: τα 24 mm spines
+θα ακουμπούσαν στο bed αλλά το 8 mm web θα γεφύρωνε 8 mm ψηλότερα. Το νέο
+`side_frame.stl` εξάγεται όρθιο σε δύο πέλματα 36×24 mm, footprint περίπου
+125×24 mm και ύψος 106 mm, με brim. Δεν χρειάζεται split. Οι printed τάσεις
+κατά Z ελέγχονται ως κάθετες στις στρώσεις με `E⊥=1.200 MPa`.
+
+Load path, δυσμενές ένα post:
+
+- post Ø23, `L=193 mm`, `I=13.736 mm⁴`, `Z=1.194 mm³`: 3,23 MPa και
+  2,91 mm στα 20 N,
+- cup P2-90c: 4,09 MPa bearing / 3,94 MPa root,
+- rear slotted root: δύο rails συνολικού X width 18 mm × Y24,
+  `Z=1.728 mm³`; με moment 5.660 Nmm δίνει 3,28 MPa. Το front Ø7 section
+  έχει μεγαλύτερο Z,
+- foot/base: moment arm 12 mm → 472 N tension. M4 ≈53,7 MPa και OD14 washer
+  bearing 3,42 MPa. Κατά X, η απόσταση ποδιών 124,5 mm απαιτεί μόνο περίπου
+  45,5 N couple force,
+- 30 N κατακόρυφα: post compression 0,072 MPa, minimum spine 0,069 MPa.
+
+Το single-post displacement είναι ~3,64 mm και δηλώνεται μη λειτουργικό
+case: δεν επιτρέπεται χρήση με ένα post ούτε ως λαβή. Στο πραγματικό panel
+δεμένο σε 4 posts, δύο side frames και carrier, το ίδιο γραμμικό upper bound
+μοιράζει το 20 N σε τέσσερα και δίνει **0,91 mm** κατά X ή Y. Vertical 30 N:
+στήριξη <0,01 mm + P2-81 local panel flex ≤0,3 mm. Τα high-mass cases 2 g
+(~19,6 N για 1 kg) και 0,5 g (~4,9 N) είναι χαμηλότερα. Όλες οι printed
+τάσεις μένουν ≤4,09 MPa έναντι 5 MPa κάθετα/10 MPa μέσα στη στρώση.
+
+Το imported-exported STL gate απέκτησε `load_spines`: corner solid probes
+σε τέσσερα ύψη ανά spine, έξω από wrench/chimney, πρέπει να είναι πλήρως
+εντός του τελικού STL. Περνούν επίσης pair/axis/insertion/open-cup/ligament,
+όλα τα part-install και hardware/tool paths, chassis shared holes, one-body,
+P2-85 ski, MPU και P2-86b panels F. Επανεξήχθη μόνο `side_frame.stl`.
+
+Κατάσταση: `P2_90D_FULL_LOAD_PATH_AND_TOP_DEFLECTION_PASS`.
+ΠΑΥΣΗ.

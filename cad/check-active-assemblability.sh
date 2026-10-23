@@ -115,7 +115,7 @@ done
 p290c_side_frame_stl="${P290C_SIDE_FRAME_STL:-$here/rear-pod/stl-v2/side_frame.stl}"
 p290c_panel_posts_stl="${P290C_PANEL_POSTS_STL:-$here/rear-pod/stl-v2/panel_posts.stl}"
 for selector in pair_clearance post_bolt_axes post_insertion cups_open \
-                cup_ligament; do
+                cup_ligament load_spines; do
   mesh="$out/printed-joint-$selector.stl"
   log="$out/printed-joint-$selector.log"
   status=0
