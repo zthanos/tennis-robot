@@ -7,7 +7,7 @@ src="$here/p288-assemblability.scad"
 out="$(mktemp -d "$here/.assemblability.XXXXXX")"
 trap 'rm -rf "$out"' EXIT
 
-checks=(side_frame_front_driver side_frame_rear_wrench
+checks=(side_frame_front_driver side_frame_front_head_install side_frame_rear_wrench
         side_frame_front_nut side_frame_rear_driver dock_mount_driver
         parkside_lock_driver ugreen_driver post_cup_driver
         post_cup_nyloc_wrench)

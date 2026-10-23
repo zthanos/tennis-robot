@@ -351,14 +351,17 @@ module side_frame() {
         }
         for (x=[-58,side_frame_front_x-panel_center_x])
             translate([x,0,-1]) cylinder(d=m4_clear,h=8);
-        // Ø7 vertical tool chimney above the moved P2-88 base screw head;
-        // the P2-90c cup change does not alter this lower access path.
+        // Ø7 vertical Allen chimney above the moved P2-88 front base screw.
         translate([side_frame_front_x-panel_center_x,0,4]) cylinder(d=7,h=100);
-        // Rear nyloc pocket/open-ended wrench space; the rear bolt enters
-        // from below through the wedge washer.  The 18 mm lateral slot keeps
-        // the socket/wrench route open through the new 24 mm-deep spine.
-        translate([-58,0,4]) cylinder(d=18,h=23);
-        translate([-58,0,15.5]) cube([18,30,23],center=true);
+        // Identical 18 mm lower side pockets in both load spines.  Rear:
+        // nyloc/open-ended wrench after the bolt enters from below through
+        // the wedge washer.  Front: the M4 head + OD14 washer enter from the
+        // side before the Allen is driven through the chimney.  The old
+        // front Ø7-only bore admitted the tool but not the screw hardware.
+        for (x=[-58,side_frame_front_x-panel_center_x]) {
+            translate([x,0,4]) cylinder(d=18,h=23);
+            translate([x,0,15.5]) cube([18,30,23],center=true);
+        }
         // Carrier plate is X17.5..21.5 relative to panel center.
         translate([17.1,-6,74]) cube([4.8,12,34]);
         // M4 transverse clamp screw through jaw and carrier tongue.

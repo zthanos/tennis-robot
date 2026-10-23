@@ -19,6 +19,19 @@ module side_frame_front_driver_collision() {
   }
 }
 
+module side_frame_front_head_install_collision() {
+  // Front M4 head plus OD14 washer enter laterally into the low pocket
+  // before the Allen approaches from above.  The 0.1 mm Z offset avoids
+  // counting the intended contact with the top of the foot pad.
+  intersection() {
+    side_frame();
+    hull() {
+      translate([66.5,-24,4.1]) cylinder(d=13.6,h=3.8);
+      translate([66.5,0,4.1]) cylinder(d=13.6,h=3.8);
+    }
+  }
+}
+
 module side_frame_rear_wrench_collision() {
   intersection() {
     side_frame();
@@ -116,6 +129,7 @@ module post_cup_nyloc_wrench_collision(which="both") {
 }
 
 if (check=="side_frame_front_driver") side_frame_front_driver_collision();
+else if (check=="side_frame_front_head_install") side_frame_front_head_install_collision();
 else if (check=="side_frame_rear_wrench") side_frame_rear_wrench_collision();
 else if (check=="side_frame_front_nut") side_frame_front_nut_access_collision();
 else if (check=="side_frame_rear_driver") side_frame_rear_driver_collision();
@@ -126,6 +140,7 @@ else if (check=="post_cup_driver") post_cup_driver_collision();
 else if (check=="post_cup_nyloc_wrench") post_cup_nyloc_wrench_collision();
 else union() {
   side_frame_front_driver_collision();
+  side_frame_front_head_install_collision();
   side_frame_rear_wrench_collision();
   side_frame_front_nut_access_collision();
   side_frame_rear_driver_collision();
