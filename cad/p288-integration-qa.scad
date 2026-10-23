@@ -32,13 +32,20 @@ module qa_docks_panels_service() {
 
 module qa_ugreen_surroundings() {
   intersection() {
-    ugreen_post_holder();
+    union(){ ugreen_post_holder(); ugreen_rear_retainer(); }
     union() {
       carrier_installed();
       electronics_ghosts();
       control_body_solids();
       translate([-198.5,0,347]) control_panel_v2();
     }
+  }
+}
+
+module qa_ugreen_panels() {
+  intersection() {
+    union(){ ugreen_post_holder(); ugreen_rear_retainer(); }
+    all_f_rear(0);
   }
 }
 
@@ -53,8 +60,10 @@ if (check=="docks_pod_frame") qa_docks_pod_frame();
 else if (check=="docks_panels_closed") qa_docks_panels_closed();
 else if (check=="docks_panels_service") qa_docks_panels_service();
 else if (check=="ugreen_surroundings") qa_ugreen_surroundings();
+else if (check=="ugreen_panels") qa_ugreen_panels();
 else if (check=="new_parts_ground") qa_new_parts_ground();
 else union() {
   qa_docks_pod_frame(); qa_docks_panels_closed();
-  qa_docks_panels_service(); qa_ugreen_surroundings(); qa_new_parts_ground();
+  qa_docks_panels_service(); qa_ugreen_surroundings(); qa_ugreen_panels();
+  qa_new_parts_ground();
 }

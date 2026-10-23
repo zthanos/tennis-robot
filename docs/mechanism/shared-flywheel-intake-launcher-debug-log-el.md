@@ -4146,3 +4146,36 @@ Parkside→regulated 12 V DC-DC. Η A1 σημειώνει ότι το P2-53 χρ
 Δεν άλλαξε firmware, netlist, CAD ή STL. Κατάσταση:
 `P2_89C_TILT_POWER_FEEDBACK_AND_PURCHASE_PLAN_CORRECTED`.
 ΠΑΥΣΗ.
+
+### P2-90 — πραγματικό UGREEN και μόνιμο insertion-path gate
+
+τι διαφέρει από το αναμενόμενο: η συσκευή μετρήθηκε **115×45×45 mm**, όχι
+110×40×40. Η ενδιάμεση διεύρυνση της κοιλότητας στα 46,8 mm περνούσε μόνο
+στατικό έλεγχο: η εισαγωγή από +Y ήταν αδύνατη, επειδή οι ήδη τυπωμένοι
++Y panel posts αφήνουν περίπου 93 mm ενώ το μήκος είναι 115 mm. Οι
+`panel_posts`, το `control_panel` και οι P2-86b βάσεις είναι τυπωμένα και
+κλειδώθηκαν· δεν άλλαξαν και δεν επανεξήχθησαν.
+
+Η ελάχιστη λύση αλλάζει μόνο τη μη τυπωμένη θήκη. Το UGREEN παραμένει κατά
+X αλλά μετακινείται στο κεντρικό service corridor, κέντρο
+`X−209/Y34/Z258`, με θύρες προς −X και κουμπί προς +Y. Με αφαιρεμένο μόνο
+το `rear_hi` και τον νέο διβίδο `ugreen_rear_retainer.stl`, σύρεται ευθεία
+προς −X. Η θήκη δένει με δύο M3/Ruthex στους δύο πίσω posts και ο retainer
+με δύο M3/Ruthex· το λουράκι παραμένει δευτερεύον. Η φυσική συσκευή κρατά
+4 mm από το rear-electronics envelope. Η πρώτη δοκιμή κατακόρυφου
+προσανατολισμού απορρίφθηκε επειδή το sweep έτεμνε τον Mega/perfboard όγκο.
+
+Προστέθηκε μόνιμο `p290-insertion-qa.scad` στο export/assemblability gate.
+Swept-solid `PASS_EMPTY`: UGREEN με πλήρες pod και F σε service κατάσταση,
+Parkside drawers προς −X, γυμνή electronics plate προς +Z μετά από
+αφαίρεση rear_hi/control panel/posts/side frames, και Pi προς +Z μετά την
+plate. Η πρόσθετη προϋπόθεση της plate είναι πραγματική: τα integral rear
+bosses δεν περνούν από τις παγωμένες/φυσικά επιβεβαιωμένες σιαγόνες 4,8 mm.
+Πέρασαν επίσης one-body για holder/retainer, static device/holder,
+carrier/electronics/controls/posts, panels F, ground, tool approaches
+≥59,9 mm και όλα τα chassis-hole probes.
+
+Ξαναεξήχθησαν μόνο `ugreen_post_holder.stl` και το νέο
+`ugreen_rear_retainer.stl`. Κατάσταση:
+`P2_90_UGREEN_115X45X45_REAR_INSERTION_EXACT_SOLID_PASS`.
+ΠΑΥΣΗ.

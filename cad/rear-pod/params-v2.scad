@@ -49,9 +49,18 @@ parkside_center_x = -198.5;
 parkside_center_y = 115.5;
 parkside_center_z = 98.5;
 
-ugreen_clear = [121,52,52];
-ugreen_center = [-195,42,258];
-ugreen_actual = [110,40,40];
+// P2-90 physical measurement: 115 x 45 x 45 mm.  The printed panel posts
+// leave only about 93 mm between them, so the unit cannot enter from +Y at its
+// old Y42 location.  It moves to the centre corridor and slides +X through the
+// removable rear_hi opening, passing beside (not between) the post paths.
+// Ports face -X and the button faces +Y.  Reservation keeps 3 mm per side.
+ugreen_actual = [115,45,45];
+ugreen_installed_size = ugreen_actual;
+ugreen_clear = [ugreen_installed_size[0]+6,
+                ugreen_installed_size[1]+6,
+                ugreen_installed_size[2]+6];
+ugreen_center = [-209,34,258];
+ugreen_service_start_x = -350;
 
 // P2-88 field-drilled front side-frame axis.  The rear axis is an existing
 // P2-79 through-hole in the printed base.  The new front Ø4.5 hole is made
@@ -92,10 +101,8 @@ arm_hole = 16.3;
 
 assert(carrier_main_z0 - (parkside_center_z + parkside_clear[2]/2) >= 10,
        "carrier needs 10 mm above Parkside reservations");
-assert((ugreen_center[2] - ugreen_clear[2]/2) - carrier_step_z >= 10,
-       "carrier lower step needs 10 mm below Ugreen");
-assert((ugreen_center[1] - ugreen_clear[1]/2) - carrier_y_upper_max >= 10,
-       "carrier upper edge needs 10 mm beside Ugreen");
+assert((ugreen_center[2]-ugreen_installed_size[2]/2)-231.5 >= 3,
+       "physical UGREEN needs 3 mm above the rear electronics envelope");
 assert(297 - carrier_top_z >= 10,
        "carrier needs 10 mm below the deepest v1 control body");
 assert((carrier_rear_x - perf_solid_projection - perf_cable_bend) - pod_x_rear >= 10,

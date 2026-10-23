@@ -84,6 +84,25 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 > βίδες ζάντας (πλήθος, κύκλος) για φλάντζα D5065 (άξονας 8 mm)· μάζα· ακτινική ταλάντωση· τριβή
 > λάστιχου–μπάλας με τη διάταξη TPU friction. Μετά: βήμα agent για απόσταση αξόνων + αντάπτορα D5065.
 
+## Παραγγελία Grobotronics — 22/10/2026 (μηχανισμός κλίσης, προετοιμασία)
+
+Αγορά «προετοιμασίας» με απόφαση χρήστη, πριν τη δοκιμή κίνησης (φθηνά, ~26,40 € + μεταφορικά). Η υλοποίηση της κλίσης εκκρεμεί.
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Κατάσταση |
+|---:|---|---|---:|---:|---:|---|
+| G13 | Τραπεζοειδής κοχλίας T8 – Lead 2mm, 200 mm (`14-00094070`) | Tilt / Mechanics | 1 | 3,90 € | 3,90 € | Παραγγέλθηκε |
+| G14 | Anti-Backlash περικόχλιο T8 Lead 2mm, brass (`14-00018512`) | Tilt / Mechanics | 1 | 2,90 € | 2,90 € | Παραγγέλθηκε |
+| G15 | Pillow Block Flanged 8mm – KFL08 (`14-00010806`) | Tilt / Mechanics | 1 | 2,20 € | 2,20 € | Παραγγέλθηκε |
+| G16 | Timing Pulley GT2 6mm – 20T, bore **6 mm** (`14-00021610`) — FIT0186 | Tilt / Drive | 1 | 1,60 € | 1,60 € | Παραγγέλθηκε |
+| G17 | Timing Pulley GT2 6mm – 20T, bore **8 mm** (`14-00021614`) — ντίζα | Tilt / Drive | 1 | 1,60 € | 1,60 € | Παραγγέλθηκε |
+| G18 | Timing Belt GT2 – 160mm closed loop (`14-00020100`) | Tilt / Drive | 2 | 1,40 € | 2,80 € | Παραγγέλθηκε |
+| G19 | Microswitch SPDT ON-(ON) with Roller Simulation (`05-00000304`) | Tilt / Endpoints | 5 | 0,80 € | 4,00 € | Παραγγέλθηκε |
+| G20 | DC-DC Step-Down 7.5–30V 3A, 3.3/5/9/12V (`25-00016906`) — 12 V για BTS #3/FIT0186 | Tilt / Power | 1 | 7,40 € | 7,40 € | Παραγγέλθηκε |
+
+> 20T/20T + GT2-160 → απόσταση κέντρων 60 mm (CAD ≈62 → ρυθμιζόμενος carrier, λειτουργεί και ως tensioner).
+> DC-DC: default 5 V — αλλαγή solder pad σε 12 V και μέτρηση με πολύμετρο πριν τη σύνδεση.
+> Εκκρεμούν: AS5600 + μαγνήτης (AliExpress), tensioner/guard (τυπωμένα).
+
 ## Parts To Order
 
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
@@ -95,12 +114,25 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 
 | # | Part | Προδιαγραφή / interface | Ποσότητα | Κατάσταση |
 |---:|---|---|---:|---|
-| T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Ωφέλιμο thread travel ≥60 mm: 34–35 mm λειτουργική διαδρομή + ≥25 mm περιθώριο για end/adjustment· τελικό overall/cut length μετά το clevis/carriage dry-fit. Μαζί thrust bearing, flexible coupling και anti-rotation nut carriage | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
-| T2 | Δύο timing pulleys + toothed belt 1:1 | Ίδιο tooth count· motor pulley για **FIT0186 6 mm D-shaft** με θετικό κλείδωμα στο flat. Screw-side bore και belt length κλειδώνουν μετά τη φυσική center-distance μέτρηση | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
+| T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Ωφέλιμο thread travel ≥60 mm: 34–35 mm λειτουργική διαδρομή + ≥25 mm περιθώριο για end/adjustment· τελικό overall/cut length μετά το clevis/carriage dry-fit. Μαζί thrust bearing, flexible coupling και anti-rotation nut carriage | 1 σετ | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
+| T2 | Δύο timing pulleys + toothed belt 1:1 | Ίδιο tooth count· motor pulley για **FIT0186 6 mm D-shaft** με θετικό κλείδωμα στο flat. Screw-side bore και belt length κλειδώνουν μετά τη φυσική center-distance μέτρηση | 1 σετ | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
 | T3 | Belt tensioner + guard hardware | Ρύθμιση τάσης χωρίς να παραβιάζει τα P2-54 clearances· captive hardware και guard γύρω από pulleys/belt | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
 | T4 | AS5600 board + diametric magnet | I²C `0x36`, magnet `Ø6×2,5 mm`, non-magnetic cap, adjustable air gap 0,5–2,5 mm (στόχος 1,5 mm)· έλεγχος breakout voltage/pull-ups πριν κοινό D20/D21 με MPU6050 | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
-| T5 | Endpoint switches −3°/+20° | 2 switches με ανεξάρτητες επαφές για Mega sense/homing και NC direction-specific hardware cutoff προς το αντίστοιχο R_EN/L_EN· τελικός τύπος μετά stop/bracket fit | 2 | **Δεν έχουν αγοραστεί — μετά το drive test** |
-| T6 | Parkside→regulated 12 V DC-DC για BTS #3/FIT0186 | Input να καλύπτει το πραγματικό Parkside range 15–21 V, regulated 12 V output, fused motor branch· current/transient rating κλειδώνει μετά το FIT0186 current/thermal test | 1 | **Δεν έχει αγοραστεί — μετά το drive test** |
+| T5 | Endpoint switches −3°/+20° | 2 switches με ανεξάρτητες επαφές για Mega sense/homing και NC direction-specific hardware cutoff προς το αντίστοιχο R_EN/L_EN· τελικός τύπος μετά stop/bracket fit | 2 | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
+| T6 | Parkside→regulated 12 V DC-DC για BTS #3/FIT0186 | Input να καλύπτει το πραγματικό Parkside range 15–21 V, regulated 12 V output, fused motor branch· current/transient rating κλειδώνει μετά το FIT0186 current/thermal test | 1 | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
+
+#### Υποψήφιοι κωδικοί (snapshot 2026-10-22, Grobotronics εκτός αν σημειώνεται)
+
+| Για | Κωδικός / link | Τιμή | Σημείωση |
+|---|---|---:|---|
+| T1 | [Lead Screw T8 – Lead 2mm, 200 mm](https://grobotronics.com/lead-screw-t8-200mm-lead-2mm.html) `14-00094070` | 3,90 € | lead 2 / pitch 2 / 1 αρχή, ανοξείδωτη· κόβεται μετά το dry-fit. **ΟΧΙ** τις «Lead 8mm» (δεν αυτοασφαλίζουν) |
+| T1 | [Anti-Backlash Nut T8 Lead 2mm (Brass)](https://grobotronics.com/anti-backlash-nut-for-lead-screw-t8-lead-2mm-brass.html) `14-00018512` | 2,90 € | |
+| T1 | [Pillow Block Flanged 8mm – KFL08](https://grobotronics.com/pillow-block-flanged-8mm-kfl08.html) | 2,20 € | στήριξη/ώση ντίζας· flexible coupling δεν χρειάζεται με belt drive |
+| T2 | [Timing Pulley GT2 6mm – 20T](https://grobotronics.com/aluminum-gt2-timing-pulley-20-tooth.html), επιλογή bore **6 mm** (FIT0186) + bore **8 mm** (ντίζα) | 2× 1,60 € | set screw στο flat του D-shaft |
+| T2 | [Timing Belt GT2 – 160mm](https://grobotronics.com/timing-belt-gt2-160mm.html) (closed loop) | 1,40 € | με 20T/20T → απόσταση κέντρων **60 mm** (CAD P2-53 ≈62 mm → carrier ρυθμιζόμενος)· 2ος ιμάντας ως ρεζέρβα |
+| T5 | [Microswitch SPDT ON-(ON) with Roller Simulation](https://grobotronics.com/microswitch-spdt-on-on-with-roller-simulation.html) | 0,80 € | **4 + 1**: ανά άκρο ένας για Mega sense/homing και ένας NC για hardware cutoff R_EN/L_EN |
+| T6 | [DC-DC Step-Down 7.5–30V 3A (3.3/5/9/12V)](https://grobotronics.com/dc-dc-multi-output-buck-converter-3-3v-5v-9v-12v.html) | 7,40 € | 12 V/3 A χωρίς ψύκτρα, 3,5 A με ψύκτρα, overload/thermal protection· default 5 V → αλλαγή solder pad σε 12 V· επιβεβαίωση έναντι FIT0186 current test |
+| T4 | AS5600 + diametric magnet | ~2–4 € | **Δεν βρέθηκε** σε Grobotronics/Skroutz → AliExpress· έλεγχος 3,3/5 V και pull-ups πριν κοινό I²C με MPU6050 |
 
 ### Current compute basket — not yet ordered
 

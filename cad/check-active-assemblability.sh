@@ -49,7 +49,7 @@ for selector in qa_p288_reservation_overflow qa_p288_ugreen_device_collision; do
 done
 
 for selector in docks_pod_frame docks_panels_closed docks_panels_service \
-                ugreen_surroundings new_parts_ground; do
+                ugreen_surroundings ugreen_panels new_parts_ground; do
   mesh="$out/integration-$selector.stl"
   log="$out/integration-$selector.log"
   status=0
@@ -66,6 +66,26 @@ for selector in docks_pod_frame docks_panels_closed docks_panels_service \
     exit 1
   fi
   echo "ASSEMBLABILITY PASS_EMPTY: integration-$selector"
+done
+
+# P2-90: swept solids for every declared removable object/service sequence.
+for selector in ugreen parkside carrier pi; do
+  mesh="$out/insertion-$selector.stl"
+  log="$out/insertion-$selector.log"
+  status=0
+  "$openscad_bin" -o "$mesh" -D "check=\"$selector\"" \
+    "$here/p290-insertion-qa.scad" >"$log" 2>&1 || status=$?
+  if [[ -s "$mesh" ]]; then
+    cat "$log" >&2
+    echo "INSERTION_PATH FAIL: $selector" >&2
+    exit 1
+  fi
+  if ((status != 0)) && ! grep -qi "top level object is empty" "$log"; then
+    cat "$log" >&2
+    echo "INSERTION_PATH ERROR: $selector (status $status)" >&2
+    exit 1
+  fi
+  echo "INSERTION_PATH PASS_EMPTY: $selector"
 done
 
 # Every chassis-sharing screw also passes the permanent thin-axis probe.

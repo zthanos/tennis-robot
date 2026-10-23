@@ -1,9 +1,9 @@
-# Ενεργό σύνολο εκτύπωσης — P2-88
+# Ενεργό σύνολο εκτύπωσης — P2-90
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
 «concept» **δεν τυπώνονται**. Η κατάσταση αποτυπώνει όσα είναι γνωστά στις
-2026-10-22 (P2-88)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
+2026-10-23 (P2-90)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
 αρχείο.
 
 ## Σασί v3 — P2-78 sockets και πλευρικές διαγώνιες
@@ -76,9 +76,9 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Jig εμπρός οπής βάσης | `stl-v2/side_frame_base_drill_jig.stl` ×1 | P2-88 | εντοπισμός στις δύο παλιές Ø4,5· τρυπάνι Ø4,5 | Προς εκτύπωση· υποχρεωτικό για τις τυπωμένες βάσεις |
 | Σφηνοειδείς πίσω ροδέλες | `stl-v2/rear_foot_wedge_washer.stl` ×2 | P2-88 | κάτω από την πίσω M4 | Προς εκτύπωση |
 | Parkside docks/drawers | `stl-v2/parkside_dock_left/right.stl`, `parkside_drawer_left/right.stl` ×1 | P2-88 provisional | 4×M3×12 προς υπάρχουσες slots + 2×M3 rear locks, Ruthex RX-M3x5.7 | **Σχεδιασμένο· αναμονή πραγματικής μπαταρίας/dock — ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ** |
-| Θήκη UGREEN | `stl-v2/ugreen_post_holder.stl` ×1 | P2-88 | 2×M3×20 + Ruthex RX-M3x5.7, προαιρετικό λουράκι | Προς εκτύπωση μετά από dry fit 110×40×40 |
-| Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81 | κάτω 4×M4×30, επάνω 4×M4×20, ροδέλες/nyloc | Προς εκτύπωση |
-| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΝΕΟ P2-86 export — προς εκτύπωση**· physical proof-load 30 N πριν τη χρήση |
+| Θήκη UGREEN + πίσω retainer | `stl-v2/ugreen_post_holder.stl`, `ugreen_rear_retainer.stl` ×1 | P2-90, πραγματικό 115×45×45 | 2×M3×20 collars + 2×M3×12 retainer, Ruthex RX-M3x5.7, προαιρετικό λουράκι | **ΝΕΟ export 23/10 — κεντρική εισαγωγή από −X· η ενδιάμεση +6 mm έκδοση superseded** |
+| Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81 | κάτω 4×M4×30, επάνω 4×M4×20, ροδέλες/nyloc | **ΤΥΠΩΜΕΝΑ — κλειδωμένα στο P2-90** |
+| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΤΥΠΩΜΕΝΟ — κλειδωμένο στο P2-90**· physical proof-load 30 N πριν τη χρήση |
 | Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | Προς εκτύπωση |
 | BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | Προς εκτύπωση |
 | Cable bulkhead + feet | `stl-v2/cable_bulkhead.stl` ×1, `bulkhead_foot.stl` ×2 | P2-75 retained in v2 | Υπάρχουσες M4, ροδέλες/παξιμάδια | Προς εκτύπωση |

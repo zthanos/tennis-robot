@@ -1,3 +1,16 @@
+> **P2-90 / 2026-10-23:** η πραγματική συσκευή μετρήθηκε **115×45×45 mm**.
+> Η ενδιάμεση διεύρυνση 46,8 mm δεν λύνει τη συναρμολόγηση: οι ήδη τυπωμένοι
+> +Y posts αφήνουν περίπου 93 mm και εμποδίζουν εισαγωγή του μήκους 115 mm.
+> Η τελική θήκη μετακινεί το UGREEN στον κεντρικό διάδρομο, με θύρες προς −X
+> και κουμπί προς +Y, και το εισάγει από πίσω με αφαιρεμένο μόνο το `rear_hi`.
+> **Δεν άλλαξαν ούτε επανεξήχθησαν οι τυπωμένες βάσεις, posts ή control panel.**
+> Τύπωσε `ugreen_post_holder.stl` και `ugreen_rear_retainer.stl` από το παρόν
+> release· μην τυπώσεις την ενδιάμεση έκδοση +6 mm.
+
+![P2-90 UGREEN στη νέα κεντρική θήκη, rear_hi αφαιρεμένο](../p290-ugreen-service-isometric.png)
+
+![P2-90 swept διαδρομή εισαγωγής από πίσω προς +X](../p290-ugreen-insertion-path.png)
+
 # τι διαφέρει από το αναμενόμενο — P2-88 συναρμολογήσιμο side frame και power docks
 
 ![P2-88 rear pod, docks, UGREEN και panels F](../p288-assembly-isometric.png)
@@ -38,20 +51,42 @@ single-M3 nominal shear ≈1,8 MPa και bearing σε 10 mm PETG ≈0,43 MPa. �
 από εκτύπωση μετρώνται πραγματικά: L/W/H, ράγες/κωνικότητα, release tabs και
 διαδρομή, επαφές/contact module, bend radius καλωδίου και κέντρο μάζας.
 
-## UGREEN 110×40×40
+## UGREEN 115×45×45 — P2-90
 
-Το `ugreen_post_holder.stl` είναι μονοκόμματη ανοικτή θήκη στους δύο +Y Ø23
-posts, με 2×M3×20 και Ruthex RX-M3x5.7. Αφαιρείται προς +Y χωρίς λύσιμο pod,
-με ανοικτά άκρα X για κουμπί/καλώδιο. Το λουράκι είναι μόνο δευτερεύον.
+Το `ugreen_post_holder.stl` είναι μονοκόμματη σέλα που σφίγγει στους δύο
+πίσω Ø23 posts, έναν σε κάθε πλευρά. Η συσκευή εγκαθίσταται κατά X στο
+`[-266,5…−151,5]`, `Y11,5…56,5`, `Z235,5…280,5`: θύρες προς −X, πλαϊνό
+κουμπί προς +Y. Η φυσική συσκευή έχει 4 mm από το ψηλότερο rear-electronics
+envelope και τουλάχιστον 3 mm από τα υπόλοιπα μη επιτρεπόμενα solids.
+
+Service χωρίς λύσιμο του pod: (1) αφαιρείς μόνο το `rear_hi`, (2) λύνεις τις
+δύο M3 του `ugreen_rear_retainer.stl`, (3) αποσυνδέεις τα καλώδια από την
+ανοικτή πίσω έδρα και (4) σύρεις τη συσκευή ευθεία προς −X. Η αντίστροφη
+διαδρομή εισαγωγής είναι +X από `X−350` έως `X−209`. Το swept-solid gate
+είναι EMPTY έναντι βάσεων, posts, carrier/electronics, controls, Parkside,
+frame και των panels F σε service κατάσταση. Το λουράκι είναι μόνο
+δευτερεύον.
+
+Βίδες: 2×M3×20 για τους post collars και 2×M3×12 για τον πίσω retainer,
+όλες σε Ruthex RX-M3x5.7. Οι οδηγοί εργαλείου έχουν 59,9/62,3 mm
+καθαρή πίσω προσέγγιση. Δεν χρησιμοποιείται M3 σε κύρια M4 φέρουσα ένωση.
+
+Το μόνιμο insertion gate ελέγχει επίσης Parkside drawer extraction. Για
+service της γυμνής όρθιας πλάκας απαιτείται πρώτα αφαίρεση rear_hi, control
+panel, posts και side frames, επειδή τα integral rear bosses δεν περνούν από
+τις παγωμένες σιαγόνες 4,8 mm. Το Pi αφαιρείται κατακόρυφα μετά την πλάκα.
+Και οι τέσσερις δηλωμένες διαδρομές (`UGREEN`, `Parkside`, plate, `Pi`)
+περνούν EMPTY.
 
 Ruthex datum: `L=5,7`, `OD=4,6`, pilot `Ø4,0`, βάθος `≥6,7`, PETG γύρω από
 insert `≥2,0 mm`. Τα inserts είναι μόνο για docks/θήκη, ποτέ για κύρια M4.
 
-Σειρά: (1) βγάζεις τις βάσεις, (2) στερεώνεις το jig στις παλιές οπές και
+Σειρά P2-88: (1) βγάζεις τις βάσεις, (2) στερεώνεις το jig στις παλιές οπές και
 τρυπάς Ø4,5 στο X−132, (3) τοποθετείς rear wedge/βίδες, (4) βιδώνεις τα νέα
 side frames, (5) επανατοποθετείς carrier/posts, (6) τοποθετείς inserts και
-docks/UGREEN holder. Το permanent QA μοντελοποιεί hardware και ≥60 mm tool
-paths. Τα P2-88 paths, chassis axes, P2-85 ski και P2-86 panels είναι EMPTY.
+docks/UGREEN holder. Το permanent QA μοντελοποιεί hardware, ≥59,9 mm tool
+paths και τα P2-90 swept solids. Τα P2-88 paths, chassis axes, P2-85 ski,
+P2-86 panels και P2-90 insertion paths είναι EMPTY.
 
 # τι διαφέρει από το αναμενόμενο — P2-86 φέρον interface panels F
 

@@ -423,35 +423,78 @@ module parkside_drawer(side=1) {
     }
 }
 
-// UGREEN tray clamps to the two +Y panel posts at Y90.  It opens toward +Y
-// for service; two M3 clamp screws use the purchased Ruthex inserts.  A strap
-// slot is secondary retention only.
+// P2-90 centre-corridor UGREEN cradle.  The already-printed posts cannot pass
+// a 115 mm device inserted from +Y (about 93 mm clear).  In the centre corridor it
+// slides +X from the removable rear_hi opening, beside both rear posts.  Ports
+// face -X and the button faces +Y.  One collar on each rear post carries the
+// saddle; the rear retainer is removable and the strap is secondary only.
 module ugreen_post_holder() {
     difference() {
         union() {
-            translate([ugreen_center[0],ugreen_center[1],235])
-                cube([116,46,6],center=true);
-            for (x=[panel_center_x-58,panel_center_x+58]) {
-                translate([x,77,249]) cube([16,28,34],center=true);
-                translate([x,70,249]) cube([28,12,14],center=true);
+            // Floor stops short of the front-negative post; the device may
+            // overhang 2 mm while its +X stop uses the clear centre region.
+            translate([-210,ugreen_center[1],233]) cube([113,51,5],center=true);
+            for (sy=[-1,1])
+                translate([-210,ugreen_center[1]+sy*24,241])
+                    cube([113,3,16],center=true);
+            translate([-152,42,233]) cube([5,28,5],center=true);
+            translate([-150,42,248.5]) cube([3,28,36],center=true);
+
+            // One lower collar on each rear post; wide Y spacing reacts the
+            // saddle moment while all connecting arms remain below Z235.5.
+            for (s=[-1,1]) let(py=s>0?90:-56) {
+                translate([panel_center_x-58,py,225]) cylinder(d=31,h=18,center=true);
+                hull() {
+                    translate([panel_center_x-58,py-s*12,230]) cube([18,10,8],center=true);
+                    translate([panel_center_x-58,ugreen_center[1]+s*25,230])
+                        cube([28,5,8],center=true);
+                }
             }
-            translate([ugreen_center[0],21,250]) cube([116,6,34],center=true);
+            // Rear-retainer insert bosses sit outside the 45 mm device width.
+            for (sy=[-1,1])
+                translate([-259.5,ugreen_center[1]+sy*31,242])
+                    cube([14,11,24],center=true);
         }
-        // Actual 110x40x40 device cavity, open at both X ends for cable/button.
-        translate([ugreen_center[0],ugreen_center[1],258])
-            cube([ugreen_actual[0]+0.8,ugreen_actual[1]+0.8,ugreen_actual[2]+0.8],center=true);
-        // Ø23 post clamp seats, split open toward +Y.
-        for (x=[panel_center_x-58,panel_center_x+58]) {
-            translate([x,90,249]) cylinder(d=23.6,h=36,center=true);
-            translate([x,90,249]) cube([7,30,38],center=true);
-            translate([x-14,70,249]) rotate([0,90,0])
+        // 0.4 mm assembly clearance on each device face.
+        translate(ugreen_center) cube([ugreen_installed_size[0]+0.8,
+                                       ugreen_installed_size[1]+0.8,
+                                       ugreen_installed_size[2]+0.8],center=true);
+        // Entire -X face stays open until the separate retainer is fitted.
+        translate([-274,ugreen_center[1],258]) cube([18,47,47],center=true);
+
+        // Rear printed-post seats split outward.  Clamp screws approach from
+        // X and terminate in purchased Ruthex RX-M3x5.7 inserts.
+        for (s=[-1,1]) let(py=s>0?90:-56) {
+            translate([panel_center_x-58,py,225]) cylinder(d=23.6,h=20,center=true);
+            translate([panel_center_x-58,py+s*8,225]) cube([7,22,22],center=true);
+            translate([panel_center_x-72,py-s*12,230]) rotate([0,90,0])
                 cylinder(d=m3_clear,h=28);
-            translate([x+4,70,249]) rotate([0,90,0])
+            translate([panel_center_x-54,py-s*12,230]) rotate([0,90,0])
                 cylinder(d=ruthex_m3_hole,h=ruthex_m3_depth+0.2);
         }
-        // Two strap passages, not credited structurally.
-        for (x=[ugreen_center[0]-38,ugreen_center[0]+38])
-            translate([x,18,250]) cube([12,12,4],center=true);
+        // M3 rear-retainer screws and two strap passages.  Neither strap is
+        // credited as the primary structural attachment.
+        for (sy=[-1,1]) {
+            translate([-266.4,ugreen_center[1]+sy*31,242])
+                rotate([0,90,0]) cylinder(d=ruthex_m3_hole,h=ruthex_m3_depth+0.2);
+            translate([-210,ugreen_center[1]+sy*20,233]) cube([12,8,8],center=true);
+        }
+    }
+}
+
+module ugreen_rear_retainer() {
+    difference() {
+        union() {
+            // Low bridge seats on the rear face; ports and side button remain
+            // exposed. 0.1 mm axial fit avoids a false coplanar solid.
+            translate([-268.1,ugreen_center[1],242]) cube([3,68,10],center=true);
+            for (sy=[-1,1])
+                translate([-268.1,ugreen_center[1]+sy*31,242])
+                    cube([3,10,18],center=true);
+        }
+        for (sy=[-1,1])
+            translate([-273,ugreen_center[1]+sy*31,242])
+                rotate([0,90,0]) cylinder(d=m3_clear,h=6);
     }
 }
 
@@ -666,9 +709,12 @@ module p288_access_hardware() {
         translate([-273,side*153,76]) rotate([0,90,0]) cylinder(d=6,h=5);
         translate([-333,side*153,76]) rotate([0,90,0]) cylinder(d=5,h=60);
     }
-    // UGREEN clamp screws: approach each clamp from its nearest X end.
-    translate([-288.5,70,249]) rotate([0,90,0]) cylinder(d=5,h=60);
-    translate([-108.5,70,249]) rotate([0,-90,0]) cylinder(d=5,h=60);
+    // UGREEN: two post collars plus two rear-retainer screws, all approached
+    // through the removable rear_hi aperture.
+    for (p=[[78,230],[-44,230]])
+        translate([-332,p[0],p[1]]) rotate([0,90,0]) cylinder(d=5,h=59.9);
+    for (p=[[3,242],[65,242]])
+        translate([-332,p[0],p[1]]) rotate([0,90,0]) cylinder(d=5,h=62.3);
 }
 
 module p288_new_parts_installed() {
@@ -678,6 +724,7 @@ module p288_new_parts_installed() {
         parkside_drawer(side);
     }
     ugreen_post_holder();
+    ugreen_rear_retainer();
 }
 
 module p288_battery_ghosts() {
@@ -686,7 +733,7 @@ module p288_battery_ghosts() {
                    parkside_drawer_floor_z+4+parkside_battery_provisional[2]/2])
             cube(parkside_battery_provisional,center=true);
     color([.15,.2,.3,.55]) translate(ugreen_center)
-        cube(ugreen_actual,center=true);
+        cube(ugreen_installed_size,center=true);
 }
 
 module qa_p288_reservation_overflow() {
@@ -699,7 +746,10 @@ module qa_p288_reservation_overflow() {
 }
 
 module qa_p288_ugreen_device_collision() {
-    intersection() { ugreen_post_holder(); translate(ugreen_center) cube(ugreen_actual,center=true); }
+    intersection() {
+        union(){ ugreen_post_holder(); ugreen_rear_retainer(); }
+        translate(ugreen_center) cube(ugreen_installed_size,center=true);
+    }
 }
 
 module p288_preview() {
@@ -926,6 +976,7 @@ else if (part=="parkside_dock_right") rotate([0,0,0]) parkside_dock(-1);
 else if (part=="parkside_drawer_left") parkside_drawer(1);
 else if (part=="parkside_drawer_right") parkside_drawer(-1);
 else if (part=="ugreen_post_holder") ugreen_post_holder();
+else if (part=="ugreen_rear_retainer") ugreen_rear_retainer();
 else if (part=="panel_posts") panel_posts_print_set();
 else if (part=="corner_tie") corner_tie();
 else if (part=="component_pins") component_pin_plate();

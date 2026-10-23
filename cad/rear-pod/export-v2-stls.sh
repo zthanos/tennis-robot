@@ -21,7 +21,8 @@ all_parts=(
   upright_mount_fit_coupon control_panel
   rear_foot_wedge_washer side_frame_base_drill_jig
   parkside_dock_left parkside_dock_right
-  parkside_drawer_left parkside_drawer_right ugreen_post_holder
+  parkside_drawer_left parkside_drawer_right
+  ugreen_post_holder ugreen_rear_retainer
 )
 parts=("${all_parts[@]}")
 if (($#)); then
@@ -35,7 +36,7 @@ declare -A expected_components=(
   [rear_foot_wedge_washer]=1 [side_frame_base_drill_jig]=1
   [parkside_dock_left]=1 [parkside_dock_right]=1
   [parkside_drawer_left]=1 [parkside_drawer_right]=1
-  [ugreen_post_holder]=1
+  [ugreen_post_holder]=1 [ugreen_rear_retainer]=1
 )
 
 for part_name in "${parts[@]}"; do

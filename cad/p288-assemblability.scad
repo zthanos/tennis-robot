@@ -63,8 +63,12 @@ module ugreen_driver_collision() {
   intersection() {
     p288_new_parts_installed();
     union() {
-      translate([-316.5,70,249]) rotate([0,90,0]) cylinder(d=5,h=45.5);
-      translate([-80.5,70,249]) rotate([0,-90,0]) cylinder(d=5,h=45.5);
+      // Two post collars and two removable rear-retainer screws, all reached
+      // from the open rear_hi service aperture with a >=60 mm driver.
+      translate([-332,78,230]) rotate([0,90,0]) cylinder(d=5,h=59.9);
+      translate([-332,-44,230]) rotate([0,90,0]) cylinder(d=5,h=59.9);
+      translate([-332,3,242]) rotate([0,90,0]) cylinder(d=5,h=62.3);
+      translate([-332,65,242]) rotate([0,90,0]) cylinder(d=5,h=62.3);
     }
   }
 }
