@@ -12,6 +12,8 @@ status_led_hole = 8;
 p290d_spine_x = 36;
 p290d_spine_y = 24;
 p290d_rear_slot_x = 18;
+p290d_pocket_full_top = 27;
+p290d_pocket_tip = 36;
 p290d_post_span = 193;      // cup M4 Z154 -> panel underside Z347
 p290d_spine_span = 90;      // base foot -> cup M4
 p290d_e_perp = 1200;        // MPa, conservative printed-PETG Z modulus
@@ -317,7 +319,11 @@ module frame_web_2d() {
         polygon(points=[[-58,4],[-50,4],[24,76],[16,84]]);
         polygon(points=[[58,4],[50,4],[15,76],[23,84]]);
         translate([12,75]) square([15,31]);
-        translate([-58,4]) square([124.5,7]);
+        // P2-90d printability correction: this rail used to begin at Z4 and
+        // created a 124.5 mm unsupported bridge between the two feet.  It now
+        // sits directly on the bed (Z0..7), overlapping the diagonals by
+        // 3 mm and strengthening the base load path.
+        translate([-58,0]) square([124.5,7]);
     }
 }
 
@@ -329,6 +335,17 @@ module cup_load_spine(x_top=0,x_foot=0) {
         translate([x_foot,0,8]) cube([p290d_spine_x,p290d_spine_y,16],center=true);
         translate([x_top,0,74]) cube([p290d_spine_x,p290d_spine_y,4],center=true);
     }
+}
+
+// Support-free side entry for the vertical base fastener hardware.  The
+// usable pocket stays 18x30 mm through Z27, then closes at exactly 45°.
+// At the front foot the existing Ø7 Allen chimney continues through the tip;
+// at the rear foot the two slopes meet without a flat bridge.
+module base_hardware_pocket(x=0) {
+    translate([x,15,0]) rotate([90,0,0])
+        linear_extrude(height=30)
+            polygon(points=[[-9,4],[9,4],[9,p290d_pocket_full_top],
+                            [0,p290d_pocket_tip],[-9,p290d_pocket_full_top]]);
 }
 
 module side_frame() {
@@ -353,15 +370,13 @@ module side_frame() {
             translate([x,0,-1]) cylinder(d=m4_clear,h=8);
         // Ø7 vertical Allen chimney above the moved P2-88 front base screw.
         translate([side_frame_front_x-panel_center_x,0,4]) cylinder(d=7,h=100);
-        // Identical 18 mm lower side pockets in both load spines.  Rear:
+        // Identical support-free lower pockets in both load spines.  Rear:
         // nyloc/open-ended wrench after the bolt enters from below through
         // the wedge washer.  Front: the M4 head + OD14 washer enter from the
         // side before the Allen is driven through the chimney.  The old
         // front Ø7-only bore admitted the tool but not the screw hardware.
-        for (x=[-58,side_frame_front_x-panel_center_x]) {
-            translate([x,0,4]) cylinder(d=18,h=23);
-            translate([x,0,15.5]) cube([18,30,23],center=true);
-        }
+        for (x=[-58,side_frame_front_x-panel_center_x])
+            base_hardware_pocket(x);
         // Carrier plate is X17.5..21.5 relative to panel center.
         translate([17.1,-6,74]) cube([4.8,12,34]);
         // M4 transverse clamp screw through jaw and carrier tongue.
@@ -379,17 +394,36 @@ module elliptical_frustum(z0,h,rx0,ry0,rx1,ry1) {
     }
 }
 
+module support_free_cup_outer(x=0) {
+    // Start exactly on the 36x24 mm load spine.  The Y radius grows 8 mm
+    // over 8 mm, then 10 mm over 11.5 mm: every underside is <=45°.
+    translate([x,0,0]) {
+        elliptical_frustum(75,8.2,18,12,20,20);
+        elliptical_frustum(83,11.5,20,20,20,30);
+    }
+}
+
+module support_free_cup_land(x=0,sx=1) {
+    // Preserve the full 8x18 mm washer/nut face from Z85.75 upward.  The
+    // small root lies inside the cup wall and reaches the outer X edge and
+    // Y edge with <1 mm horizontal growth per 1 mm layer height.
+    hull() {
+        translate([x+sx*17.15,0,79.75]) cube([2.3,8,0.2],center=true);
+        translate([x+sx*20,0,85.75]) cube([8,18,0.2],center=true);
+    }
+    translate([x+sx*20,0,(85.75+99)/2])
+        cube([8,18,99-85.75],center=true);
+}
+
 module post_socket_cup(x=0) {
     difference() {
         union() {
-            translate([x,0,0])
-                // Eight millimetres of radial wall at the M4 plane.  The
-                // Y flare follows the immediately departing diagonal posts.
-                elliptical_frustum(75,19.5,19.8,19.8,20.0,30.0);
-            // Broad flat washer/nut lands merge 4 mm into the cup wall.
-            // The 48 mm face-to-face stack uses M4x60 + washers + nyloc.
-            for (sx=[-1,1]) translate([x+sx*20,0,90])
-                cube([8,18,18],center=true);
+            // Support-free exterior; the unchanged inner cavity below still
+            // follows the already-printed spherical/diagonal post ends.
+            support_free_cup_outer(x);
+            // Broad flat washer/nut faces merge into the cup through <=45°
+            // roots.  The 48 mm face stack remains M4x60 + washers + nyloc.
+            for (sx=[-1,1]) support_free_cup_land(x,sx);
         }
         // Final post bottom is local Z79.5; 0.3 mm axial clearance.  The
         // cavity continues above the rim so the exported STL is truly open.
@@ -1080,6 +1114,8 @@ assert(p290d_base_tension/p290d_washer_area <= 5,
        "P2-90d OD14 base washer bearing must stay <=5 MPa");
 assert(p290d_frame_delta <= 1,
        "P2-90d four-post frame top displacement must stay <=1 mm");
+assert(p290d_pocket_tip-p290d_pocket_full_top >= p290d_rear_slot_x/2,
+       "P2-90d base-pocket roof must remain self-supporting at <=45 degrees");
 
 if (part=="base_left") base_half_v2(1);
 else if (part=="base_right") base_half_v2(-1);

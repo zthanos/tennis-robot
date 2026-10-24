@@ -4326,5 +4326,38 @@ OD14 ροδέλα δεν μπορούσαν να μπουν μέσα στο συ
 Δεν άλλαξαν άξονες, post cups, jaw 4,8/tongue 4, bases, τυπωμένα posts ή
 control panel. Επανεξήχθη μόνο `side_frame.stl`.
 
+Νεότερος έλεγχος εκτυπωσιμότητας: το ορθογώνιο slot έκλεινε αρχικά στο
+local `Z27` με επίπεδη οροφή, δηλαδή μη δηλωμένη γέφυρα 18 mm. Αυτό
+αντιφάσκει με την οδηγία «supports μόνο για Ø7». Και τα δύο pockets έγιναν
+support-free pentagonal openings: πλήρες πλάτος 18 mm μέχρι `Z27` και δύο
+κλίσεις ακριβώς 45° που συναντώνται στο `Z36`. Στο front pocket η Ø7 Allen
+chimney συνεχίζει μέσα από την κορυφή. Μόνιμο assert απαιτεί
+`Ztip−Zfull ≥ half_width`, άρα οροφή ≤45°. Τα hardware sweeps κεφαλής+OD14,
+πίσω wrench/nyloc και Allen παραμένουν `PASS_EMPTY`, ενώ η ελάχιστη φέρουσα
+διατομή 18×24 mm δεν αλλάζει.
+
+Στις 2026-10-24 ο χρήστης ανέφερε ότι το side frame παραμένει μη
+εκτυπώσιμο. Audit των downward horizontal facets του exported STL βρήκε το
+κύριο αίτιο που είχε διαφύγει: η χαμηλή τραβέρσα `square([124.5,7])`
+ξεκινούσε στο local `Z4`, άρα ζητούσε γέφυρα περίπου **124,5 mm** ανάμεσα
+στα πέλματα. Βρέθηκαν επίσης οριζόντιες undersides περίπου 758 mm² στην
+αρχή των cups (`Z75`) και 336 mm² στα washer/nut lands (`Z81`).
+
+Διορθώσεις χωρίς αλλαγή interface/envelope:
+
+- η χαμηλή τραβέρσα μετακινήθηκε στο `Z0…7`, πάνω στο bed,
+- το cup outer ξεκινά στο footprint του spine 36×24 και ανοίγει με δύο
+  frusta ≤45°· η εσωτερική cavity παραμένει ακριβώς ίδια,
+- τα washer/nut lands κρατούν την πλήρη 8×18 mm έδρα από `Z85,75` έως
+  `Z99`, αλλά φτάνουν εκεί με λοξή ρίζα ≤45° αντί για flat shelf,
+- τα δύο base pockets κρατούν την pentagonal roof 45° της προηγούμενης
+  μικροδιόρθωσης.
+
+Προστέθηκε μόνιμος gate στο `export-v2-stls.sh`: στο upright exported STL
+αθροίζει ανά Z τις σχεδόν οριζόντιες downward facets πάνω από το bed και
+αποτυγχάνει πάνω από 40 mm². Τελικό αποτέλεσμα **28,29 mm² στο Z92,2**,
+μόνο από τα μικρά transverse-hole ceilings. One-body, post fit/insertion,
+load-spine probes, fastener/tool paths και όλα τα integration gates πέρασαν.
+
 Κατάσταση: `P2_90D_FRONT_BASE_HARDWARE_ACCESS_PASS`.
 ΠΑΥΣΗ.

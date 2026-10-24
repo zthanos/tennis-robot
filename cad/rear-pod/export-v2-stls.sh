@@ -49,6 +49,37 @@ for part_name in "${parts[@]}"; do
     "${expected_components[$part_name]}"
 done
 
+# P2-90d printability regression: in the upright release pose, no horizontal
+# downward-facing layer above the bed may exceed 40 mm^2.  This catches the
+# former 124.5 mm low bridge and the 18 mm flat pocket/cup shelves, while
+# allowing the small tessellated ceilings of the Ø4.5/Ø7 transverse bores.
+if [[ -f "$out_dir/side_frame.stl" ]]; then
+  awk '
+    /facet normal/ { nz=$5; vi=0; next }
+    /vertex/ { vi++; x[vi]=$2; y[vi]=$3; z[vi]=$4 }
+    /endfacet/ {
+      if (nz < -0.99 && vi == 3) {
+        za=(z[1]+z[2]+z[3])/3
+        if (za > 0.2) {
+          ax=x[2]-x[1]; ay=y[2]-y[1]
+          bx=x[3]-x[1]; by=y[3]-y[1]
+          ar=(ax*by-ay*bx)/2; if (ar < 0) ar=-ar
+          key=sprintf("%.1f",za); area[key]+=ar
+        }
+      }
+    }
+    END {
+      max=0; maxz=0
+      for (key in area) if (area[key] > max) { max=area[key]; maxz=key }
+      if (max > 40) {
+        printf "PRINTABILITY FAIL: side_frame horizontal underside %.2f mm^2 at Z%s\n", max, maxz > "/dev/stderr"
+        exit 1
+      }
+      printf "PRINTABILITY PASS: side_frame max horizontal underside %.2f mm^2 at Z%s\n", max, maxz
+    }
+  ' "$out_dir/side_frame.stl"
+fi
+
 # P2-75 cable parts remain active immutable release assets in stl-v2. They
 # have no P2-81 geometry change and are intentionally not rewritten here.
 for part_name in cable_bulkhead bulkhead_foot; do
