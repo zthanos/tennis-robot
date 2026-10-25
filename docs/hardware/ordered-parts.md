@@ -103,6 +103,20 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 > DC-DC: default 5 V — αλλαγή solder pad σε 12 V και μέτρηση με πολύμετρο πριν τη σύνδεση.
 > Εκκρεμούν: AS5600 + μαγνήτης (AliExpress), tensioner/guard (τυπωμένα).
 
+## Παραγγελία Amazon.de — 2026-10-25
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή | Κατάσταση |
+|---|---|---|---:|---:|---|
+| AZ1 | AS5600 magnetic encoder module, 12-bit, με μαγνήτη και 7-pin header ([B0D4YW7NVB](https://www.amazon.de/gp/product/B0D4YW7NVB)), GERUI | Tilt / Feedback | 1 πακέτο (4 τεμ.) | 9,36 € | Παραγγέλθηκε 25/10/2026 |
+
+> **Η πλακέτα έρχεται ρυθμισμένη για 3,3 V** (πωλητής: «VCC: 3.3 V»· η R1 = 0 Ω γεφυρώνει
+> VDD5V–VDD3V3 του τσιπ). Απόφαση χρήστη: **δοκιμή σε ένα από τα 4 με αφαίρεση της R1** και
+> τροφοδοσία 5 V από το Mega (έλεγχος: καμία συνέχεια pin 1–pin 2 του τσιπ μετά). Αν δεν
+> πετύχει, αγορά I²C level converter 3,3↔5 V (BSS138, 4 κανάλια) και τροφοδοσία από το 3,3 V
+> του Mega χωρίς αλλαγή στην πλακέτα.
+> Σύνδεση: VCC, GND, SDA→D20, SCL→D21 (κοινά με MPU6050 0x68· AS5600 = 0x36), DIR→GND,
+> GPO και OUT ασύνδετα (GPO σε GND = programming mode). Bench check: I²C scanner βλέπει 0x36 και 0x68.
+
 ## Parts To Order
 
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
@@ -117,7 +131,7 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 | T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Ωφέλιμο thread travel ≥60 mm: 34–35 mm λειτουργική διαδρομή + ≥25 mm περιθώριο για end/adjustment· τελικό overall/cut length μετά το clevis/carriage dry-fit. Μαζί thrust bearing, flexible coupling και anti-rotation nut carriage | 1 σετ | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
 | T2 | Δύο timing pulleys + toothed belt 1:1 | Ίδιο tooth count· motor pulley για **FIT0186 6 mm D-shaft** με θετικό κλείδωμα στο flat. Screw-side bore και belt length κλειδώνουν μετά τη φυσική center-distance μέτρηση | 1 σετ | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
 | T3 | Belt tensioner + guard hardware | Ρύθμιση τάσης χωρίς να παραβιάζει τα P2-54 clearances· captive hardware και guard γύρω από pulleys/belt | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
-| T4 | AS5600 board + diametric magnet | I²C `0x36`, magnet `Ø6×2,5 mm`, non-magnetic cap, adjustable air gap 0,5–2,5 mm (στόχος 1,5 mm)· έλεγχος breakout voltage/pull-ups πριν κοινό D20/D21 με MPU6050 | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
+| T4 | AS5600 board + diametric magnet | I²C `0x36`, magnet `Ø6×2,5 mm`, non-magnetic cap, adjustable air gap 0,5–2,5 mm (στόχος 1,5 mm)· έλεγχος breakout voltage/pull-ups πριν κοινό D20/D21 με MPU6050 | 1 σετ | **Παραγγέλθηκε 25/10/2026 — βλ. AZ1** |
 | T5 | Endpoint switches −3°/+20° | 2 switches με ανεξάρτητες επαφές για Mega sense/homing και NC direction-specific hardware cutoff προς το αντίστοιχο R_EN/L_EN· τελικός τύπος μετά stop/bracket fit | 2 | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
 | T6 | Parkside→regulated 12 V DC-DC για BTS #3/FIT0186 | Input να καλύπτει το πραγματικό Parkside range 15–21 V, regulated 12 V output, fused motor branch· current/transient rating κλειδώνει μετά το FIT0186 current/thermal test | 1 | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
 
@@ -132,7 +146,7 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 | T2 | [Timing Belt GT2 – 160mm](https://grobotronics.com/timing-belt-gt2-160mm.html) (closed loop) | 1,40 € | με 20T/20T → απόσταση κέντρων **60 mm** (CAD P2-53 ≈62 mm → carrier ρυθμιζόμενος)· 2ος ιμάντας ως ρεζέρβα |
 | T5 | [Microswitch SPDT ON-(ON) with Roller Simulation](https://grobotronics.com/microswitch-spdt-on-on-with-roller-simulation.html) | 0,80 € | **4 + 1**: ανά άκρο ένας για Mega sense/homing και ένας NC για hardware cutoff R_EN/L_EN |
 | T6 | [DC-DC Step-Down 7.5–30V 3A (3.3/5/9/12V)](https://grobotronics.com/dc-dc-multi-output-buck-converter-3-3v-5v-9v-12v.html) | 7,40 € | 12 V/3 A χωρίς ψύκτρα, 3,5 A με ψύκτρα, overload/thermal protection· default 5 V → αλλαγή solder pad σε 12 V· επιβεβαίωση έναντι FIT0186 current test |
-| T4 | AS5600 + diametric magnet | ~2–4 € | **Δεν βρέθηκε** σε Grobotronics/Skroutz → AliExpress· έλεγχος 3,3/5 V και pull-ups πριν κοινό I²C με MPU6050 |
+| T4 | AS5600 + diametric magnet | 9,36 €/4 | **Παραγγέλθηκε στο Amazon (AZ1)** — 3,3 V board, R1 αφαιρείται για 5 V |
 
 ### Current compute basket — not yet ordered
 
