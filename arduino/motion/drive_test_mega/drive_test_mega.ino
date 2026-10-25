@@ -41,6 +41,9 @@ const unsigned long HOST_TIMEOUT_MS = 300UL;
 const unsigned long CONTROL_PERIOD_US = 10000UL;
 const unsigned long SPEED_FILTER_PERIOD_US = 40000UL;
 const unsigned long TELEMETRY_PERIOD_MS = 20UL;
+// START/ARM button: local arming on a debounced press.  It never commands
+// motion; the host must keep sending traffic or HOST_TIMEOUT disarms again.
+const unsigned long START_DEBOUNCE_MS = 50UL;
 
 const float TWO_PI_F = 6.28318530718f;
 const float DEG_TO_RAD_F = 0.01745329252f;
@@ -127,6 +130,10 @@ unsigned long motionStartMs = 0;
 unsigned long previousLoopUs = 0;
 unsigned long maximumLoopGapUs = 0;
 unsigned long maximumTelemetryWriteUs = 0;
+
+bool startRawLast = false;
+bool startStablePressed = false;
+unsigned long startChangeMs = 0;
 
 float motionDistanceM = 0.0f;
 char commandBuffer[112];
@@ -231,7 +238,7 @@ void enterEstop(const __FlashStringHelper *reason) {
   Serial.println(reason);
 }
 
-void armController() {
+void armController(const __FlashStringHelper *source) {
   if (!estopHealthy()) {
     enterEstop(F("OPEN_CIRCUIT"));
     return;
@@ -247,7 +254,8 @@ void armController() {
   digitalWrite(RIGHT_ENABLE_PIN, HIGH);
   digitalWrite(STATUS_LED_PIN, HIGH);
   lastHostMs = millis();
-  Serial.println(F("OK,ARMED"));
+  Serial.print(F("OK,ARMED,"));
+  Serial.println(source);
 }
 
 bool imuRead(uint8_t registerAddress, uint8_t *data, uint8_t length) {
@@ -499,7 +507,7 @@ void handleCommand(char *command) {
     return;
   }
   if (strcmp(command, "ARM") == 0) {
-    armController();
+    armController(F("HOST"));
     return;
   }
   if (strcmp(command, "DISARM") == 0) {
@@ -606,6 +614,28 @@ void serviceSerial() {
   }
 }
 
+// Debounced START press arms locally (same checks as host ARM: E-stop
+// closed and CPR configured) and reports it to the host.  Holding the button
+// or pressing it while armed does nothing more.
+void serviceStartButton(unsigned long nowMs) {
+  bool pressed = digitalRead(START_PIN) == LOW;
+  if (pressed != startRawLast) {
+    startRawLast = pressed;
+    startChangeMs = nowMs;
+  }
+  if (nowMs - startChangeMs < START_DEBOUNCE_MS || pressed == startStablePressed) {
+    return;
+  }
+  startStablePressed = pressed;
+  if (!pressed) {
+    return;
+  }
+  Serial.println(F("EVENT,START_PRESSED"));
+  if (controllerState != ARMED) {
+    armController(F("BUTTON"));
+  }
+}
+
 void setup() {
   Serial.begin(SERIAL_BAUD);
 
@@ -641,6 +671,10 @@ void setup() {
   if (!estopHealthy()) {
     controllerState = ESTOPPED;
   }
+  // A button held during boot is not treated as a press.
+  startRawLast = digitalRead(START_PIN) == LOW;
+  startStablePressed = startRawLast;
+  startChangeMs = millis();
 
   Serial.print(F("READY,DRIVE_TEST_MEGA,CPR_REQUIRED,ESTOP="));
   Serial.print(estopHealthy() ? F("OK") : F("OPEN"));
@@ -658,6 +692,7 @@ void loop() {
   // Service host commands first.  At 500 kbaud a ~220-character telemetry line
   // occupies about 4.4 ms on the wire, keeping STOP below the 20 ms requirement.
   serviceSerial();
+  serviceStartButton(nowMs);
 
   if (!estopHealthy() && controllerState != ESTOPPED) {
     enterEstop(F("OPEN_CIRCUIT"));

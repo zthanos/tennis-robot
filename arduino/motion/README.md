@@ -12,7 +12,10 @@
   feed-forward, προαιρετικό gyro loop, 500000-baud/50 Hz telemetry και
   host/NC-E-stop/run-limit safety. Απαιτεί measured `CFG CPR` και lifted-wheel
   `CFG NOLOAD` πριν από floor bring-up και δεν αντικαθιστά το integration
-  sketch.
+  sketch. Από 2026-10-23 το START (D32) οπλίζει **τοπικά** με debounce
+  (ίδιοι έλεγχοι με το host `ARM`), χωρίς να κινεί τίποτα, και αναφέρει
+  `EVENT,START_PRESSED` / `OK,ARMED,BUTTON|HOST`. Οδηγός πάγκου χωρίς μοτέρ:
+  `docs/hardware/bench-bringup-no-motors-el.md`.
 
 Για την πρώτη θέση σε λειτουργία της κοινής perfboard εκτελείται πρώτα το
 gyro-only test, μετά τα ξεχωριστά motion/intake tests και τελευταίο το ενιαίο
