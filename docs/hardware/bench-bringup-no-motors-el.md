@@ -12,7 +12,9 @@ E-stop, encoders, MPU6050, BTS7960) από το Pi **πριν συνδεθεί �
 Firmware: `arduino/motion/drive_test_mega/drive_test_mega.ino` (500000 baud).
 Βοηθητικό script στο Pi: `scripts/bench_check_mega.py`. Χρειάζεται επειδή
 το firmware κάνει `FAULT,HOST_TIMEOUT` αν περάσουν 300 ms χωρίς μήνυμα, άρα
-ένα απλό serial terminal δεν μπορεί να το κρατήσει ARMED.
+ένα απλό serial terminal δεν μπορεί να το κρατήσει ARMED. Για όλες τις
+συνδέσεις του σταδίου A υπάρχει και σελίδα ελέγχου στον browser:
+`scripts/mega_buttons_panel.py`, βλ. [Σελίδα ελέγχου](#σελίδα-ελέγχου-συνδέσεων).
 
 > **Γενικός κανόνας:** σε όλα τα στάδια A–Γ **κανένα μοτέρ δεν είναι
 > συνδεδεμένο** στις εξόδους M+/M− των BTS. Τα encoders των FIT0403 μπορούν
@@ -68,11 +70,79 @@ Firmware: `arduino/motion/drive_test_mega/drive_test_mega.ino` (500000 baud).
 
 ### A1. Ανέβασμα firmware (μόνο όταν το αποφασίσεις)
 
+Το checkout στο Pi **δεν** ενημερώνεται με `git pull`. Τα αρχεία στέλνονται
+από το PC με `rsync`, με το PC συνδεδεμένο στο AP `TennisRobot`
+(`docs/network/field-wifi-ap.md`):
+
+```bash
+rsync -av -e "ssh -o IdentityAgent=none -i ~/.ssh/id_pi" \
+  arduino/motion/drive_test_mega/ \
+  thanos@10.42.0.1:~/tennis-robot/arduino/motion/drive_test_mega/
+rsync -av -e "ssh -o IdentityAgent=none -i ~/.ssh/id_pi" \
+  scripts/bench_check_mega.py scripts/mega_buttons_panel.py \
+  scripts/mega_buttons_panel.html thanos@10.42.0.1:~/tennis-robot/scripts/
+```
+
+Στο Pi:
+
 ```bash
 cd ~/tennis-robot   # το checkout του repo στο Pi
 arduino-cli compile --fqbn arduino:avr:mega arduino/motion/drive_test_mega
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:mega arduino/motion/drive_test_mega
 ```
+
+Το upload αποτυγχάνει αν η θύρα είναι ανοιχτή από άλλο πρόγραμμα
+(`bench_check_mega.py` ή τη σελίδα ελέγχου). Σταμάτησέ το πρώτα με Ctrl+C.
+
+### Σελίδα ελέγχου συνδέσεων
+
+Ελέγχει **κάθε σύνδεση του σταδίου A ξεχωριστά**: USB, E-stop D33, START
+D32, LED D34, τα τέσσερα encoders (κανάλια A και B) και το MPU6050.
+Καλύπτει τα A2–A6 εκτός από τη μέτρηση CPR του A3. Ο server τρέχει στο Pi
+και η σελίδα ανοίγει από PC ή κινητό στο δίκτυο `TennisRobot`:
+
+```bash
+cd ~/tennis-robot && python3 scripts/mega_buttons_panel.py
+```
+
+Άνοιξε `http://10.42.0.1:8083`. Πάνω δείχνει ζωντανά σύνδεση, telemetry
+(Hz και loop gap), state, E-stop, το **αναμενόμενο** LED (D34: ON μόνο σε
+ARMED) και gz. Οι έλεγχοι τσεκάρονται αυτόματα από τα μηνύματα και την
+telemetry του Mega. Όταν κάτι αποτύχει, γίνονται κόκκινοι και γράφουν την
+πιθανή αιτία. Τις γραμμές με ✋ τις τσεκάρεις εσύ.
+
+| Σύνδεση | Τι κάνεις | Περνά όταν | Αν αποτύχει |
+|---|---|---|---|
+| USB | άνοιγμα σελίδας | `READY,…` και telemetry ≥ 40 Hz | καλώδιο/θύρα, λάθος firmware |
+| E-stop D33 | απάτητο | `ESTOP=OK` | OPEN: NO επαφή ή κομμένο καλώδιο |
+| E-stop D33 | πάτημα | E-stop OPEN | δεν αλλάζει: D33 βραχυκυκλωμένο στο GND |
+| E-stop D33 | ξεκλείδωμα | E-stop OK ξανά | |
+| E-stop D33 ✋ | βγάλσιμο βύσματος | OPEN όσο είναι έξω (fail-safe) | |
+| START D32 ✋ | πολύμετρο D32–GND | ≈ 5 V αφημένο, ≈ 0 V πατημένο | |
+| START D32 | 3 πατήματα | 3 × `EVENT,START_PRESSED`, κανένα διπλό < 150 ms | διπλό: χαλαρή επαφή/αναπήδηση |
+| START D32 | πάτημα με E-stop κλειστό | `OK,ARMED,BUTTON` | |
+| Καλώδια | «Δοκιμή καλωδίων 10 s» και κούνημα καλωδίων/βυσμάτων E-stop και START | καμία μετάβαση E-stop, κανένα START σε 10 s | γράφει ποια επαφή είναι χαλαρή |
+| LED D34 ✋ | ARM / DISARM / E-stop | ON σε ARMED, OFF αμέσως σε DISARM και E-stop | |
+| Encoder LF/LR/RF/RR | γύρισμα **μόνο** αυτού του τροχού, πρώτα μπροστά μετά πίσω | ≥ 30 counts κάθε φορά, μπροστά +, πίσω − | − μπροστά: αντιμετάθεση A/B· μόνο +: το B δεν διαβάζεται· 0: A, 5 V ή GND |
+| Encoders | (από τα παραπάνω) | κάθε τροχός αλλάζει μόνο τον δικό του μετρητή | μπερδεμένα καλώδια |
+| MPU6050 | εκκίνηση | `IMU=OK` | MISSING: SDA/SCL ή τροφοδοσία |
+| MPU6050 | ακίνητο 2 s | \|gz\| < 0,03 rad/s | |
+| MPU6050 | στροφή αριστερά με το χέρι | gz > +0,3 rad/s | |
+| Ασφάλεια | E-stop ενώ ARMED | `ESTOP,OPEN_CIRCUIT` | |
+| Ασφάλεια | «Παύση heartbeat» ενώ ARMED | `FAULT,HOST_TIMEOUT` σε 0,3 s | |
+
+Τα αποτελέσματα μένουν και μετά από reload της σελίδας. Ξεκινούν από την
+αρχή όταν ξεκινήσει ξανά ο server ή με «Μηδενισμός λίστας». Αν γυρίσεις
+κατά λάθος πρώτα πίσω έναν τροχό, πάτα «Μηδενισμός λίστας» και ξανάρχισε.
+
+Ασφάλεια: η σελίδα στέλνει μόνο ARM, DISARM, ZERO και παύση/συνέχιση
+heartbeat, **ποτέ `CMD`**. Μετά από κάθε reset του Mega ο server στέλνει
+`DISARM`, `CFG CPR 1000` και `CFG PWM 0`, άρα οι έξοδοι μένουν στο μηδέν
+ακόμα και σε ARMED. Το CPR 1000 είναι πλασματικό: χρειάζεται μόνο για να
+επιτρέπεται η όπλιση, και το πραγματικό CPR μετριέται στο A3 με το
+`bench_check_mega.py`. Το heartbeat (`PING`) στέλνεται μόνο όσο η σελίδα
+είναι ανοιχτή· αν την κλείσεις, το Mega κάνει `FAULT,HOST_TIMEOUT`. Το
+άνοιγμα της θύρας κάνει reset το Mega.
 
 ### A2. E-stop
 
