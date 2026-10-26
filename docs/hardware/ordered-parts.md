@@ -86,22 +86,22 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 
 ## Παραγγελία Grobotronics — 22/10/2026 (μηχανισμός κλίσης, προετοιμασία)
 
-Αγορά «προετοιμασίας» με απόφαση χρήστη, πριν τη δοκιμή κίνησης (φθηνά, ~26,40 € + μεταφορικά). Η υλοποίηση της κλίσης εκκρεμεί.
+Αγορά «προετοιμασίας» με απόφαση χρήστη, πριν τη δοκιμή κίνησης (φθηνά, ~26,40 € + μεταφορικά). Παραλήφθηκε· οι φυσικές διαστάσεις εκκρεμούν για το P2-93 fit check.
 
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|
-| G13 | Τραπεζοειδής κοχλίας T8 – Lead 2mm, 200 mm (`14-00094070`) | Tilt / Mechanics | 1 | 3,90 € | 3,90 € | Παραγγέλθηκε |
-| G14 | Anti-Backlash περικόχλιο T8 Lead 2mm, brass (`14-00018512`) | Tilt / Mechanics | 1 | 2,90 € | 2,90 € | Παραγγέλθηκε |
-| G15 | Pillow Block Flanged 8mm – KFL08 (`14-00010806`) | Tilt / Mechanics | 1 | 2,20 € | 2,20 € | Παραγγέλθηκε |
-| G16 | Timing Pulley GT2 6mm – 20T, bore **6 mm** (`14-00021610`) — FIT0186 | Tilt / Drive | 1 | 1,60 € | 1,60 € | Παραγγέλθηκε |
-| G17 | Timing Pulley GT2 6mm – 20T, bore **8 mm** (`14-00021614`) — ντίζα | Tilt / Drive | 1 | 1,60 € | 1,60 € | Παραγγέλθηκε |
-| G18 | Timing Belt GT2 – 160mm closed loop (`14-00020100`) | Tilt / Drive | 2 | 1,40 € | 2,80 € | Παραγγέλθηκε |
-| G19 | Microswitch SPDT ON-(ON) with Roller Simulation (`05-00000304`) | Tilt / Endpoints | 5 | 0,80 € | 4,00 € | Παραγγέλθηκε |
-| G20 | DC-DC Step-Down 7.5–30V 3A, 3.3/5/9/12V (`25-00016906`) — 12 V για BTS #3/FIT0186 | Tilt / Power | 1 | 7,40 € | 7,40 € | Παραγγέλθηκε |
+| G13 | Τραπεζοειδής κοχλίας T8 – Lead 2mm, 200 mm (`14-00094070`) | Tilt / Mechanics | 1 | 3,90 € | 3,90 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G14 | Anti-Backlash περικόχλιο T8 Lead 2mm, brass (`14-00018512`) | Tilt / Mechanics | 1 | 2,90 € | 2,90 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G15 | Pillow Block Flanged 8mm – KFL08 (`14-00010806`) | Tilt / Mechanics | 1 | 2,20 € | 2,20 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G16 | Timing Pulley GT2 6mm – 20T, bore **6 mm** (`14-00021610`) — FIT0186 | Tilt / Drive | 1 | 1,60 € | 1,60 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G17 | Timing Pulley GT2 6mm – 20T, bore **8 mm** (`14-00021614`) — ντίζα | Tilt / Drive | 1 | 1,60 € | 1,60 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G18 | Timing Belt GT2 – 160mm closed loop (`14-00020100`) | Tilt / Drive | 2 | 1,40 € | 2,80 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G19 | Microswitch SPDT ON-(ON) with Roller Simulation (`05-00000304`) | Tilt / Endpoints | 5 | 0,80 € | 4,00 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G20 | DC-DC Step-Down 7.5–30V 3A, 3.3/5/9/12V (`25-00016906`) — 12 V για BTS #3/FIT0186 | Tilt / Power | 1 | 7,40 € | 7,40 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
 
 > 20T/20T + GT2-160 → απόσταση κέντρων 60 mm (CAD ≈62 → ρυθμιζόμενος carrier, λειτουργεί και ως tensioner).
 > DC-DC: default 5 V — αλλαγή solder pad σε 12 V και μέτρηση με πολύμετρο πριν τη σύνδεση.
-> Εκκρεμούν: AS5600 + μαγνήτης (AliExpress), tensioner/guard (τυπωμένα).
+> Εκκρεμούν: AS5600 + μαγνήτης AZ1. Ο P2-93 carrier ενσωματώνει τη ρύθμιση τάσης· ξεχωριστό belt guard παραμένει εκτός πρώτου κύματος.
 
 ## Παραγγελία Amazon.de — 2026-10-25
 
@@ -128,12 +128,12 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 
 | # | Part | Προδιαγραφή / interface | Ποσότητα | Κατάσταση |
 |---:|---|---|---:|---|
-| T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Ωφέλιμο thread travel ≥60 mm: 34–35 mm λειτουργική διαδρομή + ≥25 mm περιθώριο για end/adjustment· τελικό overall/cut length μετά το clevis/carriage dry-fit. Μαζί thrust bearing, flexible coupling και anti-rotation nut carriage | 1 σετ | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
-| T2 | Δύο timing pulleys + toothed belt 1:1 | Ίδιο tooth count· motor pulley για **FIT0186 6 mm D-shaft** με θετικό κλείδωμα στο flat. Screw-side bore και belt length κλειδώνουν μετά τη φυσική center-distance μέτρηση | 1 σετ | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
+| T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Ωφέλιμο thread travel ≥60 mm: 34–35 mm λειτουργική διαδρομή + ≥25 mm περιθώριο για end/adjustment· τελικό overall/cut length μετά το clevis/carriage dry-fit. Μαζί thrust bearing, flexible coupling και anti-rotation nut carriage | 1 σετ | **Παραλήφθηκε — φυσικό fit check εκκρεμεί** |
+| T2 | Δύο timing pulleys + toothed belt 1:1 | Ίδιο tooth count· motor pulley για **FIT0186 6 mm D-shaft** με θετικό κλείδωμα στο flat. Screw-side bore και belt length κλειδώνουν μετά τη φυσική center-distance μέτρηση | 1 σετ | **Παραλήφθηκε — φυσικό fit check εκκρεμεί** |
 | T3 | Belt tensioner + guard hardware | Ρύθμιση τάσης χωρίς να παραβιάζει τα P2-54 clearances· captive hardware και guard γύρω από pulleys/belt | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
 | T4 | AS5600 board + diametric magnet | I²C `0x36`, magnet `Ø6×2,5 mm`, non-magnetic cap, adjustable air gap 0,5–2,5 mm (στόχος 1,5 mm)· έλεγχος breakout voltage/pull-ups πριν κοινό D20/D21 με MPU6050 | 1 σετ | **Παραγγέλθηκε 25/10/2026 — βλ. AZ1** |
-| T5 | Endpoint switches −3°/+20° | 2 switches με ανεξάρτητες επαφές για Mega sense/homing και NC direction-specific hardware cutoff προς το αντίστοιχο R_EN/L_EN· τελικός τύπος μετά stop/bracket fit | 2 | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
-| T6 | Parkside→regulated 12 V DC-DC για BTS #3/FIT0186 | Input να καλύπτει το πραγματικό Parkside range 15–21 V, regulated 12 V output, fused motor branch· current/transient rating κλειδώνει μετά το FIT0186 current/thermal test | 1 | **Παραγγέλθηκε 22/10/2026 — βλ. G13–G20** |
+| T5 | Endpoint switches −3°/+20° | **2 switches ανά endpoint**: ένας για Mega sense/homing και ένας NC για direction-specific hardware cutoff προς το αντίστοιχο R_EN/L_EN· moving-yoke cassette, trigger ~1° πριν το hard stop και μηχανικό overtravel χωρίς impact στον switch | 4 (+1 spare) | **Παραλήφθηκαν 5 — φυσικό fit check εκκρεμεί** |
+| T6 | Parkside→regulated 12 V DC-DC για BTS #3/FIT0186 | Input να καλύπτει το πραγματικό Parkside range 15–21 V, regulated 12 V output, fused motor branch· current/transient rating κλειδώνει μετά το FIT0186 current/thermal test | 1 | **Παραλήφθηκε — electrical bench check εκκρεμεί** |
 
 #### Υποψήφιοι κωδικοί (snapshot 2026-10-22, Grobotronics εκτός αν σημειώνεται)
 

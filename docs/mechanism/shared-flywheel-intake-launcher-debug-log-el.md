@@ -4361,3 +4361,57 @@ load-spine probes, fastener/tool paths και όλα τα integration gates πέ
 
 Κατάσταση: `P2_90D_FRONT_BASE_HARDWARE_ACCESS_PASS`.
 ΠΑΥΣΗ.
+
+### P2-93 — πρώτο release αψίδας και κλίσης
+
+τι διαφέρει από το αναμενόμενο: το παγωμένο P2-67 arch sweep δεν ήταν
+μηδενικής επαφής με το σημερινό σύνολο· ο exact-solid audit έδωσε πραγματικό
+overlap περίπου 66.558 mm³. Η νέα αψίδα μετακινήθηκε στις Y±228 και έγινε
+hollow 20×26 mm, με φαρδιά πόδια στις ήδη υπάρχουσες X240/X300 οπές. Το
+παλιό `p271_basket_exact()` περιέχει επίσης superseded P2-51 tail έως X278·
+στο P2-93 clip-άρεται στο παγωμένο P2-71 front plane X225 και προστίθεται
+ρητά το front grid. Τέλος, στο πρώτο joint audit οι οπές των leg segments
+ήταν στα ±8/±18 ενώ το sleeve στα ±12· διορθώθηκαν σε κοινά ±12 πριν το
+τελικό export και προστέθηκε `printed_joint_axes` regression.
+
+Παρήχθησαν **20 one-body STL / 33 prints** για arch core, S4/front lands,
+LiDAR/OAK universal interface, FIT0186 tensioning carrier 57…63 mm, KFL08
+base, anti-rotation Tr8 carriage, συμμετρικά +20° stops και AS5600 pod/cap.
+Το προηγούμενο «22 STL / 35 prints» είχε και αριθμητικό λάθος: οι παλιές
+ποσότητες άθροιζαν 37 prints· αφαιρώντας τέσσερα switch brackets το σωστό
+release είναι 33 prints. Basket floor/rear/side grids και basket supports
+μένουν εκτός έως τα Δ1–Δ5. Τα hardware-dependent parts σημειώνονται
+fit-check μέχρι τις φυσικές μετρήσεις.
+
+Exact-solid PASS: P2-78 frame/holes, printed↔printed M4, P2-71 basket,
+κατακόρυφο removal prism X−118…225/Y±172, P2-85 ski, rear pod, F,
+arch↔tilt και moving set −10…+20°. Η drive-test console/F σύγκρουση είναι
+σκόπιμο expected-intersection και επιβάλλει αφαίρεση της console πριν το F.
+Τα M4 foot/joint fasteners έχουν επίσης κενές Ø10×60 mm driver διαδρομές.
+Το endpoint audit αποκάλυψε ότι fixed cassette στην αψίδα τέμνει το moving
+set κατά περίπου 8.985 mm³· η παλιότερη broad exclusion το είχε κρύψει.
+Η προσωρινή arch-hole δοκιμή απορρίφθηκε και αντιστράφηκε πλήρως: σύμφωνα
+με την απόφαση Α η αψίδα δεν αλλάζει. Τα `tilt_switch_lower/upper`
+αφαιρέθηκαν και κάθε `tilt_stop` κρατά μόνο δύο M3 interfaces για
+αντικαταστάσιμο striker tab, έξω από τη φέρουσα shoulder contact.
+
+Η endpoint cassette μεταφέρεται στο release του κινούμενου yoke με ανοικτές
+απαιτήσεις: trigger περίπου 1° πριν τα hard stops −3°/+20°, roller-lever
+overtravel ώστε κανένα reaction/impact να μη φτάνει στον διακόπτη, καλώδιο
+μέσα στο D5065 service loop με strain relief στα δύο άκρα και δύο switches
+ανά endpoint (Mega sense + NC hardware cutoff R_EN/L_EN).
+
+Και τα 20 STL πέρασαν one-body και P2-90e underside gate ≤40 mm²· μέγιστο
+28,73 mm². Το analytical 8 N·m screen περνά με governing stop-root
+8,77 MPa/10 MPa και across-layer 2,90 MPa/5 MPa.
+
+Planning upper-bound: 1.609,7 g PETG. Χρόνος P2S 100,8 h με 0,4/0,28
+(load path 5 perimeters/35%, light 4/25%) ή 75,5 h με 0,6/0,30
+(4/35% και 3/25%). Με future moving module ≤0,85 kg και basket/supports
+≤0,90 kg, το mechanism+basket φτάνει 3,360 kg και αφήνει 140 g κάτω από
+τον στόχο 3,5 kg. Με F≈1,56 kg και 45 μπάλες≈2,6 kg, το τελικό φορτίο
+εκτιμάται 7,520 kg, δηλαδή 2,07 kg πάνω από την πλάκα έρματος 5,45 kg της
+drive test.
+
+Κατάσταση: `P2_93_ARCH_TILT_FIRST_WAVE_RELEASE_PASS`.
+ΠΑΥΣΗ.

@@ -1,0 +1,498 @@
+{
+  "material": "PETG",
+  "density_g_cm3": 1.27,
+  "mass_method": "conservative full-STL-volume envelope; slicer mass should be lower on infilled solids",
+  "profile_assumptions": {
+    "0.4/0.28": {
+      "nozzle_mm": 0.4,
+      "layer_mm": 0.28,
+      "heavy_walls": 5,
+      "light_walls": 4,
+      "heavy_infill": 35,
+      "light_infill": 25,
+      "rate_g_h": 22.0,
+      "overhead_h": 0.65,
+      "height_factor_h": 0.45
+    },
+    "0.6/0.30": {
+      "nozzle_mm": 0.6,
+      "layer_mm": 0.3,
+      "heavy_walls": 4,
+      "light_walls": 3,
+      "heavy_infill": 35,
+      "light_infill": 25,
+      "rate_g_h": 31.0,
+      "overhead_h": 0.55,
+      "height_factor_h": 0.38
+    }
+  },
+  "rows": [
+    {
+      "part": "arch_brace_x240",
+      "qty": 2,
+      "bbox_mm": [
+        22.0,
+        26.0,
+        225.97
+      ],
+      "volume_cm3_each": 72.43,
+      "mass_g_each": 92.0,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 5.2,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 3.9,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "arch_brace_x300",
+      "qty": 2,
+      "bbox_mm": [
+        22.0,
+        26.0,
+        190.59
+      ],
+      "volume_cm3_each": 61.06,
+      "mass_g_each": 77.5,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 4.5,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 3.3,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "arch_crossbar_center",
+      "qty": 1,
+      "bbox_mm": [
+        26.0,
+        20.0,
+        200.0
+      ],
+      "volume_cm3_each": 62.03,
+      "mass_g_each": 78.8,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 4.6,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 3.4,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "arch_crossbar_end",
+      "qty": 2,
+      "bbox_mm": [
+        26.0,
+        20.0,
+        128.0
+      ],
+      "volume_cm3_each": 39.62,
+      "mass_g_each": 50.3,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 3.2,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.4,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "arch_foot_x240",
+      "qty": 2,
+      "bbox_mm": [
+        26.0,
+        107.0,
+        38.5
+      ],
+      "volume_cm3_each": 43.73,
+      "mass_g_each": 55.5,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 3.4,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.5,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "arch_foot_x300",
+      "qty": 2,
+      "bbox_mm": [
+        76.0,
+        107.0,
+        50.0
+      ],
+      "volume_cm3_each": 85.81,
+      "mass_g_each": 109.0,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 5.8,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 4.2,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "arch_joint_sleeve",
+      "qty": 4,
+      "bbox_mm": [
+        18.98,
+        12.99,
+        48.0
+      ],
+      "volume_cm3_each": 5.65,
+      "mass_g_each": 7.2,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 1.1,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 0.9,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "arch_leg_lower",
+      "qty": 2,
+      "bbox_mm": [
+        26.0,
+        20.0,
+        99.85
+      ],
+      "volume_cm3_each": 30.86,
+      "mass_g_each": 39.2,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 2.6,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.0,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "arch_leg_upper",
+      "qty": 2,
+      "bbox_mm": [
+        26.0,
+        24.0,
+        92.16
+      ],
+      "volume_cm3_each": 31.32,
+      "mass_g_each": 39.8,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 2.6,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.0,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "lidar_crossbar_half",
+      "qty": 2,
+      "bbox_mm": [
+        20.0,
+        24.0,
+        160.0
+      ],
+      "volume_cm3_each": 45.02,
+      "mass_g_each": 57.2,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 3.5,
+          "perimeters": 4,
+          "infill_percent": 25
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.6,
+          "perimeters": 3,
+          "infill_percent": 25
+        }
+      }
+    },
+    {
+      "part": "lidar_mast",
+      "qty": 2,
+      "bbox_mm": [
+        34.0,
+        24.0,
+        109.0
+      ],
+      "volume_cm3_each": 43.03,
+      "mass_g_each": 54.6,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 3.3,
+          "perimeters": 4,
+          "infill_percent": 25
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.5,
+          "perimeters": 3,
+          "infill_percent": 25
+        }
+      }
+    },
+    {
+      "part": "oak_universal_plate",
+      "qty": 1,
+      "bbox_mm": [
+        108.0,
+        48.0,
+        6.0
+      ],
+      "volume_cm3_each": 25.22,
+      "mass_g_each": 32.0,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 2.3,
+          "perimeters": 4,
+          "infill_percent": 25
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 1.7,
+          "perimeters": 3,
+          "infill_percent": 25
+        }
+      }
+    },
+    {
+      "part": "sensor_joint_sleeve",
+      "qty": 1,
+      "bbox_mm": [
+        12.99,
+        16.99,
+        44.0
+      ],
+      "volume_cm3_each": 4.76,
+      "mass_g_each": 6.0,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 1.0,
+          "perimeters": 4,
+          "infill_percent": 25
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 0.8,
+          "perimeters": 3,
+          "infill_percent": 25
+        }
+      }
+    },
+    {
+      "part": "tilt_as5600_cover",
+      "qty": 1,
+      "bbox_mm": [
+        46.0,
+        46.0,
+        4.0
+      ],
+      "volume_cm3_each": 7.57,
+      "mass_g_each": 9.6,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 1.2,
+          "perimeters": 4,
+          "infill_percent": 25
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 0.9,
+          "perimeters": 3,
+          "infill_percent": 25
+        }
+      }
+    },
+    {
+      "part": "tilt_as5600_pod",
+      "qty": 1,
+      "bbox_mm": [
+        46.0,
+        46.0,
+        10.0
+      ],
+      "volume_cm3_each": 14.4,
+      "mass_g_each": 18.3,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 1.6,
+          "perimeters": 4,
+          "infill_percent": 25
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 1.2,
+          "perimeters": 3,
+          "infill_percent": 25
+        }
+      }
+    },
+    {
+      "part": "tilt_fit0186_carrier",
+      "qty": 1,
+      "bbox_mm": [
+        109.0,
+        52.0,
+        17.0
+      ],
+      "volume_cm3_each": 51.01,
+      "mass_g_each": 64.8,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 3.8,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.8,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "tilt_kfl08_base",
+      "qty": 1,
+      "bbox_mm": [
+        68.0,
+        62.0,
+        20.0
+      ],
+      "volume_cm3_each": 44.6,
+      "mass_g_each": 56.6,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 3.3,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.5,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "tilt_magnet_cap",
+      "qty": 1,
+      "bbox_mm": [
+        18.0,
+        18.0,
+        8.0
+      ],
+      "volume_cm3_each": 1.6,
+      "mass_g_each": 2.0,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 0.8,
+          "perimeters": 4,
+          "infill_percent": 25
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 0.6,
+          "perimeters": 3,
+          "infill_percent": 25
+        }
+      }
+    },
+    {
+      "part": "tilt_nut_carriage",
+      "qty": 1,
+      "bbox_mm": [
+        48.0,
+        62.0,
+        20.0
+      ],
+      "volume_cm3_each": 39.04,
+      "mass_g_each": 49.6,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 3.0,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.2,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    },
+    {
+      "part": "tilt_stop",
+      "qty": 2,
+      "bbox_mm": [
+        59.0,
+        38.0,
+        29.0
+      ],
+      "volume_cm3_each": 44.52,
+      "mass_g_each": 56.5,
+      "profiles": {
+        "0.4/0.28": {
+          "p2s_hours_each": 3.3,
+          "perimeters": 5,
+          "infill_percent": 35
+        },
+        "0.6/0.30": {
+          "p2s_hours_each": 2.5,
+          "perimeters": 4,
+          "infill_percent": 35
+        }
+      }
+    }
+  ],
+  "first_wave_distinct_stls": 20,
+  "first_wave_prints": 33,
+  "first_wave_mass_g": 1609.7,
+  "first_wave_hours_by_profile": {
+    "0.4/0.28": 100.8,
+    "0.6/0.30": 75.5
+  }
+}

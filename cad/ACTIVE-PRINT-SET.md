@@ -1,9 +1,9 @@
-# Ενεργό σύνολο εκτύπωσης — P2-90d
+# Ενεργό σύνολο εκτύπωσης — P2-93
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
 «concept» **δεν τυπώνονται**. Η κατάσταση αποτυπώνει όσα είναι γνωστά στις
-2026-10-23 (P2-90d)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
+2026-10-26 (P2-93)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
 αρχείο.
 
 ## Σασί v3 — P2-78 sockets και πλευρικές διαγώνιες
@@ -56,6 +56,41 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 Το `ski-boss-spacer.stl` (P2-73 fix 2026-10-19) είναι superseded από το hub
 της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
 αναμένει πλέον 5 STL αντί για 4, όλα ακριβώς ένα σώμα.
+
+## Αψίδα/κλίση — P2-93
+
+Πηγή: `arch-tilt-p293/p293-arch-tilt-release.scad`. Ενεργός κατάλογος:
+`arch-tilt-p293/stl/`. Αναλυτική λίστα ποσοτήτων, μάζας, χρόνου, hardware
+και σειράς συναρμολόγησης: `arch-tilt-p293/README.md`.
+
+| Υποσύνολο | Ενεργά STL | Κατάσταση |
+|---|---|---|
+| Πόδια/σκέλη/διαγώνιες | `arch_foot_x240/x300`, `arch_leg_lower/upper`, `arch_brace_x240/x300`, `arch_joint_sleeve` | **Release-ready· τυπώνονται τώρα**. Μόνο υπάρχουσες P2-78 οπές, through-M4 |
+| Άνω αψίδα/sensors | `arch_crossbar_center/end`, `lidar_mast`, `lidar_crossbar_half`, `sensor_joint_sleeve`, `oak_universal_plate` | **Release-ready· τυπώνονται τώρα**. Το OAK part είναι universal interface, όχι cradle |
+| Φέροντα tilt stops | `tilt_stop` | **Release-ready μετά από dry assembly**· συμμετρική διαδρομή φορτίου προς αψίδα· ενσωματωμένο M3 interface για μελλοντικό striker tab |
+| FIT/KFL/Tr8 interfaces | `tilt_fit0186_carrier`, `tilt_kfl08_base`, `tilt_nut_carriage` | **Fit-check μόνο** μέχρι `[ΜΕΤΡΗΣΕΙΣ ΧΡΗΣΤΗ: ...]`· μην ξεκινήσεις τελικό print |
+| Encoder | `tilt_as5600_pod/cover`, `tilt_magnet_cap` | **Fit-check μόνο** μέχρι μετρήσεις AS5600· AZ1 εκκρεμεί |
+
+Τα endpoint `tilt_switch_lower/upper` αφαιρέθηκαν από το P2-93. Η cassette
+ανήκει στο release της κινούμενης μονάδας και παραμένουν ανοικτά gates:
+
+- ενεργοποίηση roller lever ~1° πριν τα hard stops −3°/+20°,
+- υπερδιαδρομή ώστε reaction/impact να περνά αποκλειστικά stop→αψίδα και
+  ποτέ από τον microswitch,
+- καλώδιο μέσα στο D5065 service loop με strain relief και στα δύο άκρα,
+- δύο switches ανά άκρο: Mega sense + NC hardware cutoff R_EN/L_EN.
+
+Basket floor και rear/side grids, καθώς και saddles/guides/locks, **δεν
+ανήκουν στο πρώτο κύμα**: περιμένουν τα Δ1–Δ5 του mockup. Η προσωρινή
+drive-test console συγκρούεται με το F και αφαιρείται πριν το F.
+
+Το release έχει **20 one-body STL / 33 prints**, planning upper-bound
+1.609,7 g PETG και 100,8 h με 0,4/0,28 ή 75,5 h με 0,6/0,30 στον P2S.
+Export, P2-90e roofs και exact-solid regression:
+
+```bash
+OPENSCAD_BIN=/snap/bin/openscad-nightly bash cad/arch-tilt-p293/export-p293-stls.sh
+```
 
 ## Rear pod v2 — κατάσταση P2-88
 

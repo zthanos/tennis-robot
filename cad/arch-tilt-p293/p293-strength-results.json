@@ -1,0 +1,65 @@
+{
+  "status": "PASS",
+  "design_load_nm": 8.0,
+  "source": "P2-11/P2-54 terminal design load; analytical section screens, not FEA",
+  "limits_mpa": {
+    "in_layer": 10.0,
+    "across_layers": 5.0
+  },
+  "rows": [
+    {
+      "check": "arch leg, full 8 N.m in one member",
+      "stress_mpa": 4.286,
+      "limit_mpa": 10.0,
+      "utilization": 0.429,
+      "pass": true,
+      "model": "20x26 outer minus 13.6x19.6 elliptical void; open-end print, bending in layer"
+    },
+    {
+      "check": "X240/X300 brace, full 8 N.m sensitivity",
+      "stress_mpa": 4.532,
+      "limit_mpa": 10.0,
+      "utilization": 0.453,
+      "pass": true,
+      "model": "26x22 outer minus 19.6x15.6 elliptical void; conservative single brace"
+    },
+    {
+      "check": "foot M4 printed bearing",
+      "stress_mpa": 2.899,
+      "limit_mpa": 5.0,
+      "utilization": 0.58,
+      "pass": true,
+      "model": "8 N.m / 60 mm X240-X300 couple; one 10 mm foot and one \u00d84.6 bore"
+    },
+    {
+      "check": "+20 stop shoulder root",
+      "stress_mpa": 8.772,
+      "limit_mpa": 10.0,
+      "utilization": 0.877,
+      "pass": true,
+      "model": "one stop takes complete 8 N.m; 38x12 mm rectangular root"
+    },
+    {
+      "check": "+20 stop M6 bearing",
+      "stress_mpa": 1.894,
+      "limit_mpa": 5.0,
+      "utilization": 0.379,
+      "pass": true,
+      "model": "200 N at 40 mm effective shoulder; \u00d86.6 through bore in 16 mm depth"
+    },
+    {
+      "check": "FIT/KFL carrier local strip",
+      "stress_mpa": 2.55,
+      "limit_mpa": 10.0,
+      "utilization": 0.255,
+      "pass": true,
+      "model": "103.6 N actuator force, 42 mm eccentricity, conservative 10x32 strip"
+    }
+  ],
+  "max_utilization": 0.877,
+  "limitations": [
+    "physical proof-load and hardware fit remain mandatory before use",
+    "joint slip, fastener preload, creep and impact are not nonlinear-modeled",
+    "fit-check parts must be re-exported if user measurements exceed the slots/shims"
+  ]
+}
