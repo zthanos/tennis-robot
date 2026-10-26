@@ -72,13 +72,13 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83/P2-86b | 2×M4×20 countersunk προς βάση· κοινή μακρύτερη through-M4 tie→rear crossbar→stay στο `Y±165/Z37` | **ΝΕΟ P2-86b export — προς εκτύπωση** |
 | Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | Προς εκτύπωση |
 | Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | Προς εκτύπωση |
-| Side frames | `stl-v2/side_frame.stl` ×2 | P2-88/P2-90d | εμπρός 2×M4×25 στο X−132, πίσω 2×M4×35 με wedge, ροδέλες OD14· ανοικτά post cups 4×M4×60 στον υπάρχοντα άξονα X, ροδέλες/nyloc | **ΔΙΟΡΘΩΜΕΝΟ P2-90d: όρθιο export, 36×24 load spines, ίδιο χαμηλό hardware pocket στα δύο base feet και support-free οροφές 45° — ξανατύπωμα· όλα τα προηγούμενα side-frame STL superseded** |
+| Side frames | `stl-v2/side_frame.stl` ×2 | P2-88/P2-90d | εμπρός 2×M4×25 στο X−132, πίσω 2×M4×35 με wedge, ροδέλες OD14· ανοικτά post cups 4×M4×60 στον υπάρχοντα άξονα X, ροδέλες/nyloc | **ΤΥΠΩΜΕΝΑ P2-90d (επιβεβαίωση χρήστη 2026-10-26) — συναρμολογημένα με panel posts και control panel**· όρθιο export, 36×24 load spines, ίδιο χαμηλό hardware pocket στα δύο base feet, support-free οροφές 45°· όλα τα προηγούμενα side-frame STL superseded |
 | Jig εμπρός οπής βάσης | `stl-v2/side_frame_base_drill_jig.stl` ×1 | P2-88 | εντοπισμός στις δύο παλιές Ø4,5· τρυπάνι Ø4,5 | Προς εκτύπωση· υποχρεωτικό για τις τυπωμένες βάσεις |
 | Σφηνοειδείς πίσω ροδέλες | `stl-v2/rear_foot_wedge_washer.stl` ×2 | P2-88 | κάτω από την πίσω M4 | Προς εκτύπωση |
 | Parkside docks/drawers | `stl-v2/parkside_dock_left/right.stl`, `parkside_drawer_left/right.stl` ×1 | P2-88 provisional | 4×M3×12 προς υπάρχουσες slots + 2×M3 rear locks, Ruthex RX-M3x5.7 | **Σχεδιασμένο· αναμονή πραγματικής μπαταρίας/dock — ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ** |
 | Θήκη UGREEN + split caps + πίσω retainer | `stl-v2/ugreen_post_holder.stl`, `ugreen_clamp_caps.stl` ×1 print plate / 2 caps, `ugreen_rear_retainer.stl` ×1 | P2-90/P2-90b, πραγματικό 115×45×45 | 4×M3×30 caps + 2×M3×12 retainer, 6× Ruthex RX-M3x5.7, προαιρετικό λουράκι | **ΝΕΟ P2-90b export holder+caps — πλάγια τοποθέτηση caps, κεντρική εισαγωγή συσκευής από −X· κλειστά P2-90 collars superseded** |
 | Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81/P2-90d interface | κάτω/cup 4×M4×60, επάνω 4×M4×20, ροδέλες/nyloc | **ΤΥΠΩΜΕΝΑ — κλειδωμένα, καμία μεταβολή STL στο P2-90d** |
-| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΤΥΠΩΜΕΝΟ — κλειδωμένο στο P2-90**· physical proof-load 30 N πριν τη χρήση |
+| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΤΥΠΩΜΕΝΟ — κλειδωμένο στο P2-90· συναρμολογημένο στα posts με E-stop, toggle και START/ARM (2026-10-26)**· physical proof-load 30 N πριν τη χρήση |
 | Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | Προς εκτύπωση |
 | BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | Προς εκτύπωση |
 | Cable bulkhead + feet | `stl-v2/cable_bulkhead.stl` ×1, `bulkhead_foot.stl` ×2 | P2-75 retained in v2 | Υπάρχουσες M4, ροδέλες/παξιμάδια | Προς εκτύπωση |
@@ -89,8 +89,8 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 Δεν υπάρχει M3 self-tap σε φέρον σημείο.
 
 Τα παλιά P2-79 side frames έχουν τυπωθεί αλλά είναι **superseded**: οι τέσσερις
-M4 δεν συναρμολογούνται. Δεν χρησιμοποιούνται· απαιτείται το νέο όρθιο
-P2-90d STL.
+M4 δεν συναρμολογούνται. Δεν χρησιμοποιούνται· τα νέα όρθια P2-90d έχουν
+τυπωθεί και φέρουν τα posts και το control panel.
 
 Το P2-83 `corner_tie.stl` είναι ακριβώς ένα σώμα. Βρίσκεται κάτω από τη
 βάση (`Z≤51`), στην εσωτερική παρειά της ράγας, και δεν περνά πάνω από τη
