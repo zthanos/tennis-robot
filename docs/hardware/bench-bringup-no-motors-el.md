@@ -36,7 +36,7 @@ Firmware: `arduino/motion/drive_test_mega/drive_test_mega.ino` (500000 baud).
 | Φωτισμός START/ARM = ARMED LED | D34 | D34 → **330 Ω** → LED(+) → LED(−) → GND. R16-504BD: σκέτο LED ~2,2 V (προδιαγραφή πωλητή, 220–1000 Ω)· 330 Ω ≈ 8,5 mA, χωρίς transistor | στάδιο A5: ανάβει με ARM |
 | Φωτισμός toggle | — | από το switched 12 V του toggle | στάδιο Γ1 |
 | LED κατάστασης Ø8 στο πάνελ | — | **δεν έχει pin ακόμα** | εκτός bring-up |
-| Encoders A/B | LF D2/D22, LR D3/D23, RF D18/D24, RR D19/D25 | κίτρινο=A, λευκό=B, πράσινο=5 V, μπλε=GND | στάδιο A3 |
+| Encoders A/B | LF D2/D22, LR D3/D23, RF D18/D24, RR D19/D25 | **κατά θέση, όχι χρώμα**: 1–2 μοτέρ (χοντρά), 3 GND, 4 5 V, 5 A, 6 B — βλ. `drive-test-wiring-el.md` §3 και έλεγχος με όριο ~30 mA πριν το Mega | στάδιο A3 |
 | MPU6050 | D20 SDA, D21 SCL, 5 V, GND | GY-521 με regulator | στάδιο A4 |
 | BTS αριστερό | RPWM D5, LPWM D6, R_EN+L_EN D30 | logic VCC/GND κατά την ετικέτα του module | στάδιο B |
 | BTS δεξί | RPWM D9, LPWM D10, R_EN+L_EN D31 | όπως πάνω | στάδιο B |
