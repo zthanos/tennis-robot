@@ -8,6 +8,12 @@ current architecture. [`decisions/decision-log-el.md`](decisions/decision-log-el
 records why earlier architectures changed. Physical print status is owned by
 [`../cad/ACTIVE-PRINT-SET.md`](../cad/ACTIVE-PRINT-SET.md).
 
+Current mechanism in one sentence: one tilting dual flywheel performs intake
+and throwing at `−3° / 0° / +15…+20°`, driven in tilt by FIT0186+Tr8×2 with
+AS5600 and BTS #3; the P2-71 basket is four-sided mesh with only an `80×80 mm`
+feed door, and F is the sole body concept. P2-90…P2-93 bench/electronics/CAD
+status is consolidated in `current-design-el.md`.
+
 ## Structure
 
 ```text
@@ -57,6 +63,8 @@ docs/
 - `../archive/mechanism/intake/README.md` - superseded intake reports, CAD/data
   traceability, and the classification ledger.
 - `basket-bin-redesign-spec-el.md`.
+- `../hardware/bench-bringup-no-motors-el.md` - no-motor Mega bring-up,
+  `bench_check_mega.py`, `mega_buttons_panel.py` and local START arming.
 
 ## hardware/
 - Purchase/build: `prototype-purchase-list-el.md`, `hardware-bom-el.md`,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Concept F (planter tub) renders, PNG only.  Side views from -Y, +X right, +Z up.
+# Historical initial Concept F renders, before P2-84. PNG only.
 set -euo pipefail
 cd "$(dirname "$0")"
 O="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"

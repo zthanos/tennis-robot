@@ -69,7 +69,7 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Άνω αψίδα/sensors | `arch_crossbar_center/end`, `lidar_mast`, `lidar_crossbar_half`, `sensor_joint_sleeve`, `oak_universal_plate` | **Release-ready· τυπώνονται τώρα**. Το OAK part είναι universal interface, όχι cradle |
 | Φέροντα tilt stops | `tilt_stop` | **Release-ready μετά από dry assembly**· συμμετρική διαδρομή φορτίου προς αψίδα· ενσωματωμένο M3 interface για μελλοντικό striker tab |
 | FIT/KFL/Tr8 interfaces | `tilt_fit0186_carrier`, `tilt_kfl08_base`, `tilt_nut_carriage` | **Fit-check μόνο** μέχρι `[ΜΕΤΡΗΣΕΙΣ ΧΡΗΣΤΗ: ...]`· μην ξεκινήσεις τελικό print |
-| Encoder | `tilt_as5600_pod/cover`, `tilt_magnet_cap` | **Fit-check μόνο** μέχρι μετρήσεις AS5600· AZ1 εκκρεμεί |
+| Encoder | `tilt_as5600_pod/cover`, `tilt_magnet_cap` | **Fit-check μόνο** μέχρι μετρήσεις AS5600· AZ1 παραγγέλθηκε 2026-10-25, 3,3 V board με αφαίρεση R1 σε ένα sample για 5 V |
 
 Τα endpoint `tilt_switch_lower/upper` αφαιρέθηκαν από το P2-93. Η cassette
 ανήκει στο release της κινούμενης μονάδας και παραμένουν ανοικτά gates:
@@ -92,7 +92,7 @@ Export, P2-90e roofs και exact-solid regression:
 OPENSCAD_BIN=/snap/bin/openscad-nightly bash cad/arch-tilt-p293/export-p293-stls.sh
 ```
 
-## Rear pod v2 — κατάσταση P2-88
+## Rear pod v2 — κατάσταση P2-90d
 
 > **ΠΡΟΣΟΧΗ — ΜΗΝ ΤΥΠΩΣΕΙΣ ΠΑΛΙΑ EXPORT:** στο P2-86b άλλαξαν ξανά τα
 > `base_left.stl`, `base_right.stl` και `corner_tie.stl`. Τα P2-86 base STL
@@ -141,6 +141,10 @@ M4 δεν συναρμολογούνται. Δεν χρησιμοποιούντ�
 | TPU pulley + bracket | `test-fixtures/tpu-friction/pulley.stl`, `pulley_bracket.stl` | `tpu-friction-test.scad` | M4×25 + παξιμάδι ως άξονας | Μόνο δοκιμή |
 | Ski hand-test, τέσσερις παραλλαγές | `test-fixtures/ski-jump-hand-test/ski_42deg_R75.stl`, `ski_60deg_R75.stl`, `ski_75deg_R75.stl`, `ski_75deg_R110.stl` | `ski-jump-test.scad` | Ταινία/σφιγκτήρας στο τραπέζι | Μόνο χειροκίνητη δοκιμή |
 | Basket mockup | Δεν έχει STL· διαστάσεις στο `test-fixtures/basket-mockup/README.md` | P2-71 cardboard fixture | Ταινία/χαρτόνι | Μόνο δοκιμή· pile retention 40/45 μπαλών εκκρεμεί |
+
+Το P2-71 καλάθι έχει τέσσερις πλευρές πλέγματος. Μόνο η fail-closed θύρα
+`80×80 mm` είναι συμπαγής δίοδος τροφοδοσίας βολών· η τελική front-wall
+λεπτομέρεια μένει υπό mockup.
 | Drive-motor hole gauge | `drive-motor-mount/37mm-mount-hole-gauge.stl` | `drive-motor-mount/37mm-mount-hole-gauge.scad` | Πραγματικές βίδες steel mount μόνο για fit | Τυπωμένο· μόνο δοκιμή, fit-checked σε 1/4 mounts |
 | M3 nut-keeper sleeve | `drive-motor-mount/nut-keeper-stl/sleeve.stl` | `drive-motor-mount/m3-side-nut-keeper.scad` | Δεν φέρει preload· συγκρατεί μόνο M3 nut | Μόνο δοκιμή εφαρμογής· physical retention εκκρεμεί |
 

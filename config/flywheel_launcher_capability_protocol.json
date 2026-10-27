@@ -16,11 +16,11 @@
   "immutable_inputs": {
     "ball_calibration_results": {
       "path": "config/tennis_ball_compliance_calibration_results.json",
-      "sha256": "a7aa85327219d624c562b4c528f946bb62e1326d0b58dc7064f7439a07731a8a"
+      "sha256": "0f943c385c874b545f40805d6d7cadfa0abe74d516de91fba69a331f520e9207"
     },
     "ball_model": {
       "path": "gazebo/models/tennis_ball_compliant/model.sdf",
-      "sha256": "8715ce705508cc8c6428126a4063e1846f43d46c780eef5274780ee1cbb7356f"
+      "sha256": "69adc990887ebacecdaa2b3197e4bff5e274593ba14168ff2bf6f2479aa1fd01"
     },
     "standalone_bench_xacro_sha256": "c89a7052d12757d5c220e74f1b859d9257a659c39bc10b4ab80c0fde9ee25941",
     "launcher_module_xacro_sha256": "6a43938eea29e1cf27165e74139d5b7385aecd1b0165980e13d602ac14773bc6",

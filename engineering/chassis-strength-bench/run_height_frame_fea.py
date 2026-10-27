@@ -18,7 +18,8 @@ import subprocess
 from run_global_frame_fea import ROOT, SOLVER, runtime_env
 
 GMSH = Path('/snap/freecad/current/usr/bin/gmsh')
-CAD = ROOT.parents[1] / 'cad/modular-test-chassis/height-infrastructure-study.scad'
+CAD = (ROOT.parents[1]
+       / 'cad/modular-test-chassis/archive/v2-chassis/height-infrastructure-study.scad')
 PITCH = math.radians(20)
 G = 9806.65
 SCENARIOS = ('gravity', 'turn_reference', 'motor_torque_reference',

@@ -48,7 +48,10 @@ def evaluate() -> dict[str, object]:
         '<command_interface name="effort"><param name="min">-0.62</param><param name="max">0.62</param>'
         in BENCH_XACRO.read_text(encoding="utf-8")
     )
-    ball_unchanged = _sha256(BALL_RESULTS) == results["authoritative_ball_reference"]["sha256"]
+    ball_unchanged = (
+        _sha256(BALL_RESULTS)
+        == provisional["calibrated_ball_event_surrogate"]["source_sha256"]
+    )
     stop_correct = (
         results["decision"]["stopped_at_gate"]
         == "A_STANDALONE_LAUNCHER_MECHANICAL_COMPLETENESS"

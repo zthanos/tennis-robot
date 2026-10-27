@@ -64,7 +64,8 @@ def test_cutout_cases_are_sensitivity_only():
 def test_structural_screen_is_reproducible_but_not_validation():
     screen = load_result()["structural_screen"]
     assert screen["status"] == "SCREEN_PASS_WITH_ASSUMPTIONS_NOT_PHYSICAL_VALIDATION"
-    assert math.isclose(screen["derived"]["motor_torque_at_manufacturer_85a_3s_nm"], 2.635, abs_tol=1e-12)
+    assert math.isclose(screen["derived"]["motor_torque_at_superseded_repository_85a_3s_nm"], 2.635, abs_tol=1e-12)
+    assert math.isclose(screen["derived"]["motor_torque_at_motor_guide_65a_max_nm"], 2.015, abs_tol=1e-12)
     assert math.isclose(screen["derived"]["worst_case_bolt_tension_n"], 388.80299855870146, rel_tol=1e-12)
     assert screen["provisional_inputs"]["hub_mass_kg"] is None
     assert screen["vibration_resonance"].startswith("UNRESOLVED")
@@ -78,7 +79,8 @@ def test_hub_is_audited_not_selected_and_inertia_is_not_promoted():
     assert rotating["flywheel_mass_kg"] is None
     assert rotating["flywheel_inertia_kg_m2"] is None
     assert rotating["hub_inertia_kg_m2"] is None
-    assert rotating["motor_rotor_inertia_kg_m2"] is None
+    assert math.isclose(rotating["motor_rotor_inertia_kg_m2"], 0.00009259233848, rel_tol=1e-12)
+    assert rotating["motor_rotor_inertia_classification"].startswith("DERIVED")
     assert rotating["provisional_values_accepted_for_capability_simulation"] is False
 
 

@@ -1045,7 +1045,7 @@ module qa_base_parkside_collision() {
     }
 }
 
-module assembly() {
+module rear_pod_v2_assembly() {
     color([.80,.55,.12]) {
         translate([0,0,pod_z_bottom]) base_half_v2(-1);
         translate([0,0,pod_z_bottom]) base_half_v2(1);
@@ -1081,6 +1081,10 @@ module assembly() {
     if (show_panel) controls_ghosts();
     if (show_ghosts) { reserved_ghosts(); electronics_ghosts(); }
 }
+
+// Backwards-compatible dispatcher name; the explicit alias lets report scenes
+// compose this assembly with other CAD files that also define `assembly()`.
+module assembly() { rear_pod_v2_assembly(); }
 
 module envelope_ghost() {
     color([.95,.55,.08,.08]) translate([0,0,pod_z_bottom])

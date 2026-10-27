@@ -6,7 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 4WD skid-steer tennis robot with a modular PETG v3 chassis and one shared,
 tilting dual flywheel for both intake and launch. The P2-40 operating geometry
-is −3° collection, 0° transport and +15…+20° stationary launch. The active
+is −3° collection, 0° transport and +15…+20° stationary launch. Tilt uses the
+P2-53/54 FIT0186+Tr8×2 baseline, AS5600 absolute feedback and reserved BTS #3.
+The P2-71 basket has four mesh sides; only its fail-closed 80×80 feed door is
+solid, while the front-wall details remain mockup-gated. F is the sole active
+body concept; its side/front panels and the moving flywheel module remain
+concepts pending basket and wheel/D5065 measurements. The active
 mechanical, electronics, print and body-panel status is summarized in
 `docs/current-design-el.md`; the physical print source of truth is
 `cad/ACTIVE-PRINT-SET.md`.

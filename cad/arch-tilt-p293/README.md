@@ -8,7 +8,9 @@ release** με διαστάσεις κατασκευαστή και δεν πα�
 `[ΜΕΤΡΗΣΕΙΣ ΧΡΗΣΤΗ: FIT0186 / KFL08 / Tr8 nut / microswitch / AS5600]`
 
 Τα FIT0186, KFL08, Tr8 nut, GT2 και microswitches έχουν παραληφθεί· οι
-πραγματικές μετρήσεις εκκρεμούν. Δεν περιλαμβάνονται basket floor,
+πραγματικές μετρήσεις εκκρεμούν. Το AS5600 AZ1 παραγγέλθηκε 2026-10-25·
+είναι 3,3 V board και η εγκεκριμένη δοκιμή 5 V γίνεται σε ένα sample μόνο
+μετά την αφαίρεση της R1 0 Ω. Δεν περιλαμβάνονται basket floor,
 rear/side grids ή basket saddles/guides/locks: περιμένουν το mockup και τα
 Δ1–Δ5. Δεν περιλαμβάνονται D5065 cradle, τελικό OAK-D cradle, firmware ή
 Gazebo.

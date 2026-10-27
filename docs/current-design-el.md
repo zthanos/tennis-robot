@@ -1,6 +1,6 @@
 # Τρέχον design του tennis robot
 
-Κατάσταση: **P2-89c — 2026-10-22**. Αυτό είναι το κεντρικό σημείο εκκίνησης
+Κατάσταση: **P2-93 — 2026-10-27**. Αυτό είναι το κεντρικό σημείο εκκίνησης
 για τη σημερινή αρχιτεκτονική. Το φυσικό print status παραμένει στο
 [`cad/ACTIVE-PRINT-SET.md`](../cad/ACTIVE-PRINT-SET.md), ενώ το πλήρες ιστορικό
 πειραμάτων βρίσκεται στο
@@ -10,16 +10,52 @@
 
 - 4WD skid-steer βάση με modular v3 PETG σασί και τέσσερις FIT0403.
 - Ένα κοινό περιστρεφόμενο ζεύγος flywheels για συλλογή και εκτόξευση.
-- Σταθερό καλάθι, παθητικός βατήρας R75/75°, γερμένη εμπρός αψίδα και
-  fail-closed θύρα τροφοδοσίας.
+- Καλάθι P2-71 με τέσσερις πλευρές πλέγματος, παθητικός βατήρας R75/75°,
+  αψίδα P2-93 και μόνο μία συμπαγή fail-closed θύρα τροφοδοσίας `80×80 mm`.
 - Rear pod v2 για Mega, perfboard, BTS7960, Pi 5, UGREEN και τις μελλοντικές
   Parkside μπαταρίες.
-- Body concept F. Μόνο τα πίσω panels είναι σχεδιασμένα και παραμένουν σε
-  αναμονή· τα πλαϊνά/εμπρός περιμένουν το basket mockup.
+- Body concept F, το μοναδικό ενεργό body concept. Τα πίσω P2-86b panels
+  είναι exact/release-candidate· τα πλαϊνά/εμπρός περιμένουν το basket mockup.
 - Canonical runtime: Ubuntu 24.04 + ROS 2 Jazzy + Gazebo Harmonic. Στο Ubuntu
   26.04 development PC χρησιμοποιείται το `docker/jazzy/run.sh`.
 
-![Πλήρες robot στη θέση εκτόξευσης](../cad/modular-test-chassis/full-robot-v3-launch20.png)
+![P2-93 hero — terracotta F](../cad/body-panels/renders-current-p293/current-p293-hero-terracotta.png)
+
+*Exact/released context: P2-78 chassis, rear pod v2/P2-90d, P2-93 arch/tilt,
+P2-85 ski και P2-86b rear panels. Concept: πλαϊνά/εμπρός F και κινητή μονάδα
+P2-40 μέχρι τις φυσικές μετρήσεις τροχών/D5065.*
+
+![Τομή συλλογής −3°](../cad/body-panels/renders-current-p293/current-p293-section-collection--3deg.png)
+
+*Θέση συλλογής `−3°`. Τα ίδια concept όρια ισχύουν για F side/front και
+moving flywheel module.*
+
+![Τομή βολής +20°](../cad/body-panels/renders-current-p293/current-p293-section-launch-20deg.png)
+
+*Θέση βολής `+20°`. Η απόδοση/αντοχή της κινητής μονάδας δεν έχει φυσικά
+επικυρωθεί.*
+
+![Πίσω service με ανοικτές Parkside doors](../cad/body-panels/renders-current-p293/current-p293-rear-service-open.png)
+
+*P2-86b rear service: οι Parkside doors είναι ανοικτές και τα αφαιρούμενα
+`rear_hi` panels λείπουν. Τα Parkside docks παραμένουν provisional μέχρι
+μέτρηση πραγματικής μπαταρίας/dock.*
+
+## Αλλαγές P2-90…P2-93
+
+- P2-90/P2-90b: πραγματική UGREEN `115×45×45 mm`, holder με split caps και
+  rear retainer, insertion από −X.
+- P2-90c/P2-90d: open post cups, συνεχείς 36×24 load spines, προσβάσιμα M4
+  pockets και support-free roofs. Τα side frames τυπώθηκαν και
+  συναρμολογήθηκαν με posts/control panel.
+- Bench bring-up: ο οδηγός `hardware/bench-bringup-no-motors-el.md`, το CLI
+  `scripts/bench_check_mega.py` και το UI `scripts/mega_buttons_panel.py`
+  ελέγχουν Mega/E-stop/START/LED χωρίς μοτέρ. Από 2026-10-23 το START οπλίζει
+  τοπικά στο Mega με τα safety gates ενεργά.
+- P2-93: πρώτο release αψίδας/κλίσης, 20 one-body STL / 33 prints. Το arch
+  core είναι release-ready· FIT/KFL/Tr8/AS5600 interfaces είναι fit-check
+  μέχρι μετρήσεις. Με επιλογή A, τα endpoint switches μεταφέρονται στην
+  κινητή μονάδα και η αψίδα μένει αμετάβλητη.
 
 ## Κοινό περιστρεφόμενο flywheel
 
@@ -90,11 +126,11 @@ homing/reference και επιβεβαίωση. Ο encoder του FIT0186 είν
 είναι το authoritative position feedback.
 
 Επιτρέπεται manual, spring-retained transport pin μόνο με τη μονάδα ακίνητη
-και χωρίς τροφοδοσία· δεν είναι runtime lock. Έχουν παραληφθεί δύο FIT0186.
-Tr8×2/nut, pulleys/belt/tensioner, AS5600/magnet, endpoint switches και το
-ρυθμιζόμενο 12 V power stage **δεν έχουν αγοραστεί**· βρίσκονται στο
-[`ordered-parts.md`](hardware/ordered-parts.md) ως Parts To Order μετά το
-drive test.
+και χωρίς τροφοδοσία· δεν είναι runtime lock. FIT0186, KFL08, Tr8 nut, GT2
+parts και microswitches έχουν παραληφθεί, αλλά περιμένουν φυσικές μετρήσεις.
+Το AS5600 board/magnet AZ1 έχει παραγγελθεί (2026-10-25): έρχεται ως 3,3 V
+board και σε ένα από τα τέσσερα θα αφαιρεθεί η `R1` 0 Ω για δοκιμή σε 5 V.
+Το ρυθμιζόμενο 12 V power stage παραμένει ανοικτό.
 
 ## Διαδρομή μπάλας και καλάθι
 
@@ -102,8 +138,9 @@ drive test.
 - P2-74: selector rails στα `Y±55 mm`.
 - P2-67: γερμένη αψίδα `X390/Z245` και deflector· η R75/75 baseline πέρασε
   90/90 cases και το συνολικό P2-67 matrix 180/180.
-- P2-68/P2-69: όρθιο εμπρός τοίχωμα `X225`, top `Z235`, και fail-closed
-  θύρα clear `80×80 mm`, επιβεβαιωμένα 30/30 στο σχετικό matrix.
+- P2-68/P2-69/P2-71: τέσσερις πλευρές πλέγματος. Μόνο η fail-closed θύρα
+  clear `80×80 mm` είναι συμπαγής και χρησιμοποιείται για τροφοδοσία βολών.
+  Η τελική front-wall λεπτομέρεια παραμένει υπό basket mockup.
 - P2-71: το καλάθι σχεδιάζεται για 45 μπάλες, αλλά το φυσικό acceptance είναι
   **40 υποχρεωτικές / 41–45 best-effort** μέχρι basket mockup και pile test.
 
@@ -129,11 +166,13 @@ P2-77 rail-side mount.
 - ακριβώς ένα σώμα ανά ενεργό STL, εκτός δηλωμένων print plates,
 - πλήρες hardware και ≥60 mm tool-access cylinder στη σειρά συναρμολόγησης.
 
-## Rear pod v2 και ηλεκτρονικά
+## Rear pod v2, P2-90d και ηλεκτρονικά
 
-Το rear pod v2 καλύπτει τα P2-75…P2-88. Οι P2-86b βάσεις έχουν τυπωθεί και
-είναι κλειδωμένες. Τα παλιά side frames τυπώθηκαν αλλά καταργούνται λόγω
-μη συναρμολογήσιμων M4· αντικαθίστανται από τα P2-88 side frames. Το upright
+Το rear pod v2 καλύπτει τα P2-75…P2-90d. Οι P2-86b βάσεις έχουν τυπωθεί και
+είναι κλειδωμένες. Η πραγματική UGREEN είναι `115×45×45 mm` και το P2-90b
+holder χρησιμοποιεί split side-installable caps και rear retainer. Τα
+P2-90d side frames είναι τυπωμένα/συναρμολογημένα με open post cups,
+36×24 load spines και support-free 45° roofs. Το upright
 jaw coupon τυπώθηκε και πέρασε, άρα η σιαγόνα `4,8 mm`, η γλωττίδα `4 mm`
 και η αντίστοιχη M4 θέση δεν αλλάζουν.
 
@@ -188,6 +227,13 @@ MPU6050, PCA9685, E-stop `D33`, START `D32`, ARMED LED `D34` και break beams
 `D36/D37`. Τα δύο Parkside X20V packs/docks είναι provisional και δεν έχουν
 αγοραστεί.
 
+Από 2026-10-23 το START οπλίζει **τοπικά στο Mega** από DISARMED, μόνο όταν
+το E-stop είναι κλειστό και το CPR έγκυρο· δεν εξαρτάται από host command.
+Ο οδηγός πάγκου χωρίς μοτέρ είναι το
+[`bench-bringup-no-motors-el.md`](hardware/bench-bringup-no-motors-el.md),
+με CLI `scripts/bench_check_mega.py` και browser UI
+`scripts/mega_buttons_panel.py`.
+
 ![Rear pod v2 P2-88](../cad/rear-pod/p288-assembly-isometric.png)
 
 Τα Ruthex RX-M3x5.7 heat-set inserts επιτρέπονται για καλύμματα, θήκες και
@@ -204,8 +250,8 @@ docks μέτριου φορτίου. Δεν χρησιμοποιούνται σ�
 ![Concept F και περιμετρικά σημεία](../cad/body-panels/p286b-perimeter-top.png)
 
 Τα πλαϊνά και εμπρός panels περιμένουν το basket mockup. Οι S4/front
-στηρίξεις κοντά στην αψίδα παραμένουν ανοικτές επειδή δεν υπάρχει υφιστάμενη
-οπή· δεν επιτρέπεται να προστεθεί οπή στο τυπωμένο σασί.
+στηρίξεις πλέον έχουν P2-93 lands στην αψίδα, αλλά η τελική panel γεωμετρία
+παραμένει ανοικτή μέχρι το mockup. Δεν επιτρέπεται νέα οπή στο τυπωμένο σασί.
 
 ## Runtime
 
@@ -222,10 +268,11 @@ docks μέτριου φορτίου. Δεν χρησιμοποιούνται σ�
 - ολόκληρο modular chassis v3/P2-78,
 - R75/75 ski,
 - rear-pod P2-86b base left/right,
-- παλιά side frames — **superseded, δεν χρησιμοποιούνται**,
+- P2-90d side frames, panel posts και control panel συναρμολογημένα,
 - upright jaw coupon — fit PASS.
 
-Σε εκτύπωση τώρα: P2-85 X300 brackets και wall forks.
+Σε εκτύπωση τώρα: P2-85 X300 brackets/wall forks και το πρώτο κύμα P2-93
+αψίδας. Τα FIT/KFL/Tr8/AS5600 interfaces είναι fit-check μέχρι μέτρηση.
 
 Κύρια ανοικτά φυσικά gates:
 

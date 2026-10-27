@@ -15,5 +15,9 @@ P2-77 centre node με ενσωματωμένα terminal sockets, μανίκια
 `../ACTIVE-PRINT-SET.md`. Οι κατάλογοι `archive/` είναι ιστορικοί και
 σημασμένοι **ΜΗΝ ΤΥΠΩΣΕΙΣ**.
 
+Το τρέχον robot χρησιμοποιεί ένα κοινό tilting dual flywheel για intake και
+throwing (`−3° / 0° / +15…+20°`), P2-85 ski, P2-71 mesh basket και την P2-93
+αψίδα/κλίση. Τα παλιότερα fixed/separate launcher studies δεν είναι ενεργά.
+
 Το `modular-chassis-v2.scad` παραμένει μόνο ως QA compatibility dependency
 του `../drive-motor-mount/m3-side-nut-keeper.scad`. Δεν είναι ενεργή release.

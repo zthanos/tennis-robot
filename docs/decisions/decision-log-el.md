@@ -1,6 +1,6 @@
 # Ιστορικό αποφάσεων σχεδιασμού
 
-Κατάσταση: P2-89, 2026-10-22. Οι ημερομηνίες P2 ακολουθούν τη χρονική
+Κατάσταση: P2-93, 2026-10-27. Οι ημερομηνίες P2 ακολουθούν τη χρονική
 εγγραφή του αντίστοιχου βήματος/debug log και όχι την ημερομηνία του
 μεταγενέστερου commit που συγκέντρωσε τα αρχεία.
 
@@ -180,8 +180,9 @@
   παρτίδας.
 - **Γιατί:** measurement sample μέσα στην εξαίρεση του purchase freeze.
 - **Seller data:** Ø192, width 48, mass 760 g· όχι μετρήσεις.
-- **Ανοιχτή απόφαση:** Ø192 οδηγεί σε ρυθμιζόμενη απόσταση αξόνων D5065, αλλά
-  η τελική διαδρομή/θέση μένει **ΑΝΟΙΧΤΗ μέχρι μέτρηση**.
+- **Απόφαση:** η seller-reported Ø192 διάμετρος οδηγεί σε **ρυθμιζόμενη
+  απόσταση αξόνων D5065**. Η τελική διαδρομή/θέση μένει ανοικτή μέχρι να
+  μετρηθούν και οι δύο φυσικοί τροχοί· το `Y≈±125 mm` δεν είναι release datum.
 - **Evidence:** `ordered-parts.md` A1.
 
 ## 2026-10-22 — actuator κλίσης και κατανομή BTS7960
@@ -215,3 +216,34 @@
   μόνο χωρίς τροφοδοσία.
 - **Evidence:** debug P2-11/P2-12/P2-53/P2-54, Rev-C wiring και
   `motion_intake_mega.ino` pin audit.
+
+## 2026-10-23 — τοπική όπλιση από START στο Mega
+
+- **Πλαίσιο:** ο πάγκος πρέπει να ελέγχει E-stop, START και ARMED LED χωρίς
+  μοτέρ και χωρίς εξάρτηση από host ARM command.
+- **Απόφαση:** το START στο D32 οπλίζει τοπικά από `DISARMED`, μόνο με κλειστό
+  E-stop και έγκυρο CPR. Εκπέμπει `EVENT,START_PRESSED` και
+  `OK,ARMED,BUTTON`; η host όπλιση παραμένει διαθέσιμη.
+- **Evidence:** `drive_test_mega.ino`, `bench-bringup-no-motors-el.md`,
+  `scripts/bench_check_mega.py`, `scripts/mega_buttons_panel.py`.
+
+## 2026-10-25 — AS5600 AZ1 3,3 V board / δοκιμή 5 V
+
+- **Πλαίσιο:** το παραγγελμένο AZ1 έχει `R1=0 Ω` που γεφυρώνει VDD5V–VDD3V3
+  και ο πωλητής το δηλώνει ως 3,3 V board.
+- **Απόφαση χρήστη:** σε ένα από τα τέσσερα samples αφαιρείται η R1 πριν από
+  δοκιμή τροφοδοσίας 5 V. Πριν τη σύνδεση στο κοινό D20/D21 ελέγχονται τάση,
+  pull-ups, I²C `0x36`, μαγνήτης και air gap.
+- **Evidence:** `ordered-parts.md` AZ1/T4 και P2-93 AS5600 fit-check parts.
+
+## 2026-10-26 — P2-93 endpoint switches στην κινητή μονάδα (επιλογή A)
+
+- **Πλαίσιο:** fixed cassette πάνω στην αψίδα είχε exact-solid overlap με το
+  moving set. Η προσωρινή δοκιμή οπών στην αψίδα απορρίφθηκε.
+- **Απόφαση A:** η αψίδα δεν αλλάζει. Η endpoint cassette ανήκει στο επόμενο
+  release του moving yoke, με trigger περίπου 1° πριν τα `−3°/+20°` hard
+  stops, roller overtravel και καλώδιο μέσα στο D5065 service loop.
+- **Απαίτηση:** δύο contacts/switches ανά endpoint: Mega sense και NC
+  direction-specific hardware cutoff του R_EN/L_EN. Κανένα impact load δεν
+  περνά από microswitch.
+- **Evidence:** P2-93 exact-solid audit και `cad/arch-tilt-p293/README.md`.

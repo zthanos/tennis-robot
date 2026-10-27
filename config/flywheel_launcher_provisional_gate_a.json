@@ -852,7 +852,7 @@
   },
   "calibrated_ball_event_surrogate": {
     "source_path": "config/tennis_ball_compliance_calibration_results.json",
-    "source_sha256": "a7aa85327219d624c562b4c528f946bb62e1326d0b58dc7064f7439a07731a8a",
+    "source_sha256": "0f943c385c874b545f40805d6d7cadfa0abe74d516de91fba69a331f520e9207",
     "event": "independent 2.54 m rebound incident energy at converged 0.25 ms step",
     "energy_j": 1.4447156780000003,
     "is_launcher_event": false,

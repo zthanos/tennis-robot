@@ -1,7 +1,11 @@
 # P2-86b — πίσω panels F για rear pod v2
 
 > **ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ.** Είναι release-ready CAD/STL, αλλά η φυσική
-> κατασκευή περιμένει P2-87 και basket mockup/pile-retention test.
+> κατασκευή περιμένει basket mockup/pile-retention test.
+
+Το F είναι το μοναδικό ενεργό body concept. Αυτός ο κατάλογος περιέχει μόνο
+το exact rear subset· τα side/front F παραμένουν concept μέχρι το P2-71
+basket mockup. Για τα current P2-93 renders δες `../README.md`.
 
 Πηγές: `../body-panels-f-rear-v2.scad`, `../body-panels-f.scad` και
 `../body-panels-f-support.scad`. Export: `../export-f-rear-stls.sh`.

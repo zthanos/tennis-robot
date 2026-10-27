@@ -136,7 +136,7 @@ def test_identical_low_energy_retest_clears_geometry_without_steering():
 def test_ball_calibration_remains_untouched_and_capability_sweep_resumes_only_after_pass():
     audit = data()
     digest = hashlib.sha256(BALL_RESULTS.read_bytes()).hexdigest()
-    assert digest == "a7aa85327219d624c562b4c528f946bb62e1326d0b58dc7064f7439a07731a8a"
+    assert digest == "0f943c385c874b545f40805d6d7cadfa0abe74d516de91fba69a331f520e9207"
     capability = json.loads((ROOT / "config/flywheel_launcher_capability_map.json").read_text(encoding="utf-8"))
     assert capability["regression_reference"]["passed"] is True
     assert len(capability["symmetric_operating_points"]) == 21

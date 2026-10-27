@@ -1,8 +1,19 @@
 # Tennis Robot
 
+![Τρέχουσα γεωμετρία P2-93 — hero terracotta](cad/body-panels/renders-current-p293/current-p293-hero-terracotta.png)
+
+*P2-93 current-design render: exact/released context για σασί, rear pod,
+αψίδα/κλίση, βατήρα και P2-86b rear panels. Τα πλαϊνά/εμπρός F και η
+κινητή flywheel μονάδα παραμένουν concept μέχρι basket mockup και φυσικές
+μετρήσεις τροχών/D5065.*
+
 Το τρέχον project είναι 4WD skid-steer tennis robot με modular PETG chassis,
 ROS 2 Jazzy/Gazebo Harmonic και **ένα κοινό περιστρεφόμενο dual flywheel** για
-συλλογή και εκτόξευση. Ξεκίνα από:
+συλλογή και εκτόξευση (`−3°` συλλογή, `0°` μεταφορά, `+15…+20°` βολή).
+Η κλίση γίνεται με FIT0186+Tr8×2, AS5600 και το αποφασισμένο BTS #3. Το
+καλάθι P2-71 έχει τέσσερις πλευρές πλέγματος· μόνο η fail-closed θύρα
+`80×80 mm` είναι συμπαγής δίοδος τροφοδοσίας. Το F είναι το μοναδικό ενεργό
+body concept. Ξεκίνα από:
 
 - [`docs/current-design-el.md`](docs/current-design-el.md) — σημερινή
   αρχιτεκτονική, physical status και ανοικτά gates,
@@ -11,6 +22,9 @@ ROS 2 Jazzy/Gazebo Harmonic και **ένα κοινό περιστρεφόμε�
 - [`docs/decisions/decision-log-el.md`](docs/decisions/decision-log-el.md) —
   ιστορικό αποφάσεων,
 - [`CLAUDE.md`](CLAUDE.md) — ενεργοί κανόνες ανάπτυξης/runtime.
+- [`docs/hardware/bench-bringup-no-motors-el.md`](docs/hardware/bench-bringup-no-motors-el.md)
+  — πάγκος Mega χωρίς μοτέρ, `bench_check_mega.py`, `mega_buttons_panel.py`
+  και τοπική όπλιση από START.
 
 Canonical runtime είναι native Ubuntu 24.04 + ROS 2 Jazzy. Σε Ubuntu 26.04
 χρησιμοποιείται [`docker/jazzy/run.sh`](docker/jazzy/run.sh). Το παλιό

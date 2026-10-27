@@ -318,6 +318,17 @@ module tub_solid(){ // geometry only (QA): collar + lattice + decks + drawer fac
   if(front_on) front_continuation();
 }
 
+// Current-design reports use only the still-conceptual side/front portion of
+// F.  The rear of X=-185 is supplied by the exact P2-86b release-candidate
+// panels, so the original pre-P2-84 rear concept must not be drawn over them.
+module f_side_front_concept(){
+  intersection(){ tub(); slab([-185,-400,-10],[700,400,500]); }
+  if(front_on) {
+    color(c_collar) intersection(){ front_continuation(); below_line(); }
+    color(c_lat) difference(){ front_continuation(); below_line(); }
+  }
+}
+
 // print pieces: L/R by mirror; X splits; collar | lattice at the diagonal seam;
 // collar split at Z200 where it is taller than 250 mm.
 xs = [-400,-150,40,230,500];

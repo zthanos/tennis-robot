@@ -15,10 +15,18 @@ PARTS = {
 }
 
 
+def stl_path(name):
+    """Resolve the preserved P2-82 v2 export, including retained Gamma context."""
+    archived = ROOT / f"cad/modular-test-chassis/archive/v2-chassis/stl/{name}.stl"
+    if archived.exists():
+        return archived
+    return ROOT / f"cad/modular-test-chassis/stl-v2/{name}.stl"
+
+
 def measure():
     rows = []
     for name, qty in PARTS.items():
-        stats = mesh_stats((ROOT / f"cad/modular-test-chassis/stl-v2/{name}.stl").read_bytes())
+        stats = mesh_stats(stl_path(name).read_bytes())
         if stats["nonmanifold_edge_count"]:
             raise ValueError(f"Nonmanifold STL: {name}")
         rows.append({"part":name,"quantity":qty,**stats})

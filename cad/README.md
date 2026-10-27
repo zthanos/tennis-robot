@@ -9,6 +9,12 @@
 
 Για το current shared-flywheel build οι ενεργές releases είναι:
 
+- κοινό dual flywheel P2-40 για intake/throwing (`−3° / 0° / +15…+20°`),
+  με P2-53/54 FIT0186+Tr8×2 tilt, AS5600 και BTS #3,
+- P2-71 four-side mesh basket: μόνο η fail-closed θύρα `80×80 mm` είναι
+  συμπαγής feed path· front-wall detail περιμένει mockup,
+- F ως μοναδικό body concept (`body-panels/README.md`).
+
 - `modular-test-chassis/modular-chassis-v3.scad` + `stl-v3/` (P2-78),
 - `modular-test-chassis/stl-ski-mount/` (P2-85 bracket + wall forks),
 - `rear-pod/rear-pod-v2.scad` + `rear-pod/stl-v2/` (P2-86b panel interface),

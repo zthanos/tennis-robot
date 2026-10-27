@@ -2,7 +2,8 @@ import math
 from pathlib import Path
 import re
 
-CAD=Path(__file__).resolve().parents[1]/'cad/modular-test-chassis/rear-corner-launcher-study.scad'
+CAD=(Path(__file__).resolve().parents[1]
+     /'cad/modular-test-chassis/archive/v2-chassis/rear-corner-launcher-study.scad')
 
 def scalar(text,name):
     return float(re.search(rf'^{name}=(-?[\d.]+);',text,re.M)[1])

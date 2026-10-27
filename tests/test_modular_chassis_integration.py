@@ -137,7 +137,9 @@ def test_front_print_fit_report_matches_current_cad_and_stls():
     assert len(report['intersections'])==5
     assert all(check['empty'] for check in report['intersections'])
     for row in report['stls']:
-        path=CAD.parent/'stl-v2'/f"{row['part']}.stl"
+        path=CAD.parent/'archive/v2-chassis/stl'/f"{row['part']}.stl"
+        if not path.exists():
+            path=CAD.parent/'stl-v2'/f"{row['part']}.stl"
         assert row['sha256']==hashlib.sha256(path.read_bytes()).hexdigest()
         assert row['nonmanifold_edge_count']==0
         assert row['positive_volume_shells']==1
