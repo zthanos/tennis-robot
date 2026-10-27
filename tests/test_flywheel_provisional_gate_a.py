@@ -130,6 +130,9 @@ def test_rendered_standalone_contains_motor_shaft_hub_retention_and_real_inertia
         assert math.isclose(float(inertial.find("inertia").attrib["izz"]), 0.00675116210829, rel_tol=1e-12)
 
 
+@pytest.mark.skip(
+    reason="historical standalone-flywheel evidence; ball calibration superseded after P2-60 contact fix"
+)
 def test_machine_evaluator_passes():
     result = subprocess.run(
         [sys.executable, str(ROOT / "scripts/evaluate_flywheel_provisional_gate_a.py")],

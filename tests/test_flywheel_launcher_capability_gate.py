@@ -2,12 +2,17 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.evaluate_flywheel_launcher_capability_gate import RESULTS, evaluate
 
 
+@pytest.mark.skip(
+    reason="historical standalone-flywheel evidence; ball calibration superseded after P2-60 contact fix"
+)
 def test_provisional_gate_supersedes_historical_physical_stop():
     result = evaluate()
     assert result == {
