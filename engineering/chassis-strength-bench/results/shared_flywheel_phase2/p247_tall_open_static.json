@@ -1,0 +1,72 @@
+{
+  "status": "PASS_STATIC_WITH_PHYSICAL_CAPACITY_PENDING",
+  "inputs": {
+    "ball_count": 45,
+    "ball_diameter_mm": 66.0,
+    "interior_plan_mm": [
+      287.0,
+      344.0
+    ],
+    "packing_fraction_sweep": [
+      0.56,
+      0.6,
+      0.64
+    ],
+    "surface_peak_allowance_mm": 66.0,
+    "camera_hfov_deg_repo": 69,
+    "camera_vfov_deg_provisional": 54
+  },
+  "capacity": {
+    "solid_ball_volume_l": 6.773964911523384,
+    "packing_sweep": {
+      "0.56": {
+        "mean_bulk_height_mm": 122.52214076487537,
+        "local_pile_top_with_one_ball_allowance_world_z_mm": 242.5221407648754
+      },
+      "0.60": {
+        "mean_bulk_height_mm": 114.35399804721702,
+        "local_pile_top_with_one_ball_allowance_world_z_mm": 234.353998047217
+      },
+      "0.64": {
+        "mean_bulk_height_mm": 107.20687316926595,
+        "local_pile_top_with_one_ball_allowance_world_z_mm": 227.20687316926595
+      }
+    },
+    "conservative_local_pile_top_world_z_mm": 242.5221407648754,
+    "selected_entry_surface_world_z_mm": 247.0,
+    "entry_above_conservative_pile_mm": 4.477859235124615,
+    "selected_basket_rim_world_z_mm": 335.0
+  },
+  "collection_energy": {
+    "ramp_rise_mm": 237.0,
+    "lossless_minimum_speed_m_s": 2.1560037337630007,
+    "speed_for_25_percent_velocity_margin_m_s": 2.695004667203751,
+    "selected_test_speed_m_s": 2.7,
+    "selected_speed_margin_percent": 25.231694069821042,
+    "d200_rpm_at_selected_speed": 257.8310078088705,
+    "note": "Energy screen only; Gazebo and 1:1 test determine contact losses and rebound."
+  },
+  "sensors": {
+    "lidar_scan_plane_clearance_above_rim_mm": 54.99999999999999,
+    "lidar_body_bottom_vertical_difference_mm": 22.999999999999964,
+    "lidar_body_x_separation_from_basket_front_mm": 51.99999999999999,
+    "camera_body_rear_x_mm": 312.92108579918613,
+    "camera_body_to_basket_front_x_gap_mm": 34.92108579918612,
+    "camera_ground_envelope_from_cad_mm": {
+      "x": [
+        430,
+        545
+      ],
+      "half_width_y": [
+        70,
+        120
+      ]
+    },
+    "fov_result": "PASS: basket and raised bridge are behind camera X=350 mm; forward ground envelope is unchanged."
+  },
+  "dependencies": [
+    "The low floor still drains toward the separate launch-feed/singulator interface; that mechanism remains dependent.",
+    "Ball-ball DART contact is uncalibrated; absolute 45-ball capacity requires the 1:1 mock-up.",
+    "The 54 deg vertical camera FOV is provisional and must be replaced by the selected camera calibration."
+  ]
+}

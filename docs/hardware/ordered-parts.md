@@ -20,7 +20,8 @@
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Εκτιμώμενη παραλαβή | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|---|---|
 | 7 | Waveshare Slamtec RPLIDAR C1 Laser Ranging Sensor, 360° Omnidirectional Lidar, Millimetre Level High Definition, Anti-Interference and Anti-Adhesion, Compact and Easy to Integrate | Sensors / Navigation LiDAR | 1 | 83,35 € | 83,35 € | TBD | Παρασκευή | Αγοράστηκε — εκκρεμεί παράδοση (δεν έχει έρθει ακόμα) |
-| 8 | HPI Racing Dirt Buster Block Tire S Compound on Black Wheel (Baja 5B Rear, 170x80 mm, mounted w/ foam inserts, 24 mm hex) — 1 ζευγάρι | Drive / Wheels | 2 | TBD | TBD | RC offroad (μεταχειρισμένα) | Παραλήφθηκε | Αγοράστηκε |
+| 8 | HPI Racing Dirt Buster Block Tire S Compound on Black Wheel (Baja 5B Rear, 170x80 mm, mounted w/ foam inserts, 24 mm hex) — 1 ζευγάρι / 2 τεμ. | Drive / Wheels | 1 ζευγάρι | TBD | TBD | RC offroad (μεταχειρισμένα) | Παραλήφθηκε | Αγοράστηκε· οι άλλοι δύο drive wheels απαιτούν επιβεβαίωση χρήστη |
+| R1 | DC Motor Driver Breakout with L298N (`19-00010298`) | Collector / Intake — archive, όχι ενεργός driver | 1 | — | — | Grobotronics | — | Παραλήφθηκε |
 
 ## Παραγγελία Grobotronics — 03/07/2026
 
@@ -43,12 +44,109 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 > Σχέδιο τροχών: brass hex adapter 6mm→12mm hex (G3, με set screw στο flat του D-shaft) + 3D printed
 > προσαρμογέας 12mm hex → 24mm hex (Baja 5B) από το `cad/`. Πήραμε 6 (4 + 2 ρεζέρβες).
 
+## Παραγγελία Grobotronics — 01/09/2026
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Κατάσταση |
+|---:|---|---|---:|---:|---:|---|
+| G12 | DFRobot Metal DC Geared Motor w/Encoder 12V 251RPM 18kg.cm (`FIT0186`, `GB37Y3530-12V-251R`) — δεύτερο μοτέρ intake | Collector / Intake | 1 | — | — | Παραλήφθηκε 03/09/2026 |
+
+## Παραγγελία Skroutz (Grobotronics) — 10/2026
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Κατάσταση |
+|---:|---|---|---:|---:|---:|---|
+| S1 | Ruthex heat-set inserts **RX-M3x5.7** — 100 τμχ (L 5,7, OD Ø4,6, οπή Ø4,0, βάθος ≥6,7, τοίχωμα ≥1,6 mm) | Mechanics / Fasteners | 1 πακέτο | 9,90 € | 9,90 € | Παραγγέλθηκε (παράδοση ~26/10/2026) |
+
+> Τοποθέτηση με το κολλητήρι του χρήστη (~230–245 °C για PETG). Μόνο για συνδέσεις μέτριου
+> φορτίου (θήκες, docks, καλύμματα), όχι για κύρια M4. Δεν υπάρχουν M4 inserts. Πρώτη χρήση:
+> θήκη UGREEN και Parkside docks (P2-88).
+
+## Παραγγελία AliExpress — 2026-10-22
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
+|---:|---|---|---:|---:|---:|---|---|
+| A1 | 8″ pneumatic wheel **200x50**, aluminium-alloy hub, 10 mm axle, 6200 bearings, inner + outer tyre ([1005012429999292](https://www.aliexpress.com/item/1005012429999292.html)) — **τροχοί του κοινού flywheel (intake + launch), 2 τεμ., ίδια παρτίδα/χρώμα** | Flywheel / Wheels | 2 | 33,39 € | 66,78 € (+ μεταφορικά) | Shop1105601460 Store | Παραγγέλθηκε 22/10/2026 — εκκρεμεί παράδοση |
+
+> **Στοιχεία πωλητή (ΟΧΙ μετρημένα):** εξωτερική διάμετρος **192 mm** (όχι 200), πλάτος πέλματος
+> 48 mm, μάζα **760 g**/τεμ., πίεση 36 PSI (2,5 bar), ζάντα δύο κομματιών με βίδες/παξιμάδια,
+> κατευθυντικό πέλμα (V) — ο δεύτερος τροχός τοποθετείται κατοπτρικά.
+> Το frozen exact-geometry audit P2-53 χρησιμοποίησε τροχούς **Ø200×60 mm**:
+> το seller-reported πέλμα 48 mm είναι 12 mm στενότερο. Επομένως hub/cheek,
+> lateral wheel datum, service loops και clearances ξαναελέγχονται μετά τη
+> φυσική μέτρηση· το P2-53 width δεν αποτελεί receiving dimension.
+>
+> **Επίπτωση στον σχεδιασμό:** το CAD έχει άξονες στο Y±129 (απόσταση 258 mm) για D200 → nip 58 mm,
+> συμπίεση μπάλας ~9 mm. Με D192 το nip γίνεται ~66 mm (σχεδόν μηδενική συμπίεση) → οι άξονες των
+> D5065 πρέπει να πάνε ~Y±125 ή, καλύτερα, να γίνουν ρυθμιζόμενοι (σχισμή). Η μονάδα flywheel δεν έχει
+> τυπωθεί, οπότε η αλλαγή είναι φθηνή. Το flywheel παραμένει παγωμένο μέχρι να επιβεβαιωθεί η κίνηση.
+>
+> **Μετρήσεις στην παραλαβή (και στους δύο):** πραγματική διάμετρος στα 2,0 / 2,5 bar και διαφορά
+> μεταξύ τους· πλάτος hub με τα ρουλεμάν (μάγουλα/μοτέρ έχουν λίγα mm)· ρουλεμάν/έδρα (6200 = 10×30×9)·
+> βίδες ζάντας (πλήθος, κύκλος) για φλάντζα D5065 (άξονας 8 mm)· μάζα· ακτινική ταλάντωση· τριβή
+> λάστιχου–μπάλας με τη διάταξη TPU friction. Μετά: βήμα agent για απόσταση αξόνων + αντάπτορα D5065.
+
+## Παραγγελία Grobotronics — 22/10/2026 (μηχανισμός κλίσης, προετοιμασία)
+
+Αγορά «προετοιμασίας» με απόφαση χρήστη, πριν τη δοκιμή κίνησης (φθηνά, ~26,40 € + μεταφορικά). Παραλήφθηκε· οι φυσικές διαστάσεις εκκρεμούν για το P2-93 fit check.
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Κατάσταση |
+|---:|---|---|---:|---:|---:|---|
+| G13 | Τραπεζοειδής κοχλίας T8 – Lead 2mm, 200 mm (`14-00094070`) | Tilt / Mechanics | 1 | 3,90 € | 3,90 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G14 | Anti-Backlash περικόχλιο T8 Lead 2mm, brass (`14-00018512`) | Tilt / Mechanics | 1 | 2,90 € | 2,90 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G15 | Pillow Block Flanged 8mm – KFL08 (`14-00010806`) | Tilt / Mechanics | 1 | 2,20 € | 2,20 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G16 | Timing Pulley GT2 6mm – 20T, bore **6 mm** (`14-00021610`) — FIT0186 | Tilt / Drive | 1 | 1,60 € | 1,60 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G17 | Timing Pulley GT2 6mm – 20T, bore **8 mm** (`14-00021614`) — ντίζα | Tilt / Drive | 1 | 1,60 € | 1,60 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G18 | Timing Belt GT2 – 160mm closed loop (`14-00020100`) | Tilt / Drive | 2 | 1,40 € | 2,80 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G19 | Microswitch SPDT ON-(ON) with Roller Simulation (`05-00000304`) | Tilt / Endpoints | 5 | 0,80 € | 4,00 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+| G20 | DC-DC Step-Down 7.5–30V 3A, 3.3/5/9/12V (`25-00016906`) — 12 V για BTS #3/FIT0186 | Tilt / Power | 1 | 7,40 € | 7,40 € | Παραλήφθηκε — μέτρηση εκκρεμεί |
+
+> 20T/20T + GT2-160 → απόσταση κέντρων 60 mm (CAD ≈62 → ρυθμιζόμενος carrier, λειτουργεί και ως tensioner).
+> DC-DC: default 5 V — αλλαγή solder pad σε 12 V και μέτρηση με πολύμετρο πριν τη σύνδεση.
+> Εκκρεμούν: AS5600 + μαγνήτης AZ1. Ο P2-93 carrier ενσωματώνει τη ρύθμιση τάσης· ξεχωριστό belt guard παραμένει εκτός πρώτου κύματος.
+
+## Παραγγελία Amazon.de — 2026-10-25
+
+| # | Part | Κατηγορία | Ποσότητα | Τιμή | Κατάσταση |
+|---|---|---|---:|---:|---|
+| AZ1 | AS5600 magnetic encoder module, 12-bit, με μαγνήτη και 7-pin header ([B0D4YW7NVB](https://www.amazon.de/gp/product/B0D4YW7NVB)), GERUI | Tilt / Feedback | 1 πακέτο (4 τεμ.) | 9,36 € | Παραγγέλθηκε 25/10/2026 |
+
+> **Η πλακέτα έρχεται ρυθμισμένη για 3,3 V** (πωλητής: «VCC: 3.3 V»· η R1 = 0 Ω γεφυρώνει
+> VDD5V–VDD3V3 του τσιπ). Απόφαση χρήστη: **δοκιμή σε ένα από τα 4 με αφαίρεση της R1** και
+> τροφοδοσία 5 V από το Mega (έλεγχος: καμία συνέχεια pin 1–pin 2 του τσιπ μετά). Αν δεν
+> πετύχει, αγορά I²C level converter 3,3↔5 V (BSS138, 4 κανάλια) και τροφοδοσία από το 3,3 V
+> του Mega χωρίς αλλαγή στην πλακέτα.
+> Σύνδεση: VCC, GND, SDA→D20, SCL→D21 (κοινά με MPU6050 0x68· AS5600 = 0x36), DIR→GND,
+> GPO και OUT ασύνδετα (GPO σε GND = programming mode). Bench check: I²C scanner βλέπει 0x36 και 0x68.
+
 ## Parts To Order
 
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|---|
 | 9 | 24 mm hex wheel hub / adapter, **6 mm bore (D-shaft)** → Baja 5B 24 mm hex | Drive / Wheels | 4 | TBD | TBD | Grobotronics | ✅ Λύθηκε — βλ. G3 + printed 12→24 hex adapter |
 | 10 | MPU-6050 IMU module (6-axis gyro + accel, GY-521, I2C) | Sensors / Odometry | 1 | 3,60 € | 3,60 € | Grobotronics | ✅ Παραγγέλθηκε — βλ. G2 |
+
+### Tilt mechanism — μετά το physical drive test, δεν έχουν αγοραστεί
+
+| # | Part | Προδιαγραφή / interface | Ποσότητα | Κατάσταση |
+|---:|---|---|---:|---|
+| T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Ωφέλιμο thread travel ≥60 mm: 34–35 mm λειτουργική διαδρομή + ≥25 mm περιθώριο για end/adjustment· τελικό overall/cut length μετά το clevis/carriage dry-fit. Μαζί thrust bearing, flexible coupling και anti-rotation nut carriage | 1 σετ | **Παραλήφθηκε — φυσικό fit check εκκρεμεί** |
+| T2 | Δύο timing pulleys + toothed belt 1:1 | Ίδιο tooth count· motor pulley για **FIT0186 6 mm D-shaft** με θετικό κλείδωμα στο flat. Screw-side bore και belt length κλειδώνουν μετά τη φυσική center-distance μέτρηση | 1 σετ | **Παραλήφθηκε — φυσικό fit check εκκρεμεί** |
+| T3 | Belt tensioner + guard hardware | Ρύθμιση τάσης χωρίς να παραβιάζει τα P2-54 clearances· captive hardware και guard γύρω από pulleys/belt | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
+| T4 | AS5600 board + diametric magnet | I²C `0x36`, magnet `Ø6×2,5 mm`, non-magnetic cap, adjustable air gap 0,5–2,5 mm (στόχος 1,5 mm)· έλεγχος breakout voltage/pull-ups πριν κοινό D20/D21 με MPU6050 | 1 σετ | **Παραγγέλθηκε 25/10/2026 — βλ. AZ1** |
+| T5 | Endpoint switches −3°/+20° | **2 switches ανά endpoint**: ένας για Mega sense/homing και ένας NC για direction-specific hardware cutoff προς το αντίστοιχο R_EN/L_EN· moving-yoke cassette, trigger ~1° πριν το hard stop και μηχανικό overtravel χωρίς impact στον switch | 4 (+1 spare) | **Παραλήφθηκαν 5 — φυσικό fit check εκκρεμεί** |
+| T6 | Parkside→regulated 12 V DC-DC για BTS #3/FIT0186 | Input να καλύπτει το πραγματικό Parkside range 15–21 V, regulated 12 V output, fused motor branch· current/transient rating κλειδώνει μετά το FIT0186 current/thermal test | 1 | **Παραλήφθηκε — electrical bench check εκκρεμεί** |
+
+#### Υποψήφιοι κωδικοί (snapshot 2026-10-22, Grobotronics εκτός αν σημειώνεται)
+
+| Για | Κωδικός / link | Τιμή | Σημείωση |
+|---|---|---:|---|
+| T1 | [Lead Screw T8 – Lead 2mm, 200 mm](https://grobotronics.com/lead-screw-t8-200mm-lead-2mm.html) `14-00094070` | 3,90 € | lead 2 / pitch 2 / 1 αρχή, ανοξείδωτη· κόβεται μετά το dry-fit. **ΟΧΙ** τις «Lead 8mm» (δεν αυτοασφαλίζουν) |
+| T1 | [Anti-Backlash Nut T8 Lead 2mm (Brass)](https://grobotronics.com/anti-backlash-nut-for-lead-screw-t8-lead-2mm-brass.html) `14-00018512` | 2,90 € | |
+| T1 | [Pillow Block Flanged 8mm – KFL08](https://grobotronics.com/pillow-block-flanged-8mm-kfl08.html) | 2,20 € | στήριξη/ώση ντίζας· flexible coupling δεν χρειάζεται με belt drive |
+| T2 | [Timing Pulley GT2 6mm – 20T](https://grobotronics.com/aluminum-gt2-timing-pulley-20-tooth.html), επιλογή bore **6 mm** (FIT0186) + bore **8 mm** (ντίζα) | 2× 1,60 € | set screw στο flat του D-shaft |
+| T2 | [Timing Belt GT2 – 160mm](https://grobotronics.com/timing-belt-gt2-160mm.html) (closed loop) | 1,40 € | με 20T/20T → απόσταση κέντρων **60 mm** (CAD P2-53 ≈62 mm → carrier ρυθμιζόμενος)· 2ος ιμάντας ως ρεζέρβα |
+| T5 | [Microswitch SPDT ON-(ON) with Roller Simulation](https://grobotronics.com/microswitch-spdt-on-on-with-roller-simulation.html) | 0,80 € | **4 + 1**: ανά άκρο ένας για Mega sense/homing και ένας NC για hardware cutoff R_EN/L_EN |
+| T6 | [DC-DC Step-Down 7.5–30V 3A (3.3/5/9/12V)](https://grobotronics.com/dc-dc-multi-output-buck-converter-3-3v-5v-9v-12v.html) | 7,40 € | 12 V/3 A χωρίς ψύκτρα, 3,5 A με ψύκτρα, overload/thermal protection· default 5 V → αλλαγή solder pad σε 12 V· επιβεβαίωση έναντι FIT0186 current test |
+| T4 | AS5600 + diametric magnet | 9,36 €/4 | **Παραγγέλθηκε στο Amazon (AZ1)** — 3,3 V board, R1 αφαιρείται για 5 V |
 
 ### Current compute basket — not yet ordered
 
@@ -62,13 +160,17 @@ Snapshot date: `28/06/2026`
 
 ### Motion control board — εκκρεμή
 
-> Ήδη διαθέσιμα (επιβεβαιωμένο): 4× FIT0403 drive μοτέρ, 2× BTS7960/IBT-2 drivers, Arduino Mega 2560. Λείπουν τα παρακάτω για να ολοκληρωθεί η perfboard + safety chain (βλ. `motion-perfboard-wiring-el.md`).
+> Ήδη διαθέσιμα (επιβεβαιωμένο): 4× FIT0403 drive μοτέρ, 2× BTS7960/IBT-2
+> drivers, Arduino Mega 2560. Οι **διαθέσιμοι 2 BTS7960 προορίζονται τώρα για
+> τα δύο intake μοτέρ**· για την κίνηση εκκρεμούν 2 επιπλέον drivers. Λείπουν
+> επίσης τα παρακάτω για την perfboard + safety chain (βλ.
+> `unified-keyed-perfboard-wiring-el.md`).
 
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|---|
 | 11 | Solderable perfboard (double-sided, πράσινο) | Motion / Board | 2 | — | — | — | ✅ Παραλήφθηκε |
-| 12 | Pin headers 2.54 mm για J1-J9 | Motion / Board | 4x 1x20 female | 0,25 € | 1,00 € | Grobotronics | ✅ Παραγγέλθηκε — βλ. G8 |
-| 13 | 4-pin connectors/headers για encoders (J4-J7) | Motion / Board | 4 | ~1 € | ~4 € | TBD | ⏸ Εκκρεμεί αυτοψία: τι connector έχει το FIT0403 (PH 6-pin; καλώδιο στο κουτί;) πριν αγοραστεί οτιδήποτε |
+| 12 | Pin headers 2.54 mm για το παλιό J1-J9 layout | Motion / Board | 4x 1x20 female = 80 θέσεις | 0,25 € | 1,00 € | Grobotronics | ⚠️ Παραλήφθηκαν. Το Rev C έχει 107 ηλεκτρικές θέσεις διαφορετικών τύπων· οι 80 θηλυκές δεν αντικαθιστούν IDC/male headers |
+| 13 | 4-pin connectors/headers για όλους τους encoders της Rev C | Motion + Intake / Board | 6 | ~1 € | ~6 € | TBD | ⏸ Επιβεβαίωσε τον πραγματικό σύνδεσμο των 4 drive και 2 intake encoder πριν την αγορά/κόλληση |
 | 14 | Hookup wire (solid πράσινο + μαύρο) + 65pcs M-M jumpers | Motion / Board | — | — | — | — | ✅ Παραλήφθηκε |
 | 14b | Copper foil tape (shielding/bus, προαιρετικό) | Motion / Board | 1 | — | — | — | ✅ Παραλήφθηκε |
 | 15 | 12V LiFePO4 μπαταρία (~12.8V, **15-20Ah** — όχι 50Ah, βάρος) + connector | Motion / Power | 1 | ~40-70 € | ~40-70 € | TBD | Προς παραγγελία — μαζί με το #25 (φορτιστή) |
@@ -83,10 +185,13 @@ Snapshot date: `28/06/2026`
 | 26 | 2x Inline ασφαλειοθήκη MINI blade αδιάβροχη (PerVoi) — motor: καλώδιο ≥1.5mm² | Motion / Safety | 2 | ~2-3 € | ~4-6 € | Skroutz | 🛒 Στο καλάθι Skroutz |
 | 27 | Καλώδιο ισχύος πολύκλωνο 1.5-2.5mm² κόκκινο+μαύρο (~2m έκαστο) + USB-C pigtail για buck→Pi | Motion / Wiring | — | ~8-12 € | ~8-12 € | Kafkas/TBD | Προς παραγγελία |
 | 28 | Αντίσταση 470Ω (LED start button) | Motion / Board | 1 | ~0,10 € | ~0,10 € | — | Από απόθεμα ή με επόμενη παραγγελία |
+| 29 | Rev C headers: 2+4 θηλυκά ανά BTS, 6× encoder, Mega/IR/USER/IMU/JP/PWR | Motion + Intake / Board | 107 ηλεκτρικές θέσεις διαφόρων τύπων· 24 σίγουρα θηλυκές για τους BTS | TBD | TBD | TBD | Μέτρησε ξεχωριστά τους τύπους των mating harnesses και κάνε dry-fit πριν κολληθούν |
+| 30 | Rev C passives: 13× 100nF, 1× 220µF ≥10V, 2× 10kΩ IR, 8× 10kΩ driver-side EN, 1× 470Ω | Motion + Intake / Board | 1 σετ | TBD | TBD | TBD | Φυσική χωροθέτηση/συγκόλληση ακόμη προς έλεγχο |
+| 31 | JP_PWR 1x3 + jumper και πολωμένο PWR_IN 1x2 με mating plug | Motion + Intake / Board | 1 σετ | TBD | TBD | TBD | Απαιτούνται για ασφαλή επιλογή Mega/εξωτερικού 5V |
 
 > ✅ **Άξονας επιβεβαιωμένος:** Το μοτέρ είναι **DFRobot FIT0403** (12V 122RPM w/Encoder, gearbox 90:1) με **6 mm D-shaft**. Το hub πρέπει να γεφυρώνει `6 mm D-shaft → 24 mm hex (Baja 5B)`, με set screw στο flat του shaft. Χρειάζονται 4 (ένα ανά κινητήριο τροχό). Ψάξε: "6mm to 24mm hex hub adapter" ή "24mm hex wheel hub 6mm bore".
 
-> ⚠️ **Safety chain:** το E-stop (#17) πρέπει να κόβει **φυσικά** το +12V στα BTS7960 `B+`, όχι μέσω Arduino. Η main fuse (#16) κοντά στη μπαταρία. Δες `motion-perfboard-wiring-el.md` §2.
+> ⚠️ **Safety chain:** το E-stop (#17) πρέπει να κόβει **φυσικά** το +12V στα BTS7960 `B+`, όχι μέσω Arduino. Η main fuse (#16) κοντά στη μπαταρία. Δες `unified-keyed-perfboard-wiring-el.md`· το παλιό drive-only έγγραφο είναι στο archive.
 
 ## Cost Summary
 

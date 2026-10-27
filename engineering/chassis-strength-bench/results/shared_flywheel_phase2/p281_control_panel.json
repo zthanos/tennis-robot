@@ -1,0 +1,30 @@
+{
+  "status": "P2_81_CONTROL_PANEL_RIB_SCREEN_PASS",
+  "assumptions": {
+    "material": "PETG linear isotropic screen",
+    "elastic_modulus_MPa": 1500.0,
+    "load_N": 30.0,
+    "support_span_mm": 116.0,
+    "effective_top_width_mm": 40.0,
+    "credited_rib_width_mm": 16.0,
+    "total_section_depth_mm": 12.0,
+    "joint_slip_credited": false
+  },
+  "section": {
+    "neutral_axis_mm_from_panel_underside_positive_up": -0.6666666666666666,
+    "second_moment_mm4": 3456.0
+  },
+  "results": {
+    "panel_midspan_deflection_mm": 0.18818672839506173,
+    "four_post_axial_shortening_mm": 0.002382811246290758,
+    "combined_top_displacement_mm": 0.19056953964135248,
+    "top_fibre_bending_stress_MPa": 1.1747685185185186,
+    "bottom_fibre_bending_stress_MPa": 1.8460648148148149,
+    "limit_mm": 0.3,
+    "margin_to_limit_mm": 0.1094304603586475
+  },
+  "limitations": [
+    "The two 8 mm E-stop rails are credited as 16 mm total rib width; the split transverse ties and wider grid are not credited.",
+    "A physical 30 N proof-load remains required for print anisotropy, local yielding, fastener seating and creep."
+  ]
+}

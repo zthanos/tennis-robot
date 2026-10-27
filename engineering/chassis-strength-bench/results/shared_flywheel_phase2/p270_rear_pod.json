@@ -1,0 +1,220 @@
+{
+  "status": "P2_70_LAYOUT_PROPOSAL_ONLY",
+  "turn_envelope": {
+    "icr_x_mm": 117.0,
+    "existing_front_datum_x_mm": 542.0,
+    "existing_radius_mm": 425.0,
+    "pod_vertices_mm": [
+      [
+        -125.0,
+        -167.0
+      ],
+      [
+        -267.0,
+        -167.0
+      ],
+      [
+        -272.0,
+        -162.0
+      ],
+      [
+        -272.0,
+        162.0
+      ],
+      [
+        -267.0,
+        167.0
+      ],
+      [
+        -125.0,
+        167.0
+      ]
+    ],
+    "worst_pod_vertex": {
+      "x_mm": -272.0,
+      "y_mm": -162.0,
+      "radius_mm": 421.3846224057067
+    },
+    "radial_margin_mm": 3.6153775942933066,
+    "allowed_half_width_at_x_minus_300_mm": 82.07313811473277,
+    "conclusion": "X=-300 is available only inside about Y +/-82 mm; not for the full-width pod"
+  },
+  "clearance_screen_mm": {
+    "pod_envelope": {
+      "x": [
+        -272,
+        -125
+      ],
+      "y": [
+        -167,
+        167
+      ],
+      "z": [
+        55,
+        350
+      ],
+      "highest_control_z": 374
+    },
+    "tilted_backboard_to_front_face_min": 6.3,
+    "basket_side_grid_to_pod_side": 5.0,
+    "rear_tyre_inner_face_to_pod_side": 88.5,
+    "rear_FIT0403_rearmost_to_pod_front": 40.0,
+    "chassis_crossbar_top_to_pod_body_bottom": 3.0,
+    "lidar_scan_plane_to_highest_control": 16.0,
+    "note": "mount feet intentionally mate with the rear-crossbar M4 grid and are excluded from body collision probes"
+  },
+  "mass_balance": {
+    "current_repo_baseline": {
+      "mass_kg": 18.11,
+      "cg_x_mm": 165.56940916620653,
+      "front_axle_percent": 63.16970114142645,
+      "rear_axle_percent": 36.83029885857355
+    },
+    "relocated_power_plus_770g_prior_CAD_shell_proxy": {
+      "mass_kg": 18.88,
+      "cg_x_mm": 146.85974576271184,
+      "front_axle_percent": 58.04376596238681,
+      "rear_axle_percent": 41.95623403761319
+    },
+    "nominal_if_all_unweighed_electronics_are_additional": {
+      "mass_kg": 19.89,
+      "cg_x_mm": 129.3678733031674,
+      "front_axle_percent": 53.25147213785408,
+      "rear_axle_percent": 46.74852786214592
+    },
+    "unweighed_component_assumptions_REQUIRE_USER_MEASUREMENT": [
+      {
+        "name": "Pi5_case_heatsink",
+        "mass_kg": 0.2,
+        "x_m": -0.192
+      },
+      {
+        "name": "Mega_holder_board",
+        "mass_kg": 0.06,
+        "x_m": -0.1985
+      },
+      {
+        "name": "perfboard_harness",
+        "mass_kg": 0.15,
+        "x_m": -0.1985
+      },
+      {
+        "name": "four_BTS7960",
+        "mass_kg": 0.2,
+        "x_m": -0.1985
+      },
+      {
+        "name": "fuse_relay_dc_dc_ideal_diodes",
+        "mass_kg": 0.3,
+        "x_m": -0.215
+      },
+      {
+        "name": "top_controls",
+        "mass_kg": 0.1,
+        "x_m": -0.153
+      }
+    ],
+    "sensitivity_front_axle_percent_per_added_0p5kg_at_x_minus185": [
+      {
+        "additional_unweighed_mass_kg": 0.0,
+        "mass_kg": 18.88,
+        "cg_x_mm": 146.85974576271184,
+        "front_axle_percent": 58.04376596238681,
+        "rear_axle_percent": 41.95623403761319
+      },
+      {
+        "additional_unweighed_mass_kg": 0.5,
+        "mass_kg": 19.38,
+        "cg_x_mm": 138.29783281733745,
+        "front_axle_percent": 55.698036388311635,
+        "rear_axle_percent": 44.301963611688365
+      },
+      {
+        "additional_unweighed_mass_kg": 1.0,
+        "mass_kg": 19.88,
+        "cg_x_mm": 130.16659959758553,
+        "front_axle_percent": 53.47030125961248,
+        "rear_axle_percent": 46.52969874038752
+      },
+      {
+        "additional_unweighed_mass_kg": 1.5,
+        "mass_kg": 20.38,
+        "cg_x_mm": 122.4343473994112,
+        "front_axle_percent": 51.35187599983868,
+        "rear_axle_percent": 48.64812400016132
+      }
+    ]
+  },
+  "cables": [
+    {
+      "name": "front FIT0403 left",
+      "routed_estimate_mm": 820.5,
+      "recommended_cut_length_mm": 900.0,
+      "includes_service_loop_mm": 150,
+      "status": "MEASUREMENT USER before harness cut"
+    },
+    {
+      "name": "front FIT0403 right",
+      "routed_estimate_mm": 820.5,
+      "recommended_cut_length_mm": 900.0,
+      "includes_service_loop_mm": 150,
+      "status": "MEASUREMENT USER before harness cut"
+    },
+    {
+      "name": "rear FIT0403 left",
+      "routed_estimate_mm": 405.6,
+      "recommended_cut_length_mm": 500.0,
+      "includes_service_loop_mm": 100,
+      "status": "MEASUREMENT USER before harness cut"
+    },
+    {
+      "name": "rear FIT0403 right",
+      "routed_estimate_mm": 405.6,
+      "recommended_cut_length_mm": 500.0,
+      "includes_service_loop_mm": 100,
+      "status": "MEASUREMENT USER before harness cut"
+    },
+    {
+      "name": "LiDAR",
+      "routed_estimate_mm": 1035.7,
+      "recommended_cut_length_mm": 1100.0,
+      "includes_service_loop_mm": 150,
+      "status": "MEASUREMENT USER before harness cut"
+    },
+    {
+      "name": "camera",
+      "routed_estimate_mm": 1029.2,
+      "recommended_cut_length_mm": 1100.0,
+      "includes_service_loop_mm": 150,
+      "status": "MEASUREMENT USER before harness cut"
+    },
+    {
+      "name": "FIT0186 actuator",
+      "routed_estimate_mm": 832.0,
+      "recommended_cut_length_mm": 900.0,
+      "includes_service_loop_mm": 250,
+      "status": "MEASUREMENT USER before harness cut"
+    },
+    {
+      "name": "D5065 controller left",
+      "routed_estimate_mm": 507.6,
+      "recommended_cut_length_mm": 600.0,
+      "includes_service_loop_mm": 150,
+      "status": "MEASUREMENT USER before harness cut"
+    },
+    {
+      "name": "D5065 controller right",
+      "routed_estimate_mm": 507.6,
+      "recommended_cut_length_mm": 600.0,
+      "includes_service_loop_mm": 150,
+      "status": "MEASUREMENT USER before harness cut"
+    }
+  ],
+  "assumptions": [
+    "No new Gazebo run; geometry and routing use existing P2-67/P2-68/P2-69 CAD data",
+    "Parkside clear reservation is 141x91x81 mm; final rail/latch is blocked on purchase and user measurement",
+    "BTS7960, fuse, relay, DC-DC, ideal-diode, connector and LED bodies require user measurement",
+    "Cable cut lengths are rounded up to the next 100 mm and must be remeasured on the physical route",
+    "MPU6050 remains on the chassis near the centre and is not included in the rear pod"
+  ]
+}

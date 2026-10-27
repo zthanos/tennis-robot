@@ -1,0 +1,41 @@
+{
+  "status": "FROZEN_AFTER_PIECEWISE_FAILURE_BEFORE_R125_RERUN",
+  "written_before_run": true,
+  "stage": "P2-50 one-ball common-throat to sill Z285, R125 repeat",
+  "purpose": "Repeat the same frozen matrix after the first piecewise transition impacted and returned the ball. Only the dependent ramp floor changes: a 125 mm circular lower transition chorded at 8 degrees and tangent to the upper climb.",
+  "frozen_inputs": {
+    "flywheel_surface_speeds_m_s": [2.8, 3.0, 3.2],
+    "lateral_ball_offsets_m": [-0.05, 0.0, 0.05],
+    "approach_speed_m_s": 0.6,
+    "ball_tread_mu": 0.6,
+    "ground_mu": 0.7,
+    "repeats_per_condition": 1,
+    "ball_model": "gazebo/models/tennis_ball_compliant/model.sdf; unchanged calibration",
+    "launcher_tilt_deg": -3.0,
+    "ramp_variant": "p249_r125",
+    "transition_radius_mm": 125,
+    "ramp_sill_base_z_m": 0.285,
+    "wheel_current_limit_a": 20.0,
+    "torque_constant_nm_per_a": 0.031
+  },
+  "criteria": [
+    {"name": "sill_reached", "hard_fail": true, "rule": "ball base frame x <= 0.110 m, z >= 0.305 m and |y| <= 0.020 m"},
+    {"name": "sill_speed", "hard_fail": true, "rule": "ball centre speed at sill >= 0.30 m/s"},
+    {"name": "transition_bounce_gap", "hard_fail": true, "rule": "maximum ball-bottom airborne gap above ramp in X=245..352 mm <= 20 mm"},
+    {"name": "throat_lateral_containment", "hard_fail": true, "rule": "maximum |y| from X=325 mm to sill <= 40 mm"},
+    {"name": "d5065_contact_current", "hard_fail": true, "rule": "absolute current during ball-wheel contact <= 20 A per motor"},
+    {"name": "d5065_contact_torque", "hard_fail": true, "rule": "absolute torque during ball-wheel contact <= 0.62 N m per motor"},
+    {"name": "forbidden_launcher_contact_count", "hard_fail": true, "rule": "no moving launcher contact with chassis, arch, LiDAR or ground"},
+    {"name": "finite_state", "hard_fail": true, "rule": "no NaN or Inf in telemetry"}
+  ],
+  "diagnostics_only": [
+    "DART contact forces are uncalibrated and are not structural claims",
+    "single repeat per condition is a quick geometry gate, not a reliability estimate",
+    "absolute basket capacity and ball-ball behaviour are outside P2-50"
+  ],
+  "superseded_first_run_observation": {
+    "condition": "2.8 m/s, y=0",
+    "result": "FAIL before ramp base and sill",
+    "cause_for_rerun": "sharp piecewise transition contact returned the ball; diagnostic contact-force peak 2303.99 N is not a physical load claim"
+  }
+}

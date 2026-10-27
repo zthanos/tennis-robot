@@ -12,9 +12,10 @@ It intentionally does not modify or feed:
 - controller configuration
 - runtime sweep artifacts
 
-The current simulated intake direction remains documented in
-`docs/mechanism/dual-wheel-intake-design-el.md`, where the validated default is two
-motors. This CAD folder exists to inspect the packaging of the earlier
+The current physical intake is documented in
+`docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md`; historical
+dual-wheel simulation rationale is indexed under
+`docs/archive/mechanism/intake/`. This CAD folder exists to inspect the packaging of the earlier
 "one motor + gears" idea without touching robot behavior.
 
 Render:

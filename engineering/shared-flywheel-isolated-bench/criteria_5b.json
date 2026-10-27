@@ -1,0 +1,28 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_GAZEBO_5B_RUN",
+  "sequence_deg": [-3, 0, 15, 20, 15, 0, -3],
+  "dwell_s": 3.0,
+  "angular_rate_rad_s": 0.04836115082,
+  "angular_rate_basis": "23 deg joint range divided by the accepted P16 proxy transition time 8.3 s (40 mm stroke); linkage force/speed variation is excluded",
+  "load_cases": {
+    "empty": "dynamic tilt; launcher present; empty basket",
+    "full45": "dynamic tilt; launcher present; 2.565 kg 45-ball equivalent basket payload",
+    "ballast": "spawn/stability-only; fixed chassis ballast; no launcher tilt evidence"
+  },
+  "criteria": [
+    {"name":"dwell_joint_target_error","threshold":0.5,"comparison":"abs_max_le","unit":"deg","hard_fail":true,"cases":["empty","full45"],"rationale":"Half of the frozen 1 degree indexed lower-stop pitch is the maximum acceptable endpoint ambiguity.","source":"P2-39/P2-40 indexed lower stop -10..-3 deg in 1 deg increments."},
+    {"name":"forbidden_launcher_contact_count","threshold":0,"comparison":"eq","unit":"contact samples","hard_fail":true,"cases":["empty","full45"],"rationale":"The frozen mechanical requirement is physical separation >=8 mm; any simulated contact contradicts that discrete requirement and triggers model/frame investigation.","source":"P2-40 frozen clearance requirement >=8 mm; predicted residual >=11 mm is not used as a Gazebo threshold."},
+    {"name":"nan_or_inf_state_count","threshold":0,"comparison":"eq","unit":"samples","hard_fail":true,"cases":["empty","full45","ballast"],"rationale":"Non-finite state is numerical instability, not physical evidence.","source":"Numerical validity requirement."},
+    {"name":"joint_limit_violation","threshold":0,"comparison":"eq","unit":"samples","hard_fail":true,"cases":["empty","full45"],"rationale":"The accepted operating range is exactly -3 to +20 degrees and terminal impact is excluded.","source":"P2-40 launcher limits."},
+    {"name":"absolute_roll","threshold":3.0,"comparison":"max_le","unit":"deg","hard_fail":true,"cases":["empty","full45","ballast"],"rationale":"Retains the accepted 5a chassis stability gate.","source":"criteria_5a.json stability.absolute_roll_deg_max."},
+    {"name":"absolute_pitch","threshold":3.0,"comparison":"max_le","unit":"deg","hard_fail":true,"cases":["empty","full45","ballast"],"rationale":"Retains the accepted 5a chassis stability gate.","source":"criteria_5a.json stability.absolute_pitch_deg_max."},
+    {"name":"base_rise_from_settled","threshold":0.005,"comparison":"max_le","unit":"m","hard_fail":true,"cases":["empty","full45","ballast"],"rationale":"Retains the accepted 5a wheel-lift/stability gate.","source":"criteria_5a.json stability.base_rise_from_settled_m_max."},
+    {"name":"tilt_command_torque","threshold":12.6,"comparison":"abs_max_le","unit":"N m","hard_fail":true,"cases":["empty","full45"],"rationale":"The approved abstract actuator effort limit.","source":"P2-42 user decision and existing ros2_control effort interface."},
+    {"name":"settling_time","threshold":null,"unit":"s","hard_fail":false,"cases":["empty","full45"],"rationale":"No accepted loaded P16 settling requirement exists; report only.","source":"P16 physical dynamics explicitly excluded from 5b."},
+    {"name":"overshoot","threshold":null,"unit":"deg","hard_fail":false,"cases":["empty","full45"],"rationale":"Report controller behaviour without inventing a mechanical acceptance bound.","source":"P2-42 scope."},
+    {"name":"contact_force","threshold":null,"unit":"N","hard_fail":false,"cases":["empty","full45","ballast"],"rationale":"No calibrated stiffness or physical force requirement exists.","source":"P2-42 user instruction: contacts/forces diagnostic-only."},
+    {"name":"chassis_horizontal_displacement","threshold":null,"unit":"m","hard_fail":false,"cases":["empty","full45","ballast"],"rationale":"Robot is commanded stationary, but no calibrated floor-drift bound exists.","source":"P2-42 operating condition."}
+  ],
+  "forbidden_environment_owner_tokens": ["fixture_arch_", "fixture_lidar_", "chassis_", "ground_plane"],
+  "launcher_owner_tokens": ["cad_upper_plate", "cad_yoke_", "cad_trunnion_", "d5065_motor_", "flywheel_left", "flywheel_right"]
+}

@@ -1,0 +1,27 @@
+{
+  "status":"FROZEN_BEFORE_FIRST_P2_47_R3_GAZEBO_RUN",
+  "scope":"Final comparative revision after retained r1/r2 unloaded diagnostics; relative Gazebo result only, no absolute capacity claim, no 5c-3/5d",
+  "reference_geometry":{"ramp_tip_underside_clearance_mm":8,"intake_angle_deg":-3,"approach_speed_m_s":0.6,"flywheel_surface_speed_m_s":2.5,"ball_tread_mu":0.6,"ground_mu":0.7},
+  "prior_pilots":{"r1_root":"gazebo_5c2_p247","r2_root":"gazebo_5c2_p247_r2","runs_each":3,"retained":true,"reason_for_r3":"legacy P2-44 anti-rebound flap overlapped the new entry functions; r2 one-way flap closed at the front plane and left the ball in the entrance zone"},
+  "variants":{
+    "high_hood":"legacy flap removed; gentle controlled rise X352/Z23.5 to X250/Z65; roof clear plane Z160-178",
+    "one_way_flap":"legacy flap removed; 25 g 96x85x2 mm flap hinged at X305/Z165, 0..80 deg inward, damping 0.005 Nms/rad",
+    "lip_cover":"legacy flap removed; floor rises to Z60 over final 27 mm, 6 mm lip top Z60, light roof/cheeks"
+  },
+  "delivery_matrix":{"existing_ball_count":[0,25,40,44],"repeats_per_condition":3,"variants":["high_hood","one_way_flap","lip_cover"],"run_count":36,"preload_method":"dynamic fall from identical low-discrepancy points in common unobstructed open top; no final grid"},
+  "motion_retention":{"preloaded_ball_count":45,"repeats_per_variant":3,"run_count":9},
+  "criteria":[
+    {"name":"delivery_success_count","threshold":3,"comparison":"eq","hard_fail":true},
+    {"name":"collection_success","threshold":true,"comparison":"eq","hard_fail":true},
+    {"name":"bounce_out","threshold":false,"comparison":"eq","hard_fail":true},
+    {"name":"entrance_blocked","threshold":false,"comparison":"eq","hard_fail":true},
+    {"name":"preload_retained_before_and_after","threshold":true,"comparison":"eq","hard_fail":true},
+    {"name":"motion_ball_loss_count","threshold":0,"comparison":"eq","hard_fail":true},
+    {"name":"d5065_current","threshold":20.0,"comparison":"abs_max_le","unit":"A per motor","hard_fail":true},
+    {"name":"forbidden_launcher_contact_count","threshold":0,"comparison":"eq","hard_fail":true},
+    {"name":"finite_state","threshold":0,"comparison":"nonfinite_count_eq","hard_fail":true}
+  ],
+  "ranking_rule":"Rank by fully passing conditions, delivery successes, fewer preload-spill and entrance-blocked runs, then motion losses; report all conditions.",
+  "physics_limitations":["Calibrated tennis_ball_compliant remains only for incoming ground/flywheel interaction.","Basket/entry/ball-ball use uncalibrated native DART rigid contact; relative comparison only.","Flap properties are assumptions.","Absolute capacity requires 1:1 physical mock-up."],
+  "prohibitions":["no artificial transfer","no final grid placement","no forced ball velocity","no contact refit","no frozen P2-40 CAD change","no 5c-3/5d"]
+}

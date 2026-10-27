@@ -1,5 +1,9 @@
 # Native Ubuntu handoff
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Status captured on 2026-07-05 from branch `feat/matrix-based-collection`.
 
 ## Current working baseline

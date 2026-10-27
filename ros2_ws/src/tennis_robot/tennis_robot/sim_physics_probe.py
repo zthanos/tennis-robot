@@ -1,4 +1,10 @@
-"""Live Gazebo physics probe for intake / roller tuning."""
+"""Live Gazebo probe for the frozen fixed-motor intake.
+
+The wheel/motor stack is rigid, so there is no carriage state to probe. Wheel
+droop, motor torque and motor current are NOT measurable here: gz_ros2_control
+velocity commands act as an ideal velocity source (D4). Those quantities come
+from the bounded FIT0186 law in the reduced-order solver.
+"""
 
 from __future__ import annotations
 
@@ -25,10 +31,6 @@ BASE_LINK_HEIGHT_M = 0.045
 BALL_RADIUS_M = 0.033
 BALL_MASS_KG = 0.058
 INTAKE_WHEEL_JOINTS = ("intake_wheel_left_joint", "intake_wheel_right_joint")
-INTAKE_CARRIAGE_JOINTS = (
-    "intake_wheel_left_carriage_joint",
-    "intake_wheel_right_carriage_joint",
-)
 
 
 def _vec_mag(vec) -> float:
@@ -115,7 +117,7 @@ class SimPhysicsProbe(Node):
             path.parent.mkdir(parents=True, exist_ok=True)
             self._jsonl = path.open("w", encoding="utf-8")
 
-        # Dual-wheel side-pinch geometry (docs/mechanism/dual-wheel-intake-design-el.md).
+        # NOT_PHYSICAL_INTAKE_ARCHITECTURE dual-wheel simulation surrogate.
         self._nip_x = float(os.getenv("INTAKE_NIP_X_M", "0.540"))
         self._wheel_radius = float(os.getenv("INTAKE_WHEEL_RADIUS_M", "0.060"))
         self._wheel_gap = float(os.getenv("INTAKE_WHEEL_GAP_M", "0.056"))
@@ -157,6 +159,14 @@ class SimPhysicsProbe(Node):
             lambda msg: self._on_contacts(msg, "right"), 10,
         )
         self.create_subscription(Contacts, "/gz/lip_contact_0", self._on_lip_contacts, 10)
+        self.create_subscription(
+            Contacts, "/gz/basket_handoff_contact_0",
+            lambda msg: self._on_handoff_contacts(msg, "chute_contact_sample"), 10,
+        )
+        self.create_subscription(
+            Contacts, "/gz/compact_ramp_contact_0",
+            lambda msg: self._on_handoff_contacts(msg, "compact_ramp_contact_sample"), 10,
+        )
 
         self.create_timer(print_period_s, self._print_summary)
         if duration_s > 0.0:
@@ -227,7 +237,7 @@ class SimPhysicsProbe(Node):
 
     def _on_joint_states(self, msg: JointState) -> None:
         names = list(msg.name)
-        for joint in (*INTAKE_WHEEL_JOINTS, *INTAKE_CARRIAGE_JOINTS):
+        for joint in INTAKE_WHEEL_JOINTS:
             try:
                 index = names.index(joint)
             except ValueError:
@@ -352,16 +362,6 @@ class SimPhysicsProbe(Node):
             } or None,
             "wheel_commands_rad_s": {
                 j: round(v, 4) for j, v in self._wheel_commands.items()
-            } or None,
-            "carriage_positions_m": {
-                j: round(self._joint_positions[j], 6)
-                for j in INTAKE_CARRIAGE_JOINTS
-                if j in self._joint_positions
-            } or None,
-            "carriage_velocities_m_s": {
-                j: round(self._joint_velocities[j], 6)
-                for j in INTAKE_CARRIAGE_JOINTS
-                if j in self._joint_velocities
             } or None,
             "wheel_joint_efforts": {
                 j: round(self._joint_efforts[j], 4)
@@ -498,6 +498,22 @@ class SimPhysicsProbe(Node):
                 max_depth,
                 max_force,
             )
+
+    def _on_handoff_contacts(self, msg: Contacts, sample_type: str) -> None:
+        ball_name, contact_names, points_world, max_depth, max_force = (
+            self._extract_ball_contacts(msg)
+        )
+        if not points_world:
+            return
+        robot_pose = self._current_robot_pose()
+        points_base = (
+            [_world_to_base(point, robot_pose) for point in points_world]
+            if robot_pose is not None else None
+        )
+        self._write_contact_log(
+            sample_type, ball_name, contact_names, points_world, points_base,
+            max_depth, max_force,
+        )
 
     def _nearest_ball_base(self) -> tuple[str, tuple[float, float, float]] | None:
         robot_pose = self._current_robot_pose()

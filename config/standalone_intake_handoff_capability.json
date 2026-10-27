@@ -1,0 +1,2775 @@
+{
+  "schema_version": 2,
+  "study_date": "2026-08-27",
+  "scope": "standalone fixed-motor intake capture and free handoff on the authoritative ramp",
+  "evidence_classification": "SIMULATION_BOUNDED",
+  "supersedes": "schema_version 1 (flat frictionless ground datum). Every number downstream of the exit vector in that revision is invalidated.",
+  "frame_mapping": {
+    "source": "scripts/intake_geometry.py",
+    "cad_ground_frame": "Option A: origin at the chassis plate centre, z=0 at the court, +X forward",
+    "standalone_frame": "wheel axis origin (0, 0, 0.070); cad_x = std_x + 0.470",
+    "base_link_frame": "xacro_z = cad_z - 0.045; xacro_x = cad_x + packaging shift",
+    "packaging_shift_x_m": {
+      "baseline": 0.0,
+      "option-a-collect": 0.0,
+      "option-a-launch": 0.0,
+      "compact": -0.1
+    },
+    "cad_aligned_urdf_variant": "compact",
+    "cheek_throat_to_nip_m": 0.11499999999999999,
+    "asserted_by": "tests/test_intake_frame_alignment.py"
+  },
+  "ground_profile": {
+    "source": "cad/collector-intake-v1/option-a/option-a.scad oa_ramp_z",
+    "law": "smoothstep t*t*(3-2*t)",
+    "front_x_cad_m": 0.52,
+    "rear_x_cad_m": 0.42,
+    "front_z_m": 0.0015,
+    "rear_z_m": 0.035,
+    "maximum_slope_deg": 26.679528106691276,
+    "width_m": 0.18,
+    "wall_height_m": 0.018,
+    "ball_centre_lateral_bound_m": 0.056999999999999995,
+    "z_at_nip_mid_m": 0.018250000000000013,
+    "frozen_contact_sequence": {
+      "ramp_lip_first_contact_ball_centre_cad_x_m": 0.529836157786453,
+      "first_wheel_contact_ball_centre_cad_x_m": 0.48120000000001306,
+      "lip_lead_m": 0.048636157786439926,
+      "note": "frozen CAD geometry only; asserted by tests/test_intake_frame_alignment.py"
+    },
+    "court_moves_in_robot_frame": true,
+    "approach_speed_m_s": 0.45,
+    "available_coast_climb_m": 0.010324626656401525,
+    "required_climb_m": 0.0335,
+    "classification": "GROUND_PROFILE_IS_AUTHORITATIVE_RAMP"
+  },
+  "geometry": {
+    "wheel_centres_m": {
+      "left": [
+        0.0,
+        0.09,
+        0.07
+      ],
+      "right": [
+        0.0,
+        -0.09,
+        0.07
+      ]
+    },
+    "wheel_axis": [
+      0.573576436351046,
+      0.0,
+      0.8191520442889918
+    ],
+    "wheel_diameter_m": 0.124,
+    "wheel_width_m": 0.073,
+    "nominal_gap_m": 0.056,
+    "wheel_lowest_point_above_court_m": 0.00453921132968696,
+    "bridge_aabb_m": {
+      "x": [
+        -0.10999999999999999,
+        0.10999999999999999
+      ],
+      "y": [
+        -0.245,
+        0.245
+      ],
+      "z": [
+        0.19,
+        0.208
+      ]
+    },
+    "bridge_under_z_source_conflict_m": {
+      "standalone_scad_authority_1": 0.19,
+      "option_a_bridge_params_authority_2": 0.15,
+      "used": 0.19,
+      "note": "reported, not silently reconciled; authority 1 owns bridge geometry"
+    },
+    "cheek_throat_ball_centre_half_width_m": 0.047,
+    "geometry_frozen": true,
+    "legacy_translating_carriage_used": false
+  },
+  "motor_model": {
+    "product": "DFRobot FIT0186 / GB37Y3530-12V-251R",
+    "manufacturer_source": "https://wiki.dfrobot.com/fit0186/",
+    "nominal_voltage_v": 12.0,
+    "no_load_speed_rpm": 251.0,
+    "no_load_current_a": 0.35,
+    "stall_torque_nm": 1.765197,
+    "stall_current_a": 7.0,
+    "law": "linear torque-speed and torque-current bounded model",
+    "wheel_inertia_assumption_kg_m2": 0.0012,
+    "wheel_inertia_physically_measured": false,
+    "gazebo_is_an_ideal_velocity_source": true,
+    "droop_torque_current_measurable_in_gazebo": false
+  },
+  "sensitivity_bounds": {
+    "tread_friction_coefficients": [
+      0.3,
+      0.6,
+      0.9
+    ],
+    "ball_ramp_friction_coefficients": [
+      0.2,
+      0.4,
+      0.6
+    ],
+    "ball_ramp_friction_bound_rationale": "dry tennis felt on a smooth rigid printed/plywood sheet; 0.20 covers a slick surface and 0.60 a rough unfinished one",
+    "tyre_force_at_5mm_n": [
+      20.0,
+      60.0,
+      120.0
+    ],
+    "tyre_law": "linear radial spring in series with calibrated ball law",
+    "bounds_physically_calibrated": false,
+    "lateral_entry_offsets_m": [
+      -0.02,
+      -0.01,
+      0.0,
+      0.01,
+      0.02
+    ],
+    "speed_cases_fraction_of_no_load": {
+      "LOW": 0.55,
+      "NOMINAL": 0.75,
+      "HIGH": 0.95
+    },
+    "rotating_inertia_allocation_kg_m2": 0.0012
+  },
+  "trajectory_physics": {
+    "gravity": true,
+    "aerodynamic_drag": false,
+    "magnus_effect": false,
+    "spin_decay": false,
+    "FULL_HANDOFF_TRAJECTORY_PHYSICS_VALIDATED": false
+  },
+  "approach_speed": {
+    "why_it_is_reported": "The frozen ramp lip reaches a court-resting ball 48.6 mm before the first centred wheel contact (see ground_profile.frozen_contact_sequence), so the ball must cross the wedge on its own momentum. Approach speed is therefore a first-order variable, not a nuisance parameter. It is a COMMANDED operating value, not an unmeasured coefficient.",
+    "cases_m_s": {
+      "ROUTE_NOMINAL": 0.35,
+      "STUDY_REFERENCE": 0.45,
+      "ROUTE_MAX": 0.6,
+      "ABOVE_THRESHOLD": 0.8
+    },
+    "envelope_case": "ABOVE_THRESHOLD",
+    "envelope_speed_m_s": 0.8,
+    "sweep": {
+      "ROUTE_NOMINAL": {
+        "approach_speed_m_s": 0.35,
+        "cases": 405,
+        "mechanism_captured": 0,
+        "centred_cases": 81,
+        "centred_mechanism_captured": 0,
+        "offset_only_capture": false,
+        "capture_rate_percent": 0.0,
+        "outcomes": {
+          "PLOUGHED_AHEAD": 405
+        },
+        "maximum_ball_centre_z_m": 0.036850657794277236,
+        "exit_speed_range_m_s": [
+          null,
+          null
+        ]
+      },
+      "STUDY_REFERENCE": {
+        "approach_speed_m_s": 0.45,
+        "cases": 405,
+        "mechanism_captured": 28,
+        "centred_cases": 81,
+        "centred_mechanism_captured": 0,
+        "offset_only_capture": true,
+        "capture_rate_percent": 6.91358024691358,
+        "outcomes": {
+          "PLOUGHED_AHEAD": 377,
+          "CAPTURED": 28
+        },
+        "maximum_ball_centre_z_m": 0.09918552551547796,
+        "exit_speed_range_m_s": [
+          1.3827352872593288,
+          1.9789468366886023
+        ]
+      },
+      "ROUTE_MAX": {
+        "approach_speed_m_s": 0.6,
+        "cases": 405,
+        "mechanism_captured": 140,
+        "centred_cases": 81,
+        "centred_mechanism_captured": 0,
+        "offset_only_capture": true,
+        "capture_rate_percent": 34.5679012345679,
+        "outcomes": {
+          "PLOUGHED_AHEAD": 265,
+          "CAPTURED": 140
+        },
+        "maximum_ball_centre_z_m": 0.10669564493787885,
+        "exit_speed_range_m_s": [
+          1.044527061027419,
+          1.9364915818680664
+        ]
+      },
+      "ABOVE_THRESHOLD": {
+        "approach_speed_m_s": 0.8,
+        "cases": 405,
+        "mechanism_captured": 233,
+        "centred_cases": 81,
+        "centred_mechanism_captured": 81,
+        "offset_only_capture": false,
+        "capture_rate_percent": 57.53086419753087,
+        "outcomes": {
+          "PLOUGHED_AHEAD": 172,
+          "CAPTURED": 233
+        },
+        "maximum_ball_centre_z_m": 0.10275810542230374,
+        "exit_speed_range_m_s": [
+          0.9845098965445782,
+          2.1192711412886758
+        ]
+      }
+    },
+    "capture_threshold": {
+      "scan_m_s": [
+        0.3,
+        0.325,
+        0.35,
+        0.375,
+        0.4,
+        0.425,
+        0.45,
+        0.475,
+        0.5,
+        0.525,
+        0.55,
+        0.575,
+        0.6,
+        0.625,
+        0.65,
+        0.675,
+        0.7,
+        0.725,
+        0.75,
+        0.775,
+        0.8
+      ],
+      "swept_bounds": {
+        "tread_friction": [
+          0.3,
+          0.6,
+          0.9
+        ],
+        "ball_ramp_friction": [
+          0.2,
+          0.4,
+          0.6
+        ]
+      },
+      "table": [
+        {
+          "approach_speed_m_s": 0.3,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.03582627041437509
+        },
+        {
+          "approach_speed_m_s": 0.325,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.03629939054543322
+        },
+        {
+          "approach_speed_m_s": 0.35,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.03682428568848305
+        },
+        {
+          "approach_speed_m_s": 0.375,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.037367718922046364
+        },
+        {
+          "approach_speed_m_s": 0.4,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.03806299152299631
+        },
+        {
+          "approach_speed_m_s": 0.425,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.03864519116642941
+        },
+        {
+          "approach_speed_m_s": 0.45,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.03932845165171847
+        },
+        {
+          "approach_speed_m_s": 0.475,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.04015193786018823
+        },
+        {
+          "approach_speed_m_s": 0.5,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.040986571518583155
+        },
+        {
+          "approach_speed_m_s": 0.525,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.04185370391574361
+        },
+        {
+          "approach_speed_m_s": 0.55,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.042752024197828774
+        },
+        {
+          "approach_speed_m_s": 0.575,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.043695572236926765
+        },
+        {
+          "approach_speed_m_s": 0.6,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.04468903663498229
+        },
+        {
+          "approach_speed_m_s": 0.625,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.045727339031347077
+        },
+        {
+          "approach_speed_m_s": 0.65,
+          "captured": 0,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.04680684373397563
+        },
+        {
+          "approach_speed_m_s": 0.675,
+          "captured": 2,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.09179123714283606
+        },
+        {
+          "approach_speed_m_s": 0.7,
+          "captured": 4,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.09063388216897375
+        },
+        {
+          "approach_speed_m_s": 0.725,
+          "captured": 7,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.09171314259803337
+        },
+        {
+          "approach_speed_m_s": 0.75,
+          "captured": 7,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.09149808934486088
+        },
+        {
+          "approach_speed_m_s": 0.775,
+          "captured": 9,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.09102021021934384
+        },
+        {
+          "approach_speed_m_s": 0.8,
+          "captured": 9,
+          "cases": 9,
+          "maximum_ball_centre_z_m": 0.09143305805350291
+        }
+      ],
+      "MINIMUM_APPROACH_SPEED_WITH_ANY_CAPTURE_M_S": 0.675,
+      "MINIMUM_APPROACH_SPEED_WITH_CAPTURE_ACROSS_ALL_FRICTION_BOUNDS_M_S": 0.775,
+      "route_nominal_speed_m_s": 0.35,
+      "route_max_speed_m_s": 0.6,
+      "source": "ros2_ws/src/tennis_robot/config/collection_route.yaml"
+    }
+  },
+  "campaign": {
+    "trial_count": 1622,
+    "matrix_case_count": 405,
+    "matrix_approach_case": "ABOVE_THRESHOLD",
+    "matrix_approach_speed_m_s": 0.8,
+    "mechanism_captured_count": 233,
+    "valid_after_model_gates_count": 181,
+    "high_bound_case_count_expected": 135,
+    "high_valid_case_count": 67,
+    "centered_speed_summary": {
+      "LOW": {
+        "executed_cases": 27,
+        "valid_cases": 27,
+        "mechanism_captured_cases": 27,
+        "exit_speed_range_m_s": [
+          0.9845098965445782,
+          1.1311037344239074
+        ],
+        "exit_elevation_range_deg": [
+          28.026242832163184,
+          31.998636097929815
+        ],
+        "exit_z_range_m": [
+          0.07860017857842327,
+          0.08233745984337748
+        ],
+        "ballistic_range_m": [
+          0.13572030367935545,
+          0.16998679309502251
+        ],
+        "above_base_distance_range_m": [
+          0.0,
+          0.08622924123040814
+        ],
+        "wheel_droop_range_percent": [
+          9.895331754139404,
+          31.46865891390152
+        ],
+        "peak_current_range_a": [
+          0.7119217589076485,
+          1.5009661997759483
+        ]
+      },
+      "NOMINAL": {
+        "executed_cases": 27,
+        "valid_cases": 27,
+        "mechanism_captured_cases": 27,
+        "exit_speed_range_m_s": [
+          1.3059516436955927,
+          1.4138893121372056
+        ],
+        "exit_elevation_range_deg": [
+          29.69503715755193,
+          32.64182267458739
+        ],
+        "exit_z_range_m": [
+          0.07789025212364119,
+          0.08193769432663998
+        ],
+        "ballistic_range_m": [
+          0.2089856829512281,
+          0.2419507266164411
+        ],
+        "above_base_distance_range_m": [
+          0.11372268419454787,
+          0.15569210150897306
+        ],
+        "wheel_droop_range_percent": [
+          8.261909232181115,
+          23.790040191041374
+        ],
+        "peak_current_range_a": [
+          0.7620627229550332,
+          1.5365282545281889
+        ]
+      },
+      "HIGH": {
+        "executed_cases": 27,
+        "valid_cases": 27,
+        "mechanism_captured_cases": 27,
+        "exit_speed_range_m_s": [
+          1.6249088797967253,
+          1.7020579896629857
+        ],
+        "exit_elevation_range_deg": [
+          30.61674788043134,
+          33.142026388544494
+        ],
+        "exit_z_range_m": [
+          0.07812940433332843,
+          0.0819605940158787
+        ],
+        "ballistic_range_m": [
+          0.2993136477970067,
+          0.329588958968862
+        ],
+        "above_base_distance_range_m": [
+          0.20282273186939392,
+          0.24330181232223602
+        ],
+        "wheel_droop_range_percent": [
+          8.120764749175587,
+          20.161846771180517
+        ],
+        "peak_current_range_a": [
+          0.8630293130291677,
+          1.6237246697693295
+        ]
+      }
+    },
+    "offset_capture_matrix": {
+      "LOW": {
+        "-0.020": {
+          "mechanism_captured": 0,
+          "valid_after_gates": 0,
+          "executed": 27
+        },
+        "-0.010": {
+          "mechanism_captured": 18,
+          "valid_after_gates": 13,
+          "executed": 27
+        },
+        "+0.000": {
+          "mechanism_captured": 27,
+          "valid_after_gates": 27,
+          "executed": 27
+        },
+        "+0.010": {
+          "mechanism_captured": 18,
+          "valid_after_gates": 13,
+          "executed": 27
+        },
+        "+0.020": {
+          "mechanism_captured": 0,
+          "valid_after_gates": 0,
+          "executed": 27
+        }
+      },
+      "NOMINAL": {
+        "-0.020": {
+          "mechanism_captured": 8,
+          "valid_after_gates": 5,
+          "executed": 27
+        },
+        "-0.010": {
+          "mechanism_captured": 18,
+          "valid_after_gates": 12,
+          "executed": 27
+        },
+        "+0.000": {
+          "mechanism_captured": 27,
+          "valid_after_gates": 27,
+          "executed": 27
+        },
+        "+0.010": {
+          "mechanism_captured": 18,
+          "valid_after_gates": 12,
+          "executed": 27
+        },
+        "+0.020": {
+          "mechanism_captured": 8,
+          "valid_after_gates": 5,
+          "executed": 27
+        }
+      },
+      "HIGH": {
+        "-0.020": {
+          "mechanism_captured": 14,
+          "valid_after_gates": 8,
+          "executed": 27
+        },
+        "-0.010": {
+          "mechanism_captured": 18,
+          "valid_after_gates": 12,
+          "executed": 27
+        },
+        "+0.000": {
+          "mechanism_captured": 27,
+          "valid_after_gates": 27,
+          "executed": 27
+        },
+        "+0.010": {
+          "mechanism_captured": 18,
+          "valid_after_gates": 12,
+          "executed": 27
+        },
+        "+0.020": {
+          "mechanism_captured": 14,
+          "valid_after_gates": 8,
+          "executed": 27
+        }
+      }
+    },
+    "mechanism_outcomes": {
+      "PLOUGHED_AHEAD": 172,
+      "CAPTURED": 233
+    },
+    "model_validity_gate_rejections": {
+      "tyre_deflection_above_5mm_model_validity_bound": 52,
+      "bridge_collision": 0,
+      "lateral_escape_beyond_100mm": 0
+    },
+    "gate_rejected_but_mechanically_captured": {
+      "count": 52,
+      "bilateral_contact_duration_range_s": [
+        0.030250000000000023,
+        0.07225000000000005
+      ],
+      "exit_speed_range_m_s": [
+        1.0534794720741114,
+        2.1192711412886758
+      ],
+      "note": "model-validity rejections, NOT mechanism failures"
+    },
+    "tread_friction_sensitivity": {
+      "0.3": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.3166786929140366,
+          1.4138893121372056
+        ],
+        "exit_elevation_range_deg": [
+          31.78941570533472,
+          32.64182267458739
+        ]
+      },
+      "0.6": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.309359169595326,
+          1.3933885929431298
+        ],
+        "exit_elevation_range_deg": [
+          30.18219505576393,
+          32.28847485703953
+        ]
+      },
+      "0.9": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.3059516436955927,
+          1.3877498105973514
+        ],
+        "exit_elevation_range_deg": [
+          29.69503715755193,
+          32.28456317710012
+        ]
+      }
+    },
+    "ball_ramp_friction_sensitivity": {
+      "0.2": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.3059516436955927,
+          1.4135122507776434
+        ],
+        "exit_elevation_range_deg": [
+          31.804710237938806,
+          32.64182267458739
+        ]
+      },
+      "0.4": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.309151975555169,
+          1.4132017075515637
+        ],
+        "exit_elevation_range_deg": [
+          29.69503715755193,
+          32.10313223973148
+        ]
+      },
+      "0.6": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.3078323411667112,
+          1.4138893121372056
+        ],
+        "exit_elevation_range_deg": [
+          30.498452331211524,
+          32.10801237338168
+        ]
+      }
+    },
+    "tyre_compliance_sensitivity": {
+      "20.0": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.3059516436955927,
+          1.318491126602462
+        ],
+        "peak_tyre_deflection_range_mm": [
+          3.671948998757479,
+          3.672027553438502
+        ]
+      },
+      "60.0": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.352268102547066,
+          1.3745497366104762
+        ],
+        "peak_tyre_deflection_range_mm": [
+          2.731922471541278,
+          2.7319658326924006
+        ]
+      },
+      "120.0": {
+        "valid_cases": 9,
+        "exit_speed_range_m_s": [
+          1.3852910270220171,
+          1.4138893121372056
+        ],
+        "peak_tyre_deflection_range_mm": [
+          2.0382988016821844,
+          2.0383334527985464
+        ]
+      }
+    },
+    "representative_repeatability": {
+      "classification": "DETERMINISTIC_SIMULATION_REPEATABILITY_ONLY",
+      "exit_speed_m_s": {
+        "mean": 1.3596841347740236,
+        "stddev": 0.0
+      },
+      "exit_elevation_deg": {
+        "mean": 30.191021638383784,
+        "stddev": 0.0
+      },
+      "exit_azimuth_deg": {
+        "mean": 0.0,
+        "stddev": 0.0
+      },
+      "apex_z_m": {
+        "mean": 0.10332869515753436,
+        "stddev": 0.0
+      }
+    },
+    "timestep_convergence": {
+      "cases": [
+        {
+          "timestep_s": 0.0005,
+          "capture_valid": true,
+          "outcome": "CAPTURED",
+          "exit_speed_m_s": 1.3608305308159598,
+          "exit_elevation_deg": 30.111830005999067,
+          "peak_tyre_deflection_m": 0.0027319057355632004,
+          "peak_normal_force_n": 32.78254365748851
+        },
+        {
+          "timestep_s": 0.00025,
+          "capture_valid": true,
+          "outcome": "CAPTURED",
+          "exit_speed_m_s": 1.3596841347740236,
+          "exit_elevation_deg": 30.191021638383784,
+          "peak_tyre_deflection_m": 0.00273195696576634,
+          "peak_normal_force_n": 32.7847013803344
+        },
+        {
+          "timestep_s": 0.000125,
+          "capture_valid": true,
+          "outcome": "CAPTURED",
+          "exit_speed_m_s": 1.3595817154214367,
+          "exit_elevation_deg": 30.198326605836446,
+          "peak_tyre_deflection_m": 0.0027319644857291612,
+          "peak_normal_force_n": 32.784815323619014
+        }
+      ],
+      "exit_speed_relative_spread": 0.0009182249225790936,
+      "classification": "NUMERICALLY_CONVERGED_FOR_BOUNDED_STUDY"
+    }
+  },
+  "ramp_effect": {
+    "representative_case": "ABOVE_THRESHOLD_NOMINAL_mu0.6_F60_r0.40_y+0.000",
+    "at_envelope_approach_speed": {
+      "approach_speed_m_s": 0.8,
+      "flat_ground_datum": {
+        "exit_x_cad_m": 0.42937900009672364,
+        "exit_z_m": 0.06524011850484908,
+        "exit_speed_m_s": 1.3599656166971539,
+        "exit_elevation_deg": 36.577545900953595,
+        "exit_azimuth_deg": 0.0,
+        "exit_vx_m_s": -1.0921218475233172,
+        "exit_vz_m_s": 0.8104173916943826,
+        "apex_z_m": 0.0986990736738716,
+        "ballistic_ground_range_m": 0.21669573714845752,
+        "maximum_above_base_receiving_distance_m": 0.1201334032275649,
+        "bilateral_contact_duration_s": 0.05550000000000004,
+        "outcome": "CAPTURED"
+      },
+      "authoritative_ramp": {
+        "exit_x_cad_m": 0.4393936276863108,
+        "exit_z_m": 0.07949150166265863,
+        "exit_speed_m_s": 1.3596841347740236,
+        "exit_elevation_deg": 30.191021638383784,
+        "exit_azimuth_deg": 0.0,
+        "exit_vx_m_s": -1.1752478979107346,
+        "exit_vz_m_s": 0.6837640856410819,
+        "apex_z_m": 0.10332869515753436,
+        "ballistic_ground_range_m": 0.22269463695240097,
+        "maximum_above_base_receiving_distance_m": 0.1292772687701808,
+        "bilateral_contact_duration_s": 0.06850000000000005,
+        "outcome": "CAPTURED"
+      },
+      "delta": {
+        "exit_z_m": 0.01425138315780955,
+        "exit_speed_m_s": -0.00028148192313026676,
+        "exit_elevation_deg": -6.386524262569811,
+        "apex_z_m": 0.004629621483662763,
+        "ballistic_ground_range_m": 0.005998899803943442,
+        "maximum_above_base_receiving_distance_m": 0.009143865542615912
+      }
+    },
+    "note": "The flat-ground column is the INVALID legacy datum, reproduced only so the change can be quantified. Every flat-ground number in the previous report is withdrawn.",
+    "flat_ground_datum": {
+      "exit_x_cad_m": 0.42949546619540174,
+      "exit_z_m": 0.06549474360604146,
+      "exit_speed_m_s": 1.3564903533802974,
+      "exit_elevation_deg": 35.72329820845158,
+      "exit_azimuth_deg": 0.0,
+      "exit_vx_m_s": -1.1012615036445015,
+      "exit_vz_m_s": 0.7920158959291511,
+      "apex_z_m": 0.09747473528037355,
+      "ballistic_ground_range_m": 0.21522568847714765,
+      "maximum_above_base_receiving_distance_m": 0.11012615036445017,
+      "bilateral_contact_duration_s": 0.06025000000000005,
+      "outcome": "CAPTURED"
+    },
+    "authoritative_ramp": {
+      "exit_x_cad_m": 0.5595389742851127,
+      "exit_z_m": 0.03223706462552521,
+      "exit_speed_m_s": 0.0929893360007552,
+      "exit_elevation_deg": 69.58303789933109,
+      "exit_azimuth_deg": 180.0,
+      "exit_vx_m_s": 0.03243928422704947,
+      "exit_vz_m_s": 0.08714763019553684,
+      "apex_z_m": 0.033,
+      "ballistic_ground_range_m": 0.0,
+      "maximum_above_base_receiving_distance_m": 0.0,
+      "bilateral_contact_duration_s": 0.0,
+      "outcome": "PLOUGHED_AHEAD"
+    },
+    "delta": {
+      "exit_z_m": -0.03325767898051625,
+      "exit_speed_m_s": -1.2635010173795422,
+      "exit_elevation_deg": 33.85973969087951,
+      "apex_z_m": -0.06447473528037355,
+      "ballistic_ground_range_m": -0.21522568847714765,
+      "maximum_above_base_receiving_distance_m": -0.11012615036445017
+    }
+  },
+  "ramp_dynamics": {
+    "ball_climbs_ramp_in_reduced_order_solver": true,
+    "ploughed_ahead_cases": 172,
+    "stalled_in_nip_cases": 0,
+    "ball_centre_z_at_nip_stations_m": {
+      "predicted_static_rest": {
+        "NIP_UPPER": 0.04406600892289371,
+        "NIP_MID": 0.055182090466828454,
+        "NIP_LOWER": 0.06387664511856303
+      },
+      "simulated_range": {
+        "ball_centre_z_at_nip_upper_m": [
+          0.04428188202604511,
+          0.04787887971441706
+        ],
+        "ball_centre_z_at_nip_mid_m": [
+          0.056608670658318004,
+          0.06312981883178494
+        ],
+        "ball_centre_z_at_nip_lower_m": [
+          0.07103938027567933,
+          0.07755886589772233
+        ]
+      }
+    },
+    "wheel_contact_before_ramp_contact_cases": 0,
+    "peak_ramp_normal_force_range_n": [
+      2.9806341923363364,
+      6.4366217610491905
+    ]
+  },
+  "handoff": {
+    "MAX_PHYSICAL_HANDOFF_REACH_M": 0.3784483885353379,
+    "MAX_PHYSICAL_HANDOFF_HEIGHT_M": 0.13787427756484041,
+    "MAX_RELIABLE_BASKET_HANDOFF_DISTANCE_M": null,
+    "MAX_CENTERED_SIMULATION_BOUNDED_ABOVE_BASE_DISTANCE_M": 0.20500000000000002,
+    "MAX_RELIABLE_BASKET_HANDOFF_HEIGHT_M": null,
+    "RECOMMENDED_MAX_BASKET_RECEIVING_X_REARWARD_FROM_EXIT_M": null,
+    "RECOMMENDED_MIN_BASKET_RECEIVING_Z_M": null,
+    "RECOMMENDED_RECEIVING_OPENING_WIDTH_M": null,
+    "RECOMMENDED_LATERAL_TOLERANCE_M": null,
+    "receiving_crossing_vertical_velocity_range_m_s": null,
+    "receiving_crossing_residual_speed_range_m_s": null,
+    "REACHABLE_HANDOFF_VOLUME": {
+      "robot_frame_ball_centre_aabb_m": {
+        "x": [
+          -0.4106758168394088,
+          -0.028542054080819033
+        ],
+        "y": [
+          -0.10571233205592326,
+          0.10571233205592259
+        ],
+        "z": [
+          0.033,
+          0.13787427756484041
+        ]
+      },
+      "rearward_distance_from_exit_m": [
+        0.0,
+        0.3784483885353379
+      ],
+      "classification": "REACHABLE_HANDOFF_VOLUME_SIMULATION_BOUNDED"
+    },
+    "RELIABLE_HANDOFF_VOLUME": null,
+    "centered_high_speed_reference_plane": {
+      "rearward_distance_from_exit_m": 0.15,
+      "all_bound_cases_above_useful_plane": true,
+      "ball_centre_z_range_m": [
+        0.11234469264806587,
+        0.12383261803837348
+      ],
+      "vertical_velocity_range_m_s": [
+        -0.21989546102210888,
+        -0.10161758819126954
+      ],
+      "residual_speed_range_m_s": [
+        1.3826826430377768,
+        1.460563695498071
+      ],
+      "lateral_error_range_m": [
+        0.0,
+        0.0
+      ],
+      "qualification": "CENTERED_ONLY_NOT_A_RELIABLE_BASKET_CONSTRAINT"
+    },
+    "exit_station_cad_x_range_m": [
+      0.43566398143317486,
+      0.4414579459191809
+    ]
+  },
+  "basket_on_base": {
+    "floor_plane_z_m": 0.052,
+    "chassis_cut_out": false,
+    "definition": "worst-case intersection over every valid trial: the ball bottom must pass above the rim top at that rearward distance",
+    "rim_windows": {
+      "centred_entries_all_bounds": {
+        "0.005": {
+          "rim_height_m": 0.005,
+          "required_ball_centre_z_m": 0.09,
+          "window_m": [
+            0.035,
+            0.045
+          ],
+          "window_width_m": 0.01,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.035,
+              "ball_centre_z_range_m": [
+                0.09007658195505859,
+                0.10150501575392382
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                0.8514684968363481,
+                1.5868066950174557
+              ],
+              "vertical_velocity_range_m_s": [
+                0.07129085705323723,
+                0.6897053853356406
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.1583688873627427,
+              "rigid_wall_rebound_rise_m": 0.06841370290619114
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.04,
+              "ball_centre_z_range_m": [
+                0.0903240727559213,
+                0.10381139735379545
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                0.8467529283345357,
+                1.5735925269348425
+              ],
+              "vertical_velocity_range_m_s": [
+                0.015108771453183623,
+                0.6553000386605576
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.148722544662435,
+              "rigid_wall_rebound_rise_m": 0.06727901396581605
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.045,
+              "ball_centre_z_range_m": [
+                0.09024969760435664,
+                0.10599635929156195
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                0.8459929280382233,
+                1.5609953673559946
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.04107331414686993,
+                0.6208946919854745
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.139526618169876,
+              "rigid_wall_rebound_rise_m": 0.06620614142024414
+            }
+          }
+        },
+        "0.010": {
+          "rim_height_m": 0.01,
+          "required_ball_centre_z_m": 0.095,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "0.015": {
+          "rim_height_m": 0.015,
+          "required_ball_centre_z_m": 0.1,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "0.020": {
+          "rim_height_m": 0.02,
+          "required_ball_centre_z_m": 0.105,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "MAX_BASKET_RIM_HEIGHT_ON_BASE_M": 0.005,
+        "population_size": 81
+      },
+      "all_valid_entries": {
+        "0.005": {
+          "rim_height_m": 0.005,
+          "required_ball_centre_z_m": 0.09,
+          "window_m": [
+            0.035,
+            0.045
+          ],
+          "window_width_m": 0.01,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.035,
+              "ball_centre_z_range_m": [
+                0.09007658195505859,
+                0.10666793058755117
+              ],
+              "lateral_error_range_m": [
+                -0.013028937576227738,
+                0.013028937576227655
+              ],
+              "residual_speed_range_m_s": [
+                0.8514684968363481,
+                1.732314786131455
+              ],
+              "vertical_velocity_range_m_s": [
+                0.07129085705323723,
+                0.8250912164986539
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.264589793875962,
+              "rigid_wall_rebound_rise_m": 0.08153586325479385
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.04,
+              "ball_centre_z_range_m": [
+                0.0903240727559213,
+                0.1091639152896505
+              ],
+              "lateral_error_range_m": [
+                -0.014626620405270779,
+                0.014626620405270685
+              ],
+              "residual_speed_range_m_s": [
+                0.8467529283345357,
+                1.7169012599966187
+              ],
+              "vertical_velocity_range_m_s": [
+                0.015108771453183623,
+                0.7922189936321504
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.2533379197975316,
+              "rigid_wall_rebound_rise_m": 0.08009136357483973
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.045,
+              "ball_centre_z_range_m": [
+                0.09024969760435664,
+                0.11153221068159448
+              ],
+              "lateral_error_range_m": [
+                -0.016224303234313817,
+                0.016224303234313713
+              ],
+              "residual_speed_range_m_s": [
+                0.8459929280382233,
+                1.701983114187287
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.04107331414686993,
+                0.7593467707656469
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.2424476733567196,
+              "rigid_wall_rebound_rise_m": 0.07870558350861538
+            }
+          }
+        },
+        "0.010": {
+          "rim_height_m": 0.01,
+          "required_ball_centre_z_m": 0.095,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "0.015": {
+          "rim_height_m": 0.015,
+          "required_ball_centre_z_m": 0.1,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "0.020": {
+          "rim_height_m": 0.02,
+          "required_ball_centre_z_m": 0.105,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "MAX_BASKET_RIM_HEIGHT_ON_BASE_M": 0.005,
+        "population_size": 181
+      },
+      "centred_LOW": {
+        "0.005": {
+          "rim_height_m": 0.005,
+          "required_ball_centre_z_m": 0.09,
+          "window_m": [
+            0.035,
+            0.045
+          ],
+          "window_width_m": 0.01,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.035,
+              "ball_centre_z_range_m": [
+                0.09007658195505859,
+                0.09682568696723297
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                0.8514684968363481,
+                0.9942626279910746
+              ],
+              "vertical_velocity_range_m_s": [
+                0.07129085705323723,
+                0.24041515355469734
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.7258117184334845,
+              "rigid_wall_rebound_rise_m": 0.02685946019361187
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.04,
+              "ball_centre_z_range_m": [
+                0.0903240727559213,
+                0.09774578429778231
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                0.8467529283345357,
+                0.9836605012314844
+              ],
+              "vertical_velocity_range_m_s": [
+                0.015108771453183623,
+                0.1892377056607944
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.7180721658989836,
+              "rigid_wall_rebound_rise_m": 0.026289692985823773
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.045,
+              "ball_centre_z_range_m": [
+                0.09024969760435664,
+                0.09843365157931233
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                0.8459929280382233,
+                0.9755830538881662
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.04107331414686993,
+                0.13806025776689151
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.7121756293383613,
+              "rigid_wall_rebound_rise_m": 0.025859703722652026
+            }
+          }
+        },
+        "0.010": {
+          "rim_height_m": 0.01,
+          "required_ball_centre_z_m": 0.095,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "0.015": {
+          "rim_height_m": 0.015,
+          "required_ball_centre_z_m": 0.1,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "0.020": {
+          "rim_height_m": 0.02,
+          "required_ball_centre_z_m": 0.105,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "MAX_BASKET_RIM_HEIGHT_ON_BASE_M": 0.005,
+        "population_size": 27
+      },
+      "centred_NOMINAL": {
+        "0.005": {
+          "rim_height_m": 0.005,
+          "required_ball_centre_z_m": 0.09,
+          "window_m": [
+            0.025,
+            0.125
+          ],
+          "window_width_m": 0.1,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.025,
+              "ball_centre_z_range_m": [
+                0.09095295338263953,
+                0.09549822625861099
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.2037666709524648,
+                1.3165516718167272
+              ],
+              "vertical_velocity_range_m_s": [
+                0.43294965377461847,
+                0.5564511743175677
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.9610827204262108,
+              "rigid_wall_rebound_rise_m": 0.047094573350830615
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.075,
+              "ball_centre_z_range_m": [
+                0.10085308626709356,
+                0.10921297293084381
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.1088782877948657,
+                1.2078384238029225
+              ],
+              "vertical_velocity_range_m_s": [
+                0.001784575784393172,
+                0.14449726130140816
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.8817220493761334,
+              "rigid_wall_rebound_rise_m": 0.03963809110940274
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.125,
+              "ball_centre_z_range_m": [
+                0.0914531162995816,
+                0.10661760510948545
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.1838320778104192,
+                1.245553177843625
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.42938050220583235,
+                -0.26745665171475164
+              ],
+              "phases": [
+                "descending"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.9092538198258463,
+              "rigid_wall_rebound_rise_m": 0.04215213701253193
+            }
+          }
+        },
+        "0.010": {
+          "rim_height_m": 0.01,
+          "required_ball_centre_z_m": 0.095,
+          "window_m": [
+            0.04,
+            0.11
+          ],
+          "window_width_m": 0.07,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.04,
+              "ball_centre_z_range_m": [
+                0.09615373152033826,
+                0.10148953466712012
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.1585058291706671,
+                1.2704617802093514
+              ],
+              "vertical_velocity_range_m_s": [
+                0.30360013037755085,
+                0.4328650004127198
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.9274370995528265,
+              "rigid_wall_rebound_rise_m": 0.043854913432566645
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.075,
+              "ball_centre_z_range_m": [
+                0.10085308626709356,
+                0.10921297293084381
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.1088782877948657,
+                1.2078384238029225
+              ],
+              "vertical_velocity_range_m_s": [
+                0.001784575784393172,
+                0.14449726130140816
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.8817220493761334,
+              "rigid_wall_rebound_rise_m": 0.03963809110940274
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.11,
+              "ball_centre_z_range_m": [
+                0.09626357794701407,
+                0.10920943545732165
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.1440361399327748,
+                1.2201814230501988
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.3000309788087647,
+                -0.1438704778099037
+              ],
+              "phases": [
+                "descending"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.8907324388266451,
+              "rigid_wall_rebound_rise_m": 0.040452360264619576
+            }
+          }
+        },
+        "0.015": {
+          "rim_height_m": 0.015,
+          "required_ball_centre_z_m": 0.1,
+          "window_m": [
+            0.065,
+            0.09
+          ],
+          "window_width_m": 0.025,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.065,
+              "ball_centre_z_range_m": [
+                0.10045825665239153,
+                0.10790003076351289
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.1145386702813147,
+                1.2175373719450124
+              ],
+              "vertical_velocity_range_m_s": [
+                0.08801759138243814,
+                0.22688804390464
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.8888022815198591,
+              "rigid_wall_rebound_rise_m": 0.04027723512284556
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.0775,
+              "ball_centre_z_range_m": [
+                0.10083331327450844,
+                0.10948208779103615
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.1085622558034918,
+                1.2064942558793061
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.01977367811511821,
+                0.12389956565060012
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.8807408067918935,
+              "rigid_wall_rebound_rise_m": 0.03954991606452945
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.09,
+              "ball_centre_z_range_m": [
+                0.10002356593401886,
+                0.11024248144189047
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.113588683917118,
+                1.2049195329266424
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.12756494761267456,
+                0.020911087396560224
+              ],
+              "phases": [
+                "apex",
+                "descending"
+              ],
+              "rigid_wall_rebound_speed_m_s": 0.879591259036449,
+              "rigid_wall_rebound_rise_m": 0.039446741903367895
+            }
+          }
+        },
+        "0.020": {
+          "rim_height_m": 0.02,
+          "required_ball_centre_z_m": 0.105,
+          "window_m": null,
+          "window_width_m": null,
+          "contiguous": false
+        },
+        "MAX_BASKET_RIM_HEIGHT_ON_BASE_M": 0.015,
+        "population_size": 27
+      },
+      "centred_HIGH": {
+        "0.005": {
+          "rim_height_m": 0.005,
+          "required_ball_centre_z_m": 0.09,
+          "window_m": [
+            0.025,
+            0.215
+          ],
+          "window_width_m": 0.19,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.025,
+              "ball_centre_z_range_m": [
+                0.0921036349551814,
+                0.09652799356786515
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.5357074802302328,
+                1.61502477016066
+              ],
+              "vertical_velocity_range_m_s": [
+                0.6564635625041976,
+                0.7585160786858067
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.1789680822172817,
+              "rigid_wall_rebound_rise_m": 0.07086852997135082
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.12,
+              "ball_centre_z_range_m": [
+                0.11480539239589703,
+                0.12420042890544392
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.368431658953979,
+                1.455135763831028
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.009569295375795539,
+                0.10481449185922875
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.0622491075966505,
+              "rigid_wall_rebound_rise_m": 0.057531020613047296
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.215,
+              "ball_centre_z_range_m": [
+                0.09153818605785757,
+                0.10883184264224505
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.521160458815711,
+                1.5671392692976174
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.6756021532557888,
+                -0.5488870949673492
+              ],
+              "phases": [
+                "descending"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.1440116665872606,
+              "rigid_wall_rebound_rise_m": 0.0667283268643095
+            }
+          }
+        },
+        "0.010": {
+          "rim_height_m": 0.01,
+          "required_ball_centre_z_m": 0.095,
+          "window_m": [
+            0.035,
+            0.205
+          ],
+          "window_width_m": 0.17,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.035,
+              "ball_centre_z_range_m": [
+                0.09679272922082593,
+                0.10150501575392382
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.5045272433789036,
+                1.5868066950174557
+              ],
+              "vertical_velocity_range_m_s": [
+                0.5863548406220931,
+                0.6897053853356406
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.1583688873627427,
+              "rigid_wall_rebound_rise_m": 0.06841370290619114
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.12,
+              "ball_centre_z_range_m": [
+                0.11480539239589703,
+                0.12420042890544392
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.368431658953979,
+                1.455135763831028
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.009569295375795539,
+                0.10481449185922875
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.0622491075966505,
+              "rigid_wall_rebound_rise_m": 0.057531020613047296
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.205,
+              "ball_centre_z_range_m": [
+                0.09611752630387328,
+                0.1124418262570367
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.4912460490619703,
+                1.5431230984150073
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.6054934313736839,
+                -0.48007640161718323
+              ],
+              "phases": [
+                "descending"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.1264798618429552,
+              "rigid_wall_rebound_rise_m": 0.06469879516133051
+            }
+          }
+        },
+        "0.015": {
+          "rim_height_m": 0.015,
+          "required_ball_centre_z_m": 0.1,
+          "window_m": [
+            0.045,
+            0.195
+          ],
+          "window_width_m": 0.15,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.045,
+              "ball_centre_z_range_m": [
+                0.10096719606755813,
+                0.10599635929156195
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.476170634762858,
+                1.5609953673559946
+              ],
+              "vertical_velocity_range_m_s": [
+                0.5162461187399885,
+                0.6208946919854745
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.139526618169876,
+              "rigid_wall_rebound_rise_m": 0.06620614142024414
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.12,
+              "ball_centre_z_range_m": [
+                0.11480539239589703,
+                0.12420042890544392
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.368431658953979,
+                1.455135763831028
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.009569295375795539,
+                0.10481449185922875
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.0622491075966505,
+              "rigid_wall_rebound_rise_m": 0.057531020613047296
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.195,
+              "ball_centre_z_range_m": [
+                0.10019565228365714,
+                0.11556898326750063
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.4642312562754813,
+                1.5217236015406028
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.5353847094915796,
+                -0.41126570826701725
+              ],
+              "phases": [
+                "descending"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.11085822912464,
+              "rigid_wall_rebound_rise_m": 0.06291679652143858
+            }
+          }
+        },
+        "0.020": {
+          "rim_height_m": 0.02,
+          "required_ball_centre_z_m": 0.105,
+          "window_m": [
+            0.06,
+            0.18
+          ],
+          "window_width_m": 0.12,
+          "contiguous": true,
+          "receiving_points": {
+            "near_edge": {
+              "rearward_distance_from_exit_m": 0.06,
+              "ball_centre_z_range_m": [
+                0.10611319347351433,
+                0.11182272713223071
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.4392906013198437,
+                1.527054904318882
+              ],
+              "vertical_velocity_range_m_s": [
+                0.4110830359168317,
+                0.5176786519602254
+              ],
+              "phases": [
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.1147500801527839,
+              "rigid_wall_rebound_rise_m": 0.06335842215234755
+            },
+            "mid": {
+              "rearward_distance_from_exit_m": 0.12,
+              "ball_centre_z_range_m": [
+                0.11480539239589703,
+                0.12420042890544392
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.368431658953979,
+                1.455135763831028
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.009569295375795539,
+                0.10481449185922875
+              ],
+              "phases": [
+                "apex",
+                "rising"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.0622491075966505,
+              "rigid_wall_rebound_rise_m": 0.057531020613047296
+            },
+            "far_edge": {
+              "rearward_distance_from_exit_m": 0.18,
+              "ball_centre_z_range_m": [
+                0.10537306450414831,
+                0.11935441890008201
+              ],
+              "lateral_error_range_m": [
+                0.0,
+                0.0
+              ],
+              "residual_speed_range_m_s": [
+                1.4295006744251482,
+                1.494772719112279
+              ],
+              "vertical_velocity_range_m_s": [
+                -0.4302216266684227,
+                -0.3080496682417677
+              ],
+              "phases": [
+                "descending"
+              ],
+              "rigid_wall_rebound_speed_m_s": 1.0911840849519636,
+              "rigid_wall_rebound_rise_m": 0.06070792305488899
+            }
+          }
+        },
+        "MAX_BASKET_RIM_HEIGHT_ON_BASE_M": 0.029,
+        "population_size": 27
+      },
+      "headline_population": "centred_HIGH",
+      "population_definitions": {
+        "centred_HIGH": "y=0 entries, HIGH wheel-speed command, all unmeasured bounds",
+        "centred_NOMINAL": "y=0 entries, NOMINAL wheel-speed command, all unmeasured bounds",
+        "centred_LOW": "y=0 entries, LOW wheel-speed command, all unmeasured bounds",
+        "centred_entries_all_bounds": "y=0 entries, all three wheel-speed commands",
+        "all_valid_entries": "every valid entry including lateral offsets"
+      },
+      "MAX_BASKET_RIM_HEIGHT_ON_BASE_M": 0.029,
+      "MAX_BASKET_RIM_HEIGHT_ALL_ENTRIES_M": 0.005
+    },
+    "flat_ground_reference_withdrawn": {
+      "0.005": [
+        0.04,
+        0.18
+      ],
+      "0.010": [
+        0.05,
+        0.165
+      ],
+      "0.015": [
+        0.065,
+        0.15
+      ],
+      "0.020": [
+        0.095,
+        0.12
+      ],
+      "max_rim_height_m": 0.021,
+      "status": "INVALID_FLAT_GROUND_DATUM_QUOTED_FOR_COMPARISON_ONLY"
+    },
+    "low_rim_versus_rebound_conflict": {
+      "statement": "A low rim is required for the ball to clear it, while a deep energy-absorbing entry is required to stop rebound escape. These pull in opposite directions and are NOT resolved here; no basket geometry is designed in this task.",
+      "rigid_wall_rebound_coefficient_used": 0.73,
+      "worst_case_rebound_rise_m": null
+    }
+  },
+  "gazebo_campaign": {
+    "schema_version": 1,
+    "status": "COMPLETE",
+    "frozen_cad_contact_sequence": {
+      "ramp_lip_first_contact_ball_centre_cad_x_m": 0.5298,
+      "first_wheel_contact_ball_centre_cad_x_m": 0.4812,
+      "lip_lead_m": 0.0486,
+      "asserted_by": "tests/test_intake_frame_alignment.py"
+    },
+    "scope": "Gazebo owns ramp wedge/plough dynamics with ground friction, cheek centering, capture half-width, jam/reject modes and 6-DOF multi-contact. Wheel droop, torque and current are NOT measurable here (ideal velocity source) and are not reported.",
+    "model": {
+      "packaging_variant": "compact",
+      "nip_x_base_link_m": 0.37,
+      "ramp": "option_a_handoff_ramp.stl (authoritative oa_ramp_z)",
+      "legacy_carriage": false,
+      "tread_friction_swept": [
+        0.3,
+        0.6,
+        0.9
+      ],
+      "ball_ramp_friction_swept": [
+        0.2,
+        0.4,
+        0.6
+      ]
+    },
+    "stages": {
+      "S1": {
+        "question": "does the ball climb, stall, or get ploughed ahead?",
+        "phase": "Phase 3 (wheels + ramp, no cheeks)",
+        "runs": [
+          {
+            "case": "drive0.35_mu0.3_rampmu0.40",
+            "drive_speed_m_s": 0.35,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.3,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "PLOUGHED_AHEAD",
+            "wheel_contact_samples": {
+              "left": 0,
+              "right": 0
+            },
+            "bilateral_wheel_contact": false,
+            "ramp_contact_samples": 149,
+            "peak_ramp_contact_force_n": 1.3258,
+            "peak_wheel_contact_force_n": 0.0,
+            "minimum_ball_rel_x_m": 0.4101999999999997,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0363,
+            "ball_climb_m": 0.0032999999999999974,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.357600000000001,
+            "advance_saturated_at_net": true,
+            "samples": 650
+          },
+          {
+            "case": "drive0.35_mu0.6_rampmu0.40",
+            "drive_speed_m_s": 0.35,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "PLOUGHED_AHEAD",
+            "wheel_contact_samples": {
+              "left": 0,
+              "right": 0
+            },
+            "bilateral_wheel_contact": false,
+            "ramp_contact_samples": 149,
+            "peak_ramp_contact_force_n": 1.3258,
+            "peak_wheel_contact_force_n": 0.0,
+            "minimum_ball_rel_x_m": 0.41030000000000033,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0364,
+            "ball_climb_m": 0.0034000000000000002,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3577,
+            "advance_saturated_at_net": true,
+            "samples": 607
+          },
+          {
+            "case": "drive0.35_mu0.9_rampmu0.40",
+            "drive_speed_m_s": 0.35,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.9,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "PLOUGHED_AHEAD",
+            "wheel_contact_samples": {
+              "left": 0,
+              "right": 0
+            },
+            "bilateral_wheel_contact": false,
+            "ramp_contact_samples": 149,
+            "peak_ramp_contact_force_n": 1.3258,
+            "peak_wheel_contact_force_n": 0.0,
+            "minimum_ball_rel_x_m": 0.41030000000000033,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0364,
+            "ball_climb_m": 0.0034000000000000002,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.357600000000001,
+            "advance_saturated_at_net": true,
+            "samples": 633
+          },
+          {
+            "case": "drive0.60_mu0.3_rampmu0.40",
+            "drive_speed_m_s": 0.6,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.3,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "PLOUGHED_AHEAD",
+            "wheel_contact_samples": {
+              "left": 0,
+              "right": 0
+            },
+            "bilateral_wheel_contact": false,
+            "ramp_contact_samples": 148,
+            "peak_ramp_contact_force_n": 1.6899,
+            "peak_wheel_contact_force_n": 0.0,
+            "minimum_ball_rel_x_m": 0.3926000000000007,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0439,
+            "ball_climb_m": 0.0109,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.357900000000001,
+            "advance_saturated_at_net": true,
+            "samples": 599
+          },
+          {
+            "case": "drive0.60_mu0.6_rampmu0.40",
+            "drive_speed_m_s": 0.6,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "PLOUGHED_AHEAD",
+            "wheel_contact_samples": {
+              "left": 0,
+              "right": 0
+            },
+            "bilateral_wheel_contact": false,
+            "ramp_contact_samples": 144,
+            "peak_ramp_contact_force_n": 1.6899,
+            "peak_wheel_contact_force_n": 0.0,
+            "minimum_ball_rel_x_m": 0.3927000000000005,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0438,
+            "ball_climb_m": 0.010799999999999997,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.357900000000001,
+            "advance_saturated_at_net": true,
+            "samples": 622
+          },
+          {
+            "case": "drive0.60_mu0.9_rampmu0.40",
+            "drive_speed_m_s": 0.6,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.9,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "PLOUGHED_AHEAD",
+            "wheel_contact_samples": {
+              "left": 0,
+              "right": 0
+            },
+            "bilateral_wheel_contact": false,
+            "ramp_contact_samples": 147,
+            "peak_ramp_contact_force_n": 1.6899,
+            "peak_wheel_contact_force_n": 0.0,
+            "minimum_ball_rel_x_m": 0.3926999999999996,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0438,
+            "ball_climb_m": 0.010799999999999997,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.357900000000001,
+            "advance_saturated_at_net": true,
+            "samples": 651
+          },
+          {
+            "case": "drive0.80_mu0.3_rampmu0.40",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.3,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 17,
+              "right": 131
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 116,
+            "peak_ramp_contact_force_n": 2.0129,
+            "peak_wheel_contact_force_n": 35.9613,
+            "minimum_ball_rel_x_m": 0.3891999999999912,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0455,
+            "ball_climb_m": 0.012499999999999997,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": 0.0455,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.357600000000001,
+            "advance_saturated_at_net": true,
+            "samples": 648
+          },
+          {
+            "case": "drive0.80_mu0.6_rampmu0.20",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.2,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 14,
+              "right": 12
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 99,
+            "peak_ramp_contact_force_n": 4.8519,
+            "peak_wheel_contact_force_n": 60.8578,
+            "minimum_ball_rel_x_m": 0.3892000000000083,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0466,
+            "ball_climb_m": 0.013600000000000001,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": 0.0466,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3588000000000005,
+            "advance_saturated_at_net": true,
+            "samples": 649
+          },
+          {
+            "case": "drive0.80_mu0.6_rampmu0.40",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 14,
+              "right": 12
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 111,
+            "peak_ramp_contact_force_n": 4.8519,
+            "peak_wheel_contact_force_n": 60.8578,
+            "minimum_ball_rel_x_m": 0.3895000000000085,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0466,
+            "ball_climb_m": 0.013600000000000001,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": 0.0466,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.358700000000001,
+            "advance_saturated_at_net": true,
+            "samples": 649
+          },
+          {
+            "case": "drive0.80_mu0.6_rampmu0.60",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.6,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 14,
+              "right": 12
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 111,
+            "peak_ramp_contact_force_n": 4.8519,
+            "peak_wheel_contact_force_n": 60.8578,
+            "minimum_ball_rel_x_m": 0.3911000000000084,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0447,
+            "ball_climb_m": 0.011699999999999995,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3588000000000005,
+            "advance_saturated_at_net": true,
+            "samples": 648
+          },
+          {
+            "case": "drive0.80_mu0.9_rampmu0.40",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.9,
+            "ramp_mu": 0.4,
+            "phase": "ramp",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 11,
+              "right": 11
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 104,
+            "peak_ramp_contact_force_n": 1.7367,
+            "peak_wheel_contact_force_n": 60.8578,
+            "minimum_ball_rel_x_m": 0.3911000000000084,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0447,
+            "ball_climb_m": 0.011699999999999995,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3588000000000005,
+            "advance_saturated_at_net": true,
+            "samples": 649
+          }
+        ],
+        "outcome_counts": {
+          "PLOUGHED_AHEAD": 6,
+          "REJECTED_AT_NIP": 5
+        },
+        "climb_success_rate_percent": 0.0,
+        "capture_rate_percent": 0.0,
+        "maximum_ball_climb_m": 0.013600000000000001,
+        "wheel_engagement_before_stall": true,
+        "BALL_CLIMBS_RAMP_IN_SIM": false
+      },
+      "S2": {
+        "question": "capture half-width",
+        "phase": "Phase 4 (full intake)",
+        "runs": [
+          {
+            "case": "lat0.000_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 14,
+              "right": 12
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 111,
+            "peak_ramp_contact_force_n": 4.8501,
+            "peak_wheel_contact_force_n": 60.8717,
+            "minimum_ball_rel_x_m": 0.391,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0446,
+            "ball_climb_m": 0.0116,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3586,
+            "advance_saturated_at_net": true,
+            "samples": 630
+          },
+          {
+            "case": "lat0.020_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.02,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 20,
+              "right": 26
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 126,
+            "peak_ramp_contact_force_n": 3.8416,
+            "peak_wheel_contact_force_n": 26.8674,
+            "minimum_ball_rel_x_m": 0.3897000000000125,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0452,
+            "ball_climb_m": 0.012199999999999996,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": 0.0452,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3573,
+            "advance_saturated_at_net": true,
+            "samples": 649
+          },
+          {
+            "case": "lat0.040_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.04,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 11,
+              "right": 10
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 3726,
+            "peak_ramp_contact_force_n": 2.2795,
+            "peak_wheel_contact_force_n": 30.508,
+            "minimum_ball_rel_x_m": 0.4110999999985333,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0358,
+            "ball_climb_m": 0.002799999999999997,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3584000000000005,
+            "advance_saturated_at_net": true,
+            "samples": 620
+          },
+          {
+            "case": "lat0.060_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.06,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 78,
+              "right": 14
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 136,
+            "peak_ramp_contact_force_n": 2.1753,
+            "peak_wheel_contact_force_n": 12.7404,
+            "minimum_ball_rel_x_m": 0.39639999999998793,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.042,
+            "ball_climb_m": 0.009000000000000001,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3575,
+            "advance_saturated_at_net": true,
+            "samples": 650
+          },
+          {
+            "case": "lat0.080_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.08,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 121,
+              "right": 5
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 127,
+            "peak_ramp_contact_force_n": 1.9364,
+            "peak_wheel_contact_force_n": 16.5852,
+            "minimum_ball_rel_x_m": 0.4094999999999141,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0366,
+            "ball_climb_m": 0.003599999999999999,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.357600000000001,
+            "advance_saturated_at_net": true,
+            "samples": 638
+          },
+          {
+            "case": "lat0.100_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.1,
+            "outcome": "PLOUGHED_AHEAD",
+            "wheel_contact_samples": {
+              "left": 0,
+              "right": 0
+            },
+            "bilateral_wheel_contact": false,
+            "ramp_contact_samples": 0,
+            "peak_ramp_contact_force_n": 0.0,
+            "peak_wheel_contact_force_n": 0.0,
+            "minimum_ball_rel_x_m": 0.4122999999992837,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0357,
+            "ball_climb_m": 0.002700000000000001,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.357900000000001,
+            "advance_saturated_at_net": true,
+            "samples": 646
+          }
+        ],
+        "outcome_counts": {
+          "REJECTED_AT_NIP": 5,
+          "PLOUGHED_AHEAD": 1
+        },
+        "INTAKE_CAPTURE_HALF_WIDTH_M": null,
+        "gated_by": "S1: no capture on the frozen ramp"
+      },
+      "S3": {
+        "question": "maximum lateral entry velocity",
+        "status": "NOT_RUN",
+        "INTAKE_MAX_LATERAL_ENTRY_VELOCITY_M_S": null,
+        "gated_by": "S2: no capture half-width exists to sweep entry velocity within"
+      },
+      "S4": {
+        "question": "cheek throat adequacy",
+        "cad_throat_ball_centre_half_width_m": 0.047,
+        "measured_capture_half_width_m": null,
+        "CHEEK_THROAT_ADEQUATE": null,
+        "gated_by": "S2: capture half-width is undefined while S1 fails"
+      },
+      "S5": {
+        "question": "wheel-speed sweep on the corrected model",
+        "phase": "Phase 4 (full intake)",
+        "runs": [
+          {
+            "case": "wheel14.5_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 14.5,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 14,
+              "right": 12
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 111,
+            "peak_ramp_contact_force_n": 4.8501,
+            "peak_wheel_contact_force_n": 60.8717,
+            "minimum_ball_rel_x_m": 0.38960000000001266,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0466,
+            "ball_climb_m": 0.013600000000000001,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": 0.0466,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3586,
+            "advance_saturated_at_net": true,
+            "samples": 646
+          },
+          {
+            "case": "wheel19.7_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 19.7,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 11,
+              "right": 10
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 88,
+            "peak_ramp_contact_force_n": 2.0104,
+            "peak_wheel_contact_force_n": 4.19,
+            "minimum_ball_rel_x_m": 0.3898000000000131,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0466,
+            "ball_climb_m": 0.013600000000000001,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": 0.0466,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3586,
+            "advance_saturated_at_net": true,
+            "samples": 650
+          },
+          {
+            "case": "wheel25.0_drive0.80",
+            "drive_speed_m_s": 0.8,
+            "wheel_speed_rad_s": 25.0,
+            "tread_mu": 0.6,
+            "ramp_mu": 0.4,
+            "phase": "full",
+            "packaging_variant": "compact",
+            "lateral_offset_m": 0.0,
+            "outcome": "REJECTED_AT_NIP",
+            "wheel_contact_samples": {
+              "left": 14,
+              "right": 12
+            },
+            "bilateral_wheel_contact": true,
+            "ramp_contact_samples": 111,
+            "peak_ramp_contact_force_n": 4.8501,
+            "peak_wheel_contact_force_n": 60.8717,
+            "minimum_ball_rel_x_m": 0.39149999999999974,
+            "nip_x_base_m": 0.37,
+            "ramp_front_x_base_m": 0.42000000000000004,
+            "reached_nip": false,
+            "reached_ramp_front": true,
+            "maximum_ball_centre_z_m": 0.0441,
+            "ball_climb_m": 0.011099999999999999,
+            "ball_centre_z_at_nip_stations_m": {
+              "NIP_UPPER": null,
+              "NIP_MID": null,
+              "NIP_LOWER": null
+            },
+            "world_forward_advance_m": 6.3586,
+            "advance_saturated_at_net": true,
+            "samples": 649
+          }
+        ],
+        "outcome_counts": {
+          "REJECTED_AT_NIP": 3
+        },
+        "gated_by": "S1: no capture on the frozen ramp"
+      }
+    },
+    "cross_validation": {
+      "compared_case": "centred ball, authoritative ramp, same approach speeds",
+      "tolerance": "qualitative on the capture/plough mechanism at each approach speed. Exit velocity is NOT cross-compared: Gazebo uses rigid contact with kp/kd conditioning and does not own that quantity.",
+      "solver_centred_capture": {
+        "0.35": false,
+        "0.60": false,
+        "0.80": true
+      },
+      "gazebo_centred_capture": {
+        "0.35": false,
+        "0.60": false,
+        "0.80": false
+      },
+      "agree_at_route_speeds": true,
+      "agree_above_threshold": false,
+      "CROSS_INSTRUMENT_AGREEMENT": "AGREE_ON_PLOUGH_AT_ROUTE_SPEEDS",
+      "disagreement": "Above the plough threshold the two instruments differ: the reduced-order solver transports a centred ball at 0.80 m/s, Gazebo reaches the wheel bite and rejects it. The gap is narrow \u2014 both put the ball at the front face of the nip \u2014 and it is REPORTED, NOT TUNED AWAY. Candidate causes, none of which may be adjusted to close it: the two contact laws at the 1.5 mm lip (calibrated ball law vs rigid kp/kd), the solver's 2-contact reduction versus 6-DOF multi-contact, and the absence of tyre compliance in the Gazebo wheel. Settling it needs the physical ramp-lip test, not a model change."
+    },
+    "plots": [
+      "docs/images/intake-gazebo-s1-ball-reach-vs-approach-speed.png"
+    ],
+    "markdown": "**S1 \u2014 ramp dynamics (Phase 3: wheels + ramp, no cheeks), centred ball.**\nThe nip mid-plane sits at base_link x = 370 mm and the ramp\nfront lip at 420 mm. `minimum ball x` is how far the ball\never got toward the nip; `advance` is how far it was pushed forward in the world.\n\n`REJECTED_AT_NIP` means the ball reached the wheel bite and was spat out again.\n`Advance` saturates at the court net (world x=0), so it is a floor, not the\ndistance the ball would have travelled on an open court.\n\n| Drive (m/s) | tread mu | ramp mu | Outcome | Climb (mm) | Min ball x (mm) | Advance (mm) |\n| --- | --- | --- | --- | --- | --- | --- |\n| 0.35 | 0.3 | 0.40 | PLOUGHED_AHEAD | 3.3 | 410 | 6358 |\n| 0.35 | 0.6 | 0.40 | PLOUGHED_AHEAD | 3.4 | 410 | 6358 |\n| 0.35 | 0.9 | 0.40 | PLOUGHED_AHEAD | 3.4 | 410 | 6358 |\n| 0.60 | 0.3 | 0.40 | PLOUGHED_AHEAD | 10.9 | 393 | 6358 |\n| 0.60 | 0.6 | 0.40 | PLOUGHED_AHEAD | 10.8 | 393 | 6358 |\n| 0.60 | 0.9 | 0.40 | PLOUGHED_AHEAD | 10.8 | 393 | 6358 |\n| 0.80 | 0.3 | 0.40 | REJECTED_AT_NIP | 12.5 | 389 | 6358 |\n| 0.80 | 0.6 | 0.20 | REJECTED_AT_NIP | 13.6 | 389 | 6359 |\n| 0.80 | 0.6 | 0.40 | REJECTED_AT_NIP | 13.6 | 390 | 6359 |\n| 0.80 | 0.6 | 0.60 | REJECTED_AT_NIP | 11.7 | 391 | 6359 |\n| 0.80 | 0.9 | 0.40 | REJECTED_AT_NIP | 11.7 | 391 | 6359 |\n\nClimb success (ball reached the nip): 0% of\n11 runs. Capture: 0%.\nMaximum ball climb observed: 13.6 mm.\nAt least one run reached bilateral wheel contact:\ntrue \u2014 that is a REJECT at the nip\nface, not a capture: no run transported the ball past the nip.\n\n**S2 \u2014 capture half-width (Phase 4, full intake).**\n\n| Lateral offset (mm) | Outcome | Min ball x (mm) | Climb (mm) |\n| --- | --- | --- | --- |\n| 0 | REJECTED_AT_NIP | 391 | 11.6 |\n| 20 | REJECTED_AT_NIP | 390 | 12.2 |\n| 40 | REJECTED_AT_NIP | 411 | 2.8 |\n| 60 | REJECTED_AT_NIP | 396 | 9.0 |\n| 80 | REJECTED_AT_NIP | 409 | 3.6 |\n| 100 | PLOUGHED_AHEAD | 412 | 2.7 |\n\n`INTAKE_CAPTURE_HALF_WIDTH_M = null`\n(gated: S1: no capture on the frozen ramp)\n\n**S3 \u2014 lateral entry velocity.** `NOT_RUN`, gated by S2:\nS2: no capture half-width exists to sweep entry velocity within.\n\n**S4 \u2014 cheek throat adequacy.** The CAD throat admits a ball centre to\n\u00b147 mm. There is no measured capture\nhalf-width to compare it against while S1 fails, so `CHEEK_THROAT_ADEQUATE`\nstays undetermined. No cheek geometry was changed.\n\n**S5 \u2014 wheel-speed sweep (Phase 4, centred).**\n\n| Wheel speed (rad/s) | Outcome | Min ball x (mm) | Climb (mm) |\n| --- | --- | --- | --- |\n| 14.5 | REJECTED_AT_NIP | 390 | 13.6 |\n| 19.7 | REJECTED_AT_NIP | 390 | 13.6 |\n| 25.0 | REJECTED_AT_NIP | 391 | 11.1 |\n\n**Cross-validation gate.** qualitative on the capture/plough mechanism at each approach speed. Exit velocity is NOT cross-compared: Gazebo uses rigid contact with kp/kd conditioning and does not own that quantity.\nSolver centred capture by approach speed: {\"0.35\": false, \"0.60\": false, \"0.80\": true}.\nGazebo centred capture by approach speed: {\"0.35\": false, \"0.60\": false, \"0.80\": false}.\n`CROSS_INSTRUMENT_AGREEMENT = AGREE_ON_PLOUGH_AT_ROUTE_SPEEDS`.\nAbove the plough threshold the two instruments differ: the reduced-order solver transports a centred ball at 0.80 m/s, Gazebo reaches the wheel bite and rejects it. The gap is narrow \u2014 both put the ball at the front face of the nip \u2014 and it is REPORTED, NOT TUNED AWAY. Candidate causes, none of which may be adjusted to close it: the two contact laws at the 1.5 mm lip (calibrated ball law vs rigid kp/kd), the solver's 2-contact reduction versus 6-DOF multi-contact, and the absence of tyre compliance in the Gazebo wheel. Settling it needs the physical ramp-lip test, not a model change.\n\n![intake-gazebo-s1-ball-reach-vs-approach-speed](../images/intake-gazebo-s1-ball-reach-vs-approach-speed.png)"
+  },
+  "classifications": {
+    "SIM_INTAKE_MATCHES_FROZEN_CAD": true,
+    "LEGACY_CARRIAGE_REMOVED": true,
+    "UNPHYSICAL_FRICTION_REMOVED": true,
+    "FRAME_MAPPING_ASSERTED": true,
+    "GROUND_PROFILE_IS_AUTHORITATIVE_RAMP": true,
+    "CROSS_INSTRUMENT_AGREEMENT": "AGREE_ON_PLOUGH_AT_ROUTE_SPEEDS",
+    "BALL_CLIMBS_RAMP_IN_SOLVER": true,
+    "INTAKE_CAPTURES_CENTRED_BALL_AT_ROUTE_NOMINAL_APPROACH": false,
+    "INTAKE_CAPTURES_CENTRED_BALL_AT_ROUTE_MAX_APPROACH": false,
+    "INTAKE_CAPTURES_OFFSET_ENTRIES_AT_ROUTE_NOMINAL_APPROACH": false,
+    "MINIMUM_CENTRED_CAPTURE_APPROACH_SPEED_M_S": 0.775,
+    "CENTRED_BALL_PLOUGHED_AHEAD_AT_ROUTE_SPEEDS": true,
+    "EXIT_ENVELOPE_CONDITIONAL_ON_APPROACH_SPEED_M_S": 0.8,
+    "BALL_CLIMBS_RAMP_IN_SIM": false,
+    "INTAKE_CAPTURE_HALF_WIDTH_M": "UNMEASURED_S2_GATED: S1: no capture on the frozen ramp",
+    "SOLVER_BOUNDED_LATERAL_OFFSET_LIMIT_M": 0.02,
+    "INTAKE_MAX_LATERAL_ENTRY_VELOCITY_M_S": "UNMEASURED_S3_GATED: S2: no capture half-width exists to sweep entry velocity within",
+    "CHEEK_THROAT_ADEQUATE": "UNMEASURED_S4_GATED: S2: capture half-width is undefined while S1 fails",
+    "MAX_BASKET_RIM_HEIGHT_ON_BASE_M": 0.029,
+    "MAX_BASKET_RIM_HEIGHT_ON_BASE_ALL_ENTRIES_M": 0.005,
+    "ABOVE_BASE_BASKET_RECEIVING_POSITION_FEASIBLE": false,
+    "BASE_CUTOUT_REQUIRED_FOR_BASKET_HANDOFF": "unresolved",
+    "BASE_CUTOUT_DECISION_PHYSICALLY_UNRESOLVED": true,
+    "INTAKE_STATIC_CAPTURE_VALIDATED_IN_SIM": false,
+    "INTAKE_DYNAMIC_CAPTURE_VALIDATED_IN_SIM": true,
+    "INTAKE_EXIT_STATE_VALIDATED_IN_SIM": true,
+    "INTAKE_HANDOFF_ENVELOPE_GENERATED": true,
+    "INTAKE_RELIABLE_HANDOFF_ENVELOPE_DEFINED": false,
+    "INTAKE_TYRE_COMPLIANCE_PHYSICALLY_VALIDATED": false,
+    "INTAKE_TREAD_FRICTION_PHYSICALLY_VALIDATED": false,
+    "BALL_RAMP_FRICTION_PHYSICALLY_VALIDATED": false,
+    "PHYSICAL_HARDWARE_PENDING": true,
+    "DETERMINISTIC_SIMULATION_REPEATABILITY_ONLY": true,
+    "FULL_HANDOFF_TRAJECTORY_PHYSICS_VALIDATED": false
+  },
+  "plots": [
+    "docs/images/standalone-intake-handoff-01-ball-speed-time.png",
+    "docs/images/standalone-intake-handoff-04-ball-compression-time.png",
+    "docs/images/standalone-intake-handoff-02-wheel-speed-time.png",
+    "docs/images/standalone-intake-handoff-03-tyre-deflection-time.png",
+    "docs/images/standalone-intake-handoff-05-contact-force-time.png",
+    "docs/images/standalone-intake-handoff-06-exit-speed-wheel-speed.png",
+    "docs/images/standalone-intake-handoff-07-exit-elevation-wheel-speed.png",
+    "docs/images/standalone-intake-handoff-08-xz-trajectories.png",
+    "docs/images/standalone-intake-handoff-09-reachable-envelope.png",
+    "docs/images/standalone-intake-handoff-10-receiving-height-map.png",
+    "docs/images/standalone-intake-handoff-11-friction-sensitivity.png",
+    "docs/images/standalone-intake-handoff-12-tyre-sensitivity.png",
+    "docs/images/standalone-intake-handoff-13-ball-height-flat-vs-ramp.png",
+    "docs/images/standalone-intake-handoff-14-exit-state-flat-vs-ramp.png",
+    "docs/images/standalone-intake-handoff-15-rim-clearance-window.png",
+    "docs/images/standalone-intake-handoff-16-capture-vs-lateral-offset.png",
+    "docs/images/standalone-intake-handoff-17-capture-vs-approach-speed.png"
+  ],
+  "telemetry": {
+    "trial_summary_csv": "docs/mechanism/standalone-intake-handoff-trials.csv",
+    "representative_time_series_csv": "docs/mechanism/standalone-intake-handoff-telemetry.csv"
+  },
+  "stop_reasons": [
+    "STOP CONDITION (task section 14): on the authoritative ramp the ball is PLOUGHED AHEAD and never reaches the nip at the collection route's commanded speeds (0.35 m/s nominal, 0.60 m/s maximum). Capture first appears at 0.675 m/s and is bound-wide from 0.775 m/s.",
+    "nonzero lateral entries are not reliable across the full bounded friction, ramp-friction and tyre-compliance matrix",
+    "tyre compliance, felt/tread friction and ball-to-ramp friction remain physically unmeasured",
+    "STOP CONDITION (task section 14): the Gazebo campaign captured no ball at any tested approach speed, tread friction or lateral offset. S2-S5 therefore have nothing to measure and stay gated: capture half-width, maximum lateral entry velocity and cheek throat adequacy are UNANSWERED.",
+    "STOP CONDITION (task section 14): the two instruments disagree above the plough threshold \u2014 the solver transports a centred ball at the envelope approach speed and Gazebo rejects it at the nip. Neither model was tuned to close the gap."
+  ]
+}

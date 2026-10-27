@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "frozen_before_first_p259_launch_run": true,
+  "scope": "P2-59 5d-1 one-ball reverse-direction launch in the frozen P2-40/P2-51 isolated bench",
+  "immutable_setup": {
+    "wheel_diameter_m": 0.2,
+    "wheel_width_m": 0.06,
+    "wheel_centre_y_m": [-0.129, 0.129],
+    "nip_m": 0.058,
+    "pivot_base_x_m": 0.387,
+    "basket_feed_port_base_m": [0.278, 0.0, 0.042],
+    "ball_model": "gazebo/models/tennis_ball_compliant/model.sdf",
+    "contact_calibration": "unchanged P2-51/5c-3 analytical normal and tangential model"
+  },
+  "matrix": {
+    "launch_angle_deg": [15, 20],
+    "tread_mu": [0.6, 0.9],
+    "surface_speed_m_s": [12, 16, 20, 24],
+    "repeats": 3,
+    "vehicle_stationary": true,
+    "wheel_direction": "reverse of collection",
+    "feed_entry_speed_m_s": 0.6
+  },
+  "per_run_checks": {
+    "ball_injected_only_after_wheels_settled": true,
+    "bilateral_wheel_contact_required": true,
+    "forward_exit_plane_launcher_x_m": 0.14,
+    "minimum_forward_launcher_velocity_m_s": 0.1,
+    "maximum_motor_current_a_each": 20.0,
+    "maximum_motor_torque_nm_each": 0.62,
+    "maximum_vehicle_translation_m": 0.02,
+    "maximum_vehicle_yaw_deg": 1.0,
+    "forbidden_ball_contacts": ["intake_cheek", "fixture_arch", "lidar", "camera", "beam", "sensor"],
+    "finite_state_required": true
+  },
+  "record_policy": "record every failed run and every cell whose mean exit speed is closest below and above 12 and 14 m/s",
+  "classification_note": "The campaign maps capability; 12-14 m/s is a selection band, not a requirement at every commanded surface speed."
+}

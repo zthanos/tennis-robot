@@ -1,0 +1,62 @@
+{
+  "status": "FROZEN_BEFORE_P2_57_GEOMETRIC_PREVENTION_MATRIX",
+  "written_before_run": true,
+  "stage": "P2-57 replaceable printed cheeks and wheel-face shields",
+  "purpose": "Prevent side-by-side wedging without changing the frozen P2-40 core or P2-51 ski and basket.",
+  "frozen_setup": {
+    "geometry": "P2-40 pivot, wheels, nip and rails; P2-51 R75/42-degree ski and basket",
+    "wheel_surface_speed_m_s": 6.0,
+    "tread_mu": [0.6, 0.9],
+    "ramp_mu": 0.15,
+    "approach_speed_m_s": 0.6,
+    "ground_mu": 0.7,
+    "launcher_tilt_deg": -3.0,
+    "ball_model": "gazebo/models/tennis_ball_compliant/model.sdf; unchanged P2-51/5c-3 calibration"
+  },
+  "replaceable_front_parts": {
+    "material_model": "rigid printed part with smooth 0.05 friction contact surface",
+    "variants": [
+      "p257_shield_m90",
+      "p257_shield_m100",
+      "p257_shield_m110",
+      "p257_stagger_open",
+      "p257_stagger_shield"
+    ],
+    "shield_inner_edge_y_mm": 46,
+    "shield_outer_edge_y_mm": 190,
+    "shield_front_x_mm": 130,
+    "stagger_lead_mm": 70,
+    "stagger_mouth_mm": 140,
+    "stagger_side": "+Y"
+  },
+  "matrix": {
+    "side_by_side_half_separations_mm": [35, 50, 100],
+    "sequential_clear_gaps_mm": [0, 50, 150, 300],
+    "single_lateral_offsets_mm": [0, -20, 20, -40, 40, -60, 60, -80, 80, -100, 100],
+    "runs_per_variant": 36,
+    "total_runs": 180,
+    "repeats_per_condition": 1,
+    "headless": true,
+    "record_all": true
+  },
+  "criteria": [
+    {"name": "zero_side_by_side_jams", "hard_fail": true, "rule": "no sustained two-ball throat lock in any of the six side-by-side runs per variant"},
+    {"name": "series_regression_8_of_8", "hard_fail": true, "rule": "both balls retained in all four sequential gaps at both tread friction values"},
+    {"name": "rejected_ball_forward_push", "hard_fail": true, "limit_m": 0.3, "rule": "every non-captured ball remains free on the court and its maximum +X displacement from its initial world position is no more than 0.30 m"},
+    {"name": "capture_half_width", "hard_fail": true, "minimum_mm": 40, "rule": "symmetric single-ball capture and retention succeeds through Y=+/-40 mm at both tread friction values"},
+    {"name": "d5065_contact_current", "hard_fail": true, "limit_a": 20.0, "rule": "absolute modeled current no more than 20 A per motor"},
+    {"name": "d5065_contact_torque", "hard_fail": true, "limit_nm": 0.62, "rule": "absolute modeled torque no more than 0.62 N m per motor"},
+    {"name": "forbidden_contact", "hard_fail": true, "rule": "no ball or moving launcher contact with chassis, arch, camera or LiDAR"},
+    {"name": "finite_state", "hard_fail": true, "rule": "no NaN or Inf in observer or motor telemetry"}
+  ],
+  "cad_gate": {
+    "angle_sweep_deg": [-10, 20, 1],
+    "zero_intersection_required": true,
+    "positive_ground_clearance_required": true
+  },
+  "limitations": [
+    "deterministic Gazebo comparison, not a tolerance or wear study",
+    "printed-part compliance and surface finish are not represented",
+    "no STL or production release claim"
+  ]
+}

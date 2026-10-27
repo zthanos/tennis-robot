@@ -1,0 +1,25 @@
+{
+  "phase": "P2-61",
+  "frozen_before_first_run": true,
+  "platen": {
+    "preload_n": 15.57,
+    "test_load_n": 95.64,
+    "speed_m_s": 0.003333,
+    "expected_historical_deformation_mm": 13.0,
+    "expected_corrected_deformation_mm": 6.5,
+    "corrected_tolerance_mm": 0.15
+  },
+  "rebound": {
+    "drop_height_ball_bottom_m": 2.54,
+    "target_m": 1.41,
+    "acceptance_m": [1.35, 1.47],
+    "timesteps_s": [0.001, 0.0005, 0.00025],
+    "maximum_relative_spread": 0.005
+  },
+  "contact": {
+    "loading_stiffness": 107309.29404174259,
+    "loading_exponent": 1.5,
+    "unloading_exponent": 1.9866353710127362,
+    "diametral_compression_scale_corrected": 2.0
+  }
+}

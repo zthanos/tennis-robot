@@ -1,0 +1,333 @@
+{
+  "status": "CAD_MEASURED_ELASTIC_FRAME_VALIDATION_PENDING",
+  "parts": [
+    {
+      "part": "motor_left",
+      "quantity": 1,
+      "triangle_count": 3762,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        100.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        200.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 144.46497628133426,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "motor_right",
+      "quantity": 1,
+      "triangle_count": 3762,
+      "bounds_min_mm": [
+        -100.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        100.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        200.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 144.46497628133426,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "front_motor_gamma_left",
+      "quantity": 1,
+      "triangle_count": 5480,
+      "bounds_min_mm": [
+        0.0,
+        -60.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        255.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        255.0,
+        85.0,
+        30.0
+      ],
+      "solid_volume_cm3": 206.81551030331428,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "front_motor_gamma_right",
+      "quantity": 1,
+      "triangle_count": 5460,
+      "bounds_min_mm": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        255.0,
+        60.0,
+        30.0
+      ],
+      "envelope_mm": [
+        255.0,
+        85.0,
+        30.0
+      ],
+      "solid_volume_cm3": 206.81551030331536,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rail_extension_left",
+      "quantity": 1,
+      "triangle_count": 816,
+      "bounds_min_mm": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        165.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        165.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 77.60571780233741,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "rail_extension_right",
+      "quantity": 1,
+      "triangle_count": 816,
+      "bounds_min_mm": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        165.0,
+        25.0,
+        30.0
+      ],
+      "envelope_mm": [
+        165.0,
+        50.0,
+        30.0
+      ],
+      "solid_volume_cm3": 77.60571780233741,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "corner_left",
+      "quantity": 1,
+      "triangle_count": 38,
+      "bounds_min_mm": [
+        -21.5,
+        -60.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        23.0
+      ],
+      "envelope_mm": [
+        81.5,
+        81.5,
+        23.0
+      ],
+      "solid_volume_cm3": 118.68,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "corner_right",
+      "quantity": 1,
+      "triangle_count": 38,
+      "bounds_min_mm": [
+        -21.5,
+        -21.5,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        60.0,
+        23.0
+      ],
+      "envelope_mm": [
+        81.5,
+        81.5,
+        23.0
+      ],
+      "solid_volume_cm3": 118.68,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "crossbar_half",
+      "quantity": 2,
+      "triangle_count": 1600,
+      "bounds_min_mm": [
+        -25.0,
+        -110.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        110.0,
+        30.0
+      ],
+      "envelope_mm": [
+        50.0,
+        220.0,
+        30.0
+      ],
+      "solid_volume_cm3": 103.39703560467498,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "straight_sleeve",
+      "quantity": 5,
+      "triangle_count": 1968,
+      "bounds_min_mm": [
+        -60.0,
+        -21.5,
+        0.0
+      ],
+      "bounds_max_mm": [
+        60.0,
+        21.5,
+        23.0
+      ],
+      "envelope_mm": [
+        120.0,
+        43.0,
+        23.0
+      ],
+      "solid_volume_cm3": 53.35332511623618,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "ramp_back_half",
+      "quantity": 2,
+      "triangle_count": 424,
+      "bounds_min_mm": [
+        -12.5,
+        -80.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        12.5,
+        80.0,
+        20.0
+      ],
+      "envelope_mm": [
+        25.0,
+        160.0,
+        20.0
+      ],
+      "solid_volume_cm3": 39.46845890116866,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "ramp_back_sleeve",
+      "quantity": 3,
+      "triangle_count": 1036,
+      "bounds_min_mm": [
+        -9.0,
+        -30.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        9.0,
+        30.0,
+        13.0
+      ],
+      "envelope_mm": [
+        18.0,
+        60.0,
+        13.0
+      ],
+      "solid_volume_cm3": 8.692478396480771,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "electronics_tray_left",
+      "quantity": 1,
+      "triangle_count": 86,
+      "bounds_min_mm": [
+        -25.0,
+        0.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        245.0,
+        190.0
+      ],
+      "envelope_mm": [
+        50.0,
+        245.0,
+        190.0
+      ],
+      "solid_volume_cm3": 159.42537142857142,
+      "nonmanifold_edge_count": 0
+    },
+    {
+      "part": "electronics_tray_right",
+      "quantity": 1,
+      "triangle_count": 86,
+      "bounds_min_mm": [
+        -25.0,
+        -245.0,
+        0.0
+      ],
+      "bounds_max_mm": [
+        25.0,
+        0.0,
+        190.0
+      ],
+      "envelope_mm": [
+        50.0,
+        245.0,
+        190.0
+      ],
+      "solid_volume_cm3": 159.42537142857142,
+      "nonmanifold_edge_count": 0
+    }
+  ],
+  "total_solid_volume_cm3": 1992.5582014134263,
+  "pla_solid_mass_g": 2470.7721697526486,
+  "previous_middle_t_pla_solid_mass_g": 2847.0284372867636,
+  "geometry": {
+    "brace_width_mm": 25,
+    "brace_height_mm": 20,
+    "brace_x_mm": 306.9,
+    "ramp_rear_face_x_mm": 319.65,
+    "glue_gap_mm": 0.25,
+    "brace_top_z_mm": 42,
+    "motor_nut_channel_bottom_z_mm": 44.3,
+    "brace_half_length_mm": 160,
+    "sleeve_length_mm": 60
+  },
+  "limitations": [
+    "CAD density estimate, not slicer mass or a measured print",
+    "New 18x13 mm sleeve and M3 nut pockets need a physical coupon",
+    "Ramp glue pads contact rear sidewalls; adhesive strength is unverified",
+    "Relocation does not remove the closed physics loop or validate elastic stiffness"
+  ]
+}

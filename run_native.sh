@@ -17,6 +17,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 export GAZEBO_HEADLESS="${GAZEBO_HEADLESS:-false}"
+# Packaging variant. `compact` is the ONLY variant that carries the frozen CAD
+# intake (curved cheeks, Option A handoff ramp, plywood bridge) AND the
+# side-by-side flywheel launcher, so it is the default: it is the machine we
+# actually want to watch. Both generate_robot_urdf.py and sim.launch.py default
+# ROBOT_ENABLE_FLYWHEEL to true for `compact`, so the launcher comes up with it
+# — do not set ROBOT_ENABLE_FLYWHEEL here, let the variant drive it.
+# run_pi.sh MUST use the same variant: the Pi's robot_state_publisher would
+# otherwise broadcast a different TF tree than the PC simulates.
+export ROBOT_PACKAGING_VARIANT="${ROBOT_PACKAGING_VARIANT:-compact}"
 export SLAM_MODE="${SLAM_MODE:-localization}"
 export WORKSPACE="$SCRIPT_DIR"
 # Nodes default their runtime-file paths under $TENNIS_ROBOT_ROOT (the old

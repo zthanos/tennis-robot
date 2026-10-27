@@ -1,0 +1,430 @@
+{
+  "phase": "P2-71",
+  "method": "geometry_only_from_retained_P2-69_R75_75_30_traces",
+  "new_gazebo_runs": 0,
+  "current_native_contact_audit": {
+    "cases": 30,
+    "front_wall_contact_cases": 0,
+    "feed_door_contact_cases": 0,
+    "rear_backboard_contact_cases": 30,
+    "rear_backboard_samples": 14812,
+    "backboard_point_z_mm": {
+      "min": 90.0038,
+      "max": 90.4945
+    },
+    "backboard_ball_center_z_mm": {
+      "min": 79.17349999999999,
+      "max": 79.6334
+    },
+    "backboard_begins_after_floor_cases": 30
+  },
+  "geometry": {
+    "front_grid": {
+      "name": "front_grid_and_closed_door",
+      "x_mm": 225.0,
+      "thickness_mm": 4.0,
+      "half_y_mm": 172.0,
+      "bottom_z_mm": 46.1,
+      "top_z_mm": 235.0
+    },
+    "front_grid_max_opening_mm": 40.0,
+    "solid_fail_closed_door_mm": [
+      84.0,
+      84.0
+    ],
+    "rear_grid": {
+      "name": "rear_upright_grid",
+      "x_mm": -118.0,
+      "thickness_mm": 4.0,
+      "half_y_mm": 140.0,
+      "bottom_z_mm": 72.54545454545455,
+      "top_z_mm": 320.0
+    },
+    "rear_pod_front_x_mm": -125.0,
+    "rear_grid_rear_face_x_mm": -120.0,
+    "rear_pod_clearance_mm": 5.0,
+    "floor_extension_mm": [
+      [
+        -118.0,
+        72.54545454545455
+      ],
+      [
+        -85.0,
+        70.0
+      ]
+    ]
+  },
+  "flight_clearance": {
+    "front_grid_and_closed_door": {
+      "minimum_ball_surface_clearance_mm": 25.004507644000654,
+      "case_path": "engineering/chassis-strength-bench/results/shared_flywheel_phase2/gazebo_p269/matrix/a_75/r_75/v_5/tm_0p6/y_m50/e_0p3",
+      "state": {
+        "time_s": 2.653927419354839,
+        "ball_center_xyz_mm": [
+          281.3129096774193,
+          5.946010387096774,
+          255.3624838709677
+        ]
+      },
+      "passes_10mm": true
+    },
+    "rear_upright_grid": {
+      "minimum_ball_surface_clearance_mm": 106.9486,
+      "case_path": "engineering/chassis-strength-bench/results/shared_flywheel_phase2/gazebo_p269/matrix/a_75/r_75/v_8/tm_0p9/y_0/e_0p3",
+      "state": {
+        "time_s": 2.84525,
+        "ball_center_xyz_mm": [
+          23.9486,
+          -0.0115799,
+          84.5313
+        ]
+      },
+      "passes_10mm": true
+    }
+  },
+  "basket_capacity": {
+    "plan_area_mm2": 111400.0,
+    "storage_x_extent_mm": [
+      -118.0,
+      225.0
+    ],
+    "gross_volume_to_front_rim_z235_l": 19.632124848484846,
+    "usable_volume_to_front_rim_after_existing_1p7l_reserve_l": 17.932124848484847,
+    "gross_volume_to_side_rear_rim_z320_l": 29.101124848484847,
+    "usable_volume_to_side_rear_rim_after_existing_1p7l_reserve_l": 27.401124848484848,
+    "packing_fraction": 0.56,
+    "pile": {
+      "40": {
+        "solid_ball_volume_l": 6.0213021435763405,
+        "mean_bulk_height_mm": 96.51997537151097,
+        "P251_comparable_conservative_static_top_z_mm": 235.0654299169655,
+        "volume_conserving_static_plane": {
+          "surface_intercept_mm": 155.2364232037769,
+          "one_ball_allowance_mm": 66.0,
+          "top_z_at_rear_wall_mm": 221.2364232037769,
+          "top_z_at_front_wall_x225_mm": 221.2364232037769,
+          "maximum_top_z_mm": 221.2364232037769
+        },
+        "forward_braking_0p2g_plane": {
+          "surface_intercept_mm": 143.11988883882555,
+          "one_ball_allowance_mm": 66.0,
+          "top_z_at_rear_wall_mm": 185.51988883882555,
+          "top_z_at_front_wall_x225_mm": 254.11988883882555,
+          "maximum_top_z_mm": 254.11988883882555
+        },
+        "opposite_acceleration_0p2g_plane": {
+          "surface_intercept_mm": 167.35295756872807,
+          "one_ball_allowance_mm": 66.0,
+          "top_z_at_rear_wall_mm": 256.95295756872804,
+          "top_z_at_front_wall_x225_mm": 188.35295756872807,
+          "maximum_top_z_mm": 256.95295756872804
+        },
+        "front_wall_margin_static_mm": 13.763576796223106,
+        "front_wall_margin_forward_braking_0p2g_mm": -19.119888838825545,
+        "rear_wall_margin_opposite_acceleration_0p2g_mm": 63.04704243127196
+      },
+      "45": {
+        "solid_ball_volume_l": 6.773964911523382,
+        "mean_bulk_height_mm": 108.58497229294981,
+        "P251_comparable_conservative_static_top_z_mm": 247.13042683840436,
+        "volume_conserving_static_plane": {
+          "surface_intercept_mm": 167.29466577749037,
+          "one_ball_allowance_mm": 66.0,
+          "top_z_at_rear_wall_mm": 233.29466577749037,
+          "top_z_at_front_wall_x225_mm": 233.29466577749037,
+          "maximum_top_z_mm": 233.29466577749037
+        },
+        "forward_braking_0p2g_plane": {
+          "surface_intercept_mm": 155.17813141253913,
+          "one_ball_allowance_mm": 66.0,
+          "top_z_at_rear_wall_mm": 197.57813141253914,
+          "top_z_at_front_wall_x225_mm": 266.17813141253913,
+          "maximum_top_z_mm": 266.17813141253913
+        },
+        "opposite_acceleration_0p2g_plane": {
+          "surface_intercept_mm": 179.41120014244166,
+          "one_ball_allowance_mm": 66.0,
+          "top_z_at_rear_wall_mm": 269.0112001424417,
+          "top_z_at_front_wall_x225_mm": 200.41120014244166,
+          "maximum_top_z_mm": 269.0112001424417
+        },
+        "front_wall_margin_static_mm": 1.7053342225096344,
+        "front_wall_margin_forward_braking_0p2g_mm": -31.17813141253913,
+        "rear_wall_margin_opposite_acceleration_0p2g_mm": 50.98879985755832
+      }
+    },
+    "warning": "0.2g plane is a geometry screen, not a calibrated granular-ball dynamics claim"
+  },
+  "rows": [
+    {
+      "case": "v_5/tm_0p6/y_0/e_0p3",
+      "takeoff_s": 2.57025,
+      "first_floor_s": 2.88025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 25.35306431610727,
+        "rear_upright_grid": 171.9971
+      }
+    },
+    {
+      "case": "v_5/tm_0p6/y_100/e_0p3",
+      "takeoff_s": 2.81025,
+      "first_floor_s": 3.12025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 25.238607072508017,
+        "rear_upright_grid": 172.9539
+      }
+    },
+    {
+      "case": "v_5/tm_0p6/y_50/e_0p3",
+      "takeoff_s": 2.60025,
+      "first_floor_s": 2.91525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 25.007433545752292,
+        "rear_upright_grid": 170.72230000000002
+      }
+    },
+    {
+      "case": "v_5/tm_0p6/y_m100/e_0p3",
+      "takeoff_s": 2.81025,
+      "first_floor_s": 3.12025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 25.15219050761302,
+        "rear_upright_grid": 173.8945
+      }
+    },
+    {
+      "case": "v_5/tm_0p6/y_m50/e_0p3",
+      "takeoff_s": 2.60025,
+      "first_floor_s": 2.91525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 25.004507644000654,
+        "rear_upright_grid": 170.6913
+      }
+    },
+    {
+      "case": "v_5/tm_0p9/y_0/e_0p3",
+      "takeoff_s": 2.57025,
+      "first_floor_s": 2.87025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.286019738790223,
+        "rear_upright_grid": 160.04680000000002
+      }
+    },
+    {
+      "case": "v_5/tm_0p9/y_100/e_0p3",
+      "takeoff_s": 2.79025,
+      "first_floor_s": 3.09025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.263033323022903,
+        "rear_upright_grid": 160.5362
+      }
+    },
+    {
+      "case": "v_5/tm_0p9/y_50/e_0p3",
+      "takeoff_s": 2.56025,
+      "first_floor_s": 2.86525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 25.806145325204973,
+        "rear_upright_grid": 166.6438
+      }
+    },
+    {
+      "case": "v_5/tm_0p9/y_m100/e_0p3",
+      "takeoff_s": 2.79025,
+      "first_floor_s": 3.09025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.28088806756437,
+        "rear_upright_grid": 160.2077
+      }
+    },
+    {
+      "case": "v_5/tm_0p9/y_m50/e_0p3",
+      "takeoff_s": 2.56025,
+      "first_floor_s": 2.86525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 25.806742644431772,
+        "rear_upright_grid": 166.6531
+      }
+    },
+    {
+      "case": "v_6/tm_0p6/y_0/e_0p3",
+      "takeoff_s": 2.56525,
+      "first_floor_s": 2.86525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.45487793565399,
+        "rear_upright_grid": 160.3315
+      }
+    },
+    {
+      "case": "v_6/tm_0p6/y_100/e_0p3",
+      "takeoff_s": 2.80525,
+      "first_floor_s": 3.10525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.469737150025992,
+        "rear_upright_grid": 158.4624
+      }
+    },
+    {
+      "case": "v_6/tm_0p6/y_50/e_0p3",
+      "takeoff_s": 2.59525,
+      "first_floor_s": 2.89525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.44601364471079,
+        "rear_upright_grid": 159.7443
+      }
+    },
+    {
+      "case": "v_6/tm_0p6/y_m100/e_0p3",
+      "takeoff_s": 2.80525,
+      "first_floor_s": 3.10525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.463435885275018,
+        "rear_upright_grid": 158.44819999999999
+      }
+    },
+    {
+      "case": "v_6/tm_0p6/y_m50/e_0p3",
+      "takeoff_s": 2.59525,
+      "first_floor_s": 2.89525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.402523339440137,
+        "rear_upright_grid": 159.81060000000002
+      }
+    },
+    {
+      "case": "v_6/tm_0p9/y_0/e_0p3",
+      "takeoff_s": 2.56525,
+      "first_floor_s": 2.86025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.934355432923482,
+        "rear_upright_grid": 147.7534
+      }
+    },
+    {
+      "case": "v_6/tm_0p9/y_100/e_0p3",
+      "takeoff_s": 2.78525,
+      "first_floor_s": 3.08025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.748439819800524,
+        "rear_upright_grid": 153.911
+      }
+    },
+    {
+      "case": "v_6/tm_0p9/y_50/e_0p3",
+      "takeoff_s": 2.55525,
+      "first_floor_s": 2.85525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.495984763509924,
+        "rear_upright_grid": 153.4897
+      }
+    },
+    {
+      "case": "v_6/tm_0p9/y_m100/e_0p3",
+      "takeoff_s": 2.78525,
+      "first_floor_s": 3.08025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.758912105200523,
+        "rear_upright_grid": 153.83190000000002
+      }
+    },
+    {
+      "case": "v_6/tm_0p9/y_m50/e_0p3",
+      "takeoff_s": 2.55525,
+      "first_floor_s": 2.85525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 26.4901885683457,
+        "rear_upright_grid": 153.4251
+      }
+    },
+    {
+      "case": "v_8/tm_0p6/y_0/e_0p3",
+      "takeoff_s": 2.56025,
+      "first_floor_s": 2.85025,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 27.877800771819082,
+        "rear_upright_grid": 112.0353
+      }
+    },
+    {
+      "case": "v_8/tm_0p6/y_100/e_0p3",
+      "takeoff_s": 2.80025,
+      "first_floor_s": 3.08525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 27.947142302776513,
+        "rear_upright_grid": 116.1507
+      }
+    },
+    {
+      "case": "v_8/tm_0p6/y_50/e_0p3",
+      "takeoff_s": 2.59025,
+      "first_floor_s": 2.87525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 28.009631094490985,
+        "rear_upright_grid": 114.2791
+      }
+    },
+    {
+      "case": "v_8/tm_0p6/y_m100/e_0p3",
+      "takeoff_s": 2.80025,
+      "first_floor_s": 3.08525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 27.914776199847253,
+        "rear_upright_grid": 116.12709999999998
+      }
+    },
+    {
+      "case": "v_8/tm_0p6/y_m50/e_0p3",
+      "takeoff_s": 2.59025,
+      "first_floor_s": 2.87525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 28.008668797040684,
+        "rear_upright_grid": 114.2527
+      }
+    },
+    {
+      "case": "v_8/tm_0p9/y_0/e_0p3",
+      "takeoff_s": 2.55525,
+      "first_floor_s": 2.84525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 27.977983581073026,
+        "rear_upright_grid": 106.9486
+      }
+    },
+    {
+      "case": "v_8/tm_0p9/y_100/e_0p3",
+      "takeoff_s": 2.77525,
+      "first_floor_s": 3.06525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 28.030922074547973,
+        "rear_upright_grid": 107.5668
+      }
+    },
+    {
+      "case": "v_8/tm_0p9/y_50/e_0p3",
+      "takeoff_s": 2.54525,
+      "first_floor_s": 2.83525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 28.053440380796125,
+        "rear_upright_grid": 107.4716
+      }
+    },
+    {
+      "case": "v_8/tm_0p9/y_m100/e_0p3",
+      "takeoff_s": 2.77525,
+      "first_floor_s": 3.06525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 28.01731586732886,
+        "rear_upright_grid": 107.5257
+      }
+    },
+    {
+      "case": "v_8/tm_0p9/y_m50/e_0p3",
+      "takeoff_s": 2.54525,
+      "first_floor_s": 2.83525,
+      "clearance_mm": {
+        "front_grid_and_closed_door": 28.05423920876065,
+        "rear_upright_grid": 107.47890000000001
+      }
+    }
+  ]
+}

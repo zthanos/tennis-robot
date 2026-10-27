@@ -1,5 +1,9 @@
 # C2 r1 diagnostic capture — root cause
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 ## Scope
 
 Μόνο το `r1_q98` trial εκτελέστηκε. Δεν δημιουργήθηκε artifact, δεν άλλαξε

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Compact packaging mass/envelope model. Dimensions and masses are
+       provisional engineering estimates until the assembled parts are
+       weighed. They are separate fixed links so generated URDF/SDF mass and
+       centre-of-mass audits can identify each contribution. -->
+  <xacro:macro name="compact_electronics_packaging" params="parent base_link_height">
+    <!-- Existing 240 x 180 mm motion tray, vertical in the YZ plane at the
+         rear. Installed depth includes Mega, two driver heatsinks, fuse and
+         wiring clearance. CAD: plane X=-0.425, components face +X. -->
+    <xacro:property name="tray_x" value="0.055"/>
+    <xacro:property name="tray_y" value="0.240"/>
+    <xacro:property name="tray_z" value="0.180"/>
+    <xacro:property name="tray_mass" value="0.85"/>
+    <joint name="motion_electronics_tray_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="motion_electronics_tray_link"/>
+      <origin xyz="-0.3975 0 ${0.058 + tray_z / 2.0 - base_link_height}" rpy="0 0 0"/>
+    </joint>
+    <link name="motion_electronics_tray_link">
+      <xacro:box_inertial mass="${tray_mass}" x="${tray_x}" y="${tray_y}" z="${tray_z}"/>
+      <collision name="motion_electronics_tray_col">
+        <geometry><box size="${tray_x} ${tray_y} ${tray_z}"/></geometry>
+      </collision>
+      <visual name="motion_electronics_tray_vis">
+        <geometry><box size="${tray_x} ${tray_y} ${tray_z}"/></geometry>
+        <material name="electronics_blue"/>
+      </visual>
+    </link>
+
+    <!-- Raspberry Pi 5 + M.2 HAT/NVMe + active cooler inside its case. -->
+    <xacro:property name="pi_x" value="0.120"/>
+    <xacro:property name="pi_y" value="0.090"/>
+    <xacro:property name="pi_z" value="0.050"/>
+    <xacro:property name="pi_mass" value="0.33"/>
+    <joint name="pi_case_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="pi_case_link"/>
+      <origin xyz="-0.255 -0.190 ${0.052 + pi_z / 2.0 - base_link_height}" rpy="0 0 0"/>
+    </joint>
+    <link name="pi_case_link">
+      <xacro:box_inertial mass="${pi_mass}" x="${pi_x}" y="${pi_y}" z="${pi_z}"/>
+      <collision name="pi_case_col">
+        <geometry><box size="${pi_x} ${pi_y} ${pi_z}"/></geometry>
+      </collision>
+      <visual name="pi_case_vis">
+        <geometry><box size="${pi_x} ${pi_y} ${pi_z}"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+    </link>
+
+    <!-- Separate 12 V -> 5 V / 5 A buck converter and insulated carrier. -->
+    <xacro:property name="buck_x" value="0.035"/>
+    <xacro:property name="buck_y" value="0.020"/>
+    <xacro:property name="buck_z" value="0.040"/>
+    <xacro:property name="buck_mass" value="0.08"/>
+    <joint name="pi_buck_converter_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="pi_buck_converter_link"/>
+      <origin xyz="-0.255 -0.122 ${0.052 + buck_z / 2.0 - base_link_height}" rpy="0 0 0"/>
+    </joint>
+    <link name="pi_buck_converter_link">
+      <xacro:box_inertial mass="${buck_mass}" x="${buck_x}" y="${buck_y}" z="${buck_z}"/>
+      <collision name="pi_buck_converter_col">
+        <geometry><box size="${buck_x} ${buck_y} ${buck_z}"/></geometry>
+      </collision>
+      <visual name="pi_buck_converter_vis">
+        <geometry><box size="${buck_x} ${buck_y} ${buck_z}"/></geometry>
+        <material name="electronics_blue"/>
+      </visual>
+    </link>
+  </xacro:macro>
+</robot>

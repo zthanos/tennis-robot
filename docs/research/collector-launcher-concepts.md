@@ -1,5 +1,9 @@
 # Collector And Launcher Concepts
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Last checked: 2026-07-10
 
 This document compares early mechanical concepts for collecting tennis balls and, later, launching them for practice. Costs are rough prototype estimates and exclude shipping, VAT/import duties, machining, 3D printing, and failed experiments.
@@ -57,7 +61,7 @@ docs/mechanism/intake-concept-decision-el.md
 Measurement report:
 
 ```text
-docs/mechanism/intake-bench-sweep-report-el.md
+docs/archive/mechanism/intake/intake-bench-sweep-report-el.md
 ```
 
 Next concept direction:

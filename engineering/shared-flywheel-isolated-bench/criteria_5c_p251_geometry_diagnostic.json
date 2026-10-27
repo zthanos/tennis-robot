@@ -1,0 +1,35 @@
+{
+  "status": "FROZEN_AFTER_R75_35DEG_CONTACT_BEFORE_GEOMETRY_DIAGNOSTIC",
+  "written_before_run": true,
+  "stage": "P2-51 R75 nominal-angle versus measured-takeoff diagnostic",
+  "purpose": "Map the dependent ski arc angle to actual ball takeoff angle after the nominal 35 degree R75 case left at 25.98 degrees and contacted the frozen X300 crossbar. The 35 degree result is reused; only 45 and 55 degree runs are new.",
+  "frozen_inputs": {
+    "ski_angle_deg": [35, 45, 55],
+    "ski_radius_mm": 75,
+    "tangent_length_mm": 52,
+    "wheel_surface_speed_m_s": [10.0],
+    "ramp_mu": [0.15],
+    "tread_mu": [0.6],
+    "lateral_ball_offsets_m": [0.0],
+    "approach_speed_m_s": 0.6,
+    "ground_mu": 0.7,
+    "launcher_tilt_deg": -3.0,
+    "ball_model": "gazebo/models/tennis_ball_compliant/model.sdf; unchanged calibration",
+    "powered_ramp": false,
+    "conditions": 3
+  },
+  "criteria": [
+    {"name": "nip_capture", "hard_fail": true, "rule": "ball crosses launcher local X=-33 mm without plough"},
+    {"name": "ski_takeoff", "hard_fail": true, "rule": "ball clears the selected ski tip toward -X"},
+    {"name": "d5065_contact_current", "hard_fail": true, "rule": "absolute current during ball-wheel contact <=20 A per motor"},
+    {"name": "d5065_contact_torque", "hard_fail": true, "rule": "absolute torque during ball-wheel contact <=0.62 N m per motor"},
+    {"name": "forbidden_contact", "hard_fail": true, "rule": "no ball or launcher contact with chassis, arch, camera or LiDAR"},
+    {"name": "finite_state", "hard_fail": true, "rule": "no NaN or Inf in telemetry"}
+  ],
+  "diagnostics_only": [
+    "measured takeoff angle versus nominal ski tangent",
+    "X300 crossbar contact depth",
+    "basket entry and retention",
+    "highest ball top relative to LiDAR Z390"
+  ]
+}

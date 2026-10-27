@@ -1,0 +1,57 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_P2_47_R5_GAZEBO_RUN",
+  "scope": "P2-47 tall open-drop revision after r4 exposed a rear-wall shelf; no flap, hood or liner; no absolute capacity, 5c-3 or 5d claim",
+  "prior_diagnostic": {
+    "revision": "r4",
+    "result": "incoming ball passed nip and reached the raised bridge, but rested at X=21 mm between the X=50 mm bridge end and rear wall",
+    "retained": true,
+    "criteria_changed": false,
+    "geometry_change": "move bridge end from X=50 to X=90 mm and smooth the dependent ramp; frozen P2-40 geometry unchanged"
+  },
+  "reference_geometry": {
+    "basket_interior_plan_mm": [287, 344],
+    "basket_rim_world_z_mm": 335,
+    "entry_bridge_surface_world_z_mm": 247,
+    "entry_drop_x_mm": 90,
+    "ramp_tip_underside_clearance_mm": 8,
+    "intake_angle_deg": -3,
+    "approach_speed_m_s": 0.6,
+    "flywheel_surface_speed_m_s": 2.7,
+    "ball_tread_mu": 0.6,
+    "ground_mu": 0.7
+  },
+  "static_gate": {
+    "calculation": "analyze_p247_tall_open_static.py",
+    "packing_fraction_sweep": [0.56, 0.60, 0.64],
+    "local_surface_allowance_ball_diameters": 1.0,
+    "lidar_scan_z_mm": 390,
+    "camera_center_mm": [350, 0, 305],
+    "camera_fov_deg": {"horizontal_repo": 69, "vertical_provisional": 54}
+  },
+  "delivery_matrix": {
+    "existing_ball_count": [0, 25, 40, 44],
+    "repeats_per_condition": 3,
+    "variants": ["tall_open_drop"],
+    "run_count": 12,
+    "preload_method": "dynamic fall into the two unobstructed side lanes beside the overhead bridge; no final grid"
+  },
+  "motion_retention": {"preloaded_ball_count": 45, "repeats": 3, "run_count": 3},
+  "criteria": [
+    {"name": "delivery_success_count", "threshold": 3, "comparison": "eq", "hard_fail": true},
+    {"name": "collection_success", "threshold": true, "comparison": "eq", "hard_fail": true},
+    {"name": "bounce_out", "threshold": false, "comparison": "eq", "hard_fail": true},
+    {"name": "entrance_blocked", "threshold": false, "comparison": "eq", "hard_fail": true},
+    {"name": "preload_retained_before_and_after", "threshold": true, "comparison": "eq", "hard_fail": true},
+    {"name": "motion_ball_loss_count", "threshold": 0, "comparison": "eq", "hard_fail": true},
+    {"name": "d5065_current", "threshold": 20.0, "comparison": "abs_max_le", "unit": "A per motor", "hard_fail": true},
+    {"name": "forbidden_launcher_contact_count", "threshold": 0, "comparison": "eq", "hard_fail": true},
+    {"name": "finite_state", "threshold": 0, "comparison": "nonfinite_count_eq", "hard_fail": true}
+  ],
+  "ranking_rule": "Prefer tall_open_drop if all frozen conditions pass; otherwise compare failure modes against high_hood, lip_cover and rejected one_way_flap without changing retained results.",
+  "physics_limitations": [
+    "Calibrated tennis_ball_compliant applies only to incoming ground/flywheel interaction.",
+    "Basket, bridge and ball-ball contacts use uncalibrated native DART rigid contact; relative comparison only.",
+    "Absolute capacity and rebound retention require the 1:1 physical mock-up."
+  ],
+  "prohibitions": ["no artificial transfer", "no final grid placement", "no forced ball velocity", "no contact refit", "no frozen P2-40 CAD change", "no 5c-3/5d"]
+}

@@ -30,7 +30,7 @@
  *       estop: 1=tripped 0=ok
  *   Mega -> Host (acks): "OK ARM", "OK DISARM", "ERR <reason>", "PONG"
  *
- * PIN MAP — see docs/motion-perfboard-wiring-el.md §4.
+ * PIN MAP — see docs/hardware/unified-keyed-perfboard-wiring-el.md.
  */
 
 #include <Arduino.h>

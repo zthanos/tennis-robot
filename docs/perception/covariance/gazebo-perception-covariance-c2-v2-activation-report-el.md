@@ -1,5 +1,9 @@
 # C2 Gazebo v2 producer activation report
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 ## Selected artifact and startup telemetry
 
 Το Gazebo launch επιλέγει ρητά και μόνο:

@@ -1,0 +1,8 @@
+{
+  "sample_count": 890,
+  "yaw_change_rad": 0.0004887478692192636,
+  "yaw_change_deg": 0.028003190152275724,
+  "translation_m": 0.003070944545327317,
+  "turn_executed": false,
+  "approximately_in_place": true
+}

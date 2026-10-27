@@ -1,0 +1,19 @@
+[Unit]
+Description=Tennis Robot intake bench web panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@GROUP@
+SupplementaryGroups=dialout
+WorkingDirectory=@ROOT@
+ExecStart=/usr/bin/python3 @ROOT@/scripts/intake_bench_panel.py --host 0.0.0.0 --port 8082 --serial-port /dev/ttyACM0
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

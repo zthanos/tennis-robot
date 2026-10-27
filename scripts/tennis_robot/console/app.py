@@ -33,6 +33,14 @@ class NavTestOutcome:
     payload: dict
 
 
+class CommandRejected(RuntimeError):
+    """A command was refused because another subsystem owns the machine.
+
+    Raised (rather than returned) so the stable ``/api/command`` success shape
+    is untouched; the controller maps it to HTTP 409.
+    """
+
+
 class ConsoleApp:
     def __init__(
         self,
@@ -46,6 +54,7 @@ class ConsoleApp:
         path: PathService,
         camera: CameraService,
         db: DatabaseService,
+        throwing=None,
     ) -> None:
         self.config = config
         self.command_store = command_store
@@ -56,6 +65,7 @@ class ConsoleApp:
         self.path = path
         self.camera = camera
         self.db = db
+        self.throwing = throwing
 
     # ------------------------------------------------------------------
     # simple reads (exposed so the controller stays thin)
@@ -90,9 +100,23 @@ class ConsoleApp:
     # ------------------------------------------------------------------
     # commands
     # ------------------------------------------------------------------
+    def _throwing_conflict(self) -> str | None:
+        """None if the robot is free, else why Throwing Mode still owns it."""
+        if self.throwing is None:
+            return None
+        return self.throwing.machine_owner_conflict()
+
     def set_command(self, mode: str):
         """Apply a high-level command. Starting/stopping the survey launch is
-        tied to the map_court/idle modes. Returns the written command object."""
+        tied to the map_court/idle modes. Returns the written command object.
+
+        Raises CommandRejected if Throwing Mode owns the machine — every mode
+        but ``idle`` drives or actuates the robot, and ``idle`` is the stop
+        command, so it must never be blocked."""
+        if mode != "idle":
+            conflict = self._throwing_conflict()
+            if conflict:
+                raise CommandRejected(conflict)
         if mode == "map_court":
             self.ros.start_survey()
         elif mode == "idle":
@@ -101,10 +125,33 @@ class ConsoleApp:
         return self.command_store.write(mode)
 
     def collector_control(self, action: str) -> dict[str, object]:
+        # Stopping the intake is always allowed; starting or speeding it up
+        # while the launcher is armed is the interlock this guards.
+        if action != "stop":
+            conflict = self._throwing_conflict()
+            if conflict:
+                return {"ok": False, "message": conflict}
         return self.ros.collector_control(action)
 
     def collector_status(self) -> dict[str, object]:
         return self.ros.collector_status()
+
+    def throwing_status(self) -> dict[str, object]:
+        return self.throwing.status() if self.throwing is not None else {
+            "ok": False, "message": "Throwing Mode service is not configured"
+        }
+
+    def throwing_command(self, action: str, data: dict) -> dict[str, object]:
+        if self.throwing is None:
+            return {"ok": False, "message": "Throwing Mode service is not configured"}
+        if action == "start": return self.throwing.start(data)
+        if action == "test_throw": return self.throwing.start(data, test_throw=True)
+        if action == "pause": return self.throwing.pause()
+        if action == "resume": return self.throwing.resume()
+        if action == "stop": return self.throwing.stop()
+        if action == "basket_raise": return self.throwing.basket_command(True)
+        if action == "basket_lower": return self.throwing.basket_command(False)
+        return {"ok": False, "message": "Unknown Throwing Mode action."}
 
     def clear_path(self) -> None:
         self.path.clear()

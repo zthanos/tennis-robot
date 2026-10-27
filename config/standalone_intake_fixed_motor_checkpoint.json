@@ -1,0 +1,416 @@
+{
+  "schema_version": 1,
+  "checkpoint_date": "2026-08-27",
+  "scope": "standalone fixed-motor dual-wheel intake with ball and tyre compliance",
+  "decision": {
+    "physical_architecture": "FIXED_MOTOR_COMPLIANT_TYRE",
+    "architecture_frozen_provisionally": true,
+    "previous_architecture": "TRANSLATING_MOTOR_COMPLIANT_GUIDE",
+    "previous_architecture_status": "SUPERSEDED_WRONG_COMPLIANCE_ARCHITECTURE",
+    "static_passage_authorized": false,
+    "dynamic_capture_authorized": false,
+    "stop_reasons": [
+      "tyre and foam radial compliance and bottom-out are unmeasured",
+      "no defensible bounded tyre contact law exists",
+      "felt-to-Trencher-tread traction is unmeasured",
+      "direct-drive seating and retention remain physically undefined",
+      "printed-mount bolt pattern, clamp split, print-fit allowance and cable-tail envelope remain physically unreleased"
+    ]
+  },
+  "standalone_boundary": {
+    "included": [
+      "minimal fixed local bridge/support datum",
+      "fixed left FIT0186 motor",
+      "fixed right FIT0186 motor",
+      "two 14-00012630 adapters",
+      "two fixed-centre Pro-Line Raid/Trencher wheels",
+      "Trencher tyre and foam-insert radial compliance",
+      "one calibrated regulation tennis ball"
+    ],
+    "excluded": [
+      "basket",
+      "flywheel launcher",
+      "robot chassis beyond the minimal support datum",
+      "complete bridge packaging",
+      "translating motor assemblies",
+      "linear guides",
+      "return springs",
+      "pod hard stops",
+      "moving-motor cable loops"
+    ]
+  },
+  "fixed_geometry": {
+    "side_convention": {"left": 1, "right": -1},
+    "tilt_deg": 35.0,
+    "tilt_plane": "ROBOT_LONGITUDINAL_X_Z",
+    "wheel_to_motor_axis_formula": "[sin(35 deg), 0, cos(35 deg)]",
+    "motor_to_wheel_direction": "downward_rearward_on_the_same_unoriented_axis",
+    "openscad_transform": "rotate([0, 35, 0])",
+    "left_axis": [0.573576436, 0.0, 0.819152044],
+    "right_axis": [0.573576436, 0.0, 0.819152044],
+    "option_a_local_mm": {
+      "wheel_centres": {
+        "left": [470.0, 90.0, 70.0],
+        "right": [470.0, -90.0, 70.0]
+      },
+      "motor_centres": {
+        "left": [523.629396799, 90.0, 146.590716141],
+        "right": [523.629396799, -90.0, 146.590716141]
+      }
+    },
+    "compact_ground_m": {
+      "wheel_centres": {
+        "left": [0.370, 0.090, 0.070],
+        "right": [0.370, -0.090, 0.070]
+      },
+      "motor_centres": {
+        "left": [0.423629396799, 0.090, 0.146590716141],
+        "right": [0.423629396799, -0.090, 0.146590716141]
+      }
+    },
+    "motor_outboard_offset_from_wheel_y_mm": 0.0,
+    "motor_forward_offset_from_wheel_x_mm": 53.629396799,
+    "wheel_diameter_mm": 124.0,
+    "wheel_width_mm": 73.0,
+    "fixed_tread_gap_mm": 56.0,
+    "ball_nominal_diameter_mm": 66.0,
+    "total_nominal_centered_closure_mm": 10.0,
+    "motor_and_wheel_translation_allowed": false
+  },
+  "manufacturer_evidence": {
+    "selected_product": "PRO117010 / manufacturer chart #1170-10 Trencher 2.8 inch M2 mounted on Raid 6x30",
+    "sources": [
+      "https://teams.prolineracing.com/images/TireSelector-poster.pdf",
+      "https://teams.prolineracing.com/images/6x30-RemovableHexes_1-10_MT-SC.pdf",
+      "https://www.prolineracing.com/product/1-10-trencher-hp-belted-f-r-2.8-mt-tires-mtd-12mm-14mm-blk-raid-2/PRO1016810.html"
+    ],
+    "known": {
+      "diameter_mm": 124.0,
+      "width_mm": 73.0,
+      "compound": "M2_MEDIUM",
+      "insert": "OPEN_CELL",
+      "wheel": "RAID_6X30_REMOVABLE_HEX",
+      "included_hex_options": ["12_MM_NARROW", "12_MM_WIDE", "14_MM"]
+    },
+    "qualification": "The current manufacturer product page is a related HP belted product, not a substitute for PRO117010. Verify the delivered selected product, insert, and installed hex before calibration.",
+    "not_evidenced": [
+      "tyre radial stiffness",
+      "foam stiffness",
+      "loading/unloading hysteresis",
+      "damping",
+      "available elastic radial travel",
+      "foam bottom-out",
+      "felt/tread friction"
+    ]
+  },
+  "fixed_bridge_mount": {
+    "architecture": "TWO_INDEPENDENT_3D_PRINTED_SHORT_BODY_CLAMPS_UNDER_RAISED_BRIDGE",
+    "status": "PROVISIONAL_GEOMETRY_PENDING_PRINT_FIT_AND_FASTENER_RELEASE",
+    "bridge_z_mm": [190.0, 208.0],
+    "invalid_previous_vertical_opening_removed": [22.0, 22.0],
+    "invented_bridge_fastener_pattern_removed": true,
+    "axis_y_at_bridge_mm": {"left": 90.0, "right": -90.0},
+    "axis_x_at_bridge_under_mm": 554.024904585,
+    "axis_x_at_bridge_top_mm": 566.628640273,
+    "motor_mount_face_center_mm": {
+      "left": [503.554221527, 90.0, 117.920394591],
+      "right": [503.554221527, -90.0, 117.920394591]
+    },
+    "motor_mount_face_relation_to_bridge": "MOTOR_BODY_RETAINED_BELOW_RAISED_BRIDGE_BY_SHORT_PRINTED_CLAMP",
+    "motor_body_diameter_analysis_mm": 30.0,
+    "motor_body_max_z_mm": 183.864684236,
+    "motor_to_bridge_vertical_clearance_mm": 6.135315764,
+    "printed_mounts_quantity": 2,
+    "printed_mount_grip_diameter_mm": 30.0,
+    "printed_mount_axial_depth_mm": 10.0,
+    "printed_mount_axial_position": "TOPMOST_10_MM_OF_MOTOR_BODY_WITH_UPPER_EDGE_FLUSH_TO_MOTOR_TOP_FACE",
+    "printed_mount_provisional_bore_diameter_mm": 30.6,
+    "printed_mount_provisional_outer_diameter_mm": 42.0,
+    "bridge_motor_opening_required": false,
+    "clearance_allowance_mm": 0.6,
+    "intact_bridge_motor_intersection_volume_mm3_per_side_analysis": 0.0,
+    "disposition": "Retain both fixed wheel centres and coaxial motor stacks. Raise the intact bridge above the motor envelope and support each 30 mm motor with its own 10 mm-deep printed clamp; release the clamp split, bolt pattern, cable bend envelope and print allowance only after fit-up.",
+    "checks": {
+      "wheel_centres": "DEFINED_RETAINED",
+      "motor_centres": "DEFINED_RETAINED",
+      "shaft_axes": "DEFINED_RETAINED",
+      "bridge_mounting_plane": "DEFINED",
+      "fixed_motor_bracket": "PROVISIONAL_TWO_PRINTED_SHORT_BODY_CLAMPS",
+      "motor_body_clearance": "RAISED_BRIDGE_CLEARS_ANALYSIS_ENVELOPE_BY_6.135_MM_VERTICAL",
+      "motor_cable_clearance": "TOP_FACE_REMAINS_OPEN; CABLE_TAIL_AND_BEND_ENVELOPE_PENDING",
+      "adapter_clearance": "UNPROVED_UNMEASURED_20MM_ENVELOPE_AND_8MM_SEATING_ASSUMPTION",
+      "opposite_wheel_clearance": "NO_RIGID_WHEEL_INTERSECTION",
+      "ball_corridor": "INTENTIONAL_10MM_TOTAL_ELASTIC_CLOSURE"
+    }
+  },
+  "direct_drive_stack": {
+    "order": [
+      "FIT0186 motor face",
+      "native 6 mm D-shaft",
+      "14-00012630 adapter",
+      "12 mm male hex",
+      "installed Raid 12 mm interface",
+      "Raid/Trencher wheel"
+    ],
+    "missing_measurements": [
+      "exact shaft projection, D-flat and shoulder",
+      "adapter bore depth/type and internal stop",
+      "set-screw or clamp landing and tool path",
+      "adapter hex axial length and seating face",
+      "installed Raid pocket depth/orientation",
+      "wheel seating and centre clearance",
+      "adapter and wheel axial retention"
+    ],
+    "missing_measurements_justify_carriage": false
+  },
+  "compliance_partition": {
+    "equation_mm": "10 = delta_ball + delta_tyre_left + delta_tyre_right",
+    "symmetric_equation_mm": "delta_tyre_each = (10 - delta_ball) / 2",
+    "force_equilibrium": "F_ball(delta_ball) = F_tyre_left(delta_tyre_left) = F_tyre_right(delta_tyre_right)",
+    "ball_model_source": "config/tennis_ball_compliance_calibration_results.json",
+    "ball_loading_law": "F_N = 107309.29404174259 * delta_ball_m^1.5",
+    "ball_loading_stiffness_n_m_pow": 107309.29404174259,
+    "partitions": [
+      {"ball_deformation_mm": 0.0, "ball_force_n": 0.00, "tyre_deformation_each_mm": 5.000},
+      {"ball_deformation_mm": 1.0, "ball_force_n": 3.39, "tyre_deformation_each_mm": 4.500},
+      {"ball_deformation_mm": 2.0, "ball_force_n": 9.60, "tyre_deformation_each_mm": 4.000},
+      {"ball_deformation_mm": 2.761218979, "ball_force_n": 15.57, "tyre_deformation_each_mm": 3.619390511},
+      {"ball_deformation_mm": 3.0, "ball_force_n": 17.63, "tyre_deformation_each_mm": 3.500},
+      {"ball_deformation_mm": 4.0, "ball_force_n": 27.15, "tyre_deformation_each_mm": 3.000},
+      {"ball_deformation_mm": 5.0, "ball_force_n": 37.94, "tyre_deformation_each_mm": 2.500},
+      {"ball_deformation_mm": 6.5, "ball_force_n": 56.24, "tyre_deformation_each_mm": 1.750},
+      {"ball_deformation_mm": 8.0, "ball_force_n": 76.78, "tyre_deformation_each_mm": 1.000},
+      {"ball_deformation_mm": 9.261218979, "ball_force_n": 95.64, "tyre_deformation_each_mm": 0.369390511},
+      {"ball_deformation_mm": 10.0, "ball_force_n": 107.31, "tyre_deformation_each_mm": 0.000}
+    ],
+    "required_full_tyre_test_envelope": {
+      "radial_deflection_each_mm": [0.0, 5.0],
+      "force_n": [0.0, 107.31]
+    },
+    "priority_itf_anchored_envelope": {
+      "radial_deflection_each_mm": [0.369, 3.619],
+      "force_n": [15.57, 95.64]
+    },
+    "gross_radial_construction_depth_mm": 26.44,
+    "gross_depth_derivation": "(124 mm tyre OD - 71.12 mm nominal 2.8 inch wheel OD) / 2",
+    "gross_depth_is_allowable_travel": false,
+    "unique_equilibrium_solved": false,
+    "blocked_by": "missing tyre loading/unloading force-deflection law and bottom-out travel"
+  },
+  "tyre_contact_model_strategy": {
+    "preferred": "ANALYTICAL_COMPLIANT_TYRE_CONTACT_LAYER_WITH_FIXED_MOTOR_AND_WHEEL_FRAMES",
+    "sequence": [
+      "measure effective radial loading/unloading law",
+      "fit or bound tyre force-deflection and hysteresis",
+      "apply at local tread contact while keeping wheel centres fixed",
+      "validate centered static passage",
+      "then validate dynamic capture with measured/bounded friction"
+    ],
+    "alternatives": [
+      {"approach": "ANALYTICAL_COMPLIANT_TYRE_CONTACT_LAYER", "status": "RECOMMENDED_AFTER_CALIBRATION"},
+      {"approach": "DEFORMABLE_COMPLIANT_WHEEL", "status": "VALID_BUT_UNNECESSARILY_COMPLEX_WITHOUT_MATERIAL_DATA"},
+      {"approach": "CALIBRATED_EFFECTIVE_RADIAL_SPRING_HYSTERESIS_LAW", "status": "VALID_AFTER_PHYSICAL_TEST"},
+      {"approach": "BOUNDED_TYRE_STIFFNESS_SENSITIVITY", "status": "VALID_ONLY_WITH_MEASURED_BOUNDS_NOT_GUESSES"},
+      {"approach": "PRISMATIC_COMPLETE_MOTOR_POD", "status": "REJECTED_AS_PHYSICAL_MODEL"}
+    ],
+    "legacy_surrogate_label": "SIMULATION_ONLY_TYRE_COMPLIANCE_SURROGATE",
+    "legacy_surrogate_faithful": false,
+    "legacy_surrogate_problem": "It translates the adapter and motor collision as well as the rigid wheel.",
+    "future_numerical_surrogate_constraints": [
+      "physical CAD and documents retain fixed motors",
+      "rest wheel centres remain fixed",
+      "only a contact-layer degree of freedom may yield",
+      "surrogate never becomes manufacturing geometry"
+    ]
+  },
+  "minimum_physical_test": {
+    "name": "one-wheel one-ball controlled radial compression and traction screen",
+    "hardware": [
+      "one actual selected Trencher/Raid wheel with installed insert and hex",
+      "one regulation tennis ball",
+      "rigid hub fixture that does not load the motor shaft",
+      "radial linear stage",
+      "0 to at least 150 N calibrated load cell",
+      "displacement measurement resolution <=0.05 mm",
+      "direct tyre displacement indicator or calibrated side video"
+    ],
+    "protocol": {
+      "tyre_deflection_mm": [0.0, 5.0],
+      "force_stop_n": 120.0,
+      "increment_mm_max": 0.25,
+      "slow_loading_unloading_cycles": 3,
+      "circumferential_phases_min": 5,
+      "test_both_wheels": true,
+      "stop_on": ["foam bottom-out", "visible damage", "120 N force"]
+    },
+    "record": [
+      "force versus actuator closure",
+      "direct tyre radial deflection",
+      "ball deformation cross-check",
+      "loading/unloading hysteresis area",
+      "recovery and permanent set after 1 and 10 minutes",
+      "local tread collapse or lug folding",
+      "foam bottom-out",
+      "ball-felt snagging and slip onset",
+      "visible felt, rubber, foam, or glue damage",
+      "temperature, preconditioning, dwell, product/insert/hex identity",
+      "repeatability across tread phases and both wheels"
+    ],
+    "traction_extension": "At representative normal loads, slowly pull/roll the ball tangentially to bound felt/tread traction without fitting friction to capture success.",
+    "exit_criteria": [
+      "repeatable loading/unloading force-deflection bounds over required envelope",
+      "identified usable radial travel and bottom-out margin",
+      "no unacceptable damage or persistent set",
+      "defensible traction sensitivity bounds"
+    ]
+  },
+  "validation": {
+    "static_fixed_geometry_passage": "NOT_RUN_TYRE_MODEL_UNDEFINED",
+    "static_required_outputs_after_gate": [
+      "ball deformation",
+      "left tyre deformation",
+      "right tyre deformation",
+      "common normal force",
+      "required contact load",
+      "available tyre radial travel",
+      "foam bottom-out margin"
+    ],
+    "dynamic_capture": "NOT_RUN_TYRE_MODEL_AND_FRICTION_UNDEFINED",
+    "dynamic_required_model": [
+      "fixed motor positions",
+      "fixed wheel centres",
+      "shared 35 degree longitudinal X-Z axes",
+      "actual wheel rotation",
+      "calibrated tyre compliance",
+      "calibrated tennis-ball compliance",
+      "measured or bounded felt/tread friction",
+      "non-ideal FIT0186 torque-speed-current behavior"
+    ],
+    "ideal_velocity_control_is_physical_evidence": false,
+    "existing_mu_2_5_is_physical_evidence": false
+  },
+  "repository_audit": [
+    {
+      "classification": "CURRENT_AUTHORITATIVE",
+      "artifacts": [
+        "docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md",
+        "config/standalone_intake_fixed_motor_checkpoint.json",
+        "cad/standalone-intake-fixed-motor/standalone-intake-fixed-motor-compliant-tyre.scad",
+        "tests/test_standalone_intake_fixed_motor_checkpoint.py"
+      ],
+      "qualification": "Current physical architecture, machine-readable contract, analysis CAD checkpoint, and regression enforcement."
+    },
+    {
+      "classification": "CURRENT_SUPPORTING_EVIDENCE",
+      "artifacts": [
+        "cad/collector-intake-v1/option-a/option-a.scad",
+        "cad/collector-intake-v1/params.scad",
+        "config/compact_mechanical_contract.json:intake_direct_drive_orientation",
+        "config/compact_cad_measurements.json:fixed-rest intake envelopes",
+        "docs/hardware/ordered-parts.md",
+        "docs/hardware/prototype-purchase-list-el.md",
+        "docs/hardware/chassis-layout-4wd-dual-intake-el.md",
+        "docs/mechanism/intake-concept-decision-el.md"
+      ],
+      "qualification": "Fixed axes/centres and purchase records are current; Option A fixed opening/bracket remains incomplete."
+    },
+    {
+      "classification": "HISTORICAL_SUPERSEDED",
+      "artifacts": [
+        "docs/archive/mechanism/intake/dual-wheel-intake-design-el.md",
+        "docs/archive/mechanism/intake/compact-basket-launch-path-reevaluation-stop-report.md",
+        "docs/archive/mechanism/intake/compact-intake-carriage-physical-definition-stop-report.md"
+      ],
+      "qualification": "These physical claims or placeholders conflict with or incompletely represent the fixed direct-drive compliant-tyre machine."
+    },
+    {
+      "classification": "CURRENT_SIMULATION_SURROGATE",
+      "artifacts": [
+        "ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro",
+        "ros2_ws/src/tennis_robot/urdf/components/drivetrain.urdf.xacro",
+        "scripts/generate_robot_urdf.py",
+        "ros2_ws/src/tennis_robot/urdf/components/ros2_control.urdf.xacro",
+        "ros2_ws/src/tennis_robot/tennis_robot/sim_physics_probe.py",
+        "scripts/sim_debug/analyze_intake_release_criteria.py",
+        "scripts/sim_debug/run_native_intake_sweep.sh",
+        "tests/test_compact_mechanical_model.py",
+        "config/compact_mechanical_contract.json:intake_direct_drive_pods link mapping",
+        "docs/mechanism/compact-mechanical-reconstruction-report.md",
+        "docs/mechanism/compact-handoff-regression-repair.md"
+      ],
+      "qualification": "Legacy 0 to 8 mm rigid-wheel spring carriage. It moves motor collisions and is not corrected-architecture validation evidence. No world independently defines it; launches inherit generated URDF/SDF."
+    },
+    {
+      "classification": "HISTORICAL_SUPERSEDED",
+      "artifacts": [
+        "docs/archive/mechanism/intake/standalone-intake-guide-definition-report.md",
+        "docs/archive/mechanism/intake/config/standalone_intake_guide_definition.json",
+        "cad/archive/intake/standalone-guide-definition/standalone-intake-guide-definition.scad",
+        "docs/archive/mechanism/intake/standalone-intake-validation-report.md",
+        "docs/archive/mechanism/intake/config/standalone_intake_checkpoint.json",
+        "cad/flywheel-launcher-v0/compact-intake-pod-concept-study.scad",
+        "scripts/analyze_compact_intake_pod_concepts.py",
+        "docs/archive/mechanism/intake/compact-intake-pod-concept-study-measurements.json",
+        "docs/archive/mechanism/intake/compact-intake-pod-design-study.md",
+        "docs/archive/mechanism/intake/compact-intake-moving-pod-hardware-gate-stop-report.md",
+        "docs/archive/mechanism/intake/compact-corrected-geometry-packaging-resolution-report.md"
+      ],
+      "qualification": "Preserved for traceability; no moving-pod result constrains or validates the fixed physical intake."
+    }
+  ],
+  "analysis_cad": {
+    "path": "cad/standalone-intake-fixed-motor/standalone-intake-fixed-motor-compliant-tyre.scad",
+    "status": "ANALYSIS_ONLY",
+    "shows": [
+      "minimal fixed bridge datum",
+      "fixed parallel-longitudinal FIT0186 motor envelopes",
+      "two provisional 10 mm-deep printed motor-body mounts",
+      "raised intact bridge at Z 190 to 208 mm",
+      "purchased adapter envelopes",
+      "fixed wheel centres and shared 35 degree longitudinal axes",
+      "66 mm ball",
+      "0 to 5 mm radial tyre-compliance envelope"
+    ],
+    "does_not_show": ["linear rails", "translating pods", "return springs", "pod hard stops", "moving-motor cable loops"]
+  },
+  "classifications": {
+    "INTAKE_PHYSICAL_ARCHITECTURE": "FIXED_MOTOR_COMPLIANT_TYRE",
+    "INTAKE_MOTORS_FIXED_TO_BRIDGE": true,
+    "INTAKE_TRANSLATING_MOTOR_PODS_REQUIRED": false,
+    "INTAKE_LINEAR_GUIDES_REQUIRED": false,
+    "INTAKE_RETURN_SPRINGS_REQUIRED": false,
+    "INTAKE_POD_HARD_STOPS_REQUIRED": false,
+    "INTAKE_35_DEGREE_LONGITUDINAL_AXES_VALIDATED": true,
+    "INTAKE_FRONT_VIEW_AXES_PARALLEL": true,
+    "INTAKE_WHEEL_ADAPTER_MOTOR_COAXIAL": true,
+    "INTAKE_MOTOR_Y_ALIGNED_WITH_WHEEL_CENTRE": true,
+    "INTAKE_MOTOR_FORWARD_OF_WHEEL_CENTRE": true,
+    "INTAKE_FIXED_BRIDGE_MOTOR_MOUNT_PHYSICALLY_DEFINED": false,
+    "INTAKE_DIRECT_DRIVE_STACK_PHYSICALLY_DEFINED": false,
+    "INTAKE_SHAFT_ENGAGEMENT_DEFINED": false,
+    "INTAKE_ADAPTER_SEATING_DEFINED": false,
+    "INTAKE_AXIAL_RETENTION_DEFINED": false,
+    "INTAKE_WHEEL_HEX_INTERFACE_DEFINED": false,
+    "INTAKE_TYRE_COMPLIANCE_REQUIRED": true,
+    "INTAKE_TYRE_COMPLIANCE_PHYSICALLY_MEASURED": false,
+    "INTAKE_TYRE_COMPLIANCE_MODEL_DEFINED": false,
+    "INTAKE_TYRE_COMPLIANCE_MODEL_CALIBRATED": false,
+    "INTAKE_STATIC_FIXED_GEOMETRY_PASSAGE_VALIDATED": false,
+    "INTAKE_DYNAMIC_CAPTURE_VALIDATED_IN_SIM": false,
+    "INTAKE_TREAD_FRICTION_PHYSICALLY_VALIDATED": false,
+    "INTAKE_PREVIOUS_GUIDE_STUDY_SUPERSEDED": true,
+    "INTAKE_ACTIVE_DESIGN_UNAMBIGUOUS": true,
+    "INTAKE_FIXED_MOTOR_COMPLIANT_TYRE_CURRENT": true,
+    "INTAKE_COMPLIANCE_SOURCE_IS_TYRE_AND_BALL": true,
+    "INTAKE_ACTIVE_TRANSLATING_POD_DESIGN": false,
+    "INTAKE_ACTIVE_BEARING_SUPPORTED_REMOTE_SHAFT_DESIGN": false,
+    "INTAKE_SUPERSEDED_ARTIFACTS_ARCHIVED": true,
+    "INTAKE_TRACEABILITY_PRESERVED": true,
+    "INTAKE_SIMULATION_SURROGATES_EXPLICITLY_LABELLED": true,
+    "INTAKE_STALE_ACTIVE_REFERENCES": 0,
+    "INTAKE_ARCHITECTURE_FROZEN_PROVISIONALLY": false,
+    "INTAKE_PHYSICAL_VALIDATION_PENDING": true,
+    "INTAKE_READY_FOR_COMPLETE_ROBOT_INTEGRATION": false,
+    "PHYSICAL_HARDWARE_PENDING": true
+  }
+}

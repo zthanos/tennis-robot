@@ -1,5 +1,27 @@
 # Motion MCU (Arduino Mega) — drive firmware
 
+## Available Mega sketches
+
+- `motion_mega/motion_mega.ino`: υπάρχον drive-only firmware.
+- `motion_intake_mega/motion_intake_mega.ino`: ενιαίο bring-up firmware για
+  motion, intake, 6 encoders, 2 IR beams, safety inputs και GY-521/MPU6050.
+- `08_mpu6050_mega_bench/08_mpu6050_mega_bench.ino`: gyro-only test χωρίς
+  τροφοδοσία των motor drivers.
+- `drive_test_mega/drive_test_mega.ino`: απομονωμένο P2-64 sketch με 100 Hz
+  voltage-domain wheel PI, 40 ms encoder-speed filter, no-load-speed
+  feed-forward, προαιρετικό gyro loop, 500000-baud/50 Hz telemetry και
+  host/NC-E-stop/run-limit safety. Απαιτεί measured `CFG CPR` και lifted-wheel
+  `CFG NOLOAD` πριν από floor bring-up και δεν αντικαθιστά το integration
+  sketch. Από 2026-10-23 το START (D32) οπλίζει **τοπικά** με debounce
+  (ίδιοι έλεγχοι με το host `ARM`), χωρίς να κινεί τίποτα, και αναφέρει
+  `EVENT,START_PRESSED` / `OK,ARMED,BUTTON|HOST`. Οδηγός πάγκου χωρίς μοτέρ:
+  `docs/hardware/bench-bringup-no-motors-el.md`.
+
+Για την πρώτη θέση σε λειτουργία της κοινής perfboard εκτελείται πρώτα το
+gyro-only test, μετά τα ξεχωριστά motion/intake tests και τελευταίο το ενιαίο
+sketch. Όλα ξεκινούν με μηδενικές εξόδους· οι δοκιμές κινητήρων γίνονται με
+τους τροχούς σηκωμένους ή αφαιρεμένους.
+
 `motion_mega/motion_mega.ino` — real-time / safety layer for the 4WD skid-steer
 drive. Two BTS7960 drivers (one per side), four encoders. The host (PC now, Pi
 later) sends high-level per-side duty over USB serial; the Mega handles arming,
@@ -52,7 +74,8 @@ state: `0`=DISARMED `1`=ARMED `2`=ESTOP · estop: `1`=tripped `0`=ok
 
 ## Pin map
 
-Matches `docs/hardware/motion-perfboard-wiring-el.md §4`:
+Mega pin allocation matches `docs/hardware/unified-keyed-perfboard-wiring-el.md`;
+the old drive-only header layout is archived:
 
 | Function | Mega pin |
 |---|---|
@@ -62,11 +85,16 @@ Matches `docs/hardware/motion-perfboard-wiring-el.md §4`:
 | Encoders B | LF=D22, LR=D23, RF=D24, RR=D25 |
 | START_ARM / ESTOP_STATUS / ARMED_LED | D32 / D33 / D34 |
 | IMU I2C (not used in v1) | SDA=D20, SCL=D21 |
+| Reserved intake 2× BTS7960 control | PWM left=D44/D45, right=D46/D11; enable left=D40, right=D42 |
+| Reserved intake encoders (PCINT) | left=A10/A11, right=A8/A9 |
+| Reserved intake IR beams | entry=D36, exit=D37 |
 
 ## Notes / next steps
 
 - v1 counts encoders on the A-edge only (direction from B). Fine for bench
   direction/odometry sanity; full 4× quadrature can come later if needed.
-- The IMU (MPU6050) is wired to the Mega I2C but not read in v1.
+- Το drive-only v1 δεν διαβάζει IMU ούτε ελέγχει intake. Το νέο
+  `motion_intake_mega.ino` υλοποιεί και τα δύο, κρατώντας το pin map και τα
+  safety timeouts της ενιαίας perfboard.
 - Later, a host node converts ROS `/cmd_vel` (Twist) → per-side duty and sends
   `M left right` — keeps the Mega dumb + safe. See `motion_controller.py`.

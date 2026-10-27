@@ -1,0 +1,25 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 200
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    v3_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+    launcher_tilt_effort_controller:
+      type: effort_controllers/JointGroupEffortController
+
+v3_drive_controller:
+  ros__parameters:
+    left_wheel_names: [rear_left_wheel_joint, front_left_wheel_joint]
+    right_wheel_names: [rear_right_wheel_joint, front_right_wheel_joint]
+    wheel_separation: 0.594
+    wheel_radius: 0.085
+    open_loop: false
+    position_feedback: true
+    cmd_vel_timeout: 0.25
+    publish_rate: 50.0
+
+launcher_tilt_effort_controller:
+  ros__parameters:
+    joints: [launcher_tilt_joint]
+    interface_name: effort

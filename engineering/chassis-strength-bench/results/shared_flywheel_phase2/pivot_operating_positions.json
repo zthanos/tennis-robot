@@ -1,0 +1,759 @@
+{
+  "status": "STATIC_CAD_SOLUTION_FOUND_WITH_STATIONARY_LAUNCH_RULE",
+  "operating_rule": {
+    "collection": "robot moving; -3 deg; apply 5 mm allowance",
+    "transport": "robot moving slowly; 0 deg preferred, +5 deg still passes; apply 5 mm allowance",
+    "launch": "robot stationary; +15..+20 deg; require raw static clearance >=8 mm; no 5 mm motion allowance"
+  },
+  "geometry": {
+    "tread": "printed TPU 60 mm/r2",
+    "stop_adjustment_deg": [
+      -10,
+      -3
+    ],
+    "pivot_offset_sweep_mm": [
+      45,
+      110
+    ],
+    "pivot_z_adjustment_travel_mm": 23
+  },
+  "rows": [
+    {
+      "pivot_behind_nip_mm": 45.0,
+      "pivot_x_at_transport_mm": 397.0,
+      "pivot_ground_z_when_adjusted_mm": 55.31400407356969,
+      "pivot_down_range_over_R_h_mm": [
+        5.98599592643032,
+        20.98599592643032
+      ],
+      "pivot_down_reference_R85_h29_mm": 12.985995926430306,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.76640437570562,
+      "collection_after_allowance_mm": 12.76640437570562,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 25.31400407356969,
+        "1": 24.358690864827363,
+        "2": 23.412806944359264,
+        "3": 22.476640437570566,
+        "4": 21.550476509848075,
+        "5": 20.634597279696127
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 20.31400407356969,
+      "transport_plus5_after_allowance_mm": 15.634597279696127,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 12.101181804258996,
+        "16": 11.316098625485168,
+        "17": 10.54441763492811,
+        "18": 9.786373894092979,
+        "19": 9.042198310446572,
+        "20": 8.312117567080662
+      },
+      "launch_plus20_static_clearance_mm": 8.312117567080662,
+      "launch_plus15_static_clearance_mm": 12.101181804258996,
+      "launch_15_vs_20_clearance_gain_mm": 3.7890642371783336,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": true,
+      "cad_collision_note": "OpenSCAD pivot-running-envelope intersection is empty through 73 mm; first arch intersection at 74 mm",
+      "passes_all_static_and_cad": true
+    },
+    {
+      "pivot_behind_nip_mm": 50.0,
+      "pivot_x_at_transport_mm": 392.0,
+      "pivot_ground_z_when_adjusted_mm": 55.5756838547844,
+      "pivot_down_range_over_R_h_mm": [
+        5.72431614521561,
+        20.72431614521561
+      ],
+      "pivot_down_reference_R85_h29_mm": 12.724316145215596,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.766404375705612,
+      "collection_after_allowance_mm": 12.766404375705612,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 25.5756838547844,
+        "1": 24.70763267822849,
+        "2": 23.848984209086478,
+        "3": 22.999999999999993,
+        "4": 22.16093865978341,
+        "5": 21.332055774649124
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 20.5756838547844,
+      "transport_plus5_after_allowance_mm": 16.332055774649124,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 13.656956810986312,
+        "16": 12.955965185784876,
+        "17": 12.267955939756504,
+        "18": 11.593138647182418,
+        "19": 10.931718863947061,
+        "20": 10.283898064923719
+      },
+      "launch_plus20_static_clearance_mm": 10.283898064923719,
+      "launch_plus15_static_clearance_mm": 13.656956810986312,
+      "launch_15_vs_20_clearance_gain_mm": 3.3730587460625934,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": true,
+      "cad_collision_note": "OpenSCAD pivot-running-envelope intersection is empty through 73 mm; first arch intersection at 74 mm",
+      "passes_all_static_and_cad": true
+    },
+    {
+      "pivot_behind_nip_mm": 55.0,
+      "pivot_x_at_transport_mm": 387.0,
+      "pivot_ground_z_when_adjusted_mm": 55.837363635999125,
+      "pivot_down_range_over_R_h_mm": [
+        5.462636364000886,
+        20.462636364000886
+      ],
+      "pivot_down_reference_R85_h29_mm": 12.462636364000872,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.76640437570562,
+      "collection_after_allowance_mm": 12.76640437570562,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 25.837363635999125,
+        "1": 25.05657449162963,
+        "2": 24.285161473813705,
+        "3": 23.523359562429434,
+        "4": 22.771400809718763,
+        "5": 22.029514269602142
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 20.837363635999125,
+      "transport_plus5_after_allowance_mm": 17.029514269602142,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 15.212731817713642,
+        "16": 14.595831746084599,
+        "17": 13.991494244584914,
+        "18": 13.399903400271885,
+        "19": 12.821239417447565,
+        "20": 12.25567856276679
+      },
+      "launch_plus20_static_clearance_mm": 12.25567856276679,
+      "launch_plus15_static_clearance_mm": 15.212731817713642,
+      "launch_15_vs_20_clearance_gain_mm": 2.957053254946853,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": true,
+      "cad_collision_note": "OpenSCAD pivot-running-envelope intersection is empty through 73 mm; first arch intersection at 74 mm",
+      "passes_all_static_and_cad": true
+    },
+    {
+      "pivot_behind_nip_mm": 60.0,
+      "pivot_x_at_transport_mm": 382.0,
+      "pivot_ground_z_when_adjusted_mm": 56.09904341721385,
+      "pivot_down_range_over_R_h_mm": [
+        5.200956582786162,
+        20.200956582786162
+      ],
+      "pivot_down_reference_R85_h29_mm": 12.200956582786148,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.76640437570562,
+      "collection_after_allowance_mm": 12.76640437570562,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 26.09904341721385,
+        "1": 25.40551630503077,
+        "2": 24.721338738540933,
+        "3": 24.046719124858882,
+        "4": 23.381862959654114,
+        "5": 22.726972764555153
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 21.09904341721385,
+      "transport_plus5_after_allowance_mm": 17.726972764555153,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 16.768506824440973,
+        "16": 16.235698306384307,
+        "17": 15.715032549413323,
+        "18": 15.206668153361353,
+        "19": 14.710759970948068,
+        "20": 14.227459060609846
+      },
+      "launch_plus20_static_clearance_mm": 14.227459060609846,
+      "launch_plus15_static_clearance_mm": 16.768506824440973,
+      "launch_15_vs_20_clearance_gain_mm": 2.541047763831127,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": true,
+      "cad_collision_note": "OpenSCAD pivot-running-envelope intersection is empty through 73 mm; first arch intersection at 74 mm",
+      "passes_all_static_and_cad": true
+    },
+    {
+      "pivot_behind_nip_mm": 65.0,
+      "pivot_x_at_transport_mm": 377.0,
+      "pivot_ground_z_when_adjusted_mm": 56.36072319842856,
+      "pivot_down_range_over_R_h_mm": [
+        4.939276801571452,
+        19.939276801571452
+      ],
+      "pivot_down_reference_R85_h29_mm": 11.939276801571438,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.766404375705612,
+      "collection_after_allowance_mm": 12.766404375705612,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 26.36072319842856,
+        "1": 25.754458118431902,
+        "2": 25.157516003268153,
+        "3": 24.57007868728831,
+        "4": 23.99232510958945,
+        "5": 23.424431259508157
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 21.36072319842856,
+      "transport_plus5_after_allowance_mm": 18.424431259508157,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 18.324281831168275,
+        "16": 17.875564866684016,
+        "17": 17.438570854241718,
+        "18": 17.01343290645079,
+        "19": 16.60028052444857,
+        "20": 16.199239558452902
+      },
+      "launch_plus20_static_clearance_mm": 16.199239558452902,
+      "launch_plus15_static_clearance_mm": 18.324281831168275,
+      "launch_15_vs_20_clearance_gain_mm": 2.1250422727153726,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": true,
+      "cad_collision_note": "OpenSCAD pivot-running-envelope intersection is empty through 73 mm; first arch intersection at 74 mm",
+      "passes_all_static_and_cad": true
+    },
+    {
+      "pivot_behind_nip_mm": 70.0,
+      "pivot_x_at_transport_mm": 372.0,
+      "pivot_ground_z_when_adjusted_mm": 56.62240297964328,
+      "pivot_down_range_over_R_h_mm": [
+        4.677597020356728,
+        19.67759702035673
+      ],
+      "pivot_down_reference_R85_h29_mm": 11.677597020356714,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.76640437570562,
+      "collection_after_allowance_mm": 12.76640437570562,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 26.622402979643283,
+        "1": 26.103399931833042,
+        "2": 25.59369326799538,
+        "3": 25.09343824971775,
+        "4": 24.602787259524796,
+        "5": 24.12188975446117
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 21.622402979643283,
+      "transport_plus5_after_allowance_mm": 19.12188975446117,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 19.88005683789562,
+        "16": 19.51543142698374,
+        "17": 19.162109159070127,
+        "18": 18.82019765954026,
+        "19": 18.489801077949075,
+        "20": 18.171020056295973
+      },
+      "launch_plus20_static_clearance_mm": 18.171020056295973,
+      "launch_plus15_static_clearance_mm": 19.88005683789562,
+      "launch_15_vs_20_clearance_gain_mm": 1.7090367815996466,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": true,
+      "cad_collision_note": "OpenSCAD pivot-running-envelope intersection is empty through 73 mm; first arch intersection at 74 mm",
+      "passes_all_static_and_cad": true
+    },
+    {
+      "pivot_behind_nip_mm": 75.0,
+      "pivot_x_at_transport_mm": 367.0,
+      "pivot_ground_z_when_adjusted_mm": 56.88408276085801,
+      "pivot_down_range_over_R_h_mm": [
+        4.415917239142004,
+        19.415917239142004
+      ],
+      "pivot_down_reference_R85_h29_mm": 11.41591723914199,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.76640437570562,
+      "collection_after_allowance_mm": 12.76640437570562,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 26.884082760858007,
+        "1": 26.452341745234182,
+        "2": 26.029870532722608,
+        "3": 25.616797812147198,
+        "4": 25.213249409460147,
+        "5": 24.819348249414187
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 21.884082760858007,
+      "transport_plus5_after_allowance_mm": 19.819348249414187,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 21.435831844622935,
+        "16": 21.15529798728346,
+        "17": 20.885647463898536,
+        "18": 20.626962412629712,
+        "19": 20.379321631449592,
+        "20": 20.142800554139043
+      },
+      "launch_plus20_static_clearance_mm": 20.142800554139043,
+      "launch_plus15_static_clearance_mm": 21.435831844622935,
+      "launch_15_vs_20_clearance_gain_mm": 1.293031290483892,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": false,
+      "cad_collision_note": "nominal bearing/guard intersection with X330 arch",
+      "passes_all_static_and_cad": false
+    },
+    {
+      "pivot_behind_nip_mm": 80.0,
+      "pivot_x_at_transport_mm": 362.0,
+      "pivot_ground_z_when_adjusted_mm": 57.14576254207272,
+      "pivot_down_range_over_R_h_mm": [
+        4.1542374579272945,
+        19.154237457927294
+      ],
+      "pivot_down_reference_R85_h29_mm": 11.15423745792728,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.766404375705612,
+      "collection_after_allowance_mm": 12.766404375705612,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 27.145762542072717,
+        "1": 26.80128355863531,
+        "2": 26.46604779744982,
+        "3": 26.140157374576624,
+        "4": 25.823711559395477,
+        "5": 25.516806744367184
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 22.145762542072717,
+      "transport_plus5_after_allowance_mm": 20.516806744367184,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 22.99160685135025,
+        "16": 22.79516454758317,
+        "17": 22.60918576872693,
+        "18": 22.433727165719166,
+        "19": 22.26884218495008,
+        "20": 22.1145810519821
+      },
+      "launch_plus20_static_clearance_mm": 22.1145810519821,
+      "launch_plus15_static_clearance_mm": 22.99160685135025,
+      "launch_15_vs_20_clearance_gain_mm": 0.8770257993681518,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": false,
+      "cad_collision_note": "nominal bearing/guard intersection with X330 arch",
+      "passes_all_static_and_cad": false
+    },
+    {
+      "pivot_behind_nip_mm": 85.0,
+      "pivot_x_at_transport_mm": 357.0,
+      "pivot_ground_z_when_adjusted_mm": 57.40744232328744,
+      "pivot_down_range_over_R_h_mm": [
+        3.8925576767125705,
+        18.89255767671257
+      ],
+      "pivot_down_reference_R85_h29_mm": 10.892557676712556,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.76640437570562,
+      "collection_after_allowance_mm": 12.76640437570562,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 27.40744232328744,
+        "1": 27.15022537203645,
+        "2": 26.90222506217705,
+        "3": 26.663516937006065,
+        "4": 26.434173709330835,
+        "5": 26.214265239320195
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 22.40744232328744,
+      "transport_plus5_after_allowance_mm": 21.214265239320195,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 24.547381858077582,
+        "16": 24.435031107882878,
+        "17": 24.332724073555326,
+        "18": 24.24049191880862,
+        "19": 24.158362738450585,
+        "20": 24.086361549825156
+      },
+      "launch_plus20_static_clearance_mm": 24.086361549825156,
+      "launch_plus15_static_clearance_mm": 24.547381858077582,
+      "launch_15_vs_20_clearance_gain_mm": 0.4610203082524258,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": false,
+      "cad_collision_note": "nominal bearing/guard intersection with X330 arch",
+      "passes_all_static_and_cad": false
+    },
+    {
+      "pivot_behind_nip_mm": 90.0,
+      "pivot_x_at_transport_mm": 352.0,
+      "pivot_ground_z_when_adjusted_mm": 57.669122104502165,
+      "pivot_down_range_over_R_h_mm": [
+        3.6308778954978465,
+        18.630877895497846
+      ],
+      "pivot_down_reference_R85_h29_mm": 10.630877895497832,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.76640437570562,
+      "collection_after_allowance_mm": 12.76640437570562,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 27.669122104502165,
+        "1": 27.499167185437596,
+        "2": 27.338402326904276,
+        "3": 27.18687649943551,
+        "4": 27.04463585926618,
+        "5": 26.91172373427322
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 22.669122104502165,
+      "transport_plus5_after_allowance_mm": 21.91172373427322,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 26.103156864804912,
+        "16": 26.074897668182615,
+        "17": 26.056262378383735,
+        "18": 26.047256671898086,
+        "19": 26.047883291951088,
+        "20": 26.058142047668227
+      },
+      "launch_plus20_static_clearance_mm": 26.058142047668227,
+      "launch_plus15_static_clearance_mm": 26.103156864804912,
+      "launch_15_vs_20_clearance_gain_mm": 0.045014817136685537,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": false,
+      "cad_collision_note": "nominal bearing/guard intersection with X330 arch",
+      "passes_all_static_and_cad": false
+    },
+    {
+      "pivot_behind_nip_mm": 95.0,
+      "pivot_x_at_transport_mm": 347.0,
+      "pivot_ground_z_when_adjusted_mm": 57.930801885716875,
+      "pivot_down_range_over_R_h_mm": [
+        3.3691981142831366,
+        18.369198114283137
+      ],
+      "pivot_down_reference_R85_h29_mm": 10.369198114283122,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.766404375705612,
+      "collection_after_allowance_mm": 12.766404375705612,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 27.930801885716875,
+        "1": 27.848108998838722,
+        "2": 27.774579591631497,
+        "3": 27.710236061864943,
+        "4": 27.65509800920151,
+        "5": 27.609182229226217
+      },
+      "best_transport_angle_deg": "0",
+      "best_transport_after_allowance_mm": 22.930801885716875,
+      "transport_plus5_after_allowance_mm": 22.609182229226217,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 27.65893187153223,
+        "16": 27.71476422848231,
+        "17": 27.77980068321213,
+        "18": 27.854021424987526,
+        "19": 27.93740384545159,
+        "20": 28.029922545511283
+      },
+      "launch_plus20_static_clearance_mm": 28.029922545511283,
+      "launch_plus15_static_clearance_mm": 27.65893187153223,
+      "launch_15_vs_20_clearance_gain_mm": -0.3709906739790547,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": false,
+      "cad_collision_note": "nominal bearing/guard intersection with X330 arch",
+      "passes_all_static_and_cad": false
+    },
+    {
+      "pivot_behind_nip_mm": 100.0,
+      "pivot_x_at_transport_mm": 342.0,
+      "pivot_ground_z_when_adjusted_mm": 58.1924816669316,
+      "pivot_down_range_over_R_h_mm": [
+        3.1075183330684126,
+        18.107518333068413
+      ],
+      "pivot_down_reference_R85_h29_mm": 10.107518333068398,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.76640437570562,
+      "collection_after_allowance_mm": 12.76640437570562,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 28.1924816669316,
+        "1": 28.197050812239862,
+        "2": 28.210756856358724,
+        "3": 28.233595624294377,
+        "4": 28.265560159136868,
+        "5": 28.30664072417923
+      },
+      "best_transport_angle_deg": "5",
+      "best_transport_after_allowance_mm": 23.30664072417923,
+      "transport_plus5_after_allowance_mm": 23.30664072417923,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 29.214706878259545,
+        "16": 29.354630788782032,
+        "17": 29.50333898804054,
+        "18": 29.660786178076993,
+        "19": 29.826924398952094,
+        "20": 30.00170304335436
+      },
+      "launch_plus20_static_clearance_mm": 30.00170304335436,
+      "launch_plus15_static_clearance_mm": 29.214706878259545,
+      "launch_15_vs_20_clearance_gain_mm": -0.7869961650948163,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": false,
+      "cad_collision_note": "nominal bearing/guard intersection with X330 arch",
+      "passes_all_static_and_cad": false
+    },
+    {
+      "pivot_behind_nip_mm": 105.0,
+      "pivot_x_at_transport_mm": 337.0,
+      "pivot_ground_z_when_adjusted_mm": 58.454161448146316,
+      "pivot_down_range_over_R_h_mm": [
+        2.8458385518536957,
+        17.845838551853696
+      ],
+      "pivot_down_reference_R85_h29_mm": 9.845838551853682,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.766404375705612,
+      "collection_after_allowance_mm": 12.766404375705612,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 28.454161448146316,
+        "1": 28.545992625640995,
+        "2": 28.64693412108595,
+        "3": 28.756955186723825,
+        "4": 28.876022309072212,
+        "5": 29.00409921913224
+      },
+      "best_transport_angle_deg": "5",
+      "best_transport_after_allowance_mm": 24.00409921913224,
+      "transport_plus5_after_allowance_mm": 24.00409921913224,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 30.77048188498686,
+        "16": 30.99449734908174,
+        "17": 31.226877292868934,
+        "18": 31.467550931166446,
+        "19": 31.716444952452576,
+        "20": 31.973483541197403
+      },
+      "launch_plus20_static_clearance_mm": 31.973483541197403,
+      "launch_plus15_static_clearance_mm": 30.77048188498686,
+      "launch_15_vs_20_clearance_gain_mm": -1.2030016562105423,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": false,
+      "cad_collision_note": "nominal bearing/guard intersection with X330 arch",
+      "passes_all_static_and_cad": false
+    },
+    {
+      "pivot_behind_nip_mm": 110.0,
+      "pivot_x_at_transport_mm": 332.0,
+      "pivot_ground_z_when_adjusted_mm": 58.71584122936103,
+      "pivot_down_range_over_R_h_mm": [
+        2.584158770638979,
+        17.58415877063898
+      ],
+      "pivot_down_reference_R85_h29_mm": 9.584158770638965,
+      "collection_angle_deg": -3.0,
+      "collection_raw_clearance_mm": 17.766404375705612,
+      "collection_after_allowance_mm": 12.766404375705612,
+      "transport_clearance_raw_mm_by_angle": {
+        "0": 28.715841229361033,
+        "1": 28.894934439042128,
+        "2": 29.08311138581317,
+        "3": 29.28031474915326,
+        "4": 29.486484459007556,
+        "5": 29.70155771408525
+      },
+      "best_transport_angle_deg": "5",
+      "best_transport_after_allowance_mm": 24.70155771408525,
+      "transport_plus5_after_allowance_mm": 24.70155771408525,
+      "launch_static_clearance_mm_by_angle": {
+        "15": 32.326256891714195,
+        "16": 32.63436390938145,
+        "17": 32.950415597697344,
+        "18": 33.274315684255896,
+        "19": 33.605965505953094,
+        "20": 33.945264039040474
+      },
+      "launch_plus20_static_clearance_mm": 33.945264039040474,
+      "launch_plus15_static_clearance_mm": 32.326256891714195,
+      "launch_15_vs_20_clearance_gain_mm": -1.619007147326279,
+      "passes_collection": true,
+      "passes_transport_0_to_5": true,
+      "passes_launch_15_to_20": true,
+      "cad_bearing_nominal_collision_free": false,
+      "cad_collision_note": "nominal bearing/guard intersection with X330 arch",
+      "passes_all_static_and_cad": false
+    }
+  ],
+  "selected_static_candidate": {
+    "pivot_behind_nip_mm": 55.0,
+    "pivot_x_at_transport_mm": 387.0,
+    "pivot_ground_z_when_adjusted_mm": 55.837363635999125,
+    "pivot_down_range_over_R_h_mm": [
+      5.462636364000886,
+      20.462636364000886
+    ],
+    "pivot_down_reference_R85_h29_mm": 12.462636364000872,
+    "collection_angle_deg": -3.0,
+    "collection_raw_clearance_mm": 17.76640437570562,
+    "collection_after_allowance_mm": 12.76640437570562,
+    "transport_clearance_raw_mm_by_angle": {
+      "0": 25.837363635999125,
+      "1": 25.05657449162963,
+      "2": 24.285161473813705,
+      "3": 23.523359562429434,
+      "4": 22.771400809718763,
+      "5": 22.029514269602142
+    },
+    "best_transport_angle_deg": "0",
+    "best_transport_after_allowance_mm": 20.837363635999125,
+    "transport_plus5_after_allowance_mm": 17.029514269602142,
+    "launch_static_clearance_mm_by_angle": {
+      "15": 15.212731817713642,
+      "16": 14.595831746084599,
+      "17": 13.991494244584914,
+      "18": 13.399903400271885,
+      "19": 12.821239417447565,
+      "20": 12.25567856276679
+    },
+    "launch_plus20_static_clearance_mm": 12.25567856276679,
+    "launch_plus15_static_clearance_mm": 15.212731817713642,
+    "launch_15_vs_20_clearance_gain_mm": 2.957053254946853,
+    "passes_collection": true,
+    "passes_transport_0_to_5": true,
+    "passes_launch_15_to_20": true,
+    "cad_bearing_nominal_collision_free": true,
+    "cad_collision_note": "OpenSCAD pivot-running-envelope intersection is empty through 73 mm; first arch intersection at 74 mm",
+    "passes_all_static_and_cad": true
+  },
+  "cad_collision_sweep": {
+    "offsets_empty_mm": [
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      71,
+      72,
+      73
+    ],
+    "first_collision_mm": 74,
+    "collision_component": "bearing/guard running envelope vs X330 front arch",
+    "other_checked_components": [
+      "drive tyres/mounts/motors",
+      "frame beams",
+      "basket",
+      "fixed guide"
+    ],
+    "selected_offset_parametric_margin_to_first_collision_mm": 19,
+    "limitation": "nominal exact-solid screen, not tolerance/runout proof"
+  },
+  "moving_module_arch_sweep": {
+    "selected_offset_mm": 55,
+    "selected_angle_range_deg": [
+      -3,
+      20
+    ],
+    "selected_full_sweep_result": "empty",
+    "offset_sweep_at_plus20": {
+      "empty_through_mm": 57,
+      "first_collision_mm": 58
+    },
+    "selected_offset_parametric_margin_to_first_collision_mm": 3,
+    "other_selected_full_sweep_intersections": "frame, drive, basket/battery, fixed guide, actuator and low deck are empty"
+  },
+  "launch_angle_trade": {
+    "plus15_clearance_mm": 15.212731817713642,
+    "plus16_clearance_mm": 14.595831746084599,
+    "plus20_clearance_mm": 12.25567856276679,
+    "clearance_gain_plus15_vs_plus20_mm": 2.957053254946853,
+    "cad_result": "selected 55 mm offset is collision-free through +20 deg; at +20 the first arch intersection appears when offset reaches 58 mm",
+    "ballistic_note": "+15..+20 deg trades static ground clearance against trajectory elevation; range, apex and net clearance depend on exit speed and will be evaluated in 5d"
+  },
+  "four_bar_gate": "NOT_TRIGGERED: the 55 mm pivot offset passes collection, transport and stationary launch through +20 deg; retain a four-bar only as fallback if measured envelopes consume the margin",
+  "delivery": {
+    "handoff_ball_center_ground_mm": 58.454161448146316,
+    "existing_guide_entry_ground_range_mm": [
+      75.0,
+      90.0
+    ],
+    "entry_step_up_range_mm": [
+      16.545838551853684,
+      31.545838551853684
+    ],
+    "recommended_entry_lowering_mm": "reshape the first two guide stations downward by about 20..25 mm and make the final value shim-adjustable after R/h measurement",
+    "guide_peak_ground_range_mm": [
+      133.0,
+      148.0
+    ],
+    "lift_to_peak_range_mm": [
+      74.54583855185368,
+      89.54583855185368
+    ],
+    "minimum_speed_at_50_percent_transfer_range_mps": [
+      1.7103153816693395,
+      1.8745075899485546
+    ],
+    "speed_for_25_percent_margin_worst_case_mps": 2.343134487435693,
+    "speed_for_25_percent_margin_worst_case_rpm": 223.75286160269107,
+    "speed_cases": [
+      {
+        "surface_speed_mps": 2.0,
+        "rpm_d200": 190.98593171027443,
+        "speed_margin_over_worst_min_percent": 6.694686685951989,
+        "ball_kinetic_energy_j": 0.114,
+        "energy_available_at_50_percent_j": 0.057,
+        "meets_25_percent_speed_margin": false
+      },
+      {
+        "surface_speed_mps": 2.25,
+        "rpm_d200": 214.8591731740587,
+        "speed_margin_over_worst_min_percent": 20.031522521695997,
+        "ball_kinetic_energy_j": 0.14428125,
+        "energy_available_at_50_percent_j": 0.072140625,
+        "meets_25_percent_speed_margin": false
+      },
+      {
+        "surface_speed_mps": 2.35,
+        "rpm_d200": 224.40846975957245,
+        "speed_margin_over_worst_min_percent": 25.366256855993583,
+        "ball_kinetic_energy_j": 0.15739125,
+        "energy_available_at_50_percent_j": 0.078695625,
+        "meets_25_percent_speed_margin": true
+      },
+      {
+        "surface_speed_mps": 2.5,
+        "rpm_d200": 238.732414637843,
+        "speed_margin_over_worst_min_percent": 33.36835835743999,
+        "ball_kinetic_energy_j": 0.17812500000000003,
+        "energy_available_at_50_percent_j": 0.08906250000000002,
+        "meets_25_percent_speed_margin": true
+      }
+    ],
+    "rebound_note": "2.35..2.50 m/s closes the energy margin but increases residual rebound energy; retain contained roof, compliant rear deflector and anti-return flap, then validate in 5c"
+  },
+  "actuator_geometry": {
+    "pin_spacing_mm_by_angle": {
+      "-3": 123.13167852134004,
+      "0": 119.02046231875785,
+      "15": 97.31445087653874,
+      "16": 95.8050693067768,
+      "17": 94.28857768985655,
+      "18": 92.76510062834984,
+      "19": 91.23476390904811,
+      "20": 89.69769455320615
+    },
+    "required_spacing_change_minus3_to_plus20_mm": 33.43398396813389,
+    "note": "33.4 mm travel fits inside the prior 40 mm stroke screen, but the 89.7..123.1 mm absolute installed length requires P16/bracket drawing verification"
+  },
+  "recommendation": "Use 55 mm pivot-behind-nip, -3 deg collection, 0 deg transport and adjustable +15..+20 deg stationary launch. Keep 23 mm shims/slots and do not release STL until loaded R, tread profile and physical clearances are measured."
+}

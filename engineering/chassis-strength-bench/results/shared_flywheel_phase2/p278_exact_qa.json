@@ -1,0 +1,37 @@
+{
+  "status": "P2_78_EXACT_SOLID_PASS",
+  "socket_crossbar_interface_abs_y_mm": 130.0,
+  "sleeve_length_mm": 120.0,
+  "sleeve_insertion_each_side_mm": 60.0,
+  "retained_hole_stations_abs_y_mm": [75.0, 100.0, 125.0, 150.0],
+  "lock_hole_stations_abs_y_mm": [100.0, 160.0],
+  "selected_torsion_variant": "paired_short_inboard",
+  "side_brace_endpoints_abs_y_mm": [150.0, 125.0],
+  "side_brace_body_section_mm": [20.0, 15.0],
+  "side_brace_end_land_mm": [23.0, 23.0],
+  "side_brace_minimum_hole_edge_to_part_edge_mm": 9.25,
+  "side_brace_cad_bottom_z_mm": 20.5,
+  "estimated_physical_bottom_above_ground_mm": 18.5,
+  "cad_exclusion_plane_for_physical_z15_mm": 17.0,
+  "empty_intersection_checks": [
+    "x240_sleeve_fit",
+    "x300_sleeve_fit",
+    "x240_holes",
+    "x300_holes",
+    "side_braces_frame",
+    "side_braces_ski_brackets",
+    "side_braces_feed_floor_ballast",
+    "side_braces_fit0403_cable",
+    "terminal_fit0403_cable",
+    "terminal_wheels",
+    "terminal_ski_brackets",
+    "side_braces_mpu",
+    "ground"
+  ],
+  "changed_stl_nonmanifold_edge_count": 0,
+  "full_robot_openscad_compile": "NoError; manifold top-level object",
+  "limitations": [
+    "Exact solids validate nominal CAD only; printed tolerances and deflection require dry assembly.",
+    "The physical chassis datum is about 2 mm lower than CAD; selected braces still remain at about 20 mm, above the 15 mm exclusion limit."
+  ]
+}

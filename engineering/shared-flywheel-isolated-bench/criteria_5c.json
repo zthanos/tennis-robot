@@ -1,0 +1,51 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_GAZEBO_5C1_RUN",
+  "scope": "5c-1 only: one-ball capture through nip to frozen guide-entry plane; no basket delivery, multi-ball jam campaign or launch",
+  "matrix": {
+    "approach_speed_m_s": [0.35, 0.6, 0.8],
+    "ball_lateral_offset_m": [-0.1, -0.05, 0.0, 0.05, 0.1],
+    "cheek_variant": ["narrow", "wide"],
+    "ball_tread_mu": [0.3, 0.6, 0.9],
+    "flywheel_surface_speed_m_s": [2.35, 2.5],
+    "ground_mu": 0.7,
+    "repeats_per_condition": 5,
+    "condition_count": 180,
+    "run_count": 900
+  },
+  "geometry": {
+    "launcher_angle_deg": -3.0,
+    "launcher_pivot_m": [0.387, 0.0, 0.049837363636],
+    "ball_usable_edge_reference_margin_m": 0.01,
+    "wheel_radius_m": 0.1,
+    "tread_width_m": 0.06,
+    "tread_edge_round_m": 0.002,
+    "nip_plane_launcher_x_m": 0.0,
+    "fully_through_nip_plane_launcher_x_m": -0.033,
+    "guide_entry_plane_launcher_x_m": -0.105,
+    "guide_entry_basis": "Frozen P2-40 rear-throat datum nip_u-105 mm; reaching this plane is stage 5c-1, not basket delivery."
+  },
+  "motor_model": {
+    "supply_voltage_v": 12.8,
+    "kv_rpm_per_v": 270.0,
+    "torque_constant_nm_per_a": 0.031,
+    "phase_neutral_resistance_ohm": 0.039,
+    "current_limit_a": 20.0,
+    "torque_limit_nm": 0.62,
+    "control": "speed error requests current; terminal voltage is back-EMF plus I*R and is clamped to +/-12.8 V; current and torque are then recomputed from the clamped voltage"
+  },
+  "criteria": [
+    {"name":"condition_success_count","threshold":4,"comparison":"min_ge","unit":"successful repeats of 5","hard_fail":true,"rationale":"User-proposed repeatability gate accepted unchanged.","source":"P2-43 approval."},
+    {"name":"fully_through_nip","threshold":-0.033,"comparison":"launcher_x_min_le","unit":"m","hard_fail":true,"rationale":"A 33 mm-radius ball is fully behind the geometric nip when its centre is one radius behind it.","source":"Calibrated ball radius 0.033 m and frozen nip frame."},
+    {"name":"guide_entry_reached","threshold":-0.105,"comparison":"launcher_x_min_le","unit":"m","hard_fail":true,"rationale":"Uses the existing frozen rear-throat datum; it does not claim downstream guide or basket delivery.","source":"P2-40 rear_throat = nip_u-105 mm."},
+    {"name":"nip_exit_speed","threshold":1.7,"comparison":"rearward_speed_min_ge","unit":"m/s","hard_fail":true,"rationale":"Uses the lower edge of the stated 1.7-1.9 m/s guide requirement; 1.9 m/s is reported as the preferred-margin diagnostic.","source":"P2-43 user requirement."},
+    {"name":"plough","threshold":0.1,"comparison":"pre_nip_forward_ball_displacement_max_le","unit":"m","hard_fail":true,"rationale":"A ball pushed forward by more than 100 mm before crossing the nip is operational ploughing rather than capture; smaller contact transients are reported.","source":"Defensible bound: greater than three ball radii and larger than the complete 77 mm cheek taper length."},
+    {"name":"jam","threshold":0.5,"comparison":"corridor_low_relative_speed_duration_max_le","unit":"s","hard_fail":true,"rationale":"Half a second is longer than the nominal 105 mm guide-entry transit even at 0.21 m/s and distinguishes a persistent wedge from contact chatter.","source":"Engineering bound; nominal required transit at 1.7 m/s is 0.062 s."},
+    {"name":"d5065_current","threshold":20.0,"comparison":"abs_max_le","unit":"A per motor","hard_fail":true,"rationale":"Existing provisional controller/pack gate; not the motor maximum.","source":"v3_bench_contract.json D5065 analytical model."},
+    {"name":"d5065_torque","threshold":0.62,"comparison":"abs_max_le","unit":"N m per motor","hard_fail":true,"rationale":"20 A multiplied by Kt=0.031 N m/A.","source":"Existing D5065 analytical model."},
+    {"name":"forbidden_launcher_contact_count","threshold":0,"comparison":"eq","unit":"contact samples","hard_fail":true,"rationale":"Frozen P2-40 requires physical separation from ground/chassis; any contact stops the campaign for frame/model investigation.","source":"P2-40 >=8 mm physical clearance requirement."},
+    {"name":"contact_force","threshold":null,"unit":"N","hard_fail":false,"rationale":"No calibrated cheek/guide stiffness or force acceptance requirement exists.","source":"Diagnostic only."},
+    {"name":"nip_exit_speed_preferred","threshold":1.9,"comparison":"report_fraction_ge","unit":"m/s","hard_fail":false,"rationale":"Upper edge of the stated guide requirement is reported but not substituted for the accepted 1.7 m/s minimum.","source":"P2-43 user requirement."}
+  ],
+  "failure_discipline": "If any launcher-to-ground/chassis contact contradicts P2-40, stop before CAD changes and inspect model/frames.",
+  "prohibitions": ["no artificial ball transfer", "no forced post-contact ball velocity", "no refit of tennis_ball_compliant", "no 5c-2/5c-3/5d claim"]
+}

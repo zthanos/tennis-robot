@@ -1,0 +1,55 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_P2_46_GAZEBO_RUN",
+  "scope": "Gazebo 5c-2 only: single-ball delivery, bounce/retention, practical basket capacity and full-basket motion retention; no multi-ball intake or launch claim",
+  "reference_geometry": {
+    "ramp_tip_underside_clearance_mm": 8,
+    "cheek_variant": "exposed_shallow",
+    "intake_angle_deg": -3,
+    "approach_speed_m_s": 0.6,
+    "flywheel_surface_speed_m_s": 2.5,
+    "ball_tread_mu": 0.6,
+    "ground_mu": 0.7
+  },
+  "delivery_matrix": {
+    "existing_ball_count": [0, 10, 25, 40],
+    "repeats_per_condition": 5,
+    "run_count": 20,
+    "preload_method": "dynamic fall from deterministic low-discrepancy release points above the open basket; no final grid placement"
+  },
+  "capacity_probe": {
+    "existing_ball_count": [44, 49, 54, 59],
+    "resulting_total_after_new_ball": [45, 50, 55, 60],
+    "repeats_per_condition": 3,
+    "run_count": 12,
+    "closure_definition": "first probed resulting total with fewer than 3/3 retained collection successes or persistent entrance occupancy",
+    "resolution_balls": 5
+  },
+  "motion_retention": {
+    "preloaded_ball_count": 45,
+    "repeats": 5,
+    "sequence": ["settle", "straight_0p6", "brake_from_0p6", "moving_turn", "final_stop"],
+    "run_count": 5
+  },
+  "success_semantics": {
+    "collection_success": "new ball crosses the basket entrance and remains inside through a 2 s dwell",
+    "bounce_out": "new ball crosses the entrance, then leaves the basket containment bounds",
+    "entrance_blocked": "a ball centre persistently occupies the central entrance prism during the final 1 s dwell",
+    "path_diagnostics": ["pre_nip_forward_displacement_m", "pre_nip_lateral_displacement_m", "front_wall_or_cheek_contact_count"]
+  },
+  "criteria": [
+    {"name": "core_delivery_success_count", "threshold": 5, "comparison": "eq", "unit": "successful repeats of 5", "hard_fail": true, "rationale": "Each requested 0/10/25/40 preload condition must retain the new ball in every repeat."},
+    {"name": "collection_success", "threshold": true, "comparison": "eq", "hard_fail": true, "rationale": "Separates successful capture/retention from path quality."},
+    {"name": "bounce_out", "threshold": false, "comparison": "eq", "hard_fail": true, "rationale": "A ball that later exits is not retained."},
+    {"name": "entrance_blocked", "threshold": false, "comparison": "eq", "hard_fail": true, "rationale": "The new delivery must not leave the next intake path persistently closed."},
+    {"name": "motion_ball_loss_count", "threshold": 0, "comparison": "eq", "hard_fail": true, "rationale": "No ball may leave the basket during 0.6 m/s travel, braking or moving turn."},
+    {"name": "d5065_current", "threshold": 20.0, "comparison": "abs_max_le", "unit": "A per motor", "hard_fail": true},
+    {"name": "forbidden_launcher_contact_count", "threshold": 0, "comparison": "eq", "hard_fail": true},
+    {"name": "finite_state", "threshold": 0, "comparison": "nonfinite_count_eq", "hard_fail": true}
+  ],
+  "physics_limitations": [
+    "Incoming ball to ground/flywheel uses the unchanged calibrated tennis_ball_compliant analytical law.",
+    "Basket, ramp and ball-to-ball contacts are native DART rigid contacts; ball-to-ball restitution/compliance is not calibrated, so contact forces and exact rebound amplitudes are diagnostic only.",
+    "All repeats are deterministic seeds, not manufacturing or clay-court uncertainty Monte Carlo."
+  ],
+  "prohibitions": ["no artificial ball transfer", "no final grid placement", "no forced ball velocity", "no tennis_ball_compliant refit", "no frozen P2-40 geometry change", "no 5c-3 or 5d run"]
+}

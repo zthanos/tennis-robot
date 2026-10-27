@@ -14,12 +14,13 @@ import math
 import time
 
 import rclpy
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, TwistStamped
 from nav_msgs.msg import Odometry
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import JointState
 
 
-WHEEL_RADIUS_M = 0.09
+WHEEL_RADIUS_M = 0.085
 WHEEL_SEPARATION_M = 0.70
 
 
@@ -39,15 +40,30 @@ def stamp_sec(stamp):
 
 
 class MotionDiagnostic:
-    def __init__(self, cmd_topic):
+    def __init__(self, cmd_topic, stamped_cmd):
         self.node = rclpy.create_node("diagnose_turn_motion")
-        self.pub = self.node.create_publisher(Twist, cmd_topic, 10)
+        self.stamped_cmd = stamped_cmd
+        command_type = TwistStamped if stamped_cmd else Twist
+        self.pub = self.node.create_publisher(command_type, cmd_topic, 10)
         self.odom = None
         self.joint_state = None
         self.cmd_out = None
-        self.node.create_subscription(Odometry, "/diff_drive_controller/odom", self._on_odom, 10)
-        self.node.create_subscription(JointState, "/joint_states", self._on_joint_state, 10)
-        self.node.create_subscription(Twist, "/diff_drive_controller/cmd_vel_out", self._on_cmd_out, 10)
+        self.node.create_subscription(
+            Odometry, "/diff_drive_controller/odom", self._on_odom, qos_profile_sensor_data
+        )
+        self.node.create_subscription(
+            JointState, "/joint_states", self._on_joint_state, qos_profile_sensor_data
+        )
+        output_type = TwistStamped if stamped_cmd else Twist
+        self.node.create_subscription(output_type, "/diff_drive_controller/cmd_vel_out", self._on_cmd_out, 10)
+
+    def _command(self, twist):
+        if not self.stamped_cmd:
+            return twist
+        msg = TwistStamped()
+        msg.header.stamp = self.node.get_clock().now().to_msg()
+        msg.twist = twist
+        return msg
 
     def _on_odom(self, msg):
         self.odom = msg
@@ -69,7 +85,7 @@ class MotionDiagnostic:
     def stop(self):
         msg = Twist()
         for _ in range(10):
-            self.pub.publish(msg)
+            self.pub.publish(self._command(msg))
             rclpy.spin_once(self.node, timeout_sec=0.05)
 
     def run_command(self, label, twist, sim_duration_s, max_wall_s):
@@ -84,7 +100,7 @@ class MotionDiagnostic:
         samples = []
 
         while time.time() - start_wall < max_wall_s:
-            self.pub.publish(twist)
+            self.pub.publish(self._command(twist))
             rclpy.spin_once(self.node, timeout_sec=0.05)
             if self.odom is None or self.joint_state is None:
                 continue
@@ -135,9 +151,10 @@ class MotionDiagnostic:
             f"right={end_velocities.get('rear_right_wheel_joint', 0.0):+.3f}"
         )
         if self.cmd_out is not None:
+            cmd_out = self.cmd_out.twist if self.stamped_cmd else self.cmd_out
             print(
                 "last_cmd_vel_out="
-                f"linear.x={self.cmd_out.linear.x:+.3f} angular.z={self.cmd_out.angular.z:+.3f}"
+                f"linear.x={cmd_out.linear.x:+.3f} angular.z={cmd_out.angular.z:+.3f}"
             )
 
     def destroy(self):
@@ -147,6 +164,11 @@ class MotionDiagnostic:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--cmd-topic", default="/cmd_vel_teleop")
+    parser.add_argument(
+        "--stamped-cmd",
+        action="store_true",
+        help="Publish geometry_msgs/TwistStamped (required by Jazzy diff_drive_controller).",
+    )
     parser.add_argument("--sim-seconds", type=float, default=2.0)
     parser.add_argument("--max-wall-seconds", type=float, default=45.0)
     parser.add_argument("--linear-x", type=float, default=0.3)
@@ -154,7 +176,7 @@ def main():
     args = parser.parse_args()
 
     rclpy.init()
-    diag = MotionDiagnostic(args.cmd_topic)
+    diag = MotionDiagnostic(args.cmd_topic, args.stamped_cmd)
     try:
         linear = Twist()
         linear.linear.x = args.linear_x

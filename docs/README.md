@@ -3,6 +3,17 @@
 Active source-of-truth documents, grouped by topic. When a decision changes,
 update the relevant baseline document first, then adjust CAD/software/tests.
 
+**Start here:** [`current-design-el.md`](current-design-el.md) is the concise
+current architecture. [`decisions/decision-log-el.md`](decisions/decision-log-el.md)
+records why earlier architectures changed. Physical print status is owned by
+[`../cad/ACTIVE-PRINT-SET.md`](../cad/ACTIVE-PRINT-SET.md).
+
+Current mechanism in one sentence: one tilting dual flywheel performs intake
+and throwing at `−3° / 0° / +15…+20°`, driven in tilt by FIT0186+Tr8×2 with
+AS5600 and BTS #3; the P2-71 basket is four-sided mesh with only an `80×80 mm`
+feed door, and F is the sole body concept. P2-90…P2-93 bench/electronics/CAD
+status is consolidated in `current-design-el.md`.
+
 ## Structure
 
 ```text
@@ -11,7 +22,7 @@ docs/
   perception/         OAK-D perception + measurement-covariance calibration
     covariance/       Gazebo covariance calibration reports (c2 / c2-v2 / c2-v3)
   survey/             court knowledge model + LiDAR court survey (v2) + SLAM
-  mechanism/          active dual-wheel intake / funnel / basket + intake debug log
+  mechanism/          shared rotating flywheel, basket, ski and P2 evidence
   hardware/           active 4WD layout, BOM, wiring, purchase lists, sensor contract
   process/            architecture guide, delivery contract, validation, board, telemetry
   images/             diagrams referenced by the build plans
@@ -41,20 +52,36 @@ docs/
 - `slam-mapping-el.md` - SLAM mapping notes.
 
 ## mechanism/
-- `intake-debug-log-el.md` - **running debug log** for the intake/collector mechanism.
-- `dual-wheel-intake-design-el.md`, `intake-concept-decision-el.md`, `intake-bench-sweep-report-el.md`.
+- `shared-flywheel-intake-launcher-debug-log-el.md` - πλήρες P2 history και
+  source evidence για το κοινό περιστρεφόμενο flywheel.
+- `p273-bolted-ski-final-el.md`, `outboard-selector-rails-p274-el.md`,
+  `p285-ski-bracket-el.md` - ενεργός βατήρας/rails/στήριξη.
+- `rear-cage-p280-el.md` - μελλοντικό fully printed PETG concept, όχι release.
+- Τα `standalone-*`, `compact-*`, `intake-concept-decision-el.md` και τα
+  παλιά flywheel capability reports είναι ιστορικά evidence και φέρουν banner
+  προς το `current-design-el.md`.
+- `../archive/mechanism/intake/README.md` - superseded intake reports, CAD/data
+  traceability, and the classification ledger.
 - `basket-bin-redesign-spec-el.md`.
+- `../hardware/bench-bringup-no-motors-el.md` - no-motor Mega bring-up,
+  `bench_check_mega.py`, `mega_buttons_panel.py` and local START arming.
 
 ## hardware/
-- Purchase/build: `chassis-layout-4wd-dual-intake-el.md`, `prototype-purchase-list-el.md`, `hardware-bom-el.md`, `ordered-parts.md`.
-- Wiring/setup: `motion-perfboard-wiring-el.md`, `ros2-control-migration-el.md`, `ubuntu-dual-boot-handoff.md`.
+- Purchase/build: `prototype-purchase-list-el.md`, `hardware-bom-el.md`,
+  `ordered-parts.md` και το active CAD manifest.
+- `chassis-layout-4wd-dual-intake-el.md` και
+  `modular-open-front-test-chassis-el.md` είναι ιστορικά predecessors του
+  modular v3/P2-78 chassis.
+- Wiring/setup: `unified-keyed-perfboard-wiring-el.md` (new Rev C netlist;
+  physical solder-side routing still pending), `ros2-control-migration-el.md`,
+  `ubuntu-dual-boot-handoff.md`. Older perfboard wiring is in `../archive/hardware/`.
 - Contracts: `sensor-topic-contract-el.md`, `hardware-glossary.md`.
 - `../arduino/collector/` - Arduino bring-up sketches (collector motor, encoder, IR beam).
 
 ## process/
 - `architecture-implementation-guide-el.md` - source-of-truth implementation guide.
 - `feature-delivery-contract-el.md` - spec/design/plan workflow for substantial features.
-- `pi-deployment-plan-el.md` - Raspberry Pi deployment + Humble→Jazzy migration plan.
+- `pi-deployment-plan-el.md` - Raspberry Pi deployment/Jazzy baseline.
 - `validation-plan-el.md`, `project-board-plan-el.md`, `telemetry-architecture-el.md`.
 
 ## Archive

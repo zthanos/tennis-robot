@@ -1,0 +1,8 @@
+{
+  "phase": "P2-61",
+  "frozen_before_first_corrected_launch_run": true,
+  "setup": {"angle_deg": 20, "nip_mm": 58, "diametral_compression_mm": 8, "timestep_s": 0.00025, "surface_speed_m_s": [12,16,20,24], "tread_mu": [0.6,0.9], "feed_speed_m_s": [0,2]},
+  "per_run_checks": {"forward_exit_plane_launcher_x_m": 0.14, "maximum_vehicle_translation_m": 0.02, "maximum_vehicle_yaw_deg": 1.0, "forbidden_ball_contacts": ["intake_cheek","fixture_arch","lidar","camera","beam","sensor"]},
+  "target_exit_speed_m_s": [12,14],
+  "record_policy": "failed and boundary cases"
+}

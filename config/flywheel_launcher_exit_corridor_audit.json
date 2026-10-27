@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "scope": "standalone_flywheel_post_nip_exit_corridor_preimplementation_audit",
+  "cad_cylinder": {
+    "classification": "NOMINAL_LAUNCH_CORRIDOR",
+    "physical_hardware": false,
+    "exit_keep_out_or_reference": true,
+    "source_file": "cad/flywheel-launcher-v0/launcher-envelope.scad",
+    "source_module": "exit_guide_envelope",
+    "parameter_source": "cad/flywheel-launcher-v0/params.scad",
+    "diameter_m": 0.09,
+    "length_m": 0.22,
+    "launcher_local_origin_m": [
+      0.21,
+      0.0,
+      0.0
+    ],
+    "launcher_local_axis": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "launcher_local_x_extent_m": [
+      0.1,
+      0.32
+    ],
+    "collision_geometry": false,
+    "intended_for_manufacture": false
+  },
+  "measured_path": {
+    "final_wheel_contact_time_s": 2.035,
+    "wheel_release_time_s": 2.037,
+    "wheel_release_world_position_m": [
+      0.038094,
+      0.0,
+      0.358997
+    ],
+    "wheel_release_launcher_local_position_m": [
+      0.03887380592571946,
+      0.0,
+      -0.004574500830637176
+    ],
+    "wheel_release_world_velocity_m_s": [
+      5.01907,
+      0.0,
+      1.61728
+    ],
+    "wheel_release_launcher_local_velocity_m_s": [
+      5.269525379605667,
+      0.0,
+      -0.19687695901693014
+    ],
+    "first_cradle_contact_time_s": 2.044,
+    "first_cradle_contact_world_position_m": [
+      0.0732274,
+      0.0,
+      0.370043
+    ],
+    "first_cradle_contact_launcher_local_position_m": [
+      0.07566635715201442,
+      0.0,
+      -0.006210986644954078
+    ],
+    "collision_name": "flywheel_launcher_frame_link_fixed_joint_lump__flywheel_cradle_lower_plate_col_collision",
+    "contact_normal_world_on_ball": [
+      -0.3420201433256687,
+      0.0,
+      0.9396926207859084
+    ],
+    "geometric_penetration_m": 0.00021098664495407954,
+    "centre_distance_release_to_contact_m": 0.036828927646077335
+  },
+  "cad_corridor_comparison": {
+    "measured_centre_path_inside_cylinder": true,
+    "full_66mm_swept_ball_inside_cylinder": false,
+    "full_ball_first_exits_cylinder_at_launcher_local_x_m": 0.16502570647805279,
+    "full_ball_centre_z_at_exit_m": -0.012004044828094149,
+    "cradle_plate_intersects_cylinder": true,
+    "plate_overlap_launcher_local_x_m": [
+      0.1,
+      0.128
+    ],
+    "cylinder_half_width_at_lower_plate_inner_face_m": 0.022449944320643647
+  },
+  "root_cause": {
+    "A_cradle_incorrectly_reconstructed": false,
+    "B_cad_lacks_required_exit_opening": true,
+    "C_actual_exit_departs_nominal_axis_enough_to_exhaust_6mm_clearance": true,
+    "D_shaped_exit_cutout_required": true,
+    "E_other_fixed_component_redirects_ball_before_impact": false
+  },
+  "cutout_study": {
+    "zero_contact": {
+      "clearance_m": 0.0,
+      "includes_cad_nominal_corridor": false,
+      "bounding_box_xy_m": {
+        "x": [
+          0.0713,
+          0.128
+        ],
+        "y": [
+          -0.014431556357589555,
+          0.014431556357589555
+        ]
+      },
+      "removed_area_m2": 0.0010669916789052924,
+      "removed_volume_m3": 8.53593343124234e-06,
+      "removed_6061_mass_kg": 0.023047020264354318,
+      "remaining_side_ligament_each_m": 0.14256844364241045
+    },
+    "plus_2mm": {
+      "clearance_m": 0.002,
+      "includes_cad_nominal_corridor": false,
+      "bounding_box_xy_m": {
+        "x": [
+          0.03260000000000002,
+          0.128
+        ],
+        "y": [
+          -0.0185545093953541,
+          0.0185545093953541
+        ]
+      },
+      "removed_area_m2": 0.0023898431648627138,
+      "removed_volume_m3": 1.911874531890171e-05,
+      "removed_6061_mass_kg": 0.05162061236103462,
+      "remaining_side_ligament_each_m": 0.1384454906046459
+    },
+    "plus_5mm": {
+      "clearance_m": 0.005,
+      "includes_cad_nominal_corridor": false,
+      "bounding_box_xy_m": {
+        "x": [
+          0.022800000000000015,
+          0.128
+        ],
+        "y": [
+          -0.023733306109817134,
+          0.023733306109817134
+        ]
+      },
+      "removed_area_m2": 0.003955795194436534,
+      "removed_volume_m3": 3.164636155549227e-05,
+      "removed_6061_mass_kg": 0.08544517619982914,
+      "remaining_side_ligament_each_m": 0.13326669389018286
+    },
+    "practical_plus_5mm_union_cad_corridor": {
+      "clearance_m": 0.005,
+      "includes_cad_nominal_corridor": true,
+      "bounding_box_xy_m": {
+        "x": [
+          0.022800000000000015,
+          0.128
+        ],
+        "y": [
+          -0.023733306109817134,
+          0.023733306109817134
+        ]
+      },
+      "removed_area_m2": 0.003970600826323288,
+      "removed_volume_m3": 3.17648066105863e-05,
+      "removed_6061_mass_kg": 0.08576497784858302,
+      "remaining_side_ligament_each_m": 0.13326669389018286
+    }
+  },
+  "proposed_practical_cutout": {
+    "definition": "union of measured ballistic swept sphere at radius 38 mm and explicit CAD diameter-90-mm nominal corridor, clipped to each plate",
+    "lower_plate": {
+      "clearance_m": 0.005,
+      "includes_cad_nominal_corridor": true,
+      "bounding_box_xy_m": {
+        "x": [
+          0.022800000000000015,
+          0.128
+        ],
+        "y": [
+          -0.023733306109817134,
+          0.023733306109817134
+        ]
+      },
+      "removed_area_m2": 0.003970600826323288,
+      "removed_volume_m3": 3.17648066105863e-05,
+      "removed_6061_mass_kg": 0.08576497784858302,
+      "remaining_side_ligament_each_m": 0.13326669389018286
+    },
+    "upper_plate": {
+      "definition": "CAD nominal corridor intersection only; no unsupported mirror of measured downward path",
+      "bounding_box_xy_m": {
+        "x": [
+          0.1,
+          0.128
+        ],
+        "y": [
+          -0.022449944320643647,
+          0.022449944320643647
+        ]
+      },
+      "removed_area_m2": 0.0012571968819560441,
+      "removed_volume_m3": 1.0057575055648354e-05,
+      "removed_6061_mass_kg": 0.027155452650250555,
+      "remaining_side_ligament_each_m": 0.13455005567935635
+    },
+    "minimum_distance_to_motor_mount_hole_edge_m": 0.10235583635939037,
+    "minimum_distance_to_shaft_axis_m": 0.11864010905900088,
+    "minimum_distance_to_panel_side_edge_m": 0.13326669389018286,
+    "downstream_edge_is_intentionally_open": true,
+    "structural_classification": "GEOMETRIC_PASS_STRUCTURAL_REVIEW_REQUIRED"
+  },
+  "future_capability_envelope": {
+    "minimum_current_test_clearance": "defined by measured path plus 5 mm",
+    "future_capability_keep_out": "provisional existing diameter-90-mm CAD corridor only",
+    "final_12_to_18_m_s_angular_envelope_defined": false,
+    "reason": "exit elevation across the stopped RPM and timestep matrices has not been measured"
+  },
+  "decisions_preimplementation": {
+    "CAD_CYLINDER_IS_PHYSICAL_HARDWARE": false,
+    "CAD_CYLINDER_IS_EXIT_KEEP_OUT_OR_REFERENCE": true,
+    "CURRENT_CRADLE_VIOLATES_BALL_EXIT_ENVELOPE": true,
+    "LOWER_PLATE_EXIT_CUTOUT_REQUIRED": true,
+    "MINIMUM_EXIT_CUTOUT_DEFINED": true,
+    "PRACTICAL_EXIT_CLEARANCE_DEFINED": true,
+    "POST_FLYWHEEL_PATH_NONCONTACTING": false,
+    "POST_FLYWHEEL_BARREL_CONTACT_REQUIRED": false,
+    "CRADLE_EXIT_GEOMETRY_READY_FOR_CAPABILITY_RETEST": false,
+    "STRUCTURAL_REVIEW_REQUIRED": true
+  },
+  "postimplementation_retest": {
+    "case_id": "same_low_energy_mu_0p3_dt_1ms_after_exit_relief",
+    "wheel_target_rad_s": [
+      80.0,
+      -80.0
+    ],
+    "friction_assumption": 0.3,
+    "timestep_s": 0.001,
+    "injection_speed_m_s": 3.0,
+    "exit_speed_m_s": 5.273201898590647,
+    "exit_elevation_deg": 17.860343423863593,
+    "post_release_geometry_clear": true,
+    "maximum_non_gravity_delta_v_before_ground_m_s": 4.0000000032461985e-06,
+    "first_ground_contact_time_s": 2.508,
+    "first_bounce_xyz_m": [
+      2.40207,
+      0.0,
+      0.0314045
+    ],
+    "recovery_time_s": 0.20900000000000007,
+    "passed": true
+  },
+  "decisions_final": {
+    "CAD_CYLINDER_IS_PHYSICAL_HARDWARE": false,
+    "CAD_CYLINDER_IS_EXIT_KEEP_OUT_OR_REFERENCE": true,
+    "CURRENT_CRADLE_VIOLATES_BALL_EXIT_ENVELOPE": false,
+    "LOWER_PLATE_EXIT_CUTOUT_REQUIRED": true,
+    "MINIMUM_EXIT_CUTOUT_DEFINED": true,
+    "PRACTICAL_EXIT_CLEARANCE_DEFINED": true,
+    "POST_FLYWHEEL_PATH_NONCONTACTING": true,
+    "POST_FLYWHEEL_BARREL_CONTACT_REQUIRED": false,
+    "CRADLE_EXIT_GEOMETRY_READY_FOR_CAPABILITY_RETEST": true,
+    "STRUCTURAL_REVIEW_REQUIRED": true
+  }
+}

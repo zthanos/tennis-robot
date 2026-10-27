@@ -4,11 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Simulation-first tennis ball collection robot. Stack: Gazebo Harmonic (simulation) + ROS 2 Humble + Python. The active design is "Concept A": level (un-pitched) 4WD skid-steer chassis with four driven 180 mm wheels (two per side, no casters), orange funnel, wide intake roller, optional OAK-D depth camera, and an MPU6050 IMU (gyro+accel) for fusing with wheel odometry.
+4WD skid-steer tennis robot with a modular PETG v3 chassis and one shared,
+tilting dual flywheel for both intake and launch. The P2-40 operating geometry
+is −3° collection, 0° transport and +15…+20° stationary launch. Tilt uses the
+P2-53/54 FIT0186+Tr8×2 baseline, AS5600 absolute feedback and reserved BTS #3.
+The P2-71 basket has four mesh sides; only its fail-closed 80×80 feed door is
+solid, while the front-wall details remain mockup-gated. F is the sole active
+body concept; its side/front panels and the moving flywheel module remain
+concepts pending basket and wheel/D5065 measurements. The active
+mechanical, electronics, print and body-panel status is summarized in
+`docs/current-design-el.md`; the physical print source of truth is
+`cad/ACTIVE-PRINT-SET.md`.
+
+The canonical stack is Gazebo Harmonic + ROS 2 Jazzy + Python. Native Ubuntu
+24.04 is the normal runtime; the Ubuntu 26.04 development PC uses
+`docker/jazzy/run.sh`. Webots, Concept A funnel/roller and Humble Docker are
+historical only.
 
 ## Current Architecture Direction
 
-New implementation work should start from `docs/process/architecture-implementation-guide-el.md` and the active baseline docs in `docs/`, especially validation, search strategy, collection state machine, and mission dashboard plans.
+New implementation work should start from `docs/current-design-el.md`,
+`docs/process/architecture-implementation-guide-el.md` and the active baseline
+docs in `docs/`, especially validation, search strategy, collection state
+machine and mission dashboard plans.
 
 ## Commands
 

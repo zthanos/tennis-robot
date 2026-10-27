@@ -1,0 +1,74 @@
+{
+  "status": "ADD_ON_CAD_CHECKED_PHYSICAL_RETENTION_UNVERIFIED",
+  "source_sha256": "16647e2bddc3d9a1c47e83f692ca923362b928a213eeec403406a27608764c5f",
+  "stl_sha256": "5639a43527899dca754c17b3706d06c8daa248a4f2a7a2254e514a61c2bbe75b",
+  "checks": [
+    {
+      "check": "qa_sleeve",
+      "overlap_volume_cm3": 3.8546943414985435e-16,
+      "empty": false
+    },
+    {
+      "check": "qa_front_sleeve",
+      "overlap_volume_cm3": 0.0,
+      "empty": true
+    },
+    {
+      "check": "qa_nut",
+      "overlap_volume_cm3": 0.0,
+      "empty": true
+    }
+  ],
+  "mesh": {
+    "triangle_count": 46,
+    "bounds_min_mm": [
+      -4.75,
+      -2.5,
+      0.0
+    ],
+    "bounds_max_mm": [
+      4.75,
+      7.75,
+      3.3000000000000003
+    ],
+    "envelope_mm": [
+      9.5,
+      10.25,
+      3.3000000000000003
+    ],
+    "solid_volume_cm3": 0.23926793414693587,
+    "nonmanifold_edge_count": 0,
+    "connected_components": 1,
+    "positive_volume_shells": 1,
+    "shell_signed_volume_cm3": [
+      0.23926793414693584
+    ],
+    "component_bounds_mm": [
+      [
+        [
+          -4.75,
+          -2.5,
+          0.0
+        ],
+        [
+          4.75,
+          7.75,
+          3.3
+        ]
+      ]
+    ],
+    "degenerate_triangles": 0
+  },
+  "assumptions": {
+    "nut_across_flats_mm": 5.5,
+    "nut_thickness_preview_mm": 2.4,
+    "entrance_to_screw_axis_mm": 9,
+    "channel_height_mm": 3.7
+  },
+  "limits": [
+    "No positive latch in existing housing",
+    "Physical insertion, nut centering and resistance to falling out require trial",
+    "No change to existing load-bearing nut seat or screw stack",
+    "Applies to current 43 mm wide sleeves; not certification of older exports"
+  ]
+}

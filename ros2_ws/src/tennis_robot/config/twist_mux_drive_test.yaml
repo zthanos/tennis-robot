@@ -1,0 +1,8 @@
+twist_mux:
+  ros__parameters:
+    use_sim_time: false
+    topics:
+      collection:
+        topic: /cmd_vel_collection_stamped
+        timeout: 0.5
+        priority: 100

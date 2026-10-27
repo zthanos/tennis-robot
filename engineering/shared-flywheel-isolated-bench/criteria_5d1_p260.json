@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "frozen_before_first_p260_run": true,
+  "scope": "P2-60 diagnostic-only launch saturation sensitivity; production geometry remains frozen",
+  "baseline": {
+    "launch_angle_deg": 20,
+    "surface_speed_m_s": 20,
+    "wheel_diameter_m": 0.2,
+    "ball_diameter_m": 0.066,
+    "nominal_nip_gap_m": 0.058,
+    "normal_law": "F=107309.294*delta^1.5 per wheel",
+    "contact_model": "unchanged P2-51/5c-3 analytical normal and tangential model"
+  },
+  "matrix": {
+    "nip_compression_mm": [8, 11, 14],
+    "tread_mu": [0.6, 0.9, 1.2],
+    "feed_speed_m_s": [0, 2, 4],
+    "repeats": 1,
+    "diagnostic_wheel_motion_in_generated_world_only": true,
+    "contact_entry_release_offset_inside_contact_mm": 0.5
+  },
+  "reporting": {
+    "target_exit_speed_m_s": 12,
+    "record_every_non_exit_case": true,
+    "record_closest_below_and_first_at_or_above_target_per_mu": true
+  },
+  "per_run_checks": {
+    "forward_exit_plane_launcher_x_m": 0.14,
+    "maximum_motor_current_a_each": 20,
+    "maximum_motor_torque_nm_each": 0.62,
+    "maximum_vehicle_translation_m": 0.02,
+    "maximum_vehicle_yaw_deg": 1,
+    "forbidden_ball_contacts": ["intake_cheek", "fixture_arch", "lidar", "camera", "beam", "sensor"],
+    "finite_state_required": true
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "status": "P2_65_CAD_COLLISION_PASS",
+  "engine": "OpenSCAD 2026.10.13.snap exact CGAL intersections",
+  "geometry": {
+    "crossbar_half_length_mm": 195.0,
+    "rail_inner_face_abs_y_mm": 195.0,
+    "x240_t_clamp": {
+      "insertion_mm": 60.0,
+      "upright_width_mm": 24.0
+    },
+    "x300_t_clamp": {
+      "insertion_mm": 60.0,
+      "upright_width_mm": 11.0
+    },
+    "field_drill_holes_global_mm": [
+      {
+        "x": 240.0,
+        "z": 46.0,
+        "axis": "Y",
+        "diameter": 4.5
+      },
+      {
+        "x": 300.0,
+        "z": 46.0,
+        "axis": "Y",
+        "diameter": 4.5
+      }
+    ]
+  },
+  "exact_intersections": {
+    "x240_crossbar_and_t_clamp_vs_front_terminal_cm3": 0.0,
+    "x300_crossbar_and_t_clamp_vs_front_terminal_cm3": 0.0,
+    "x300_connection_vs_ballast_plate_cm3": 0.0,
+    "x300_connection_vs_c_hooks_after_relief_cm3": 0.0,
+    "outboard_m4_head_vs_baja_tyre_cm3": 0.0,
+    "x300_connection_vs_fit0403_encoder_and_rerouted_cable_cm3": 0.0
+  },
+  "clearances_mm": {
+    "outboard_m4_head_to_tyre_inner_face": 6.5,
+    "x310_c_hook_radial_to_x300_relief": 1.25,
+    "fit0403_motor_body_bottom_to_connection_top": 13.0,
+    "control_console_x_max_to_x240_tube_x_min": 30.0
+  },
+  "assembly_transform_correction": {
+    "printed_geometry_changed": false,
+    "rail_and_rear_corner_sleeve_center_z_mm": 37.0,
+    "x240_x300_low_sleeve_center_z_mm": 32.0,
+    "previous_side_hole_axis_error_mm": -11.5
+  },
+  "required_cable_route": [
+    "leave the encoder radially at X300/Y166 above the deck",
+    "jog rearward to X275 before descending",
+    "descend inboard at Y185",
+    "cross toward the rail only below global Z22"
+  ],
+  "notes": [
+    "Terminal probes contain only zero-thickness coincident faces at Y=195; numerical signed volume is below 3e-13 cm3.",
+    "The pre-P2-65 X310/Y185 C-hook had a 0.3304 cm3 intersection with the old X300 tube edge; the 9 mm symmetric relief removes it.",
+    "Motor and cable envelope retains the documented +/-2..3 mm tape-measure uncertainty; physical cable bend and strain relief remain an assembly gate."
+  ]
+}

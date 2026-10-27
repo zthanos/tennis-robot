@@ -1,5 +1,10 @@
 # Pi Deployment Plan — Ubuntu 24.04 / ROS 2 Jazzy
 
+> **ΤΡΕΧΟΥΣΑ ΚΑΤΑΣΤΑΣΗ (P2-89, 2026-10-22):** το κανονικό runtime είναι
+> native Ubuntu 24.04 + ROS 2 Jazzy. Στον dev PC με Ubuntu 26.04 χρησιμοποιείται
+> το `docker/jazzy/run.sh`. Οι παρακάτω αναφορές σε Humble και στο αρχικό migration
+> διατηρούνται ως ιστορικό του deployment work, όχι ως τρέχουσα οδηγία εκτέλεσης.
+
 ## Context
 
 **Στόχος:** το control stack + το exposed control-panel UI να τρέχουν σε Raspberry

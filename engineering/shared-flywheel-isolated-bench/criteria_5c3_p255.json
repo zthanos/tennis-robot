@@ -1,0 +1,62 @@
+{
+  "status": "FROZEN_BEFORE_CORRECTED_TWO_BALL_P2_55_MATRIX",
+  "written_before_run": true,
+  "stage": "5c-3 P2-51 two-ball collection and ballistic delivery",
+  "purpose": "Measure sequential and side-by-side two-ball handling on the frozen P2-51 R75/42-degree setup without changing geometry or contact calibration.",
+  "supersedes": "The first P2-55 empty_y0 and empty_y50 runs were one-ball P2-51 repetitions and are excluded from this matrix.",
+  "frozen_setup": {
+    "geometry": "P2-40 frozen launcher plus P2-51 basket and R75/42-degree ski-jump",
+    "ski_angle_deg_geometric": 42,
+    "ski_radius_mm": 75,
+    "tangent_length_mm": 52,
+    "wheel_surface_speed_m_s": 6.0,
+    "tread_mu": [0.6, 0.9],
+    "ramp_mu": 0.15,
+    "approach_speed_m_s": 0.6,
+    "ground_mu": 0.7,
+    "launcher_tilt_deg": -3.0,
+    "ball_model": "gazebo/models/tennis_ball_compliant/model.sdf; unchanged calibration",
+    "sequential_clear_gaps_mm": [0, 50, 150, 300],
+    "side_by_side_offsets_mm": [[-50, 50], [-100, 100]],
+    "ball_nominal_diameter_for_gap_mm": 66,
+    "conditions": 12,
+    "repeats_per_condition": 1,
+    "headless_for_acceptance": true
+  },
+  "criteria": [
+    {"name": "all_balls_nip_capture", "hard_fail": true, "rule": "both incoming balls cross launcher-local X=-33 mm"},
+    {"name": "all_balls_ski_takeoff", "hard_fail": true, "rule": "both incoming balls clear the P2-51 ski tip toward -X"},
+    {"name": "all_balls_basket_entry", "hard_fail": true, "rule": "both incoming balls enter the P2-51 basket aperture"},
+    {"name": "all_balls_retained", "hard_fail": true, "rule": "both incoming balls remain in the empty basket with final mean speed <=0.25 m/s"},
+    {"name": "lidar_margin", "hard_fail": true, "rule": "each ball top remains at or below Z380 before first basket entry"},
+    {"name": "d5065_contact_current", "hard_fail": true, "rule": "absolute modeled current <=20 A per motor"},
+    {"name": "d5065_contact_torque", "hard_fail": true, "rule": "absolute modeled torque <=0.62 N m per motor"},
+    {"name": "forbidden_contact", "hard_fail": true, "rule": "no incoming ball or launcher contact with chassis, arch, camera or LiDAR"},
+    {"name": "finite_state", "hard_fail": true, "rule": "no NaN or Inf in telemetry"}
+  ],
+  "required_diagnostics": [
+    "rpm drop attributable to each ball contact window",
+    "time after each ball contact to recover both wheels to 95 percent of commanded rpm",
+    "takeoff speed for each ball and minimum second-ball takeoff speed",
+    "first side-by-side pair contact and governing nip free width versus 2x67 mm"
+  ],
+  "jam_recovery_diagnostics": {
+    "acceptance_scope": false,
+    "case": "side_by_side_y100",
+    "tread_mu": [0.6, 0.9],
+    "profiles": ["stop_1s", "reverse_75mm"],
+    "geometry_changes": false,
+    "record_all": true
+  },
+  "visualization": {
+    "bench_gui_default": false,
+    "acceptance_always_headless": true,
+    "record_required": ["series_gap_0", "series_gap_50", "every_failing_case", "all_jam_recovery_diagnostics"],
+    "live_gui_results_excluded_from_criteria": true
+  },
+  "limitations": [
+    "deterministic Gazebo comparison, not a Monte Carlo tolerance study",
+    "native DART ball-ball and basket contact are not physically calibrated",
+    "no capacity, pile, 5d, STL or production-stack claim"
+  ]
+}

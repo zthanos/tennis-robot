@@ -1,0 +1,273 @@
+{
+  "status": "P2_49_STATIC_CAD_SEPARATED_PATHS_PASS_PENDING_PHYSICAL_TEST_AND_5D_GATE_MECHANISM",
+  "supersedes": "P2-48 ramp-inside-basket functional concept",
+  "geometry_mm": {
+    "storage_polygon_xy": [
+      [
+        -15,
+        -172
+      ],
+      [
+        278,
+        -172
+      ],
+      [
+        278,
+        -50
+      ],
+      [
+        145,
+        -50
+      ],
+      [
+        100,
+        -40
+      ],
+      [
+        100,
+        40
+      ],
+      [
+        145,
+        50
+      ],
+      [
+        278,
+        50
+      ],
+      [
+        278,
+        172
+      ],
+      [
+        -15,
+        172
+      ]
+    ],
+    "central_external_bay_clear_width": 80,
+    "central_external_bay_outer_width": 100,
+    "divider_x": 100,
+    "side_wing_front_x": 278,
+    "rear_x": -15,
+    "rim_z": 360.0,
+    "high_collection_sill_z": 285.0,
+    "lidar_scan_z": 390.0,
+    "floor_longitudinal_slope_deg": 4.5,
+    "floor_cross_slope_deg": 2.0
+  },
+  "storage": {
+    "storage_plan_area_mm2": 83442.0,
+    "floor_z_range_mm": [
+      42.05681123815818,
+      60.5616341495346
+    ],
+    "gross_storage_below_rim_l": 25.82419019729292,
+    "full_rectangle_reference_l": 31.216824794361596,
+    "external_ramp_channel_bay_removed_from_storage_l": 5.392634597068675,
+    "explicit_internal_displacements_l": {
+      "panel_ribs_seams_and_fastener_backs_l": 0.55,
+      "two_smooth_notch_corner_fairings_l": 0.25,
+      "low_feed_throat_gate_keepout_l": 0.35
+    },
+    "net_clean_storage_l": 24.674190197292923,
+    "capacity_by_packing": {
+      "0.56": 91.7910855891854,
+      "0.6": 98.34759170269864,
+      "0.64": 104.90409781621189
+    }
+  },
+  "pile_40": {
+    "count": 40,
+    "solid_ball_volume_l": 6.021302143576341,
+    "effective_plan_area_mm2": 79942.0,
+    "packing_sweep": [
+      {
+        "packing_fraction": 0.56,
+        "mean_height_mm": 134.50157934985768,
+        "conservative_local_top_z_mm": 261.0632134993923,
+        "high_sill_margin_mm": 23.936786500607695
+      },
+      {
+        "packing_fraction": 0.6,
+        "mean_height_mm": 125.5348073932005,
+        "conservative_local_top_z_mm": 252.09644154273508,
+        "high_sill_margin_mm": 32.90355845726492
+      },
+      {
+        "packing_fraction": 0.64,
+        "mean_height_mm": 117.68888193112548,
+        "conservative_local_top_z_mm": 244.25051608066008,
+        "high_sill_margin_mm": 40.74948391933992
+      }
+    ],
+    "worst_local_top_z_mm": 261.0632134993923,
+    "minimum_high_sill_margin_mm": 23.936786500607695
+  },
+  "pile_45": {
+    "count": 45,
+    "solid_ball_volume_l": 6.773964911523384,
+    "effective_plan_area_mm2": 79942.0,
+    "packing_sweep": [
+      {
+        "packing_fraction": 0.56,
+        "mean_height_mm": 151.31427676858988,
+        "conservative_local_top_z_mm": 277.8759109181245,
+        "high_sill_margin_mm": 7.124089081875525
+      },
+      {
+        "packing_fraction": 0.6,
+        "mean_height_mm": 141.2266583173506,
+        "conservative_local_top_z_mm": 267.7882924668852,
+        "high_sill_margin_mm": 17.211707533114804
+      },
+      {
+        "packing_fraction": 0.64,
+        "mean_height_mm": 132.39999217251616,
+        "conservative_local_top_z_mm": 258.96162632205073,
+        "high_sill_margin_mm": 26.038373677949266
+      }
+    ],
+    "worst_local_top_z_mm": 277.8759109181245,
+    "minimum_high_sill_margin_mm": 7.124089081875525
+  },
+  "mandatory_40_high_entry_pass": true,
+  "target_45_is_best_effort": true,
+  "routes_and_selector": {
+    "collection_ramp_transition_radius_mm": 125,
+    "collection_ramp_continuous_side_rails": true,
+    "collection_ramp_side_rail_height_mm": 20,
+    "collection_ramp_clear_width_mm": 80,
+    "collection_ramp_surface_points_xz_mm": [
+      [
+        402,
+        10
+      ],
+      [
+        384.603,
+        11.216
+      ],
+      [
+        367.545,
+        14.842
+      ],
+      [
+        351.158,
+        20.807
+      ],
+      [
+        335.76,
+        28.994
+      ],
+      [
+        321.652,
+        39.244
+      ],
+      [
+        309.107,
+        51.359
+      ],
+      [
+        270,
+        95.1
+      ],
+      [
+        220,
+        151.05
+      ],
+      [
+        170,
+        207.0
+      ],
+      [
+        120,
+        262.95
+      ],
+      [
+        100,
+        285.0
+      ]
+    ],
+    "launch_feed_surface_points_xz_mm": [
+      [
+        100,
+        42
+      ],
+      [
+        180,
+        42
+      ],
+      [
+        225,
+        40
+      ],
+      [
+        250,
+        38
+      ]
+    ],
+    "selector_envelope_xz_mm": [
+      225,
+      335,
+      32,
+      130
+    ],
+    "mouths": {
+      "collection_minus3": {
+        "angle_deg": -3,
+        "floor_xyz_mm": [
+          324.66628119527286,
+          0,
+          45.09315664502592
+        ],
+        "ball_center_z_mm": 78.09315664502591
+      },
+      "launch_plus15": {
+        "angle_deg": 15,
+        "floor_xyz_mm": [
+          329.1831511308979,
+          0,
+          26.063176229331166
+        ],
+        "ball_center_z_mm": 59.06317622933116
+      },
+      "launch_plus20": {
+        "angle_deg": 20,
+        "floor_xyz_mm": [
+          331.47521865787905,
+          0,
+          21.114573783521273
+        ],
+        "ball_center_z_mm": 54.11457378352127
+      }
+    },
+    "collection_lossless_speed_m_s": 2.1691853057712964,
+    "collection_speed_with_25_percent_margin_m_s": 2.7114816322141206,
+    "d200_rpm_with_25_percent_margin": 258.9274229218547,
+    "switch_states": {
+      "collect": "upper collection branch open; low feed shutter closed; selector connects common mouth throat to upper ramp",
+      "transport": "upper and low branch shutters closed; launcher stopped",
+      "launch": "upper collection shutter closed; low feed branch open; selector connects floor channel to common mouth throat"
+    }
+  },
+  "packaging": {
+    "basket_rear_x_mm": -15,
+    "reason_no_rear_extension": "Clean capacity already exceeds 45; retain measured 32 mm rear-drive clearance and external battery access.",
+    "rear_fit0403_front_x_mm": -47,
+    "rear_drive_clearance_mm": 32,
+    "ugreen_envelope_x_mm": [
+      -157.5,
+      -42.5
+    ],
+    "ugreen_to_basket_x_gap_mm": 27.5,
+    "parkside_forward_edge_x_mm": -97.5,
+    "parkside_to_basket_x_gap_mm": 82.5,
+    "rim_to_lidar_scan_clearance_mm": 30.0,
+    "camera": "Camera at X350 is forward of basket X278; central notch preserves the collection ground view. Optical FOV remains a physical validation item."
+  },
+  "limitations": [
+    "Static geometry and energy screen only; no Gazebo.",
+    "Gate/diverter actuation, timing, sensing and ball singulation remain Phase 5d.",
+    "Packing and pile shape require the printed-basket physical test.",
+    "No STL release; all P2-49 panels remain dependent."
+  ]
+}

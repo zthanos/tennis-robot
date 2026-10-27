@@ -1,0 +1,2534 @@
+{
+ "method": "exact-solid zero-intersection (OpenSCAD Manifold) + surface-sampled KD-tree distance, 2.5 mm global sample pass + exact point-to-triangle refinement from 0.4 mm panel samples, numerical uncertainty +/-1 mm",
+ "angles_deg": [
+  -10,
+  20,
+  1
+ ],
+ "concepts": {
+  "A": {
+   "gates": {
+    "qa_moving_sweep": "PASS_EMPTY",
+    "qa_tyres": "PASS_EMPTY",
+    "qa_fixed": "PASS_EMPTY",
+    "qa_cone": "PASS_EMPTY",
+    "qa_fov": "PASS_EMPTY",
+    "qa_lidar": "PASS_EMPTY",
+    "qa_ball": "PASS_EMPTY",
+    "qa_basket": "PASS_EMPTY",
+    "qa_feed": "PASS_EMPTY",
+    "qa_moving_sweep_inflated10": "PASS_EMPTY",
+    "qa_tyres_inflated10": "PASS_EMPTY"
+   },
+   "pieces": [
+    {
+     "piece": "rp_lid",
+     "qty": 2,
+     "bbox_mm": [
+      159.2,
+      240.2,
+      30.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 98.4,
+     "mass_g_each_PETG": 125.0,
+     "mass_g_each_ASA": 105.0,
+     "z_max": 231.1,
+     "abs_y_max": 241.1,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 46.5,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        -240.0,
+        208.9
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 11.7,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        -0.9,
+        222.9
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 41.8,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        0.9,
+        231.1
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 8.9,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        1.0,
+        223.6
+       ]
+      }
+     }
+    },
+    {
+     "piece": "rp_console",
+     "qty": 1,
+     "bbox_mm": [
+      61.6,
+      124.0,
+      209.3
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 174.8,
+     "mass_g_each_PETG": 222.0,
+     "mass_g_each_ASA": 187.0,
+     "z_max": 267.3,
+     "abs_y_max": 62.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 5.5,
+       "angle_deg": null,
+       "at": [
+        -228.3,
+        -62.0,
+        80.7
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      }
+     }
+    },
+    {
+     "piece": "rp_door",
+     "qty": 2,
+     "bbox_mm": [
+      15.5,
+      175.0,
+      156.5
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 64.5,
+     "mass_g_each_PETG": 82.0,
+     "mass_g_each_ASA": 69.0,
+     "z_max": 214.0,
+     "abs_y_max": 240.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 17.5,
+       "angle_deg": null,
+       "at": [
+        -250.0,
+        109.4,
+        111.8
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      }
+     }
+    },
+    {
+     "piece": "rp_side",
+     "qty": 2,
+     "bbox_mm": [
+      161.4,
+      2.2,
+      152.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 52.6,
+     "mass_g_each_PETG": 67.0,
+     "mass_g_each_ASA": 56.0,
+     "z_max": 211.1,
+     "abs_y_max": 242.2,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 13.3,
+       "angle_deg": null,
+       "at": [
+        -105.9,
+        242.2,
+        113.8
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 6.9,
+       "angle_deg": null,
+       "at": [
+        -142.3,
+        241.7,
+        58.9
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 164.5,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        -240.0,
+        211.1
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 64.6,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        240.0,
+        60.0
+       ]
+      }
+     }
+    },
+    {
+     "piece": "sp_shell",
+     "qty": 2,
+     "bbox_mm": [
+      172.2,
+      67.2,
+      198.6
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 177.0,
+     "mass_g_each_PETG": 225.0,
+     "mass_g_each_ASA": 189.0,
+     "z_max": 251.1,
+     "abs_y_max": 245.1,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 16.1,
+       "angle_deg": null,
+       "at": [
+        30.0,
+        242.9,
+        85.0
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 0.5,
+       "angle_deg": null,
+       "at": [
+        171.0,
+        211.4,
+        52.5
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 75.1,
+       "angle_deg": null,
+       "at": [
+        49.6,
+        -177.9,
+        250.4
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 115.6,
+       "angle_deg": null,
+       "at": [
+        199.8,
+        -177.9,
+        72.9
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 1.9,
+       "angle_deg": null,
+       "at": [
+        30.1,
+        177.9,
+        147.0
+       ]
+      }
+     }
+    },
+    {
+     "piece": "sp_door",
+     "qty": 2,
+     "bbox_mm": [
+      170.0,
+      8.2,
+      184.0
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 72.9,
+     "mass_g_each_PETG": 93.0,
+     "mass_g_each_ASA": 78.0,
+     "z_max": 240.0,
+     "abs_y_max": 250.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 15.3,
+       "angle_deg": null,
+       "at": [
+        30.0,
+        244.0,
+        84.7
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 4.0,
+       "angle_deg": null,
+       "at": [
+        112.7,
+        242.0,
+        56.0
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 139.0,
+       "angle_deg": null,
+       "at": [
+        140.4,
+        -241.8,
+        199.2
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 173.4,
+       "angle_deg": null,
+       "at": [
+        200.0,
+        -241.8,
+        77.3
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 65.8,
+       "angle_deg": null,
+       "at": [
+        68.6,
+        241.8,
+        71.2
+       ]
+      }
+     }
+    }
+   ],
+   "total_pieces": 11,
+   "total_mass_g_PETG_solid_model": 1406,
+   "total_mass_g_ASA_solid_model": 1181
+  },
+  "B": {
+   "gates": {
+    "qa_moving_sweep": "PASS_EMPTY",
+    "qa_tyres": "PASS_EMPTY",
+    "qa_fixed": "PASS_EMPTY",
+    "qa_cone": "PASS_EMPTY",
+    "qa_fov": "PASS_EMPTY",
+    "qa_lidar": "PASS_EMPTY",
+    "qa_ball": "PASS_EMPTY",
+    "qa_basket": "PASS_EMPTY",
+    "qa_feed": "PASS_EMPTY",
+    "qa_moving_sweep_inflated10": "PASS_EMPTY",
+    "qa_tyres_inflated10": "PASS_EMPTY"
+   },
+   "pieces": [
+    {
+     "piece": "rp_lid",
+     "qty": 2,
+     "bbox_mm": [
+      159.2,
+      240.2,
+      30.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 98.4,
+     "mass_g_each_PETG": 125.0,
+     "mass_g_each_ASA": 105.0,
+     "z_max": 231.1,
+     "abs_y_max": 241.1,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 46.5,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        -240.0,
+        208.9
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 11.7,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        -0.9,
+        222.9
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 41.8,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        0.9,
+        231.1
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 8.9,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        163.8,
+        228.8
+       ]
+      }
+     }
+    },
+    {
+     "piece": "rp_console",
+     "qty": 1,
+     "bbox_mm": [
+      61.6,
+      124.0,
+      209.3
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 174.8,
+     "mass_g_each_PETG": 222.0,
+     "mass_g_each_ASA": 187.0,
+     "z_max": 267.3,
+     "abs_y_max": 62.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 5.5,
+       "angle_deg": null,
+       "at": [
+        -218.8,
+        -62.0,
+        117.7
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      }
+     }
+    },
+    {
+     "piece": "rp_door",
+     "qty": 2,
+     "bbox_mm": [
+      15.5,
+      175.0,
+      156.5
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 64.5,
+     "mass_g_each_PETG": 82.0,
+     "mass_g_each_ASA": 69.0,
+     "z_max": 214.0,
+     "abs_y_max": 240.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 17.5,
+       "angle_deg": null,
+       "at": [
+        -250.0,
+        -110.7,
+        117.9
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      }
+     }
+    },
+    {
+     "piece": "rp_side",
+     "qty": 2,
+     "bbox_mm": [
+      161.4,
+      2.2,
+      152.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 52.6,
+     "mass_g_each_PETG": 67.0,
+     "mass_g_each_ASA": 56.0,
+     "z_max": 211.1,
+     "abs_y_max": 242.2,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 13.3,
+       "angle_deg": null,
+       "at": [
+        -104.8,
+        -242.2,
+        97.5
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 6.9,
+       "angle_deg": null,
+       "at": [
+        -142.5,
+        -241.7,
+        58.9
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 164.4,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        -240.0,
+        211.1
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 64.6,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        -240.0,
+        58.9
+       ]
+      }
+     }
+    },
+    {
+     "piece": "sp_shell",
+     "qty": 2,
+     "bbox_mm": [
+      247.2,
+      67.2,
+      220.6
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 250.5,
+     "mass_g_each_PETG": 318.0,
+     "mass_g_each_ASA": 268.0,
+     "z_max": 273.1,
+     "abs_y_max": 245.1,
+     "dist": {
+      "moving": {
+       "min_mm": 77.6,
+       "angle_deg": -7,
+       "at": [
+        215.0,
+        -177.9,
+        177.8
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 12.6,
+       "angle_deg": null,
+       "at": [
+        -28.6,
+        -242.9,
+        160.4
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 0.5,
+       "angle_deg": null,
+       "at": [
+        206.6,
+        -220.2,
+        52.5
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 75.1,
+       "angle_deg": null,
+       "at": [
+        213.0,
+        177.9,
+        149.6
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 108.9,
+       "angle_deg": null,
+       "at": [
+        214.9,
+        177.9,
+        71.9
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 1.9,
+       "angle_deg": null,
+       "at": [
+        -29.9,
+        -177.9,
+        257.0
+       ]
+      }
+     }
+    },
+    {
+     "piece": "sp_door",
+     "qty": 2,
+     "bbox_mm": [
+      245.0,
+      8.2,
+      204.0
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 115.1,
+     "mass_g_each_PETG": 146.0,
+     "mass_g_each_ASA": 123.0,
+     "z_max": 260.0,
+     "abs_y_max": 250.0,
+     "dist": {
+      "moving": {
+       "min_mm": 104.2,
+       "angle_deg": 9,
+       "at": [
+        215.0,
+        -241.8,
+        182.0
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 11.5,
+       "angle_deg": null,
+       "at": [
+        -20.9,
+        -244.0,
+        107.7
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 4.0,
+       "angle_deg": null,
+       "at": [
+        53.4,
+        242.3,
+        56.0
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 139.0,
+       "angle_deg": null,
+       "at": [
+        207.1,
+        -241.8,
+        151.4
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 168.5,
+       "angle_deg": null,
+       "at": [
+        215.0,
+        241.8,
+        79.8
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 65.8,
+       "angle_deg": null,
+       "at": [
+        148.8,
+        -241.8,
+        136.7
+       ]
+      }
+     }
+    },
+    {
+     "piece": "fender_rear",
+     "qty": 2,
+     "bbox_mm": [
+      189.4,
+      88.0,
+      67.6
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 47.6,
+     "mass_g_each_PETG": 61.0,
+     "mass_g_each_ASA": 51.0,
+     "z_max": 185.8,
+     "abs_y_max": 336.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 12.0,
+       "angle_deg": null,
+       "at": [
+        -65.0,
+        -292.0,
+        182.0
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 12.0,
+       "angle_deg": null,
+       "at": [
+        -118.9,
+        -273.1,
+        165.6
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 170.1,
+       "angle_deg": null,
+       "at": [
+        -17.7,
+        -248.2,
+        174.0
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 72.0,
+       "angle_deg": null,
+       "at": [
+        9.6,
+        248.0,
+        148.7
+       ]
+      }
+     }
+    },
+    {
+     "piece": "fender_front",
+     "qty": 2,
+     "bbox_mm": [
+      197.7,
+      88.0,
+      72.0
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 49.5,
+     "mass_g_each_PETG": 63.0,
+     "mass_g_each_ASA": 53.0,
+     "z_max": 190.2,
+     "abs_y_max": 336.0,
+     "dist": {
+      "moving": {
+       "min_mm": 22.1,
+       "angle_deg": 14,
+       "at": [
+        391.1,
+        248.0,
+        118.2
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": 87.7,
+       "angle_deg": 20,
+       "at": [
+        398.9,
+        248.0,
+        121.0
+       ]
+      },
+      "tyres": {
+       "min_mm": 12.0,
+       "angle_deg": null,
+       "at": [
+        246.1,
+        -316.2,
+        165.6
+       ]
+      },
+      "stops": {
+       "min_mm": 31.0,
+       "angle_deg": null,
+       "at": [
+        360.3,
+        -248.0,
+        161.5
+       ]
+      },
+      "fixed": {
+       "min_mm": 3.0,
+       "angle_deg": null,
+       "at": [
+        315.7,
+        248.0,
+        185.0
+       ]
+      },
+      "launch_cone": {
+       "min_mm": 221.1,
+       "angle_deg": null,
+       "at": [
+        398.9,
+        248.0,
+        121.0
+       ]
+      },
+      "camera_fov": {
+       "min_mm": 180.8,
+       "angle_deg": null,
+       "at": [
+        398.9,
+        248.0,
+        121.0
+       ]
+      },
+      "ball_path": {
+       "min_mm": 145.2,
+       "angle_deg": null,
+       "at": [
+        216.8,
+        248.0,
+        144.4
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 180.4,
+       "angle_deg": null,
+       "at": [
+        208.9,
+        248.0,
+        118.2
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 72.0,
+       "angle_deg": null,
+       "at": [
+        230.9,
+        -248.0,
+        154.3
+       ]
+      }
+     }
+    },
+    {
+     "piece": "shoulder",
+     "qty": 2,
+     "bbox_mm": [
+      162.2,
+      28.4,
+      75.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 34.0,
+     "mass_g_each_PETG": 43.0,
+     "mass_g_each_ASA": 36.0,
+     "z_max": 260.1,
+     "abs_y_max": 249.3,
+     "dist": {
+      "moving": {
+       "min_mm": 32.0,
+       "angle_deg": -6,
+       "at": [
+        386.0,
+        -246.0,
+        194.0
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": 84.3,
+       "angle_deg": 20,
+       "at": [
+        389.1,
+        246.0,
+        187.1
+       ]
+      },
+      "tyres": {
+       "min_mm": 16.6,
+       "angle_deg": null,
+       "at": [
+        300.8,
+        248.2,
+        184.9
+       ]
+      },
+      "stops": {
+       "min_mm": 30.0,
+       "angle_deg": null,
+       "at": [
+        389.1,
+        -246.0,
+        184.9
+       ]
+      },
+      "fixed": {
+       "min_mm": 0.9,
+       "angle_deg": null,
+       "at": [
+        354.5,
+        220.9,
+        257.9
+       ]
+      },
+      "launch_cone": {
+       "min_mm": 237.1,
+       "angle_deg": null,
+       "at": [
+        389.1,
+        246.0,
+        184.9
+       ]
+      },
+      "camera_fov": {
+       "min_mm": 190.4,
+       "angle_deg": null,
+       "at": [
+        359.1,
+        220.9,
+        257.9
+       ]
+      },
+      "ball_path": {
+       "min_mm": 145.2,
+       "angle_deg": null,
+       "at": [
+        226.9,
+        -220.9,
+        257.9
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 191.2,
+       "angle_deg": null,
+       "at": [
+        276.5,
+        -246.0,
+        184.9
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 44.9,
+       "angle_deg": null,
+       "at": [
+        234.3,
+        -220.9,
+        258.3
+       ]
+      }
+     }
+    },
+    {
+     "piece": "brow",
+     "qty": 2,
+     "bbox_mm": [
+      46.5,
+      236.0,
+      12.7
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 26.8,
+     "mass_g_each_PETG": 34.0,
+     "mass_g_each_ASA": 29.0,
+     "z_max": 262.7,
+     "abs_y_max": 238.0,
+     "dist": {
+      "moving": {
+       "min_mm": 40.2,
+       "angle_deg": -6,
+       "at": [
+        301.7,
+        -179.9,
+        250.0
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": 83.1,
+       "angle_deg": 20,
+       "at": [
+        346.0,
+        136.0,
+        260.5
+       ]
+      },
+      "tyres": {
+       "min_mm": 92.2,
+       "angle_deg": null,
+       "at": [
+        299.5,
+        238.0,
+        260.5
+       ]
+      },
+      "stops": {
+       "min_mm": 84.9,
+       "angle_deg": null,
+       "at": [
+        346.0,
+        -201.0,
+        260.5
+       ]
+      },
+      "fixed": {
+       "min_mm": 0.5,
+       "angle_deg": null,
+       "at": [
+        317.5,
+        132.2,
+        260.5
+       ]
+      },
+      "launch_cone": {
+       "min_mm": 177.8,
+       "angle_deg": null,
+       "at": [
+        346.0,
+        2.0,
+        260.5
+       ]
+      },
+      "camera_fov": {
+       "min_mm": 11.9,
+       "angle_deg": null,
+       "at": [
+        346.0,
+        2.0,
+        262.7
+       ]
+      },
+      "ball_path": {
+       "min_mm": 88.7,
+       "angle_deg": null,
+       "at": [
+        299.5,
+        58.1,
+        250.0
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 17.5,
+       "angle_deg": null,
+       "at": [
+        299.5,
+        89.4,
+        262.5
+       ]
+      }
+     }
+    },
+    {
+     "piece": "front_guard",
+     "qty": 2,
+     "bbox_mm": [
+      119.0,
+      16.0,
+      70.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 22.4,
+     "mass_g_each_PETG": 28.0,
+     "mass_g_each_ASA": 24.0,
+     "z_max": 150.2,
+     "abs_y_max": 257.0,
+     "dist": {
+      "moving": {
+       "min_mm": 12.0,
+       "angle_deg": 6,
+       "at": [
+        438.7,
+        241.0,
+        85.6
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": 79.0,
+       "angle_deg": 1,
+       "at": [
+        440.6,
+        241.0,
+        132.3
+       ]
+      },
+      "tyres": {
+       "min_mm": 46.7,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        -243.2,
+        84.9
+       ]
+      },
+      "stops": {
+       "min_mm": 24.1,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        -241.0,
+        150.0
+       ]
+      },
+      "fixed": {
+       "min_mm": 17.4,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        -241.0,
+        80.0
+       ]
+      },
+      "launch_cone": {
+       "min_mm": 182.5,
+       "angle_deg": null,
+       "at": [
+        546.5,
+        -241.0,
+        137.7
+       ]
+      },
+      "camera_fov": {
+       "min_mm": 126.9,
+       "angle_deg": null,
+       "at": [
+        529.0,
+        -241.0,
+        80.0
+       ]
+      },
+      "ball_path": {
+       "min_mm": 154.7,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        241.0,
+        80.0
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 181.8,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        241.0,
+        80.0
+       ]
+      },
+      "basket_lift": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      }
+     }
+    }
+   ],
+   "total_pieces": 21,
+   "total_mass_g_PETG_solid_model": 2156,
+   "total_mass_g_ASA_solid_model": 1815
+  },
+  "C": {
+   "gates": {
+    "qa_moving_sweep": "PASS_EMPTY",
+    "qa_tyres": "PASS_EMPTY",
+    "qa_fixed": "PASS_EMPTY",
+    "qa_cone": "PASS_EMPTY",
+    "qa_fov": "PASS_EMPTY",
+    "qa_lidar": "PASS_EMPTY",
+    "qa_ball": "PASS_EMPTY",
+    "qa_basket": "PASS_EMPTY",
+    "qa_feed": "PASS_EMPTY",
+    "qa_moving_sweep_inflated10": "PASS_EMPTY",
+    "qa_tyres_inflated10": "PASS_EMPTY"
+   },
+   "pieces": [
+    {
+     "piece": "rp_lid",
+     "qty": 2,
+     "bbox_mm": [
+      159.2,
+      240.2,
+      64.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 115.1,
+     "mass_g_each_PETG": 146.0,
+     "mass_g_each_ASA": 123.0,
+     "z_max": 249.1,
+     "abs_y_max": 241.1,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 63.0,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        240.0,
+        226.9
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 12.9,
+       "angle_deg": null,
+       "at": [
+        -203.4,
+        57.1,
+        212.4
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 25.4,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        0.9,
+        249.1
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 8.9,
+       "angle_deg": null,
+       "at": [
+        -98.9,
+        -36.8,
+        243.6
+       ]
+      }
+     }
+    },
+    {
+     "piece": "rp_console",
+     "qty": 1,
+     "bbox_mm": [
+      61.6,
+      124.0,
+      223.3
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 185.3,
+     "mass_g_each_PETG": 235.0,
+     "mass_g_each_ASA": 198.0,
+     "z_max": 281.3,
+     "abs_y_max": 62.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 5.5,
+       "angle_deg": null,
+       "at": [
+        -221.5,
+        -62.0,
+        105.5
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      }
+     }
+    },
+    {
+     "piece": "rp_door",
+     "qty": 2,
+     "bbox_mm": [
+      15.5,
+      175.0,
+      140.5
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 58.0,
+     "mass_g_each_PETG": 74.0,
+     "mass_g_each_ASA": 62.0,
+     "z_max": 198.0,
+     "abs_y_max": 240.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 17.5,
+       "angle_deg": null,
+       "at": [
+        -250.0,
+        -110.6,
+        125.9
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      }
+     }
+    },
+    {
+     "piece": "skin_rear",
+     "qty": 2,
+     "bbox_mm": [
+      223.2,
+      64.4,
+      253.1
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 173.6,
+     "mass_g_each_PETG": 220.0,
+     "mass_g_each_ASA": 186.0,
+     "z_max": 313.1,
+     "abs_y_max": 245.3,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 11.3,
+       "angle_deg": null,
+       "at": [
+        -47.4,
+        -244.2,
+        119.9
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 2.0,
+       "angle_deg": null,
+       "at": [
+        -80.1,
+        -242.0,
+        60.4
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 78.1,
+       "angle_deg": null,
+       "at": [
+        -71.7,
+        -180.9,
+        312.6
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 4.9,
+       "angle_deg": null,
+       "at": [
+        -78.3,
+        -180.9,
+        311.2
+       ]
+      }
+     }
+    },
+    {
+     "piece": "skin_mid",
+     "qty": 2,
+     "bbox_mm": [
+      248.2,
+      69.3,
+      253.1
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 203.5,
+     "mass_g_each_PETG": 258.0,
+     "mass_g_each_ASA": 218.0,
+     "z_max": 313.1,
+     "abs_y_max": 250.2,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 11.3,
+       "angle_deg": null,
+       "at": [
+        6.6,
+        244.2,
+        64.8
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 7.3,
+       "angle_deg": null,
+       "at": [
+        -38.0,
+        -242.0,
+        99.3
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 78.9,
+       "angle_deg": null,
+       "at": [
+        -39.1,
+        180.9,
+        310.9
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 170.9,
+       "angle_deg": null,
+       "at": [
+        207.6,
+        242.0,
+        72.6
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 4.9,
+       "angle_deg": null,
+       "at": [
+        196.5,
+        180.9,
+        311.0
+       ]
+      }
+     }
+    },
+    {
+     "piece": "sp_shell_c",
+     "qty": 2,
+     "bbox_mm": [
+      245.0,
+      63.0,
+      147.5
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 112.3,
+     "mass_g_each_PETG": 143.0,
+     "mass_g_each_ASA": 120.0,
+     "z_max": 200.0,
+     "abs_y_max": 242.0,
+     "dist": {
+      "moving": {
+       "min_mm": 77.7,
+       "angle_deg": 15,
+       "at": [
+        215.0,
+        -179.0,
+        178.0
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 13.5,
+       "angle_deg": null,
+       "at": [
+        10.5,
+        -242.0,
+        54.0
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 0.5,
+       "angle_deg": null,
+       "at": [
+        145.0,
+        -218.0,
+        52.5
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 76.2,
+       "angle_deg": null,
+       "at": [
+        172.3,
+        -179.0,
+        178.4
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 109.9,
+       "angle_deg": null,
+       "at": [
+        214.9,
+        179.0,
+        73.8
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 3.0,
+       "angle_deg": null,
+       "at": [
+        49.7,
+        179.0,
+        134.2
+       ]
+      }
+     }
+    },
+    {
+     "piece": "fender_rear",
+     "qty": 2,
+     "bbox_mm": [
+      189.4,
+      88.0,
+      67.6
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 47.6,
+     "mass_g_each_PETG": 61.0,
+     "mass_g_each_ASA": 51.0,
+     "z_max": 185.8,
+     "abs_y_max": 336.0,
+     "dist": {
+      "moving": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "d5065_airflow": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "tyres": {
+       "min_mm": 12.0,
+       "angle_deg": null,
+       "at": [
+        -65.0,
+        -299.3,
+        182.0
+       ]
+      },
+      "stops": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "fixed": {
+       "min_mm": 12.0,
+       "angle_deg": null,
+       "at": [
+        -65.0,
+        304.2,
+        182.0
+       ]
+      },
+      "launch_cone": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "camera_fov": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "ball_path": {
+       "min_mm": 170.1,
+       "angle_deg": null,
+       "at": [
+        -19.2,
+        -248.2,
+        174.8
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 72.0,
+       "angle_deg": null,
+       "at": [
+        9.3,
+        -248.0,
+        148.4
+       ]
+      }
+     }
+    },
+    {
+     "piece": "fender_front",
+     "qty": 2,
+     "bbox_mm": [
+      197.7,
+      88.0,
+      72.0
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 49.5,
+     "mass_g_each_PETG": 63.0,
+     "mass_g_each_ASA": 53.0,
+     "z_max": 190.2,
+     "abs_y_max": 336.0,
+     "dist": {
+      "moving": {
+       "min_mm": 22.1,
+       "angle_deg": 14,
+       "at": [
+        391.1,
+        248.0,
+        118.2
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": 87.7,
+       "angle_deg": 20,
+       "at": [
+        398.9,
+        248.0,
+        121.0
+       ]
+      },
+      "tyres": {
+       "min_mm": 12.0,
+       "angle_deg": null,
+       "at": [
+        300.0,
+        292.0,
+        182.0
+       ]
+      },
+      "stops": {
+       "min_mm": 31.0,
+       "angle_deg": null,
+       "at": [
+        364.2,
+        -248.0,
+        163.9
+       ]
+      },
+      "fixed": {
+       "min_mm": 3.0,
+       "angle_deg": null,
+       "at": [
+        306.3,
+        -248.0,
+        189.1
+       ]
+      },
+      "launch_cone": {
+       "min_mm": 221.1,
+       "angle_deg": null,
+       "at": [
+        398.9,
+        248.0,
+        121.0
+       ]
+      },
+      "camera_fov": {
+       "min_mm": 180.8,
+       "angle_deg": null,
+       "at": [
+        398.9,
+        248.0,
+        121.0
+       ]
+      },
+      "ball_path": {
+       "min_mm": 145.2,
+       "angle_deg": null,
+       "at": [
+        220.8,
+        -248.0,
+        144.7
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 180.4,
+       "angle_deg": null,
+       "at": [
+        208.9,
+        248.0,
+        118.2
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 72.0,
+       "angle_deg": null,
+       "at": [
+        212.1,
+        248.0,
+        126.0
+       ]
+      }
+     }
+    },
+    {
+     "piece": "shoulder",
+     "qty": 2,
+     "bbox_mm": [
+      162.2,
+      28.4,
+      117.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 48.6,
+     "mass_g_each_PETG": 62.0,
+     "mass_g_each_ASA": 52.0,
+     "z_max": 302.1,
+     "abs_y_max": 249.3,
+     "dist": {
+      "moving": {
+       "min_mm": 32.0,
+       "angle_deg": -7,
+       "at": [
+        388.3,
+        -246.0,
+        188.5
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": 84.3,
+       "angle_deg": 20,
+       "at": [
+        389.1,
+        -246.0,
+        187.1
+       ]
+      },
+      "tyres": {
+       "min_mm": 16.6,
+       "angle_deg": null,
+       "at": [
+        300.3,
+        248.2,
+        184.9
+       ]
+      },
+      "stops": {
+       "min_mm": 30.0,
+       "angle_deg": null,
+       "at": [
+        389.1,
+        -246.0,
+        184.9
+       ]
+      },
+      "fixed": {
+       "min_mm": 1.0,
+       "angle_deg": null,
+       "at": [
+        327.3,
+        -246.0,
+        222.7
+       ]
+      },
+      "launch_cone": {
+       "min_mm": 237.1,
+       "angle_deg": null,
+       "at": [
+        389.1,
+        246.0,
+        184.9
+       ]
+      },
+      "camera_fov": {
+       "min_mm": 190.8,
+       "angle_deg": null,
+       "at": [
+        389.1,
+        246.0,
+        184.9
+       ]
+      },
+      "ball_path": {
+       "min_mm": 146.6,
+       "angle_deg": null,
+       "at": [
+        226.9,
+        246.0,
+        184.9
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 191.2,
+       "angle_deg": null,
+       "at": [
+        275.7,
+        -246.0,
+        185.0
+       ]
+      },
+      "basket_lift": {
+       "min_mm": 44.9,
+       "angle_deg": null,
+       "at": [
+        275.8,
+        220.9,
+        301.3
+       ]
+      }
+     }
+    },
+    {
+     "piece": "brow",
+     "qty": 2,
+     "bbox_mm": [
+      46.5,
+      236.0,
+      12.7
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 26.8,
+     "mass_g_each_PETG": 34.0,
+     "mass_g_each_ASA": 29.0,
+     "z_max": 262.7,
+     "abs_y_max": 238.0,
+     "dist": {
+      "moving": {
+       "min_mm": 40.2,
+       "angle_deg": 2,
+       "at": [
+        301.7,
+        -180.2,
+        250.0
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": 83.1,
+       "angle_deg": 20,
+       "at": [
+        346.0,
+        136.0,
+        260.5
+       ]
+      },
+      "tyres": {
+       "min_mm": 92.2,
+       "angle_deg": null,
+       "at": [
+        299.5,
+        -238.0,
+        260.5
+       ]
+      },
+      "stops": {
+       "min_mm": 84.9,
+       "angle_deg": null,
+       "at": [
+        346.0,
+        -201.0,
+        260.5
+       ]
+      },
+      "fixed": {
+       "min_mm": 0.5,
+       "angle_deg": null,
+       "at": [
+        316.4,
+        -120.2,
+        260.5
+       ]
+      },
+      "launch_cone": {
+       "min_mm": 177.8,
+       "angle_deg": null,
+       "at": [
+        346.0,
+        -2.0,
+        260.5
+       ]
+      },
+      "camera_fov": {
+       "min_mm": 11.9,
+       "angle_deg": null,
+       "at": [
+        346.0,
+        2.0,
+        262.7
+       ]
+      },
+      "ball_path": {
+       "min_mm": 88.7,
+       "angle_deg": null,
+       "at": [
+        299.5,
+        -2.0,
+        250.0
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      },
+      "basket_lift": {
+       "min_mm": 17.5,
+       "angle_deg": null,
+       "at": [
+        299.5,
+        142.1,
+        260.4
+       ]
+      }
+     }
+    },
+    {
+     "piece": "front_guard",
+     "qty": 2,
+     "bbox_mm": [
+      119.0,
+      16.0,
+      110.2
+     ],
+     "fits_250x250": true,
+     "volume_cm3_each": 35.8,
+     "mass_g_each_PETG": 45.0,
+     "mass_g_each_ASA": 38.0,
+     "z_max": 190.2,
+     "abs_y_max": 257.0,
+     "dist": {
+      "moving": {
+       "min_mm": 12.0,
+       "angle_deg": 16,
+       "at": [
+        434.4,
+        -241.0,
+        85.9
+       ]
+      },
+      "d5065_airflow": {
+       "min_mm": 79.0,
+       "angle_deg": 11,
+       "at": [
+        434.9,
+        -241.0,
+        93.8
+       ]
+      },
+      "tyres": {
+       "min_mm": 46.7,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        -243.2,
+        85.6
+       ]
+      },
+      "stops": {
+       "min_mm": 24.0,
+       "angle_deg": null,
+       "at": [
+        436.5,
+        241.0,
+        163.5
+       ]
+      },
+      "fixed": {
+       "min_mm": 17.4,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        241.0,
+        80.0
+       ]
+      },
+      "launch_cone": {
+       "min_mm": 181.5,
+       "angle_deg": null,
+       "at": [
+        547.9,
+        -241.0,
+        157.5
+       ]
+      },
+      "camera_fov": {
+       "min_mm": 126.9,
+       "angle_deg": null,
+       "at": [
+        529.0,
+        -241.0,
+        80.0
+       ]
+      },
+      "ball_path": {
+       "min_mm": 154.7,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        241.0,
+        80.0
+       ]
+      },
+      "feed_path_temp": {
+       "min_mm": 181.8,
+       "angle_deg": null,
+       "at": [
+        430.0,
+        241.0,
+        80.0
+       ]
+      },
+      "basket_lift": {
+       "min_mm": null,
+       "angle_deg": null,
+       "at": null
+      }
+     }
+    }
+   ],
+   "total_pieces": 21,
+   "total_mass_g_PETG_solid_model": 2447,
+   "total_mass_g_ASA_solid_model": 2062
+  }
+ }
+}

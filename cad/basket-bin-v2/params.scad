@@ -4,7 +4,8 @@
 // All values in mm, GROUND frame (z=0 at court surface), robot +x forward.
 // Sources: docs/basket-bin-redesign-spec-el.md,
 //          ros2_ws/src/tennis_robot/urdf/components/basket.urdf.xacro,
-//          debug log #45-#56 (docs/intake-debug-log-el.md).
+//          historical debug log #45-#56
+//          (docs/archive/mechanism/intake/intake-debug-log-el.md).
 // Do not change a value here without re-validating in the Gazebo bench.
 
 // ---- Bin interior (spec §2) ----

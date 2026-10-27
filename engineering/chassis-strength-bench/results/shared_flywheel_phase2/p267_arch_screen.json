@@ -1,0 +1,45 @@
+{
+  "phase": "P2-67",
+  "method": "conservative single-leg Euler-Bernoulli closed-form screen",
+  "geometry": {
+    "base_x_z_mm": [
+      318.0,
+      52.0
+    ],
+    "top_x_z_mm": [
+      390.0,
+      245.0
+    ],
+    "inclination_from_vertical_deg": 20.4583820536357,
+    "member_length_mm": 205.9927183179056,
+    "tube_outer_mm": [
+      30.0,
+      50.0
+    ],
+    "wall_mm": 3.2,
+    "crossmember_rear_edge_mm": 365.0
+  },
+  "loads": {
+    "p2_40_hold_torque_nm": 12.6,
+    "worst_angle_deg": -10,
+    "actuator_force_n": 168.15818720435612,
+    "sensor_and_mount_mass_kg": 0.58,
+    "sensor_inertial_case_g": 3,
+    "sensor_horizontal_force_per_leg_n": 8.5347
+  },
+  "material_screen": {
+    "elastic_modulus_mpa": 2000.0,
+    "screen_allowable_mpa": 20.0
+  },
+  "results": {
+    "base_moment_nm": 13.081953829896216,
+    "max_bending_stress_mpa": 3.0309178162553563,
+    "factor_to_screen_allowable": 6.598661267796972,
+    "top_deflection_mm": 0.8138717977635606
+  },
+  "limitations": [
+    "No credit for the two chassis braces or crossbar load sharing.",
+    "Does not certify clevis bracket, fastener bearing, printed layers, fatigue, vibration or impact.",
+    "Physical proof-load and vibration checks remain mandatory before release."
+  ]
+}

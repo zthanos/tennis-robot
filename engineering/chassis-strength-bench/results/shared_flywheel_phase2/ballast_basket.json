@@ -1,0 +1,221 @@
+{
+  "status": "PHASE_2_PRE_PHYSICAL_TEST_PARAMETRIC",
+  "ballast": {
+    "target_total_plate_fasteners_and_ballast_kg": 5.44788705882353,
+    "target_x_m": 0.36,
+    "reference_module_mass_kg": 4.706,
+    "reference_module_x_m": 0.427,
+    "front_axle_load_match_basis": "equal moment about rear axle X=-0.065 m",
+    "point_mass_yaw_pitch_inertia_about_rear_axle_kg_m2": {
+      "module": 1.1391531840000002,
+      "ballast": 0.9840245999999999,
+      "difference_percent": -13.617886178861816
+    },
+    "with_real_module": {
+      "mass_kg": 18.11,
+      "cg_x_m": 0.16556940916620652,
+      "front_axle_fraction": 0.6316970114142645,
+      "rear_axle_n": 65.41003308958902,
+      "front_axle_n": 112.18839841041095,
+      "rear_wheel_each_n": 32.70501654479451,
+      "front_wheel_each_n": 56.09419920520548,
+      "parts": [
+        {
+          "name": "bare_mobile_base",
+          "mass_kg": 10.0,
+          "x_m": 0.1
+        },
+        {
+          "name": "shared_flywheel_module_design",
+          "mass_kg": 4.706,
+          "x_m": 0.427
+        },
+        {
+          "name": "basket_and_supports_45_ball_design",
+          "mass_kg": 1.7,
+          "x_m": 0.12
+        },
+        {
+          "name": "two_Parkside_X20V_4Ah",
+          "mass_kg": 1.3,
+          "x_m": -0.165
+        },
+        {
+          "name": "UGREEN_12000mAh_100W",
+          "mass_kg": 0.309,
+          "x_m": -0.1
+        },
+        {
+          "name": "Actuonix_P16",
+          "mass_kg": 0.095,
+          "x_m": 0.32
+        }
+      ]
+    },
+    "with_drive_test_ballast": {
+      "mass_kg": 18.85188705882353,
+      "cg_x_m": 0.15649570422159018,
+      "front_axle_fraction": 0.6068375458125759,
+      "rear_axle_n": 72.68545981500078,
+      "front_axle_n": 112.18839841041095,
+      "rear_wheel_each_n": 36.34272990750039,
+      "front_wheel_each_n": 56.09419920520548,
+      "parts": [
+        {
+          "name": "bare_mobile_base",
+          "mass_kg": 10.0,
+          "x_m": 0.1
+        },
+        {
+          "name": "basket_and_supports_45_ball_design",
+          "mass_kg": 1.7,
+          "x_m": 0.12
+        },
+        {
+          "name": "two_Parkside_X20V_4Ah",
+          "mass_kg": 1.3,
+          "x_m": -0.165
+        },
+        {
+          "name": "UGREEN_12000mAh_100W",
+          "mass_kg": 0.309,
+          "x_m": -0.1
+        },
+        {
+          "name": "Actuonix_P16",
+          "mass_kg": 0.095,
+          "x_m": 0.32
+        },
+        {
+          "name": "front_plate_plus_secured_ballast",
+          "mass_kg": 5.44788705882353,
+          "x_m": 0.36
+        }
+      ]
+    },
+    "dummy_power_masses_if_packs_absent": [
+      {
+        "item": "Parkside left",
+        "mass_kg": 0.65,
+        "x_m": -0.165,
+        "y_m": -0.11
+      },
+      {
+        "item": "Parkside right",
+        "mass_kg": 0.65,
+        "x_m": -0.165,
+        "y_m": 0.11
+      },
+      {
+        "item": "UGREEN",
+        "mass_kg": 0.309,
+        "x_m": -0.1,
+        "y_m": 0.0
+      }
+    ]
+  },
+  "basket": {
+    "outer_parameters_mm": {
+      "rear_x": -15,
+      "front_x": 278,
+      "width": 350,
+      "rear_floor_z": 42,
+      "front_floor_z": 54,
+      "top_z": 215,
+      "upper_front_x": 205
+    },
+    "inner_cross_section_area_m2": 0.0420525,
+    "inner_cavity_centroid_m": {
+      "x": 0.11288869468719658,
+      "z": 0.13129008184214175
+    },
+    "gross_inner_volume_l": 14.466059999999999,
+    "guide_and_feeder_keepout_l_assumed": 1.3,
+    "usable_volume_l": 13.16606,
+    "ball_solid_volume_l": 0.15053255358940854,
+    "capacity_by_random_packing": {
+      "0.55": 48.10476423426262,
+      "0.58": 50.72866046522239,
+      "0.6": 52.477924619195576,
+      "0.64": 55.976452927141956
+    },
+    "uniform_fill_inlet_threshold_screen": {
+      "guide_lower_lip": {
+        "z_m": 0.094,
+        "volume_l": 4.045504099378882,
+        "balls_at_0.58_packing_after_0.2_l_floor_keepout": 14.816678017190572
+      },
+      "guide_center": {
+        "z_m": 0.132,
+        "volume_l": 7.471180024844721,
+        "balls_at_0.58_packing_after_0.2_l_floor_keepout": 28.015763460128174
+      },
+      "guide_upper_lip": {
+        "z_m": 0.168,
+        "volume_l": 10.508798310559005,
+        "balls_at_0.58_packing_after_0.2_l_floor_keepout": 39.7196677898176
+      }
+    },
+    "feed_load_screen": {
+      "design_local_ball_column_count": 10,
+      "ball_column_weight_n": 5.5897905,
+      "singulator_effective_radius_m": 0.023,
+      "gravity_torque_nm": 0.12856518150000001,
+      "design_factor_for_friction_and_wedge": 3.0,
+      "minimum_output_torque_nm": 0.38569554449999993,
+      "minimum_tangential_force_n": 15.0
+    },
+    "full_45_ball_case": {
+      "mass_kg": 20.675,
+      "cg_x_m": 0.1580549939540508,
+      "front_axle_fraction": 0.6111095724768515,
+      "rear_axle_n": 78.84850203136986,
+      "front_axle_n": 123.90398671863014,
+      "rear_wheel_each_n": 39.42425101568493,
+      "front_wheel_each_n": 61.95199335931507,
+      "parts": [
+        {
+          "name": "bare_mobile_base",
+          "mass_kg": 10.0,
+          "x_m": 0.1
+        },
+        {
+          "name": "shared_flywheel_module_design",
+          "mass_kg": 4.706,
+          "x_m": 0.427
+        },
+        {
+          "name": "basket_and_supports_45_ball_design",
+          "mass_kg": 1.7,
+          "x_m": 0.12
+        },
+        {
+          "name": "two_Parkside_X20V_4Ah",
+          "mass_kg": 1.3,
+          "x_m": -0.165
+        },
+        {
+          "name": "UGREEN_12000mAh_100W",
+          "mass_kg": 0.309,
+          "x_m": -0.1
+        },
+        {
+          "name": "Actuonix_P16",
+          "mass_kg": 0.095,
+          "x_m": 0.32
+        },
+        {
+          "name": "45_tennis_balls",
+          "mass_kg": 2.565,
+          "x_m": 0.105
+        }
+      ]
+    },
+    "ball_mass_45_kg": 2.565,
+    "limitations": [
+      "capacity is geometric and depends strongly on guide/feeder keepout and packing",
+      "ball CG X=0.105 m and basket/support mass 1.70 kg are pre-physical-test estimates",
+      "flow, bridging and inlet closure require physical collection testing"
+    ]
+  }
+}

@@ -1,5 +1,9 @@
 # Collection subsystem — simulation freeze and hardware handoff baseline
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 **Status:** `COLLECTION_SIMULATION_FROZEN_FOR_HARDWARE_HANDOFF`
 **Frozen at:** Phase 21 validation, 2026-08-18
 **Evidence:** debug log entries #57–#86 in

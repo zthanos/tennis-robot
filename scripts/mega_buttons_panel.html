@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mega Wiring · Tennis Robot</title>
+  <style>
+    :root{color-scheme:dark;--bg:#09110f;--panel:#111d19;--line:#294238;--ink:#f2f7f4;--muted:#a7b9b1;--green:#43d17f;--amber:#f5b942;--red:#ff665f;--blue:#61a8ff}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+    button{font:inherit}.wrap{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:20px 0 48px}
+    header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}h1{font-size:clamp(24px,4vw,38px);line-height:1.05;margin:0 0 6px}.eyebrow{color:var(--green);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:12px}.sub{margin:0;color:var(--muted)}
+    .stop{background:var(--red);color:#240403;border:0;border-radius:14px;padding:15px 22px;font-weight:900;cursor:pointer;min-width:140px}
+    .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:18px 0}.metric{background:#0d1714;border:1px solid var(--line);border-radius:13px;padding:12px}.metric span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.metric strong{display:block;margin-top:5px;font-size:18px;overflow-wrap:anywhere}
+    .good{color:var(--green)!important}.warn{color:var(--amber)!important}.bad{color:var(--red)!important}.info{color:var(--blue)!important}
+    .led{display:flex;align-items:center;gap:10px}.dot{width:22px;height:22px;border-radius:50%;background:#26332e;border:2px solid #3a4c45;flex:none}.dot.on{background:var(--green);border-color:#a5f5c6;box-shadow:0 0 18px var(--green)}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}.btn{border:1px solid #3e6b56;background:#1d4d37;color:#eafff1;border-radius:10px;padding:9px 13px;font-weight:700;cursor:pointer}.btn.alt{background:transparent;color:var(--ink);border-color:var(--line)}
+    .cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}h2{font-size:17px;margin:0 0 10px}
+    .checks{display:grid;gap:8px}.check{display:grid;grid-template-columns:28px 1fr;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px}.check.pass{border-color:#2f7a52;background:#10261b}.check.fail{border-color:#8a3430;background:#2a1312}
+    .mark{width:24px;height:24px;border-radius:7px;border:2px solid #3a4c45;display:grid;place-items:center;font-weight:900;font-size:14px}.check.pass .mark{background:var(--green);border-color:var(--green);color:#04150b}.check.fail .mark{background:var(--red);border-color:var(--red);color:#2a0705}
+    .check b{display:block}.check .do{color:var(--muted);font-size:13px}.check .exp{font:12px/1.5 ui-monospace,Consolas,monospace;color:#cfe0d8;margin-top:3px}.check .note{font-size:13px;margin-top:4px}.check label{display:flex;gap:8px;align-items:center;font-size:13px;color:#ffe4a2;margin-top:4px;cursor:pointer}
+    .group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.1em;margin:12px 0 2px}
+    .console{background:#050907;border:1px solid var(--line);border-radius:14px;padding:12px;height:640px;overflow:auto;font:12px/1.55 ui-monospace,Consolas,monospace;white-space:pre-wrap}.console div{color:#b9d8c9}.console .tx{color:var(--blue)}.console .state{color:var(--amber)}.console .estop{color:#ff9d7d}.console .info{color:var(--muted)}
+    .notice{background:#251d0c;border:1px solid #6b5420;border-radius:12px;padding:11px 14px;margin:0 0 16px;color:#ffe4a2;font-size:14px}
+    @media(max-width:860px){header{flex-direction:column}.stop{width:100%}.grid{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}.console{height:300px}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div><div class="eyebrow">Raspberry Pi · Στάδιο A · μόνο USB, χωρίς μοτέρ</div><h1>Mega: έλεγχος συνδέσεων</h1><p class="sub">drive_test_mega · USB · E-stop D33 · START D32 · LED D34 · encoders · MPU6050</p></div>
+    <button class="stop" id="stop">DISARM</button>
+  </header>
+
+  <section class="grid">
+    <div class="metric"><span>Pi ↔ Mega</span><strong id="conn">—</strong></div>
+    <div class="metric"><span>Telemetry</span><strong id="telem">—</strong></div>
+    <div class="metric"><span>State</span><strong id="state">—</strong></div>
+    <div class="metric"><span>E-stop (D33)</span><strong id="estop">—</strong></div>
+    <div class="metric"><span>Αναμενόμενο LED (D34)</span><strong class="led"><span class="dot" id="ledDot"></span><span id="ledText">—</span></strong></div>
+    <div class="metric"><span>gz (MPU6050)</span><strong id="gz">—</strong></div>
+  </section>
+
+  <div class="notice">Ποτέ δεν στέλνεται <code>CMD</code> και μετά από κάθε reset το PWM μπαίνει στο 0, άρα ακόμα και σε ARMED οι έξοδοι μένουν στο μηδέν. Κανένα μοτέρ στα BTS. Αν κλείσεις τη σελίδα, το Mega αφοπλίζεται (<code>FAULT,HOST_TIMEOUT</code>).</div>
+
+  <div class="actions">
+    <button class="btn" data-a="arm">ARM από Pi</button>
+    <button class="btn alt" data-a="disarm">DISARM</button>
+    <button class="btn alt" data-a="zero">Μηδενισμός encoders + gyro</button>
+    <button class="btn" id="wiggle">Δοκιμή καλωδίων 10 s</button>
+    <button class="btn alt" data-a="pause_heartbeat">Παύση heartbeat</button>
+    <button class="btn alt" data-a="resume_heartbeat">Συνέχιση heartbeat</button>
+    <button class="btn alt" id="reset">Μηδενισμός λίστας</button>
+  </div>
+
+  <div class="cols">
+    <section><h2>Έλεγχοι συνδέσεων <span id="score" class="sub"></span></h2><div class="checks" id="checks"></div></section>
+    <section><h2>Συμβάντα</h2><div class="console" id="log"></div></section>
+  </div>
+</main>
+
+<script>
+const WHEELS = ["LF", "LR", "RF", "RR"];
+const PINS = {LF:"A D2 · B D22", LR:"A D3 · B D23", RF:"A D18 · B D24", RR:"A D19 · B D25"};
+const ENC_MIN = 30;        // counts per direction before a wheel counts as turned
+const BOUNCE_S = 0.15;     // two START events closer than this = contact bounce
+const WIGGLE_S = 10;
+
+// ---- results (one session = one server start) ------------------------------
+function freshResults(){
+  return {
+    lastSeq:0,                          // events up to here are already applied
+    ready:null, link:false,
+    estopIdle:false, estopOpen:false, estopRelease:false,
+    wiggle:null, wiggleResult:null, wiggleWhy:"",
+    presses:[], bounce:false, startArm:false,
+    enc:WHEELS.map(() => ({pos:0, neg:0, first:0})), cross:"",
+    imuI2c:false, imuRest:false, imuLeft:false,
+    estopArmed:false, timeout:false,
+    manual:{},
+  };
+}
+let R = freshResults();
+let gzSamples = [];
+
+// Each check: ok() → pass, fail() → red, note() → live diagnostic line.
+const CHECKS = [
+  {g:"USB · Pi ↔ Mega", id:"link", t:"Σύνδεση USB και telemetry",
+   do:"Άνοιξε τη σελίδα· το άνοιγμα της θύρας κάνει reset το Mega.",
+   exp:"READY,DRIVE_TEST_MEGA,… και telemetry ≈ 50 Hz",
+   ok:() => R.link, note:() => R.ready || "αναμονή για READY…"},
+
+  {g:"E-stop · D33 (NC προς GND)", id:"estop_idle", t:"Κλειστό κύκλωμα σε ηρεμία",
+   do:"E-stop απάτητο.", exp:"ESTOP=OK (D33 = LOW)· αν OPEN: NO επαφή ή κομμένο καλώδιο",
+   ok:() => R.estopIdle},
+  {g:"E-stop · D33 (NC προς GND)", id:"estop_open", t:"Πάτημα ανοίγει το κύκλωμα",
+   do:"Πάτα το E-stop.", exp:"E-stop OPEN → ESTOPPED· αν δεν αλλάζει: D33 βραχυκυκλωμένο στο GND",
+   ok:() => R.estopOpen},
+  {g:"E-stop · D33 (NC προς GND)", id:"estop_release", t:"Ξεκλείδωμα κλείνει ξανά",
+   do:"Ξεκλείδωσε το E-stop.", exp:"E-stop OK (το state μένει ESTOPPED μέχρι ARM/START)",
+   ok:() => R.estopRelease},
+  {g:"E-stop · D33 (NC προς GND)", id:"estop_unplug", t:"Αποσύνδεση βύσματος = OPEN (fail-safe)", manual:true,
+   do:"E-stop απάτητο, βγάλε το βύσμα, δες την ένδειξη E-stop πάνω, ξαναβάλ' το.",
+   exp:"OPEN όσο είναι έξω, OK όταν μπει"},
+
+  {g:"START · D32 (NO προς GND)", id:"d32_meter", t:"Τάση στο D32", manual:true,
+   do:"Πολύμετρο DC μεταξύ D32 και GND.", exp:"αφημένο ≈ 5 V (pull-up) · πατημένο ≈ 0 V"},
+  {g:"START · D32 (NO προς GND)", id:"start_press", t:"Κάθε πάτημα = ένα συμβάν",
+   do:"Πάτα START 3 φορές, καθαρά, με παύση ανάμεσα.",
+   exp:"3 × EVENT,START_PRESSED, κανένα διπλό (< 150 ms)",
+   ok:() => R.presses.length >= 3 && !R.bounce, fail:() => R.bounce,
+   note:() => `πατήματα: ${R.presses.length}` + (R.bounce ? " · διπλό συμβάν: χαλαρή επαφή ή αναπήδηση" : "")},
+  {g:"START · D32 (NO προς GND)", id:"start_arm", t:"START οπλίζει το Mega",
+   do:"E-stop κλειστό, πάτα START.", exp:"OK,ARMED,BUTTON → ARMED",
+   ok:() => R.startArm},
+
+  {g:"Καλώδια · κούνημα", id:"wiggle", t:"Σταθερά καλώδια E-stop και START",
+   do:"Πάτα «Δοκιμή καλωδίων 10 s» και για 10 s κούνα καλώδια και βύσματα του E-stop και του START, χωρίς να πατήσεις κουμπί.",
+   exp:"καμία μετάβαση E-stop, κανένα START_PRESSED",
+   ok:() => R.wiggleResult === "pass", fail:() => R.wiggleResult === "fail",
+   note:() => R.wiggle ? "σε εξέλιξη…" : R.wiggleWhy},
+
+  {g:"LED · D34 → 330 Ω → LED → GND", id:"led_on", t:"Το LED του START ανάβει σε ARMED", manual:true,
+   do:"Πάτα «ARM από Pi» (ή START).", exp:"LED ON, ίδιο με την ένδειξη «Αναμενόμενο LED»"},
+  {g:"LED · D34 → 330 Ω → LED → GND", id:"led_off", t:"Το LED σβήνει σε DISARM και E-stop", manual:true,
+   do:"Πάτα DISARM· ξαναόπλισε και πάτα E-stop.", exp:"LED OFF αμέσως και στις δύο"},
+
+  ...WHEELS.map((w, i) => ({
+    g:"Encoders · 5 V / GND / A / B", id:`enc_${w}`, t:`Encoder ${w} (${PINS[w]})`,
+    do:`Γύρνα με το χέρι μόνο τον ${w}: πρώτα μπροστά, μετά πίσω.`,
+    exp:`μόνο ο ${w} αλλάζει· μπροστά +, πίσω −`,
+    ok:() => { const e = R.enc[i]; return e.pos >= ENC_MIN && e.neg >= ENC_MIN && e.first === 1; },
+    fail:() => R.enc[i].first === -1,
+    note:() => {
+      const e = R.enc[i];
+      let s = `+${e.pos} / −${e.neg}`;
+      if (e.first === -1) s += " · μπροστά δίνει −: αντιμετάθεση A/B (ή γύρισες πρώτα πίσω: Μηδενισμός λίστας)";
+      else if (e.pos >= 3 * ENC_MIN && e.neg === 0) s += " · γύρνα και πίσω· αν μένει +, το B δεν διαβάζεται";
+      return s;
+    },
+  })),
+  {g:"Encoders · 5 V / GND / A / B", id:"enc_cross", t:"Χωρίς μπερδεμένα κανάλια",
+   do:"Προκύπτει από τους 4 παραπάνω.", exp:"κάθε τροχός αλλάζει μόνο τον δικό του μετρητή",
+   ok:() => !R.cross && R.enc.every(e => e.pos >= ENC_MIN && e.neg >= ENC_MIN), fail:() => !!R.cross,
+   note:() => R.cross ? `άλλαξαν μαζί: ${R.cross} (αν γύρισες μόνο έναν, μπερδεμένα καλώδια)` : ""},
+
+  {g:"MPU6050 · SDA D20 / SCL D21 / 5 V / GND", id:"imu_i2c", t:"Το IMU απαντά στο I2C",
+   do:"Στην εκκίνηση του Mega.", exp:"READY,…,IMU=OK· αν MISSING: SDA/SCL ή τροφοδοσία",
+   ok:() => R.imuI2c, fail:() => !!R.ready && !R.imuI2c},
+  {g:"MPU6050 · SDA D20 / SCL D21 / 5 V / GND", id:"imu_rest", t:"Ακίνητο: gz ≈ 0",
+   do:"Άφησε το chassis ακίνητο 2 s.", exp:"|gz| < 0,03 rad/s για 2 s",
+   ok:() => R.imuRest},
+  {g:"MPU6050 · SDA D20 / SCL D21 / 5 V / GND", id:"imu_left", t:"Στροφή αριστερά: gz > 0",
+   do:"Στρίψε το chassis (ή την πλακέτα) αριστερά με το χέρι.", exp:"gz > +0,3 rad/s",
+   ok:() => R.imuLeft},
+
+  {g:"Αλυσίδα ασφαλείας", id:"estop_armed", t:"Το E-stop αφοπλίζει",
+   do:"Ενώ είναι ARMED, πάτα E-stop.", exp:"ESTOP,OPEN_CIRCUIT → ESTOPPED (LED OFF)",
+   ok:() => R.estopArmed},
+  {g:"Αλυσίδα ασφαλείας", id:"timeout", t:"Χάσιμο Pi αφοπλίζει",
+   do:"Ενώ είναι ARMED, πάτα «Παύση heartbeat» (μετά «Συνέχιση»).", exp:"FAULT,HOST_TIMEOUT σε 0,3 s (LED OFF)",
+   ok:() => R.timeout},
+];
+
+// ---- persistence (per server start, so a restarted server starts clean) -------
+let sessionKey = null;
+function save(){ try { localStorage.setItem("megaWiring", JSON.stringify({key:sessionKey, R:{...R, wiggle:null}})); } catch {} }
+function restore(){
+  R = freshResults();
+  try { const s = JSON.parse(localStorage.getItem("megaWiring") || "null"); if (s && s.key === sessionKey) R = {...R, ...s.R}; } catch {}
+}
+
+// ---- event / telemetry handling ----------------------------------------------
+const ctx = {state:null};
+let prevEnc = null;
+
+function handleEvent(e){
+  if (e.seq > R.lastSeq){ checkEvent(e); R.lastSeq = e.seq; }
+  if (e.kind === "state") ctx.state = e.text;
+  if (e.kind === "rx" && e.text.startsWith("READY,")) { ctx.state = null; prevEnc = null; }
+  if (e.kind === "tx" && e.text === "ZERO") prevEnc = null;
+  logEvent(e);
+}
+
+function checkEvent(e){
+  const t = e.text, rx = e.kind === "rx";
+  if (rx && t.startsWith("READY,")){
+    R.ready = t;
+    if (t.includes("ESTOP=OK")) R.estopIdle = true;
+    R.imuI2c = t.includes("IMU=OK");
+  }
+  if (e.kind === "estop" && t === "OPEN") R.estopOpen = true;
+  if (e.kind === "estop" && t === "OK"){ if (R.estopOpen) R.estopRelease = true; else R.estopIdle = true; }
+  if (R.wiggle && e.at >= R.wiggle.from && e.at <= R.wiggle.until){
+    const why = (e.kind === "estop" && t === "OPEN") || (rx && t === "ESTOP,OPEN_CIRCUIT") ? "μετάβαση E-stop: χαλαρή επαφή στο D33/GND"
+              : (rx && t === "EVENT,START_PRESSED") ? "START_PRESSED χωρίς πάτημα: χαλαρή επαφή στο D32/GND" : "";
+    if (why){ R.wiggle = null; R.wiggleResult = "fail"; R.wiggleWhy = why; }
+    return;
+  }
+  if (rx && t === "EVENT,START_PRESSED"){
+    const last = R.presses[R.presses.length - 1];
+    if (last !== undefined && e.at - last < BOUNCE_S) R.bounce = true;
+    R.presses.push(e.at);
+  }
+  if (rx && t === "OK,ARMED,BUTTON") R.startArm = true;
+  if (rx && t === "ESTOP,OPEN_CIRCUIT" && ctx.state === "ARMED") R.estopArmed = true;
+  if (rx && t === "FAULT,HOST_TIMEOUT") R.timeout = true;
+}
+
+function checkTelemetry(s){
+  if (R.ready && s.telemetry_hz >= 40 && s.telemetry_age_s !== null && s.telemetry_age_s < 0.2) R.link = true;
+  // Encoders: attribute each poll's movement to a single wheel.
+  if (prevEnc){
+    const d = s.encoders.map((v, i) => v - prevEnc[i]);
+    const moving = d.map((v, i) => Math.abs(v) >= 2 ? i : -1).filter(i => i >= 0);
+    if (moving.length === 1){
+      const i = moving[0], e = R.enc[i];
+      if (d[i] > 0) e.pos += d[i]; else e.neg -= d[i];
+      if (!e.first && (e.pos >= ENC_MIN || e.neg >= ENC_MIN)) e.first = e.pos >= ENC_MIN ? 1 : -1;
+    } else if (moving.length > 1){
+      R.cross = moving.map(i => WHEELS[i]).join(" + ");
+    }
+  }
+  prevEnc = s.encoders.slice();
+  // Gyro: a quiet 2 s window, and a left turn.
+  gzSamples.push([s.now, s.gz]);
+  gzSamples = gzSamples.filter(([t]) => s.now - t <= 2.0);
+  if (gzSamples.length >= 10 && s.now - gzSamples[0][0] >= 1.8 && gzSamples.every(([, g]) => Math.abs(g) < 0.03)) R.imuRest = true;
+  if (s.gz > 0.3) R.imuLeft = true;
+  if (R.wiggle && s.now > R.wiggle.until){ R.wiggle = null; R.wiggleResult = "pass"; R.wiggleWhy = "καμία μετάβαση σε 10 s"; }
+}
+
+// ---- rendering -----------------------------------------------------------------
+function renderChecks(){
+  const box = document.getElementById("checks");
+  box.innerHTML = "";
+  let group = "", done = 0;
+  for (const c of CHECKS){
+    if (c.g !== group){ group = c.g; box.insertAdjacentHTML("beforeend", `<div class="group">${group}</div>`); }
+    const ok = c.manual ? !!R.manual[c.id] : c.ok();
+    const bad = !ok && !c.manual && !!c.fail && c.fail();
+    if (ok) done++;
+    const note = c.note ? c.note() : "";
+    const el = document.createElement("div");
+    el.className = "check" + (ok ? " pass" : bad ? " fail" : "");
+    el.innerHTML = `<div class="mark">${ok ? "✓" : bad ? "✗" : ""}</div><div><b>${c.t}</b><div class="do">${c.do}</div><div class="exp">${c.exp}</div>`
+      + (note ? `<div class="note ${bad ? "bad" : "info"}"></div>` : "")
+      + (c.manual ? `<label><input type="checkbox" ${ok ? "checked" : ""}> επιβεβαιώνω</label>` : "") + `</div>`;
+    if (note) el.querySelector(".note").textContent = note;
+    if (c.manual) el.querySelector("input").onchange = (ev) => { R.manual[c.id] = ev.target.checked; save(); renderChecks(); };
+    box.appendChild(el);
+  }
+  document.getElementById("score").textContent = `· ${done}/${CHECKS.length}`;
+}
+
+function logEvent(e){
+  const time = new Date(e.at * 1000).toLocaleTimeString("el-GR", {hour12:false});
+  const prefix = {tx:"→ ", rx:"← ", state:"STATE ", estop:"E-STOP ", info:"· "}[e.kind] || "";
+  const row = document.createElement("div");
+  row.className = e.kind;
+  row.textContent = `${time}  ${prefix}${e.text}`;
+  document.getElementById("log").prepend(row);
+}
+
+function setText(id, text, cls){ const el = document.getElementById(id); el.textContent = text; el.className = cls || ""; }
+
+// ---- polling and actions ---------------------------------------------------------
+let since = 0, serverNow = 0, lastRender = "", estopOk = false;
+async function poll(){
+  let s;
+  try { s = await (await fetch(`/api/status?since=${since}`, {cache:"no-store"})).json(); }
+  catch (err) { setText("conn", "panel offline", "bad"); return; }
+  if (sessionKey !== String(s.started_at)){
+    // New page load or restarted server: re-read the whole event log.
+    const stale = since !== 0;  // this reply was filtered by the old server's seq
+    sessionKey = String(s.started_at); restore();
+    since = 0; prevEnc = null; document.getElementById("log").innerHTML = "";
+    if (stale) return;
+  }
+  serverNow = s.now;
+  for (const e of s.events) handleEvent(e);
+  since = s.seq;
+  checkTelemetry(s);
+  const snap = JSON.stringify(R);
+  if (snap !== lastRender){ lastRender = snap; save(); renderChecks(); }
+  setText("conn", s.connected ? "OK" : (s.last_error || "αναμονή…"), s.connected ? "good" : "bad");
+  const fresh = s.telemetry_age_s !== null && s.telemetry_age_s < 0.2;
+  setText("telem", fresh ? `${s.telemetry_hz} Hz · gap ${s.max_loop_gap_us} µs` : "—", fresh && s.telemetry_hz >= 40 ? "good" : "bad");
+  const st = s.state || "—";
+  setText("state", st + (s.heartbeat_paused ? " · heartbeat ΠΑΥΣΗ" : ""), {ARMED:"good", DISARMED:"info", ESTOPPED:"bad", FAULTED:"warn"}[st]);
+  estopOk = s.estop_open === false;
+  setText("estop", s.estop_open == null ? "—" : (s.estop_open ? "OPEN" : "OK (κλειστό)"), s.estop_open ? "bad" : "good");
+  const ledOn = s.state === "ARMED";
+  document.getElementById("ledDot").className = "dot" + (ledOn ? " on" : "");
+  document.getElementById("ledText").textContent = ledOn ? "ON" : "OFF";
+  setText("gz", `${s.gz >= 0 ? "+" : ""}${s.gz.toFixed(3)} rad/s`, Math.abs(s.gz) < 0.03 ? "good" : "info");
+}
+
+async function act(name){
+  const r = await fetch(`/api/action?name=${name}`, {method:"POST"});
+  if (!r.ok) alert((await r.json()).error || r.statusText);
+  await poll();
+}
+
+document.querySelectorAll("[data-a]").forEach(b => b.onclick = () => act(b.dataset.a));
+document.getElementById("stop").onclick = () => act("disarm");
+document.getElementById("wiggle").onclick = async () => {
+  if (!estopOk){ alert("Ξεκλείδωσε πρώτα το E-stop."); return; }
+  await act("disarm");  // leave ESTOPPED so a glitch also shows up as ESTOP,OPEN_CIRCUIT
+  setTimeout(() => { R.wiggle = {from:serverNow, until:serverNow + WIGGLE_S}; R.wiggleResult = null; R.wiggleWhy = ""; renderChecks(); }, 400);
+};
+document.getElementById("reset").onclick = () => {
+  if (!confirm("Μηδενισμός όλων των ελέγχων;")) return;
+  R = {...freshResults(), lastSeq:since}; prevEnc = null; save(); renderChecks();
+};
+renderChecks();
+poll();
+setInterval(poll, 150);
+</script>
+</body>
+</html>

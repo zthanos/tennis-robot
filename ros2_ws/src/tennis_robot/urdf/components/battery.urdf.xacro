@@ -5,14 +5,14 @@
        clears the bin rear wall (x=0.02) and leaves the aft deck free for
        electronics. Modeled with real mass so the sim sees the true CoG: the
        rear placement counterweights the front intake overhang. -->
-  <xacro:macro name="battery_pack" params="parent">
+  <xacro:macro name="battery_pack" params="parent center_x:=-0.143 mass:=6.26">
     <xacro:property name="bat_x" value="0.166"/>
     <xacro:property name="bat_y" value="0.198"/>
     <xacro:property name="bat_z" value="0.170"/>
-    <xacro:property name="bat_mass" value="6.26"/>
+    <xacro:property name="bat_mass" value="${mass}"/>
     <!-- Span x -0.226..-0.06 (centre -0.143); bottom on the plate top
          (ground 0.052 = base_link 0.007), centre base_link 0.092. -->
-    <xacro:property name="bat_cx" value="-0.143"/>
+    <xacro:property name="bat_cx" value="${center_x}"/>
     <xacro:property name="bat_cz" value="${0.052 - base_link_height + bat_z / 2.0}"/>
     <joint name="battery_joint" type="fixed">
       <parent link="${parent}"/>

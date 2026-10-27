@@ -24,6 +24,12 @@
   <material name="sensor_black">
     <color rgba="0.02 0.03 0.04 1"/>
   </material>
+  <material name="electronics_blue">
+    <color rgba="0.08 0.28 0.62 1"/>
+  </material>
+  <material name="body_dark_grey">
+    <color rgba="0.20 0.20 0.22 1"/>
+  </material>
   <material name="ir_beam_red">
     <color rgba="1.0 0.05 0.02 0.35"/>
   </material>

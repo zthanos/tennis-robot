@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "calibration_provenance": {
+    "itf": "https://www.itftennis.com/media/15648/2026-technical-booklet.pdf",
+    "dynamic_reference": "R. Cross, Dynamic properties of tennis balls, Sports Engineering 2 (1999) 23-33, doi:10.1046/j.1460-2687.1999.00019.x",
+    "launcher_results_used_for_fit": false,
+    "individual_ball_measurements_used": false
+  },
+  "protocol_assumptions": {
+    "preconditioning": "three orthogonal axes, three 25.4 mm load/unload cycles per axis; the axisymmetric model gives identical axes and has no long-term conditioning memory",
+    "target_selection": "midpoints of the published ITF Type 2 deformation and rebound acceptance bands"
+  },
+  "physical_parameters": {
+    "mass_kg": 0.058,
+    "radius_m": 0.033,
+    "gravity_m_s2": 9.80665,
+    "shell_inertia_kg_m2": 4.2108000000000004e-05,
+    "solid_sphere_sensitivity_inertia_kg_m2": 2.5264800000000006e-05
+  },
+  "model_form_parameters": {
+    "loading_exponent": 1.5,
+    "loading_exponent_provenance": "provisional Hertz-like reduced-order assumption; not identifiable from the ITF single loading point",
+    "unloading_exponent": 1.9866353710127362
+  },
+  "calibrated_parameters": {
+    "preload_compression_m": 0.0027612189793203186,
+    "loading_stiffness_n_m_pow": 107309.29404174259,
+    "dynamic_damping_n_s_m_pow": 2356.929198779746,
+    "damping_fit_target_rebound_height_m": 1.41,
+    "damping_fit_reference_timestep_s": 2.5e-05
+  },
+  "numerical_parameters": {
+    "integrator": "explicit RK4",
+    "accepted_timesteps_s": [
+      0.00025,
+      0.000125,
+      6.25e-05
+    ],
+    "max_supported_compression_m": 0.035,
+    "force_cap_n": 5000.0
+  },
+  "platen_results": [
+    {
+      "timestep_s": 0.00025,
+      "forward_deformation_m": 0.006499999999999999,
+      "forward_force_n": 95.63999999999999,
+      "return_deformation_m": 0.0094,
+      "return_force_n": 95.64,
+      "maximum_compression_m": 0.028161218979320318,
+      "peak_force_n": 507.1244062457327,
+      "stored_energy_j": 5.71249658161755,
+      "recovered_energy_j": 4.781715770412663,
+      "hysteresis_energy_j": 0.9307808112048876,
+      "viscous_energy_j": 0.0008364575261397112,
+      "residual_deformation_m": 0.0
+    },
+    {
+      "timestep_s": 0.000125,
+      "forward_deformation_m": 0.006499999999998975,
+      "forward_force_n": 95.63999999998413,
+      "return_deformation_m": 0.0094,
+      "return_force_n": 95.64,
+      "maximum_compression_m": 0.028161218979320318,
+      "peak_force_n": 507.1244062457327,
+      "stored_energy_j": 5.71249658161755,
+      "recovered_energy_j": 4.781715770412663,
+      "hysteresis_energy_j": 0.9307808112048876,
+      "viscous_energy_j": 0.0008364575260267887,
+      "residual_deformation_m": 0.0
+    },
+    {
+      "timestep_s": 6.25e-05,
+      "forward_deformation_m": 0.006499999999990843,
+      "forward_force_n": 95.63999999985816,
+      "return_deformation_m": 0.0094,
+      "return_force_n": 95.64,
+      "maximum_compression_m": 0.028161218979320318,
+      "peak_force_n": 507.1244062457327,
+      "stored_energy_j": 5.71249658161755,
+      "recovered_energy_j": 4.781715770412663,
+      "hysteresis_energy_j": 0.9307808112048876,
+      "viscous_energy_j": 0.000836457525976469,
+      "residual_deformation_m": 0.0
+    }
+  ],
+  "rebound_results": [
+    {
+      "timestep_s": 0.00025,
+      "impact_velocity_m_s": 7.058171292905834,
+      "contact_duration_s": 0.0047500000000000025,
+      "maximum_compression_m": 0.009943534300256839,
+      "peak_force_n": 314.17501424211906,
+      "separation_compression_m": 0.0,
+      "rebound_velocity_m_s": 5.262480468257545,
+      "rebound_height_m": 1.4119857789761106,
+      "incident_energy_j": 1.4447156780000003,
+      "rebound_energy_j": 0.8031173196849722,
+      "hysteresis_energy_j": 0.19503642655049203,
+      "viscous_energy_j": 0.44628889633023444,
+      "residual_internal_energy_j": 0.0,
+      "dissipated_energy_j": 0.6413253228807265,
+      "energy_balance_residual_j": 0.00027303543430157173,
+      "energy_balance_residual_fraction": 0.0001889890436293664
+    },
+    {
+      "timestep_s": 0.000125,
+      "impact_velocity_m_s": 7.058171292905834,
+      "contact_duration_s": 0.004625000000000003,
+      "maximum_compression_m": 0.009973941172094722,
+      "peak_force_n": 312.2194614034844,
+      "separation_compression_m": 0.00038182739273053175,
+      "rebound_velocity_m_s": 5.259524313829426,
+      "rebound_height_m": 1.4100180547159864,
+      "incident_energy_j": 1.4447156780000003,
+      "rebound_energy_j": 0.8019981062642706,
+      "hysteresis_energy_j": 0.19653087903925281,
+      "viscous_energy_j": 0.44611121548112853,
+      "residual_internal_energy_j": 5.917055561034721e-05,
+      "dissipated_energy_j": 0.6427012650759917,
+      "energy_balance_residual_j": 1.6306659738063445e-05,
+      "energy_balance_residual_fraction": 1.1287106512637596e-05
+    },
+    {
+      "timestep_s": 6.25e-05,
+      "impact_velocity_m_s": 7.058171292905834,
+      "contact_duration_s": 0.004625000000000003,
+      "maximum_compression_m": 0.00997398496937983,
+      "peak_force_n": 312.1933368569885,
+      "separation_compression_m": 0.0003817360667059488,
+      "rebound_velocity_m_s": 5.25954111593621,
+      "rebound_height_m": 1.4100271573996417,
+      "incident_energy_j": 1.4447156780000003,
+      "rebound_energy_j": 0.8020032837405653,
+      "hysteresis_energy_j": 0.19653303654829068,
+      "viscous_energy_j": 0.4461172213647876,
+      "residual_internal_energy_j": 5.912817094828701e-05,
+      "dissipated_energy_j": 0.6427093860840266,
+      "energy_balance_residual_j": 3.008175408436564e-06,
+      "energy_balance_residual_fraction": 2.082191987146528e-06
+    }
+  ],
+  "convergence_limits": {
+    "maximum_deformation_relative_spread_max": 0.01,
+    "peak_force_relative_spread_max": 0.025,
+    "contact_duration_relative_spread_max": 0.03,
+    "rebound_height_relative_spread_max": 0.005,
+    "dissipated_energy_relative_spread_max": 0.01,
+    "energy_balance_residual_fraction_max": 0.005
+  },
+  "convergence": {
+    "maximum_deformation_relative_spread": 0.0030561239236553523,
+    "peak_force_relative_spread": 0.006334018060111265,
+    "contact_duration_relative_spread": 0.026785714285714107,
+    "rebound_height_relative_spread": 0.0013948793836336254,
+    "dissipated_energy_relative_spread": 0.0021550381919699718,
+    "maximum_energy_balance_residual_fraction": 0.0001889890436293664
+  },
+  "classifications": {
+    "BALL_COMPLIANCE_MODEL_IMPLEMENTED": true,
+    "BALL_DEFORMATION_CALIBRATED_TO_ITF": true,
+    "BALL_REBOUND_CALIBRATED_TO_ITF": true,
+    "BALL_LOADING_UNLOADING_HYSTERESIS_VALIDATED": true,
+    "BALL_INERTIA_MODEL_DOCUMENTED": true,
+    "TIME_STEP_CONVERGENCE_VALIDATED": true,
+    "ENERGY_ACCOUNTING_VALIDATED": true,
+    "FINITE_CYLINDER_CONTACT_VALIDATED": true,
+    "BILATERAL_CONTACT_SYMMETRY_VALIDATED": true,
+    "LAUNCHER_TYRE_FRICTION_CALIBRATION_PENDING": true,
+    "LAUNCHER_PHYSICS_TRIALS_AUTHORIZED": true
+  },
+  "unresolved": [
+    "launcher tyre static/dynamic friction",
+    "launcher tyre normal compliance",
+    "ball-specific measured inertia",
+    "ball-specific multi-point force-deformation curve",
+    "rate dependence above the ITF drop-test impact velocity"
+  ]
+}

@@ -1,0 +1,356 @@
+{
+  "schema_version": 1,
+  "artifact_status": "HISTORICAL_SUPERSEDED_TRANSLATING_POD_ASSUMPTION",
+  "superseded_by": "config/standalone_intake_fixed_motor_checkpoint.json",
+  "checkpoint_date": "2026-08-26",
+  "scope": "isolated standalone dual-wheel compliant intake design gate",
+  "decision": {
+    "case": "C_MECHANICAL_DESIGN_INCOMPLETE",
+    "reason": "No current authoritative compliant-guide architecture exists, and the purchased direct-drive interfaces lack the measured engagement, seating, retention, and service details needed for a physical bench model.",
+    "stop_condition_triggered": true,
+    "simulation_campaign_authorized": false,
+    "complete_robot_redesign_authorized": false
+  },
+  "evidence_classes": [
+    "MANUFACTURER_SPEC",
+    "PURCHASED_PART_SPEC",
+    "MEASURED_FROM_HARDWARE",
+    "MEASURED_FROM_CAD",
+    "DERIVED",
+    "ASSUMED_PROVISIONAL",
+    "MISSING"
+  ],
+  "standalone_boundary": {
+    "included": [
+      "two intake wheels",
+      "two FIT0186 motors",
+      "two 14-00012630 adapters",
+      "two coherent compliant pods",
+      "fixed guides and local support",
+      "springs, preload, and hard stops",
+      "motor cable service loops",
+      "one calibrated compliant tennis ball",
+      "minimal bench datum"
+    ],
+    "excluded": [
+      "flywheel launcher",
+      "basket and handoff path",
+      "complete bridge and chassis packaging",
+      "navigation and perception",
+      "complete-robot collection route"
+    ]
+  },
+  "datums": {
+    "side_convention": {
+      "left": 1,
+      "right": -1
+    },
+    "wheel_to_motor_axis_formula": "[0, side*sin(35 deg), cos(35 deg)]",
+    "openscad_transform": "rotate([-side * 35, 0, 0])",
+    "tilt_deg": 35.0,
+    "left_axis": [0.0, 0.573576436, 0.819152044],
+    "right_axis": [0.0, -0.573576436, 0.819152044],
+    "motor_location": {
+      "left": "OUTBOARD",
+      "right": "OUTBOARD"
+    },
+    "wheel_diameter_mm": {
+      "value": 124.0,
+      "evidence": "MANUFACTURER_SPEC"
+    },
+    "wheel_width_mm": {
+      "value": 73.0,
+      "evidence": "MANUFACTURER_SPEC"
+    },
+    "nominal_gap_mm": {
+      "value": 56.0,
+      "evidence": "MEASURED_FROM_CAD"
+    },
+    "ball_diameter_mm": {
+      "value": 66.0,
+      "evidence": "calibrated ball model datum"
+    },
+    "required_pod_travel_mm": [0.0, 8.0],
+    "first_order_centered_ball_outward_displacement_per_pod_mm": {
+      "value": 5.0,
+      "evidence": "DERIVED",
+      "validation_status": "GEOMETRIC_SCREEN_ONLY"
+    }
+  },
+  "architecture": {
+    "current": "two mirrored direct-drive wheels on independently compliant complete motor-wheel pods",
+    "ownership": "Each motor, its shaft, purchased adapter, Raid interface, and wheel translate coherently with its pod.",
+    "driveline": [
+      "FIT0186 6 mm D-shaft",
+      "14-00012630 6 mm shaft to 12 mm hex adapter, nominal L30 mm",
+      "PRO117010 supplied 12 mm Raid interface",
+      "PRO117010 Trencher/Raid wheel"
+    ],
+    "obsolete_not_permitted": [
+      "198 mm shared or supported transmission shaft",
+      "external wheel-shaft bearings and bearing cartridges",
+      "flexible coupler",
+      "printed 6 mm to 12 mm torque hub",
+      "fixed motor with sliding or telescopic torque transfer",
+      "single top roller or scoop architecture",
+      "X-Z-plane rotate([0,35,0]) intake axis"
+    ]
+  },
+  "direct_drive_interface_gate": {
+    "interface_chain_identified": true,
+    "fully_mechanically_defined": false,
+    "known": [
+      "FIT0186 nominal 6 mm D-shaft",
+      "14-00012630 nominal 6 mm shaft input",
+      "14-00012630 nominal 12 mm hex output",
+      "14-00012630 nominal total length 30 mm",
+      "PRO117010 includes removable narrow/wide 12 mm Raid interfaces"
+    ],
+    "missing_measurements": [
+      "both motor shaft projections and D-flat geometry",
+      "adapter usable 6 mm bore depth and external step profile",
+      "adapter set-screw position, projection, and tool path",
+      "selected 12 mm Raid interface depth, offset, and seating face",
+      "adapter-to-wheel installed engagement",
+      "wheel-side axial-retention method and service sequence",
+      "motor-face mounting and encoder/cable clearance"
+    ]
+  },
+  "guide_gate": {
+    "architecture_defined": false,
+    "candidate_a_status": "SUPERSEDED_ANALYSIS_ALLOCATION_NOT_ACTIVE",
+    "reason": "Candidate A was never manufacturing geometry and is explicitly invalid under the changed bridge allocation. No newer rods, rail, bushings, followers, spring, stops, or cable-service design exists.",
+    "required_definition": [
+      "guide technology and purchased or manufactured part definition",
+      "two-line or otherwise proven anti-racking constraint",
+      "follower spacing, fits, materials, and wear surfaces",
+      "stiffness in non-travel directions",
+      "0 mm inner stop and 8 mm outer hard stop",
+      "spring type, rate, preload, retention, and fatigue allowance",
+      "debris tolerance and cleanability",
+      "cable bend radius, anchors, strain relief, and swept loop",
+      "fasteners, access, assembly, and service path"
+    ]
+  },
+  "ball_model": {
+    "normal_model": "reuse calibrated standalone tennis-ball compliance model without refit",
+    "source": "config/tennis_ball_compliance_calibration_results.json",
+    "normal_compliance_recalibration_required": false,
+    "intake_tread_friction": {
+      "status": "PHYSICAL_HARDWARE_GATE",
+      "note": "No flywheel tyre friction value is transferred to the Trencher tread/felt contact."
+    }
+  },
+  "motor_screen": {
+    "motor": "DFRobot FIT0186 / GB37Y3530-12V-251R",
+    "no_load_speed_rad_s": {
+      "value": 26.3,
+      "evidence": "MANUFACTURER_SPEC"
+    },
+    "stall_torque_nm": {
+      "value": 1.77,
+      "evidence": "MANUFACTURER_SPEC"
+    },
+    "stall_current_a": {
+      "value": 7.0,
+      "evidence": "repository manufacturer-spec record"
+    },
+    "wheel_surface_speed_no_load_m_s": {
+      "value": 1.6306,
+      "evidence": "DERIVED"
+    },
+    "stall_tangential_force_at_tread_n": {
+      "value": 28.548,
+      "evidence": "DERIVED"
+    },
+    "existing_simulation_actuator": "ideal velocity source with effort limit; not a physical torque-speed/current model",
+    "capability_validation_status": "NOT_RUN_GUIDE_GATE_FAILED"
+  },
+  "validation": {
+    "static_entry": "NOT_RUN_GUIDE_GATE_FAILED",
+    "quasi_static_pass_through": "NOT_RUN_GUIDE_GATE_FAILED",
+    "dynamic_capture": "NOT_RUN_GUIDE_GATE_FAILED",
+    "offset_entry": "NOT_RUN_GUIDE_GATE_FAILED",
+    "repeatability": "NOT_RUN_GUIDE_GATE_FAILED",
+    "motor_capability": "NOT_RUN_GUIDE_GATE_FAILED",
+    "structural_and_wear_screen": "NOT_RUN_GUIDE_GATE_FAILED",
+    "plots_generated": false,
+    "plots_reason": "There is no credible guide/contact system to generate engineering telemetry from; placeholder plots would be decorative evidence."
+  },
+  "purchase_bom_audit": [
+    {
+      "component": "FIT0186 motor already recorded as received",
+      "intake_quantity": 1,
+      "classification": ["ALREADY_OWNED", "PHYSICAL_MEASUREMENT_REQUIRED"]
+    },
+    {
+      "component": "second identical FIT0186 motor",
+      "intake_quantity": 1,
+      "classification": ["TO_BUY", "VERIFY_BEFORE_ORDERING"]
+    },
+    {
+      "component": "PRO117010 Trencher/Raid wheel pair",
+      "intake_quantity": 2,
+      "classification": ["TO_BUY", "VERIFY_BEFORE_ORDERING", "PHYSICAL_MEASUREMENT_REQUIRED"]
+    },
+    {
+      "component": "14-00012630 adapter allocated from six purchased",
+      "intake_quantity": 2,
+      "project_purchased_quantity": 6,
+      "classification": ["ALREADY_OWNED", "PHYSICAL_MEASUREMENT_REQUIRED"]
+    },
+    {
+      "component": "guide rods, rails, bushings, or followers",
+      "intake_quantity": null,
+      "classification": ["VERIFY_BEFORE_ORDERING"]
+    },
+    {
+      "component": "springs",
+      "intake_quantity": 2,
+      "classification": ["VERIFY_BEFORE_ORDERING"]
+    },
+    {
+      "component": "pod brackets, followers, and hard stops",
+      "intake_quantity": 2,
+      "classification": ["CUSTOM_MANUFACTURE", "3D_PRINT"]
+    },
+    {
+      "component": "guide, stop, and spring fasteners",
+      "intake_quantity": null,
+      "classification": ["VERIFY_BEFORE_ORDERING"]
+    },
+    {
+      "component": "motor cable management and strain relief",
+      "intake_quantity": 2,
+      "classification": ["CUSTOM_MANUFACTURE", "VERIFY_BEFORE_ORDERING"]
+    }
+  ],
+  "smallest_next_engineering_task": {
+    "name": "standalone intake direct-interface metrology and guide-definition gate",
+    "exit_criteria": [
+      "measure both motors, two allocated adapters, and both selected Raid 12 mm interfaces",
+      "select and dimension one physical guide family",
+      "produce standalone manufacturing CAD for one complete translating pod and its fixed guide",
+      "define spring/preload, hard stops, cable loop, fasteners, and tool access",
+      "demonstrate 0 to 8 mm motion and return without racking or interference in the isolated bench"
+    ]
+  },
+  "source_audit": [
+    {
+      "artifact": "cad/collector-intake-v1/option-a/option-a.scad",
+      "purpose": "current dual-wheel envelope and direct-drive orientation",
+      "status": "CURRENT_GEOMETRY_INTENT_GUIDE_MISSING",
+      "geometry_owner": true,
+      "simulation_owner": false,
+      "evidence": ["MEASURED_FROM_CAD", "ASSUMED_PROVISIONAL"],
+      "remain_active": true
+    },
+    {
+      "artifact": "cad/flywheel-launcher-v0/compact-intake-pod-concept-study.scad",
+      "purpose": "corrected-axis direct-drive package analysis",
+      "status": "ANALYSIS_ONLY_CANDIDATE_A_INVALID",
+      "geometry_owner": false,
+      "simulation_owner": false,
+      "evidence": ["MEASURED_FROM_CAD", "ASSUMED_PROVISIONAL"],
+      "remain_active": true
+    },
+    {
+      "artifact": "ros2_ws/src/tennis_robot/urdf/components/drivetrain.urdf.xacro",
+      "purpose": "current simulated wheel axes and placeholder prismatic compliance",
+      "status": "SIMULATION_REFERENCE_NOT_PHYSICAL_GUIDE",
+      "geometry_owner": false,
+      "simulation_owner": true,
+      "evidence": ["ASSUMED_PROVISIONAL"],
+      "remain_active": true
+    },
+    {
+      "artifact": "config/compact_mechanical_contract.json",
+      "purpose": "current corrected axes and package envelope",
+      "status": "CURRENT_ORIENTATION_CONTRACT_COMPLETE_ROBOT_SCOPE",
+      "geometry_owner": false,
+      "simulation_owner": false,
+      "evidence": ["MEASURED_FROM_CAD", "DERIVED"],
+      "remain_active": true
+    },
+    {
+      "artifact": "docs/archive/mechanism/intake/dual-wheel-intake-design-el.md",
+      "purpose": "functional compliance and motor rationale",
+      "status": "CURRENT_FUNCTIONAL_INTENT_HISTORICAL_DIMENSIONS_AND_PHYSICS",
+      "geometry_owner": false,
+      "simulation_owner": false,
+      "evidence": ["MANUFACTURER_SPEC", "ASSUMED_PROVISIONAL"],
+      "remain_active": true
+    },
+    {
+      "artifact": "config/tennis_ball_compliance_calibration_results.json",
+      "purpose": "calibrated ball normal-contact model",
+      "status": "CURRENT_REUSE_WITHOUT_RECALIBRATION",
+      "geometry_owner": false,
+      "simulation_owner": true,
+      "evidence": ["calibrated model evidence"],
+      "remain_active": true
+    },
+    {
+      "artifact": "docs/hardware/ordered-parts.md",
+      "purpose": "actual purchase and receipt evidence",
+      "status": "CURRENT_OWNERSHIP_SOURCE",
+      "geometry_owner": false,
+      "simulation_owner": false,
+      "evidence": ["PURCHASED_PART_SPEC", "MEASURED_FROM_HARDWARE"],
+      "remain_active": true
+    },
+    {
+      "artifact": "docs/hardware/prototype-purchase-list-el.md",
+      "purpose": "planned intake purchases",
+      "status": "CURRENT_PLAN_CONTAINS_SUPERSEDED_FIXED_SHAFT_TEXT",
+      "geometry_owner": false,
+      "simulation_owner": false,
+      "evidence": ["PURCHASED_PART_SPEC", "ASSUMED_PROVISIONAL"],
+      "remain_active": true
+    },
+    {
+      "artifact": "docs/archive/mechanism/intake/intake-debug-log-el.md and intake-bench-sweep-report-el.md",
+      "purpose": "historical dual-wheel simulation evidence",
+      "status": "HISTORICAL_ONLY_WRONG_AXIS_AND_PRECALIBRATION_MODEL",
+      "geometry_owner": false,
+      "simulation_owner": false,
+      "evidence": ["historical simulation"],
+      "remain_active": false
+    },
+    {
+      "artifact": "cad/archive/single-motor-geared-intake",
+      "purpose": "superseded single-motor intake concept",
+      "status": "OBSOLETE_ARCHIVED",
+      "geometry_owner": false,
+      "simulation_owner": false,
+      "evidence": ["historical CAD"],
+      "remain_active": false
+    }
+  ],
+  "classifications": {
+    "INTAKE_CURRENT_ARCHITECTURE_IDENTIFIED": true,
+    "INTAKE_35_DEGREE_MIRRORED_AXES_VALIDATED": true,
+    "LEFT_INTAKE_MOTOR_OUTBOARD": true,
+    "RIGHT_INTAKE_MOTOR_OUTBOARD": true,
+    "INTAKE_DIRECT_DRIVE_INTERFACE_DEFINED": false,
+    "INTAKE_PRINTED_TORQUE_HUB_REQUIRED": false,
+    "INTAKE_COMPLIANT_TRAVEL_REQUIRED": true,
+    "INTAKE_COMPLIANT_TRAVEL_RANGE_MM": [0.0, 8.0],
+    "INTAKE_GUIDE_ARCHITECTURE_DEFINED": false,
+    "INTAKE_GUIDE_ARCHITECTURE_UNRESOLVED": true,
+    "INTAKE_GUIDE_ARCHITECTURE_VALIDATED_IN_SIM": false,
+    "GEOMETRIC_CAPTURE_CAPABILITY_VALIDATED": false,
+    "INTAKE_STATIC_BALL_PASSAGE_VALIDATED": false,
+    "INTAKE_DYNAMIC_CAPTURE_VALIDATED_IN_SIM": false,
+    "INTAKE_CAPTURE_ENVELOPE_DEFINED": false,
+    "INTAKE_MOTOR_CAPABILITY_VALIDATED_IN_SIM": false,
+    "INTAKE_TREAD_FRICTION_PHYSICALLY_VALIDATED": false,
+    "PHYSICAL_FELT_TREAD_TRACTION_VALIDATED": false,
+    "INTAKE_STRUCTURAL_SCREEN_PASSED": false,
+    "INTAKE_PHYSICAL_HARDWARE_VALIDATED": false,
+    "INTAKE_ARCHITECTURE_FROZEN_PROVISIONALLY": false,
+    "INTAKE_MECHANICAL_DESIGN_INCOMPLETE": true,
+    "INTAKE_READY_FOR_COMPLETE_ROBOT_INTEGRATION": false,
+    "PHYSICAL_HARDWARE_PENDING": true
+  }
+}

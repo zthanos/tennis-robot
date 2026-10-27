@@ -1,0 +1,58 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_P2_50_GAZEBO_RUN",
+  "scope": "P2-50 one-ball diagnostic from nip through the common throat and external P2-49 collection ramp to sill Z285; no pile, retention, launch-feed or 5d gate mechanism claim",
+  "frozen_inputs": {
+    "approach_speed_m_s": 0.6,
+    "lateral_ball_offsets_m": [-0.05, 0.0, 0.05],
+    "flywheel_surface_speeds_m_s": [2.8, 3.0, 3.2],
+    "ball_tread_mu": 0.6,
+    "ground_mu": 0.7,
+    "tilt_deg": -3.0,
+    "ramp_variant": "p249_separated_piecewise_first_run",
+    "ramp_sill_surface_xyz_m": [0.100, 0.0, 0.285],
+    "ramp_clear_width_m": 0.080,
+    "repeats_per_condition": 1,
+    "artificial_ball_transfer": false
+  },
+  "criteria": [
+    {
+      "name": "sill_reached",
+      "hard_fail": true,
+      "threshold": {"base_x_max_m": 0.110, "base_z_min_m": 0.305, "abs_base_y_max_m": 0.020},
+      "rationale": "Requires the ball centre to reach the high opening rather than merely contact the lower ramp."
+    },
+    {
+      "name": "sill_speed",
+      "hard_fail": true,
+      "comparison": "ge",
+      "threshold_m_s": 0.30,
+      "rationale": "A small positive residual speed is required to cross the sill and fall into storage."
+    },
+    {
+      "name": "transition_bounce_gap",
+      "hard_fail": true,
+      "comparison": "le",
+      "threshold_m": 0.020,
+      "rationale": "More than 20 mm airborne gap over X245..352 indicates that the piecewise -3 to steep-ramp transition needs a smooth-radius redesign."
+    },
+    {
+      "name": "throat_lateral_containment",
+      "hard_fail": true,
+      "comparison": "abs_y_le",
+      "threshold_m": 0.040,
+      "rationale": "The physical ramp is 80 mm wide; any centre excursion beyond 40 mm is loss from the throat."
+    },
+    {"name": "d5065_contact_current", "hard_fail": true, "comparison": "le", "threshold_a": 20.0},
+    {"name": "d5065_contact_torque", "hard_fail": true, "comparison": "le", "threshold_nm": 0.62},
+    {"name": "forbidden_launcher_contact_count", "hard_fail": true, "comparison": "eq", "threshold": 0},
+    {"name": "finite_state", "hard_fail": true, "comparison": "eq", "threshold": true}
+  ],
+  "diagnostics": [
+    "ball speed relative to base at ramp base X approximately 0.325 m",
+    "ball speed relative to base at sill",
+    "maximum transition contact force and maximum airborne gap",
+    "contact-window D5065 current maximum, mean and saturation time per motor",
+    "nip crossing and sill arrival times"
+  ],
+  "decision_rule": "If any condition fails because of transition impact, bounce gap or loss before the sill, replace only the dependent P2-49 lower transition with a tangent smooth-radius curve, freeze a revision of this criteria file, and repeat the same nine-condition matrix."
+}

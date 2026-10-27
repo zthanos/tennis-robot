@@ -1,5 +1,9 @@
 # Tennis Robot Validation and Implementation Plan
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Αυτό είναι το βασικό πλάνο υλοποίησης και validation για το tennis robot.
 Η κεντρική στρατηγική είναι simulation-first, με σταδιακή μεταφορά των
 αποφάσεων σε μικρό φυσικό prototype και μετά σε πραγματικό γήπεδο.

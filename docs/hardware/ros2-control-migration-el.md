@@ -1,5 +1,9 @@
 # ros2_control Migration
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Μετάβαση του robot control από τα απευθείας Gazebo plugins στο πρότυπο
 `ros2_control` (Controller Manager → Resource Manager → Hardware Interfaces).
 

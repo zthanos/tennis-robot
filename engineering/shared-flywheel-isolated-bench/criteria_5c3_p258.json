@@ -1,0 +1,51 @@
+{
+  "status": "FROZEN_BEFORE_P2_58_DIAGONAL_PAIR_MATRIX",
+  "written_before_run": true,
+  "stage": "P2-58 planner tolerance for diagonal pairs",
+  "purpose": "Map the longitudinal/lateral pair geometry that the planner may present to the frozen P2-40 cheeks and P2-51 delivery path.",
+  "frozen_setup": {
+    "geometry": "P2-40 baseline cheeks, pivot, wheels, nip and rails plus P2-51 R75/42-degree ski and basket",
+    "five_c_design": "p244",
+    "five_c_cheek_variant": "exposed_shallow",
+    "wheel_surface_speed_m_s": 6.0,
+    "tread_mu": [0.6, 0.9],
+    "ramp_mu": 0.15,
+    "approach_speed_m_s": 0.6,
+    "launcher_tilt_deg": -3.0,
+    "ball_model": "gazebo/models/tennis_ball_compliant/model.sdf; unchanged P2-51/5c-3 calibration",
+    "jam_detector": "accepted P2-56 D5065-only detector; unchanged thresholds"
+  },
+  "matrix": {
+    "dx_mm": [0, 35, 70, 100, 150],
+    "dy_mm": [0, 20, 35, 50, 70, 100],
+    "coordinates": "centre-to-centre components before contact; pair lateral midpoint is Y=0",
+    "lead_ball_sides": {
+      "lead_plus": "first ball at +dy/2, second ball at -dy/2; both tread mu values",
+      "lead_minus": "first ball at -dy/2, second ball at +dy/2; tread mu 0.6",
+      "center": "dy=0; mirror-identical and run once per tread mu"
+    },
+    "minimum_nonoverlap_centre_distance_mm": 66,
+    "infeasible_cells": "sqrt(dx^2+dy^2)<66 mm are reported N/A and are not spawned",
+    "expected_executable_runs": 63
+  },
+  "classification": {
+    "PASS": "both balls retained in the P2-51 basket",
+    "JAM": "not both retained and the accepted P2-56 detector or a sustained stationary pair lock triggers",
+    "REJECT": "not both retained without a physical jam signature",
+    "N/A": "initial centre distance below 66 mm"
+  },
+  "recording": {
+    "screening": "headless without state log",
+    "required": "rerun headless with state log every JAM/REJECT and every PASS sharing a grid edge with a non-PASS feasible cell"
+  },
+  "deliverables": [
+    "classification maps by tread mu and lead-ball side",
+    "P2-56 detector trigger status for every physical jam",
+    "conservative planner alignment rule supported by all tested orientations and tread friction values"
+  ],
+  "geometry_changes": false,
+  "limitations": [
+    "deterministic Gazebo comparison, not a tolerance or perception-error Monte Carlo",
+    "no P2-57 cheeks/covers, STL, 5d or production-stack claim"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "status": "FROZEN_BEFORE_FIRST_GAZEBO_5A_RUN",
+  "cases": ["empty", "full45", "ballast"],
+  "ground_friction_mu": [0.5, 0.7, 0.9],
+  "scenarios": [
+    {"name": "straight_0p3", "target_v_m_s": 0.3, "target_w_rad_s": 0.0},
+    {"name": "straight_0p6", "target_v_m_s": 0.6, "target_w_rad_s": 0.0},
+    {"name": "spin_0p5", "target_v_m_s": 0.0, "target_w_rad_s": 0.5},
+    {"name": "spin_1p0", "target_v_m_s": 0.0, "target_w_rad_s": 1.0},
+    {"name": "moving_turn", "target_v_m_s": 0.4, "target_w_rad_s": 0.6},
+    {"name": "brake_from_0p6", "initial_v_m_s": 0.6, "target_v_m_s": 0.0}
+  ],
+  "pass_criteria": {
+    "straight": {
+      "steady_speed_relative_error_max": 0.10,
+      "cross_track_deviation_m_max": 0.05,
+      "heading_error_deg_max": 3.0,
+      "steady_mean_longitudinal_slip_ratio_max": 0.20,
+      "steady_peak_longitudinal_slip_ratio_max": 0.50
+    },
+    "spin": {
+      "steady_yaw_rate_relative_error_max": 0.15,
+      "centre_translation_m_max": 0.10,
+      "rear_wheel_overspeed_fraction_max": 0.15,
+      "rear_free_spin_definition": "rear wheel speed >115% target while achieved yaw rate <85% target"
+    },
+    "moving_turn": {
+      "steady_linear_speed_relative_error_max": 0.15,
+      "steady_yaw_rate_relative_error_max": 0.15
+    },
+    "braking": {
+      "speed_threshold_m_s": 0.05,
+      "stop_time_s_max": 1.5,
+      "stop_distance_m_max": 0.45,
+      "heading_change_deg_max": 5.0
+    },
+    "stability": {
+      "absolute_roll_deg_max": 3.0,
+      "absolute_pitch_deg_max": 3.0,
+      "base_rise_from_settled_m_max": 0.005
+    },
+    "drive_torque": {
+      "absolute_command_nm_max": 3.73,
+      "steady_saturation_fraction_max": 0.10,
+      "saturation_threshold_fraction_of_limit": 0.99
+    }
+  },
+  "fea_export_policy": {
+    "wheel_joint_transmitted_wrench": "report maxima per joint and scenario",
+    "launcher_tilt_transmitted_wrench": "report force and torque maxima for module cases",
+    "frame_inertial_loads": "report mass times peak body acceleration and yaw inertia times peak yaw acceleration",
+    "strength_claim": "none; Gazebo loads are inputs to FEA and physical checks"
+  },
+  "limitations": [
+    "isotropic Coulomb friction is a sensitivity, not calibrated clay-court tyre data",
+    "controller is an isolated 3.73 N m torque-limited speed servo, not production electronics",
+    "rigid URDF cannot predict printed-frame elastic deflection",
+    "all nine case-by-mu combinations are reported; no preferred-mu filtering"
+  ]
+}

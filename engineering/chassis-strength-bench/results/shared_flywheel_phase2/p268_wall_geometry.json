@@ -1,0 +1,168 @@
+{
+  "phase": "P2-68",
+  "method": "geometry_only_from_existing_P2-67_R75_75_e0p3_trajectories",
+  "new_gazebo_runs": 0,
+  "trace_count": 30,
+  "interpolation_max_chord_mm": 0.1,
+  "ball_radius_mm": 33.0,
+  "required_surface_clearance_mm": 10.0,
+  "panel": {
+    "x_mm": 225.0,
+    "thickness_mm": 4.0,
+    "y_extent_mm": [
+      -172.0,
+      172.0
+    ],
+    "bottom_mm": 46.1,
+    "top_mm": 235.0,
+    "top_edge_radius_mm": 2.0
+  },
+  "selected_clearance": {
+    "exact_minimum_ball_center_to_panel_mm": 58.004507644000654,
+    "exact_minimum_ball_surface_clearance_mm": 25.004507644000654,
+    "conservative_box_center_clearance_mm": 44.45349152542374,
+    "conservative_box_surface_clearance_mm": 11.453491525423743,
+    "maximum_abs_ball_y_near_wall_mm": 33.9339,
+    "lateral_clearance_to_panel_edge_mm": 105.0661
+  },
+  "candidate_top_limits": [
+    {
+      "wall_x_mm": 180,
+      "exact_circular_top_limit_mm": 191.19151975495762,
+      "conservative_box_top_limit_mm": 157.42256976744187
+    },
+    {
+      "wall_x_mm": 185,
+      "exact_circular_top_limit_mm": 201.80095398432834,
+      "conservative_box_top_limit_mm": 168.4962682926829
+    },
+    {
+      "wall_x_mm": 190,
+      "exact_circular_top_limit_mm": 211.8993085545071,
+      "conservative_box_top_limit_mm": 179.068375
+    },
+    {
+      "wall_x_mm": 195,
+      "exact_circular_top_limit_mm": 221.3846470188329,
+      "conservative_box_top_limit_mm": 189.0702
+    },
+    {
+      "wall_x_mm": 200,
+      "exact_circular_top_limit_mm": 230.3409063452822,
+      "conservative_box_top_limit_mm": 198.5960410958904
+    },
+    {
+      "wall_x_mm": 205,
+      "exact_circular_top_limit_mm": 238.71197934569219,
+      "conservative_box_top_limit_mm": 207.5527323943662
+    },
+    {
+      "wall_x_mm": 210,
+      "exact_circular_top_limit_mm": 246.47906838150462,
+      "conservative_box_top_limit_mm": 215.9967910447761
+    },
+    {
+      "wall_x_mm": 215,
+      "exact_circular_top_limit_mm": 253.6607570284523,
+      "conservative_box_top_limit_mm": 224.04053846153846
+    },
+    {
+      "wall_x_mm": 220,
+      "exact_circular_top_limit_mm": 260.2206145851269,
+      "conservative_box_top_limit_mm": 231.49308196721307
+    },
+    {
+      "wall_x_mm": 225,
+      "exact_circular_top_limit_mm": 266.0932797158199,
+      "conservative_box_top_limit_mm": 238.37349152542373
+    },
+    {
+      "wall_x_mm": 230,
+      "exact_circular_top_limit_mm": 263.9317905778289,
+      "conservative_box_top_limit_mm": 229.0388235294118
+    },
+    {
+      "wall_x_mm": 235,
+      "exact_circular_top_limit_mm": 250.93863330960073,
+      "conservative_box_top_limit_mm": 215.91364516129028
+    },
+    {
+      "wall_x_mm": 240,
+      "exact_circular_top_limit_mm": 237.73477357975915,
+      "conservative_box_top_limit_mm": 202.55006451612903
+    },
+    {
+      "wall_x_mm": 245,
+      "exact_circular_top_limit_mm": 224.32053708180348,
+      "conservative_box_top_limit_mm": 189.02915189873417
+    },
+    {
+      "wall_x_mm": 250,
+      "exact_circular_top_limit_mm": 210.69432935026603,
+      "conservative_box_top_limit_mm": 175.27878124999998
+    },
+    {
+      "wall_x_mm": 255,
+      "exact_circular_top_limit_mm": 196.8574262478499,
+      "conservative_box_top_limit_mm": 161.38588271604937
+    },
+    {
+      "wall_x_mm": 260,
+      "exact_circular_top_limit_mm": 182.81031912928535,
+      "conservative_box_top_limit_mm": 147.1635243902439
+    },
+    {
+      "wall_x_mm": 265,
+      "exact_circular_top_limit_mm": 168.5523102938154,
+      "conservative_box_top_limit_mm": 132.84632352941176
+    },
+    {
+      "wall_x_mm": 270,
+      "exact_circular_top_limit_mm": 154.04909291876749,
+      "conservative_box_top_limit_mm": 118.23470930232557
+    },
+    {
+      "wall_x_mm": 275,
+      "exact_circular_top_limit_mm": 139.3201050749809,
+      "conservative_box_top_limit_mm": 103.38902873563217
+    },
+    {
+      "wall_x_mm": 280,
+      "exact_circular_top_limit_mm": 124.38583143784363,
+      "conservative_box_top_limit_mm": 88.35193785310733
+    }
+  ],
+  "feed_door": {
+    "clear_width_mm": 80.0,
+    "clear_height_mm": 80.0,
+    "closed_z_mm": [
+      46.1,
+      126.1
+    ],
+    "fail_state": "spring_closed",
+    "opens_only_at_launcher_deg": [
+      15.0,
+      20.0
+    ],
+    "fixed_channel_mm": [
+      [
+        227.0,
+        46.1
+      ],
+      [
+        278.0,
+        42.0
+      ]
+    ],
+    "moving_mouth_floor_mm": {
+      "plus15": [
+        329.2,
+        26.1
+      ],
+      "plus20": [
+        331.5,
+        21.1
+      ]
+    }
+  }
+}

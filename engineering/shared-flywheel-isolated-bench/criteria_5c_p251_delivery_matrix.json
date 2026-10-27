@@ -1,0 +1,40 @@
+{
+  "status": "FROZEN_BEFORE_R75_42DEG_MATERIAL_MATRIX",
+  "written_before_run": true,
+  "stage": "P2-51 passive R75/42-degree empty-basket delivery matrix",
+  "purpose": "Quantify the only geometry that passed the realized-angle screen across the full material, tread and lateral-position matrix without selecting a convenient friction value.",
+  "frozen_inputs": {
+    "ski_angle_deg_geometric": [42],
+    "measured_takeoff_deg_at_reference": 37.98,
+    "ski_radius_mm": 75,
+    "tangent_length_mm": 52,
+    "wheel_surface_speed_m_s": [6.0, 10.0, 14.0],
+    "ramp_mu": [0.15, 0.25, 0.4],
+    "tread_mu": [0.6, 0.9],
+    "lateral_ball_offsets_m": [-0.1, -0.05, 0.0, 0.05, 0.1],
+    "approach_speed_m_s": 0.6,
+    "ground_mu": 0.7,
+    "repeats_per_condition": 1,
+    "launcher_tilt_deg": -3.0,
+    "ball_model": "gazebo/models/tennis_ball_compliant/model.sdf; unchanged calibration",
+    "powered_ramp": false,
+    "conditions": 90
+  },
+  "criteria": [
+    {"name": "nip_capture", "hard_fail": true, "rule": "ball crosses launcher local X=-33 mm without plough"},
+    {"name": "ski_takeoff", "hard_fail": true, "rule": "ball clears the R75/42-degree ski tip toward -X"},
+    {"name": "basket_entry", "hard_fail": true, "rule": "ball enters the empty-basket aperture"},
+    {"name": "retained_empty_basket", "hard_fail": true, "rule": "ball remains inside the empty basket with final mean speed <=0.25 m/s"},
+    {"name": "lidar_margin", "hard_fail": true, "rule": "highest ball top is at or below Z380, preserving 10 mm to LiDAR Z390"},
+    {"name": "d5065_contact_current", "hard_fail": true, "rule": "absolute current during ball-wheel contact <=20 A per motor"},
+    {"name": "d5065_contact_torque", "hard_fail": true, "rule": "absolute torque during ball-wheel contact <=0.62 N m per motor"},
+    {"name": "forbidden_contact", "hard_fail": true, "rule": "no ball or launcher contact with chassis, arch, camera or LiDAR"},
+    {"name": "finite_state", "hard_fail": true, "rule": "no NaN or Inf in telemetry"}
+  ],
+  "diagnostics_only": [
+    "measured takeoff speed and angle",
+    "ramp speed loss inferred against nip exit",
+    "first basket-contact point",
+    "native DART empty-basket rebound is comparative; loaded ball-ball contact remains uncalibrated"
+  ]
+}

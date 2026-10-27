@@ -43,10 +43,10 @@
     <text x="368" y="178" class="label">Basket v2.1</text><text x="354" y="201" class="small">removable · 400 × 280</text>
     <rect x="546" y="130" width="58" height="117" rx="5" class="rail"/><text x="548" y="260" class="tiny">entry hood</text>
 
-    <!-- dual vertical-axis intake wheels and funnel -->
+    <!-- dual intake wheels: parallel in plan/front; 35deg tilt is longitudinal X-Z -->
     <path d="M598 55 L790 112 L790 265 L598 322 Z" class="funnel"/><text x="650" y="78" class="small">funnel cheeks</text>
-    <g transform="rotate(35 650 131)"><rect x="611" y="111" width="78" height="40" rx="18" class="intake"/></g>
-    <g transform="rotate(-35 650 246)"><rect x="611" y="226" width="78" height="40" rx="18" class="intake"/></g>
+    <rect x="611" y="111" width="78" height="40" rx="18" class="intake"/>
+    <rect x="611" y="226" width="78" height="40" rx="18" class="intake"/>
     <circle cx="650" cy="131" r="9" class="hub"/><circle cx="650" cy="246" r="9" class="hub"/>
     <text x="675" y="133" class="small">left intake wheel</text><text x="675" y="250" class="small">right intake wheel</text>
     <path d="M810 188 C755 188 704 188 646 188 C620 188 594 188 566 188" class="flow"/>

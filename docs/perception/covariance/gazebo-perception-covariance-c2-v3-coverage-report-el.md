@@ -1,5 +1,9 @@
 # C2 controlled Gazebo coverage report
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../../current-design-el.md).
+
 - Gate: **PASS**
 - Accepted evidence rows: 540
 - Detail: All C2 coverage requirements passed.

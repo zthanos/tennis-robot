@@ -1,0 +1,67 @@
+{
+  "status": "P2_80_ANALYSIS_ONLY_NO_STL",
+  "load_basis": {
+    "electronics_high_kg": 1.0,
+    "future_Parkside_pair_kg": 1.3,
+    "braking_g": 0.5,
+    "vertical_g": 2.0,
+    "panel_press_N": 30.0,
+    "panel_side_or_fore_aft_N": 20.0
+  },
+  "P2_79": {
+    "top_displacement_mm": {
+      "30N_vertical_full_panel_bound": 0.8860422315361459,
+      "30N_vertical_40mm_strip_sensitivity": 3.051007811246291,
+      "20N_lateral": 0.6278730155821577,
+      "20N_fore_aft": 0.6278730155821577,
+      "0p5g_braking_loaded_2p3kg_scaled_fore_aft": 0.3541674712645056,
+      "2g_vertical_loaded_2p3kg_post_shortening": 0.0035842246766705586
+    },
+    "stress_mpa": {
+      "post_bending_at_20N": 0.8288039117533071
+    },
+    "bolt_loads_N": {
+      "20N_fore_aft_total_M4_couple_at_30mm_pitch": 194.66666666666666,
+      "per_two_bolts_on_tension_line": 97.33333333333333,
+      "30N_vertical_per_four_primary_M4": 7.5,
+      "0p5g_braking_total_M4_couple_at_30mm_pitch": 109.80659999999999,
+      "2g_vertical_loaded_2p3kg_per_four_primary_M4": 11.2815
+    },
+    "structural_mass_kg_estimate": 1.43,
+    "mass_basis": "PETG CAD-volume order estimate for 8 mm bases/ribs, d23 posts, side frames/ties plus M4 hardware"
+  },
+  "P2_80": {
+    "top_displacement_mm": {
+      "30N_vertical": 0.2165163043478261,
+      "20N_lateral_braced": 0.35942863349364385,
+      "20N_fore_aft": 0.27957880434782606,
+      "0p5g_braking_loaded_2p3kg_scaled_fore_aft": 0.15770341406249996,
+      "2g_vertical_loaded_2p3kg_column_shortening": 0.000776625
+    },
+    "stress_mpa": {
+      "aluminium_column_fore_aft_at_20N": 7.125,
+      "aluminium_lower_weak_axis_with_brace_at_20N": 14.5,
+      "M4_tension_rod_at_20N": 2.654348052323194
+    },
+    "bolt_loads_N": {
+      "M4_diagonal_tension_at_20N_lateral": 23.305175899397643,
+      "fore_aft_total_base_couple_at_30mm_column_pitch": 190.0,
+      "per_side_base_couple": 95.0,
+      "2g_vertical_loaded_2p3kg_per_four_columns": 11.2815
+    },
+    "structural_mass_kg_estimate": 0.84,
+    "mass_basis": "4x 20x3 Al flats, Al top frame/control rails, 2x M4 steel diagonals, PETG sockets/ties and M4 hardware"
+  },
+  "change_percent_P280_vs_P279": {
+    "20N_lateral": -42.75456587979256,
+    "20N_fore_aft": -55.47207836466688,
+    "structural_mass": -41.25874125874126
+  },
+  "limitations": [
+    "linear isotropic member screen; no joint slip, local hole bearing, preload loss, fatigue or printed-layer certification",
+    "P2-79 vertical result is sensitive to effective panel width; the 40 mm strip value is reported and does not pass 1 mm",
+    "P2-80 30 N vertical result credits the two added top-frame control rails at X=panel centre +/-24 mm",
+    "P2-80 lateral result requires both preloaded M4 steel diagonals; four unbraced 20x3 flats are not acceptable",
+    "Parkside and purchased connector dimensions remain physical measurement gates"
+  ]
+}

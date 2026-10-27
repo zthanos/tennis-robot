@@ -1,0 +1,378 @@
+{
+  "status": "NO_FULL_ARC_SOLUTION_WITH_FIXED_PIVOT_AND_PLUS20_LAUNCH",
+  "criteria": {
+    "R_mm": [
+      82,
+      90
+    ],
+    "h_mm": [
+      26,
+      33
+    ],
+    "ball_center_z_mm": 33.0,
+    "ball_center_above_usable_edge_mm": 8.0,
+    "flywheel_clearance_after_5mm_allowance_mm": 12.0,
+    "accepted_lower_stop_deg": [
+      -10.0,
+      -4.5
+    ]
+  },
+  "profiles": [
+    {
+      "profile": "printed_flat_w50_r2",
+      "manufacturing_status": "printed TPU candidate",
+      "width_mm": 50.0,
+      "edge_rounding_or_unusable_inset_mm": 2.0,
+      "wheel_mass_kg_each": 0.8494210298183528,
+      "mass_delta_from_46mm_model_kg_each": 0.011822441473989136,
+      "polar_inertia_kg_m2_each": 0.004805840784769362,
+      "polar_inertia_delta_percent": 2.4208002368253414,
+      "nip_gap_change_mm": 0.0,
+      "widens_each_axial_side_vs_50mm_mm": 0.0,
+      "angle_needed_for_both_intake_criteria_deg": -3.439812767515196,
+      "inside_accepted_minus10_to_minus4p5_stop": false,
+      "pivot_down_range_at_needed_angle_mm": [
+        10.645040573064449,
+        25.64504057306445
+      ],
+      "nip_height_range_at_needed_angle_mm": [
+        47.95495942693556,
+        47.95495942693556
+      ],
+      "intake_raw_clearance_at_needed_angle_mm": 17.0,
+      "intake_clearance_after_allowance_mm": 12.0,
+      "raw_clearance_if_contact_met_at_minus4p5_mm": 15.154090427215506,
+      "margin_to_required_raw_at_minus4p5_mm": -1.8459095727844943,
+      "launch_plus20_raw_clearance_range_mm": [
+        8.351536024376074,
+        8.351536024376074
+      ],
+      "launch_plus20_after_allowance_range_mm": [
+        3.351536024376074,
+        3.351536024376074
+      ],
+      "passes_intake_all_grid": true,
+      "passes_intake_with_accepted_stop": false,
+      "passes_launch_plus20_all_grid": false
+    },
+    {
+      "profile": "printed_flat_w50_r3",
+      "manufacturing_status": "printed TPU candidate",
+      "width_mm": 50.0,
+      "edge_rounding_or_unusable_inset_mm": 3.0,
+      "wheel_mass_kg_each": 0.8494210298183528,
+      "mass_delta_from_46mm_model_kg_each": 0.011822441473989136,
+      "polar_inertia_kg_m2_each": 0.004805840784769362,
+      "polar_inertia_delta_percent": 2.4208002368253414,
+      "nip_gap_change_mm": 0.0,
+      "widens_each_axial_side_vs_50mm_mm": 0.0,
+      "angle_needed_for_both_intake_criteria_deg": -2.8659839825988622,
+      "inside_accepted_minus10_to_minus4p5_stop": false,
+      "pivot_down_range_at_needed_angle_mm": [
+        12.081269555702292,
+        27.081269555702292
+      ],
+      "nip_height_range_at_needed_angle_mm": [
+        46.96873044429772,
+        46.96873044429772
+      ],
+      "intake_raw_clearance_at_needed_angle_mm": 17.0,
+      "intake_clearance_after_allowance_mm": 12.0,
+      "raw_clearance_if_contact_met_at_minus4p5_mm": 14.154090427215506,
+      "margin_to_required_raw_at_minus4p5_mm": -2.8459095727844943,
+      "launch_plus20_raw_clearance_range_mm": [
+        6.915307041738231,
+        6.915307041738231
+      ],
+      "launch_plus20_after_allowance_range_mm": [
+        1.915307041738231,
+        1.915307041738231
+      ],
+      "passes_intake_all_grid": true,
+      "passes_intake_with_accepted_stop": false,
+      "passes_launch_plus20_all_grid": false
+    },
+    {
+      "profile": "printed_flat_w55_r2",
+      "manufacturing_status": "printed TPU candidate",
+      "width_mm": 55.0,
+      "edge_rounding_or_unusable_inset_mm": 2.0,
+      "wheel_mass_kg_each": 0.8641990816608391,
+      "mass_delta_from_46mm_model_kg_each": 0.02660049331647555,
+      "polar_inertia_kg_m2_each": 0.004947828306871971,
+      "polar_inertia_delta_percent": 5.446800532857018,
+      "nip_gap_change_mm": 0.0,
+      "widens_each_axial_side_vs_50mm_mm": 2.5,
+      "angle_needed_for_both_intake_criteria_deg": -3.439812767515196,
+      "inside_accepted_minus10_to_minus4p5_stop": false,
+      "pivot_down_range_at_needed_angle_mm": [
+        8.14954463037089,
+        23.14954463037089
+      ],
+      "nip_height_range_at_needed_angle_mm": [
+        50.45045536962912,
+        50.45045536962912
+      ],
+      "intake_raw_clearance_at_needed_angle_mm": 17.0,
+      "intake_clearance_after_allowance_mm": 12.0,
+      "raw_clearance_if_contact_met_at_minus4p5_mm": 15.154090427215506,
+      "margin_to_required_raw_at_minus4p5_mm": -1.8459095727844943,
+      "launch_plus20_raw_clearance_range_mm": [
+        8.49780041510487,
+        8.49780041510487
+      ],
+      "launch_plus20_after_allowance_range_mm": [
+        3.4978004151048694,
+        3.4978004151048694
+      ],
+      "passes_intake_all_grid": true,
+      "passes_intake_with_accepted_stop": false,
+      "passes_launch_plus20_all_grid": false
+    },
+    {
+      "profile": "printed_flat_w55_r3",
+      "manufacturing_status": "printed TPU candidate",
+      "width_mm": 55.0,
+      "edge_rounding_or_unusable_inset_mm": 3.0,
+      "wheel_mass_kg_each": 0.8641990816608391,
+      "mass_delta_from_46mm_model_kg_each": 0.02660049331647555,
+      "polar_inertia_kg_m2_each": 0.004947828306871971,
+      "polar_inertia_delta_percent": 5.446800532857018,
+      "nip_gap_change_mm": 0.0,
+      "widens_each_axial_side_vs_50mm_mm": 2.5,
+      "angle_needed_for_both_intake_criteria_deg": -2.8659839825988622,
+      "inside_accepted_minus10_to_minus4p5_stop": false,
+      "pivot_down_range_at_needed_angle_mm": [
+        9.584396511272516,
+        24.584396511272516
+      ],
+      "nip_height_range_at_needed_angle_mm": [
+        49.465603488727496,
+        49.465603488727496
+      ],
+      "intake_raw_clearance_at_needed_angle_mm": 17.0,
+      "intake_clearance_after_allowance_mm": 12.0,
+      "raw_clearance_if_contact_met_at_minus4p5_mm": 14.154090427215506,
+      "margin_to_required_raw_at_minus4p5_mm": -2.8459095727844943,
+      "launch_plus20_raw_clearance_range_mm": [
+        7.062948534203237,
+        7.062948534203237
+      ],
+      "launch_plus20_after_allowance_range_mm": [
+        2.0629485342032368,
+        2.0629485342032368
+      ],
+      "passes_intake_all_grid": true,
+      "passes_intake_with_accepted_stop": false,
+      "passes_launch_plus20_all_grid": false
+    },
+    {
+      "profile": "printed_flat_w60_r2",
+      "manufacturing_status": "printed TPU candidate",
+      "width_mm": 60.0,
+      "edge_rounding_or_unusable_inset_mm": 2.0,
+      "wheel_mass_kg_each": 0.8789771335033256,
+      "mass_delta_from_46mm_model_kg_each": 0.04137854515896197,
+      "polar_inertia_kg_m2_each": 0.005089815828974581,
+      "polar_inertia_delta_percent": 8.472800828888694,
+      "nip_gap_change_mm": 0.0,
+      "widens_each_axial_side_vs_50mm_mm": 5.0,
+      "angle_needed_for_both_intake_criteria_deg": -3.439812767515196,
+      "inside_accepted_minus10_to_minus4p5_stop": false,
+      "pivot_down_range_at_needed_angle_mm": [
+        5.654048687677335,
+        20.65404868767733
+      ],
+      "nip_height_range_at_needed_angle_mm": [
+        52.94595131232268,
+        52.94595131232268
+      ],
+      "intake_raw_clearance_at_needed_angle_mm": 17.0,
+      "intake_clearance_after_allowance_mm": 12.0,
+      "raw_clearance_if_contact_met_at_minus4p5_mm": 15.154090427215506,
+      "margin_to_required_raw_at_minus4p5_mm": -1.8459095727844943,
+      "launch_plus20_raw_clearance_range_mm": [
+        8.64406480583365,
+        8.64406480583365
+      ],
+      "launch_plus20_after_allowance_range_mm": [
+        3.6440648058336507,
+        3.6440648058336507
+      ],
+      "passes_intake_all_grid": true,
+      "passes_intake_with_accepted_stop": false,
+      "passes_launch_plus20_all_grid": false
+    },
+    {
+      "profile": "printed_flat_w60_r3",
+      "manufacturing_status": "printed TPU candidate",
+      "width_mm": 60.0,
+      "edge_rounding_or_unusable_inset_mm": 3.0,
+      "wheel_mass_kg_each": 0.8789771335033256,
+      "mass_delta_from_46mm_model_kg_each": 0.04137854515896197,
+      "polar_inertia_kg_m2_each": 0.005089815828974581,
+      "polar_inertia_delta_percent": 8.472800828888694,
+      "nip_gap_change_mm": 0.0,
+      "widens_each_axial_side_vs_50mm_mm": 5.0,
+      "angle_needed_for_both_intake_criteria_deg": -2.8659839825988622,
+      "inside_accepted_minus10_to_minus4p5_stop": false,
+      "pivot_down_range_at_needed_angle_mm": [
+        7.087523466842743,
+        22.08752346684274
+      ],
+      "nip_height_range_at_needed_angle_mm": [
+        51.96247653315727,
+        51.96247653315727
+      ],
+      "intake_raw_clearance_at_needed_angle_mm": 17.0,
+      "intake_clearance_after_allowance_mm": 12.0,
+      "raw_clearance_if_contact_met_at_minus4p5_mm": 14.154090427215506,
+      "margin_to_required_raw_at_minus4p5_mm": -2.8459095727844943,
+      "launch_plus20_raw_clearance_range_mm": [
+        7.210590026668243,
+        7.210590026668243
+      ],
+      "launch_plus20_after_allowance_range_mm": [
+        2.2105900266682426,
+        2.2105900266682426
+      ],
+      "passes_intake_all_grid": true,
+      "passes_intake_with_accepted_stop": false,
+      "passes_launch_plus20_all_grid": false
+    },
+    {
+      "profile": "pneumatic_rounded_screen_r8",
+      "manufacturing_status": "purchased tyre; edge profile and loaded width unmeasured",
+      "width_mm": 50.0,
+      "edge_rounding_or_unusable_inset_mm": 8.0,
+      "wheel_mass_kg_each": null,
+      "mass_delta_from_46mm_model_kg_each": null,
+      "polar_inertia_kg_m2_each": null,
+      "polar_inertia_delta_percent": null,
+      "nip_gap_change_mm": 0.0,
+      "widens_each_axial_side_vs_50mm_mm": 0.0,
+      "angle_needed_for_both_intake_criteria_deg": -0.0,
+      "inside_accepted_minus10_to_minus4p5_stop": false,
+      "pivot_down_range_at_needed_angle_mm": [
+        19.30000000000001,
+        34.30000000000001
+      ],
+      "nip_height_range_at_needed_angle_mm": [
+        42.0,
+        42.0
+      ],
+      "intake_raw_clearance_at_needed_angle_mm": 17.0,
+      "intake_clearance_after_allowance_mm": 12.0,
+      "raw_clearance_if_contact_met_at_minus4p5_mm": 9.154090427215506,
+      "margin_to_required_raw_at_minus4p5_mm": -7.845909572784494,
+      "launch_plus20_raw_clearance_range_mm": [
+        -0.3034234025594884,
+        -0.3034234025594884
+      ],
+      "launch_plus20_after_allowance_range_mm": [
+        -5.303423402559488,
+        -5.303423402559488
+      ],
+      "passes_intake_all_grid": true,
+      "passes_intake_with_accepted_stop": false,
+      "passes_launch_plus20_all_grid": false
+    }
+  ],
+  "best_intake_candidate": {
+    "profile": "printed_flat_w60_r2",
+    "manufacturing_status": "printed TPU candidate",
+    "width_mm": 60.0,
+    "edge_rounding_or_unusable_inset_mm": 2.0,
+    "wheel_mass_kg_each": 0.8789771335033256,
+    "mass_delta_from_46mm_model_kg_each": 0.04137854515896197,
+    "polar_inertia_kg_m2_each": 0.005089815828974581,
+    "polar_inertia_delta_percent": 8.472800828888694,
+    "nip_gap_change_mm": 0.0,
+    "widens_each_axial_side_vs_50mm_mm": 5.0,
+    "angle_needed_for_both_intake_criteria_deg": -3.439812767515196,
+    "inside_accepted_minus10_to_minus4p5_stop": false,
+    "pivot_down_range_at_needed_angle_mm": [
+      5.654048687677335,
+      20.65404868767733
+    ],
+    "nip_height_range_at_needed_angle_mm": [
+      52.94595131232268,
+      52.94595131232268
+    ],
+    "intake_raw_clearance_at_needed_angle_mm": 17.0,
+    "intake_clearance_after_allowance_mm": 12.0,
+    "raw_clearance_if_contact_met_at_minus4p5_mm": 15.154090427215506,
+    "margin_to_required_raw_at_minus4p5_mm": -1.8459095727844943,
+    "launch_plus20_raw_clearance_range_mm": [
+      8.64406480583365,
+      8.64406480583365
+    ],
+    "launch_plus20_after_allowance_range_mm": [
+      3.6440648058336507,
+      3.6440648058336507
+    ],
+    "passes_intake_all_grid": true,
+    "passes_intake_with_accepted_stop": false,
+    "passes_launch_plus20_all_grid": false
+  },
+  "finding": {
+    "intake": "W60/R2 minimizes pivot descent, but needs -3.440 deg, outside the accepted -10..-4.5 deg stop range",
+    "launch": "the W60/R2 intake-compliant lowered pivot leaves only 8.64 mm raw at +20 deg (3.64 mm after allowance), so no screened profile passes the full arc",
+    "pneumatic": "rounded purchased tyre is worse and remains measurement-gated",
+    "cad_policy": "reserve >=23 mm positive-lock Z adjustment; show adjustable stop as dependent CAD only; do not release STL or lock an endpoint"
+  },
+  "cad_collision_qa": {
+    "engine": "openscad-nightly, exact solid intersections",
+    "candidate": "W60/r2, pivot down 12.654 mm at R85/h29, sweep -3.4398..+20 deg with explicit +20 endpoint",
+    "empty_intersections": [
+      "moving-vs-frame",
+      "moving-vs-drive-envelopes",
+      "moving-vs-basket-battery",
+      "moving-vs-high-guide",
+      "moving-vs-arch",
+      "actuator-vs-basket-battery-drive"
+    ],
+    "moving_throat_guide_vs_low_deck": "empty at 13 angles from -3.4398 through +20 deg",
+    "limitation": "nominal solid QA only; no tolerance/dynamic credit and does not override the flywheel-ground clearance failure",
+    "reproduction": "/snap/bin/openscad-nightly -o /tmp/p2_38_<view>.stl -D 'view=\"qa_sweep_<view>\"' cad/modular-test-chassis/shared-flywheel-intake-launcher-phase1.scad"
+  },
+  "delivery_to_existing_guide": {
+    "selected_intake_angle_deg": -3.439812767515196,
+    "reference_handoff_ball_center_ground_mm": 59.24595131232268,
+    "existing_fixed_guide_peak_ground_range_mm": [
+      133.0,
+      148.0
+    ],
+    "required_peak_lift_range_mm": [
+      73.75404868767731,
+      88.75404868767731
+    ],
+    "ball_potential_energy_range_j": [
+      0.04124105140468853,
+      0.04962860140468853
+    ],
+    "minimum_speed_ideal_range_mps": [
+      1.2029357569098313,
+      1.3196038933150465
+    ],
+    "minimum_speed_at_50_percent_transfer_range_mps": [
+      1.701208062085428,
+      1.8662017228864776
+    ],
+    "ballistic_free_flight_over_80mm": [
+      {
+        "speed_mps": 0.6,
+        "vertical_change_over_80mm_mm": -82.7063907968972
+      },
+      {
+        "speed_mps": 0.9,
+        "vertical_change_over_80mm_mm": -34.08691624406256
+      },
+      {
+        "speed_mps": 1.2,
+        "vertical_change_over_80mm_mm": -17.070100150570426
+      }
+    ],
+    "decision": "1.9 m/s only barely clears the worst 50%-transfer energy screen; reshape/lower the fixed guide entrance and retain containment before dynamic release"
+  }
+}

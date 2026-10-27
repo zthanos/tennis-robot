@@ -1,0 +1,120 @@
+{
+  "status": "P2_40_XACRO_VALIDATED_PAUSED_BEFORE_GAZEBO",
+  "runtime_gate": "Ubuntu 24.04 + ROS 2 Jazzy container; explicit user approval before every xacro/ROS/Gazebo execution",
+  "geometry_m": {
+    "wheel_track": 0.594,
+    "drive_axle_y_abs": 0.297,
+    "rear_axle_x": -0.065,
+    "front_axle_x": 0.3,
+    "drive_wheel_radius": 0.085,
+    "drive_wheel_radius_reference_only_m": 0.085,
+    "drive_wheel_radius_unmeasured_range_m": [0.082, 0.09],
+    "drive_wheel_candidate_notes": ["shopping list: Baja 5B 170x80", "CLAUDE.md mentions 180 mm; identity/loaded radius not confirmed"],
+    "drive_axle_above_mount_foot_nominal_m": 0.029,
+    "drive_axle_above_mount_foot_measurement_uncertainty_m": 0.003,
+    "drive_axle_above_mount_foot_sweep_m": [0.026, 0.033],
+    "withdrawn_previous_estimate_m": [0.021, 0.025],
+    "rail_underside_reference_at_r85_h29_m": 0.026,
+    "intake_contact_static_gate": {
+      "angle_deg": -10.0,
+      "ball_center_ground_z_m": 0.033,
+      "flywheel_axial_width_m": 0.05,
+      "rounded_edge_unusable_inset_m": 0.008,
+      "required_ball_center_above_lower_edge_m": 0.008,
+      "result_over_r82_90_h26_33": "FAIL_ALL_CASES",
+      "pure_pivot_down_required_m": [0.0038656382, 0.0188656382],
+      "pure_pivot_resulting_flywheel_ground_clearance_m": 0.0076351822,
+      "p2_37_provisional_adjustment_superseded": "The -4.589 deg result treated 8 mm as the complete edge reserve. P2-38 separates physical edge rounding from the required 8 mm usable-edge margin.",
+      "p2_38_tread_variable_result": {
+        "profiles_screened": "printed flat TPU widths 50/55/60 mm with 2/3 mm edge rounding; purchased pneumatic rounded profile retained as unmeasured",
+        "best_intake_candidate_not_release": "60 mm flat TPU, 2 mm rounding, -3.440 deg, pivot 5.654..20.654 mm down",
+        "mass_each_kg": 0.8789771335,
+        "polar_inertia_each_kg_m2": 0.0050898158,
+        "accepted_stop_minus10_to_minus4p5_result": "FAIL; at -4.5 deg the raw clearance is 15.154 mm, 1.846 mm below the required 17 mm",
+        "launch_plus20_result": "FAIL; 8.644 mm raw / 3.644 mm after allowance",
+        "decision": "No full-arc solution with fixed pivot, diameter 200 mm, ground-ball intake and +20 deg launch. Keep >=23 mm positive-lock adjustment in dependent CAD, but do not lock the endpoint or release STL."
+      },
+      "p2_39_stationary_launch_resolution": {
+        "operating_rule": "5 mm allowance only while robot moves; launch only while stationary with raw clearance >=8 mm",
+        "selected_pivot_behind_nip_m": 0.055,
+        "selected_pivot_x_at_transport_m": 0.387,
+        "pivot_down_sweep_m": [0.0054626364, 0.0204626364],
+        "collection_deg": -3.0,
+        "collection_clearance_after_allowance_m": 0.0127664044,
+        "transport_deg": 0.0,
+        "transport_clearance_after_allowance_m": 0.0208373636,
+        "launch_deg_range": [15.0, 20.0],
+        "launch_static_clearance_m": {"15deg": 0.0152127318, "20deg": 0.0122556786},
+        "cad_collision_result": "selected -3..+20 sweep empty; at +20 offset is empty through 57 mm and first intersects X330 arch at 58 mm",
+        "delivery_speed_for_25_percent_margin_mps": 2.3431344874,
+        "decision": "static/CAD candidate accepted for further measurement only; no STL or Gazebo release"
+      },
+        "p2_40_selected_geometry": {
+        "ball_edge_grid": "R=82/85/90 mm, h=26/29/33 mm; P2-42 isolated reference uses corresponding positive-locked pivot adjustment for 10.000 mm from ball centre to usable lower edge in all 9 cases; physical minimum remains 8 mm",
+        "ball_edge_reference_target_m": 0.010,
+        "ball_edge_physical_minimum_m": 0.008,
+        "pivot_down_range_for_10mm_target_m": [0.0074626364, 0.0224626364],
+        "arch_crossbar_and_lidar_x_m": 0.33,
+        "arch_side_leg_x_m": 0.318,
+        "arch_directional_clearance_m": 0.014,
+        "arch_tolerance_and_elastic_budget_m": 0.003,
+        "arch_residual_clearance_lower_bound_m": 0.011,
+        "printed_wheel_width_m": 0.06,
+        "printed_wheel_mass_each_including_hub_kg": 0.878977133503,
+        "printed_wheel_polar_inertia_each_kg_m2": 0.005089815829,
+        "printed_wheel_transverse_inertia_each_kg_m2": 0.00267808166,
+        "collection_deg": -3.0,
+        "transport_deg": 0.0,
+        "launch_adjustment_deg": [15.0, 20.0],
+        "lower_stop_adjustment_deg": [-10.0, -3.0]
+      }
+    },
+    "launcher_pivot": [0.387, 0.0, 0.049837363636],
+    "launcher_limits_rad": [-0.05235987756, 0.349065850399]
+  },
+  "mass_cases_kg": {
+    "bare_mobile_base_including_drive_hardware": 10.0,
+    "park_side_pair": 1.3,
+    "ugreen": 0.309,
+    "actuonix_p16": 0.095,
+    "basket_and_supports_provisional": 1.7,
+    "balls_45": 2.565,
+    "flywheel_module": 4.609957627007,
+    "drive_test_plate_fasteners_and_ballast": 5.44788705882353
+  },
+  "d5065_existing_analytical_model": {
+    "kv_rpm_per_v": 270.0,
+    "torque_constant_nm_per_a": 0.031,
+    "phase_neutral_resistance_ohm": 0.039,
+    "provisional_current_limit_a_per_motor": 20.0,
+    "provisional_effort_limit_nm_per_motor": 0.62,
+    "source": "config/flywheel_launcher_capability_protocol.json",
+    "source_sha256": "293c43e3ca5e7745e38a3b342ed26f971d33b1067f436cb1f19af190d5d8aab8"
+  },
+  "ball_model": {
+    "source": "gazebo/models/tennis_ball_compliant/model.sdf",
+    "source_sha256": "8715ce705508cc8c6428126a4063e1846f43d46c780eef5274780ee1cbb7356f",
+    "calibration_policy": "use verbatim; no launcher-result refit"
+  },
+  "source_module": {
+    "path": "engineering/shared-flywheel-isolated-bench/cad_v3_flywheel_launcher_module.urdf.xacro",
+    "sha256": "48e1c16a3fb74dd1ea97f5a90f52e0fca3d7333b7a857799abd4f8511191058d",
+    "legacy_authoritative_module_unchanged": "ros2_ws/src/tennis_robot/urdf/components/flywheel_launcher_module.urdf.xacro"
+  },
+  "p2_40_xacro_validation": {
+    "container_image_digest": "sha256:86e0d8532b005efb99290c8e7875c204ce992fba009b6bd803af8e70587ba077",
+    "cases": {
+      "empty": {"urdf_sha256": "6301c905c5d74901bcedb45dca9059ebb4759b73228a883f4ee9c41811ada986", "mass_kg": 18.019957627006},
+      "full45": {"urdf_sha256": "9eca51df73486e2451078f21cdc3c6f14844a368aa7126fbc0ec9ffe4f45d942", "mass_kg": 20.584957627006},
+      "ballast": {"urdf_sha256": "8cb0c4b175ec080156fd52b1fe99ded8090c5de5c7db2302c13d2b88239e83dd", "mass_kg": 18.85788235294}
+    },
+    "result": "PASS: xacro expansion, check_urdf, positive inertias, contract geometry, collisions, joint limits and ros2_control interfaces",
+    "gazebo_executed": false
+  },
+  "not_claimed": [
+    "printed-part strength",
+    "ball flow or jam performance",
+    "physical tyre radius or axle-to-mount-foot height until measured",
+    "turn contact-model calibration against the physical chassis"
+  ]
+}

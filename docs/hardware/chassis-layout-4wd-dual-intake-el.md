@@ -1,5 +1,9 @@
 # Τρέχον σχέδιο chassis — 4WD και dual-wheel intake
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Ημερομηνία baseline: 2026-08-16
 
 Αυτό είναι το ενεργό μηχανολογικό layout του prototype. Αν υπάρχει διαφορά
@@ -27,7 +31,7 @@
 `ros2_ws/src/tennis_robot/urdf/tennis_robot.urdf.xacro`. Η γεωμετρία intake
 και basket ορίζεται αντίστοιχα στα:
 
-- `docs/mechanism/dual-wheel-intake-design-el.md`
+- `docs/mechanism/standalone-intake-fixed-motor-compliant-tyre.md`
 - `docs/mechanism/basket-bin-redesign-spec-el.md`
 - `cad/basket-bin-v2/params.scad`
 
@@ -69,7 +73,9 @@ wide funnel
 
 Το intake δεν είναι ο παλιός οριζόντιος wide roller. Οι δύο κύριοι intake
 τροχοί έχουν κατακόρυφους άξονες, ακτίνα `60 mm`, ύψος `80 mm`, nominal gap
-`56 mm`, nominal nip `x=540 mm` και tilt `35°` στο τρέχον URDF baseline.
+`56 mm`, nominal nip `x=540 mm` και κοινό longitudinal X-Z tilt `35°` στο
+τρέχον URDF baseline. Οι δύο άξονες είναι παράλληλοι στη front view· δεν
+ανοίγουν σαν V προς τα πλάγια.
 Κάθε τροχός χρειάζεται ανεξάρτητο μοτέρ και ενδοτική πλευρική στήριξη.
 
 Το basket έχει εσωτερικό `400 × 280 mm`, εκτείνεται περίπου από `x=20` έως
@@ -82,7 +88,7 @@ wide funnel
 - Mega/perfboard και logic connectors σε προστατευμένο, προσβάσιμο tray.
 - BTS7960 και 40A relay εκτός κλειστού κουτιού, με αερισμό.
 - High-current καλώδια εκτός perfboard, σύμφωνα με
-  `docs/hardware/motion-perfboard-wiring-el.md`.
+  `docs/hardware/unified-keyed-perfboard-wiring-el.md`.
 - Δύο ανεξάρτητα cable looms drive, ένα ανά πλευρά, ώστε τα εμπρός/πίσω μοτέρ
   να αποσυνδέονται χωρίς να λυθεί όλο το robot.
 - Encoder και sensor καλώδια μακριά από `M+`/`M-` και relay wiring.
@@ -99,7 +105,7 @@ wide funnel
 
 1. τα τέσσερα motor mounts,
 2. το βυθισμένο basket και το flange του,
-3. τα intake carriages και το funnel,
+3. τα fixed intake motor mounts, το direct-drive stack και το funnel,
 4. battery straps και έξοδο μπαταρίας,
 5. Mega/perfboard, BTS7960, relay και fuse holders,
 6. lidar mast και OAK-D bracket.

@@ -1,0 +1,14 @@
+{
+  "status": "FROZEN_P2_42_VALIDATION_FIXTURE_MAPPING",
+  "frame": "base_link; metres; +X front, +Y left, +Z up",
+  "source": "cad/modular-test-chassis/shared-flywheel-intake-launcher-phase1.scad",
+  "simplification": "Outer solid envelopes are used for hollow printed members; holes and wall cavities are intentionally filled, making collision checking conservative.",
+  "features": [
+    {"cad_feature":"left X318 arch leg","cad_lines":"421-422","collision":"fixture_arch_left_leg_col","geometry":{"type":"box","size_m":[0.030,0.050,0.193]},"origin_xyz_m":[0.318,0.220,0.1485]},
+    {"cad_feature":"right X318 arch leg","cad_lines":"421-422","collision":"fixture_arch_right_leg_col","geometry":{"type":"box","size_m":[0.030,0.050,0.193]},"origin_xyz_m":[0.318,-0.220,0.1485]},
+    {"cad_feature":"left X318-to-X330 upper dogleg hull","cad_lines":"434-438","collision":"fixture_arch_left_dogleg_col","geometry":{"type":"box","size_m":[0.042,0.030,0.020]},"origin_xyz_m":[0.324,0.220,0.245]},
+    {"cad_feature":"right X318-to-X330 upper dogleg hull","cad_lines":"434-438","collision":"fixture_arch_right_dogleg_col","geometry":{"type":"box","size_m":[0.042,0.030,0.020]},"origin_xyz_m":[0.324,-0.220,0.245]},
+    {"cad_feature":"X330 arch crossmember outer envelope","cad_lines":"440","collision":"fixture_arch_x330_crossmember_col","geometry":{"type":"box","size_m":[0.050,0.440,0.030]},"origin_xyz_m":[0.330,0.0,0.245]},
+    {"cad_feature":"LiDAR body envelope d76 x 32","cad_lines":"522","collision":"fixture_lidar_body_col","geometry":{"type":"cylinder","radius_m":0.038,"length_m":0.032,"axis":"Z"},"origin_xyz_m":[0.330,0.0,0.374]}
+  ]
+}

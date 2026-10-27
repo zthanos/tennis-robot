@@ -1,0 +1,9 @@
+{
+  "phase": "P2-61",
+  "frozen_before_corrected_5c3_runs": true,
+  "collection_surface_speed_m_s": 5.0,
+  "timestep_s": 0.00025,
+  "cases": {"series": ["gap_0","gap_50","gap_150","gap_300"], "side_by_side": ["y50"], "p258_boundary": [[0,70],[0,100],[35,70],[35,100]]},
+  "tread_mu": [0.6,0.9],
+  "required": "series 8/8; side/boundary classified; jam detector and beam rescored"
+}

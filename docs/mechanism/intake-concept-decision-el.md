@@ -1,5 +1,9 @@
 # Intake concept decision
 
+> **ΙΣΤΟΡΙΚΟ — δεν περιγράφει το τρέχον design.** Διατηρείται ως evidence
+> της απόφασης/δοκιμής της εποχής του. Δες
+> [το τρέχον design](../current-design-el.md).
+
 Ημερομηνία: 2026-07-10
 
 ## Απόφαση
@@ -23,7 +27,7 @@ hopper.
 Η απόφαση βασίζεται στο deterministic Gazebo intake bench και στο report:
 
 ```text
-docs/mechanism/intake-bench-sweep-report-el.md
+docs/archive/mechanism/intake/intake-bench-sweep-report-el.md
 ```
 
 Κύρια ευρήματα:
