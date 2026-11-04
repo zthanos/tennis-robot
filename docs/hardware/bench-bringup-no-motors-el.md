@@ -33,7 +33,7 @@ Firmware: `arduino/motion/drive_test_mega/drive_test_mega.ino` (500000 baud).
 |---|---|---|---|
 | E-stop (NC) | D33 | NC επαφή μεταξύ D33 και GND | στάδιο A2: `ESTOP=OK/OPEN` στο monitor |
 | START/ARM (στιγμιαίο, OFF-(ON) SPST-NO) | D32 | επαφή μεταξύ D32 και GND, χωρίς αντίσταση (εσωτερικό pull-up) | στάδιο A6: όπλιση από το κουμπί |
-| Φωτισμός START/ARM = ARMED LED | D34 | D34 → **330 Ω** → LED(+) → LED(−) → GND. R16-504BD: σκέτο LED ~2,2 V (προδιαγραφή πωλητή, 220–1000 Ω)· 330 Ω ≈ 8,5 mA, χωρίς transistor | στάδιο A5: ανάβει με ARM |
+| Φωτισμός START/ARM = ARMED LED | D34 | D34 → **470 Ω** (τιμή σχεδίου, διαθέσιμη· 220 Ω επίσης ΟΚ) → LED(+) → LED(−) → GND. R16-504BD: σκέτο LED ~2,2 V (προδιαγραφή πωλητή, 220–1000 Ω)· 470 Ω ≈ 6 mA, χωρίς transistor | στάδιο A5: ανάβει με ARM |
 | Φωτισμός toggle | — | από το switched 12 V του toggle | στάδιο Γ1 |
 | LED κατάστασης Ø8 στο πάνελ | — | **δεν έχει pin ακόμα** | εκτός bring-up |
 | Encoders A/B | LF D2/D22, LR D3/D23, RF D18/D24, RR D19/D25 | **κατά θέση, όχι χρώμα**: 1–2 μοτέρ (χοντρά), 3 GND, 4 5 V, 5 A, 6 B — βλ. `drive-test-wiring-el.md` §3 και έλεγχος με όριο ~30 mA πριν το Mega | στάδιο A3 |
