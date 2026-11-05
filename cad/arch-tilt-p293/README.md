@@ -1,5 +1,29 @@
 # P2-93 — πρώτο release αψίδας και μηχανισμού κλίσης
 
+## P2-93b — exact-solid διόρθωση χωρίς interface masks
+
+Το P2-93b αφαιρεί οριστικά τα κουτιά εξαίρεσης του `tilt_arch` και ελέγχει
+τα πραγματικά solids. Οι installed poses άλλαξαν μόνο στα tilt interfaces:
+
+- FIT0186 carrier: `+Y 28 mm` από την παλιά nominal θέση,
+- KFL08: `+Y 24 mm` και station `X274 / Z112,653`, δηλαδή 36,73 mm κατά
+  μήκος του ίδιου Tr8 axis (καμία αλλαγή αξονικότητας),
+- δύο stops: από `Y±205` σε `Y±194`, συμμετρικά,
+- nut carriage, AS5600 pod και magnet cap: αμετάβλητα.
+
+Το ανεξάρτητο raw pairwise gate `cad/independent-check/collide.py` δίνει
+`0 collisions > 0.5 mm3 (0 export failures)` για arch και όλα τα tilt parts.
+Το OpenSCAD P2-93 regression δίνει `PASS_EMPTY` για `tilt_arch`, fixed tilt
+έναντι moving set και ολόκληρη τη διαδρομή −10…+20°. Δεν αφαιρείται κανένας
+"mating/declared interface" όγκος.
+
+Οι αλλαγές είναι installed-pose/QA αλλαγές: τα 20 printable STL solids δεν
+άλλαξαν. Ειδικά όλα τα 13 STL της αψίδας επανεξήχθησαν και συγκρίθηκαν
+byte-for-byte ως όμοια: `arch_foot_x240/x300`, `arch_leg_lower/upper`,
+`arch_joint_sleeve`, `arch_brace_x240/x300`, `arch_crossbar_center/end`,
+`lidar_mast`, `lidar_crossbar_half`, `sensor_joint_sleeve`,
+`oak_universal_plate`. Μπορούν να τυπωθούν/χρησιμοποιηθούν χωρίς reprint.
+
 Το release περιέχει **20 manifold, one-body STL / 33 φυσικά prints**. Η
 αψίδα είναι release-ready. Τα hardware interfaces του tilt είναι **fit-check
 release** με διαστάσεις κατασκευαστή και δεν παίρνουν τελικό πολύωρο print
@@ -122,7 +146,7 @@ upper bound· η slicer mass αναμένεται χαμηλότερη στα in
 
 Το export αποτυγχάνει αν STL δεν είναι ένα σώμα ή αν έχει downward
 horizontal roof >40 mm². Το χειρότερο STL είναι `tilt_stop`, 28,73 mm².
-Το exact-solid regression ελέγχει σασί, P2-71 basket + removal prism,
+Το exact-solid regression ελέγχει χωρίς interface masks σασί, P2-71 basket + removal prism,
 P2-85 ski, rear pod, F, moving set −10…+20°, arch↔tilt, υπάρχοντες άξονες
 P2-78, printed↔printed M4 και Ø10×60 mm driver paths. Η console/F σύγκρουση
 είναι απαιτούμενο `EXPECTED_INTERSECTION`.

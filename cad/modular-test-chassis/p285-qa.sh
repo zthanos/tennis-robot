@@ -48,6 +48,7 @@ for g in ${P285_GROW:-0}; do
     run qa_p285_bracket_frame
     run qa_p285_fast_frame
     run qa_p285_fork_frame
+    run qa_frame_unintended
     run qa_adjust_frame_unintended
     run qa_ground
   }

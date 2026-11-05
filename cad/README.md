@@ -1,5 +1,14 @@
 # Active CAD status
 
+## Μόνιμος κανόνας exact-solid QA (P2-93b)
+
+Κάθε collision gate τέμνει τα πραγματικά released/installed solids. Απαγορεύεται
+να αφαιρείται πριν από την `intersection()` οποιοδήποτε κουτί, mating zone,
+fastener zone ή «declared interface». Επιφάνεια επαφής επιτρέπεται μόνο με
+μηδενικό όγκο· θετικός όγκος διορθώνεται στη γεωμετρία. Το
+`check-exact-solid-policy.py` τρέχει στην αρχή του συνολικού assemblability
+regression και απορρίπτει direct masks και QA helpers τύπου `difference()`.
+
 ## Physical print manifest
 
 Το μοναδικό ευρετήριο για τη σημερινή φυσική κατασκευή είναι το

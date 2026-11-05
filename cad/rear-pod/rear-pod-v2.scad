@@ -918,21 +918,6 @@ module control_body_solids() {
     translate([panel_center_x,-58,panel_z+14.5]) cylinder(d=38,h=21,center=true);
 }
 
-module control_body_penetration_solids(eps=0.01) {
-    // Remove the two intentional seating planes: threaded bodies stop at the
-    // panel underside and the E-stop cap begins at the panel top.
-    translate([panel_center_x,-58,panel_z-25-eps/2])
-        cube([35,30,50-eps],center=true);
-    translate([panel_center_x,-12,panel_z-15-eps/2])
-        cube([27,15,30-eps],center=true);
-    translate([panel_center_x,32,panel_z-12.5-eps/2])
-        cylinder(d=15,h=25-eps,center=true);
-    translate([panel_center_x+42,70,panel_z-6-eps/2])
-        cylinder(d=7.8,h=12-eps,center=true);
-    translate([panel_center_x,-58,panel_z+14.5+eps/2])
-        cylinder(d=38,h=21-eps,center=true);
-}
-
 module installed_panel() {
     translate([panel_center_x,0,panel_z]) control_panel_v2();
 }
@@ -941,7 +926,7 @@ module installed_panel() {
 // the Ø8.2 locating pegs pass freely through unchanged Ø8.6 holes and the
 // Ø23 post ends are cleared by Ø25 underside service pockets.
 module qa_control_bodies_collision() {
-    intersection() { installed_panel(); control_body_penetration_solids(); }
+    intersection() { installed_panel(); control_body_solids(); }
 }
 
 module qa_control_ugreen_collision() {
@@ -964,12 +949,9 @@ module qa_control_posts_collision() {
 }
 
 module qa_control_posts_penetration() {
-    // Remove a 0.01 mm slab around the intended Z347 shoulder contact.  Any
-    // remaining object is true volume penetration, not a coplanar interface.
-    difference() {
-        qa_control_posts_collision();
-        translate([-400,-250,panel_z-0.005]) cube([500,500,0.01]);
-    }
+    // P2-93b: raw exact-solid result. Coplanar shoulder contact has zero
+    // volume; no mating slab is subtracted from the intersection.
+    qa_control_posts_collision();
 }
 
 module qa_control_carrier_collision() {

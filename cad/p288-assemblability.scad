@@ -1,7 +1,7 @@
 // P2-88 permanent exact-solid tool-access gate.
-// A non-empty export is a collision.  Fastener mating volumes are excluded;
-// only the external 60 mm driver/wrench approach is tested here.  Hole-axis
-// alignment remains in active-chassis-hole-alignment.scad.
+// A non-empty export is a collision. This file tests the external 60 mm
+// driver/wrench approaches; the separate hole-axis gate tests the bores.
+// Neither gate subtracts a mating/interface volume from an intersection.
 use <rear-pod/rear-pod-v2.scad>
 use <modular-test-chassis/modular-chassis-v3.scad>
 

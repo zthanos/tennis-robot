@@ -551,8 +551,9 @@ else if(p273_part=="qa_closed_feed") intersection() {
     p273_ski_mount_assembly(); p273_closed_feed();
 }
 else if(p273_part=="qa_frame_unintended") intersection() {
-    // Intentional bracket-foot contact with X300 is excluded from this probe.
-    p273_ski(); frame_assembly();
+    // P2-93b policy: test the complete installed ski mount. Mating faces may
+    // touch, but no bracket, fork, or ski volume may enter the chassis.
+    p273_ski_mount_assembly(); frame_assembly();
 }
 else if(p273_part=="side") rotate([-90,0,0]) {
     frame_assembly(); p273_ski_mount_assembly(); p273_selector(p273_angle);

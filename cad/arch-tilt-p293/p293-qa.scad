@@ -53,27 +53,6 @@ module fixed_world_without_arch_tilt() {
   p270_outer_envelope();
 }
 
-module arch_for_moving_qa() {
-  difference() {
-    arch_release_assembly();
-    // Declared actuator clevis/carrier attachment zone on the -Y leg is a
-    // mating interface, not forbidden moving clearance (same convention as
-    // p253_arch_without_mount()).
-    translate([320,-205,120]) cube([100,90,120],center=true);
-  }
-}
-
-module tilt_for_arch_qa() {
-  difference() {
-    tilt_release_assembly(0);
-    // Declared structural mating volumes: carrier clevis on -Y leg and the
-    // two symmetric +20 degree stop shoulders. Other overlap is forbidden.
-    translate([320,-205,140]) cube([120,100,150],center=true);
-    for(side=[-1,1]) translate(gpoint(20,[20,side*205,115])+[-72,0,-7])
-      cube([90,70,70],center=true);
-  }
-}
-
 if(check=="arch_frame_forbidden") intersection() {
   // Mating top surfaces at Z52 have zero volume; any penetration fails.
   arch_release_assembly(); frame_assembly();
@@ -82,19 +61,55 @@ else if(check=="arch_basket") intersection() { arch_release_assembly(); basket_p
 else if(check=="arch_basket_removal") intersection() { arch_release_assembly(); basket_removal_prism(); }
 else if(check=="arch_ski") intersection() { arch_release_assembly(); p273_ski_mount_assembly(); }
 else if(check=="arch_rear_pod") intersection() { arch_release_assembly(); p270_outer_envelope(); }
-else if(check=="arch_moving") intersection() { arch_for_moving_qa(); moving_sweep(); }
+else if(check=="arch_moving") intersection() { arch_release_assembly(); moving_sweep(); }
 else if(check=="arch_f") intersection() { arch_release_assembly(); all_pieces_qa(); }
 else if(check=="tilt_f") intersection() { tilt_release_assembly(0); all_pieces_qa(); }
 else if(check=="tilt_basket") intersection() { tilt_release_assembly(0); basket_p271_frozen(); }
 else if(check=="tilt_ski") intersection() { tilt_release_assembly(0); p273_ski_mount_assembly(); }
 else if(check=="tilt_rear_pod") intersection() { tilt_release_assembly(0); p270_outer_envelope(); }
-else if(check=="tilt_arch") intersection() { tilt_for_arch_qa(); arch_release_assembly(); }
+else if(check=="tilt_arch") intersection() { tilt_release_assembly(0); arch_release_assembly(); }
+else if(check=="debug_fitplate_arch") intersection() { fit_carrier_installed(); arch_release_assembly(); }
+else if(check=="debug_kfl_arch") intersection() { kfl08_installed(); arch_release_assembly(); }
+else if(check=="debug_kfl_environment") intersection() {
+  kfl08_installed();
+  union() { arch_release_assembly(); fit_carrier_installed(); mechanism_moving_sweep(); }
+}
+else if(check=="debug_carrier_kfl") intersection() {
+  fit_carrier_installed(); kfl08_installed();
+}
+else if(check=="debug_carrier_stops") intersection() {
+  fit_carrier_installed(); upper_stops_installed();
+}
+else if(check=="debug_stop_environment") intersection() {
+  upper_stops_installed();
+  union() { arch_release_assembly(); fit_carrier_installed(); mechanism_moving_sweep(); }
+}
+else if(check=="debug_carrier_environment") intersection() {
+  fit_carrier_installed();
+  union() {
+    arch_release_assembly();
+    kfl08_installed();
+    upper_stops_installed();
+    mechanism_moving_sweep();
+  }
+}
+else if(check=="debug_nut_arch") intersection() {
+  translate(gpoint(0,[50,-205,90])) anti_backlash_carriage(); arch_release_assembly();
+}
+else if(check=="debug_stops_arch") intersection() {
+  upper_stops_installed();
+  arch_release_assembly();
+}
+else if(check=="debug_sensor_arch") intersection() {
+  endpoint_sensor_installed();
+  arch_release_assembly();
+}
 else if(check=="fixed_tilt_vs_moving") intersection() {
   // Fixed carrier/bearing/stops/sensors only. Moving nut carriage is omitted.
   union() {
     fit_carrier_installed();
     kfl08_installed();
-    for(side=[-1,1]) translate(gpoint(20,[20,side*205,115])+[-72,0,-7]) rotate([0,0,side>0?180:0]) upper_stop();
+    upper_stops_installed();
     translate([387,244,55.84]) as5600_pod();
   }
   mechanism_moving_sweep();
@@ -113,7 +128,7 @@ else if(check=="debug_kfl_moving") intersection() {
   kfl08_installed(); mechanism_moving_sweep();
 }
 else if(check=="debug_stops_moving") intersection() {
-  for(side=[-1,1]) translate(gpoint(20,[20,side*205,115])+[-72,0,-7]) rotate([0,0,side>0?180:0]) upper_stop();
+  upper_stops_installed();
   mechanism_moving_sweep();
 }
 else if(check=="debug_sensor_moving") intersection() {

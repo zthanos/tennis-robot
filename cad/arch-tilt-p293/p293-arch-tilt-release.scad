@@ -41,6 +41,18 @@ as5600_board = [23,23,3];
 magnet = [6,2.5];
 magnet_gap = 1.5;
 pivot_p293 = [387,0,55.84];            // frozen P2-40/P2-54 hinge datum
+// P2-93b: place actuator hardware entirely inboard of the -Y arch members.
+// The previous nominal poses buried the printed plates in the 20x26 tube.
+tilt_carrier_y_shift = 28;
+tilt_kfl_y_shift = 24;
+// Move the KFL08 36.73 mm rearward along its own Tr8 axis; this preserves
+// coaxiality while separating the bearing base from the FIT carrier, arch,
+// and the complete -10..+20 moving set.
+tilt_kfl_x = 274;
+tilt_kfl_z = 112.653;
+tilt_stop_y = 194;
+tilt_stop_x_offset = -72;
+tilt_stop_z_offset = -7;
 
 function lerp3(a,b,t) = [for(i=[0:2]) a[i]+(b[i]-a[i])*t];
 function vlen3(v) = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
@@ -344,7 +356,7 @@ module magnet_cap() {
 module fit_carrier_installed() {
   multmatrix([
     [-0.150,-0.132,0.980,295.7],
-    [ 0.660,-0.740,0.000,-185.2],
+    [ 0.660,-0.740,0.000,-185.2+tilt_carrier_y_shift],
     [ 0.737, 0.647,0.200,140.1],
     [ 0,     0,    0,    1]
   ]) fit0186_carrier();
@@ -352,11 +364,21 @@ module fit_carrier_installed() {
 
 module kfl08_installed() {
   multmatrix([
-    [0,-0.200,0.980,310],
-    [1, 0.000,0.000,-205],
-    [0, 0.980,0.200,120],
+    [0,-0.200,0.980,tilt_kfl_x],
+    [1, 0.000,0.000,-205+tilt_kfl_y_shift],
+    [0, 0.980,0.200,tilt_kfl_z],
     [0, 0,    0,    1]
   ]) kfl08_base();
+}
+
+module upper_stops_installed() {
+  for(side=[-1,1]) translate(gpoint(20,[20,side*tilt_stop_y,115])+[tilt_stop_x_offset,0,tilt_stop_z_offset])
+    rotate([0,0,side>0?180:0]) upper_stop();
+}
+
+module endpoint_sensor_installed() {
+  translate([pivot_p293[0],244,pivot_p293[2]]) as5600_pod();
+  translate([pivot_p293[0],238,pivot_p293[2]]) rotate([90,0,0]) magnet_cap();
 }
 
 module arch_release_assembly(include_lands=true) {
@@ -391,10 +413,8 @@ module tilt_release_assembly(a=angle) {
   fit_carrier_installed();
   kfl08_installed();
   translate(gpoint(a,[50,-205,90])) anti_backlash_carriage();
-  for(side=[-1,1]) translate(gpoint(20,[20,side*205,115])+[-72,0,-7])
-    rotate([0,0,side>0?180:0]) upper_stop();
-  translate([pivot_p293[0],244,pivot_p293[2]]) as5600_pod();
-  translate([pivot_p293[0],238,pivot_p293[2]]) rotate([90,0,0]) magnet_cap();
+  upper_stops_installed();
+  endpoint_sensor_installed();
 }
 
 module assembly() {

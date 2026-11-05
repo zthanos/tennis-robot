@@ -1,9 +1,9 @@
-# Ενεργό σύνολο εκτύπωσης — P2-93
+# Ενεργό σύνολο εκτύπωσης — P2-93b
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
 «concept» **δεν τυπώνονται**. Η κατάσταση αποτυπώνει όσα είναι γνωστά στις
-2026-10-26 (P2-93)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
+2026-11-05 (P2-93b)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
 αρχείο.
 
 ## Σασί v3 — P2-78 sockets και πλευρικές διαγώνιες
@@ -57,7 +57,7 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
 αναμένει πλέον 5 STL αντί για 4, όλα ακριβώς ένα σώμα.
 
-## Αψίδα/κλίση — P2-93
+## Αψίδα/κλίση — P2-93b
 
 Πηγή: `arch-tilt-p293/p293-arch-tilt-release.scad`. Ενεργός κατάλογος:
 `arch-tilt-p293/stl/`. Αναλυτική λίστα ποσοτήτων, μάζας, χρόνου, hardware
@@ -70,6 +70,12 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Φέροντα tilt stops | `tilt_stop` | **Release-ready μετά από dry assembly**· συμμετρική διαδρομή φορτίου προς αψίδα· ενσωματωμένο M3 interface για μελλοντικό striker tab |
 | FIT/KFL/Tr8 interfaces | `tilt_fit0186_carrier`, `tilt_kfl08_base`, `tilt_nut_carriage` | **Fit-check μόνο** μέχρι `[ΜΕΤΡΗΣΕΙΣ ΧΡΗΣΤΗ: ...]`· μην ξεκινήσεις τελικό print |
 | Encoder | `tilt_as5600_pod/cover`, `tilt_magnet_cap` | **Fit-check μόνο** μέχρι μετρήσεις AS5600· AZ1 παραγγέλθηκε 2026-10-25, 3,3 V board με αφαίρεση R1 σε ένα sample για 5 V |
+
+P2-93b exact-solid status: αφαιρέθηκαν τα QA masks και διορθώθηκαν μόνο οι
+installed poses carrier/KFL08/stops. **Κανένα printable STL δεν άλλαξε.** Και
+τα 13 STL της αψίδας είναι byte-identical με το P2-93 release, άρα όσα
+τυπώθηκαν ή βρίσκονται στην ουρά εκτύπωσης παραμένουν έγκυρα. Τα tilt
+interfaces παραμένουν fit-check μέχρι τις φυσικές μετρήσεις hardware.
 
 Τα endpoint `tilt_switch_lower/upper` αφαιρέθηκαν από το P2-93. Η cassette
 ανήκει στο release της κινούμενης μονάδας και παραμένουν ανοικτά gates:

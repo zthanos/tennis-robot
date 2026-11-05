@@ -135,11 +135,6 @@ module p253_sweep_motor(){union(){for(a=[-10:1:20])p253_fit_motor(a);}}
 module p253_sweep_tr8(){union(){for(a=[-10:1:20])p253_tr8_only(a);}}
 module p253_sweep_arm(){union(){for(a=[-10:1:20])p253_moving_arm(a);}}
 module p253_sweep_launcher_without_trunnion(){union(){for(a=[-10:1:20])p253_launcher_without_trunnion(a);}}
-module p253_launcher_for_arm_qa(a){difference(){
- p253_frozen_launcher(a);
- module_pose(a)translate(p254_arm_root)cube([30,30,30],center=true);
-}}
-module p253_sweep_launcher_for_arm_qa(){union(){for(a=[-10:1:20])p253_launcher_for_arm_qa(a);}}
 module p253_sweep_cam(){union(){for(a=[-10:1:20])p253_cam_moving(a);}}
 module p253_sweep_cables(){union(){for(a=[-10:1:20])p253_cables(a);}}
 module p253_arch_without_mount(){difference(){front_arch_and_triangulation();translate(p253_fixed)cube([70,70,90],center=true);}}
@@ -223,19 +218,18 @@ else if(p253_view=="p257_assembly")p257_assembly(p253_angle,p257_variant);
 else if(p253_view=="qa_actuator_launcher")union(){for(a=[-10:1:20])intersection(){expanded_p253(clearance_probe_p253)p253_actuator(a);p253_frozen_launcher(a);}}
 else if(p253_view=="qa_actuator_frame")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_actuator();chassis_structure();}
 else if(p253_view=="qa_actuator_drive")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_actuator();drive_package_envelopes();}
-else if(p253_view=="qa_actuator_arch")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_actuator();p253_arch_without_mount();}
+else if(p253_view=="qa_actuator_arch")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_actuator();front_arch_and_triangulation();}
 else if(p253_view=="qa_actuator_sensors")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_actuator();sensors_and_mounts();}
 else if(p253_view=="qa_actuator_basket_ski")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_actuator();union(){p251_basket_exact();p251_ski_exact();p251_feed_exact();}}
 else if(p253_view=="qa_actuator_power")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_actuator();p253_power();}
 else if(p253_view=="qa_motor_launcher")union(){for(a=[-10:1:20])intersection(){expanded_p253(clearance_probe_p253)p253_fit_motor(a);p253_frozen_launcher(a);}}
 else if(p253_view=="qa_motor_drive")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_motor();drive_package_envelopes();}
-else if(p253_view=="qa_motor_arch")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_motor();p253_arch_without_mount();}
+else if(p253_view=="qa_motor_arch")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_motor();front_arch_and_triangulation();}
 else if(p253_view=="qa_motor_drive_at_angle")intersection(){expanded_p253(clearance_probe_p253)p253_fit_motor(p253_angle);drive_package_envelopes();}
-else if(p253_view=="qa_motor_arch_at_angle")intersection(){expanded_p253(clearance_probe_p253)p253_fit_motor(p253_angle);p253_arch_without_mount();}
+else if(p253_view=="qa_motor_arch_at_angle")intersection(){expanded_p253(clearance_probe_p253)p253_fit_motor(p253_angle);front_arch_and_triangulation();}
 else if(p253_view=="qa_tr8_launcher")union(){for(a=[-10:1:20])intersection(){expanded_p253(clearance_probe_p253)p253_tr8_only(a);p253_frozen_launcher(a);}}
 else if(p253_view=="qa_tr8_drive")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_tr8();drive_package_envelopes();}
 else if(p253_view=="qa_arm_drive")intersection(){expanded_p253(clearance_probe_p253)p253_sweep_arm();drive_package_envelopes();}
-else if(p253_view=="qa_arm_launcher_forbidden")union(){for(a=[-10:1:20])intersection(){expanded_p253(clearance_probe_p253)p253_moving_arm(a);p253_launcher_for_arm_qa(a);}}
 else if(p253_view=="qa_as5600_launcher")intersection(){expanded_p253(clearance_probe_p253)p253_as5600();p253_sweep_launcher_without_trunnion();}
 else if(p253_view=="qa_as5600_drive")intersection(){expanded_p253(clearance_probe_p253)p253_as5600();drive_package_envelopes();}
 else if(p253_view=="qa_cam_launcher")union(){for(a=[-10:1:20])intersection(){expanded_p253(clearance_probe_p253)p253_cam_moving(a);p253_frozen_launcher(a);}}

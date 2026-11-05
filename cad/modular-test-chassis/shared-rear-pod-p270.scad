@@ -175,6 +175,6 @@ else if(p270_view=="qa_drive") intersection(){
   p270_outer_envelope(); drive_package_envelopes();
 }
 else if(p270_view=="qa_frame") intersection(){
-  // Body only. Mount feet intentionally mate with the rear crossbar and are excluded.
-  p270_outer_envelope(); frame_assembly();
+  union(){ p270_outer_envelope(); p270_mounts(); }
+  frame_assembly();
 }

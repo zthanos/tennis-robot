@@ -28,16 +28,6 @@ module posts() {
 module panel() { translate([panel_center_x,0,panel_z]) control_panel_v2(); }
 module docks() { for(s=[-1,1]) parkside_dock(s); }
 module stays() { for(s=[-1,1]) corner_stay(s); }
-module frame_without_pod_support_contacts() {
-  difference() {
-    frame_assembly();
-    // P2-79 approved bearing/contact volumes: full rear-crossbar saddle and
-    // outer corner-clamp faces. They are not insertion obstructions.
-    translate([-191,-196,44]) cube([52,392,8.2]);
-    for(side=[-1,1]) translate([-146,side>0?244.9:-251,24]) cube([22,6.1,32]);
-  }
-}
-
 module sweep_ties() {
   // Stop 0.2 mm before the final bearing face; final static contact is
   // covered by the dedicated tie/frame exact-solid gate.
@@ -91,7 +81,7 @@ module qa_corner_ties() {
   intersection() { sweep_ties(); frame_assembly(); }
 }
 module qa_bases() {
-  intersection() { sweep_bases(); union(){ frame_without_pod_support_contacts(); ties(); } }
+  intersection() { sweep_bases(); union(){ frame_assembly(); ties(); } }
 }
 module qa_plate() {
   union() {

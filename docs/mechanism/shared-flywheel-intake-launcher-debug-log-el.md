@@ -4415,3 +4415,81 @@ drive test.
 
 Κατάσταση: `P2_93_ARCH_TILT_FIRST_WAVE_RELEASE_PASS`.
 ΠΑΥΣΗ.
+
+### P2-93b — κρυμμένη σύγκρουση tilt ↔ arch και μόνιμος exact-solid κανόνας
+
+Εύρημα χρήστη/ανεξάρτητου CAD audit: το παλιό `tilt_arch` αφαιρούσε πριν από
+την τομή ένα κουτί 120×100×150 mm γύρω από carrier/KFL08 και δύο κουτιά
+90×70×70 mm γύρω από τα stops. Χωρίς τα masks, το αρχικό overlap ήταν
+περίπου 13,86 cm³. Η πρακτική καταργήθηκε: collision QA σημαίνει raw
+intersection των released/installed solids, coplanar contact σημαίνει
+μηδενικό όγκο και κανένα "mating/declared interface" δεν αφαιρείται.
+
+Διορθώθηκαν μόνο οι installed poses των tilt interfaces. Ο FIT carrier πήγε
+`+Y 28 mm`, ο KFL08 πήγε `+Y 24 mm` και 36,73 mm πίσω κατά μήκος του ίδιου
+Tr8 axis (`X274/Z112,653`), και τα stops από `Y±205` σε `Y±194`. Nut carriage,
+AS5600 και magnet cap δεν μετακινήθηκαν. Το KFL08 διατηρεί ακριβώς τον ίδιο
+άξονα· η μετατόπιση είναι αξονική, όχι lateral shim. Τα printable solids δεν
+άλλαξαν, άρα η αλλαγή αφορά τη θέση σύσφιξης/έδρασης στο dry assembly και όχι
+νέο περίγραμμα STL.
+
+Απογραφή άλλων εξαιρέσεων που αφαιρέθηκαν/ελέγχθηκαν:
+
+- P2-79 `p279-exact-qa.scad`: αφαιρέθηκαν saddle/corner contact boxes· raw
+  chassis result `2,10e-10 mm³` (μηδενικού όγκου contact).
+- P2-81 rear pod: αφαιρέθηκαν το 0,01 mm post-contact slab και τα
+  epsilon-shrunk control bodies· posts `EMPTY`, controls raw zero-volume.
+- P2-85 ski: το legacy frame probe πλέον περιλαμβάνει ολόκληρο ski mount
+  (ski+brackets+forks), raw `5,82e-12 mm³`, και μπήκε στο μόνιμο suite.
+- P2-86b panels F: κανένα mask· οι coplanar chassis/splice/control contacts
+  καταγράφονται `PASS_ZERO_VOLUME`, ενώ κάθε θετικός όγκος αποτυγχάνει.
+- P2-88 tool access: δεν υπήρχε solid mask· διορθώθηκε το παραπλανητικό
+  σχόλιο και οι bore axes παραμένουν ξεχωριστό exact gate.
+- P2-90b installation: αφαιρέθηκε το `frame_without_pod_support_contacts()`·
+  η raw base path περνά με μηδενικού όγκου τελική επαφή.
+- P2-93: αφαιρέθηκαν `arch_for_moving_qa()` και `tilt_for_arch_qa()` και
+  όλα τα checks χρησιμοποιούν απευθείας arch/tilt solids.
+- Επιπλέον διορθώθηκε το P2-70 rear-pod frame probe ώστε να περιλαμβάνει τα
+  mount feet (raw zero-volume), και αφαιρέθηκε το obsolete P2-53 arm/launcher
+  QA helper που κατασκεύαζε forbidden target με cube subtraction.
+
+Ο μόνιμος `cad/check-exact-solid-policy.py` τρέχει πριν από το active
+assemblability suite και απορρίπτει masked intersections/QA difference
+helpers. Coverage/set-difference gates που δεν είναι collision tests
+παραμένουν ρητά διακριτά.
+
+Το μόνο `parts.py` pose diff είναι:
+
+```diff
+-    ("tilt_fit_carrier", "tilt", "p293", "fit_carrier_installed();"),
+-    ("tilt_kfl08", "tilt", "p293", "kfl08_installed();"),
++    ("tilt_fit_carrier", "tilt", "p293", "fit_carrier_installed(); // P2-93b +Y 28 mm"),
++    ("tilt_kfl08", "tilt", "p293", "kfl08_installed(); // P2-93b axis station X274 Z112.653, +Y 24 mm"),
+-    ("tilt_stop_L", "tilt", "p293+phase1", "translate(gpoint(20,[20,205,115])+[-72,0,-7]) rotate([0,0,180]) upper_stop();"),
+-    ("tilt_stop_R", "tilt", "p293+phase1", "translate(gpoint(20,[20,-205,115])+[-72,0,-7]) upper_stop();"),
++    ("tilt_stop_L", "tilt", "p293+phase1", "translate(gpoint(20,[20,194,115])+[-72,0,-7]) rotate([0,0,180]) upper_stop();"),
++    ("tilt_stop_R", "tilt", "p293+phase1", "translate(gpoint(20,[20,-194,115])+[-72,0,-7]) upper_stop();"),
+```
+
+Αυτούσιο τελικό output του ανεξάρτητου gate:
+
+```text
+  arch                     vol=    945333 mm3
+  tilt_fit_carrier         vol=     50629 mm3
+  tilt_kfl08               vol=     44669 mm3
+  tilt_nut_carriage        vol=     39135 mm3
+  tilt_stop_L              vol=     44704 mm3
+  tilt_stop_R              vol=     44704 mm3
+  tilt_as5600_pod          vol=     14410 mm3
+  tilt_magnet_cap          vol=      1601 mm3
+
+0 collisions > 0.5 mm3 (0 export failures)
+```
+
+Regression: P2-93 `PASS_EMPTY` για arch↔tilt, fixed tilt↔moving,
+−10…+20°, hole axes, printed↔printed M4, tool/install paths· 20/20 one-body,
+max underside 28,73 mm², analytical strength PASS με max utilization 0,877.
+Όλα τα 13 arch STL επανεξήχθησαν byte-identical. Κανένα arch STL δεν άλλαξε.
+
+Κατάσταση: `P2_93B_RAW_EXACT_SOLID_PASS`.
+ΠΑΥΣΗ.

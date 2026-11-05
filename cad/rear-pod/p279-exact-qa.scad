@@ -23,13 +23,7 @@ module p279_pod_fastener_axes() {
         translate([-135,side*235,37]) rotate([-side*90,0,0]) cylinder(d=4.5,h=20);
 }
 
-if(qa=="chassis") difference(){
-    intersection(){ installed_p279_structure(); frame_assembly(); }
-    // Approved mating/contact zones only: the full rear-crossbar saddle and
-    // the two outer corner-clamp faces. Any penetration elsewhere survives.
-    translate([-191,-196,44]) cube([52,392,8.2]);
-    for(side=[-1,1]) translate([-146,side>0?244.9:-251,24]) cube([22,6.1,32]);
-}
+if(qa=="chassis") intersection(){ installed_p279_structure(); frame_assembly(); }
 else if(qa=="reserved") qa_all_reserved_collision();
 else if(qa=="drawers") intersection(){ installed_p279_structure(); p279_drawer_sweeps(); }
 else if(qa=="hole_difference") union(){

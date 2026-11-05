@@ -3,9 +3,17 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
+python3 "$here/check-exact-solid-policy.py"
 src="$here/p288-assemblability.scad"
 out="$(mktemp -d "$here/.assemblability.XXXXXX")"
 trap 'rm -rf "$out"' EXIT
+
+has_positive_volume() {
+  local mesh=$1
+  [[ -s "$mesh" ]] || return 1
+  ! python3 "$here/modular-test-chassis/p285-stl-stats.py" "$mesh" | \
+    grep -Eq 'vol=-?0\.000 mm3'
+}
 
 checks=(side_frame_front_driver side_frame_front_head_install side_frame_rear_wrench
         side_frame_front_nut side_frame_rear_driver dock_mount_driver
@@ -17,7 +25,7 @@ for name in "${checks[@]}"; do
   log="$out/$name.log"
   status=0
   "$openscad_bin" -o "$mesh" -D "check=\"$name\"" "$src" >"$log" 2>&1 || status=$?
-  if [[ -s "$mesh" ]]; then
+  if has_positive_volume "$mesh"; then
     cat "$log" >&2
     echo "ASSEMBLABILITY FAIL: $name" >&2
     exit 1
@@ -36,7 +44,7 @@ for selector in qa_p288_reservation_overflow qa_p288_ugreen_device_collision; do
   status=0
   "$openscad_bin" -o "$mesh" -D "part=\"$selector\"" \
     "$here/rear-pod/rear-pod-v2.scad" >"$log" 2>&1 || status=$?
-  if [[ -s "$mesh" ]]; then
+  if has_positive_volume "$mesh"; then
     cat "$log" >&2
     echo "ASSEMBLABILITY FAIL: $selector" >&2
     exit 1
@@ -56,7 +64,7 @@ for selector in docks_pod_frame docks_panels_closed docks_panels_service \
   status=0
   "$openscad_bin" -o "$mesh" -D "check=\"$selector\"" \
     "$here/p288-integration-qa.scad" >"$log" 2>&1 || status=$?
-  if [[ -s "$mesh" ]]; then
+  if has_positive_volume "$mesh"; then
     cat "$log" >&2
     echo "ASSEMBLABILITY FAIL: integration-$selector" >&2
     exit 1
@@ -76,7 +84,7 @@ for selector in ugreen parkside carrier pi; do
   status=0
   "$openscad_bin" -o "$mesh" -D "check=\"$selector\"" \
     "$here/p290-insertion-qa.scad" >"$log" 2>&1 || status=$?
-  if [[ -s "$mesh" ]]; then
+  if has_positive_volume "$mesh"; then
     cat "$log" >&2
     echo "INSERTION_PATH FAIL: $selector" >&2
     exit 1
@@ -97,7 +105,7 @@ for selector in corner_ties bases plate side_frames posts panel docks holder \
   status=0
   "$openscad_bin" -o "$mesh" -D "check=\"$selector\"" \
     "$here/p290b-part-installation-qa.scad" >"$log" 2>&1 || status=$?
-  if [[ -s "$mesh" ]]; then
+  if has_positive_volume "$mesh"; then
     cat "$log" >&2
     echo "PART_INSTALL_PATH FAIL: $selector" >&2
     exit 1
@@ -123,7 +131,7 @@ for selector in pair_clearance post_bolt_axes post_insertion cups_open \
     -D "side_frame_stl=\"$p290c_side_frame_stl\"" \
     -D "panel_posts_stl=\"$p290c_panel_posts_stl\"" \
     "$here/p290c-printed-joint-qa.scad" >"$log" 2>&1 || status=$?
-  if [[ -s "$mesh" ]]; then
+  if has_positive_volume "$mesh"; then
     cat "$log" >&2
     echo "PRINTED_JOINT FAIL: $selector" >&2
     exit 1

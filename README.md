@@ -1,8 +1,8 @@
 # Tennis Robot
 
-![Τρέχουσα γεωμετρία P2-93 — hero terracotta](cad/body-panels/renders-current-p293/current-p293-hero-terracotta.png)
+![Τρέχουσα γεωμετρία P2-93b — hero terracotta](cad/body-panels/renders-current-p293/current-p293-hero-terracotta.png)
 
-*P2-93 current-design render: exact/released context για σασί, rear pod,
+*P2-93b current-design render: raw exact-solid released context για σασί, rear pod,
 αψίδα/κλίση, βατήρα και P2-86b rear panels. Τα πλαϊνά/εμπρός F και η
 κινητή flywheel μονάδα παραμένουν concept μέχρι basket mockup και φυσικές
 μετρήσεις τροχών/D5065.*
