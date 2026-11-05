@@ -4,6 +4,7 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
 python3 "$here/check-exact-solid-policy.py"
+bash "$here/check-current-scene.sh"
 src="$here/p288-assemblability.scad"
 out="$(mktemp -d "$here/.assemblability.XXXXXX")"
 trap 'rm -rf "$out"' EXIT

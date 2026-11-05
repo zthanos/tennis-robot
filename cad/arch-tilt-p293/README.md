@@ -1,5 +1,10 @@
 # P2-93 — πρώτο release αψίδας και μηχανισμού κλίσης
 
+> P2-95: το παλιό pairwise PASS παρακάτω είναι ιστορικό. Το υποχρεωτικό
+> full-scene gate αποκαλύπτει τομές μεταξύ μεμονωμένων arch parts και drive
+> envelopes. Νέα πλήρης εκτύπωση μπλοκάρεται μέχρι να κλείσει το
+> [P2-95 report](../independent-check/P2-95-report.md) και το coupon gate.
+
 ## P2-93b — exact-solid διόρθωση χωρίς interface masks
 
 Το P2-93b αφαιρεί οριστικά τα κουτιά εξαίρεσης του `tilt_arch` και ελέγχει

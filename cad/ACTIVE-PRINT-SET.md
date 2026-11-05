@@ -1,9 +1,9 @@
-# Ενεργό σύνολο εκτύπωσης — P2-94
+# Ενεργό σύνολο εκτύπωσης — P2-95
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
 «concept» **δεν τυπώνονται**. Η κατάσταση αποτυπώνει όσα είναι γνωστά στις
-2026-11-05 (P2-94)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
+2026-11-05 (P2-95)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
 αρχείο.
 
 ## Υποχρεωτικό gate πριν από κάθε εκτύπωση
@@ -14,28 +14,30 @@
   θέση ή/και το collision set δεν έχουν κλείσει.
 - **FIT-CHECK** — επιτρέπεται μόνο coupon/δοκιμαστικό τμήμα της διεπαφής.
   Δεν είναι άδεια για πλήρη εκτύπωση του part.
-- **RELEASED** — το STL βρίσκεται στο `independent-check/parts.py` στην
+- **RELEASED** — το STL βρίσκεται στο `current_robot()` στην
   πραγματική θέση συναρμολόγησης, το εφαρμοστέο raw exact-solid gate δίνει
   μηδέν συγκρούσεις και υπάρχει καταγεγραμμένο PASS από τυπωμένο coupon ή
   από την ήδη συναρμολογημένη ίδια διεπαφή.
 
 Για κάθε νέο ή αλλαγμένο robot-installed STL, πριν από slicing:
 
-1. προστίθεται ή ενημερώνεται η αντίστοιχη installed-pose εγγραφή στο
-   `independent-check/parts.py`,
-2. εκτελείται το αμετάβλητο `independent-check/collide.py` χωρίς αφαίρεση
+1. προστίθεται ή ενημερώνεται η αντίστοιχη installed-pose κλήση στο
+   `body-panels/current-design-p293.scad` (`current_robot()`),
+2. εκτελείται το αμετάβλητο `independent-check/scene_check.py` στις −3/0/+20°
+   μέσω `bash cad/check-current-scene.sh`, χωρίς αφαίρεση
    mating/fastener/interface όγκων,
 3. κάθε θετικός όγκος είναι FAIL· η σήμανση «σκόπιμη» τεκμηριώνει την
    πρόθεση αλλά **δεν** αποτελεί εξαίρεση και δεν επιτρέπει RELEASED,
 4. τυπώνεται και περνά coupon της διεπαφής,
 5. μόνο τότε η κατάσταση αλλάζει σε RELEASED.
 
-Το P2-94 baseline/audit χρησιμοποιεί `--min-vol 0.0001`: με αυτό
-καταγράφονται οι 33 θετικοί όγκοι μέχρι και τα 0,00020 mm³, ενώ τέσσερις τιμές
-`1,36e-15…7,05e-13 mm³` αντιμετωπίζονται ως αριθμητικός θόρυβος
-συνεπίπεδης επαφής. Το default `0.5` του script εμφανίζει μόνο 29 από τις
-33 και **δεν** είναι το release command. Η πλήρης εντολή και η ταξινόμηση
-βρίσκονται στο `independent-check/README.md`.
+Το P2-95 gate χρησιμοποιεί το default `--min-vol 0.0001` του
+`scene_check.py`. Το `collide.py`/`parts.py` παραμένει ιστορικό διαγνωστικό,
+όχι release gate. Η τρέχουσα αναφορά βρίσκεται στο
+`independent-check/P2-95-report.md`. Οι προηγούμενες 22 ενδείξεις RELEASED
+έγιναν FIT-CHECK: το ιστορικό φυσικής συναρμολόγησης διατηρείται παρακάτω,
+αλλά δεν αποτελεί P2-95 PASS. Καμία νέα πλήρης εκτύπωση δεν εγκρίνεται όσο
+το full-scene gate αποτυγχάνει.
 
 Για εκτύπωση με εκτιμώμενο χρόνο πάνω από 4 ώρες προηγείται interface
 coupon με **Cut στο Bambu Studio**. Όπου η αντοχή δεν είναι αντικείμενο της
@@ -52,23 +54,23 @@ Coupon και fixtures δεν έχουν robot-installed pose· παραμένο
 | STL | Κατάσταση | Τεκμήριο / blocker |
 |---|---|---|
 | `modular-test-chassis/stl-v3/sleeve_fit_coupon.stl` | FIT-CHECK | Coupon, όχι installed part |
-| `modular-test-chassis/stl-v3/clamp_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/corner_clamp_left.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/corner_clamp_right.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/rear_motor_left.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/rear_motor_right.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/rail_extension_left.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/rail_extension_right.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/front_terminal_left.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/front_terminal_right.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/rear_crossbar_half.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/x240_crossbar_half.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/x240_clamp_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/x240_terminal_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/x300_crossbar_half.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/x300_clamp_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/x300_terminal_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
-| `modular-test-chassis/stl-v3/torsion_side_brace.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/clamp_sleeve.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/corner_clamp_left.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/corner_clamp_right.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/rear_motor_left.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/rear_motor_right.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/rail_extension_left.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/rail_extension_right.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/front_terminal_left.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/front_terminal_right.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/rear_crossbar_half.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/x240_crossbar_half.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/x240_clamp_sleeve.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/x240_terminal_sleeve.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/x300_crossbar_half.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/x300_clamp_sleeve.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/x300_terminal_sleeve.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `modular-test-chassis/stl-v3/torsion_side_brace.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
 | `modular-test-chassis/stl-p277/mpu6050_rail_side_mount.stl` | FIT-CHECK | Δεν έχει περάσει τυπωμένο interface coupon |
 | `modular-test-chassis/stl-ski-mount/r75-75-ski.stl` | FIT-CHECK | Τυπωμένο, αλλά το πλήρες νέο bracket/fork interface δεν έχει καταγεγραμμένο coupon PASS |
 | `modular-test-chassis/stl-ski-mount/x300-ski-bracket-left.stl` | FIT-CHECK | Πρώτα Cut coupon του X300/fork interface |
@@ -95,12 +97,12 @@ Coupon και fixtures δεν έχουν robot-installed pose· παραμένο
 | `arch-tilt-p293/stl/tilt_as5600_pod.stl` | FIT-CHECK | Εκκρεμεί AS5600 coupon |
 | `arch-tilt-p293/stl/tilt_as5600_cover.stl` | FIT-CHECK | Εκκρεμεί AS5600 coupon |
 | `arch-tilt-p293/stl/tilt_magnet_cap.stl` | CONCEPT | Συγκρούεται με το launcher surrogate και δεν έχει κλειστή installed geometry |
-| `rear-pod/stl-v2/base_left.stl` | RELEASED | Τυπωμένο/συναρμολογημένο· οι συγκρούσεις αφορούν μη released F/wedge candidates |
-| `rear-pod/stl-v2/base_right.stl` | RELEASED | Τυπωμένο/συναρμολογημένο· οι συγκρούσεις αφορούν μη released F/wedge candidates |
+| `rear-pod/stl-v2/base_left.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `rear-pod/stl-v2/base_right.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
 | `rear-pod/stl-v2/corner_tie.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο tie/base coupon |
 | `rear-pod/stl-v2/pi_shelf.stl` | FIT-CHECK | Raw CAD χωρίς hit, αλλά δεν υπάρχει τυπωμένο coupon PASS |
 | `rear-pod/stl-v2/vertical_electronics_plate.stl` | FIT-CHECK | Raw CAD χωρίς hit, αλλά δεν υπάρχει τυπωμένο coupon PASS |
-| `rear-pod/stl-v2/side_frame.stl` | RELEASED | Τυπωμένο και συναρμολογημένο P2-90d· μόνο μη released basket surrogate hit |
+| `rear-pod/stl-v2/side_frame.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
 | `rear-pod/stl-v2/side_frame_base_drill_jig.stl` | FIT-CHECK | Fixture, όχι installed robot part |
 | `rear-pod/stl-v2/rear_foot_wedge_washer.stl` | CONCEPT | 12,5 mm³/πλευρά raw overlap με base· blocking |
 | `rear-pod/stl-v2/parkside_dock_left.stl` | CONCEPT | 3.282,9 mm³ overlap με drawer· provisional hardware |
@@ -110,13 +112,13 @@ Coupon και fixtures δεν έχουν robot-installed pose· παραμένο
 | `rear-pod/stl-v2/ugreen_post_holder.stl` | CONCEPT | 172,6 mm³ overlap με rear retainer· blocking |
 | `rear-pod/stl-v2/ugreen_clamp_caps.stl` | FIT-CHECK | Εκκρεμεί post/clamp coupon |
 | `rear-pod/stl-v2/ugreen_rear_retainer.stl` | CONCEPT | 172,6 mm³ overlap με holder· blocking |
-| `rear-pod/stl-v2/panel_posts.stl` | RELEASED | Τυπωμένα και συναρμολογημένα με side frames/control panel |
-| `rear-pod/stl-v2/control_panel.stl` | RELEASED | Τυπωμένο και συναρμολογημένο· οι συγκρούσεις αφορούν μη released F candidates |
+| `rear-pod/stl-v2/panel_posts.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `rear-pod/stl-v2/control_panel.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
 | `rear-pod/stl-v2/component_pins.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
 | `rear-pod/stl-v2/component_clips.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
 | `rear-pod/stl-v2/bts_spacers.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
-| `rear-pod/stl-v2/cable_bulkhead.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο bulkhead coupon |
-| `rear-pod/stl-v2/bulkhead_foot.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο bulkhead coupon |
+| `rear-pod/stl-v2/cable_bulkhead.stl` | CONCEPT | Παραμένει ενεργό v1 part στον v2 exporter/scene· raw συγκρούσεις με frames/bases, απαγόρευση εκτύπωσης |
+| `rear-pod/stl-v2/bulkhead_foot.stl` | CONCEPT | Ενεργό support του blocking cable bulkhead· δεν έχει P2-95 release |
 | `rear-pod/stl-v2/upright_mount_fit_coupon.stl` | FIT-CHECK | Coupon PASS· το ίδιο δεν είναι installed release part |
 | `body-panels/stl-f-rear/rear_lo_left.stl` | CONCEPT | Raw collisions με stay/base/door/splice |
 | `body-panels/stl-f-rear/rear_lo_right.stl` | CONCEPT | Raw collisions με stay/base/door/splice |

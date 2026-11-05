@@ -390,8 +390,8 @@ module stay_chassis_fastener_envelopes(){
 module print_orient(){ rotate([0,-90,0]) children(); }
 module deck_print_orient(){ rotate([0,0,45]) print_orient() children(); }
 module corner_print_orient(){ rotate([90,0,0]) children(); }
-module assembly_scene(service=false){
-  if(show_context){
+module assembly_scene(service=false,context=show_context){
+  if(context){
     color([0.15,0.36,0.62,0.55]) p286_pod();
     color([0.35,0.35,0.38,0.24]) frame_assembly();
     color([0.18,0.18,0.20,0.14]) drive_package_envelopes();

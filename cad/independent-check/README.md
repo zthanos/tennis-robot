@@ -1,6 +1,31 @@
-# Independent exact-solid print gate — P2-94
+# Full-scene exact-solid print gate — P2-95
 
-Το `collide.py` είναι υποχρεωτικό gate πριν από κάθε νέο ή αλλαγμένο
+Υποχρεωτικό gate είναι πλέον το **αμετάβλητο `scene_check.py`** μαζί με το
+`scadtree.py`. Ανακαλύπτει τα σώματα του
+`body-panels/current-design-p293.scad:current_robot()` στις −3/0/+20° χωρίς
+χειροκίνητο parts manifest. Κάθε νέο/αλλαγμένο STL τοποθετείται στην ίδια τη
+σκηνή, μία φορά. Το `collide.py`/`parts.py` διατηρείται για διάγνωση μόνο.
+
+Από τη ρίζα του repo:
+
+```bash
+OPENSCAD_BIN=/snap/bin/openscad-nightly bash cad/check-current-scene.sh
+```
+
+Ο wrapper κρατά την προηγούμενη cache σε `out/previous-scene.*/scene` και
+τρέχει το εργαλείο με φρέσκα exports. Αυτό απαιτείται επειδή το αμετάβλητο
+εργαλείο δεν συμπεριλαμβάνει source content/mtime στο cache key. Καλείται
+υποχρεωτικά από το `check-active-assemblability.sh` πριν τα επιμέρους gates.
+Exit 1, export error, μη αναγνωρισμένα/λανθασμένα σώματα ή εργαλειακό σφάλμα
+μπλοκάρουν release. Το εργαλείο εκτυπώνει επίσης `contained` και absent
+modules: το ότι δεν τα περιλαμβάνει όλα στο exit status δεν τα καθιστά PASS.
+
+Το αυτούσιο output, οι κατηγορίες και οι περιορισμοί του τρέχοντος run
+βρίσκονται στο [P2-95 report](P2-95-report.md).
+
+## Ιστορικό P2-94 — αντικαταστάθηκε από το scene gate
+
+Στο P2-94 το `collide.py` ήταν υποχρεωτικό gate πριν από κάθε νέο ή αλλαγμένο
 robot-installed STL. Το script και το `parts.py` ελέγχουν τα raw solids στις
 πραγματικές θέσεις συναρμολόγησης. Δεν επιτρέπεται αφαίρεση mating zone,
 fastener zone, contact box ή άλλου «declared interface» πριν από την τομή.

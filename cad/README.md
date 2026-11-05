@@ -1,6 +1,6 @@
 # Active CAD status
 
-## Υποχρεωτικό pre-print exact-solid gate (P2-94)
+## Υποχρεωτικό pre-print full-scene gate (P2-95)
 
 Κάθε collision gate τέμνει τα πραγματικά released/installed solids. Απαγορεύεται
 να αφαιρείται πριν από την `intersection()` οποιοδήποτε κουτί, mating zone,
@@ -9,9 +9,11 @@ fastener zone ή «declared interface». Επιφάνεια επαφής επι�
 `check-exact-solid-policy.py` τρέχει στην αρχή του συνολικού assemblability
 regression και απορρίπτει direct masks και QA helpers τύπου `difference()`.
 
-Κάθε νέο ή αλλαγμένο robot-installed STL δηλώνεται στο
-`independent-check/parts.py` στην πραγματική θέση συναρμολόγησης και περνά το
-raw [`independent-check/collide.py`](independent-check/README.md) gate. Μια
+Κάθε νέο ή αλλαγμένο robot-installed STL προστίθεται στο `current_robot()`
+του `body-panels/current-design-p293.scad` στην πραγματική θέση συναρμολόγησης
+και περνά το raw [`independent-check/scene_check.py`](independent-check/README.md)
+στις −3/0/+20°, μέσω `bash cad/check-current-scene.sh`. Δεν υπάρχει λίστα
+κομματιών προς συντήρηση. Το `collide.py` παραμένει διαγνωστικό μόνο. Μια
 σκόπιμη επικάλυψη τεκμηριώνεται, αλλά παραμένει FAIL και δεν εξαιρείται.
 Η κανονική κατάσταση κάθε STL (`CONCEPT`, `FIT-CHECK`, `RELEASED`) βρίσκεται
 στο [`ACTIVE-PRINT-SET.md`](ACTIVE-PRINT-SET.md). RELEASED απαιτεί μηδέν

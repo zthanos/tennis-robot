@@ -4531,3 +4531,33 @@ surrogate. Και οι 33 παραμένουν blocking για το part/set π�
 
 Κατάσταση: `P2_94_DOCUMENTED_PRE_PRINT_COLLISION_GATE_BLOCKED_33`.
 ΠΑΥΣΗ.
+
+### P2-95 — πλήρης σκηνή και raw scene gate
+
+Το `current_robot()` περιλαμβάνει πλέον Parkside docks/drawers,
+UGREEN holder/caps/retainer, rear-foot wedges, MPU mount, AS5600 cover και
+FIT0186 hardware στην οπή του carrier στη −Y πλευρά. Το gearbox length
+17 mm είναι ρητά provisional envelope, όχι μετρημένη διάσταση. Το P2-71
+basket κλείνει στο X225. Το rear-F assembly παίρνει ρητό context argument
+και δεν ξανασχεδιάζει pod/frame/drive. Δεν άλλαξε κανένα STL ή printable solid.
+
+Υποχρεωτικό gate είναι το `scene_check.py` μέσω
+`bash cad/check-current-scene.sh`, ενταγμένο στην αρχή του active
+assemblability suite. Το wrapper φυλάσσει την παλιά cache και κάνει fresh
+exports, επειδή το εργαλείο δεν ελέγχει source mtime/content. Τα
+`scene_check.py`/`scadtree.py` καταγράφηκαν ακριβώς όπως δόθηκαν, χωρίς αλλαγή.
+
+Fresh αποτέλεσμα: 106 bodies σε κάθε −3/0/+20°, 0 duplicates, 0 export
+failures, **115 collisions και 3 contained pairs**, exit 1. Σύνολο 118
+ζευγών: **45 πραγματικές, 28 σκόπιμες και 45 surrogate**. Το αυτούσιο
+stdout, ο πίνακας όλων των ζευγών και οι περιορισμοί ανακάλυψης/ομαδοποίησης
+βρίσκονται στο `cad/independent-check/P2-95-report.md`.
+
+Το v1 cable bulkhead παραμένει ενεργό στον v2 exporter και στη σκηνή:
+5.438,3/4.714,2 mm³ με side frames και 5.096,0 mm³ με κάθε βάση. Δεν
+αφαιρέθηκε για να καθαρίσει το gate· bulkhead/feet έγιναν CONCEPT.
+Οι παλιές 22 ενδείξεις RELEASED έγιναν FIT-CHECK μέχρι νέο full-scene και
+physical coupon PASS. Τα user `parts.py` edits και τα 3MF έμειναν εκτός.
+
+Κατάσταση: `P2_95_FULL_SCENE_GATE_FAIL_115_PLUS_3_CONTAINED`.
+ΠΑΥΣΗ.
