@@ -4493,3 +4493,41 @@ max underside 28,73 mm², analytical strength PASS με max utilization 0,877.
 
 Κατάσταση: `P2_93B_RAW_EXACT_SOLID_PASS`.
 ΠΑΥΣΗ.
+
+### P2-94 — υποχρεωτικό raw collision gate πριν από εκτύπωση
+
+Το βήμα είναι αποκλειστικά τεκμηρίωση: δεν άλλαξε SCAD, STL, `parts.py`, QA
+κώδικας ή installed pose. Το `cad/independent-check/collide.py` ορίζεται ως
+υποχρεωτικό pre-print gate. Κάθε νέο ή αλλαγμένο robot-installed STL πρέπει
+να δηλώνεται πρώτα στο `parts.py` στην πραγματική θέση συναρμολόγησης. Δεν
+επιτρέπεται αφαίρεση «declared mating», contact, fastener ή interface όγκου
+πριν από raw exact-solid intersection. Η σήμανση μιας επικάλυψης ως
+σκόπιμη καταγράφει την πρόθεση, αλλά δεν είναι whitelist και δεν δίνει PASS.
+
+Το `ACTIVE-PRINT-SET.md` έχει πλέον κανονική κατάσταση για κάθε ενεργό STL:
+`CONCEPT`, `FIT-CHECK` ή `RELEASED`. RELEASED απαιτεί και raw 0 collisions
+στο εφαρμοστέο installed set και φυσικό PASS από τυπωμένο interface coupon ή
+την ίδια ήδη συναρμολογημένη διεπαφή. Για εκτύπωση άνω των 4 ωρών προηγείται
+Cut coupon στο Bambu Studio. Όταν η αντοχή δεν είναι αντικείμενο της δοκιμής,
+η πρώτη εκτύπωση είναι draft με 2 τοιχώματα και 10% infill.
+
+Η αυτούσια πλήρης εκτέλεση με το default `--min-vol 0.5` έδωσε 29
+συγκρούσεις και 0 export failures. Επειδή αυτό κρύβει τέσσερις θετικούς
+όγκους `0,00020…0,00030 mm³`, το P2-94 release command είναι:
+
+```bash
+cd cad/independent-check
+OPENSCAD_BIN=/snap/bin/openscad-nightly \
+  uv run --with manifold3d --with trimesh --with numpy \
+  python collide.py --min-vol 0.0001
+```
+
+Αποτέλεσμα: **33 collisions > 0.0001 mm³, 0 export failures**. Τέσσερις
+πρόσθετες τιμές `1,36e-15…7,05e-13 mm³` με `--min-vol 0` είναι numerical
+surface-contact noise και όχι στερεός όγκος. Η πλήρης ονομαστική λίστα,
+όγκος, κατηγορία και αιτιολόγηση βρίσκεται στο
+`cad/independent-check/README.md`: 11 πραγματικές, 11 σκόπιμες και 11
+surrogate. Και οι 33 παραμένουν blocking για το part/set που τις εισάγει.
+
+Κατάσταση: `P2_94_DOCUMENTED_PRE_PRINT_COLLISION_GATE_BLOCKED_33`.
+ΠΑΥΣΗ.

@@ -1,6 +1,6 @@
 # Active CAD status
 
-## Μόνιμος κανόνας exact-solid QA (P2-93b)
+## Υποχρεωτικό pre-print exact-solid gate (P2-94)
 
 Κάθε collision gate τέμνει τα πραγματικά released/installed solids. Απαγορεύεται
 να αφαιρείται πριν από την `intersection()` οποιοδήποτε κουτί, mating zone,
@@ -8,6 +8,16 @@ fastener zone ή «declared interface». Επιφάνεια επαφής επι�
 μηδενικό όγκο· θετικός όγκος διορθώνεται στη γεωμετρία. Το
 `check-exact-solid-policy.py` τρέχει στην αρχή του συνολικού assemblability
 regression και απορρίπτει direct masks και QA helpers τύπου `difference()`.
+
+Κάθε νέο ή αλλαγμένο robot-installed STL δηλώνεται στο
+`independent-check/parts.py` στην πραγματική θέση συναρμολόγησης και περνά το
+raw [`independent-check/collide.py`](independent-check/README.md) gate. Μια
+σκόπιμη επικάλυψη τεκμηριώνεται, αλλά παραμένει FAIL και δεν εξαιρείται.
+Η κανονική κατάσταση κάθε STL (`CONCEPT`, `FIT-CHECK`, `RELEASED`) βρίσκεται
+στο [`ACTIVE-PRINT-SET.md`](ACTIVE-PRINT-SET.md). RELEASED απαιτεί μηδέν
+συγκρούσεις και PASS τυπωμένου interface coupon/ίδιας φυσικής συναρμολόγησης.
+Πριν από εκτύπωση άνω των 4 ωρών γίνεται Cut coupon στο Bambu Studio· όταν
+δεν ελέγχεται αντοχή, η πρώτη εκτύπωση είναι draft 2 τοιχωμάτων/10% infill.
 
 ## Physical print manifest
 

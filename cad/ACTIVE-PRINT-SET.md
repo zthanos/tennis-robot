@@ -1,10 +1,146 @@
-# Ενεργό σύνολο εκτύπωσης — P2-93b
+# Ενεργό σύνολο εκτύπωσης — P2-94
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
 «concept» **δεν τυπώνονται**. Η κατάσταση αποτυπώνει όσα είναι γνωστά στις
-2026-11-05 (P2-93b)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
+2026-11-05 (P2-94)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
 αρχείο.
+
+## Υποχρεωτικό gate πριν από κάθε εκτύπωση
+
+Οι μόνες επιτρεπτές καταστάσεις STL είναι:
+
+- **CONCEPT** — δεν επιτρέπεται πλήρης εκτύπωση. Η γεωμετρία, η installed
+  θέση ή/και το collision set δεν έχουν κλείσει.
+- **FIT-CHECK** — επιτρέπεται μόνο coupon/δοκιμαστικό τμήμα της διεπαφής.
+  Δεν είναι άδεια για πλήρη εκτύπωση του part.
+- **RELEASED** — το STL βρίσκεται στο `independent-check/parts.py` στην
+  πραγματική θέση συναρμολόγησης, το εφαρμοστέο raw exact-solid gate δίνει
+  μηδέν συγκρούσεις και υπάρχει καταγεγραμμένο PASS από τυπωμένο coupon ή
+  από την ήδη συναρμολογημένη ίδια διεπαφή.
+
+Για κάθε νέο ή αλλαγμένο robot-installed STL, πριν από slicing:
+
+1. προστίθεται ή ενημερώνεται η αντίστοιχη installed-pose εγγραφή στο
+   `independent-check/parts.py`,
+2. εκτελείται το αμετάβλητο `independent-check/collide.py` χωρίς αφαίρεση
+   mating/fastener/interface όγκων,
+3. κάθε θετικός όγκος είναι FAIL· η σήμανση «σκόπιμη» τεκμηριώνει την
+   πρόθεση αλλά **δεν** αποτελεί εξαίρεση και δεν επιτρέπει RELEASED,
+4. τυπώνεται και περνά coupon της διεπαφής,
+5. μόνο τότε η κατάσταση αλλάζει σε RELEASED.
+
+Το P2-94 baseline/audit χρησιμοποιεί `--min-vol 0.0001`: με αυτό
+καταγράφονται οι 33 θετικοί όγκοι μέχρι και τα 0,00020 mm³, ενώ τέσσερις τιμές
+`1,36e-15…7,05e-13 mm³` αντιμετωπίζονται ως αριθμητικός θόρυβος
+συνεπίπεδης επαφής. Το default `0.5` του script εμφανίζει μόνο 29 από τις
+33 και **δεν** είναι το release command. Η πλήρης εντολή και η ταξινόμηση
+βρίσκονται στο `independent-check/README.md`.
+
+Για εκτύπωση με εκτιμώμενο χρόνο πάνω από 4 ώρες προηγείται interface
+coupon με **Cut στο Bambu Studio**. Όπου η αντοχή δεν είναι αντικείμενο της
+δοκιμής, η πρώτη εκτύπωση γίνεται draft με **2 τοιχώματα και 10% infill**.
+Coupon και fixtures δεν έχουν robot-installed pose· παραμένουν FIT-CHECK και
+ελέγχονται στο δικό τους fixture context, όχι ως ψεύτικα σώματα στο robot.
+
+## Κανονικός πίνακας STL → κατάσταση
+
+Ο παρακάτω πίνακας υπερισχύει από παλαιότερες φράσεις όπως
+«release-ready», «προς εκτύπωση» ή «τυπώνεται τώρα». Οι διαδρομές είναι
+σχετικές με `cad/`.
+
+| STL | Κατάσταση | Τεκμήριο / blocker |
+|---|---|---|
+| `modular-test-chassis/stl-v3/sleeve_fit_coupon.stl` | FIT-CHECK | Coupon, όχι installed part |
+| `modular-test-chassis/stl-v3/clamp_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/corner_clamp_left.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/corner_clamp_right.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/rear_motor_left.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/rear_motor_right.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/rail_extension_left.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/rail_extension_right.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/front_terminal_left.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/front_terminal_right.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/rear_crossbar_half.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/x240_crossbar_half.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/x240_clamp_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/x240_terminal_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/x300_crossbar_half.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/x300_clamp_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/x300_terminal_sleeve.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-v3/torsion_side_brace.stl` | RELEASED | Τυπωμένο και συναρμολογημένο v3 interface, applicable collision set 0 |
+| `modular-test-chassis/stl-p277/mpu6050_rail_side_mount.stl` | FIT-CHECK | Δεν έχει περάσει τυπωμένο interface coupon |
+| `modular-test-chassis/stl-ski-mount/r75-75-ski.stl` | FIT-CHECK | Τυπωμένο, αλλά το πλήρες νέο bracket/fork interface δεν έχει καταγεγραμμένο coupon PASS |
+| `modular-test-chassis/stl-ski-mount/x300-ski-bracket-left.stl` | FIT-CHECK | Πρώτα Cut coupon του X300/fork interface |
+| `modular-test-chassis/stl-ski-mount/x300-ski-bracket-right.stl` | FIT-CHECK | Πρώτα Cut coupon του X300/fork interface |
+| `modular-test-chassis/stl-ski-mount/p285-ski-wall-fork-left.stl` | FIT-CHECK | Πρώτα Cut coupon του ski-wall interface |
+| `modular-test-chassis/stl-ski-mount/p285-ski-wall-fork-right.stl` | FIT-CHECK | Πρώτα Cut coupon του ski-wall interface |
+| `arch-tilt-p293/stl/arch_foot_x240.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο foot/rail coupon |
+| `arch-tilt-p293/stl/arch_foot_x300.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο foot/rail coupon |
+| `arch-tilt-p293/stl/arch_leg_lower.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο joint coupon |
+| `arch-tilt-p293/stl/arch_leg_upper.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο joint coupon |
+| `arch-tilt-p293/stl/arch_brace_x240.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο joint coupon |
+| `arch-tilt-p293/stl/arch_brace_x300.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο joint coupon |
+| `arch-tilt-p293/stl/arch_joint_sleeve.stl` | FIT-CHECK | Είναι το κρίσιμο joint coupon πριν από πολύωρη εκτύπωση |
+| `arch-tilt-p293/stl/arch_crossbar_center.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο crossbar coupon |
+| `arch-tilt-p293/stl/arch_crossbar_end.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο crossbar coupon |
+| `arch-tilt-p293/stl/lidar_mast.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο sensor-interface coupon |
+| `arch-tilt-p293/stl/lidar_crossbar_half.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο sensor-interface coupon |
+| `arch-tilt-p293/stl/sensor_joint_sleeve.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο sensor-interface coupon |
+| `arch-tilt-p293/stl/oak_universal_plate.stl` | FIT-CHECK | Universal interface, χωρίς τυπωμένο coupon PASS |
+| `arch-tilt-p293/stl/tilt_stop.stl` | FIT-CHECK | Raw P2-93b PASS, αλλά dry/coupon fit δεν έχει καταγραφεί |
+| `arch-tilt-p293/stl/tilt_fit0186_carrier.stl` | FIT-CHECK | Raw P2-93b PASS· εκκρεμούν πραγματικές διαστάσεις και coupon |
+| `arch-tilt-p293/stl/tilt_kfl08_base.stl` | FIT-CHECK | Raw P2-93b PASS· εκκρεμούν πραγματικές διαστάσεις και coupon |
+| `arch-tilt-p293/stl/tilt_nut_carriage.stl` | FIT-CHECK | Raw P2-93b PASS· εκκρεμούν πραγματικές διαστάσεις και coupon |
+| `arch-tilt-p293/stl/tilt_as5600_pod.stl` | FIT-CHECK | Εκκρεμεί AS5600 coupon |
+| `arch-tilt-p293/stl/tilt_as5600_cover.stl` | FIT-CHECK | Εκκρεμεί AS5600 coupon |
+| `arch-tilt-p293/stl/tilt_magnet_cap.stl` | CONCEPT | Συγκρούεται με το launcher surrogate και δεν έχει κλειστή installed geometry |
+| `rear-pod/stl-v2/base_left.stl` | RELEASED | Τυπωμένο/συναρμολογημένο· οι συγκρούσεις αφορούν μη released F/wedge candidates |
+| `rear-pod/stl-v2/base_right.stl` | RELEASED | Τυπωμένο/συναρμολογημένο· οι συγκρούσεις αφορούν μη released F/wedge candidates |
+| `rear-pod/stl-v2/corner_tie.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο tie/base coupon |
+| `rear-pod/stl-v2/pi_shelf.stl` | FIT-CHECK | Raw CAD χωρίς hit, αλλά δεν υπάρχει τυπωμένο coupon PASS |
+| `rear-pod/stl-v2/vertical_electronics_plate.stl` | FIT-CHECK | Raw CAD χωρίς hit, αλλά δεν υπάρχει τυπωμένο coupon PASS |
+| `rear-pod/stl-v2/side_frame.stl` | RELEASED | Τυπωμένο και συναρμολογημένο P2-90d· μόνο μη released basket surrogate hit |
+| `rear-pod/stl-v2/side_frame_base_drill_jig.stl` | FIT-CHECK | Fixture, όχι installed robot part |
+| `rear-pod/stl-v2/rear_foot_wedge_washer.stl` | CONCEPT | 12,5 mm³/πλευρά raw overlap με base· blocking |
+| `rear-pod/stl-v2/parkside_dock_left.stl` | CONCEPT | 3.282,9 mm³ overlap με drawer· provisional hardware |
+| `rear-pod/stl-v2/parkside_dock_right.stl` | CONCEPT | 3.282,9 mm³ overlap με drawer· provisional hardware |
+| `rear-pod/stl-v2/parkside_drawer_left.stl` | CONCEPT | 3.282,9 mm³ overlap με dock· provisional hardware |
+| `rear-pod/stl-v2/parkside_drawer_right.stl` | CONCEPT | 3.282,9 mm³ overlap με dock· provisional hardware |
+| `rear-pod/stl-v2/ugreen_post_holder.stl` | CONCEPT | 172,6 mm³ overlap με rear retainer· blocking |
+| `rear-pod/stl-v2/ugreen_clamp_caps.stl` | FIT-CHECK | Εκκρεμεί post/clamp coupon |
+| `rear-pod/stl-v2/ugreen_rear_retainer.stl` | CONCEPT | 172,6 mm³ overlap με holder· blocking |
+| `rear-pod/stl-v2/panel_posts.stl` | RELEASED | Τυπωμένα και συναρμολογημένα με side frames/control panel |
+| `rear-pod/stl-v2/control_panel.stl` | RELEASED | Τυπωμένο και συναρμολογημένο· οι συγκρούσεις αφορούν μη released F candidates |
+| `rear-pod/stl-v2/component_pins.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
+| `rear-pod/stl-v2/component_clips.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
+| `rear-pod/stl-v2/bts_spacers.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
+| `rear-pod/stl-v2/cable_bulkhead.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο bulkhead coupon |
+| `rear-pod/stl-v2/bulkhead_foot.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο bulkhead coupon |
+| `rear-pod/stl-v2/upright_mount_fit_coupon.stl` | FIT-CHECK | Coupon PASS· το ίδιο δεν είναι installed release part |
+| `body-panels/stl-f-rear/rear_lo_left.stl` | CONCEPT | Raw collisions με stay/base/door/splice |
+| `body-panels/stl-f-rear/rear_lo_right.stl` | CONCEPT | Raw collisions με stay/base/door/splice |
+| `body-panels/stl-f-rear/rear_hi_left.stl` | CONCEPT | Raw collisions με deck/control/splice |
+| `body-panels/stl-f-rear/rear_hi_right.stl` | CONCEPT | Raw collisions με decks/control/splice |
+| `body-panels/stl-f-rear/deck_rear_left.stl` | CONCEPT | Raw collisions με rear_hi/control |
+| `body-panels/stl-f-rear/deck_rear_right.stl` | CONCEPT | Raw collisions με rear_hi/control |
+| `body-panels/stl-f-rear/parkside_door_left.stl` | CONCEPT | Raw 503,4 mm³ hinge/skin collision |
+| `body-panels/stl-f-rear/parkside_door_right.stl` | CONCEPT | Raw 503,4 mm³ hinge/skin collision |
+| `body-panels/stl-f-rear/corner_stay_left.stl` | CONCEPT | Raw 12.247,7 mm³ mating overlap |
+| `body-panels/stl-f-rear/corner_stay_right.stl` | CONCEPT | Raw 12.247,7 mm³ mating overlap |
+| `body-panels/stl-f-rear/center_splice_lo.stl` | CONCEPT | Raw 0,00021…0,00030 mm³ lap overlap |
+| `body-panels/stl-f-rear/center_splice_hi.stl` | CONCEPT | Raw 0,00020…0,00030 mm³ lap overlap |
+| `body-panels/stl-f-rear/door_turn_button.stl` | CONCEPT | Το F subset παραμένει blocking και χωρίς coupon |
+| `test-fixtures/tpu-friction/plate.stl` | FIT-CHECK | Fixture· πρώτη εκτύπωση draft |
+| `test-fixtures/tpu-friction/sled.stl` | FIT-CHECK | Fixture· πρώτη εκτύπωση draft |
+| `test-fixtures/tpu-friction/pulley.stl` | FIT-CHECK | Fixture· πρώτη εκτύπωση draft |
+| `test-fixtures/tpu-friction/pulley_bracket.stl` | FIT-CHECK | Fixture· πρώτη εκτύπωση draft |
+| `test-fixtures/ski-jump-hand-test/ski_42deg_R75.stl` | FIT-CHECK | Fixture· πρώτη εκτύπωση draft |
+| `test-fixtures/ski-jump-hand-test/ski_60deg_R75.stl` | FIT-CHECK | Fixture· πρώτη εκτύπωση draft |
+| `test-fixtures/ski-jump-hand-test/ski_75deg_R75.stl` | FIT-CHECK | Fixture· πρώτη εκτύπωση draft |
+| `test-fixtures/ski-jump-hand-test/ski_75deg_R110.stl` | FIT-CHECK | Fixture· πρώτη εκτύπωση draft |
+| `drive-motor-mount/37mm-mount-hole-gauge.stl` | FIT-CHECK | Gauge· fit checked μόνο σε 1/4 mounts |
+| `drive-motor-mount/nut-keeper-stl/sleeve.stl` | FIT-CHECK | Retention test εκκρεμεί |
 
 ## Σασί v3 — P2-78 sockets και πλευρικές διαγώνιες
 
@@ -37,7 +173,7 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 
 | Φυσικό κομμάτι | Ενεργό STL | Πηγή | P2 | Βίδες | Κατάσταση |
 |---|---|---|---:|---|---|
-| Πλευρική βάση MPU6050 στη +Y ράγα | `modular-test-chassis/stl-p277/mpu6050_rail_side_mount.stl` | `modular-test-chassis/p277-torsion-node.scad` | P2-77 | 2×M4×55/60 στις X100/X125, ροδέλες/nyloc· MPU με μη φέρον hardware της πλακέτας | Προς εκτύπωση |
+| Πλευρική βάση MPU6050 στη +Y ράγα | `modular-test-chassis/stl-p277/mpu6050_rail_side_mount.stl` | `modular-test-chassis/p277-torsion-node.scad` | P2-77 | 2×M4×55/60 στις X100/X125, ροδέλες/nyloc· MPU με μη φέρον hardware της πλακέτας | **FIT-CHECK** — πρώτα coupon |
 
 Αυτό είναι το μόνο ενεργό MPU mount. Το `rear-pod/stl-v2/mpu6050_mount.stl`
 δεν χρησιμοποιείται.
@@ -50,8 +186,8 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 | Φυσικό κομμάτι | Ενεργό STL (ποσότητα) | P2 | Βίδες / σύνδεση | Κατάσταση |
 |---|---|---:|---|---|
 | Βατήρας R75/75° | `stl-ski-mount/r75-75-ski.stl` ×1 | P2-73, P2-85 χωρίς bosses | 2×M4×30 χαμηλής κεφαλής στο X315 (κεφαλή μέσα) | Ήδη τυπωμένος — ο ενεργός STL είναι πλέον γεωμετρικά ο ίδιος· δεν ξανατυπώνεται |
-| Αριστερό/δεξί bracket X300 | `stl-ski-mount/x300-ski-bracket-left.stl` ×1, `x300-ski-bracket-right.stl` ×1 | P2-85 | 4×M4×35 στο X300 Y±75/±100, ροδέλες/nyloc | **Τυπώνονται τώρα**, ξαπλωμένα στην παρειά Y61, χωρίς supports· το P2-73 bracket καταργείται (έσπασε) |
-| Διχάλα τοιχώματος βατήρα | `stl-ski-mount/p285-ski-wall-fork-left.stl` ×1, `p285-ski-wall-fork-right.stl` ×1 | P2-85 | Hub στη M4×30 του X315· κλείδωμα 2×M4×30 DIN 933 (κεφαλή στο hex pocket) + ροδέλα Ø12/nyloc | **Τυπώνονται τώρα**, εξωτερική παρειά στο bed, χωρίς supports· αντικαθιστούν τους `ski-boss-spacer` |
+| Αριστερό/δεξί bracket X300 | `stl-ski-mount/x300-ski-bracket-left.stl` ×1, `x300-ski-bracket-right.stl` ×1 | P2-85 | 4×M4×35 στο X300 Y±75/±100, ροδέλες/nyloc | **FIT-CHECK** — πρώτα Cut coupon· το P2-73 bracket καταργείται (έσπασε) |
+| Διχάλα τοιχώματος βατήρα | `stl-ski-mount/p285-ski-wall-fork-left.stl` ×1, `p285-ski-wall-fork-right.stl` ×1 | P2-85 | Hub στη M4×30 του X315· κλείδωμα 2×M4×30 DIN 933 (κεφαλή στο hex pocket) + ροδέλα Ø12/nyloc | **FIT-CHECK** — πρώτα Cut coupon· αντικαθιστούν τους `ski-boss-spacer` |
 
 Το `ski-boss-spacer.stl` (P2-73 fix 2026-10-19) είναι superseded από το hub
 της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
@@ -65,17 +201,18 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 
 | Υποσύνολο | Ενεργά STL | Κατάσταση |
 |---|---|---|
-| Πόδια/σκέλη/διαγώνιες | `arch_foot_x240/x300`, `arch_leg_lower/upper`, `arch_brace_x240/x300`, `arch_joint_sleeve` | **Release-ready· τυπώνονται τώρα**. Μόνο υπάρχουσες P2-78 οπές, through-M4 |
-| Άνω αψίδα/sensors | `arch_crossbar_center/end`, `lidar_mast`, `lidar_crossbar_half`, `sensor_joint_sleeve`, `oak_universal_plate` | **Release-ready· τυπώνονται τώρα**. Το OAK part είναι universal interface, όχι cradle |
-| Φέροντα tilt stops | `tilt_stop` | **Release-ready μετά από dry assembly**· συμμετρική διαδρομή φορτίου προς αψίδα· ενσωματωμένο M3 interface για μελλοντικό striker tab |
+| Πόδια/σκέλη/διαγώνιες | `arch_foot_x240/x300`, `arch_leg_lower/upper`, `arch_brace_x240/x300`, `arch_joint_sleeve` | **FIT-CHECK** — πρώτα Cut coupon. Μόνο υπάρχουσες P2-78 οπές, through-M4 |
+| Άνω αψίδα/sensors | `arch_crossbar_center/end`, `lidar_mast`, `lidar_crossbar_half`, `sensor_joint_sleeve`, `oak_universal_plate` | **FIT-CHECK** — πρώτα interface coupon. Το OAK part είναι universal interface, όχι cradle |
+| Φέροντα tilt stops | `tilt_stop` | **FIT-CHECK** — dry assembly και coupon εκκρεμούν· συμμετρική διαδρομή φορτίου προς αψίδα |
 | FIT/KFL/Tr8 interfaces | `tilt_fit0186_carrier`, `tilt_kfl08_base`, `tilt_nut_carriage` | **Fit-check μόνο** μέχρι `[ΜΕΤΡΗΣΕΙΣ ΧΡΗΣΤΗ: ...]`· μην ξεκινήσεις τελικό print |
 | Encoder | `tilt_as5600_pod/cover`, `tilt_magnet_cap` | **Fit-check μόνο** μέχρι μετρήσεις AS5600· AZ1 παραγγέλθηκε 2026-10-25, 3,3 V board με αφαίρεση R1 σε ένα sample για 5 V |
 
 P2-93b exact-solid status: αφαιρέθηκαν τα QA masks και διορθώθηκαν μόνο οι
 installed poses carrier/KFL08/stops. **Κανένα printable STL δεν άλλαξε.** Και
-τα 13 STL της αψίδας είναι byte-identical με το P2-93 release, άρα όσα
-τυπώθηκαν ή βρίσκονται στην ουρά εκτύπωσης παραμένουν έγκυρα. Τα tilt
-interfaces παραμένουν fit-check μέχρι τις φυσικές μετρήσεις hardware.
+τα 13 STL της αψίδας είναι byte-identical με το P2-93 release. Αυτό δεν
+παρακάμπτει το P2-94 coupon gate: μη ολοκληρωμένες εκτυπώσεις παγώνουν σε
+FIT-CHECK μέχρι physical PASS. Τα tilt interfaces παραμένουν fit-check μέχρι
+τις φυσικές μετρήσεις hardware.
 
 Τα endpoint `tilt_switch_lower/upper` αφαιρέθηκαν από το P2-93. Η cassette
 ανήκει στο release της κινούμενης μονάδας και παραμένουν ανοικτά gates:
@@ -111,18 +248,18 @@ OPENSCAD_BIN=/snap/bin/openscad-nightly bash cad/arch-tilt-p293/export-p293-stls
 |---|---|---:|---|---|
 | Ενισχυμένες βάσεις | `stl-v2/base_left.stl` ×1, `base_right.stl` ×1 | P2-79/P2-83/P2-86b | 4×M4×45 προς rear crossbar· 2×M4×20 countersunk προς ties· 4×M3 rear lands· τοπική flush-stay εγκοπή Y±165 | **ΤΥΠΩΜΕΝΕΣ P2-86b — ΚΛΕΙΔΩΜΕΝΕΣ, δεν επανεξήχθησαν στο P2-88** |
 | Corner ties | `stl-v2/corner_tie.stl` ×2 | P2-83/P2-86b | 2×M4×20 countersunk προς βάση· κοινή μακρύτερη through-M4 tie→rear crossbar→stay στο `Y±165/Z37` | **ΝΕΟ P2-86b export — προς εκτύπωση** |
-| Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | Προς εκτύπωση |
-| Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | Προς εκτύπωση |
+| Pi shelf | `stl-v2/pi_shelf.stl` ×1 | P2-76 | 4×M3, αφρός + 2 straps | **FIT-CHECK** — πρώτα coupon |
+| Όρθια electronics plate | `stl-v2/vertical_electronics_plate.stl` ×1 | P2-76 | 2×M4×25 στις σιαγόνες, ροδέλες/nyloc | **FIT-CHECK** — πρώτα coupon |
 | Side frames | `stl-v2/side_frame.stl` ×2 | P2-88/P2-90d | εμπρός 2×M4×25 στο X−132, πίσω 2×M4×35 με wedge, ροδέλες OD14· ανοικτά post cups 4×M4×60 στον υπάρχοντα άξονα X, ροδέλες/nyloc | **ΤΥΠΩΜΕΝΑ P2-90d (επιβεβαίωση χρήστη 2026-10-26) — συναρμολογημένα με panel posts και control panel**· όρθιο export, 36×24 load spines, ίδιο χαμηλό hardware pocket στα δύο base feet, support-free οροφές 45°· όλα τα προηγούμενα side-frame STL superseded |
-| Jig εμπρός οπής βάσης | `stl-v2/side_frame_base_drill_jig.stl` ×1 | P2-88 | εντοπισμός στις δύο παλιές Ø4,5· τρυπάνι Ø4,5 | Προς εκτύπωση· υποχρεωτικό για τις τυπωμένες βάσεις |
-| Σφηνοειδείς πίσω ροδέλες | `stl-v2/rear_foot_wedge_washer.stl` ×2 | P2-88 | κάτω από την πίσω M4 | Προς εκτύπωση |
+| Jig εμπρός οπής βάσης | `stl-v2/side_frame_base_drill_jig.stl` ×1 | P2-88 | εντοπισμός στις δύο παλιές Ø4,5· τρυπάνι Ø4,5 | **FIT-CHECK** fixture |
+| Σφηνοειδείς πίσω ροδέλες | `stl-v2/rear_foot_wedge_washer.stl` ×2 | P2-88 | κάτω από την πίσω M4 | **CONCEPT** — raw overlap 12,5 mm³/πλευρά |
 | Parkside docks/drawers | `stl-v2/parkside_dock_left/right.stl`, `parkside_drawer_left/right.stl` ×1 | P2-88 provisional | 4×M3×12 προς υπάρχουσες slots + 2×M3 rear locks, Ruthex RX-M3x5.7 | **Σχεδιασμένο· αναμονή πραγματικής μπαταρίας/dock — ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ** |
 | Θήκη UGREEN + split caps + πίσω retainer | `stl-v2/ugreen_post_holder.stl`, `ugreen_clamp_caps.stl` ×1 print plate / 2 caps, `ugreen_rear_retainer.stl` ×1 | P2-90/P2-90b, πραγματικό 115×45×45 | 4×M3×30 caps + 2×M3×12 retainer, 6× Ruthex RX-M3x5.7, προαιρετικό λουράκι | **ΝΕΟ P2-90b export holder+caps — πλάγια τοποθέτηση caps, κεντρική εισαγωγή συσκευής από −X· κλειστά P2-90 collars superseded** |
 | Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81/P2-90d interface | κάτω/cup 4×M4×60, επάνω 4×M4×20, ροδέλες/nyloc | **ΤΥΠΩΜΕΝΑ — κλειδωμένα, καμία μεταβολή STL στο P2-90d** |
 | Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΤΥΠΩΜΕΝΟ — κλειδωμένο στο P2-90· συναρμολογημένο στα posts με E-stop, toggle και START/ARM (2026-10-26)**· physical proof-load 30 N πριν τη χρήση |
-| Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | Προς εκτύπωση |
-| BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | Προς εκτύπωση |
-| Cable bulkhead + feet | `stl-v2/cable_bulkhead.stl` ×1, `bulkhead_foot.stl` ×2 | P2-75 retained in v2 | Υπάρχουσες M4, ροδέλες/παξιμάδια | Προς εκτύπωση |
+| Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | **FIT-CHECK** — πρώτα draft coupon |
+| BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | **FIT-CHECK** — πρώτα draft coupon |
+| Cable bulkhead + feet | `stl-v2/cable_bulkhead.stl` ×1, `bulkhead_foot.stl` ×2 | P2-75 retained in v2 | Υπάρχουσες M4, ροδέλες/παξιμάδια | **FIT-CHECK** — πρώτα coupon |
 | Upright jaw coupon | `stl-v2/upright_mount_fit_coupon.stl` ×1 | P2-76 | M4 δοκιμής | **Τυπωμένο, fit PASS**· η σιαγόνα 4,8 mm/γλωττίδα 4 mm/M4 θέση κλειδώνουν |
 
 Τα `rear-pod/stl-v2/mpu6050_mount.stl` και
