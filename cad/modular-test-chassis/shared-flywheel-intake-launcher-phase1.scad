@@ -204,6 +204,8 @@ module shared_base_frame() {
 module drive_hardware_envelopes() {
     // Positive collision geometry. MEASURED/FIT-CHECKED: 40x40 foot, 25x30
     // hole rectangle; bracket height is only an approximate 47 mm measurement.
+    // P2-93e USER CALIPER: front drive motor OD35 mm, length71 mm including
+    // mount, excluding shaft. Keep conservative OD38..40/~80 envelope unchanged.
     // MEASURED BY TAPE (+/-2..3 mm): tyre width/track, face-to-encoder stack,
     // and outer hex stack. Detailed diameters, shaft/hub lengths and cable bend
     // envelope remain assumptions; verify all four assemblies before release.

@@ -1,0 +1,125 @@
+{
+  "status": "SCREEN_PASS_NOT_RELEASE",
+  "one_side_full_pitch_moment_nm": 8.0,
+  "crown_vertical_force_n": 60.60606060606061,
+  "roll_moment_nm": 4.7272727272727275,
+  "pitch_contact_lever_mm": 36,
+  "reverse_pitch_contact_lever_mm": 34,
+  "reverse_roll_contact_lever_mm": 70,
+  "roll_contact_lever_mm": 78,
+  "bolt_centres_mm": [
+    [
+      240,
+      150
+    ],
+    [
+      240,
+      160
+    ],
+    [
+      230,
+      220
+    ]
+  ],
+  "old_close_pair_couple_n": 472.7272727272728,
+  "rail_pitch_couple_n": 222.22222222222223,
+  "reverse_rail_pitch_couple_n": 235.2941176470588,
+  "inboard_roll_couple_n": 60.606060606060616,
+  "reverse_roll_rail_couple_n": 67.53246753246754,
+  "load_cases_nm": [
+    [
+      -8,
+      -4.7272727272727275
+    ],
+    [
+      -8,
+      4.7272727272727275
+    ],
+    [
+      8,
+      -4.7272727272727275
+    ],
+    [
+      8,
+      4.7272727272727275
+    ]
+  ],
+  "preload_assumption_n_per_bolt": 100.0,
+  "worst_rail_bolt_n": 463.43264578558694,
+  "worst_each_inboard_bolt_n": 221.21212121212122,
+  "washer_area_mm2": {
+    "OD9": 49.09523919397449,
+    "OD12": 98.57532348801374
+  },
+  "max_residual_preload_at_5mpa_n": {
+    "rail_washer": 129.44397165448174,
+    "pitch_contact_patch": 116.56735421441304,
+    "each_inboard": 124.26407475775123
+  },
+  "rail_grip_increment_mm": 20,
+  "rows": [
+    {
+      "check": "rail top PETG / added OD12 washer",
+      "stress_mpa": 4.701304843721238,
+      "limit_mpa": 5,
+      "pass": true
+    },
+    {
+      "check": "rail underside PETG / added OD12 washer",
+      "stress_mpa": 4.701304843721238,
+      "limit_mpa": 5,
+      "pass": true
+    },
+    {
+      "check": "each X240 seat / OD9 washer (no A/B sharing credit)",
+      "stress_mpa": 4.505775403967699,
+      "limit_mpa": 5,
+      "pass": true
+    },
+    {
+      "check": "rail wall punching screen, t3.2, OD12",
+      "stress_mpa": 3.8415414774443533,
+      "limit_mpa": 5,
+      "pass": true
+    },
+    {
+      "check": "each pitch patch (front X262..270 / rear X192..200), Y214..226; full combined envelope",
+      "stress_mpa": 4.827423393599864,
+      "limit_mpa": 5,
+      "pass": true
+    },
+    {
+      "check": "rail roll compression patch X236..244 Y224..232",
+      "stress_mpa": 2.5094696969696972,
+      "limit_mpa": 5,
+      "pass": true
+    },
+    {
+      "check": "reverse roll root patch X228..232 Y144..156",
+      "stress_mpa": 3.49025974025974,
+      "limit_mpa": 5,
+      "pass": true
+    },
+    {
+      "check": "foot net root bend, 24-4.6 by20, Kt1.8",
+      "stress_mpa": 6.5791940018744155,
+      "limit_mpa": 10,
+      "pass": true
+    },
+    {
+      "check": "rail pad pitch bend, 28-4.6 by18, Kt1.5",
+      "stress_mpa": 9.49667616334283,
+      "limit_mpa": 10,
+      "pass": true
+    }
+  ],
+  "limitations": [
+    "statically admissible load path, not stiffness-resolved bolt reactions",
+    "continuous positive sole contact is REQUIRED; bolt-only triangular group is not credited",
+    "PETG 10/5 MPa screening assumptions, not material certification or creep allowables",
+    "100 N residual preload is assumed: do not apply generic steel-joint M4 torque",
+    "no rail wall bending, long-term creep, vibration, fatigue or thread stripping certification",
+    "Cut coupon must prove rail/socket seating, washer seats, access and retained thread engagement",
+    "not RELEASED: solid foot/knee/clevis and physical coupon required"
+  ]
+}

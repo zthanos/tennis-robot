@@ -1,0 +1,384 @@
+{
+  "angles": [
+    "-10",
+    "-3",
+    "0",
+    "15",
+    "20"
+  ],
+  "bodies_per_angle": {
+    "-10": 100,
+    "-3": 100,
+    "0": 100,
+    "15": 100,
+    "20": 100
+  },
+  "full_scene_hits": 86,
+  "contained": 3,
+  "duplicates": 0,
+  "export_failures": {},
+  "arch_internal_hits": [],
+  "arch_F_concept_hits": [
+    {
+      "a": "f_side_front_concept",
+      "b": "p293d_foot[side=-1]",
+      "angles": [
+        -10,
+        -3,
+        0,
+        15,
+        20
+      ],
+      "vol": 3422.572,
+      "kind": "collision",
+      "bbox": [
+        245.0,
+        -244.4,
+        64.0,
+        271.0,
+        -242.0,
+        120.0
+      ]
+    },
+    {
+      "a": "f_side_front_concept",
+      "b": "p293d_foot[side=1]",
+      "angles": [
+        -10,
+        -3,
+        0,
+        15,
+        20
+      ],
+      "vol": 3422.572,
+      "kind": "collision",
+      "bbox": [
+        245.0,
+        242.0,
+        64.0,
+        271.0,
+        244.4,
+        120.0
+      ]
+    },
+    {
+      "a": "f_side_front_concept",
+      "b": "p293d_crown[side=1]",
+      "angles": [
+        -10,
+        -3,
+        0,
+        15,
+        20
+      ],
+      "vol": 1642.7937,
+      "kind": "collision",
+      "bbox": [
+        333.9,
+        236.5,
+        196.1,
+        361.7,
+        244.4,
+        236.1
+      ]
+    },
+    {
+      "a": "f_side_front_concept",
+      "b": "p293d_crown[side=-1]",
+      "angles": [
+        -10,
+        -3,
+        0,
+        15,
+        20
+      ],
+      "vol": 1642.7934,
+      "kind": "collision",
+      "bbox": [
+        333.9,
+        -244.4,
+        196.1,
+        361.7,
+        -236.5,
+        236.1
+      ]
+    },
+    {
+      "a": "f_side_front_concept",
+      "b": "p293d_knee[side=-1]",
+      "angles": [
+        -10,
+        -3,
+        0,
+        15,
+        20
+      ],
+      "vol": 707.2341,
+      "kind": "collision",
+      "bbox": [
+        324.7,
+        -238.0,
+        195.3,
+        360.2,
+        -236.5,
+        232.5
+      ]
+    },
+    {
+      "a": "f_side_front_concept",
+      "b": "p293d_knee[side=1]",
+      "angles": [
+        -10,
+        -3,
+        0,
+        15,
+        20
+      ],
+      "vol": 707.2341,
+      "kind": "collision",
+      "bbox": [
+        324.7,
+        236.5,
+        195.3,
+        360.2,
+        238.0,
+        232.5
+      ]
+    }
+  ],
+  "arch_other_hits": [],
+  "arch_drive_min_gap_mm": 9.0,
+  "candidate_stls": [
+    {
+      "stl": "p293d_crossbar_end.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 37201.66450257268,
+      "bounds_mm": [
+        [
+          0.0,
+          1.4210854715202004e-14,
+          0.0
+        ],
+        [
+          20.0,
+          111.60000000000002,
+          26.0
+        ]
+      ],
+      "size_mm": [
+        20.0,
+        111.60000000000001,
+        26.0
+      ]
+    },
+    {
+      "stl": "p293d_crown.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 49016.000410248926,
+      "bounds_mm": [
+        [
+          -6.135015578318303,
+          -58.0,
+          0.0
+        ],
+        [
+          63.0,
+          9.132747506734916,
+          52.8
+        ]
+      ],
+      "size_mm": [
+        69.1350155783183,
+        67.13274750673492,
+        52.8
+      ]
+    },
+    {
+      "stl": "p293d_foot.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 144961.16279359013,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          79.0,
+          111.4,
+          78.0
+        ]
+      ],
+      "size_mm": [
+        79.0,
+        111.4,
+        78.0
+      ]
+    },
+    {
+      "stl": "p293d_knee.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 102771.00275957018,
+      "bounds_mm": [
+        [
+          0.0,
+          -160.56932202726603,
+          0.0
+        ],
+        [
+          130.91360035538673,
+          0.0,
+          20.0
+        ]
+      ],
+      "size_mm": [
+        130.91360035538673,
+        160.56932202726603,
+        20.0
+      ]
+    },
+    {
+      "stl": "p293d_lidar_half.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 38700.95982699468,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          24.0,
+          138.0,
+          20.0
+        ]
+      ],
+      "size_mm": [
+        24.0,
+        138.0,
+        20.0
+      ]
+    },
+    {
+      "stl": "p293d_mast.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 31971.01333104708,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          30.0,
+          30.0,
+          86.0
+        ]
+      ],
+      "size_mm": [
+        30.0,
+        30.0,
+        86.0
+      ]
+    },
+    {
+      "stl": "p293d_mast_cap.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 16954.398594580514,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          32.0,
+          44.0,
+          34.0
+        ]
+      ],
+      "size_mm": [
+        32.0,
+        44.0,
+        34.0
+      ]
+    },
+    {
+      "stl": "p293d_oak_mount.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 34294.99154297016,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          3.633600071575188
+        ],
+        [
+          87.30679758178701,
+          82.0,
+          102.0
+        ]
+      ],
+      "size_mm": [
+        87.30679758178701,
+        82.0,
+        98.36639992842481
+      ]
+    },
+    {
+      "stl": "p293e_foot_template.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 9541.979155545196,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          79.0,
+          109.0,
+          2.0
+        ]
+      ],
+      "size_mm": [
+        79.0,
+        109.0,
+        2.0
+      ]
+    },
+    {
+      "stl": "p293e_foot_template_R.stl",
+      "bodies": 1,
+      "watertight": true,
+      "volume_mm3": 9539.907529192451,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          79.0,
+          109.0,
+          2.0
+        ]
+      ],
+      "size_mm": [
+        79.0,
+        109.0,
+        2.0
+      ]
+    }
+  ],
+  "status": "ARCH_TARGETS_CLEAR"
+}

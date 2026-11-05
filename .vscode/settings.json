@@ -9,5 +9,6 @@
     ],
     "python.analysis.extraPaths": [
         "/opt/ros/jazzy/lib/python3.12/site-packages"
-    ]
+    ],
+    "cmake.sourceDirectory": "/home/thanosz/projects/diy/tennis-robot/engineering/shared-flywheel-isolated-bench"
 }

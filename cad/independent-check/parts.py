@@ -12,8 +12,10 @@ SOURCES = {
     "frear": "use <{cad}/body-panels/body-panels-f-rear-v2.scad>",
     "ffront": "use <{cad}/body-panels/body-panels-f.scad>",
     "p293": "use <{cad}/arch-tilt-p293/p293-arch-tilt-release.scad>",
+    "p293d": "use <{cad}/arch-tilt-p293/p293d-arch-candidate.scad>",
     "basket": "use <{cad}/modular-test-chassis/shared-flywheel-p271-basket-grid.scad>",
     "launcher": "use <{cad}/modular-test-chassis/shared-flywheel-transition-p252.scad>",
+    "phase1": "use <{cad}/modular-test-chassis/shared-flywheel-intake-launcher-phase1.scad>",
     "p293+phase1": "use <{cad}/arch-tilt-p293/p293-arch-tilt-release.scad>\nuse <{cad}/modular-test-chassis/shared-flywheel-intake-launcher-phase1.scad>",
 }
 
@@ -22,6 +24,8 @@ PIVOT = "[387,0,55.84]"
 PARTS = [
     # Chassis is printed and assembled; one body.
     ("chassis_frame", "chassis", "chassis", "frame_assembly();"),
+    # Drive motors, brackets, tyres, hex hubs (measured envelopes, not printed).
+    ("drive_packages", "drive", "phase1", "drive_package_envelopes();"),
     # Ski mount (P2-85).
     ("ski", "ski", "ski", "p273_ski(0);"),
     ("ski_bracket_L", "ski", "ski", "p273_mount_bracket(1);"),
@@ -68,7 +72,7 @@ PARTS = [
     # F front (concept).
     ("ffront_concept", "ffront", "ffront", "f_side_front_concept();"),
     # Arch + tilt (P2-93).
-    ("arch", "p293", "p293", "arch_release_assembly();"),
+    ("arch", "p293", "p293d", "p293d_arch_assembly(); // P2-93e existing-hole foot"),
     ("tilt_fit_carrier", "tilt", "p293", "fit_carrier_installed(); // P2-93b +Y 28 mm"),
     ("tilt_kfl08", "tilt", "p293", "kfl08_installed(); // P2-93b axis station X274 Z112.653, +Y 24 mm"),
     ("tilt_nut_carriage", "tilt", "p293+phase1", "translate(gpoint(0,[50,-205,90])) anti_backlash_carriage();"),

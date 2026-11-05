@@ -1,4 +1,41 @@
-# Ενεργό σύνολο εκτύπωσης — P2-95
+# Ενεργό σύνολο εκτύπωσης — P2-93e / P2-95 gate
+
+## P2-93e — ενεργή candidate αψίδα, όχι RELEASED
+
+**Το παλιό σετ `arch-tilt-p293/stl/` της αψίδας: ΜΗΝ ΤΥΠΩΣΕΙΣ.**
+Οι παλιές οδηγίες «μπορούν να τυπωθούν» είναι ιστορικές και ακυρώνονται.
+Το tilt δεν αλλάζει και παραμένει χωριστό επόμενο βήμα.
+Τα τρία retained upper interfaces της P2-93d assembly (κεντρική τραβέρσα,
+δύο τύποι sleeves) δεν αποτελούν άδεια εκτύπωσης του παλιού σετ.
+
+Όλα τα παρακάτω είναι στον `arch-tilt-p293/stl-candidate-p293d/`:
+
+| STL | Κατάσταση | Ποσότητα / οδηγία |
+| --- | --- | --- |
+| `p293d_foot.stl` | **FIT-CHECK** | 2, καθρέφτισμα Y για R· φέρον πέλμα και ενσωματωμένο arch clevis **συμπαγή** |
+| `p293d_knee.stl` | **FIT-CHECK** | 2, **συμπαγή**, XZ load plane στο bed |
+| `p293d_crown.stl` | **FIT-CHECK** | 2, φέρουσες παρειές/clevis **συμπαγή** |
+| `p293d_crossbar_end.stl` | **FIT-CHECK** | 2, πρώτα joint coupon |
+| `p293d_mast.stl` | **FIT-CHECK** | 2, πρώτα shoe coupon |
+| `p293d_lidar_half.stl` | **FIT-CHECK** | 2, πρώτα joint coupon |
+| `p293d_mast_cap.stl` | **FIT-CHECK** | 2, πρώτα joint coupon |
+| `p293d_oak_mount.stl` | **FIT-CHECK** | 1, πρώτα sensor-interface coupon |
+| `p293e_foot_template.stl` | **FIT-CHECK** | 1 L (+Y), πλήρες επίπεδο gauge 2 mm, χωρίς supports |
+| `p293e_foot_template_R.stl` | **FIT-CHECK** | 1 R (−Y), ήδη καθρεφτισμένο, όχι δεύτερο mirror |
+
+Τα templates είναι προσωρινά εργαλεία μέτρησης, όχι installed robot parts:
+δεν προστίθενται στο `current_robot()` ούτε μπορούν να πάρουν RELEASED ως
+φέροντα εξαρτήματα. Χαλαρές M4 και στις τρεις οπές ταυτόχρονα, χωρίς ζόρι.
+Το gauge ακουμπά στη ράγα Z52 και γεφυρώνει το χαμηλότερο X240/Z42· **δεν
+σφίγγεται** προς τη χαμηλή τραβέρσα. Η εγκοπή έχει όριο X271 και βάθος
+0,8 mm: μέτρησε από την άθικτη παρειά δίπλα της, όχι από τον πυθμένα της.
+
+Για κάθε φέρον print >4 h προηγείται Cut coupon στο Bambu Studio. Η οδηγία
+draft 2 walls/10% αφορά μόνο μη φέροντα δοκιμαστικά μέρη, **όχι** foot,
+knee ή clevis. FIT-CHECK δεν είναι έγκριση πλήρους φέροντος print.
+Έλεγχος P2-93e: 86 global collisions +3 contained, μόνο έξι F-concept
+τομές στην αψίδα, 9,00 mm drive gap σε −10/−3/0/15/20°. Καμία εξαίρεση
+όγκου. Hardware, όρια και coupon: [P2-93e log](arch-tilt-p293/P2-93e-debug.md).
 
 Η παρούσα λίστα είναι το μοναδικό ευρετήριο για κομμάτια που είναι ενεργά
 στη σημερινή φυσική κατασκευή. Αρχεία κάτω από `archive/` ή με σήμανση
@@ -23,7 +60,7 @@
 
 1. προστίθεται ή ενημερώνεται η αντίστοιχη installed-pose κλήση στο
    `body-panels/current-design-p293.scad` (`current_robot()`),
-2. εκτελείται το αμετάβλητο `independent-check/scene_check.py` στις −3/0/+20°
+2. εκτελείται το `independent-check/scene_check.py` στις −10/−3/0/15/20°
    μέσω `bash cad/check-current-scene.sh`, χωρίς αφαίρεση
    mating/fastener/interface όγκων,
 3. κάθε θετικός όγκος είναι FAIL· η σήμανση «σκόπιμη» τεκμηριώνει την
@@ -77,19 +114,19 @@ Coupon και fixtures δεν έχουν robot-installed pose· παραμένο
 | `modular-test-chassis/stl-ski-mount/x300-ski-bracket-right.stl` | FIT-CHECK | Πρώτα Cut coupon του X300/fork interface |
 | `modular-test-chassis/stl-ski-mount/p285-ski-wall-fork-left.stl` | FIT-CHECK | Πρώτα Cut coupon του ski-wall interface |
 | `modular-test-chassis/stl-ski-mount/p285-ski-wall-fork-right.stl` | FIT-CHECK | Πρώτα Cut coupon του ski-wall interface |
-| `arch-tilt-p293/stl/arch_foot_x240.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο foot/rail coupon |
-| `arch-tilt-p293/stl/arch_foot_x300.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο foot/rail coupon |
-| `arch-tilt-p293/stl/arch_leg_lower.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο joint coupon |
-| `arch-tilt-p293/stl/arch_leg_upper.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο joint coupon |
-| `arch-tilt-p293/stl/arch_brace_x240.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο joint coupon |
-| `arch-tilt-p293/stl/arch_brace_x300.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο joint coupon |
-| `arch-tilt-p293/stl/arch_joint_sleeve.stl` | FIT-CHECK | Είναι το κρίσιμο joint coupon πριν από πολύωρη εκτύπωση |
-| `arch-tilt-p293/stl/arch_crossbar_center.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο crossbar coupon |
-| `arch-tilt-p293/stl/arch_crossbar_end.stl` | FIT-CHECK | Raw CAD PASS, αλλά εκκρεμεί τυπωμένο crossbar coupon |
-| `arch-tilt-p293/stl/lidar_mast.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο sensor-interface coupon |
-| `arch-tilt-p293/stl/lidar_crossbar_half.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο sensor-interface coupon |
-| `arch-tilt-p293/stl/sensor_joint_sleeve.stl` | FIT-CHECK | Εκκρεμεί τυπωμένο sensor-interface coupon |
-| `arch-tilt-p293/stl/oak_universal_plate.stl` | FIT-CHECK | Universal interface, χωρίς τυπωμένο coupon PASS |
+| `arch-tilt-p293/stl/arch_foot_x240.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — παλιό σετ |
+| `arch-tilt-p293/stl/arch_foot_x300.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — καταργήθηκε |
+| `arch-tilt-p293/stl/arch_leg_lower.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — παλιό σετ |
+| `arch-tilt-p293/stl/arch_leg_upper.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — παλιό σετ |
+| `arch-tilt-p293/stl/arch_brace_x240.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — παλιό σετ |
+| `arch-tilt-p293/stl/arch_brace_x300.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — καταργήθηκε |
+| `arch-tilt-p293/stl/arch_joint_sleeve.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** παλιό σετ· retained interface δεν αποτελεί release |
+| `arch-tilt-p293/stl/arch_crossbar_center.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** παλιό σετ· retained interface δεν αποτελεί release |
+| `arch-tilt-p293/stl/arch_crossbar_end.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — παλιό σετ |
+| `arch-tilt-p293/stl/lidar_mast.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — παλιό σετ |
+| `arch-tilt-p293/stl/lidar_crossbar_half.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — παλιό σετ |
+| `arch-tilt-p293/stl/sensor_joint_sleeve.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** παλιό σετ· retained interface δεν αποτελεί release |
+| `arch-tilt-p293/stl/oak_universal_plate.stl` | CONCEPT | **ΜΗΝ ΤΥΠΩΣΕΙΣ** — παλιό σετ |
 | `arch-tilt-p293/stl/tilt_stop.stl` | FIT-CHECK | Raw P2-93b PASS, αλλά dry/coupon fit δεν έχει καταγραφεί |
 | `arch-tilt-p293/stl/tilt_fit0186_carrier.stl` | FIT-CHECK | Raw P2-93b PASS· εκκρεμούν πραγματικές διαστάσεις και coupon |
 | `arch-tilt-p293/stl/tilt_kfl08_base.stl` | FIT-CHECK | Raw P2-93b PASS· εκκρεμούν πραγματικές διαστάσεις και coupon |
@@ -195,7 +232,7 @@ plywood/metal ballast plate. Τα P2-77 `brace_drill_jig.stl` και
 της διχάλας P2-85 και αφαιρέθηκε από το ενεργό release. Το full ski dry-run
 αναμένει πλέον 5 STL αντί για 4, όλα ακριβώς ένα σώμα.
 
-## Αψίδα/κλίση — P2-93b
+## Ιστορικό αψίδας/κλίσης — P2-93b (δεν εγκρίνει εκτύπωση)
 
 Πηγή: `arch-tilt-p293/p293-arch-tilt-release.scad`. Ενεργός κατάλογος:
 `arch-tilt-p293/stl/`. Αναλυτική λίστα ποσοτήτων, μάζας, χρόνου, hardware

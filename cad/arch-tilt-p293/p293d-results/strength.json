@@ -1,0 +1,82 @@
+{
+  "status": "ANALYTICAL_SCREEN_PASS",
+  "design_moment_nm": 8,
+  "one_side_takes_full_load": true,
+  "lever_mm": 132.0,
+  "equivalent_crown_force_n": 60.60606060606061,
+  "angle_deg": 43.43980031307133,
+  "net_Iy_mm4": 29131.10666666667,
+  "net_Z_mm3": 2240.8543589743595,
+  "root_radius_mm": 3,
+  "knee_section_mm": [
+    26,
+    20
+  ],
+  "knee_print_plane": "XZ load plane on bed; layer normal Y",
+  "pin_pitch_mm": 34.0,
+  "max_pin_force_n": 237.2374242080164,
+  "rows": [
+    {
+      "check": "knee combined bend + axial, Kt=1.8",
+      "stress_mpa": 6.681005741940833,
+      "limit_mpa": 10,
+      "utilization": 0.6681005741940833,
+      "pass": true
+    },
+    {
+      "check": "foot clevis M4 bearing, both 6 mm cheeks",
+      "stress_mpa": 4.297779424058269,
+      "limit_mpa": 5,
+      "utilization": 0.8595558848116538,
+      "pass": true
+    },
+    {
+      "check": "knee M4 bearing",
+      "stress_mpa": 2.5786676544349607,
+      "limit_mpa": 5,
+      "utilization": 0.5157335308869921,
+      "pass": true
+    },
+    {
+      "check": "foot cheek pin edge shear",
+      "stress_mpa": 2.6715926149551392,
+      "limit_mpa": 5,
+      "utilization": 0.5343185229910279,
+      "pass": true
+    },
+    {
+      "check": "raised foot root torsion, K=2",
+      "stress_mpa": 3.858024691358025,
+      "limit_mpa": 5,
+      "utilization": 0.771604938271605,
+      "pass": true
+    },
+    {
+      "check": "raised foot root lateral cantilever bending, K=2",
+      "stress_mpa": 1.8237934904601574,
+      "limit_mpa": 10,
+      "utilization": 0.18237934904601574,
+      "pass": true
+    }
+  ],
+  "elastic_knee_deflection_mm": 2.1908126359208597,
+  "deflection_excludes": [
+    "foot bridge torsion",
+    "joint slip",
+    "bolt compliance",
+    "creep"
+  ],
+  "base_fastener_warning": {
+    "overturning_x_moment_nmm": 4727.272727272728,
+    "existing_Y_hole_pitch_mm": 10,
+    "hole_pair_couple_force_n": 472.7272727272728,
+    "note": "X240-only base loses the old 60 mm X240-X300 couple. Verify clamp preload, washer/spreader bearing and existing rail; not released by this knee calculation."
+  },
+  "limitations": [
+    "not FEA; Kt is assumed, not measured",
+    "10/5 MPa are existing repository screening limits, not material certification",
+    "100% solid knee or equivalent verified perimeter core; not draft 2 walls/10% infill",
+    "foot print orientation, supports and hardware load spreading need physical proof",
+    "full-scene F concept and unrelated/tilt collisions remain blocking release"
+  ]
+}

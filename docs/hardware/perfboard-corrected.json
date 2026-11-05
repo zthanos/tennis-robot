@@ -1,0 +1,322 @@
+{
+  "version": 5,
+  "board": {
+    "type": "perfboard",
+    "cols": 30,
+    "rows": 42
+  },
+  "pads": [],
+  "wires": [
+    { "from": [7, 37], "to": [2, 28], "via": [[4, 37], [4, 28]], "color": "#3b82f6", "width": 4 },
+    { "from": [8, 37], "to": [2, 29], "via": [[5, 37], [5, 29]], "color": "#3b82f6", "width": 4 },
+    { "from": [7, 38], "to": [5, 35], "via": [[7, 35]], "color": "#3b82f6", "width": 4 },
+    { "from": [4, 35], "to": [2, 30], "via": [[4, 30]], "color": "#3b82f6", "width": 4 },
+    { "from": [3, 28], "to": [3, 30], "kind": "solder" },
+    { "from": [3, 28], "to": [8, 38], "via": [[1, 28], [1, 40], [8, 40]], "color": "#111827", "width": 4 },
+
+    { "from": [9, 37], "to": [6, 19], "via": [[9, 24], [5, 24], [5, 18], [6, 18]], "color": "#3b82f6", "width": 4 },
+    { "from": [10, 37], "to": [7, 19], "via": [[10, 25], [4, 25], [4, 17], [7, 17]], "color": "#3b82f6", "width": 4 },
+    { "from": [11, 37], "to": [6, 20], "via": [[11, 26], [6, 26]], "color": "#3b82f6", "width": 4 },
+    { "from": [12, 37], "to": [7, 20], "via": [[12, 27], [7, 27]], "color": "#3b82f6", "width": 4 },
+    { "from": [13, 37], "to": [13, 20], "color": "#3b82f6", "width": 4 },
+    { "from": [14, 37], "to": [14, 20], "color": "#3b82f6", "width": 4 },
+    { "from": [15, 37], "to": [13, 19], "via": [[15, 23], [12, 23], [12, 18], [13, 18]], "color": "#3b82f6", "width": 4 },
+    { "from": [16, 37], "to": [14, 19], "via": [[16, 24], [11, 24], [11, 16], [14, 16]], "color": "#3b82f6", "width": 4 },
+
+    { "from": [17, 37], "to": [5, 15], "via": [[17, 33], [29, 33], [29, 10], [5, 10]], "color": "#3b82f6", "width": 4 },
+    { "from": [18, 37], "to": [6, 15], "via": [[18, 9], [4, 9], [4, 14], [6, 14]], "color": "#3b82f6", "width": 4 },
+    { "from": [19, 37], "to": [7, 15], "via": [[19, 8], [7, 8]], "color": "#3b82f6", "width": 4 },
+    { "from": [7, 15], "to": [8, 15], "color": "#3b82f6", "width": 4 },
+    { "from": [20, 37], "to": [12, 15], "via": [[20, 7], [12, 7]], "color": "#3b82f6", "width": 4 },
+    { "from": [21, 37], "to": [13, 15], "via": [[21, 6], [11, 6], [11, 14], [13, 14]], "color": "#3b82f6", "width": 4 },
+    { "from": [9, 38], "to": [14, 15], "via": [[2, 38], [2, 5], [14, 5]], "color": "#3b82f6", "width": 4 },
+    { "from": [14, 15], "to": [15, 15], "color": "#3b82f6", "width": 4 },
+    { "from": [6, 12], "to": [7, 15], "via": [[7, 12]], "color": "#3b82f6", "width": 4 },
+    { "from": [13, 12], "to": [14, 15], "via": [[14, 12]], "color": "#3b82f6", "width": 4 },
+    { "from": [9, 12], "to": [26, 12], "color": "#111827", "width": 4 },
+    { "from": [16, 12], "to": [26, 12], "color": "#111827", "width": 4 },
+
+    { "from": [22, 37], "to": [22, 34], "color": "#3b82f6", "width": 4 },
+    { "from": [23, 37], "to": [23, 34], "color": "#3b82f6", "width": 4 },
+
+    { "from": [24, 37], "to": [27, 31], "via": [[27, 37]], "color": "#ef4444", "width": 4 },
+    { "from": [27, 26], "to": [27, 31], "kind": "solder" },
+    { "from": [27, 15], "to": [27, 26], "color": "#ef4444", "width": 4 },
+    { "from": [27, 18], "to": [27, 27], "color": "#ef4444", "width": 4 },
+    { "from": [27, 21], "to": [27, 28], "color": "#ef4444", "width": 4 },
+    { "from": [8, 38], "to": [26, 31], "via": [[26, 38]], "color": "#111827", "width": 4 },
+    { "from": [26, 27], "to": [26, 31], "kind": "solder" },
+    { "from": [26, 12], "to": [26, 27], "color": "#111827", "width": 4 },
+    { "from": [26, 15], "to": [26, 28], "color": "#111827", "width": 4 },
+    { "from": [26, 18], "to": [26, 29], "color": "#111827", "width": 4 },
+    { "from": [26, 21], "to": [26, 30], "color": "#111827", "width": 4 },
+
+    { "from": [9, 15], "to": [27, 15], "color": "#ef4444", "width": 4 },
+    { "from": [10, 15], "to": [26, 15], "color": "#111827", "width": 4 },
+    { "from": [16, 15], "to": [27, 15], "color": "#ef4444", "width": 4 },
+    { "from": [17, 15], "to": [26, 15], "color": "#111827", "width": 4 },
+    { "from": [9, 13], "to": [9, 15], "color": "#ef4444", "width": 4 },
+    { "from": [11, 13], "to": [10, 15], "via": [[10, 13]], "color": "#111827", "width": 4 },
+    { "from": [16, 13], "to": [16, 15], "color": "#ef4444", "width": 4 },
+    { "from": [18, 13], "to": [17, 15], "via": [[17, 13]], "color": "#111827", "width": 4 },
+
+    { "from": [8, 17], "to": [8, 19], "color": "#ef4444", "width": 4 },
+    { "from": [10, 17], "to": [9, 19], "via": [[9, 17]], "color": "#111827", "width": 4 },
+    { "from": [15, 17], "to": [15, 19], "color": "#ef4444", "width": 4 },
+    { "from": [17, 17], "to": [16, 19], "via": [[16, 17]], "color": "#111827", "width": 4 },
+    { "from": [8, 17], "to": [27, 18], "via": [[27, 17]], "color": "#ef4444", "width": 4 },
+    { "from": [15, 17], "to": [27, 18], "via": [[27, 17]], "color": "#ef4444", "width": 4 },
+    { "from": [10, 17], "to": [26, 18], "via": [[26, 17]], "color": "#111827", "width": 4 },
+    { "from": [17, 17], "to": [26, 18], "via": [[26, 17]], "color": "#111827", "width": 4 },
+
+    { "from": [8, 22], "to": [8, 20], "color": "#ef4444", "width": 4 },
+    { "from": [10, 22], "to": [9, 20], "via": [[9, 22]], "color": "#111827", "width": 4 },
+    { "from": [15, 22], "to": [15, 20], "color": "#ef4444", "width": 4 },
+    { "from": [17, 22], "to": [16, 20], "via": [[16, 22]], "color": "#111827", "width": 4 },
+    { "from": [8, 22], "to": [27, 21], "via": [[27, 22]], "color": "#ef4444", "width": 4 },
+    { "from": [15, 22], "to": [27, 21], "via": [[27, 22]], "color": "#ef4444", "width": 4 },
+    { "from": [10, 22], "to": [26, 21], "via": [[26, 22]], "color": "#111827", "width": 4 },
+    { "from": [17, 22], "to": [26, 21], "via": [[26, 22]], "color": "#111827", "width": 4 },
+
+    { "from": [24, 32], "to": [24, 34], "color": "#ef4444", "width": 4 },
+    { "from": [26, 32], "to": [25, 34], "via": [[25, 32]], "color": "#111827", "width": 4 },
+    { "from": [24, 32], "to": [27, 31], "via": [[27, 32]], "color": "#ef4444", "width": 4 },
+    { "from": [26, 32], "to": [26, 31], "color": "#111827", "width": 4 },
+    { "from": [25, 36], "to": [26, 31], "via": [[26, 36]], "color": "#111827", "width": 4 },
+    { "from": [28, 36], "to": [27, 31], "via": [[27, 36]], "color": "#ef4444", "width": 4 }
+  ],
+  "placedIcs": [],
+  "placedStandardComponents": [
+    {
+      "ref": "R1",
+      "instanceId": "28e5d7bc-7c97-42d2-ad0a-257cfb4e6ce1",
+      "definitionId": "resistor",
+      "from": [4, 35],
+      "to": [5, 35],
+      "value": "470Ω"
+    },
+    {
+      "ref": "R2",
+      "instanceId": "a2100000-0000-4000-8000-000000000002",
+      "definitionId": "resistor",
+      "from": [6, 12],
+      "to": [9, 12],
+      "value": "10kΩ D30 EN pull-down"
+    },
+    {
+      "ref": "R3",
+      "instanceId": "a3100000-0000-4000-8000-000000000003",
+      "definitionId": "resistor",
+      "from": [13, 12],
+      "to": [16, 12],
+      "value": "10kΩ D31 EN pull-down"
+    },
+    {
+      "ref": "C2",
+      "instanceId": "bad447b6-1a1b-42eb-ba1a-b1cffa1a94ae",
+      "definitionId": "electrolytic-capacitor",
+      "from": [25, 36],
+      "to": [28, 36],
+      "value": "220µF 25V (- at from, + at to)"
+    },
+    {
+      "ref": "C3",
+      "instanceId": "ca300000-0000-4000-8000-000000000003",
+      "definitionId": "ceramic-capacitor",
+      "from": [8, 17],
+      "to": [10, 17],
+      "value": "100nF X7R"
+    },
+    {
+      "ref": "C4",
+      "instanceId": "ca400000-0000-4000-8000-000000000004",
+      "definitionId": "ceramic-capacitor",
+      "from": [8, 22],
+      "to": [10, 22],
+      "value": "100nF X7R"
+    },
+    {
+      "ref": "C5",
+      "instanceId": "ca500000-0000-4000-8000-000000000005",
+      "definitionId": "ceramic-capacitor",
+      "from": [15, 17],
+      "to": [17, 17],
+      "value": "100nF X7R"
+    },
+    {
+      "ref": "C6",
+      "instanceId": "ca600000-0000-4000-8000-000000000006",
+      "definitionId": "ceramic-capacitor",
+      "from": [15, 22],
+      "to": [17, 22],
+      "value": "100nF X7R"
+    },
+    {
+      "ref": "C7",
+      "instanceId": "ca700000-0000-4000-8000-000000000007",
+      "definitionId": "ceramic-capacitor",
+      "from": [9, 13],
+      "to": [11, 13],
+      "value": "100nF X7R"
+    },
+    {
+      "ref": "C8",
+      "instanceId": "ca800000-0000-4000-8000-000000000008",
+      "definitionId": "ceramic-capacitor",
+      "from": [16, 13],
+      "to": [18, 13],
+      "value": "100nF X7R"
+    },
+    {
+      "ref": "C9",
+      "instanceId": "ca900000-0000-4000-8000-000000000009",
+      "definitionId": "ceramic-capacitor",
+      "from": [24, 32],
+      "to": [26, 32],
+      "value": "100nF X7R"
+    }
+  ],
+  "placedAdvancedComponents": [
+    {
+      "ref": "J1",
+      "instanceId": "a8f304ff-80bc-40d7-8646-c2e33c045853",
+      "definitionId": "female-header",
+      "at": [7, 37],
+      "rotation": 0,
+      "rows": 2,
+      "cols": 18,
+      "value": "MEGA: 1 D32, 2 D33, 3 D2, 4 D22, 5 D3, 6 D23, 7 D19, 8 D25, 9 D18, 10 D24, 11 D5, 12 D6, 13 D30, 14 D9, 15 D10, 16 D20, 17 D21, 18 5V, 19 D34, 20 GND, 21 D31; 22-36 NC"
+    },
+    {
+      "ref": "J2",
+      "instanceId": "a24738b5-1f76-4f9c-a9a3-8c896612971b",
+      "definitionId": "header-pins",
+      "at": [2, 28],
+      "rotation": 0,
+      "rows": 3,
+      "cols": 2,
+      "value": "D32, GND, D33, GND, LED_D34_AFTER_R1, GND"
+    },
+    {
+      "ref": "J3",
+      "instanceId": "54f6f269-478a-48df-b2fd-17b0d3d121c6",
+      "definitionId": "header-pins",
+      "at": [27, 26],
+      "rotation": 0,
+      "rows": 6,
+      "cols": 1,
+      "value": "5V BUS FROM MEGA ONLY"
+    },
+    {
+      "ref": "J4",
+      "instanceId": "f32c3980-6e8b-47e5-a898-5b803062fcea",
+      "definitionId": "header-pins",
+      "at": [26, 27],
+      "rotation": 0,
+      "rows": 5,
+      "cols": 1,
+      "value": "GND BUS FROM MEGA"
+    },
+    {
+      "ref": "J5",
+      "instanceId": "02295ce9-4bf2-41cb-9f11-8b342304ac18",
+      "definitionId": "header-pins",
+      "at": [6, 19],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 4,
+      "value": "D2, D22, 5V, GND"
+    },
+    {
+      "ref": "J6",
+      "instanceId": "9be66417-4a8c-44c0-9a1b-3873ff795007",
+      "definitionId": "header-pins",
+      "at": [6, 20],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 4,
+      "value": "D3, D23, 5V, GND"
+    },
+    {
+      "ref": "J7",
+      "instanceId": "3cb81276-6134-4bc2-af34-a4beed1e0382",
+      "definitionId": "header-pins",
+      "at": [13, 19],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 4,
+      "value": "D18, D24, 5V, GND"
+    },
+    {
+      "ref": "J8",
+      "instanceId": "3d7d532e-3669-4528-bd3c-1e339c7d86e0",
+      "definitionId": "header-pins",
+      "at": [13, 20],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 4,
+      "value": "D19, D25, 5V, GND"
+    },
+    {
+      "ref": "J9",
+      "instanceId": "cb47b952-5708-4e6b-9ae0-cb790b47b049",
+      "definitionId": "header-pins",
+      "at": [5, 15],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 4,
+      "value": "D5, D6, D30, D30"
+    },
+    {
+      "ref": "J10",
+      "instanceId": "de4f3d33-8ecc-4679-9313-34f48086dc60",
+      "definitionId": "header-pins",
+      "at": [12, 15],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 4,
+      "value": "D9, D10, D31, D31"
+    },
+    {
+      "ref": "J11",
+      "instanceId": "897e22ae-0559-4eb3-9161-2b436d446340",
+      "definitionId": "header-pins",
+      "at": [22, 34],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 2,
+      "value": "D20 SDA, D21 SCL"
+    },
+    {
+      "ref": "J12",
+      "instanceId": "576b207b-1f57-47c8-b4f1-48c1fb401b45",
+      "definitionId": "header-pins",
+      "at": [24, 34],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 2,
+      "value": "5V, GND (IMU)"
+    },
+    {
+      "ref": "J13",
+      "instanceId": "3726544e-7c72-4363-977f-0f6ee89ef798",
+      "definitionId": "header-pins",
+      "at": [9, 15],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 2,
+      "value": "5V, GND (BTS LEFT LOGIC)"
+    },
+    {
+      "ref": "J14",
+      "instanceId": "a9001216-8d6b-4124-a9ba-a7b4a426a81b",
+      "definitionId": "header-pins",
+      "at": [16, 15],
+      "rotation": 0,
+      "rows": 1,
+      "cols": 2,
+      "value": "5V, GND (BTS RIGHT LOGIC)"
+    }
+  ],
+  "customIcs": []
+}

@@ -4,7 +4,7 @@
   uv run --with manifold3d --with trimesh --with numpy --with scipy python scene_check.py
 
 The scene is `current_robot(angle,false)` of body-panels/current-design-p293.scad
-at each operating angle.  Bodies come from the CAD's own placement code
+at -10 (yoke limit), -3, 0, +15 and +20 degrees.  Bodies come from the CAD's own placement code
 (scadtree.py), so a part added to the scene is checked without editing a list.
 Also reported:
   - printed-part modules (they have an STL) that never appear in the scene,
@@ -34,12 +34,15 @@ OUT = HERE / "out" / "scene"
 SRC = HERE / "out" / "src"
 OPENSCAD = os.environ.get("OPENSCAD_BIN", "/snap/bin/openscad-nightly")
 SCENE = "body-panels/current-design-p293.scad"
-ANGLES = (-3, 0, 20)
+ANGLES = (-10, -3, 0, 15, 20)   # full yoke range plus the operating angles
+
+
+SRC_DIGEST = ""
 
 
 def wrapper(angle, sel, disc):
     sel_txt = "undef" if sel is None else json.dumps(list(sel))
-    return (f'use <{SRC / SCENE}>\n$p=[]; $disc={str(disc).lower()}; $sel={sel_txt};\n'
+    return (f'// sources {SRC_DIGEST}\nuse <{SRC / SCENE}>\n$p=[]; $disc={str(disc).lower()}; $sel={sel_txt};\n'
             f'current_robot({angle},false);\n')
 
 
@@ -76,6 +79,12 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
 
     parts, _fids, helpers = scadtree.mirror(CAD, SRC)
+    # Exports are cached only while every instrumented source is unchanged.
+    global SRC_DIGEST
+    digest = hashlib.sha1()
+    for f in sorted(SRC.rglob("*.scad")):
+        digest.update(f.read_bytes())
+    SRC_DIGEST = digest.hexdigest()
     jobs, names, seen_modules = [], {}, set()
     for angle in ANGLES:
         disc = OUT / f"disc_{angle}.scad"
@@ -124,7 +133,7 @@ def main() -> int:
     ball_from = [n for n in basket if n.startswith("p271_basket")]
     hits = {}
     for angle, solids in by_angle.items():
-        if basket:
+        if any(n in solids for n in ball_from):
             hull = trimesh.util.concatenate([solids[n][2] for n in ball_from if n in solids]).convex_hull
             # Balls live above the P2-51 floor plane, (X-85,Z70)..(X278,Z42),
             # and behind the frozen P2-71 front grid at X225.
