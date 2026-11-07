@@ -1,0 +1,2173 @@
+{
+  "note": "ANALYSIS ENVELOPES, NOT MODIFIED CAD OR FULL SCENE GATE. No volume subtraction. 1deg samples, not continuous proof.",
+  "options": [
+    {
+      "name": "A",
+      "B": [
+        260.0,
+        -205.0,
+        220.0
+      ],
+      "local": [
+        30,
+        110
+      ],
+      "direction": 1,
+      "rows": [
+        {
+          "angle": -10,
+          "N": [
+            435.6455321337286,
+            -205.0,
+            154.9567711373341
+          ],
+          "length": 187.30182748553685,
+          "alpha": -20.320075500792857,
+          "moment_arm": 113.5948643386835,
+          "motor_xmin": 249.15101921532062,
+          "face": [
+            255.57540786178075,
+            -155.0,
+            257.005715564091
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 99.58685758651275,
+              "moving_module_concept": 100.0
+            },
+            "bearings": {
+              "drive_package_envelopes": 34.601793271428996,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 51.4478204693782,
+              "moving_module_concept": 29.184556594480686
+            },
+            "screw": {
+              "drive_package_envelopes": 53.651440921129755,
+              "moving_module_concept": 47.13694763183594
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 79.65345139952055,
+              "moving_module_concept": 100.0
+            },
+            "thrust": {
+              "drive_package_envelopes": 49.6340099843441,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 44.36827243198324,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            }
+          },
+          "nut_joint_relative_deg": -10.320075500792857
+        },
+        {
+          "angle": -9,
+          "N": [
+            433.83844137227953,
+            -205.0,
+            155.79004715025735
+          ],
+          "length": 185.31789374938847,
+          "alpha": -20.272499240689537,
+          "moment_arm": 113.74220893724984,
+          "motor_xmin": 249.13470050721662,
+          "face": [
+            255.5446812364745,
+            -155.0,
+            257.00202879188356
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -11.272499240689537
+        },
+        {
+          "angle": -8,
+          "N": [
+            432.0170831678543,
+            -205.0,
+            156.59165816876992
+          ],
+          "length": 183.33165224631188,
+          "alpha": -20.234720743613124,
+          "moment_arm": 113.85915381671737,
+          "motor_xmin": 249.1217477780434,
+          "face": [
+            255.5202845800885,
+            -155.0,
+            256.99908309345795
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -12.234720743613124
+        },
+        {
+          "angle": -7,
+          "N": [
+            430.1820123238059,
+            -205.0,
+            157.36136001439013
+          ],
+          "length": 181.34364212132408,
+          "alpha": -20.20707232725402,
+          "moment_arm": 113.94470925043734,
+          "motor_xmin": 249.11227124349176,
+          "face": [
+            255.5024309765719,
+            -155.0,
+            256.99691707263594
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -13.207072327254021
+        },
+        {
+          "angle": -6,
+          "N": [
+            428.3337878204901,
+            -205.0,
+            158.0989182284796
+          ],
+          "length": 179.35442020334554,
+          "alpha": -20.189898678342328,
+          "moment_arm": 113.9978381400799,
+          "motor_xmin": 249.10638622692503,
+          "face": [
+            255.4913418442707,
+            -155.0,
+            256.9955673241373
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -14.189898678342328
+        },
+        {
+          "angle": -5,
+          "N": [
+            426.4729726449948,
+            -205.0,
+            158.80410814366138
+          ],
+          "length": 177.3645618531331,
+          "alpha": -20.183557248710713,
+          "moment_arm": 114.0174535786067,
+          "motor_xmin": 249.1042134114649,
+          "face": [
+            255.48724724592233,
+            -155.0,
+            256.995068084551
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -15.183557248710713
+        },
+        {
+          "angle": -4,
+          "N": [
+            424.6001336196485,
+            -205.0,
+            159.47671495225603
+          ],
+          "length": 175.37466185448972,
+          "alpha": -20.188418646671384,
+          "moment_arm": 114.00241632894462,
+          "motor_xmin": 249.10587909973248,
+          "face": [
+            255.49038619752676,
+            -155.0,
+            256.9954508467263
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -16.188418646671384
+        },
+        {
+          "angle": -3,
+          "N": [
+            422.71584122936105,
+            -205.0,
+            160.11653377171393
+          ],
+          "length": 173.38533535017578,
+          "alpha": -20.20486702025383,
+          "moment_arm": 113.95153222399199,
+          "motor_xmin": 249.11151548048682,
+          "face": [
+            255.50100697344294,
+            -155.0,
+            256.99674393439227
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 99.66435423903474,
+              "moving_module_concept": 100.0
+            },
+            "bearings": {
+              "drive_package_envelopes": 34.62494673779019,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 44.5219900772433,
+              "moving_module_concept": 29.14774962418465
+            },
+            "screw": {
+              "drive_package_envelopes": 53.72913687378303,
+              "moving_module_concept": 47.13694763183594
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 79.61616469787894,
+              "moving_module_concept": 100.0
+            },
+            "thrust": {
+              "drive_package_envelopes": 49.67559718350598,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 44.36202558045188,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 97.25822643201721
+            }
+          },
+          "nut_joint_relative_deg": -17.20486702025383
+        },
+        {
+          "angle": -2,
+          "N": [
+            420.820669447848,
+            -205.0,
+            160.72336970702463
+          ],
+          "length": 171.3972188238306,
+          "alpha": -20.233300428266123,
+          "moment_arm": 113.86354949566042,
+          "motor_xmin": 249.1212609011712,
+          "face": [
+            255.51936740456316,
+            -155.0,
+            256.99897203362156
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -18.233300428266123
+        },
+        {
+          "angle": -1,
+          "N": [
+            418.9151955627929,
+            -205.0,
+            161.29703791008365
+          ],
+          "length": 169.41097112905905,
+          "alpha": -20.274131194482607,
+          "moment_arm": 113.73715604311037,
+          "motor_xmin": 249.13526014509625,
+          "face": [
+            255.545735165844,
+            -155.0,
+            257.002155677571
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -19.274131194482607
+        },
+        {
+          "angle": 0,
+          "N": [
+            417.0,
+            -205.0,
+            161.8373636359991
+          ],
+          "length": 167.42727456663386,
+          "alpha": -20.3277862395172,
+          "moment_arm": 113.57097665322357,
+          "motor_xmin": 249.1536647116682,
+          "face": [
+            255.58038804882543,
+            -155.0,
+            257.0063106807614
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 99.58167531912977,
+              "moving_module_concept": 99.07514690455125
+            },
+            "bearings": {
+              "drive_package_envelopes": 34.6002471920513,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 41.69709369564942,
+              "moving_module_concept": 29.138469102185127
+            },
+            "screw": {
+              "drive_package_envelopes": 53.646252533012046,
+              "moving_module_concept": 47.13694763183594
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 79.65594579359059,
+              "moving_module_concept": 100.0
+            },
+            "thrust": {
+              "drive_package_envelopes": 49.63123070577092,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 44.368693714178654,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 91.45120323232165
+            }
+          },
+          "nut_joint_relative_deg": -20.3277862395172
+        },
+        {
+          "angle": 1,
+          "N": [
+            415.07566614659055,
+            -205.0,
+            162.3441822963207
+          ],
+          "length": 165.44683601051037,
+          "alpha": -20.394707384106766,
+          "moment_arm": 113.36357018973482,
+          "motor_xmin": 249.17663309769185,
+          "face": [
+            255.6236142140325,
+            -155.0,
+            257.0114475190093
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -21.394707384106766
+        },
+        {
+          "angle": 2,
+          "N": [
+            413.14278017329775,
+            -205.0,
+            162.8173395091747
+          ],
+          "length": 163.47038808302864,
+          "alpha": -20.475351616593986,
+          "moment_arm": 113.1134267713852,
+          "motor_xmin": 249.20433107734166,
+          "face": [
+            255.67571241732452,
+            -155.0,
+            257.0175706510073
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -22.475351616593986
+        },
+        {
+          "angle": 3,
+          "N": [
+            411.2019308559134,
+            -205.0,
+            163.25669114629056
+          ],
+          "length": 161.49869037928414,
+          "alpha": -20.570191316356542,
+          "moment_arm": 112.81896496402682,
+          "motor_xmin": 249.23693197788887,
+          "face": [
+            255.73699220332014,
+            -155.0,
+            257.02467777746955
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -23.570191316356542
+        },
+        {
+          "angle": 4,
+          "N": [
+            409.253709395941,
+            -205.0,
+            163.66210337690353
+          ],
+          "length": 159.53253074016817,
+          "alpha": -20.679714423771802,
+          "moment_arm": 112.47852901688202,
+          "motor_xmin": 249.2746169476954,
+          "face": [
+            255.80777405798287,
+            -155.0,
+            257.0327590337404
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -24.679714423771802
+        },
+        {
+          "angle": 5,
+          "N": [
+            407.29870924051,
+            -205.0,
+            164.03345270852088
+          ],
+          "length": 157.57272657300078,
+          "alpha": -20.80442454602444,
+          "moment_arm": 112.09038617922273,
+          "motor_xmin": 249.31757521231927,
+          "face": [
+            255.88838951128164,
+            -155.0,
+            257.0417961118122
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -25.80442454602444
+        },
+        {
+          "angle": 6,
+          "N": [
+            405.33752590160634,
+            -205.0,
+            164.3706260245388
+          ],
+          "length": 155.62012621798573,
+          "alpha": -20.944840986655063,
+          "moment_arm": 111.65272414066233,
+          "motor_xmin": 249.3660043138275,
+          "face": [
+            255.97918117955277,
+            -155.0,
+            257.05176130783985
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -26.944840986655063
+        },
+        {
+          "angle": 7,
+          "N": [
+            403.37075677467345,
+            -205.0,
+            164.67352061869894
+          ],
+          "length": 153.67561035789674,
+          "alpha": -21.101498685203644,
+          "moment_arm": 111.1636486461364,
+          "motor_xmin": 249.42011032755354,
+          "face": [
+            256.08050273575896,
+            -155.0,
+            257.06261649149457
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -28.101498685203644
+        },
+        {
+          "angle": 8,
+          "N": [
+            401.3990009566399,
+            -205.0,
+            164.9420442263738
+          ],
+          "length": 151.7400934674367,
+          "alpha": -21.274948051622438,
+          "moment_arm": 110.6211813455625,
+          "motor_xmin": 249.48010804958065,
+          "face": [
+            256.19271879428584,
+            -155.0,
+            257.0743119938943
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -29.274948051622438
+        },
+        {
+          "angle": 9,
+          "N": [
+            399.42285906342875,
+            -205.0,
+            165.1761150526712
+          ],
+          "length": 149.8145252975781,
+          "alpha": -21.4657546783183,
+          "moment_arm": 110.0232579481959,
+          "motor_xmin": 249.54622114715494,
+          "face": [
+            256.3162046952187,
+            -155.0,
+            257.0867854114167
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -30.4657546783183
+        },
+        {
+          "angle": 10,
+          "N": [
+            397.4429330470039,
+            -205.0,
+            165.37566179734992
+          ],
+          "length": 147.89989238887463,
+          "alpha": -21.674498910739512,
+          "moment_arm": 109.36772676289813,
+          "motor_xmin": 249.61868226303778,
+          "face": [
+            256.4513461712168,
+            -155.0,
+            257.09996032347556
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -31.674498910739512
+        },
+        {
+          "angle": 11,
+          "N": [
+            395.45982601201,
+            -205.0,
+            165.54062367653853
+          ],
+          "length": 145.99721960621176,
+          "alpha": -21.90177525535849,
+          "moment_arm": 108.6523477179557,
+          "motor_xmin": 249.69773306349083,
+          "face": [
+            256.59853887815973,
+            -155.0,
+            257.11374492336506
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -32.90177525535849
+        },
+        {
+          "angle": 12,
+          "N": [
+            393.4741420320606,
+            -205.0,
+            165.6709504412505
+          ],
+          "length": 144.107571685709,
+          "alpha": -22.148191601736396,
+          "moment_arm": 107.8747919677483,
+          "motor_xmin": 249.7836242181441,
+          "face": [
+            256.7581877686903,
+            -155.0,
+            257.12803056259423
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -34.1481916017364
+        },
+        {
+          "angle": 13,
+          "N": [
+            391.4864859657319,
+            -205.0,
+            165.76660239269097
+          ],
+          "length": 142.23205478248948,
+          "alpha": -22.414368233114164,
+          "moment_arm": 107.03264220845404,
+          "motor_xmin": 249.87661529843902,
+          "face": [
+            256.93070628566096,
+            -155.0,
+            257.1426902107954
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -35.41436823311416
+        },
+        {
+          "angle": 14,
+          "N": [
+            389.49746327231645,
+            -205.0,
+            165.82755039434878
+          ],
+          "length": 140.37181800575843,
+          "alpha": -22.700936597697158,
+          "moment_arm": 106.12339384102228,
+          "motor_xmin": 249.97697457966675,
+          "face": [
+            257.11651535033224,
+            -155.0,
+            257.1575768353526
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -36.70093659769716
+        },
+        {
+          "angle": 15,
+          "N": [
+            387.5076798273948,
+            -205.0,
+            165.85377588087226
+          ],
+          "length": 138.52805492507366,
+          "alpha": -23.008537810533646,
+          "moment_arm": 105.14445713671866,
+          "motor_xmin": 250.0849787298603,
+          "face": [
+            257.3160421180358,
+            -155.0,
+            257.17252170740966
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 97.81584474258655,
+              "moving_module_concept": 70.36417089772999
+            },
+            "bearings": {
+              "drive_package_envelopes": 34.089736334276,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 31.012034458944527,
+              "moving_module_concept": 29.136947631835938
+            },
+            "screw": {
+              "drive_package_envelopes": 51.89690218647793,
+              "moving_module_concept": 28.34109701928719
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 80.51399773437717,
+              "moving_module_concept": 100.0
+            },
+            "thrust": {
+              "drive_package_envelopes": 48.69628471023954,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 44.53926043620479,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 63.768829513204935
+            }
+          },
+          "nut_joint_relative_deg": -38.008537810533646
+        },
+        {
+          "angle": 16,
+          "N": [
+            385.51774173827965,
+            -205.0,
+            165.84527086372418
+          ],
+          "length": 136.7020050288249,
+          "alpha": -23.337820853702812,
+          "moment_arm": 104.09316057842305,
+          "motor_xmin": 250.20091236697039,
+          "face": [
+            257.5297184719712,
+            -155.0,
+            257.1873326439566
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -39.33782085370281
+        },
+        {
+          "angle": 17,
+          "N": [
+            383.52825515939,
+            -205.0,
+            165.8020379336151
+          ],
+          "length": 134.89495511275678,
+          "alpha": -23.68944044050596,
+          "moment_arm": 102.96675556922747,
+          "motor_xmin": 250.32506746389663,
+          "face": [
+            257.7579792239399,
+            -155.0,
+            257.20179219929753
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -40.68944044050596
+        },
+        {
+          "angle": 18,
+          "N": [
+            381.5398261076104,
+            -205.0,
+            165.72409025971444
+          ],
+          "length": 133.10824057286536,
+          "alpha": -24.064054507605935,
+          "moment_arm": 101.76242271827465,
+          "motor_xmin": 250.45774257911458,
+          "face": [
+            258.00125998926035,
+            -155.0,
+            257.2156558234497
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -42.06405450760593
+        },
+        {
+          "angle": 19,
+          "N": [
+            379.5530602776923,
+            -205.0,
+            165.6114515856387
+          ],
+          "length": 131.34324657317882,
+          "alpha": -24.46232129771411,
+          "moment_arm": 100.47727993159016,
+          "motor_xmin": 250.5992418888979,
+          "face": [
+            258.2599947019866,
+            -155.0,
+            257.22865000994375
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -43.46232129771411
+        },
+        {
+          "angle": 20,
+          "N": [
+            377.5685628577537,
+            -205.0,
+            165.46415622221912
+          ],
+          "length": 129.6014090548097,
+          "alpha": -24.884895994640758,
+          "moment_arm": 99.10839255209288,
+          "motor_xmin": 250.74987399557986,
+          "face": [
+            258.5346127360535,
+            -155.0,
+            257.2404704611349
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 96.62593559147278,
+              "moving_module_concept": 61.626569617478175
+            },
+            "bearings": {
+              "drive_package_envelopes": 33.764471575532134,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 29.254385294351728,
+              "moving_module_concept": 29.136947631835938
+            },
+            "screw": {
+              "drive_package_envelopes": 50.68179472445592,
+              "moving_module_concept": 15.277042107037145
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 81.10293699364681,
+              "moving_module_concept": 100.0
+            },
+            "thrust": {
+              "drive_package_envelopes": 48.07863521133941,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 44.68691507532512,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 55.2831723097138
+            }
+          },
+          "nut_joint_relative_deg": -44.88489599464076
+        }
+      ],
+      "C57_C63_hits": [],
+      "minimum_length_budget_mm": 75,
+      "screw_blank_mm": 262.3018274855368
+    },
+    {
+      "name": "B",
+      "B": [
+        280.0,
+        -205.0,
+        265.0
+      ],
+      "local": [
+        30,
+        120
+      ],
+      "direction": -1,
+      "rows": [
+        {
+          "angle": -10,
+          "N": [
+            437.38201391039786,
+            -205.0,
+            164.80484866745618
+          ],
+          "length": 186.56946870547716,
+          "alpha": -32.482322959456155,
+          "moment_arm": 122.3516578956948,
+          "motor_xmin": 248.2291654323745,
+          "face": [
+            331.55386811670115,
+            -155.0,
+            271.49605127795223
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            },
+            "bearings": {
+              "drive_package_envelopes": 70.51432462159104,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 58.37834638772715,
+              "moving_module_concept": 29.376574742353284
+            },
+            "screw": {
+              "drive_package_envelopes": 71.54642852918934,
+              "moving_module_concept": 47.13694763183594
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 72.96533479067995,
+              "moving_module_concept": 100.0
+            },
+            "thrust": {
+              "drive_package_envelopes": 77.95173285375833,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 81.89746727073792,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            }
+          },
+          "nut_joint_relative_deg": -22.482322959456155
+        },
+        {
+          "angle": -9,
+          "N": [
+            435.4027860226818,
+            -205.0,
+            165.66693055620874
+          ],
+          "length": 184.4372104233213,
+          "alpha": -32.586611347231525,
+          "moment_arm": 121.97879747141954,
+          "motor_xmin": 248.2976796918464,
+          "face": [
+            331.56560666512024,
+            -155.0,
+            271.40220346897127
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -23.586611347231525
+        },
+        {
+          "angle": -8,
+          "N": [
+            433.40881417745493,
+            -205.0,
+            166.4943388561856
+          ],
+          "length": 182.3119018185946,
+          "alpha": -32.705012346262876,
+          "moment_arm": 121.55499069503426,
+          "motor_xmin": 248.37559280228146,
+          "face": [
+            331.57872662561596,
+            -155.0,
+            271.2956302051481
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -24.705012346262876
+        },
+        {
+          "angle": -7,
+          "N": [
+            431.40070575785734,
+            -205.0,
+            167.28682153080334
+          ],
+          "length": 180.19444761293389,
+          "alpha": -32.83797447249836,
+          "moment_arm": 121.07844486627334,
+          "motor_xmin": 248.46324874586233,
+          "face": [
+            331.5931975375727,
+            -155.0,
+            271.1759183810189
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -25.83797447249836
+        },
+        {
+          "angle": -6,
+          "N": [
+            429.3790724531666,
+            -205.0,
+            168.04413718216233
+          ],
+          "length": 178.085784445923,
+          "alpha": -32.985957926663716,
+          "moment_arm": 120.54729492873307,
+          "motor_xmin": 248.5610072531669,
+          "face": [
+            331.60897658755516,
+            -155.0,
+            271.0426430959622
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -26.985957926663716
+        },
+        {
+          "angle": -5,
+          "N": [
+            427.34453007247134,
+            -205.0,
+            168.76605512457883
+          ],
+          "length": 175.9868821491051,
+          "alpha": -33.149434315405315,
+          "moment_arm": 119.95960224186565,
+          "motor_xmin": 248.66924424256402,
+          "face": [
+            331.62600737296043,
+            -155.0,
+            270.89536790429855
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -28.149434315405315
+        },
+        {
+          "angle": -4,
+          "N": [
+            425.29769835708976,
+            -205.0,
+            169.45235545485428
+          ],
+          "length": 173.89874503858087,
+          "alpha": -33.32888626787385,
+          "moment_arm": 119.31335369030297,
+          "motor_xmin": 248.78835220990652,
+          "face": [
+            331.6442185817734,
+            -155.0,
+            270.7336451824308
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -29.32888626787385
+        },
+        {
+          "angle": -3,
+          "N": [
+            423.2392007917905,
+            -205.0,
+            170.10282911925967
+          ],
+          "length": 171.82241321969408,
+          "alpha": -33.5248069335897,
+          "moment_arm": 118.60646120220758,
+          "motor_xmin": 248.91874055509322,
+          "face": [
+            331.66352258769643,
+            -155.0,
+            270.55701663040327
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            },
+            "bearings": {
+              "drive_package_envelopes": 70.27189306271481,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 52.007992203984095,
+              "moving_module_concept": 29.328609075468627
+            },
+            "screw": {
+              "drive_package_envelopes": 70.0618701644606,
+              "moving_module_concept": 47.13694763183594
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 72.15620216162515,
+              "moving_module_concept": 100.0
+            },
+            "thrust": {
+              "drive_package_envelopes": 77.52948099709626,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 81.98386045645347,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            }
+          },
+          "nut_joint_relative_deg": -30.5248069335897
+        },
+        {
+          "angle": -2,
+          "N": [
+            421.169664414873,
+            -205.0,
+            170.7172779772156
+          ],
+          "length": 169.75896389597074,
+          "alpha": -33.7376993461291,
+          "moment_arm": 117.83676175778352,
+          "motor_xmin": 249.0608358300915,
+          "face": [
+            331.6838139610765,
+            -155.0,
+            270.36501392699324
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -31.737699346129098
+        },
+        {
+          "angle": -1,
+          "N": [
+            419.0897196271658,
+            -205.0,
+            171.29551486164758
+          ],
+          "length": 167.7095126729766,
+          "alpha": -33.968075635840066,
+          "moment_arm": 117.0020179792369,
+          "motor_xmin": 249.21508189085128,
+          "face": [
+            331.70496789749103,
+            -155.0,
+            270.15715955923633
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -32.968075635840066
+        },
+        {
+          "angle": 0,
+          "N": [
+            417.0,
+            -205.0,
+            171.8373636359991
+          ],
+          "length": 165.67521484606883,
+          "alpha": -34.216456073458716,
+          "moment_arm": 116.09991940430814,
+          "motor_xmin": 249.38193993320016,
+          "face": [
+            331.72683856761245,
+            -155.0,
+            269.9329678490908
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            },
+            "bearings": {
+              "drive_package_envelopes": 70.11602196015575,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 49.28974536479555,
+              "moving_module_concept": 29.292073885707378
+            },
+            "screw": {
+              "drive_package_envelopes": 69.0843316461713,
+              "moving_module_concept": 47.13694763183594
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 71.62668233419366,
+              "moving_module_concept": 100.0
+            },
+            "thrust": {
+              "drive_package_envelopes": 77.25457048480824,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 82.04485153280334,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            }
+          },
+          "nut_joint_relative_deg": -34.216456073458716
+        },
+        {
+          "angle": 1,
+          "N": [
+            414.9011420822177,
+            -205.0,
+            172.34265924788457
+          ],
+          "length": 163.65726665913834,
+          "alpha": -34.48336792518156,
+          "moment_arm": 115.12808455689648,
+          "motor_xmin": 249.5618883902979,
+          "face": [
+            331.74925739409287,
+            -155.0,
+            269.6919462017295
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -35.48336792518156
+        },
+        {
+          "angle": 2,
+          "N": [
+            412.7937852062728,
+            -205.0,
+            172.81124777936566
+          ],
+          "length": 161.6569065193542,
+          "alpha": -34.76934409849579,
+          "moment_arm": 114.08406394012052,
+          "motor_xmin": 249.7554226665699,
+          "face": [
+            331.7720312637417,
+            -155.0,
+            269.4335966016482
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -36.76934409849579
+        },
+        {
+          "angle": 3,
+          "N": [
+            410.67857129348397,
+            -205.0,
+            173.2429864938363
+          ],
+          "length": 159.67541615062876,
+          "alpha": -35.074921556924274,
+          "moment_arm": 112.96534408919115,
+          "motor_xmin": 249.96305468026355,
+          "face": [
+            331.7949406862527,
+            -155.0,
+            269.157417384334
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -38.074921556924274
+        },
+        {
+          "angle": 4,
+          "N": [
+            408.5561446584997,
+            -205.0,
+            173.63774387950178
+          ],
+          "length": 157.71412166602144,
+          "alpha": -35.40063948086413,
+          "moment_arm": 111.7693528334319,
+          "motor_xmin": 250.18531218392903,
+          "face": [
+            331.81773791421443,
+            -155.0,
+            268.86290531255753
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -39.40063948086413
+        },
+        {
+          "angle": 5,
+          "N": [
+            406.4271518130334,
+            -205.0,
+            173.99539968943833
+          ],
+          "length": 155.77439453658897,
+          "alpha": -35.74703715095967,
+          "moment_arm": 110.49346592828535,
+          "motor_xmin": 250.42273782927901,
+          "face": [
+            331.84014504314763,
+            -155.0,
+            268.5495579873301
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -40.74703715095967
+        },
+        {
+          "angle": 6,
+          "N": [
+            404.2922412689298,
+            -205.0,
+            174.31584497822155
+          ],
+          "length": 153.85765243129052,
+          "alpha": -36.11465153003243,
+          "moment_arm": 109.13501522872812,
+          "motor_xmin": 250.67588794011516,
+          "face": [
+            331.86185211487754,
+            -155.0,
+            268.21687662408317
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -42.11465153003243
+        },
+        {
+          "angle": 7,
+          "N": [
+            402.15206334062196,
+            -205.0,
+            174.59898213511218
+          ],
+          "length": 151.965359899482,
+          "alpha": -36.504014519596666,
+          "moment_arm": 107.69129858456768,
+          "motor_xmin": 250.94533095443796,
+          "face": [
+            331.88251525268976,
+            -155.0,
+            267.8643692245266
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -43.504014519596666
+        },
+        {
+          "angle": 8,
+          "N": [
+            400.0072699470393,
+            -205.0,
+            174.84472491378952
+          ],
+          "length": 150.09902886431956,
+          "alpha": -36.9156498675267,
+          "moment_arm": 106.15959164490319,
+          "motor_xmin": 251.23164549461094,
+          "face": [
+            331.9017548624248,
+            -155.0,
+            267.49155417375727
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -44.9156498675267
+        },
+        {
+          "angle": 9,
+          "N": [
+            397.85851441302646,
+            -205.0,
+            175.0529984586226
+          ],
+          "length": 148.26021889208891,
+          "alpha": -37.3500697046446,
+          "moment_arm": 104.53716176271566,
+          "motor_xmin": 251.53541802270848,
+          "face": [
+            331.91915393991417,
+            -155.0,
+            267.0979642903288
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -46.3500697046446
+        },
+        {
+          "angle": 10,
+          "N": [
+            395.7064512703346,
+            -205.0,
+            175.223739327472
+          ],
+          "length": 146.45053719913767,
+          "alpha": -37.80777069000161,
+          "moment_arm": 102.82128419011008,
+          "motor_xmin": 251.8572400371324,
+          "face": [
+            331.93425653188604,
+            -155.0,
+            266.6831513539354
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -47.80777069000161
+        },
+        {
+          "angle": 11,
+          "N": [
+            393.55173605824456,
+            -205.0,
+            175.35689551101515
+          ],
+          "length": 144.67163835480778,
+          "alpha": -38.28922974759123,
+          "moment_arm": 101.00926074898204,
+          "motor_xmin": 252.19770476647687,
+          "face": [
+            331.9465664045678,
+            -155.0,
+            266.24669113088316
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -49.28922974759123
+        },
+        {
+          "angle": 12,
+          "N": [
+            391.39502512388304,
+            -205.0,
+            175.4524264485886
+          ],
+          "length": 142.92522363563393,
+          "alpha": -38.794899381316114,
+          "moment_arm": 99.09844114953503,
+          "motor_xmin": 252.55740331773123,
+          "face": [
+            331.9555459815407,
+            -155.0,
+            265.7881889113713
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -50.794899381316114
+        },
+        {
+          "angle": 13,
+          "N": [
+            389.23697542229326,
+            -205.0,
+            175.5103030405433
+          ],
+          "length": 141.21303998323276,
+          "alpha": -39.3252025603995,
+          "moment_arm": 97.08624710870612,
+          "motor_xmin": 252.93692023852583,
+          "face": [
+            331.96061561973477,
+            -155.0,
+            265.30728556454204
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -52.3252025603995
+        },
+        {
+          "angle": 14,
+          "N": [
+            387.0782443163198,
+            -205.0,
+            175.53050765710873
+          ],
+          "length": 139.53687851589683,
+          "alpha": -39.88052717424838,
+          "moment_arm": 94.97019939066666,
+          "motor_xmin": 253.33682845759517,
+          "face": [
+            331.96115329952886,
+            -155.0,
+            264.80366410704715
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -53.88052717424838
+        },
+        {
+          "angle": 15,
+          "N": [
+            384.91948937636954,
+            -205.0,
+            175.51303414376295
+          ],
+          "length": 137.89857254211682,
+          "alpha": -40.46122006418288,
+          "moment_arm": 92.74794785064292,
+          "motor_xmin": 253.7576835742829,
+          "face": [
+            331.95649481136843,
+            -155.0,
+            264.2770567683138
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            },
+            "bearings": {
+              "drive_package_envelopes": 68.8982985736189,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 36.625688765015006,
+              "moving_module_concept": 29.136947631835938
+            },
+            "screw": {
+              "drive_package_envelopes": 59.81892587224052,
+              "moving_module_concept": 22.927572519681508
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 67.08768508245032,
+              "moving_module_concept": 87.5468766739649
+            },
+            "thrust": {
+              "drive_package_envelopes": 74.92902824592734,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 82.72525300096355,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            }
+          },
+          "nut_joint_relative_deg": -55.46122006418288
+        },
+        {
+          "angle": 16,
+          "N": [
+            382.7613681801097,
+            -205.0,
+            175.45788782310737
+          ],
+          "length": 136.29999502328414,
+          "alpha": -41.06758064956654,
+          "moment_arm": 90.4173045098874,
+          "motor_xmin": 254.20001747710796,
+          "face": [
+            331.94593452671467,
+            -155.0,
+            263.72725252061696
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -57.06758064956654
+        },
+        {
+          "angle": 17,
+          "N": [
+            380.60453811216263,
+            -205.0,
+            175.3650854932455
+          ],
+          "length": 134.7430554329045,
+          "alpha": -41.69985417778209,
+          "moment_arm": 87.97627962244978,
+          "motor_xmin": 254.6643312834655,
+          "face": [
+            331.92872684496587,
+            -155.0,
+            263.154105024407
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -58.69985417778209
+        },
+        {
+          "angle": 18,
+          "N": [
+            378.44965616386094,
+            -205.0,
+            175.23465542266598
+          ],
+          "length": 133.22969596103547,
+          "alpha": -42.35822464121463,
+          "moment_arm": 85.4231206124777,
+          "motor_xmin": 255.15108760774655,
+          "face": [
+            331.90408840966404,
+            -155.0,
+            262.5575409191186
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -60.35822464121463
+        },
+        {
+          "angle": 19,
+          "N": [
+            376.2973787331207,
+            -205.0,
+            175.06663734163186
+          ],
+          "length": 131.76188701559965,
+          "alpha": -43.042807419865674,
+          "moment_arm": 82.75635366362289,
+          "motor_xmin": 255.6607021837116,
+          "face": [
+            331.8712011861466,
+            -155.0,
+            261.93756836708144
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {},
+            "bearings": {},
+            "nut": {},
+            "screw": {},
+            "belt_keepout": {},
+            "thrust": {},
+            "rocking_joint": {},
+            "cable_keepout": {}
+          },
+          "nut_joint_relative_deg": -62.042807419865674
+        },
+        {
+          "angle": 20,
+          "N": [
+            374.148361424497,
+            -205.0,
+            174.8610824300782
+          ],
+          "length": 130.34162197699885,
+          "alpha": -43.75364172526334,
+          "moment_arm": 79.97482762992212,
+          "motor_xmin": 256.1935348889517,
+          "face": [
+            331.82921648814573,
+            -155.0,
+            261.2942857335024
+          ],
+          "hits": [],
+          "gaps": {
+            "motor": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            },
+            "bearings": {
+              "drive_package_envelopes": 68.43397935599772,
+              "moving_module_concept": 100.0
+            },
+            "nut": {
+              "drive_package_envelopes": 32.31235287827559,
+              "moving_module_concept": 29.136947631835938
+            },
+            "screw": {
+              "drive_package_envelopes": 55.377133693787904,
+              "moving_module_concept": 10.893243537957511
+            },
+            "belt_keepout": {
+              "drive_package_envelopes": 64.88398801209318,
+              "moving_module_concept": 80.08291165996573
+            },
+            "thrust": {
+              "drive_package_envelopes": 73.8057198619152,
+              "moving_module_concept": 100.0
+            },
+            "rocking_joint": {
+              "drive_package_envelopes": 83.17489130498444,
+              "moving_module_concept": 100.0
+            },
+            "cable_keepout": {
+              "drive_package_envelopes": 100.0,
+              "moving_module_concept": 100.0
+            }
+          },
+          "nut_joint_relative_deg": -63.75364172526334
+        }
+      ],
+      "C57_C63_hits": [],
+      "minimum_length_budget_mm": 98,
+      "screw_blank_mm": 241.56946870547716
+    }
+  ],
+  "encoder_envelope_checks": [
+    {
+      "angle": -10,
+      "target": "moving_module_concept",
+      "mm3": 0.0
+    },
+    {
+      "angle": -10,
+      "target": "drive_package_envelopes",
+      "mm3": 0.0
+    },
+    {
+      "angle": -3,
+      "target": "moving_module_concept",
+      "mm3": 0.0
+    },
+    {
+      "angle": -3,
+      "target": "drive_package_envelopes",
+      "mm3": 0.0
+    },
+    {
+      "angle": 0,
+      "target": "moving_module_concept",
+      "mm3": 0.0
+    },
+    {
+      "angle": 0,
+      "target": "drive_package_envelopes",
+      "mm3": 0.0
+    },
+    {
+      "angle": 15,
+      "target": "moving_module_concept",
+      "mm3": 0.0
+    },
+    {
+      "angle": 15,
+      "target": "drive_package_envelopes",
+      "mm3": 0.0
+    },
+    {
+      "angle": 20,
+      "target": "moving_module_concept",
+      "mm3": 0.0
+    },
+    {
+      "angle": 20,
+      "target": "drive_package_envelopes",
+      "mm3": 0.0
+    }
+  ],
+  "actual_pivot_mm": [
+    387,
+    0,
+    51.837363635999125
+  ],
+  "targets": [
+    "arch_crossbar_center",
+    "drive_package_envelopes",
+    "f_side_front_concept",
+    "joint_sleeve_x",
+    "joint_sleeve_x[side=-1]",
+    "joint_sleeve_x[side=1]",
+    "moving_module_concept",
+    "p271_basket_current",
+    "p293d_crossbar_end[side=-1]",
+    "p293d_crossbar_end[side=1]",
+    "p293d_crown[side=-1]",
+    "p293d_crown[side=1]",
+    "p293d_foot[side=-1]",
+    "p293d_foot[side=1]",
+    "p293d_knee[side=-1]",
+    "p293d_knee[side=1]",
+    "p293d_lidar_half[side=-1]",
+    "p293d_lidar_half[side=1]",
+    "p293d_mast[side=-1]",
+    "p293d_mast[side=1]",
+    "p293d_mast_cap[side=-1]",
+    "p293d_mast_cap[side=1]",
+    "p293d_oak_mount"
+  ],
+  "git_head": "9be0e03c",
+  "motor_nominal": "D37 x (17 gearbox +70 can), shaft projection15 provisional",
+  "bearing_box_mm": [
+    32,
+    60,
+    14
+  ],
+  "nut_and_fork_box_mm": [
+    32,
+    44,
+    40
+  ]
+}

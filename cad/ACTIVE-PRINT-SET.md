@@ -33,6 +33,77 @@
 Για κάθε φέρον print >4 h προηγείται Cut coupon στο Bambu Studio. Η οδηγία
 draft 2 walls/10% αφορά μόνο μη φέροντα δοκιμαστικά μέρη, **όχι** foot,
 knee ή clevis. FIT-CHECK δεν είναι έγκριση πλήρους φέροντος print.
+
+### P2-93g — υποχρεωτικό physical proof-load foot+knee πριν το RELEASED
+
+**Tilt: FIT-CHECK — ΑΠΑΓΟΡΕΥΣΗ ΛΕΙΤΟΥΡΓΙΑΣ μέχρι να εγκατασταθούν και
+να επαληθευτούν τα νέα stops/strikers του P2-93h.** Τα παλιά upper stops
+αποσύρθηκαν από το `current_robot` με ρητή έγκριση. Τα παλιά AS5600
+pod/cover/magnet cap παραμένουν γνωστά ανοικτά θέματα του P2-93h.
+Νέα candidate solids: knee installed |Y|221,6, όριο |Y|≤240 στη ζώνη
+X220–420. [P2-93g debug / hardware / assembly](arch-tilt-p293/P2-93g-debug.md),
+[LC1/LC2, πραγματικές μάζες/τομές και κενά](arch-tilt-p293/P2-93g-solid-tables.md).
+Δεν υπάρχει φυσικό proof-load PASS και κανένα νέο STL δεν είναι RELEASED.
+
+| STL στο arch-tilt-p293/stl-candidate-p293g/ | Ποσότητα | Κατάσταση |
+|---|---:|---|
+| p293g_foot.stl | 2 mirrored L/R | **FIT-CHECK — συμπαγή**, steel sleeves/recessed pin heads |
+| p293g_crown.stl | 2 mirrored L/R | **FIT-CHECK — συμπαγή**, class10.9 button-head pins /inboard12×26mm lug /physical Tr8 relief |
+| p293g_crossbar_end.stl | 2 mirrored L/R | **FIT-CHECK**, νέο end length/bolt |
+| p293g_console_inboard.stl | 1 | **FIT-CHECK — συμπαγές** |
+| p293g_console_outboard.stl | 1 | **FIT-CHECK — συμπαγές** |
+| p293g_cradle.stl | 1 | **FIT-CHECK — συμπαγές** |
+| p293g_float_cap.stl | 1 | **FIT-CHECK** |
+| p293g_nut_trunnion.stl | 1 | **FIT-CHECK — συμπαγές** |
+| p293g_nut_arm.stl | 1 | **FIT-CHECK — συμπαγές** |
+
+Στις exported print coordinates: foot/end-beam **MirrorY** για το άλλο
+χέρι· crown **MirrorZ και Drop-to-bed**, επειδή έχει εξαχθεί rotatedXZ-on-bed.
+
+**Παλιά p293d_foot / p293d_crown / p293d_crossbar_end: ΜΗΝ ΤΥΠΩΣΕΙΣ**
+για τη νέα διάταξη. Το knee STL παραμένει ίδιο και **FIT-CHECK, συμπαγές**,
+μόνο installed pose±221,6. Τα δύο p293e templates μένουν αμετάβλητα
+**FIT-CHECK**, ελέγχουν ίδιες base holes και X271 datum, όχι όλες τις νέες
+τοπικές επιφάνειες του foot. Το ιστορικό inventory παρακάτω δεν αναιρεί
+αυτές τις νεότερες αντικαταστάσεις.
+
+Το analytical screening χρησιμοποιεί χωριστές LC1 actuator / LC2 hard-stop,
+με όρια10/5 MPa και περιθώριο≥1,0· **δεν** δίνει μόνο του RELEASED.
+Η παλιά άθροιση8 N·m + equivalent Tr8 και ο στόχος1,5 έχουν αποσυρθεί.
+Αποτελέσματα: [διορθωμένο preflight](arch-tilt-p293/P2-93g-corrected-load-cases.md).
+
+Foot και knee τυπώνονται **συμπαγή** και βιδώνονται στο πραγματικό σασί,
+με το τελικό hardware/ροδέλες/ροπές σύσφιγξης καταγεγραμμένα. Για το
+proof fixture επιτρέπεται ελεγχόμενη πλήρης φέρουσα εκτύπωση αφού κλείσουν
+fit/coupon και screening, παραμένει όμως **FIT-CHECK**, όχι άδεια χρήσης
+στο ρομπότ. Μόνο ο υπολογισμός δεν παρακάμπτει κανένα άλλο gate.
+
+- Εφαρμογή **150 N στο B=[260,−205,220] για24 ώρες**, μέσω της τελικής
+  κονσόλας ή άκαμπτου ισοδύναμου fixture. Κατεύθυνση παράλληλη στον Tr8
+  στη δυσμενέστερη γωνία/φορά του διορθωμένου LC1· καταγραφή της γωνίας
+  και της φοράς, όχι αυθαίρετη κατακόρυφη ανάρτηση.
+- Αρχική μέτρηση χωρίς φορτίο, **βέλος στην αρχή υπό150 N**, βέλος στο
+  τέλος των24 h υπό το ίδιο150 N, και residual μετά την εκφόρτιση.
+  Σταθερό datum πάνω στο σασί· καταγράφονται δX/δY/δZ ή ρητά η μετρούμενη
+  συνιστώσα, ακρίβεια οργάνου, θερμοκρασία, timestamps και φωτογραφίες.
+- Ασφαλισμένο σασί/fixture, μηχανική συγκράτηση του φορτίου σε αστοχία,
+  ζώνη αποκλεισμού, μοτέρ εκτός τροφοδοσίας. Δεν χρησιμοποιείται κινούμενο
+  ρομπότ ως δοκιμαστήριο. Σταμάτημα σε ρωγμή, ολίσθηση ή προοδευτική αστάθεια.
+- Καταγραφή **Δβέλους=|δ24h|−|δαρχής|**, στην ίδια loaded συνιστώσα:
+  αποδεκτή αύξηση στις24 h
+  **≤20% του αρχικού βέλους υπό φορτίο**. Residual μετά την εκφόρτιση
+  **≤0,5 mm**. Καμία ρωγμή, λεύκανση ή ολίσθηση, και καμία
+  washer indentation **>0,2 mm**. Καταγράφεται επίσης χαλάρωση βιδών.
+
+**RELEASED μόνο μετά καταγεγραμμένο PASS της φυσικής δοκιμής**, μαζί με
+coupon/installed-pose/raw scene gates που εξακολουθούν να ισχύουν.
+Η πίσω διαγώνιος προς X65 **απορρίφθηκε** και δεν αποτελεί ενεργό
+στήριγμα ή μέρος του proof fixture. Η ανάλυσή της διατηρείται ως ιστορικό
+αρνητικό αποτέλεσμα. Το PASS άλλης διάταξης δεν μεταφέρεται στη σημερινή.
+Το150 N στο B ελέγχει foot+knee με τη διαδρομή του actuator· δεν
+πιστοποιεί από μόνο του τις τοπικές παρειές των hard stops/crown ή όλο
+το KFL08/Tr8 bearing stack. Καμία δοκιμή24 h δεν έχει εκτελεστεί ακόμη.
+
 Έλεγχος P2-93e: 86 global collisions +3 contained, μόνο έξι F-concept
 τομές στην αψίδα, 9,00 mm drive gap σε −10/−3/0/15/20°. Καμία εξαίρεση
 όγκου. Hardware, όρια και coupon: [P2-93e log](arch-tilt-p293/P2-93e-debug.md).

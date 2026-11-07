@@ -1,0 +1,170 @@
+{
+  "status": "SURROGATE_DETAIL_ENVELOPES_NOT_CAD",
+  "selected": [
+    {
+      "side": -1,
+      "centre_length_mm": 288.9740472776059,
+      "upper_point_mm": [
+        320.0,
+        -204.0,
+        195.0
+      ],
+      "splice_station_mm_from_R": 224.9740472776059,
+      "shaft_piece_lengths_mm": [
+        204.77404727760592,
+        43.8
+      ],
+      "beam_sleeve_raw_intersection_mm3": 0.0,
+      "top_socket_vs_brace_mm3": 0.0,
+      "arch_gap_mm": 1.7116916943712155,
+      "basket_gap_mm": 0.8718230823909738
+    },
+    {
+      "side": 1,
+      "centre_length_mm": 288.9740472776059,
+      "upper_point_mm": [
+        320.0,
+        204.0,
+        195.0
+      ],
+      "splice_station_mm_from_R": 224.9740472776059,
+      "shaft_piece_lengths_mm": [
+        204.77404727760592,
+        43.8
+      ],
+      "beam_sleeve_raw_intersection_mm3": 0.0,
+      "top_socket_vs_brace_mm3": 0.0,
+      "arch_gap_mm": 1.7116916943712155,
+      "basket_gap_mm": 26.799125881367107
+    }
+  ],
+  "raw_hits": [
+    {
+      "object": "sleeve_-1",
+      "target": "p293d_knee[side=-1]",
+      "angle": 0,
+      "mm3": 202.64692609410622
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "upper_stop[side=-1]",
+      "angle": 0,
+      "mm3": 3419.5773650797382
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 17,
+      "GT2_centres": 57,
+      "mm3": 0.08058254205439241
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 17,
+      "GT2_centres": 60,
+      "mm3": 0.08058254205439241
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 17,
+      "GT2_centres": 63,
+      "mm3": 0.08058254205439241
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 18,
+      "GT2_centres": 57,
+      "mm3": 0.6333051552477054
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 18,
+      "GT2_centres": 60,
+      "mm3": 0.6333051552477054
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 18,
+      "GT2_centres": 63,
+      "mm3": 0.6333051552477054
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 19,
+      "GT2_centres": 57,
+      "mm3": 2.052833707715627
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 19,
+      "GT2_centres": 60,
+      "mm3": 2.052833707715627
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 19,
+      "GT2_centres": 63,
+      "mm3": 2.052833707715627
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 20,
+      "GT2_centres": 57,
+      "mm3": 4.756285176550758
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 20,
+      "GT2_centres": 60,
+      "mm3": 4.756285176550758
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "thrust",
+      "angle": 20,
+      "GT2_centres": 63,
+      "mm3": 4.756285176550758
+    },
+    {
+      "object": "brace_-1",
+      "target": "upper_stop[side=-1]",
+      "angle": 0,
+      "mm3": 8228.408444776762
+    },
+    {
+      "object": "sleeve_1",
+      "target": "p293d_knee[side=1]",
+      "angle": 0,
+      "mm3": 202.64692609410318
+    },
+    {
+      "object": "sleeve_1",
+      "target": "upper_stop[side=1]",
+      "angle": 0,
+      "mm3": 4006.0691381147635
+    },
+    {
+      "object": "brace_1",
+      "target": "upper_stop[side=1]",
+      "angle": 0,
+      "mm3": 9631.244216114004
+    }
+  ],
+  "scope": [
+    "Hollow sleeve28x28x70,real20.4x20.4 bore; not an excluded collision volume.",
+    "Two shaft pieces with0.4mm axial end gap; no overlapping solid splice.",
+    "Top tool D12 Z76..136; underside24x40x8 aroundZ15; real fastener CAD not present.",
+    "R65/Z60 is a virtual load line, NOT a Y-pin crossing the vertical rail bolt.",
+    "Rail pad,end nodes and bolts not final solids; their access/edge ligaments remain pending."
+  ]
+}

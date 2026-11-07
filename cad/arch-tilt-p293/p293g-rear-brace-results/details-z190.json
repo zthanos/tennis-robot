@@ -1,0 +1,86 @@
+{
+  "status": "SURROGATE_DETAIL_ENVELOPES_NOT_CAD",
+  "selected": [
+    {
+      "side": -1,
+      "centre_length_mm": 286.6722867666144,
+      "upper_point_mm": [
+        320.0,
+        -204.0,
+        190.0
+      ],
+      "splice_station_mm_from_R": 222.67228676661438,
+      "shaft_piece_lengths_mm": [
+        202.4722867666144,
+        43.8
+      ],
+      "beam_sleeve_raw_intersection_mm3": 0.0,
+      "top_socket_vs_brace_mm3": 0.0,
+      "arch_gap_mm": 1.1171861051407705,
+      "basket_gap_mm": 0.5147732774431926
+    },
+    {
+      "side": 1,
+      "centre_length_mm": 286.6722867666144,
+      "upper_point_mm": [
+        320.0,
+        204.0,
+        190.0
+      ],
+      "splice_station_mm_from_R": 222.67228676661438,
+      "shaft_piece_lengths_mm": [
+        202.4722867666144,
+        43.8
+      ],
+      "beam_sleeve_raw_intersection_mm3": 0.0,
+      "top_socket_vs_brace_mm3": 0.0,
+      "arch_gap_mm": 1.1171861051407705,
+      "basket_gap_mm": 26.65918564804079
+    }
+  ],
+  "raw_hits": [
+    {
+      "object": "sleeve_-1",
+      "target": "p293d_knee[side=-1]",
+      "angle": 0,
+      "mm3": 440.7518024223046
+    },
+    {
+      "object": "sleeve_-1",
+      "target": "upper_stop[side=-1]",
+      "angle": 0,
+      "mm3": 3005.836988158301
+    },
+    {
+      "object": "brace_-1",
+      "target": "upper_stop[side=-1]",
+      "angle": 0,
+      "mm3": 9656.276730731268
+    },
+    {
+      "object": "sleeve_1",
+      "target": "p293d_knee[side=1]",
+      "angle": 0,
+      "mm3": 440.7518024223064
+    },
+    {
+      "object": "sleeve_1",
+      "target": "upper_stop[side=1]",
+      "angle": 0,
+      "mm3": 4085.4111431180954
+    },
+    {
+      "object": "brace_1",
+      "target": "upper_stop[side=1]",
+      "angle": 0,
+      "mm3": 10484.717809781852
+    }
+  ],
+  "scope": [
+    "Hollow sleeve28x28x70,real20.4x20.4 bore; not an excluded collision volume.",
+    "Two shaft pieces with0.4mm axial end gap; no overlapping solid splice.",
+    "Top tool D12 Z76..136; underside24x40x8 aroundZ15; real fastener CAD not present.",
+    "R65/Z60 is a virtual load line, NOT a Y-pin crossing the vertical rail bolt.",
+    "Rail pad,end nodes and bolts not final solids; their access/edge ligaments remain pending."
+  ]
+}

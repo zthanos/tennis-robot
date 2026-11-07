@@ -1,0 +1,2692 @@
+{
+  "status": "SECTIONAL_SCREEN_NOT_PHYSICAL_RELEASE",
+  "sections": {
+    "rail_pad_X230": {
+      "A_mm2": 668.4499822000707,
+      "centroid": [
+        220.43863091509849,
+        61.96252781154424
+      ],
+      "I_mm4": [
+        99393.45007890835,
+        20702.5628115735
+      ],
+      "Z_mm3": [
+        4863.018980663922,
+        2062.5275390933402
+      ],
+      "bounds": [
+        [
+          200.0,
+          52.0
+        ],
+        [
+          240.0,
+          72.0
+        ]
+      ]
+    },
+    "knee_Z114": {
+      "A_mm2": 452.5161291018012,
+      "centroid": [
+        258.7375111548816,
+        -221.59999999999937
+      ],
+      "I_mm4": [
+        33431.15439340845,
+        15083.87097010389
+      ],
+      "Z_mm3": [
+        2433.567042566424,
+        1508.3870970102946
+      ],
+      "bounds": [
+        [
+          245.0,
+          -231.6
+        ],
+        [
+          272.2258064550899,
+          -211.6
+        ]
+      ]
+    },
+    "knee_Z97": {
+      "A_mm2": 520.0,
+      "centroid": [
+        258.00000000000017,
+        -221.6
+      ],
+      "I_mm4": [
+        29293.333333291113,
+        17333.333333313465
+      ],
+      "Z_mm3": [
+        2253.333333330056,
+        1733.3333333313465
+      ],
+      "bounds": [
+        [
+          245.0,
+          -231.6
+        ],
+        [
+          271.0,
+          -211.6
+        ]
+      ]
+    },
+    "console_Z180": {
+      "A_mm2": 480.0,
+      "centroid": [
+        260.00000000000017,
+        -205.00000000000009
+      ],
+      "I_mm4": [
+        23039.99999995902,
+        15999.99999999255
+      ],
+      "Z_mm3": [
+        1919.9999999965578,
+        1599.9999999992413
+      ],
+      "bounds": [
+        [
+          248.0,
+          -215.0
+        ],
+        [
+          272.0,
+          -195.0
+        ]
+      ]
+    },
+    "cradle_front_v0": {
+      "A_mm2": 272.4171051570049,
+      "centroid": [
+        13.457982690119692,
+        -22.305417460056148
+      ],
+      "I_mm4": [
+        60334.482098571025,
+        1828.0562916377094
+      ],
+      "Z_mm3": [
+        2048.1538988346065,
+        388.5003418200204
+      ],
+      "bounds": [
+        [
+          -16.000000000000014,
+          -26.986138613861396
+        ],
+        [
+          32.66625692667053,
+          -17.59999999999999
+        ]
+      ]
+    },
+    "cradle_spine_u20": {
+      "A_mm2": 128.00000000000006,
+      "centroid": [
+        26.0,
+        18.000000000000004
+      ],
+      "I_mm4": [
+        2730.6666666666715,
+        682.6666666666497
+      ],
+      "Z_mm3": [
+        341.3333333333333,
+        170.66666666666228
+      ],
+      "bounds": [
+        [
+          18.0,
+          14.0
+        ],
+        [
+          34.000000000000014,
+          22.0
+        ]
+      ]
+    },
+    "cradle_bridge_n15": {
+      "A_mm2": 128.00000000000023,
+      "centroid": [
+        18.000000000000004,
+        -5.92118946466749e-16
+      ],
+      "I_mm4": [
+        682.6666666666642,
+        2730.666666666682
+      ],
+      "Z_mm3": [
+        170.66666666666592,
+        341.33333333333456
+      ],
+      "bounds": [
+        [
+          14.0,
+          -8.000000000000016
+        ],
+        [
+          22.0,
+          8.000000000000014
+        ]
+      ]
+    },
+    "cradle_B_boss_n0": {
+      "A_mm2": 123.19999999999982,
+      "centroid": [
+        17.999999999999996,
+        2.306956934286043e-15
+      ],
+      "I_mm4": [
+        657.066666666673,
+        5268.442666666644
+      ],
+      "Z_mm3": [
+        164.2666666666681,
+        526.844266666665
+      ],
+      "bounds": [
+        [
+          14.0,
+          -9.999999999999986
+        ],
+        [
+          22.0,
+          9.999999999999986
+        ]
+      ]
+    },
+    "crown_lower_pin": {
+      "A_mm2": 256.8779336830295,
+      "centroid": [
+        16.40000000000001,
+        3.1865143878246335e-14
+      ],
+      "I_mm4": [
+        3082.535204196349,
+        17479.07568739815
+      ],
+      "Z_mm3": [
+        513.7558673660578,
+        1344.5442836460102
+      ],
+      "bounds": [
+        [
+          10.400000000000006,
+          -12.999999999999982
+        ],
+        [
+          22.400000000000006,
+          13.000000000000036
+        ]
+      ]
+    }
+  },
+  "masses": {
+    "p293d_knee[side=-1]": {
+      "volume_mm3": 102771.0027595703,
+      "mass_g": 130.51917350465428,
+      "CM_mm": [
+        299.35889478647863,
+        -221.59999999999954,
+        153.86856999853543
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_crown[side=-1]": {
+      "volume_mm3": 48313.85242309266,
+      "mass_g": 61.358592577327684,
+      "CM_mm": [
+        378.05894857167016,
+        -216.18914471682402,
+        233.46798140956912
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_crossbar_end[side=-1]": {
+      "volume_mm3": 35209.5538055714,
+      "mass_g": 44.71613333307568,
+      "CM_mm": [
+        390.000000000001,
+        -152.3952827589942,
+        244.99999905757642
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293d_mast[side=-1]": {
+      "volume_mm3": 31971.013331047336,
+      "mass_g": 40.60318693043012,
+      "CM_mm": [
+        390.0000026210717,
+        -149.99999999999892,
+        295.5736216433239
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293d_lidar_half[side=-1]": {
+      "volume_mm3": 38700.95982699469,
+      "mass_g": 49.150218980283256,
+      "CM_mm": [
+        389.9999999999984,
+        -69.08869551565708,
+        354.00000294202613
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293d_mast_cap[side=-1]": {
+      "volume_mm3": 16954.398594580514,
+      "mass_g": 21.532086215117253,
+      "CM_mm": [
+        390.0,
+        -146.87938731207004,
+        351.9659591481797
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293d_knee[side=1]": {
+      "volume_mm3": 102771.0027595703,
+      "mass_g": 130.51917350465428,
+      "CM_mm": [
+        299.35889478647863,
+        221.5999999999998,
+        153.86856999853543
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_crown[side=1]": {
+      "volume_mm3": 48313.85242309266,
+      "mass_g": 61.358592577327684,
+      "CM_mm": [
+        378.05894857167016,
+        216.1891447168241,
+        233.46798140956926
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_crossbar_end[side=1]": {
+      "volume_mm3": 35209.5538055714,
+      "mass_g": 44.71613333307568,
+      "CM_mm": [
+        390.000000000001,
+        152.3952827589942,
+        244.99999905757633
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293d_mast[side=1]": {
+      "volume_mm3": 31971.013331047336,
+      "mass_g": 40.60318693043012,
+      "CM_mm": [
+        390.0000026210722,
+        149.99999999999892,
+        295.5736216433239
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293d_lidar_half[side=1]": {
+      "volume_mm3": 38700.95982699465,
+      "mass_g": 49.150218980283206,
+      "CM_mm": [
+        389.99999999999926,
+        69.08869551565715,
+        354.00000294202647
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293d_mast_cap[side=1]": {
+      "volume_mm3": 16954.398594580514,
+      "mass_g": 21.532086215117253,
+      "CM_mm": [
+        390.0,
+        146.87938731207004,
+        351.9659591481798
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "arch_crossbar_center": {
+      "volume_mm3": 62030.96102275327,
+      "mass_g": 78.77932049889665,
+      "CM_mm": [
+        390.00000000000136,
+        0.0,
+        244.99999946506986
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "joint_sleeve_x[side=-1]": {
+      "volume_mm3": 5650.307235173207,
+      "mass_g": 7.175890188669974,
+      "CM_mm": [
+        390.00000000000034,
+        -99.99999999999997,
+        244.99998736256597
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "joint_sleeve_x[side=1]": {
+      "volume_mm3": 5650.307235173207,
+      "mass_g": 7.175890188669974,
+      "CM_mm": [
+        390.00000000000034,
+        99.99999999999997,
+        244.99998736256597
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "joint_sleeve_x": {
+      "volume_mm3": 4761.703970856441,
+      "mass_g": 6.04736404298768,
+      "CM_mm": [
+        390.0000000000005,
+        -1.0186770196432812e-15,
+        353.9999908470829
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293d_oak_mount": {
+      "volume_mm3": 34294.991542970296,
+      "mass_g": 43.554639259572276,
+      "CM_mm": [
+        444.33363516129947,
+        -2.828773643742093e-15,
+        314.1510511215506
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_foot": {
+      "volume_mm3": 125737.1581160479,
+      "mass_g": 159.68619080738083,
+      "CM_mm": [
+        240.26447369629435,
+        200.218679300934,
+        66.07592629171799
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_foot#2": {
+      "volume_mm3": 125737.1581160479,
+      "mass_g": 159.68619080738083,
+      "CM_mm": [
+        240.26447369629435,
+        -200.21867930093407,
+        66.07592629171799
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_console_inboard": {
+      "volume_mm3": 83454.37794623086,
+      "mass_g": 105.9870599917132,
+      "CM_mm": [
+        268.285589510897,
+        -208.74990715201685,
+        163.9080123627276
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_console_outboard": {
+      "volume_mm3": 51543.639196481345,
+      "mass_g": 65.46042177953132,
+      "CM_mm": [
+        273.2943863403673,
+        -231.91062707512262,
+        146.53034649789691
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_cradle": {
+      "volume_mm3": 83977.93183948223,
+      "mass_g": 106.65197343614244,
+      "CM_mm": [
+        265.52607403239995,
+        -193.93603052128614,
+        232.8001948800679
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_float_cap": {
+      "volume_mm3": 4366.132456046849,
+      "mass_g": 5.544988219179499,
+      "CM_mm": [
+        303.22891845868156,
+        -205.00000000000034,
+        203.9853002247061
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_nut_arm": {
+      "volume_mm3": 69824.82029629103,
+      "mass_g": 88.67752177628961,
+      "CM_mm": [
+        393.7000094858079,
+        -204.86444252846445,
+        122.51234114609498
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_nut_trunnion": {
+      "volume_mm3": 9235.783081973263,
+      "mass_g": 11.729444514106044,
+      "CM_mm": [
+        411.8142608221566,
+        -205.00000000000037,
+        163.7584863244047
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_fit_hardware": {
+      "volume_mm3": 93586.49666462366,
+      "mass_g": 205.0,
+      "CM_mm": [
+        293.3870555248667,
+        -155.00000000000003,
+        243.00035238430473
+      ],
+      "source": "DFRobot FIT0186 nominal205g, not physical weighing",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_kfl08_hardware": {
+      "volume_mm3": 6865.528130590756,
+      "mass_g": 22.0,
+      "CM_mm": [
+        248.87558635905998,
+        -205.0,
+        224.1211797793674
+      ],
+      "source": "nominal supplier48x27 KFL08; purchased G15 unmeasured",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_608_hardware": {
+      "volume_mm3": 2298.0826454529306,
+      "mass_g": 18.039948766805505,
+      "CM_mm": [
+        297.5088229576397,
+        -204.99999999999997,
+        206.10438197371428
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_tr8_hardware": {
+      "volume_mm3": 13147.10736155443,
+      "mass_g": 103.20479278820227,
+      "CM_mm": [
+        340.7854842804095,
+        -204.99999999998974,
+        190.07199525037475
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_t8_nut_hardware": {
+      "volume_mm3": 1844.3037697831944,
+      "mass_g": 15.676582043157154,
+      "CM_mm": [
+        418.1740222085329,
+        -204.9999999999993,
+        161.40243225511992
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    },
+    "p293g_collar_hardware": {
+      "volume_mm3": 1789.2634850478469,
+      "mass_g": 14.045718357625598,
+      "CM_mm": [
+        249.21621339967808,
+        -205.00000000000006,
+        223.99499018255702
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 2
+    },
+    "p293g_thrust_washer_hardware": {
+      "volume_mm3": 33.6835891643067,
+      "mass_g": 0.26441617493980757,
+      "CM_mm": [
+        249.2162133996781,
+        -204.99999999999855,
+        223.99499018255617
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 2
+    },
+    "p293g_pulley_hardware": {
+      "volume_mm3": 4219.212174083979,
+      "mass_g": 11.391872870026745,
+      "CM_mm": [
+        235.79669380286236,
+        -177.7280489434681,
+        248.25805893000836
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 2
+    },
+    "p293g_belt_hardware": {
+      "volume_mm3": 1173.5932546460244,
+      "mass_g": 1.4083119055752291,
+      "CM_mm": [
+        231.06515766709313,
+        -179.99999999999625,
+        248.4037831841036
+      ],
+      "source": "mesh volume x nominal material density",
+      "watertight": true,
+      "bodies": 1
+    }
+  },
+  "envelopes": {
+    "LC1": {
+      "knee": {
+        "stress_MPa": 6.441865984424582,
+        "limit_MPa": 10,
+        "margin": 1.5523452403664444,
+        "detail": "actual mesh sections; Kt1.8 only Z114 hole",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "M4_Z80_114_thread_8_8": {
+        "stress_MPa": 495.2473283163405,
+        "limit_MPa": 580,
+        "margin": 1.1711320119015838,
+        "detail": "conditional grade8.8, threaded root, bending+shear",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "foot_cheek_bearing": {
+        "stress_MPa": 4.845611045541282,
+        "limit_MPa": 5,
+        "margin": 1.0318616069279396,
+        "detail": "OD8 steel spacer; minimum5mm PETG bearing length;60% of full pin load",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "foot_cheek_edge": {
+        "stress_MPa": 2.8838921881583603,
+        "limit_MPa": 5,
+        "margin": 1.7337680030240574,
+        "detail": "OD8.2 bore, effective5mm; directional X/Z ligament sum, no generic Kt",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "knee_bearing": {
+        "stress_MPa": 4.038009204617735,
+        "limit_MPa": 5,
+        "margin": 1.2382339283135273,
+        "detail": "20mm solid knee, actual4mm bolt",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "rail_pad_pitch": {
+        "stress_MPa": 9.439271028433328,
+        "limit_MPa": 10,
+        "margin": 1.0594038427202295,
+        "detail": "actual section incl45deg flare, seat14.6; Kt1.5 actual bore",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "foot_root_roll": {
+        "stress_MPa": 3.5507558583736274,
+        "limit_MPa": 10,
+        "margin": 2.8163017675285498,
+        "detail": "inboard real bore net section, unchanged root",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "foot_bridge_torsion": {
+        "stress_MPa": 0.9627921551687899,
+        "limit_MPa": 5,
+        "margin": 5.193228853348349,
+        "detail": "unchanged bore-free source hull; Kt1; roll moment about X",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "base_M4_8_8": {
+        "stress_MPa": 49.77186917394068,
+        "limit_MPa": 580,
+        "margin": 11.653168941134998,
+        "detail": "external load only, no preload",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "PETG_rail_OD14": {
+        "stress_MPa": 3.716841183393139,
+        "limit_MPa": 5,
+        "margin": 1.3452283143923447,
+        "detail": "100N residual preload only at washer seats",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "PETG_inboard_OD9": {
+        "stress_MPa": 2.8033625337596924,
+        "limit_MPa": 5,
+        "margin": 1.783572384872504,
+        "detail": "100N residual preload only at washer seats",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "PETG_pin_head_OD10": {
+        "stress_MPa": 3.8865675968716804,
+        "limit_MPa": 5,
+        "margin": 1.2864821916450204,
+        "detail": "100N residual preload only; conservative PETG annulus outside sleeve bore",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "PETG_pin_nut_OD12": {
+        "stress_MPa": 1.6587279113277262,
+        "limit_MPa": 5,
+        "margin": 3.014358151119407,
+        "detail": "100N residual preload only; inboard washer outside sleeve bore",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "PETG_crown_washer": {
+        "stress_MPa": 2.1277398809076917,
+        "limit_MPa": 5,
+        "margin": 2.349911304885165,
+        "detail": "100N residual preload only under OD9 steel washer0.5; actual knee bore4.6",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "pitch_contact": {
+        "stress_MPa": 4.356117025401592,
+        "limit_MPa": 5,
+        "margin": 1.1478112205993933,
+        "detail": "8x12 contact, no preload",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "console_stem": {
+        "stress_MPa": 1.7928222113363872,
+        "limit_MPa": 10,
+        "margin": 5.577797919262671,
+        "detail": "actual Z180 stock, all console/carried solid gravity included conservatively, Kt1",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "cradle_B_bearing": {
+        "stress_MPa": 1.3097424733008913,
+        "limit_MPa": 5,
+        "margin": 3.8175443661063393,
+        "detail": "2x8mm pivot bosses;4mm stub pins; carried gravity included",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "cradle_bridge_spine": {
+        "stress_MPa": 7.3246729422457015,
+        "limit_MPa": 10,
+        "margin": 1.3652486710122047,
+        "detail": "actual mesh sections; full one-path force26mm +actual solid gravity moment aboutB",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "cradle_B_boss_net": {
+        "stress_MPa": 9.002943787587693,
+        "limit_MPa": 10,
+        "margin": 1.1107477993794588,
+        "detail": "actual mesh D20/4.6 boss, Kt1.8 real bore; full path force +actual gravity moment",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "console_B_ear_bearing": {
+        "stress_MPa": 4.4905456227459135,
+        "limit_MPa": 5,
+        "margin": 1.1134504401143488,
+        "detail": "actual2.8mm ear ligament below head recess;60% total pivot load on either ear",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "console_fork_leg": {
+        "stress_MPa": 4.093381809889719,
+        "limit_MPa": 10,
+        "margin": 2.442967811074876,
+        "detail": "actual6x20 fork leg at barZ193,27mm lever; no bore at stock root/Kt1",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "nut_clevis_bearing": {
+        "stress_MPa": 3.082827651022647,
+        "limit_MPa": 5,
+        "margin": 1.6218876194202363,
+        "detail": "2x4mm moving fork legs;60% total load on either side, local gravity included",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "nut_arm_riser": {
+        "stress_MPa": 8.055108893127834,
+        "limit_MPa": 10,
+        "margin": 1.24144814585082,
+        "detail": "actual30x10; FULL path U/W biaxial moments FU53+FW40 and13.2mm Y offset; Kt1.5 at R3 root",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "nut_arm_riser_torsion": {
+        "stress_MPa": 2.335589168374917,
+        "limit_MPa": 5,
+        "margin": 2.140787458557601,
+        "detail": "actual30x10 torsion; full path/13.2mm offset; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_shelf": {
+        "stress_MPa": 5.47042544929638,
+        "limit_MPa": 10,
+        "margin": 1.8280113846147423,
+        "detail": "actual30x16 low shelf; full path U/W bending,40mm span +30mm pin-height couple; Kt1.5 at R3 root",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "nut_arm_shelf_torsion_U": {
+        "stress_MPa": 0.7534789874442459,
+        "limit_MPa": 5,
+        "margin": 6.635885118654325,
+        "detail": "actual30x16 shelf, full13.2mm Y offset; Kt1.5 at R3 root",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "nut_arm_shelf_torsion_Y": {
+        "stress_MPa": 1.555124179937134,
+        "limit_MPa": 5,
+        "margin": 3.215177324425709,
+        "detail": "actual40x16 transverse shelf section, full pin-height couple; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_fork_legs": {
+        "stress_MPa": 8.514395417462497,
+        "limit_MPa": 10,
+        "margin": 1.1744815115692913,
+        "detail": "actual4x24 upward fork web; full one-leg force30mm lever; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_bight": {
+        "stress_MPa": 3.7593078351435496,
+        "limit_MPa": 10,
+        "margin": 2.660064149712855,
+        "detail": "actual24x14 bight, full path biaxial load; Kt1.5 at R3 junction",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "nut_arm_bight_torsion": {
+        "stress_MPa": 3.3853043372781144,
+        "limit_MPa": 5,
+        "margin": 1.4769720834080604,
+        "detail": "actual24x14 lower crossbar, full one-leg moment30mm ABOVE centre; Kt1.5 at R3 junction",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_trunnion_plate": {
+        "stress_MPa": 4.5378070564118405,
+        "limit_MPa": 10,
+        "margin": 2.203707622577337,
+        "detail": "actual32x8 plate/10.6 bore;33.6mm pin span; Kt1.5 real bore",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "arm_yoke_OD10_washer": {
+        "stress_MPa": 4.107773628063927,
+        "limit_MPa": 5,
+        "margin": 1.2172043673099378,
+        "detail": "actual four bolts20x40 pitch; local U/W force+actual moving mass moments; preload100 only washers",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "arm_yoke_M4_8_8": {
+        "stress_MPa": 17.874108225431684,
+        "limit_MPa": 580,
+        "margin": 32.44917132004174,
+        "detail": "four mounting M4, no preload in external steel load",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "arm_base_plate": {
+        "stress_MPa": 8.352271018072841,
+        "limit_MPa": 10,
+        "margin": 1.197279156574513,
+        "detail": "actual12mm base/net two4.6 bores across52mm; full moment bound; Kt1.5 real holes",
+        "angle_deg": 20.0,
+        "sign": 1
+      },
+      "cradle_front_plate": {
+        "stress_MPa": 3.9105109700057854,
+        "limit_MPa": 10,
+        "margin": 2.557210573426727,
+        "detail": "actual mesh front section incl18mm bore, Kt1.5;48mm span; all fixed hardware gravity added conservatively",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "crown_inboard_lug_bearing": {
+        "stress_MPa": 0.13201612485020595,
+        "limit_MPa": 5,
+        "margin": 37.87416124866053,
+        "detail": "single12mm inboard lug, original20mm pin pitch",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "crown_lug_local_biaxial": {
+        "stress_MPa": 0.40850911487951025,
+        "limit_MPa": 10,
+        "margin": 24.479257954744778,
+        "detail": "actual mesh lug/4.6 bore, Kt1.8 at real hole; local pin-root moment16.4mm",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "crown_pin_thread_10_9": {
+        "stress_MPa": 34.22126372351738,
+        "limit_MPa": 830,
+        "margin": 24.253926059124787,
+        "detail": "REQUIRES10.9 button-head pin; root3.14, cantilever16.4mm; no smooth-grip credit",
+        "angle_deg": -10.0,
+        "sign": -1
+      }
+    },
+    "LC2": {
+      "knee": {
+        "stress_MPa": 6.6737111760735885,
+        "limit_MPa": 10,
+        "margin": 1.4984166584630954,
+        "detail": "actual mesh sections; Kt1.8 only Z114 hole",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "M4_Z80_114_thread_8_8": {
+        "stress_MPa": 393.3136567987903,
+        "limit_MPa": 580,
+        "margin": 1.4746500406842316,
+        "detail": "conditional grade8.8, threaded root, bending+shear",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "foot_cheek_bearing": {
+        "stress_MPa": 3.848269118837302,
+        "limit_MPa": 5,
+        "margin": 1.2992854308252424,
+        "detail": "OD8 steel spacer; minimum5mm PETG bearing length;60% of full pin load",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "foot_cheek_edge": {
+        "stress_MPa": 2.8446069099314144,
+        "limit_MPa": 5,
+        "margin": 1.7577121051571072,
+        "detail": "OD8.2 bore, effective5mm; directional X/Z ligament sum, no generic Kt",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "knee_bearing": {
+        "stress_MPa": 3.2068909323644186,
+        "limit_MPa": 5,
+        "margin": 1.5591425169902908,
+        "detail": "20mm solid knee, actual4mm bolt",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "rail_pad_pitch": {
+        "stress_MPa": 6.26129149668905,
+        "limit_MPa": 10,
+        "margin": 1.5971145897436603,
+        "detail": "actual section incl45deg flare, seat14.6; Kt1.5 actual bore",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "foot_root_roll": {
+        "stress_MPa": 6.990099136368365,
+        "limit_MPa": 10,
+        "margin": 1.4305948749670234,
+        "detail": "inboard real bore net section, unchanged root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "foot_bridge_torsion": {
+        "stress_MPa": 1.8953746415643968,
+        "limit_MPa": 5,
+        "margin": 2.6380008945741302,
+        "detail": "unchanged bore-free source hull; Kt1; roll moment about X",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "base_M4_8_8": {
+        "stress_MPa": 37.01225504293111,
+        "limit_MPa": 580,
+        "margin": 15.670485338633075,
+        "detail": "external load only, no preload",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "PETG_rail_OD14": {
+        "stress_MPa": 3.048197581153512,
+        "limit_MPa": 5,
+        "margin": 1.6403136171074182,
+        "detail": "100N residual preload only at washer seats",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "PETG_inboard_OD9": {
+        "stress_MPa": 4.048980012244928,
+        "limit_MPa": 5,
+        "margin": 1.234878904039782,
+        "detail": "100N residual preload only at washer seats",
+        "angle_deg": -10.0,
+        "sign": 1
+      },
+      "PETG_pin_head_OD10": {
+        "stress_MPa": 3.8865675968716804,
+        "limit_MPa": 5,
+        "margin": 1.2864821916450204,
+        "detail": "100N residual preload only; conservative PETG annulus outside sleeve bore",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "PETG_pin_nut_OD12": {
+        "stress_MPa": 1.6587279113277262,
+        "limit_MPa": 5,
+        "margin": 3.014358151119407,
+        "detail": "100N residual preload only; inboard washer outside sleeve bore",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "PETG_crown_washer": {
+        "stress_MPa": 2.1277398809076917,
+        "limit_MPa": 5,
+        "margin": 2.349911304885165,
+        "detail": "100N residual preload only under OD9 steel washer0.5; actual knee bore4.6",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "pitch_contact": {
+        "stress_MPa": 3.3850791591347407,
+        "limit_MPa": 5,
+        "margin": 1.477070332759382,
+        "detail": "8x12 contact, no preload",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "console_stem": {
+        "stress_MPa": 0.10689440832217989,
+        "limit_MPa": 10,
+        "margin": 93.55026288989772,
+        "detail": "actual Z180 stock, all console/carried solid gravity included conservatively, Kt1",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "cradle_B_bearing": {
+        "stress_MPa": 0.10673394565900744,
+        "limit_MPa": 5,
+        "margin": 46.8454526732662,
+        "detail": "2x8mm pivot bosses;4mm stub pins; carried gravity included",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "cradle_bridge_spine": {
+        "stress_MPa": 0.5745975603965756,
+        "limit_MPa": 10,
+        "margin": 17.403484959278632,
+        "detail": "actual mesh sections; full one-path force26mm +actual solid gravity moment aboutB",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "cradle_B_boss_net": {
+        "stress_MPa": 0.70765655902885,
+        "limit_MPa": 10,
+        "margin": 14.131148609324647,
+        "detail": "actual mesh D20/4.6 boss, Kt1.8 real bore; full path force +actual gravity moment",
+        "angle_deg": 20.0,
+        "sign": -1
+      },
+      "console_B_ear_bearing": {
+        "stress_MPa": 0.36594495654516834,
+        "limit_MPa": 5,
+        "margin": 13.663257029702644,
+        "detail": "actual2.8mm ear ligament below head recess;60% total pivot load on either ear",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "console_fork_leg": {
+        "stress_MPa": 0.3335791581662846,
+        "limit_MPa": 10,
+        "margin": 29.97789206906967,
+        "detail": "actual6x20 fork leg at barZ193,27mm lever; no bore at stock root/Kt1",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_clevis_bearing": {
+        "stress_MPa": 0.055838792916464444,
+        "limit_MPa": 5,
+        "margin": 89.54348292378141,
+        "detail": "2x4mm moving fork legs;60% total load on either side, local gravity included",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_riser": {
+        "stress_MPa": 0.20489114414148019,
+        "limit_MPa": 10,
+        "margin": 48.80640420990993,
+        "detail": "actual30x10; FULL path U/W biaxial moments FU53+FW40 and13.2mm Y offset; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_riser_torsion": {
+        "stress_MPa": 0.049138137766488704,
+        "limit_MPa": 5,
+        "margin": 101.75395786793342,
+        "detail": "actual30x10 torsion; full path/13.2mm offset; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_shelf": {
+        "stress_MPa": 0.13908512668942685,
+        "limit_MPa": 10,
+        "margin": 71.89841385649895,
+        "detail": "actual30x16 low shelf; full path U/W bending,40mm span +30mm pin-height couple; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_shelf_torsion_U": {
+        "stress_MPa": 0.01919458506503465,
+        "limit_MPa": 5,
+        "margin": 260.49013214190956,
+        "detail": "actual30x16 shelf, full13.2mm Y offset; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_shelf_torsion_Y": {
+        "stress_MPa": 0.03271804272449089,
+        "limit_MPa": 5,
+        "margin": 152.82087752325359,
+        "detail": "actual40x16 transverse shelf section, full pin-height couple; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_fork_legs": {
+        "stress_MPa": 0.1977623915791449,
+        "limit_MPa": 10,
+        "margin": 50.5657315334295,
+        "detail": "actual4x24 upward fork web; full one-leg force30mm lever; Kt1.5 at R3 root",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_bight": {
+        "stress_MPa": 0.09562868106612192,
+        "limit_MPa": 10,
+        "margin": 104.57113795269805,
+        "detail": "actual24x14 bight, full path biaxial load; Kt1.5 at R3 junction",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_arm_bight_torsion": {
+        "stress_MPa": 0.07122295014855158,
+        "limit_MPa": 5,
+        "margin": 70.20209061224463,
+        "detail": "actual24x14 lower crossbar, full one-leg moment30mm ABOVE centre; Kt1.5 at R3 junction",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "nut_trunnion_plate": {
+        "stress_MPa": 0.08219261574152477,
+        "limit_MPa": 10,
+        "margin": 121.66543076628076,
+        "detail": "actual32x8 plate/10.6 bore;33.6mm pin span; Kt1.5 real bore",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "arm_yoke_OD10_washer": {
+        "stress_MPa": 1.6269859723760483,
+        "limit_MPa": 5,
+        "margin": 3.0731672459953705,
+        "detail": "actual four bolts20x40 pitch; local U/W force+actual moving mass moments; preload100 only washers",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "arm_yoke_M4_8_8": {
+        "stress_MPa": 0.08599174976736125,
+        "limit_MPa": 580,
+        "margin": 6744.8330981647605,
+        "detail": "four mounting M4, no preload in external steel load",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "arm_base_plate": {
+        "stress_MPa": 0.04696106077314382,
+        "limit_MPa": 10,
+        "margin": 212.9423789702557,
+        "detail": "actual12mm base/net two4.6 bores across52mm; full moment bound; Kt1.5 real holes",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "cradle_front_plate": {
+        "stress_MPa": 0.17060524666906196,
+        "limit_MPa": 10,
+        "margin": 58.61484447426099,
+        "detail": "actual mesh front section incl18mm bore, Kt1.5;48mm span; all fixed hardware gravity added conservatively",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "crown_inboard_lug_bearing": {
+        "stress_MPa": 2.8261054288109935,
+        "limit_MPa": 5,
+        "margin": 1.7692192049974629,
+        "detail": "single12mm inboard lug, original20mm pin pitch",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "crown_lug_local_biaxial": {
+        "stress_MPa": 8.745066775666357,
+        "limit_MPa": 10,
+        "margin": 1.1435018458435977,
+        "detail": "actual mesh lug/4.6 bore, Kt1.8 at real hole; local pin-root moment16.4mm",
+        "angle_deg": -10.0,
+        "sign": -1
+      },
+      "crown_pin_thread_10_9": {
+        "stress_MPa": 732.5839877480263,
+        "limit_MPa": 830,
+        "margin": 1.1329758961172929,
+        "detail": "REQUIRES10.9 button-head pin; root3.14, cantilever16.4mm; no smooth-grip credit",
+        "angle_deg": -10.0,
+        "sign": -1
+      }
+    }
+  },
+  "assumptions": [
+    "solidPETG density1.27g/cm3; CAD estimates, not measured masses",
+    "FIT0186 nominal205g, KFL08 provisional22g",
+    "LC1=8000/h atB both signs +actual solids gravity; LC2=one crown vertical60.606N, zeroTr8 +gravity",
+    "8Nm includes moving gravity; moving nut arm/clevis masses reported, not double-added atB",
+    "Full symmetric arch CAD mass gravity split equally across feet; LC2 stop force wholly on one side",
+    "No preload in moments; residual100N only washers; this is screening, not joint/contact FEA"
+  ],
+  "fastener_mass_estimates": {
+    "outer_sleeve_-1_80": {
+      "group": "foot",
+      "mass_g": 1.398928043941094,
+      "volume_mm3": 178.20739413262345,
+      "CM_mm": [
+        258.00000417956255,
+        -234.30000305175832,
+        80.00000000000003
+      ]
+    },
+    "inner_sleeve_-1_80": {
+      "group": "foot",
+      "mass_g": 2.2382848703057503,
+      "volume_mm3": 285.1318306121975,
+      "CM_mm": [
+        258.0000041795623,
+        -207.30000305175767,
+        80.0
+      ]
+    },
+    "inner_shim_-1_80": {
+      "group": "foot",
+      "mass_g": 0.07686426049549015,
+      "volume_mm3": 9.791625540826772,
+      "CM_mm": [
+        258.0000042210194,
+        -211.49999999999335,
+        80.00000000000006
+      ]
+    },
+    "outer_shim_-1_80": {
+      "group": "foot",
+      "mass_g": 0.07685839657570964,
+      "volume_mm3": 9.790878544676389,
+      "CM_mm": [
+        258.0000042210162,
+        -231.7000045776279,
+        79.99999999999908
+      ]
+    },
+    "outer_washer_-1_80": {
+      "group": "foot",
+      "mass_g": 0.5011053430429369,
+      "volume_mm3": 63.83507554687094,
+      "CM_mm": [
+        257.99999551363885,
+        -237.30000305175884,
+        80.00000000000001
+      ]
+    },
+    "button_head_-1_80": {
+      "group": "foot",
+      "mass_g": 0.7812100213291259,
+      "volume_mm3": 99.5172001693154,
+      "CM_mm": [
+        258.0000005492745,
+        -238.90000152587828,
+        79.99999999999955
+      ]
+    },
+    "shaft_-1_80": {
+      "group": "foot",
+      "mass_g": 4.4263995233630995,
+      "volume_mm3": 563.8725507468916,
+      "CM_mm": [
+        258.00000000000057,
+        -215.3000030517578,
+        79.99999999999996
+      ]
+    },
+    "inner_washer_-1_80": {
+      "group": "foot",
+      "mass_g": 0.7716079984967306,
+      "volume_mm3": 98.29401254735421,
+      "CM_mm": [
+        258.00000305097626,
+        -202.69999694824338,
+        80.0
+      ]
+    },
+    "nyloc_-1_80": {
+      "group": "foot",
+      "mass_g": 1.5000586997573844,
+      "volume_mm3": 191.09028022387065,
+      "CM_mm": [
+        257.99999631505017,
+        -199.69999694824241,
+        79.99999999999999
+      ]
+    },
+    "outer_sleeve_-1_114": {
+      "group": "foot",
+      "mass_g": 1.398928043941094,
+      "volume_mm3": 178.20739413262345,
+      "CM_mm": [
+        258.00000417956255,
+        -234.30000305175832,
+        113.99999999999994
+      ]
+    },
+    "inner_sleeve_-1_114": {
+      "group": "foot",
+      "mass_g": 2.2382848703057503,
+      "volume_mm3": 285.1318306121975,
+      "CM_mm": [
+        258.0000041795623,
+        -207.30000305175767,
+        114.0
+      ]
+    },
+    "inner_shim_-1_114": {
+      "group": "foot",
+      "mass_g": 0.07686426049549015,
+      "volume_mm3": 9.791625540826772,
+      "CM_mm": [
+        258.0000042210194,
+        -211.49999999999335,
+        114.00000000000011
+      ]
+    },
+    "outer_shim_-1_114": {
+      "group": "foot",
+      "mass_g": 0.07685839657570964,
+      "volume_mm3": 9.790878544676389,
+      "CM_mm": [
+        258.0000042210162,
+        -231.7000045776279,
+        113.99999999999858
+      ]
+    },
+    "outer_washer_-1_114": {
+      "group": "foot",
+      "mass_g": 0.5011053430429369,
+      "volume_mm3": 63.83507554687094,
+      "CM_mm": [
+        257.99999551363885,
+        -237.30000305175884,
+        113.99999999999999
+      ]
+    },
+    "button_head_-1_114": {
+      "group": "foot",
+      "mass_g": 0.7812100213291259,
+      "volume_mm3": 99.5172001693154,
+      "CM_mm": [
+        258.0000005492745,
+        -238.90000152587828,
+        113.9999999999994
+      ]
+    },
+    "shaft_-1_114": {
+      "group": "foot",
+      "mass_g": 4.4263995233630995,
+      "volume_mm3": 563.8725507468916,
+      "CM_mm": [
+        258.00000000000057,
+        -215.3000030517578,
+        113.99999999999996
+      ]
+    },
+    "inner_washer_-1_114": {
+      "group": "foot",
+      "mass_g": 0.7716079984967306,
+      "volume_mm3": 98.29401254735421,
+      "CM_mm": [
+        258.00000305097626,
+        -202.69999694824338,
+        114.0
+      ]
+    },
+    "nyloc_-1_114": {
+      "group": "foot",
+      "mass_g": 1.5000586997573844,
+      "volume_mm3": 191.09028022387065,
+      "CM_mm": [
+        257.99999631505017,
+        -199.69999694824241,
+        114.0
+      ]
+    },
+    "crown_head_-1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 0.7812108144653517,
+      "volume_mm3": 99.51730120577729,
+      "CM_mm": [
+        350.06465460278685,
+        -233.20000457763445,
+        207.18243512584021
+      ]
+    },
+    "crown_washer_-1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 0.19214886237294412,
+      "volume_mm3": 24.477562085725367,
+      "CM_mm": [
+        350.0646541743346,
+        -231.8500061035156,
+        207.18243468647458
+      ]
+    },
+    "crown_shaft_-1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 4.426404649516101,
+      "volume_mm3": 563.873203760013,
+      "CM_mm": [
+        350.06465484845666,
+        -209.60000610351565,
+        207.1824366251585
+      ]
+    },
+    "crown_shim_-1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 0.15372260824910997,
+      "volume_mm3": 19.58249786612866,
+      "CM_mm": [
+        350.06465417432645,
+        -211.4000015258701,
+        207.1824346864702
+      ]
+    },
+    "crown_inner_washer_-1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 0.3074393525802951,
+      "volume_mm3": 39.164248736343325,
+      "CM_mm": [
+        350.064654174333,
+        -198.7999954223614,
+        207.18243468647438
+      ]
+    },
+    "crown_nyloc_-1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 1.5000615749902788,
+      "volume_mm3": 191.09064649557695,
+      "CM_mm": [
+        350.0646549765852,
+        -195.89999389648435,
+        207.18243459043975
+      ]
+    },
+    "crown_head_-1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 0.7812094968023756,
+      "volume_mm3": 99.51713335062111,
+      "CM_mm": [
+        364.5866027871219,
+        -233.20000457763803,
+        220.93427935170496
+      ]
+    },
+    "crown_washer_-1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 0.19214887977284378,
+      "volume_mm3": 24.477564302273095,
+      "CM_mm": [
+        364.5865962607606,
+        -231.85000610351818,
+        220.93427979106443
+      ]
+    },
+    "crown_shaft_-1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 4.426412508997775,
+      "volume_mm3": 563.8742049678694,
+      "CM_mm": [
+        364.58659935360527,
+        -209.60000610351562,
+        220.93427912395737
+      ]
+    },
+    "crown_shim_-1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 0.15372262216934263,
+      "volume_mm3": 19.582499639406706,
+      "CM_mm": [
+        364.58659626076616,
+        -211.4000015258827,
+        220.9342797910683
+      ]
+    },
+    "crown_inner_washer_-1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 0.3074393804202369,
+      "volume_mm3": 39.16425228283273,
+      "CM_mm": [
+        364.586596260764,
+        -198.79999542236538,
+        220.93427979106644
+      ]
+    },
+    "crown_nyloc_-1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 1.5000610903518972,
+      "volume_mm3": 191.09058475820348,
+      "CM_mm": [
+        364.5865976228842,
+        -195.89999389648398,
+        220.93427988709902
+      ]
+    },
+    "outer_sleeve_1_80": {
+      "group": "foot",
+      "mass_g": 1.398928043941094,
+      "volume_mm3": 178.20739413262345,
+      "CM_mm": [
+        258.00000417956255,
+        234.30000305175832,
+        80.00000000000003
+      ]
+    },
+    "inner_sleeve_1_80": {
+      "group": "foot",
+      "mass_g": 2.2382848703057503,
+      "volume_mm3": 285.1318306121975,
+      "CM_mm": [
+        258.0000041795623,
+        207.30000305175767,
+        80.0
+      ]
+    },
+    "inner_shim_1_80": {
+      "group": "foot",
+      "mass_g": 0.07686426049549015,
+      "volume_mm3": 9.791625540826772,
+      "CM_mm": [
+        258.0000042210194,
+        211.49999999999335,
+        80.00000000000006
+      ]
+    },
+    "outer_shim_1_80": {
+      "group": "foot",
+      "mass_g": 0.07685839657570964,
+      "volume_mm3": 9.790878544676389,
+      "CM_mm": [
+        258.0000042210162,
+        231.7000045776279,
+        79.99999999999908
+      ]
+    },
+    "outer_washer_1_80": {
+      "group": "foot",
+      "mass_g": 0.5011053430429369,
+      "volume_mm3": 63.83507554687094,
+      "CM_mm": [
+        257.99999551363885,
+        237.30000305175884,
+        80.00000000000001
+      ]
+    },
+    "button_head_1_80": {
+      "group": "foot",
+      "mass_g": 0.7812100213291259,
+      "volume_mm3": 99.5172001693154,
+      "CM_mm": [
+        258.0000005492745,
+        238.90000152587828,
+        79.99999999999955
+      ]
+    },
+    "shaft_1_80": {
+      "group": "foot",
+      "mass_g": 4.4263995233630995,
+      "volume_mm3": 563.8725507468916,
+      "CM_mm": [
+        258.00000000000057,
+        215.3000030517578,
+        79.99999999999996
+      ]
+    },
+    "inner_washer_1_80": {
+      "group": "foot",
+      "mass_g": 0.7716079984967306,
+      "volume_mm3": 98.29401254735421,
+      "CM_mm": [
+        258.00000305097626,
+        202.69999694824338,
+        80.0
+      ]
+    },
+    "nyloc_1_80": {
+      "group": "foot",
+      "mass_g": 1.5000586997573844,
+      "volume_mm3": 191.09028022387065,
+      "CM_mm": [
+        257.99999631505017,
+        199.69999694824241,
+        79.99999999999999
+      ]
+    },
+    "outer_sleeve_1_114": {
+      "group": "foot",
+      "mass_g": 1.398928043941094,
+      "volume_mm3": 178.20739413262345,
+      "CM_mm": [
+        258.00000417956255,
+        234.30000305175832,
+        113.99999999999994
+      ]
+    },
+    "inner_sleeve_1_114": {
+      "group": "foot",
+      "mass_g": 2.2382848703057503,
+      "volume_mm3": 285.1318306121975,
+      "CM_mm": [
+        258.0000041795623,
+        207.30000305175767,
+        114.0
+      ]
+    },
+    "inner_shim_1_114": {
+      "group": "foot",
+      "mass_g": 0.07686426049549015,
+      "volume_mm3": 9.791625540826772,
+      "CM_mm": [
+        258.0000042210194,
+        211.49999999999335,
+        114.00000000000011
+      ]
+    },
+    "outer_shim_1_114": {
+      "group": "foot",
+      "mass_g": 0.07685839657570964,
+      "volume_mm3": 9.790878544676389,
+      "CM_mm": [
+        258.0000042210162,
+        231.7000045776279,
+        113.99999999999858
+      ]
+    },
+    "outer_washer_1_114": {
+      "group": "foot",
+      "mass_g": 0.5011053430429369,
+      "volume_mm3": 63.83507554687094,
+      "CM_mm": [
+        257.99999551363885,
+        237.30000305175884,
+        113.99999999999999
+      ]
+    },
+    "button_head_1_114": {
+      "group": "foot",
+      "mass_g": 0.7812100213291259,
+      "volume_mm3": 99.5172001693154,
+      "CM_mm": [
+        258.0000005492745,
+        238.90000152587828,
+        113.9999999999994
+      ]
+    },
+    "shaft_1_114": {
+      "group": "foot",
+      "mass_g": 4.4263995233630995,
+      "volume_mm3": 563.8725507468916,
+      "CM_mm": [
+        258.00000000000057,
+        215.3000030517578,
+        113.99999999999996
+      ]
+    },
+    "inner_washer_1_114": {
+      "group": "foot",
+      "mass_g": 0.7716079984967306,
+      "volume_mm3": 98.29401254735421,
+      "CM_mm": [
+        258.00000305097626,
+        202.69999694824338,
+        114.0
+      ]
+    },
+    "nyloc_1_114": {
+      "group": "foot",
+      "mass_g": 1.5000586997573844,
+      "volume_mm3": 191.09028022387065,
+      "CM_mm": [
+        257.99999631505017,
+        199.69999694824241,
+        114.0
+      ]
+    },
+    "crown_head_1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 0.7812108144653517,
+      "volume_mm3": 99.51730120577729,
+      "CM_mm": [
+        350.06465460278685,
+        233.20000457763445,
+        207.18243512584021
+      ]
+    },
+    "crown_washer_1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 0.19214886237294412,
+      "volume_mm3": 24.477562085725367,
+      "CM_mm": [
+        350.0646541743346,
+        231.8500061035156,
+        207.18243468647458
+      ]
+    },
+    "crown_shaft_1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 4.426404649516101,
+      "volume_mm3": 563.873203760013,
+      "CM_mm": [
+        350.06465484845666,
+        209.60000610351565,
+        207.1824366251585
+      ]
+    },
+    "crown_shim_1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 0.15372260824910997,
+      "volume_mm3": 19.58249786612866,
+      "CM_mm": [
+        350.06465417432645,
+        211.4000015258701,
+        207.1824346864702
+      ]
+    },
+    "crown_inner_washer_1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 0.3074393525802951,
+      "volume_mm3": 39.164248736343325,
+      "CM_mm": [
+        350.064654174333,
+        198.7999954223614,
+        207.18243468647438
+      ]
+    },
+    "crown_nyloc_1_207.18243683479295": {
+      "group": "crown",
+      "mass_g": 1.5000615749902788,
+      "volume_mm3": 191.09064649557695,
+      "CM_mm": [
+        350.0646549765852,
+        195.89999389648435,
+        207.18243459043975
+      ]
+    },
+    "crown_head_1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 0.7812094968023756,
+      "volume_mm3": 99.51713335062111,
+      "CM_mm": [
+        364.5866027871219,
+        233.20000457763803,
+        220.93427935170496
+      ]
+    },
+    "crown_washer_1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 0.19214887977284378,
+      "volume_mm3": 24.477564302273095,
+      "CM_mm": [
+        364.5865962607606,
+        231.85000610351818,
+        220.93427979106443
+      ]
+    },
+    "crown_shaft_1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 4.426412508997775,
+      "volume_mm3": 563.8742049678694,
+      "CM_mm": [
+        364.58659935360527,
+        209.60000610351562,
+        220.93427912395737
+      ]
+    },
+    "crown_shim_1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 0.15372262216934263,
+      "volume_mm3": 19.582499639406706,
+      "CM_mm": [
+        364.58659626076616,
+        211.4000015258827,
+        220.9342797910683
+      ]
+    },
+    "crown_inner_washer_1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 0.3074393804202369,
+      "volume_mm3": 39.16425228283273,
+      "CM_mm": [
+        364.586596260764,
+        198.79999542236538,
+        220.93427979106644
+      ]
+    },
+    "crown_nyloc_1_220.93427798577733": {
+      "group": "crown",
+      "mass_g": 1.5000610903518972,
+      "volume_mm3": 191.09058475820348,
+      "CM_mm": [
+        364.5865976228842,
+        195.89999389648398,
+        220.93427988709902
+      ]
+    },
+    "console_head_242_131": {
+      "group": "console",
+      "mass_g": 1.1293979559634952,
+      "volume_mm3": 143.87235107815226,
+      "CM_mm": [
+        242.0000000000002,
+        -237.799995422363,
+        130.9999996002976
+      ]
+    },
+    "console_outer_washer_242_131": {
+      "group": "console",
+      "mass_g": 0.30743356094323493,
+      "volume_mm3": 39.1635109481828,
+      "CM_mm": [
+        241.9999999999991,
+        -235.99999999999798,
+        130.99999845345042
+      ]
+    },
+    "console_shaft_242_131": {
+      "group": "console",
+      "mass_g": 4.4264150903332045,
+      "volume_mm3": 563.8745338004082,
+      "CM_mm": [
+        241.99999999999892,
+        -213.8999938964844,
+        131.0
+      ]
+    },
+    "console_inner_washer_242_131": {
+      "group": "console",
+      "mass_g": 0.30743942486253173,
+      "volume_mm3": 39.16425794427156,
+      "CM_mm": [
+        241.99999999999991,
+        -203.2000045776385,
+        130.99999845345087
+      ]
+    },
+    "console_nyloc_242_131": {
+      "group": "console",
+      "mass_g": 1.5000602981401314,
+      "volume_mm3": 191.09048383950721,
+      "CM_mm": [
+        241.99999999999957,
+        -200.3000030517577,
+        130.99999946261366
+      ]
+    },
+    "console_head_242_164": {
+      "group": "console",
+      "mass_g": 1.1293978153030686,
+      "volume_mm3": 143.87233315962658,
+      "CM_mm": [
+        242.00000000000006,
+        -237.79999542236223,
+        163.9999999999995
+      ]
+    },
+    "console_outer_washer_242_164": {
+      "group": "console",
+      "mass_g": 0.3074334277490349,
+      "volume_mm3": 39.163493980768784,
+      "CM_mm": [
+        241.99999999999957,
+        -235.99999999999937,
+        163.9999999999997
+      ]
+    },
+    "console_shaft_242_164": {
+      "group": "console",
+      "mass_g": 4.4264150903332045,
+      "volume_mm3": 563.8745338004082,
+      "CM_mm": [
+        241.99999999999892,
+        -213.8999938964844,
+        163.99999999999997
+      ]
+    },
+    "console_inner_washer_242_164": {
+      "group": "console",
+      "mass_g": 0.3074392916657925,
+      "volume_mm3": 39.164240976534074,
+      "CM_mm": [
+        241.99999999999918,
+        -203.2000045776365,
+        163.9999999999994
+      ]
+    },
+    "console_nyloc_242_164": {
+      "group": "console",
+      "mass_g": 1.5000600469610652,
+      "volume_mm3": 191.09045184217393,
+      "CM_mm": [
+        242.0000000000008,
+        -200.30000305175767,
+        164.0000000000002
+      ]
+    },
+    "console_head_304_128": {
+      "group": "console",
+      "mass_g": 1.1293964856473424,
+      "volume_mm3": 143.87216377673153,
+      "CM_mm": [
+        304.0000000000001,
+        -237.79999542236365,
+        127.99999942786853
+      ]
+    },
+    "console_outer_washer_304_128": {
+      "group": "console",
+      "mass_g": 0.30743388253599224,
+      "volume_mm3": 39.16355191541303,
+      "CM_mm": [
+        304.0000000000006,
+        -236.00000000000165,
+        127.99999886045967
+      ]
+    },
+    "console_shaft_304_128": {
+      "group": "console",
+      "mass_g": 4.426402993628697,
+      "volume_mm3": 563.8729928189423,
+      "CM_mm": [
+        303.9999999999978,
+        -213.89999389648438,
+        128.00000146432086
+      ]
+    },
+    "console_inner_washer_304_128": {
+      "group": "console",
+      "mass_g": 0.30743974646142314,
+      "volume_mm3": 39.16429891228321,
+      "CM_mm": [
+        304.00000000000085,
+        -203.20000457763703,
+        127.9999988604601
+      ]
+    },
+    "console_nyloc_304_128": {
+      "group": "console",
+      "mass_g": 1.5000571542003307,
+      "volume_mm3": 191.09008333762176,
+      "CM_mm": [
+        303.9999999999992,
+        -200.3000030517579,
+        127.99999974578832
+      ]
+    },
+    "console_head_280_166": {
+      "group": "console",
+      "mass_g": 1.129396233200114,
+      "volume_mm3": 143.87213161784894,
+      "CM_mm": [
+        280.00000000000017,
+        -237.79999542236308,
+        165.99999999999963
+      ]
+    },
+    "console_outer_washer_280_166": {
+      "group": "console",
+      "mass_g": 0.3074338209515194,
+      "volume_mm3": 39.16354407025725,
+      "CM_mm": [
+        280.0000000000038,
+        -236.00000000000514,
+        166.00000000000213
+      ]
+    },
+    "console_shaft_280_166": {
+      "group": "console",
+      "mass_g": 4.426406463894295,
+      "volume_mm3": 563.8734348909929,
+      "CM_mm": [
+        280.0,
+        -213.89999389648438,
+        165.99999999999997
+      ]
+    },
+    "console_inner_washer_280_166": {
+      "group": "console",
+      "mass_g": 0.30743968487578177,
+      "volume_mm3": 39.16429106697857,
+      "CM_mm": [
+        279.99999999999955,
+        -203.20000457763447,
+        165.99999999999932
+      ]
+    },
+    "console_nyloc_280_166": {
+      "group": "console",
+      "mass_g": 1.5000571787557564,
+      "volume_mm3": 191.09008646570146,
+      "CM_mm": [
+        280.0,
+        -200.30000305175784,
+        166.0000000000002
+      ]
+    },
+    "B_-1_0": {
+      "group": "B",
+      "mass_g": 1.573833409384638,
+      "volume_mm3": 200.48833240568638,
+      "CM_mm": [
+        260.0,
+        -223.0,
+        220.00000000000017
+      ]
+    },
+    "B_-1_1": {
+      "group": "B",
+      "mass_g": 0.3074395837483487,
+      "volume_mm3": 39.16427818450302,
+      "CM_mm": [
+        260.0000013212248,
+        -230.59999847411953,
+        219.99999999999918
+      ]
+    },
+    "B_-1_2": {
+      "group": "B",
+      "mass_g": 0.7812097703898385,
+      "volume_mm3": 99.5171682025272,
+      "CM_mm": [
+        259.99999999999795,
+        -232.09999847411976,
+        219.9999999999989
+      ]
+    },
+    "B_-1_3": {
+      "group": "B",
+      "mass_g": 0.6600243823930998,
+      "volume_mm3": 84.07953915835667,
+      "CM_mm": [
+        259.9999991476604,
+        -217.9000015258823,
+        220.0000000000032
+      ]
+    },
+    "B_1_0": {
+      "group": "B",
+      "mass_g": 1.573833409384638,
+      "volume_mm3": 200.48833240568638,
+      "CM_mm": [
+        260.0,
+        -187.0,
+        220.00000000000017
+      ]
+    },
+    "B_1_1": {
+      "group": "B",
+      "mass_g": 0.3074395837483487,
+      "volume_mm3": 39.16427818450302,
+      "CM_mm": [
+        260.0000013212248,
+        -179.40000152587817,
+        219.99999999999918
+      ]
+    },
+    "B_1_2": {
+      "group": "B",
+      "mass_g": 0.7812097703898385,
+      "volume_mm3": 99.5171682025272,
+      "CM_mm": [
+        259.99999999999795,
+        -177.90000152587805,
+        219.9999999999989
+      ]
+    },
+    "B_1_3": {
+      "group": "B",
+      "mass_g": 0.6600243823930998,
+      "volume_mm3": 84.07953915835667,
+      "CM_mm": [
+        259.9999991476604,
+        -192.09999847412305,
+        220.0000000000032
+      ]
+    },
+    "arm_mount_-15_-224_0": {
+      "group": "arm_mount",
+      "mass_g": 0.5011058552588802,
+      "volume_mm3": 63.83514079730958,
+      "CM_mm": [
+        371.9999981211671,
+        -224.0,
+        111.43736267089845
+      ]
+    },
+    "arm_mount_-15_-224_1": {
+      "group": "arm_mount",
+      "mass_g": 0.19214922727004158,
+      "volume_mm3": 24.47760856943205,
+      "CM_mm": [
+        371.9999990607803,
+        -223.9999999999998,
+        112.18736267089841
+      ]
+    },
+    "arm_mount_-15_-224_2": {
+      "group": "arm_mount",
+      "mass_g": 1.1293962332001044,
+      "volume_mm3": 143.8721316178477,
+      "CM_mm": [
+        372.0000000000015,
+        -224.0000000000014,
+        113.83736419677813
+      ]
+    },
+    "arm_mount_-15_-224_3": {
+      "group": "arm_mount",
+      "mass_g": 2.950937642596196,
+      "volume_mm3": 375.91562326066196,
+      "CM_mm": [
+        372.0,
+        -224.0,
+        97.43736267089842
+      ]
+    },
+    "arm_mount_-15_-224_4": {
+      "group": "arm_mount",
+      "mass_g": 0.5011058552588802,
+      "volume_mm3": 63.83514079730958,
+      "CM_mm": [
+        371.9999981211671,
+        -224.0,
+        90.33736419677727
+      ]
+    },
+    "arm_mount_-15_-224_5": {
+      "group": "arm_mount",
+      "mass_g": 1.500055487127276,
+      "volume_mm3": 191.08987097162753,
+      "CM_mm": [
+        372.000000438021,
+        -223.99999999999957,
+        87.33736419677736
+      ]
+    },
+    "arm_mount_-15_-184_0": {
+      "group": "arm_mount",
+      "mass_g": 0.5011058552588802,
+      "volume_mm3": 63.83514079730958,
+      "CM_mm": [
+        371.9999981211671,
+        -184.0,
+        111.43736267089845
+      ]
+    },
+    "arm_mount_-15_-184_1": {
+      "group": "arm_mount",
+      "mass_g": 0.19214922727004158,
+      "volume_mm3": 24.47760856943205,
+      "CM_mm": [
+        371.9999990607803,
+        -184.0000000000002,
+        112.18736267089841
+      ]
+    },
+    "arm_mount_-15_-184_2": {
+      "group": "arm_mount",
+      "mass_g": 1.1293962332001044,
+      "volume_mm3": 143.8721316178477,
+      "CM_mm": [
+        372.0000000000015,
+        -184.00000000000088,
+        113.83736419677813
+      ]
+    },
+    "arm_mount_-15_-184_3": {
+      "group": "arm_mount",
+      "mass_g": 2.950937642596196,
+      "volume_mm3": 375.91562326066196,
+      "CM_mm": [
+        372.0,
+        -183.9999999999999,
+        97.43736267089842
+      ]
+    },
+    "arm_mount_-15_-184_4": {
+      "group": "arm_mount",
+      "mass_g": 0.5011058552588802,
+      "volume_mm3": 63.83514079730958,
+      "CM_mm": [
+        371.9999981211671,
+        -184.0,
+        90.33736419677727
+      ]
+    },
+    "arm_mount_-15_-184_5": {
+      "group": "arm_mount",
+      "mass_g": 1.500055487127276,
+      "volume_mm3": 191.08987097162753,
+      "CM_mm": [
+        372.000000438021,
+        -184.0,
+        87.33736419677736
+      ]
+    },
+    "arm_mount_5_-224_0": {
+      "group": "arm_mount",
+      "mass_g": 0.5011054533869959,
+      "volume_mm3": 63.83508960343897,
+      "CM_mm": [
+        391.9999999999988,
+        -224.0000000000003,
+        111.43736267089834
+      ]
+    },
+    "arm_mount_5_-224_1": {
+      "group": "arm_mount",
+      "mass_g": 0.1921491215108195,
+      "volume_mm3": 24.477595096919686,
+      "CM_mm": [
+        392.00000000000153,
+        -223.9999999999998,
+        112.18736267089852
+      ]
+    },
+    "arm_mount_5_-224_2": {
+      "group": "arm_mount",
+      "mass_g": 1.1293962332001044,
+      "volume_mm3": 143.8721316178477,
+      "CM_mm": [
+        392.00000000000153,
+        -224.0000000000014,
+        113.83736419677813
+      ]
+    },
+    "arm_mount_5_-224_3": {
+      "group": "arm_mount",
+      "mass_g": 2.950937642596196,
+      "volume_mm3": 375.91562326066196,
+      "CM_mm": [
+        392.0,
+        -224.0,
+        97.43736267089842
+      ]
+    },
+    "arm_mount_5_-224_4": {
+      "group": "arm_mount",
+      "mass_g": 0.5011054533869959,
+      "volume_mm3": 63.83508960343897,
+      "CM_mm": [
+        391.9999999999988,
+        -224.0000000000003,
+        90.33736419677727
+      ]
+    },
+    "arm_mount_5_-224_5": {
+      "group": "arm_mount",
+      "mass_g": 1.5000571787557564,
+      "volume_mm3": 191.09008646570146,
+      "CM_mm": [
+        392.0,
+        -223.99999999999957,
+        87.33736419677737
+      ]
+    },
+    "arm_mount_5_-184_0": {
+      "group": "arm_mount",
+      "mass_g": 0.5011054533869959,
+      "volume_mm3": 63.83508960343897,
+      "CM_mm": [
+        391.9999999999988,
+        -184.0,
+        111.43736267089834
+      ]
+    },
+    "arm_mount_5_-184_1": {
+      "group": "arm_mount",
+      "mass_g": 0.1921491215108195,
+      "volume_mm3": 24.477595096919686,
+      "CM_mm": [
+        392.00000000000153,
+        -184.0000000000002,
+        112.18736267089852
+      ]
+    },
+    "arm_mount_5_-184_2": {
+      "group": "arm_mount",
+      "mass_g": 1.1293962332001044,
+      "volume_mm3": 143.8721316178477,
+      "CM_mm": [
+        392.00000000000153,
+        -184.00000000000088,
+        113.83736419677813
+      ]
+    },
+    "arm_mount_5_-184_3": {
+      "group": "arm_mount",
+      "mass_g": 2.950937642596196,
+      "volume_mm3": 375.91562326066196,
+      "CM_mm": [
+        392.0,
+        -183.9999999999999,
+        97.43736267089842
+      ]
+    },
+    "arm_mount_5_-184_4": {
+      "group": "arm_mount",
+      "mass_g": 0.5011054533869959,
+      "volume_mm3": 63.83508960343897,
+      "CM_mm": [
+        391.9999999999988,
+        -184.0,
+        90.33736419677727
+      ]
+    },
+    "arm_mount_5_-184_5": {
+      "group": "arm_mount",
+      "mass_g": 1.5000571787557564,
+      "volume_mm3": 191.09008646570146,
+      "CM_mm": [
+        392.0,
+        -184.0,
+        87.33736419677737
+      ]
+    },
+    "N_-1_0": {
+      "group": "N",
+      "mass_g": 0.7812106645913715,
+      "volume_mm3": 99.51728211355051,
+      "CM_mm": [
+        417.0,
+        -218.20000457763615,
+        161.8373626400357
+      ]
+    },
+    "N_-1_1": {
+      "group": "N",
+      "mass_g": 0.13989292609196854,
+      "volume_mm3": 17.820754916174337,
+      "CM_mm": [
+        417.0,
+        -219.55000305176284,
+        161.83736293052235
+      ]
+    },
+    "N_-1_2": {
+      "group": "N",
+      "mass_g": 1.573829391499236,
+      "volume_mm3": 200.4878205731511,
+      "CM_mm": [
+        417.0,
+        -227.30000305175778,
+        161.83736324130288
+      ]
+    },
+    "N_-1_3": {
+      "group": "N",
+      "mass_g": 0.30744002743870524,
+      "volume_mm3": 39.16433470556755,
+      "CM_mm": [
+        417.00000000000193,
+        -228.5999984741231,
+        161.83736139997686
+      ]
+    },
+    "N_-1_4": {
+      "group": "N",
+      "mass_g": 1.500055709798471,
+      "volume_mm3": 191.08989933738485,
+      "CM_mm": [
+        416.99999999999915,
+        -231.49999999999957,
+        161.837364632991
+      ]
+    },
+    "N_1_0": {
+      "group": "N",
+      "mass_g": 0.7812106645913715,
+      "volume_mm3": 99.51728211355051,
+      "CM_mm": [
+        417.0,
+        -191.79999542236288,
+        161.8373626400357
+      ]
+    },
+    "N_1_1": {
+      "group": "N",
+      "mass_g": 0.13989292609196854,
+      "volume_mm3": 17.820754916174337,
+      "CM_mm": [
+        417.0,
+        -190.4499969482437,
+        161.83736293052235
+      ]
+    },
+    "N_1_2": {
+      "group": "N",
+      "mass_g": 1.573829391499236,
+      "volume_mm3": 200.4878205731511,
+      "CM_mm": [
+        417.0,
+        -182.69999694824213,
+        161.83736324130288
+      ]
+    },
+    "N_1_3": {
+      "group": "N",
+      "mass_g": 0.30744002743870524,
+      "volume_mm3": 39.16433470556755,
+      "CM_mm": [
+        417.00000000000193,
+        -181.40000152588027,
+        161.83736139997686
+      ]
+    },
+    "N_1_4": {
+      "group": "N",
+      "mass_g": 1.500055709798471,
+      "volume_mm3": 191.08989933738485,
+      "CM_mm": [
+        416.99999999999915,
+        -178.5,
+        161.837364632991
+      ]
+    }
+  },
+  "total_modelled_mass_g": 2082.508383953409,
+  "target_margin": 1.0,
+  "G15_100g_sensitivity_sampled": {
+    "LC1": 1.0324042212026274,
+    "LC2": 1.1329758961172929
+  },
+  "print_STL_sanity": {
+    "p293g_console_inboard.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 83454.37794623089,
+      "bounds": [
+        [
+          0.0,
+          16.599999999999994,
+          0.0
+        ],
+        [
+          77.0,
+          73.4,
+          112.0
+        ]
+      ],
+      "scene_volume_relative_difference": 3.487394091593986e-16
+    },
+    "p293g_console_outboard.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 51543.639196481345,
+      "bounds": [
+        [
+          0.0,
+          7.400000000000006,
+          0.0
+        ],
+        [
+          77.0,
+          25.400000000000006,
+          52.0
+        ]
+      ],
+      "scene_volume_relative_difference": 0.0
+    },
+    "p293g_cradle.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 83977.93183948213,
+      "bounds": [
+        [
+          5.0,
+          2.5,
+          6.899999999999999
+        ],
+        [
+          89.8245602987317,
+          108.0,
+          79.0
+        ]
+      ],
+      "scene_volume_relative_difference": 1.2129782714019756e-15
+    },
+    "p293g_crossbar_end.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 35209.55380557142,
+      "bounds": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          20.0,
+          105.19999999999999,
+          26.0
+        ]
+      ],
+      "scene_volume_relative_difference": 6.199417624853946e-16
+    },
+    "p293g_crown.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 48313.85242309262,
+      "bounds": [
+        [
+          -6.137803268500875,
+          -58.0,
+          0.0
+        ],
+        [
+          63.0,
+          9.135387364862368,
+          52.8
+        ]
+      ],
+      "scene_volume_relative_difference": 9.035865180611095e-16
+    },
+    "p293g_float_cap.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 4366.132456046859,
+      "bounds": [
+        [
+          4.0,
+          4.0,
+          0.10000000000000142
+        ],
+        [
+          46.0,
+          46.0,
+          4.100000000000001
+        ]
+      ],
+      "scene_volume_relative_difference": 2.2913738463537895e-15
+    },
+    "p293g_foot.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 125737.15811604785,
+      "bounds": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          79.0,
+          107.0,
+          78.0
+        ]
+      ],
+      "scene_volume_relative_difference": 3.4719844427220885e-16
+    },
+    "p293g_nut_arm.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 69824.82029629097,
+      "bounds": [
+        [
+          0.0,
+          9.0,
+          0.10000000000000142
+        ],
+        [
+          67.0,
+          61.0,
+          73.0
+        ]
+      ],
+      "scene_volume_relative_difference": 8.336242136603013e-16
+    },
+    "p293g_nut_trunnion.stl": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 9235.783081973284,
+      "bounds": [
+        [
+          4.0,
+          6.0,
+          1.9000000000000004
+        ],
+        [
+          36.0,
+          44.0,
+          19.0
+        ]
+      ],
+      "scene_volume_relative_difference": 2.3634025018576566e-15
+    }
+  },
+  "unchanged_files": {
+    "cad/independent-check/scene_check.py": {
+      "HEAD_blob": "3a4584786777a1c81d75a78763b5f16874d2618b",
+      "working_blob": "3a4584786777a1c81d75a78763b5f16874d2618b",
+      "identical": true
+    },
+    "cad/independent-check/scadtree.py": {
+      "HEAD_blob": "171a15eaafb7873efe42e9feb722bf7c53d44268",
+      "working_blob": "171a15eaafb7873efe42e9feb722bf7c53d44268",
+      "identical": true
+    },
+    "cad/independent-check/parts.py": {
+      "HEAD_blob": "b574fa88b15f2fcf18c717a3b71a5acdf1feeec5",
+      "working_blob": "b574fa88b15f2fcf18c717a3b71a5acdf1feeec5",
+      "identical": true
+    },
+    "cad/check-current-scene.sh": {
+      "HEAD_blob": "3b62d3bbadb051b78e39ce1eb0dd921eb5e7faa2",
+      "working_blob": "3b62d3bbadb051b78e39ce1eb0dd921eb5e7faa2",
+      "identical": true
+    },
+    "cad/arch-tilt-p293/stl-candidate-p293d/p293d_knee.stl": {
+      "HEAD_blob": "770379e79d422c2598a0cca9664c9bbf65909fc7",
+      "working_blob": "770379e79d422c2598a0cca9664c9bbf65909fc7",
+      "identical": true
+    },
+    "cad/arch-tilt-p293/stl-candidate-p293d/p293e_foot_template.stl": {
+      "HEAD_blob": "34842c2f32f845bebc40087ae3ce67ef355ab382",
+      "working_blob": "34842c2f32f845bebc40087ae3ce67ef355ab382",
+      "identical": true
+    },
+    "cad/arch-tilt-p293/stl-candidate-p293d/p293e_foot_template_R.stl": {
+      "HEAD_blob": "592c3b27f91bd55a2df1b6b5850899f7c9cdb311",
+      "working_blob": "592c3b27f91bd55a2df1b6b5850899f7c9cdb311",
+      "identical": true
+    }
+  },
+  "screen_pass": true
+}

@@ -1,0 +1,75 @@
+{
+  "status": "SURROGATE_DETAIL_ENVELOPES_NOT_CAD",
+  "splice": "plates",
+  "selected": [
+    {
+      "side": -1,
+      "centre_length_mm": 286.6722867666144,
+      "upper_point_mm": [
+        320.0,
+        -204.0,
+        190.0
+      ],
+      "splice_station_mm_from_R": 222.67228676661438,
+      "shaft_piece_lengths_mm": [
+        202.4722867666144,
+        43.8
+      ],
+      "beam_splice_raw_intersection_mm3": -2.1827872842550278e-11,
+      "top_socket_vs_brace_mm3": 0.0,
+      "arch_gap_mm": 1.1171861051407705,
+      "basket_gap_mm": 0.5147732774431926
+    },
+    {
+      "side": 1,
+      "centre_length_mm": 286.6722867666144,
+      "upper_point_mm": [
+        320.0,
+        204.0,
+        190.0
+      ],
+      "splice_station_mm_from_R": 222.67228676661438,
+      "shaft_piece_lengths_mm": [
+        202.4722867666144,
+        43.8
+      ],
+      "beam_splice_raw_intersection_mm3": -2.000888343900442e-11,
+      "top_socket_vs_brace_mm3": 0.0,
+      "arch_gap_mm": 1.1171861051407705,
+      "basket_gap_mm": 26.65918564804079
+    }
+  ],
+  "raw_hits": [
+    {
+      "object": "splice_-1",
+      "target": "upper_stop[side=-1]",
+      "angle": 0,
+      "mm3": 920.6880748705689
+    },
+    {
+      "object": "brace_-1",
+      "target": "upper_stop[side=-1]",
+      "angle": 0,
+      "mm3": 9656.276730731268
+    },
+    {
+      "object": "splice_1",
+      "target": "upper_stop[side=1]",
+      "angle": 0,
+      "mm3": 1810.8042736709585
+    },
+    {
+      "object": "brace_1",
+      "target": "upper_stop[side=1]",
+      "angle": 0,
+      "mm3": 10484.717809781852
+    }
+  ],
+  "scope": [
+    "Splice: either hollow sleeve28x28x70 or two real4normal x20Y x60long fishplates touching beam faces; no QA exclusions.",
+    "Two shaft pieces with0.4mm axial end gap; no overlapping solid splice.",
+    "Top tool D12 Z76..136; underside24x40x8 aroundZ15; real fastener CAD not present.",
+    "R65/Z60 is a virtual load line, NOT a Y-pin crossing the vertical rail bolt.",
+    "Rail pad,end nodes and bolts not final solids; their access/edge ligaments remain pending."
+  ]
+}

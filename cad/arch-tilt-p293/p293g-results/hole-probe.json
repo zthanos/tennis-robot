@@ -1,0 +1,53 @@
+{
+  "note": "Existing exported scene only. D4 core in nominal D4.5 octagonal bore, no volume exclusions. Side rail bore is NOT clear on -Y side. Not a new candidate collision gate.",
+  "rows": [
+    {
+      "body": "rail_extension_v3[side=-1]",
+      "mesh": "cad/independent-check/out/scene/2a5c46d47790.stl",
+      "probe": "vertical_X170_Y-220_Z21..53_D4",
+      "raw_intersection_mm3": 0.0
+    },
+    {
+      "body": "rail_extension_v3[side=-1]",
+      "mesh": "cad/independent-check/out/scene/2a5c46d47790.stl",
+      "probe": "side_X170_Z37_Y-194..-246_D4",
+      "raw_intersection_mm3": 80.29556478208525
+    },
+    {
+      "body": "rail_extension_v3[side=-1]",
+      "mesh": "cad/independent-check/out/scene/2a5c46d47790.stl",
+      "probe": "control_vertical_X175_Y-220",
+      "raw_intersection_mm3": 97.15774920735814
+    },
+    {
+      "body": "rail_extension_v3[side=-1]",
+      "mesh": "cad/independent-check/out/scene/2a5c46d47790.stl",
+      "probe": "control_side_X175_Z37",
+      "raw_intersection_mm3": 97.15763338632293
+    },
+    {
+      "body": "clamp_sleeve_x[side=-1xx=200]",
+      "mesh": "cad/independent-check/out/scene/086fcd2ef1d8.stl",
+      "probe": "vertical_X170_Y-220_Z21..53_D4",
+      "raw_intersection_mm3": 0.0
+    },
+    {
+      "body": "clamp_sleeve_x[side=-1xx=200]",
+      "mesh": "cad/independent-check/out/scene/086fcd2ef1d8.stl",
+      "probe": "side_X170_Z37_Y-194..-246_D4",
+      "raw_intersection_mm3": 0.0
+    },
+    {
+      "body": "clamp_sleeve_x[side=-1xx=200]",
+      "mesh": "cad/independent-check/out/scene/086fcd2ef1d8.stl",
+      "probe": "control_vertical_X175_Y-220",
+      "raw_intersection_mm3": 345.0221981964306
+    },
+    {
+      "body": "clamp_sleeve_x[side=-1xx=200]",
+      "mesh": "cad/independent-check/out/scene/086fcd2ef1d8.stl",
+      "probe": "control_side_X175_Z37",
+      "raw_intersection_mm3": 643.7714099975799
+    }
+  ]
+}

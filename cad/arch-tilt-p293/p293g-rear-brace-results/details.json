@@ -1,0 +1,38 @@
+{
+  "status": "SURROGATE_DETAIL_ENVELOPES_NOT_CAD",
+  "selected": [
+    {
+      "side": -1,
+      "centre_length_mm": 284.43980030930976,
+      "shaft_piece_length_each_mm": 122.01990015465488,
+      "beam_sleeve_raw_intersection_mm3": 0.0,
+      "top_socket_vs_brace_mm3": 0.0,
+      "arch_gap_mm": 0.5723418865504941,
+      "basket_gap_mm": 0.1297444533675227
+    },
+    {
+      "side": 1,
+      "centre_length_mm": 284.43980030930976,
+      "shaft_piece_length_each_mm": 122.01990015465488,
+      "beam_sleeve_raw_intersection_mm3": 0.0,
+      "top_socket_vs_brace_mm3": 0.0,
+      "arch_gap_mm": 0.5723418865504941,
+      "basket_gap_mm": 26.574670197044163
+    }
+  ],
+  "raw_hits": [
+    {
+      "object": "sleeve_-1",
+      "target": "p271_front_system",
+      "angle": 0,
+      "mm3": 1346.6655415475661
+    }
+  ],
+  "scope": [
+    "Hollow sleeve28x28x80,real20.4x20.4 bore; not an excluded collision volume.",
+    "Two shaft pieces with0.4mm axial end gap; no overlapping solid splice.",
+    "Top tool D12 Z76..136; underside24x40x8 aroundZ15; real fastener CAD not present.",
+    "R65/Z60 is a virtual load line, NOT a Y-pin crossing the vertical rail bolt.",
+    "Rail pad,end nodes and bolts not final solids; their access/edge ligaments remain pending."
+  ]
+}

@@ -1,0 +1,5450 @@
+{
+  "raw_hits": [],
+  "minimum_gaps": [
+    {
+      "angle": -10,
+      "arch_to_moving": {
+        "mm": 59.19803954314244,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_cradle": {
+        "mm": 0.399993896484375,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_arm": {
+        "mm": 57.45793360158302,
+        "part": "p293d_knee[side=-1]"
+      },
+      "crown_to_Tr8": {
+        "mm": 2.4493439695136447,
+        "part": "p293g_crown[side=-1]"
+      },
+      "arm_to_moving": {
+        "mm": 0.09999847412105867,
+        "part": "p293g_nut_arm"
+      },
+      "arm_to_cradle": {
+        "mm": 96.36333705729099,
+        "part": "p293g_nut_arm"
+      },
+      "arch_tilt_to_drive": {
+        "mm": 9.0,
+        "part": "p293d_knee[side=-1]"
+      },
+      "arch_to_F": {
+        "mm": 2.0,
+        "part": "p293g_foot"
+      }
+    },
+    {
+      "angle": -3,
+      "arch_to_moving": {
+        "mm": 54.28076838051607,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_cradle": {
+        "mm": 0.399993896484375,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_arm": {
+        "mm": 51.467312791233944,
+        "part": "p293g_console_inboard"
+      },
+      "crown_to_Tr8": {
+        "mm": 2.3186387558981405,
+        "part": "p293g_crown[side=-1]"
+      },
+      "arm_to_moving": {
+        "mm": 0.09999847412106735,
+        "part": "p293g_nut_arm"
+      },
+      "arm_to_cradle": {
+        "mm": 89.03564401418093,
+        "part": "p293g_nut_arm"
+      },
+      "arch_tilt_to_drive": {
+        "mm": 9.0,
+        "part": "p293d_knee[side=-1]"
+      },
+      "arch_to_F": {
+        "mm": 2.0,
+        "part": "p293g_foot"
+      }
+    },
+    {
+      "angle": 0,
+      "arch_to_moving": {
+        "mm": 52.45814668990739,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_cradle": {
+        "mm": 0.399993896484375,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_arm": {
+        "mm": 48.0,
+        "part": "p293g_console_inboard"
+      },
+      "crown_to_Tr8": {
+        "mm": 2.458380406612579,
+        "part": "p293g_crown[side=-1]"
+      },
+      "arm_to_moving": {
+        "mm": 0.09999847412109375,
+        "part": "p293g_nut_arm"
+      },
+      "arm_to_cradle": {
+        "mm": 86.3995146979009,
+        "part": "p293g_nut_arm"
+      },
+      "arch_tilt_to_drive": {
+        "mm": 9.0,
+        "part": "p293d_knee[side=-1]"
+      },
+      "arch_to_F": {
+        "mm": 2.0,
+        "part": "p293g_foot"
+      }
+    },
+    {
+      "angle": 15,
+      "arch_to_moving": {
+        "mm": 46.9108094473929,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_cradle": {
+        "mm": 0.399993896484375,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_arm": {
+        "mm": 28.146332564064437,
+        "part": "p293g_console_inboard"
+      },
+      "crown_to_Tr8": {
+        "mm": 6.144544839979539,
+        "part": "p293g_crown[side=-1]"
+      },
+      "arm_to_moving": {
+        "mm": 0.09999847412105285,
+        "part": "p293g_nut_arm"
+      },
+      "arm_to_cradle": {
+        "mm": 78.70586471003153,
+        "part": "p293g_nut_arm"
+      },
+      "arch_tilt_to_drive": {
+        "mm": 9.0,
+        "part": "p293d_knee[side=-1]"
+      },
+      "arch_to_F": {
+        "mm": 2.0,
+        "part": "p293g_foot"
+      }
+    },
+    {
+      "angle": 20,
+      "arch_to_moving": {
+        "mm": 46.65933251236086,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_cradle": {
+        "mm": 0.399993896484375,
+        "part": "p293g_console_inboard"
+      },
+      "arch_to_arm": {
+        "mm": 22.1993984578679,
+        "part": "p293g_console_inboard"
+      },
+      "crown_to_Tr8": {
+        "mm": 9.011192912300851,
+        "part": "p293g_crown[side=-1]"
+      },
+      "arm_to_moving": {
+        "mm": 0.09999847412101641,
+        "part": "p293g_nut_arm"
+      },
+      "arm_to_cradle": {
+        "mm": 75.60142169238262,
+        "part": "p293g_nut_arm"
+      },
+      "arch_tilt_to_drive": {
+        "mm": 9.0,
+        "part": "p293d_knee[side=-1]"
+      },
+      "arch_to_F": {
+        "mm": 2.0,
+        "part": "p293g_foot"
+      }
+    }
+  ],
+  "motor_min_X": {
+    "angle": -5,
+    "min_X_mm": 237.08820506842815
+  },
+  "Y_limit": {
+    "limit_mm": 240,
+    "worst": {
+      "angle": -10,
+      "part": "p293g_foot",
+      "max_abs_Y": 240.0
+    },
+    "all": [
+      {
+        "angle": -10,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -10,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -10,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -10,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -10,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -10,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -10,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -10,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -10,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -10,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -10,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -10,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -10,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -10,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -10,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -10,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -10,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -10,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -10,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -10,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -9,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -9,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -9,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -9,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -9,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -9,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -9,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -9,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -9,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -9,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -9,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -9,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -9,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -9,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -9,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -9,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -9,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -9,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -9,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -9,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -8,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -8,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -8,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -8,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -8,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -8,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -8,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -8,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -8,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -8,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -8,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -8,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -8,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -8,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -8,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -8,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -8,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -8,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 209.4826791048203
+      },
+      {
+        "angle": -8,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -8,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -8,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -7,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -7,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -7,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -7,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -7,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -7,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -7,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -7,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -7,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -7,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -7,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -7,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -7,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -7,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -7,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -7,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -7,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -7,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 210.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -7,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -7,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -6,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -6,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -6,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -6,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -6,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -6,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -6,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -6,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -6,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -6,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -6,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -6,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -6,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -6,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -6,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -6,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -6,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -6,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 210.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -6,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -6,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -5,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -5,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -5,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -5,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -5,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -5,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -5,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -5,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -5,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -5,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -5,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -5,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -5,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -5,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -5,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -5,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -5,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -5,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 210.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -5,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -5,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -4,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -4,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -4,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -4,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -4,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -4,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -4,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -4,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -4,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -4,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -4,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -4,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -4,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -4,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -4,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -4,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -4,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -4,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 212.65034681870398
+      },
+      {
+        "angle": -4,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -4,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -4,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -3,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -3,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -3,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -3,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -3,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -3,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -3,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -3,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -3,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -3,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -3,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -3,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -3,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -3,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -3,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -3,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -3,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -3,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 215.70833779959904
+      },
+      {
+        "angle": -3,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -3,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -3,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -2,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -2,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -2,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -2,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -2,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -2,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -2,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -2,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -2,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -2,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -2,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -2,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -2,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -2,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -2,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -2,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -2,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -2,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -2,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -2,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": -1,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -1,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -1,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -1,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -1,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -1,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": -1,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": -1,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": -1,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": -1,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": -1,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": -1,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -1,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": -1,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": -1,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": -1,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": -1,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": -1,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": -1,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": -1,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 0,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 0,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 0,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 0,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 0,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 0,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 0,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 0,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 0,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 0,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 0,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 0,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 0,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 0,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 0,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 0,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 0,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 0,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 0,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 0,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 1,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 1,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 1,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 1,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 1,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 1,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 1,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 1,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 1,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 1,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 1,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 1,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 1,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 1,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 1,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 1,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 1,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 1,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 1,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 1,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 2,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 2,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 2,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 2,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 2,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 2,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 2,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 2,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 2,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 2,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 2,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 2,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 2,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 2,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 2,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 2,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 2,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 2,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 2,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 2,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 3,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 3,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 3,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 3,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 3,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 3,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 3,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 3,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 3,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 3,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 3,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 3,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 3,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 3,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 3,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 3,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 3,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 3,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 3,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 3,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 4,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 4,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 4,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 4,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 4,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 4,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 4,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 4,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 4,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 4,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 4,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 4,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 4,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 4,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 4,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 4,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 4,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 4,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 4,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 4,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 5,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 5,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 5,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 5,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 5,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 5,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 5,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 5,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 5,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 5,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 5,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 5,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 5,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 5,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 5,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 5,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 5,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 5,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 5,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 5,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 6,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 6,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 6,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 6,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 6,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 6,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 6,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 6,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 6,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 6,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 6,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 6,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 6,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 6,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 6,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 6,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 6,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 6,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 6,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 6,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 7,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 7,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 7,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 7,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 7,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 7,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 7,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 7,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 7,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 7,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 7,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 7,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 7,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 7,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 7,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 7,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 7,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 7,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 7,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 7,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 8,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 8,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 8,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 8,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 8,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 8,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 8,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 8,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 8,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 8,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 8,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 8,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 8,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 8,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 8,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 8,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 8,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 8,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 8,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 8,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 9,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 9,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 9,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 9,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 9,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 9,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 9,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 9,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 9,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 9,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 9,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 9,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 9,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 9,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 9,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 9,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 9,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 9,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 9,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 9,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 10,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 10,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 10,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 10,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 10,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 10,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 10,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 10,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 10,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 10,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 10,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 10,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 10,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 10,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 10,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 10,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 10,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 10,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 10,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 10,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 11,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 11,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 11,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 11,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 11,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 11,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 11,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 11,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 11,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 11,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 11,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 11,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 11,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 11,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 11,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 11,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 11,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 11,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 11,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 11,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 12,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 12,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 12,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 12,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 12,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 12,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 12,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 12,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 12,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 12,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 12,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 12,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 12,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 12,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 12,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 12,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 12,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 12,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 12,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 12,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 13,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 13,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 13,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 13,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 13,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 13,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 13,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 13,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 13,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 13,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 13,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 13,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 13,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 13,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 13,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 13,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 13,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 13,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 13,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 13,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 14,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 14,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 14,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 14,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 14,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 14,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 14,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 14,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 14,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 14,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 14,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 14,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 14,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 14,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 14,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 14,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 14,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 14,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 14,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 14,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 15,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 15,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 15,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 15,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 15,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 15,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 15,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 15,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 15,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 15,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 15,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 15,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 15,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 15,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 15,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 15,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 15,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 15,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 15,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 15,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 16,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 16,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 16,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 16,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 16,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 16,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 16,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 16,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 16,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 16,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 16,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 16,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 16,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 16,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 16,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 16,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 16,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 16,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 16,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 16,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 17,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 17,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 17,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 17,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 17,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 17,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 17,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 17,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 17,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 17,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 17,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 17,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 17,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 17,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 17,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 17,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 17,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 17,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 17,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 17,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 18,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 18,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 18,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 18,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 18,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 18,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 18,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 18,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 18,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 18,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 18,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 18,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 18,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 18,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 18,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 18,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 18,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 18,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 18,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 18,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 19,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 19,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 19,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 19,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 19,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 19,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 19,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 19,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 19,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 19,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 19,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 19,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 19,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 19,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 19,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 19,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 19,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 19,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 19,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 19,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      },
+      {
+        "angle": 20,
+        "part": "p293d_knee[side=-1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 20,
+        "part": "p293g_crown[side=-1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_crossbar_end[side=-1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 20,
+        "part": "p293d_mast[side=-1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 20,
+        "part": "p293d_lidar_half[side=-1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 20,
+        "part": "p293d_mast_cap[side=-1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 20,
+        "part": "p293d_knee[side=1]",
+        "max_abs_Y": 231.60000610351562
+      },
+      {
+        "angle": 20,
+        "part": "p293g_crown[side=1]",
+        "max_abs_Y": 238.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_crossbar_end[side=1]",
+        "max_abs_Y": 205.1999969482422
+      },
+      {
+        "angle": 20,
+        "part": "p293d_mast[side=1]",
+        "max_abs_Y": 165.0
+      },
+      {
+        "angle": 20,
+        "part": "p293d_lidar_half[side=1]",
+        "max_abs_Y": 138.0
+      },
+      {
+        "angle": 20,
+        "part": "p293d_mast_cap[side=1]",
+        "max_abs_Y": 162.0
+      },
+      {
+        "angle": 20,
+        "part": "arch_crossbar_center",
+        "max_abs_Y": 100.0
+      },
+      {
+        "angle": 20,
+        "part": "joint_sleeve_x[side=-1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 20,
+        "part": "joint_sleeve_x[side=1]",
+        "max_abs_Y": 124.0
+      },
+      {
+        "angle": 20,
+        "part": "joint_sleeve_x",
+        "max_abs_Y": 22.0
+      },
+      {
+        "angle": 20,
+        "part": "p293d_oak_mount",
+        "max_abs_Y": 41.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_foot",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_foot#2",
+        "max_abs_Y": 240.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_console_inboard",
+        "max_abs_Y": 233.39999389648438
+      },
+      {
+        "angle": 20,
+        "part": "p293g_console_outboard",
+        "max_abs_Y": 239.60000610351562
+      },
+      {
+        "angle": 20,
+        "part": "p293g_cradle",
+        "max_abs_Y": 233.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_float_cap",
+        "max_abs_Y": 226.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_nut_arm",
+        "max_abs_Y": 231.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_nut_trunnion",
+        "max_abs_Y": 224.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_fit_hardware",
+        "max_abs_Y": 173.5
+      },
+      {
+        "angle": 20,
+        "part": "p293g_kfl08_hardware",
+        "max_abs_Y": 229.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_608_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_tr8_hardware",
+        "max_abs_Y": 209.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_t8_nut_hardware",
+        "max_abs_Y": 216.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_collar_hardware",
+        "max_abs_Y": 213.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_thrust_washer_hardware",
+        "max_abs_Y": 210.25
+      },
+      {
+        "angle": 20,
+        "part": "p293g_pulley_hardware",
+        "max_abs_Y": 214.0
+      },
+      {
+        "angle": 20,
+        "part": "p293g_belt_hardware",
+        "max_abs_Y": 212.5
+      }
+    ]
+  },
+  "method": "actual manifold meshes transformed by CAD kinematics; raw intersections each1deg; min_gap triangle distance, no masks"
+}

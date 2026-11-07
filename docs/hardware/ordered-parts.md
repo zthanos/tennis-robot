@@ -136,6 +136,45 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 
 ## Parts To Order
 
+### P2-93g — διορθωμένη Α, προτάσεις 2026-11-06, **δεν παραγγέλθηκαν**
+
+Για τη συγκεκριμένη Α απαιτούνται τουλάχιστον218 mm συνολικά· το
+G13 των200 mm παραμένει παραληφθέν, αλλά δεν επαρκεί για αυτή τη διάταξη.
+Το παλιό planning stack δίνει262,3 mm· το τελικό μήκος κλειδώνει μόνο με
+το πραγματικό stack/dry-fit, μετά γίνεται κοπή του300. Δεν δηλώνεται
+καθολική αδυνατότητα όλων των B/N με200 mm.
+
+| Πρόταση | Ποσότητα | Προδιαγραφή / κατάσταση |
+|---|---:|---|
+| T8 lead2, 300 mm | 1 | Tr8×2, pitch2, single-start, συμβατή με το G14· **Parts To Order**, κοπή μόνο μετά dry-fit |
+| Split shaft collars Ø8 | 2, υπό έλεγχο | Νέα πρόταση χρήστη αντί για jam nuts, ένα ανά αξονική φορά. Πραγματική συγκράτηση πάνω στον Tr8 thread και μήκος stack προς επαλήθευση· δεν πιστώνεται ατεκμηρίωτη friction capacity |
+| Δεύτερο πλήρες T8 nut Tr8×2 | 1, εναλλακτική προς επιλογή | Εναλλακτική/συμπλήρωση του positive axial-stop stack μετά τις μετρήσεις, όχι αυτόματη ταυτόχρονη αγορά με όλους τους collars· **όχι M8 ούτε jam-nut pair** |
+| Hardened thrust-face washers / spacers | 2 | ID που περνά ελεύθερα τον πραγματικό Tr8, ενδεικτικά8,2 mm· OD μόνο όσο η πραγματική παρειά του inner ring του G15, όχι επαφή με shield/outer ring. Μετρήσεις G15 πριν επιλογή |
+| 608ZZ8×22×7 | 1 | **Parts To Order — επιλέχθηκε στο candidate P2-93g**, floating radial support με cap και axial float0,5/0,6· όχι επιπλέον688ZZ |
+| Steel sleeves OD8/ID4,3/L5 | 4 | **Parts To Order**:outboard foot· όχι printed υποκατάστατα |
+| Steel sleeves OD8/ID4,3/L8 | 4 | **Parts To Order**:inboard foot pin supports |
+| Rail washers OD14/ID4,3/t1 | 4 | **Parts To Order**:δύο ανά M4×60, πάνω/κάτω πρόσθετη έδραση |
+| Controlled-grade M4 fasteners / washers | ανά interface | **Parts To Order μόνο ελλείψεις μετά inventory**· [P2-93g hardware πίνακας](../../cad/arch-tilt-p293/P2-93g-debug.md). Foot button-head45, **crown button-head45 class10.9 +OD9 steel washer0,5**, saddle45, B button-head16/thin nuts2,2, N inward button-head16, **arm stock30 +OD10 washers1 +top shims0,5**, χωρίς κοπή |
+| Steel shims OD9/ID4,3 | 8×0,2 +4×0,4 mm | **Parts To Order**:foot/crown knee–lug gaps, όχι printed shims |
+| Thin steel washers OD9/ID4,3/t0,5 | 8 | **Parts To Order**:4 crown head seats +4 arm mounting top shims |
+
+**Επαναχρησιμοποίηση G15 KFL08** και G14 actuator nut. Η πρόταση jam nuts
+**αποσύρθηκε με νεότερη οδηγία χρήστη**. Locating προς εξέταση:
+KFL08 + shaft collars/δεύτερο πλήρες T8 nut + δύο face washers. Δεν προστίθεται
+τόρνευση journals ή χωριστό thrust bearing ως αυτόματη απαίτηση.
+Τα set screws δεν πιστώνονται μόνα τους ως bidirectional axial retention.
+Η ικανότητα του συγκεκριμένου G15 για αξονικό φορτίο/η συγκράτηση outer
+ring στο housing και το fit/runout επάνω στο Tr8 thread παραμένουν προς
+επαλήθευση· αυτή δεν είναι δήλωση έτοιμου bearing stack.
+
+Η floating στήριξη επιλέχθηκε πλέον ως **ένα608ZZ** στο candidate P2-93g.
+Πραγματικό fit/runout πάνω στο thread ελέγχονται με coupon/dry-fit·
+δεν αγοράζουμε και688ZZ «για παν ενδεχόμενο». Πρόσθετο thrust bearing μόνο αν τεκμηριωθεί
+ανάγκη από το πραγματικό G15/stack, όχι από αυθαίρετη απαγόρευση των radial bearings.
+
+Οι παρακάτω παλιές εγγραφές/τιμές είναι ιστορικό παραγγελιών, όχι σύσταση
+να ξαναγοραστεί T8 των200 mm ή δεύτερο KFL08.
+
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|---|
 | 9 | 24 mm hex wheel hub / adapter, **6 mm bore (D-shaft)** → Baja 5B 24 mm hex | Drive / Wheels | 4 | TBD | TBD | Grobotronics | ✅ Λύθηκε — βλ. G3 + printed 12→24 hex adapter |
@@ -145,7 +184,7 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 
 | # | Part | Προδιαγραφή / interface | Ποσότητα | Κατάσταση |
 |---:|---|---|---:|---|
-| T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Ωφέλιμο thread travel ≥60 mm: 34–35 mm λειτουργική διαδρομή + ≥25 mm περιθώριο για end/adjustment· τελικό overall/cut length μετά το clevis/carriage dry-fit. Μαζί thrust bearing, flexible coupling και anti-rotation nut carriage | 1 σετ | **Παραλήφθηκε — φυσικό fit check εκκρεμεί** |
+| T1 | Tr8×2 single-start leadscrew + anti-backlash nut | Παραληφθέν G13 200 mm + G14· δεν επαρκεί για P2-93g Α, βλ. πρόταση300 mm παραπάνω. Belt drive χωρίς flexible coupling· δεν προεξοφλείται χωριστό thrust bearing | 1 σετ | **Παραλήφθηκε — φυσικό fit check εκκρεμεί** |
 | T2 | Δύο timing pulleys + toothed belt 1:1 | Ίδιο tooth count· motor pulley για **FIT0186 6 mm D-shaft** με θετικό κλείδωμα στο flat. Screw-side bore και belt length κλειδώνουν μετά τη φυσική center-distance μέτρηση | 1 σετ | **Παραλήφθηκε — φυσικό fit check εκκρεμεί** |
 | T3 | Belt tensioner + guard hardware | Ρύθμιση τάσης χωρίς να παραβιάζει τα P2-54 clearances· captive hardware και guard γύρω από pulleys/belt | 1 σετ | **Δεν έχει αγοραστεί — μετά το drive test** |
 | T4 | AS5600 board + diametric magnet | I²C `0x36`, magnet `Ø6×2,5 mm`, non-magnetic cap, adjustable air gap 0,5–2,5 mm (στόχος 1,5 mm)· έλεγχος breakout voltage/pull-ups πριν κοινό D20/D21 με MPU6050 | 1 σετ | **Παραγγέλθηκε 25/10/2026 — βλ. AZ1** |

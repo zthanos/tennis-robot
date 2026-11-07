@@ -1,0 +1,518 @@
+{
+  "status": "PREFLIGHT_ONLY_NOT_RELEASE_NO_GEOMETRY_CHANGE",
+  "inputs": {
+    "E_MPa": 1800.0,
+    "PETG_bending_MPa": 10,
+    "PETG_bearing_shear_MPa": 5,
+    "target": 1.5,
+    "one_side_crown_moment_Nm": 8,
+    "axial_Tr8_bound_N": 100,
+    "mass_allowance_kg": 0.6,
+    "CM_XZ_mm": [
+      300,
+      245
+    ],
+    "Y_arch_B_CM_mm": [
+      -228,
+      -205,
+      -175
+    ],
+    "residual_preload_assumption_N": 100,
+    "new_strut_stock_mm": [
+      12,
+      26
+    ],
+    "new_console_stock_mm": [
+      20,
+      40
+    ],
+    "nodes_XZ_mm": [
+      [
+        258.0,
+        97.0
+      ],
+      [
+        258.0,
+        120.0
+      ],
+      [
+        350.0646532975413,
+        207.18243683479295
+      ],
+      [
+        390.0,
+        245.0
+      ],
+      [
+        260.0,
+        220.0
+      ],
+      [
+        170.0,
+        60.0
+      ]
+    ]
+  },
+  "modes": {
+    "cantilever": {
+      "min_margins": {
+        "M4_pin_threaded_8_8": {
+          "value": 0.661299078139104,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "M4_pin_smooth_8_8": {
+          "value": 1.355860938500599,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_cheek_bearing": {
+          "value": 0.37909249931390265,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_cheek_edge_shear": {
+          "value": 0.7013211237307201,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_pad_pitch": {
+          "value": 0.34976758402358993,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_root_roll": {
+          "value": 1.1961228061280917,
+          "angle": 20.0,
+          "sign": -1
+        },
+        "base_M4_8_8": {
+          "value": 5.618310899371314,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "PETG_rail_OD12": {
+          "value": 0.5527411218334217,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "PETG_inboard_OD9": {
+          "value": 1.3867643778701726,
+          "angle": 20.0,
+          "sign": -1
+        },
+        "PETG_pitch_contact": {
+          "value": 0.5383005180039881,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "knee_lower": {
+          "value": 0.6105635195489802,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "knee_incline": {
+          "value": 1.5148353393385954,
+          "angle": 3.5,
+          "sign": 1
+        },
+        "console": {
+          "value": 2.960900476620899,
+          "angle": -5.0,
+          "sign": 1
+        }
+      },
+      "worst_pin_case": {
+        "angle": -5.0,
+        "sign": 1,
+        "mass_kg": 0.6,
+        "margins": {
+          "M4_pin_threaded_8_8": 0.661299078139104,
+          "M4_pin_smooth_8_8": 1.355860938500599,
+          "foot_cheek_bearing": 0.37909249931390265,
+          "foot_cheek_edge_shear": 0.7013211237307201,
+          "foot_pad_pitch": 0.34976758402358993,
+          "foot_root_roll": 1.231859272159371,
+          "base_M4_8_8": 5.618310899371314,
+          "PETG_rail_OD12": 0.5527411218334217,
+          "PETG_inboard_OD9": 1.4044911804221922,
+          "PETG_pitch_contact": 0.5383005180039881,
+          "knee_lower": 0.6105635195489802,
+          "knee_incline": 1.5148353393386105,
+          "console": 2.960900476620899
+        },
+        "root_D_N_Nmm": [
+          -93.85920778405307,
+          100.99494619772435,
+          19860.90032862121
+        ],
+        "root_R_N_Nmm": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "pin_force_N": 633.0908694694882,
+        "base_pitch_Nmm": 24084.564678903596,
+        "base_roll_Nmm": 5832.797095880937,
+        "rail_bolt_N": 891.6952221778167,
+        "inboard_bolt_N": 174.7794499471915,
+        "forces": {
+          "knee_lower": [
+            100.99494619772435,
+            93.85920778405307,
+            19860.90032862121,
+            -100.99494619772435,
+            -93.85920778405307,
+            -17702.138549588002
+          ],
+          "knee_incline": [
+            41.672245912077415,
+            44.00589168314846,
+            7999.999999999945,
+            -41.672245912077415,
+            -44.00589168314846,
+            -2420.3240425733857
+          ],
+          "upper": [
+            41.67224591206832,
+            44.005891683152186,
+            2420.324042573382,
+            -41.67224591206832,
+            -44.005891683152186,
+            1.4551915228366852e-11
+          ],
+          "console": [
+            38.50400140562539,
+            94.64805777690708,
+            9702.138549588053,
+            -38.50400140562539,
+            -94.64805777690708,
+            -235.43999999998778
+          ]
+        }
+      }
+    },
+    "crown_only": {
+      "min_margins": {
+        "M4_pin_threaded_8_8": {
+          "value": 0.6612990781390624,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "M4_pin_smooth_8_8": {
+          "value": 1.355860938500514,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_cheek_bearing": {
+          "value": 0.37909249931387884,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_cheek_edge_shear": {
+          "value": 0.7013211237306759,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_pad_pitch": {
+          "value": 0.34976758402356445,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_root_roll": {
+          "value": 1.1961228061280917,
+          "angle": 20.0,
+          "sign": -1
+        },
+        "base_M4_8_8": {
+          "value": 5.618310899370975,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "PETG_rail_OD12": {
+          "value": 0.5527411218333899,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "PETG_inboard_OD9": {
+          "value": 1.3867643778701726,
+          "angle": 20.0,
+          "sign": -1
+        },
+        "PETG_pitch_contact": {
+          "value": 0.5383005180039571,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "knee_lower": {
+          "value": 0.6105635195489473,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "knee_incline": {
+          "value": 4.246471365290894,
+          "angle": -5.0,
+          "sign": -1
+        },
+        "console": {
+          "value": 1.8848310479808725,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "B_S_stock": {
+          "value": 17.329142355553795,
+          "angle": -5.0,
+          "sign": -1
+        }
+      },
+      "worst_pin_case": {
+        "angle": -5.0,
+        "sign": 1,
+        "mass_kg": 0.6,
+        "margins": {
+          "M4_pin_threaded_8_8": 0.6612990781390624,
+          "M4_pin_smooth_8_8": 1.355860938500514,
+          "foot_cheek_bearing": 0.37909249931387884,
+          "foot_cheek_edge_shear": 0.7013211237306759,
+          "foot_pad_pitch": 0.34976758402356445,
+          "foot_root_roll": 1.231859272159371,
+          "base_M4_8_8": 5.618310899370975,
+          "PETG_rail_OD12": 0.5527411218333899,
+          "PETG_inboard_OD9": 1.4044911804221922,
+          "PETG_pitch_contact": 0.5383005180039571,
+          "knee_lower": 0.6105635195489473,
+          "knee_incline": 4.408503992726896,
+          "console": 1.8848310479808725,
+          "B_S_stock": 27.400647570915254
+        },
+        "root_D_N_Nmm": [
+          -93.85920778406671,
+          100.99494619771671,
+          19860.900328622345
+        ],
+        "root_R_N_Nmm": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "pin_force_N": 633.090869469528,
+        "base_pitch_Nmm": 24084.564678905346,
+        "base_roll_Nmm": 5832.797095880937,
+        "rail_bolt_N": 891.6952221778681,
+        "inboard_bolt_N": 174.7794499471915,
+        "forces": {
+          "knee_lower": [
+            100.99494619771671,
+            93.85920778406671,
+            19860.900328622345,
+            -100.99494619771671,
+            -93.85920778406671,
+            -17702.13854958881
+          ],
+          "knee_incline": [
+            77.08314774042537,
+            -0.5747103976201586,
+            2347.454304785128,
+            -77.08314774042537,
+            0.5747103976201586,
+            -2420.324042573253
+          ],
+          "upper": [
+            41.6722459120665,
+            44.00589168314946,
+            2420.32404257328,
+            -41.6722459120665,
+            -44.00589168314946,
+            7.275957614183426e-12
+          ],
+          "console": [
+            45.39691852612401,
+            151.16221302807025,
+            15354.684244803699,
+            -45.39691852612401,
+            -151.16221302807025,
+            -235.43999999997322
+          ],
+          "B_S": 56.932961017165184
+        }
+      }
+    },
+    "rear_triangle": {
+      "min_margins": {
+        "M4_pin_threaded_8_8": {
+          "value": 1.947479310992735,
+          "angle": 19.0,
+          "sign": 1
+        },
+        "M4_pin_smooth_8_8": {
+          "value": 3.9929151780212813,
+          "angle": 19.0,
+          "sign": 1
+        },
+        "foot_cheek_bearing": {
+          "value": 1.1164007689892126,
+          "angle": 19.0,
+          "sign": 1
+        },
+        "foot_cheek_edge_shear": {
+          "value": 2.0653414226300435,
+          "angle": 19.0,
+          "sign": 1
+        },
+        "foot_pad_pitch": {
+          "value": 1.4634411444843094,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "foot_root_roll": {
+          "value": 1.1961228061280917,
+          "angle": 20.0,
+          "sign": -1
+        },
+        "base_M4_8_8": {
+          "value": 13.753155282794198,
+          "angle": 20.0,
+          "sign": 1
+        },
+        "PETG_rail_OD12": {
+          "value": 1.3935349606142216,
+          "angle": 20.0,
+          "sign": 1
+        },
+        "PETG_inboard_OD9": {
+          "value": 1.325912299919187,
+          "angle": 20.0,
+          "sign": -1
+        },
+        "PETG_pitch_contact": {
+          "value": 1.3571282495992232,
+          "angle": 20.0,
+          "sign": 1
+        },
+        "knee_lower": {
+          "value": 1.9928893671700256,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "knee_incline": {
+          "value": 4.101796812077625,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "console": {
+          "value": 4.567895499926762,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "B_S_stock": {
+          "value": 17.103680490945127,
+          "angle": -5.0,
+          "sign": -1
+        },
+        "B_R_stock": {
+          "value": 5.638436091363107,
+          "angle": -5.0,
+          "sign": 1
+        },
+        "S_R_stock": {
+          "value": 37.70846096531645,
+          "angle": -5.0,
+          "sign": -1
+        }
+      },
+      "worst_pin_case": {
+        "angle": 19.0,
+        "sign": 1,
+        "mass_kg": 0.6,
+        "margins": {
+          "M4_pin_threaded_8_8": 1.947479310992735,
+          "M4_pin_smooth_8_8": 3.9929151780212813,
+          "foot_cheek_bearing": 1.1164007689892126,
+          "foot_cheek_edge_shear": 2.0653414226300435,
+          "foot_pad_pitch": 1.4746220853044656,
+          "foot_root_roll": 1.1992000217986882,
+          "base_M4_8_8": 13.755673121109457,
+          "PETG_rail_OD12": 1.3938262524546516,
+          "PETG_inboard_OD9": 1.3883143182581565,
+          "PETG_pitch_contact": 1.357411931312778,
+          "knee_lower": 2.002575246046217,
+          "knee_incline": 4.106646795113567,
+          "console": 4.57719162937753,
+          "B_S_stock": 20.173240194746377,
+          "B_R_stock": 5.734882866847847,
+          "S_R_stock": 45.49512528817736
+        },
+        "root_D_N_Nmm": [
+          63.26607444816227,
+          362.0940295174792,
+          2865.6767477462217
+        ],
+        "root_R_N_Nmm": [
+          -154.28945280746427,
+          -254.19249424607546,
+          0.0
+        ],
+        "pin_force_N": 214.97656277798484,
+        "base_pitch_Nmm": 5712.6500979135235,
+        "base_roll_Nmm": 5991.648644575636,
+        "rail_bolt_N": 353.6141011636631,
+        "inboard_bolt_N": 176.8160082637902,
+        "forces": {
+          "knee_lower": [
+            362.0940295174792,
+            -63.26607444816227,
+            2865.6767477462217,
+            -362.0940295174792,
+            63.26607444816227,
+            -4320.796460053954
+          ],
+          "knee_incline": [
+            116.72867605794602,
+            -18.515663621988764,
+            72.6519651325712,
+            -116.72867605794602,
+            18.515663621988764,
+            -2420.32404257328
+          ],
+          "upper": [
+            41.67224591207378,
+            44.00589168315048,
+            2420.32404257328,
+            -41.67224591207378,
+            -44.00589168315048,
+            -1.8189894035458565e-12
+          ],
+          "console": [
+            294.53315967520336,
+            40.119021947044246,
+            4248.144494921386,
+            -294.53315967520336,
+            -40.119021947044246,
+            -235.4399999999987
+          ],
+          "B_S": 77.33016535470904,
+          "B_R": 272.0195052314028,
+          "S_R": 27.030791973248796
+        }
+      }
+    }
+  },
+  "approved_A_length_mm": {
+    "min": 129.60140905480932,
+    "max": 187.30182748553656,
+    "planning_blank": 262.3018274855366
+  },
+  "template_sha256": {
+    "cad/arch-tilt-p293/stl-candidate-p293d/p293e_foot_template_R.stl": "8477e3e2c93ca872ddbfb8fa8854fdab7d8d7536655a4b5ef366a711b1db776d",
+    "cad/arch-tilt-p293/stl-candidate-p293d/p293e_foot_template.stl": "045a65e4e6d639af213e97955371c55f85a70a9f9b23a9671854cf2c9ab4bc49"
+  },
+  "limitations": [
+    "Linear planar screening, not full 3D solid FEA or CAD collision check.",
+    "Force-sharing is stiffness dependent. New anchor/console/struts have no candidate solids.",
+    "Full roll envelope retained even in rear triangle; no claimed out-of-plane load relief.",
+    "New R anchor and crown/end joints NOT qualified; stock strut margin excludes holes/joints.",
+    "8.8 steel proof580MPa is conditional; hardware grade and grip are unverified.",
+    "PETG values are screening assumptions, not creep/fatigue/process allowables.",
+    "Mass .600kg and CM are assumptions, not measured cradle data."
+  ]
+}

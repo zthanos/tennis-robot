@@ -8,6 +8,7 @@ use <body-panels-f-rear-v2.scad>
 use <../rear-pod/rear-pod-v2.scad>
 use <../arch-tilt-p293/p293-arch-tilt-release.scad>
 use <../arch-tilt-p293/p293d-arch-candidate.scad>
+use <../arch-tilt-p293/p293g-tilt-candidate.scad>
 use <../modular-test-chassis/modular-chassis-v3.scad>
 use <../modular-test-chassis/shared-flywheel-transition-p252.scad>
 use <../modular-test-chassis/shared-flywheel-p271-basket-grid.scad>
@@ -50,11 +51,14 @@ module exact_current_context(a) {
   color([0.28,0.67,0.36]) p271_basket_current();
   color([0.28,0.67,0.36]) p271_front_system(a,true);
   color([0.08,0.62,0.82]) p273_ski_mount_assembly();
-  color([0.10,0.42,0.86]) p293d_arch_assembly();
-  color([0.95,0.43,0.08]) tilt_release_assembly(a);
+  color([0.10,0.42,0.86]) p293g_arch_assembly();
+  color([0.95,0.43,0.08]) p293g_tilt_assembly(a);
+  // P2-93g: legacy upper stops retired by explicit user approval.
+  // FIT-CHECK ONLY: operation prohibited until P2-93h stops/strikers verified.
+  // Legacy encoder remains an explicitly open P2-93h issue.
+  endpoint_sensor_installed();
   // Pod local Y0..10; cover begins at its outer Y254 face.
   color([0.95,0.43,0.08]) translate([387,254,55.84]) as5600_cover();
-  fit0186_installed_hardware();
 }
 
 // Hardware only: uses the carrier's actual +30 motor bore and installed
@@ -74,7 +78,12 @@ module fit0186_installed_hardware() {
 }
 
 module moving_module_concept(a) {
-  color([0.92,0.48,0.08]) p253_frozen_launcher(a);
+  // Four real M4 through-bores in the concept yoke top flange for new arm.
+  // No printed parts overlap the plate; new pad sits on its W47 top face.
+  color([0.92,0.48,0.08]) difference(){
+    p253_frozen_launcher(a);
+    p293g_yoke_mount_bores(a);
+  }
 }
 
 module current_robot(a=angle,service_open=service) {

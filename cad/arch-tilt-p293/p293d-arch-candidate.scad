@@ -162,9 +162,9 @@ module p293d_oak_mount(){
  }
 }
 
-module p293d_arch_assembly(){
+module p293d_arch_assembly(include_feet=true){
  for(side=[-1,1]){
-  if(side>0) p293d_foot(); else mirror([0,1,0]) p293d_foot();
+  if(include_feet) if(side>0) p293d_foot(); else mirror([0,1,0]) p293d_foot();
   translate([0,side*228,0]) p293d_knee();
   translate([0,side*228,0]) if(side>0) p293d_crown(); else mirror([0,1,0]) p293d_crown();
   if(side>0){p293d_crossbar_end();p293d_mast();p293d_lidar_half();p293d_mast_cap();}

@@ -1,0 +1,2 @@
+A nominal hits 0 C extremes hits 0 Lmin 129.6014090548097 screw 262.3018274855368
+B nominal hits 0 C extremes hits 0 Lmin 130.34162197699885 screw 241.56946870547716

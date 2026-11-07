@@ -1,0 +1,550 @@
+{
+  "status": "CORRECTED_LOAD_PREFLIGHT_NOT_RELEASE",
+  "target_margin": 1.0,
+  "supersedes": "P2-93g-preflight.md combined load and target1.5",
+  "inputs": {
+    "LC1": "F=8000/h(theta) at B, both signs; NO stop; +gravity",
+    "LC2": "one crown stop equivalent force8000/132, both signs; ZERO Tr8; +gravity",
+    "mass_assumed_kg": 0.6,
+    "CM_mm": [
+      300,
+      -175,
+      245
+    ],
+    "preload_N_only_under_washers": 100.0,
+    "Kt": "only actual bore/net-root; no generic stock multiplier"
+  },
+  "original": {
+    "LC1": {
+      "checks": {
+        "knee": {
+          "stress_MPa": 6.655596129735906,
+          "limit_MPa": 10,
+          "margin": 1.5024950139810842,
+          "detail": "Kt1.8 ONLY at actual Z114 bore; plain stem Kt1",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "pin_thread_8_8": {
+          "stress_MPa": 431.43430780706893,
+          "limit_MPa": 580,
+          "margin": 1.3443529860851202,
+          "detail": "conditional class8.8, threaded root; bending + double shear",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "pin_smooth_8_8": {
+          "stress_MPa": 210.42505313701906,
+          "limit_MPa": 580,
+          "margin": 2.7563257860856085,
+          "detail": "conditional class8.8, smooth full grip; bending + double shear",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "knee_pin_bearing": {
+          "stress_MPa": 3.8927872059261004,
+          "limit_MPa": 5,
+          "margin": 1.2844267450294633,
+          "detail": "actual bolt diameter4, knee width20",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "foot_cheek_bearing": {
+          "stress_MPa": 6.487978676543501,
+          "limit_MPa": 5,
+          "margin": 0.7706560470176779,
+          "detail": "actual bolt4; no preload",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "foot_cheek_edge": {
+          "stress_MPa": 3.5070155008343242,
+          "limit_MPa": 5,
+          "margin": 1.4257136869827043,
+          "detail": "actual edge ligament3.7; no preload",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "foot_pad_pitch": {
+          "stress_MPa": 14.977436137145876,
+          "limit_MPa": 10,
+          "margin": 0.6676710158155024,
+          "detail": "Kt1.5 at real X230 through bore; grip height18 unchanged",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "foot_root_roll": {
+          "stress_MPa": 2.8048158129143608,
+          "limit_MPa": 10,
+          "margin": 3.5652964996690604,
+          "detail": "Kt1.8 at inboard actual bore, same net-root proxy as prior screen",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "foot_bridge_torsion": {
+          "stress_MPa": 4.493459762599384,
+          "limit_MPa": 5,
+          "margin": 1.1127283349940562,
+          "detail": "actual bore-free hull Y167..206; Kt1, rectangular torsion modulus0.2*long*short^2",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "base_M4_8_8": {
+          "stress_MPa": 48.7945999285096,
+          "limit_MPa": 580,
+          "margin": 11.886561235255028,
+          "detail": "external load only: preload excluded per corrected contract",
+          "angle_deg": 20.0,
+          "sign": -1
+        },
+        "PETG_rail_washer": {
+          "stress_MPa": 5.165720754770714,
+          "limit_MPa": 5,
+          "margin": 0.9679191418510834,
+          "detail": "ONLY washer checks include residual preload100N",
+          "angle_deg": 20.0,
+          "sign": -1
+        },
+        "PETG_inboard_washer": {
+          "stress_MPa": 3.0582362745285008,
+          "limit_MPa": 5,
+          "margin": 1.6349292700646119,
+          "detail": "ONLY washer checks include residual preload100N",
+          "angle_deg": 20.0,
+          "sign": -1
+        },
+        "PETG_pitch_contact": {
+          "stress_MPa": 4.262631192190308,
+          "limit_MPa": 5,
+          "margin": 1.1729844254789499,
+          "detail": "contact8x12: NO residual preload",
+          "angle_deg": 20.0,
+          "sign": -1
+        },
+        "PETG_reverse_roll_contact": {
+          "stress_MPa": 0.5997952686346847,
+          "limit_MPa": 5,
+          "margin": 8.336177795102504,
+          "detail": "contact4x12: NO residual preload",
+          "angle_deg": 20.0,
+          "sign": 1
+        },
+        "console_stock": {
+          "stress_MPa": 1.5362733181550725,
+          "limit_MPa": 10,
+          "margin": 6.509258399416264,
+          "detail": "plain20x40 stock Kt1; final mounting bores not yet designed",
+          "angle_deg": 20.0,
+          "sign": 1
+        }
+      },
+      "F_Tr8_max_N": 80.71970288283154,
+      "pin_max_N": 311.42297647408805,
+      "base_pitch_abs_max_Nmm": 12616.992201931685
+    },
+    "LC2": {
+      "checks": {
+        "knee": {
+          "stress_MPa": 6.904336708335061,
+          "limit_MPa": 10,
+          "margin": 1.4483650526382628,
+          "detail": "Kt1.8 ONLY at actual Z114 bore; plain stem Kt1",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "pin_thread_8_8": {
+          "stress_MPa": 339.18266524811935,
+          "limit_MPa": 580,
+          "margin": 1.7099930492488984,
+          "detail": "conditional class8.8, threaded root; bending + double shear",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "pin_smooth_8_8": {
+          "stress_MPa": 165.43081777795942,
+          "limit_MPa": 580,
+          "margin": 3.505997297181192,
+          "detail": "conditional class8.8, smooth full grip; bending + double shear",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "knee_pin_bearing": {
+          "stress_MPa": 3.0604101617719346,
+          "limit_MPa": 5,
+          "margin": 1.633767938185472,
+          "detail": "actual bolt diameter4, knee width20",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "foot_cheek_bearing": {
+          "stress_MPa": 5.100683602953224,
+          "limit_MPa": 5,
+          "margin": 0.9802607629112832,
+          "detail": "actual bolt4; no preload",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "foot_cheek_edge": {
+          "stress_MPa": 2.7571262718666074,
+          "limit_MPa": 5,
+          "margin": 1.813482411385874,
+          "detail": "actual edge ligament3.7; no preload",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "foot_pad_pitch": {
+          "stress_MPa": 9.790137701804369,
+          "limit_MPa": 10,
+          "margin": 1.021436092584985,
+          "detail": "Kt1.5 at real X230 through bore; grip height18 unchanged",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "foot_root_roll": {
+          "stress_MPa": 6.783990393626993,
+          "limit_MPa": 10,
+          "margin": 1.4740586910904512,
+          "detail": "Kt1.8 at inboard actual bore, same net-root proxy as prior screen",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "foot_bridge_torsion": {
+          "stress_MPa": 3.1891752896362946,
+          "limit_MPa": 5,
+          "margin": 1.5678034431811425,
+          "detail": "actual bore-free hull Y167..206; Kt1, rectangular torsion modulus0.2*long*short^2",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "base_M4_8_8": {
+          "stress_MPa": 39.655303160817034,
+          "limit_MPa": 580,
+          "margin": 14.626038733026043,
+          "detail": "external load only: preload excluded per corrected contract",
+          "angle_deg": -10.0,
+          "sign": 1
+        },
+        "PETG_rail_washer": {
+          "stress_MPa": 4.546508658492702,
+          "limit_MPa": 5,
+          "margin": 1.099744963788905,
+          "detail": "ONLY washer checks include residual preload100N",
+          "angle_deg": -10.0,
+          "sign": 1
+        },
+        "PETG_inboard_washer": {
+          "stress_MPa": 4.34745988113606,
+          "limit_MPa": 5,
+          "margin": 1.1500968695985807,
+          "detail": "ONLY washer checks include residual preload100N",
+          "angle_deg": -10.0,
+          "sign": 1
+        },
+        "PETG_pitch_contact": {
+          "stress_MPa": 3.626807934916391,
+          "limit_MPa": 5,
+          "margin": 1.3786227695885047,
+          "detail": "contact8x12: NO residual preload",
+          "angle_deg": -10.0,
+          "sign": 1
+        },
+        "PETG_reverse_roll_contact": {
+          "stress_MPa": 1.4507210497835497,
+          "limit_MPa": 5,
+          "margin": 3.4465619705083963,
+          "detail": "contact4x12: NO residual preload",
+          "angle_deg": -10.0,
+          "sign": -1
+        },
+        "console_stock": {
+          "stress_MPa": 0.05370975000000001,
+          "limit_MPa": 10,
+          "margin": 186.18593458357185,
+          "detail": "plain20x40 stock Kt1; final mounting bores not yet designed",
+          "angle_deg": -10.0,
+          "sign": -1
+        }
+      },
+      "F_Tr8_max_N": 0.0,
+      "pin_max_N": 244.83281294175478,
+      "base_pitch_abs_max_Nmm": 8247.212
+    }
+  },
+  "local_sizing_trial": {
+    "dimensions": {
+      "cheek": 8.0,
+      "pad_w": 40.0,
+      "root_w": 24.0,
+      "root_h": 20.0,
+      "washer": 14.0
+    },
+    "envelopes": {
+      "LC1": {
+        "checks": {
+          "knee": {
+            "stress_MPa": 6.655596129735906,
+            "limit_MPa": 10,
+            "margin": 1.5024950139810842,
+            "detail": "Kt1.8 ONLY at actual Z114 bore; plain stem Kt1",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "pin_thread_8_8": {
+            "stress_MPa": 482.54895788352695,
+            "limit_MPa": 580,
+            "margin": 1.201950580400994,
+            "detail": "conditional class8.8, threaded root; bending + double shear",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "pin_smooth_8_8": {
+            "stress_MPa": 234.9696835038751,
+            "limit_MPa": 580,
+            "margin": 2.4684035461554967,
+            "detail": "conditional class8.8, smooth full grip; bending + double shear",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "knee_pin_bearing": {
+            "stress_MPa": 3.8927872059261004,
+            "limit_MPa": 5,
+            "margin": 1.2844267450294633,
+            "detail": "actual bolt diameter4, knee width20",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "foot_cheek_bearing": {
+            "stress_MPa": 4.865984007407626,
+            "limit_MPa": 5,
+            "margin": 1.0275413960235706,
+            "detail": "actual bolt4; no preload",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "foot_cheek_edge": {
+            "stress_MPa": 2.6302616256257436,
+            "limit_MPa": 5,
+            "margin": 1.9009515826436056,
+            "detail": "actual edge ligament3.7; no preload",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "foot_pad_pitch": {
+            "stress_MPa": 9.900339141503204,
+            "limit_MPa": 10,
+            "margin": 1.010066408541401,
+            "detail": "Kt1.5 at real X230 through bore; grip height18 unchanged",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "foot_root_roll": {
+            "stress_MPa": 2.8048158129143608,
+            "limit_MPa": 10,
+            "margin": 3.5652964996690604,
+            "detail": "Kt1.8 at inboard actual bore, same net-root proxy as prior screen",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "foot_bridge_torsion": {
+            "stress_MPa": 4.493459762599384,
+            "limit_MPa": 5,
+            "margin": 1.1127283349940562,
+            "detail": "actual bore-free hull Y167..206; Kt1, rectangular torsion modulus0.2*long*short^2",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "base_M4_8_8": {
+            "stress_MPa": 48.7945999285096,
+            "limit_MPa": 580,
+            "margin": 11.886561235255028,
+            "detail": "external load only: preload excluded per corrected contract",
+            "angle_deg": 20.0,
+            "sign": -1
+          },
+          "PETG_rail_washer": {
+            "stress_MPa": 3.652468097184791,
+            "limit_MPa": 5,
+            "margin": 1.3689373505695628,
+            "detail": "ONLY washer checks include residual preload100N",
+            "angle_deg": 20.0,
+            "sign": -1
+          },
+          "PETG_inboard_washer": {
+            "stress_MPa": 3.0582362745285008,
+            "limit_MPa": 5,
+            "margin": 1.6349292700646119,
+            "detail": "ONLY washer checks include residual preload100N",
+            "angle_deg": 20.0,
+            "sign": -1
+          },
+          "PETG_pitch_contact": {
+            "stress_MPa": 4.262631192190308,
+            "limit_MPa": 5,
+            "margin": 1.1729844254789499,
+            "detail": "contact8x12: NO residual preload",
+            "angle_deg": 20.0,
+            "sign": -1
+          },
+          "PETG_reverse_roll_contact": {
+            "stress_MPa": 0.5997952686346847,
+            "limit_MPa": 5,
+            "margin": 8.336177795102504,
+            "detail": "contact4x12: NO residual preload",
+            "angle_deg": 20.0,
+            "sign": 1
+          },
+          "console_stock": {
+            "stress_MPa": 1.5362733181550725,
+            "limit_MPa": 10,
+            "margin": 6.509258399416264,
+            "detail": "plain20x40 stock Kt1; final mounting bores not yet designed",
+            "angle_deg": 20.0,
+            "sign": 1
+          }
+        },
+        "F_Tr8_max_N": 80.71970288283154,
+        "pin_max_N": 311.42297647408805,
+        "base_pitch_abs_max_Nmm": 12616.992201931685
+      },
+      "LC2": {
+        "checks": {
+          "knee": {
+            "stress_MPa": 6.904336708335061,
+            "limit_MPa": 10,
+            "margin": 1.4483650526382628,
+            "detail": "Kt1.8 ONLY at actual Z114 bore; plain stem Kt1",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "pin_thread_8_8": {
+            "stress_MPa": 379.36770137628696,
+            "limit_MPa": 580,
+            "margin": 1.528859726054301,
+            "detail": "conditional class8.8, threaded root; bending + double shear",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "pin_smooth_8_8": {
+            "stress_MPa": 184.72718108220326,
+            "limit_MPa": 580,
+            "margin": 3.1397653371969176,
+            "detail": "conditional class8.8, smooth full grip; bending + double shear",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "knee_pin_bearing": {
+            "stress_MPa": 3.0604101617719346,
+            "limit_MPa": 5,
+            "margin": 1.633767938185472,
+            "detail": "actual bolt diameter4, knee width20",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "foot_cheek_bearing": {
+            "stress_MPa": 3.8255127022149185,
+            "limit_MPa": 5,
+            "margin": 1.3070143505483773,
+            "detail": "actual bolt4; no preload",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "foot_cheek_edge": {
+            "stress_MPa": 2.0678447038999557,
+            "limit_MPa": 5,
+            "margin": 2.4179765485144986,
+            "detail": "actual edge ligament3.7; no preload",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "foot_pad_pitch": {
+            "stress_MPa": 6.471446955430006,
+            "limit_MPa": 10,
+            "margin": 1.5452494733977982,
+            "detail": "Kt1.5 at real X230 through bore; grip height18 unchanged",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "foot_root_roll": {
+            "stress_MPa": 6.783990393626993,
+            "limit_MPa": 10,
+            "margin": 1.4740586910904512,
+            "detail": "Kt1.8 at inboard actual bore, same net-root proxy as prior screen",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "foot_bridge_torsion": {
+            "stress_MPa": 3.1891752896362946,
+            "limit_MPa": 5,
+            "margin": 1.5678034431811425,
+            "detail": "actual bore-free hull Y167..206; Kt1, rectangular torsion modulus0.2*long*short^2",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "base_M4_8_8": {
+            "stress_MPa": 39.655303160817034,
+            "limit_MPa": 580,
+            "margin": 14.626038733026043,
+            "detail": "external load only: preload excluded per corrected contract",
+            "angle_deg": -10.0,
+            "sign": 1
+          },
+          "PETG_rail_washer": {
+            "stress_MPa": 3.2146487619143658,
+            "limit_MPa": 5,
+            "margin": 1.5553798782739903,
+            "detail": "ONLY washer checks include residual preload100N",
+            "angle_deg": -10.0,
+            "sign": 1
+          },
+          "PETG_inboard_washer": {
+            "stress_MPa": 4.34745988113606,
+            "limit_MPa": 5,
+            "margin": 1.1500968695985807,
+            "detail": "ONLY washer checks include residual preload100N",
+            "angle_deg": -10.0,
+            "sign": 1
+          },
+          "PETG_pitch_contact": {
+            "stress_MPa": 3.626807934916391,
+            "limit_MPa": 5,
+            "margin": 1.3786227695885047,
+            "detail": "contact8x12: NO residual preload",
+            "angle_deg": -10.0,
+            "sign": 1
+          },
+          "PETG_reverse_roll_contact": {
+            "stress_MPa": 1.4507210497835497,
+            "limit_MPa": 5,
+            "margin": 3.4465619705083963,
+            "detail": "contact4x12: NO residual preload",
+            "angle_deg": -10.0,
+            "sign": -1
+          },
+          "console_stock": {
+            "stress_MPa": 0.05370975000000001,
+            "limit_MPa": 10,
+            "margin": 186.18593458357185,
+            "detail": "plain20x40 stock Kt1; final mounting bores not yet designed",
+            "angle_deg": -10.0,
+            "sign": -1
+          }
+        },
+        "F_Tr8_max_N": 0.0,
+        "pin_max_N": 244.83281294175478,
+        "base_pitch_abs_max_Nmm": 8247.212
+      }
+    }
+  },
+  "independent_local_minima_mm": {
+    "cheek_thickness": 7.785574411852201,
+    "pad_width_at_fixed_18mm_grip": 39.64720056092135,
+    "rail_washer_OD_at_ID4_3": 12.172096055579518
+  },
+  "limitations": [
+    "Analytical proxies, not 3D solid FEA, collision proof or physical proof.",
+    "Bridge torsion uses source hull rectangles; local 3D load introduction/junction stresses not solved.",
+    "No probability or printed PETG strength claimed;10/5MPa retained as requested.",
+    "0.600kg/CM are assumptions pending final geometry/hardware.",
+    "Local sizing trial not implemented; footprints, real sections, hardware grip and collision gate require approval/verification."
+  ]
+}

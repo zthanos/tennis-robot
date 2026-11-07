@@ -1,0 +1,40 @@
+{
+  "nominal": {
+    "offset_mm": 0.0,
+    "returncode": 1,
+    "EMPTY": true,
+    "volume_mm3": 0.0,
+    "raw_log": "Current top level object is empty.\n",
+    "raw_CAD_source": "use </home/thanosz/projects/diy/tennis-robot/cad/arch-tilt-p293/p293g-tilt-candidate.scad>\n// Both full solids in their common moving frame. NO masks or exemptions.\nmodule real_washer(){difference(){cylinder(d=10,h=1,$fn=48);translate([0,0,-1])cylinder(d=4.3,h=3,$fn=48);}}\nintersection(){\n p293g_nut_arm();\n union()for(u=[-15,5],y=[-224,-184])translate([u,y,59.10000000])real_washer();\n}\n"
+  },
+  "penetration_control": {
+    "offset_mm": -0.05,
+    "returncode": 0,
+    "EMPTY": false,
+    "volume_mm3": 12.34864469848406,
+    "raw_log": "Geometries in cache: 61\nGeometry cache size in bytes: 231464\nCGAL Polyhedrons in cache: 18\nCGAL cache size in bytes: 9115056\nTotal rendering time: 0:00:00.806\nTop level object is a 3D object (Nef polyhedron):\n   Simple:     yes\n   Vertices:      768\n   Halfedges:    2304\n   Edges:        1152\n   Halffacets:    784\n   Facets:        392\n   Volumes:         5\n",
+    "raw_CAD_source": "use </home/thanosz/projects/diy/tennis-robot/cad/arch-tilt-p293/p293g-tilt-candidate.scad>\n// Both full solids in their common moving frame. NO masks or exemptions.\nmodule real_washer(){difference(){cylinder(d=10,h=1,$fn=48);translate([0,0,-1])cylinder(d=4.3,h=3,$fn=48);}}\nintersection(){\n p293g_nut_arm();\n union()for(u=[-15,5],y=[-224,-184])translate([u,y,59.05000000])real_washer();\n}\n"
+  },
+  "method": "Raw actual-CAD intersection; affine invariance, no solids removed before checking. CGAL exact-predicate backend, not independent rounded world STL planes.",
+  "original_global_mesh_flags": [
+    {
+      "angle": -10,
+      "hardware": "arm_mount_-15_-224_0",
+      "body": "p293g_nut_arm",
+      "vol_mm3": 0.00011939456687391893
+    },
+    {
+      "angle": -10,
+      "hardware": "arm_mount_-15_-184_0",
+      "body": "p293g_nut_arm",
+      "vol_mm3": 0.00011695794891011334
+    },
+    {
+      "angle": -10,
+      "hardware": "arm_mount_5_-184_0",
+      "body": "p293g_nut_arm",
+      "vol_mm3": 0.00010695858229642676
+    }
+  ],
+  "PASS": true
+}
