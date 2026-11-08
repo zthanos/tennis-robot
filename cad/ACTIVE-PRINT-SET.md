@@ -72,6 +72,22 @@ X220–420. [P2-93g debug / hardware / assembly](arch-tilt-p293/P2-93g-debug.md)
 Η παλιά άθροιση8 N·m + equivalent Tr8 και ο στόχος1,5 έχουν αποσυρθεί.
 Αποτελέσματα: [διορθωμένο preflight](arch-tilt-p293/P2-93g-corrected-load-cases.md).
 
+Planning estimate για τα 9 P2-93g STL / 12 prints, σε 100% solid PETG:
+**περίπου 916 g και 31–52 h**. Είναι volume/throughput estimate και όχι
+πραγματικό slicer/G-code estimate· το διαθέσιμο BambuStudio CLI απέτυχε
+πριν παραγάγει G-code. Brim, supports και purge δεν περιλαμβάνονται.
+
+Το P2-93h είναι **PARKED — εξαρτάται από το πραγματικό moving module**
+(flywheel wheels, D5065, pivot supports/trunnions). Δεν σχεδιάζονται ή
+τυπώνονται stops/strikers, magnet seat, AS5600 support ή fixed pivot
+cassette πριν κλειδώσει αυτό το module. Η ανάλυση μένει μόνο ως reference:
+[P2-93h analysis](arch-tilt-p293/P2-93h-analysis.md).
+
+Για μελλοντικά analytical screens με τα ισχύοντα bounds 8 N·m και
+10/5 MPa, margin≥1,0 είναι **PASS**. Δεν προστίθενται νέα συντηρητικά
+bounds χωρίς στοιχείο που να τα απαιτεί· οι οριακές περιπτώσεις κρίνονται
+με φυσική δοκιμή.
+
 Foot και knee τυπώνονται **συμπαγή** και βιδώνονται στο πραγματικό σασί,
 με το τελικό hardware/ροδέλες/ροπές σύσφιγξης καταγεγραμμένα. Για το
 proof fixture επιτρέπεται ελεγχόμενη πλήρης φέρουσα εκτύπωση αφού κλείσουν
@@ -393,7 +409,7 @@ M4 δεν συναρμολογούνται. Δεν χρησιμοποιούντ�
 | TPU friction sled | `test-fixtures/tpu-friction/sled.stl` | `tpu-friction-test.scad` | Νήμα/βάρη, χωρίς φέρουσα βίδα | Μόνο δοκιμή |
 | TPU pulley + bracket | `test-fixtures/tpu-friction/pulley.stl`, `pulley_bracket.stl` | `tpu-friction-test.scad` | M4×25 + παξιμάδι ως άξονας | Μόνο δοκιμή |
 | Ski hand-test, τέσσερις παραλλαγές | `test-fixtures/ski-jump-hand-test/ski_42deg_R75.stl`, `ski_60deg_R75.stl`, `ski_75deg_R75.stl`, `ski_75deg_R110.stl` | `ski-jump-test.scad` | Ταινία/σφιγκτήρας στο τραπέζι | Μόνο χειροκίνητη δοκιμή |
-| Εκτοξευτής εισόδου βατήρα (λάστιχα) | `test-fixtures/ramp-entry-ball-launcher/stl/ramp_entry_launcher_base.stl`, `ramp_entry_launcher_pusher.stl` | `ramp-entry-ball-launcher.scad` | Πείρος ατσάλινος Ø4×135–145, 4×M5×25/30 με λείο σωληνάκι, 2 ίδια λάστιχα· ταινία/Velcro/δεματικά | FIT-CHECK δοκιμαστικό· βάση 40%, έμβολο 25% infill· `ramp_surface_z`=11 επιβεβαιωμένο από χρήστη 2026-11-08 |
+| Εκτοξευτής εισόδου βατήρα (λάστιχα) | `test-fixtures/ramp-entry-ball-launcher/stl/ramp_entry_launcher_base.stl`, `ramp_entry_launcher_pusher.stl`, `ramp_entry_launcher_spool_anchor.stl` ×2, `ramp_entry_launcher_spool_pusher.stl` ×2 | `ramp-entry-ball-launcher.scad` | Πείρος ατσάλινος Ø4×135–145, 4×M5×30 + 12 ροδέλες M5 + 4 nyloc, 2 ίδια λάστιχα ~80–90 mm· ταινία/Velcro/δεματικά | FIT-CHECK δοκιμαστικό· βάση 40%, έμβολο 25% infill· `ramp_surface_z`=11 επιβεβαιωμένο από χρήστη 2026-11-08 |
 | Basket mockup | Δεν έχει STL· διαστάσεις στο `test-fixtures/basket-mockup/README.md` | P2-71 cardboard fixture | Ταινία/χαρτόνι | Μόνο δοκιμή· pile retention 40/45 μπαλών εκκρεμεί |
 
 Το P2-71 καλάθι έχει τέσσερις πλευρές πλέγματος. Μόνο η fail-closed θύρα

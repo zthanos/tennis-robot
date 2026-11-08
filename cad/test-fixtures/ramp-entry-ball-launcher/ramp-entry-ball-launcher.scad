@@ -9,7 +9,7 @@
 //
 // This is a short-life supervised test fixture, not a robot mechanism.
 
-part = "assembly"; // [assembly,base,pusher,robot_check,qa_cocked,qa_forward,qa_ball_cup,qa_ramp,qa_band_hardware]
+part = "assembly"; // [assembly,base,pusher,spool_anchor,spool_pusher,robot_check,qa_cocked,qa_forward,qa_ball_cup,qa_ramp,qa_band_hardware]
 
 $fn = 64;
 
@@ -45,8 +45,9 @@ pusher_runner_x1 = 8;
 pusher_pin_x = -12;
 pusher_band_x = -4;
 
-// Four repeatable pull-back settings.  With the 20 mm installed preload,
-// nominal band extensions are 40/60/80/100 mm respectively.
+// Four repeatable pull-back settings.  Anchor-axis spacing is 24 mm at the
+// stop and 44/64/84/104 mm at positions 1-4; size the loops so position 4
+// stays below ~3x stretch (see README).
 cocking_strokes = [20, 40, 60, 80];
 pin_d = 4.4;             // 4 mm smooth steel rod or straight pin
 band_hole_d = 5.5;       // M5 anchor-bolt clearance; latex never touches print
@@ -328,6 +329,30 @@ module band_hardware_clearance_check(stroke=60) {
 
 assert((rail_center_y-channel_w/2-rail_wall_t) > ball_d/2,
        "rail inner walls must clear the tennis ball");
+// Printed spool for the exposed part of each M5 band bolt, so the latex
+// never touches thread or a PETG edge.  The flanges keep the loop centred
+// between the washers.  Lengths fill the exposed M5x30 shank: 30 minus the
+// lug (12 mm anchor, 10 mm pusher), the inner washer/nyloc (6) and one
+// 1 mm washer on each side of the spool (the anchor lug face is sloped, so
+// the spool must never bear on it directly).
+spool_bore = 5.5;
+spool_core_d = 9;
+spool_flange_d = 11;   // bottom stays above the Z18 rail wall it slides past
+spool_flange_t = 1.5;
+spool_anchor_len = 10;
+spool_pusher_len = 12;
+
+module band_spool(len) {
+    difference() {
+        union() {
+            cylinder(d=spool_core_d, h=len);
+            for (z = [0, len - spool_flange_t])
+                translate([0, 0, z]) cylinder(d=spool_flange_d, h=spool_flange_t);
+        }
+        translate([0, 0, -1]) cylinder(d=spool_bore, h=len + 2);
+    }
+}
+
 assert(strike_origin_x + pusher_runner_x1 <= rail_front_x,
        "runner must hit the front stop before the cup enters the ramp");
 
@@ -336,6 +361,8 @@ else if (part == "base") base_part();
 else if (part == "pusher")
     // Cup face on the bed: compact, support-free print orientation.
     translate([0, 0, 16]) rotate([0, -90, 0]) pusher_part();
+else if (part == "spool_anchor") band_spool(spool_anchor_len);
+else if (part == "spool_pusher") band_spool(spool_pusher_len);
 else if (part == "robot_check") robot_check();
 else if (part == "qa_cocked") slide_clearance_check(60);
 else if (part == "qa_forward") slide_clearance_check(0);
