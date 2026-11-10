@@ -1,0 +1,11 @@
+{
+  "status": "PARKED_SUPPLEMENTAL_FASTENER_ENVELOPE_ONLY_NOT_NEW_SOLID_GATE",
+  "raw_hits": [],
+  "min_F_gap_mm": 1.600006103515625,
+  "max_abs_Y": 234.89999389648438,
+  "assumptions": [
+    "Head circumscribedD8.1 x2.8, retain originalOD9x0.5 washer.",
+    "B normal nut3.2, outer radius4.05, bore4.1; same M4x16.",
+    "Crown smooth grip>=22mm and d>=3.8 MUST be checked, not inferred from head."
+  ]
+}

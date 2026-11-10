@@ -1,0 +1,819 @@
+{
+  "status": "PARKED_DEPENDS_ON_REAL_MOVING_MODULE_ANALYSIS_ONLY",
+  "contacts": [
+    {
+      "angle": -10,
+      "point_mm": [
+        438.8210679286263,
+        185.0,
+        230.55383438991987
+      ],
+      "normal": [
+        -0.9604387823764494,
+        0.0,
+        0.278491194308264
+      ],
+      "radius_mm": 186.07794065928394,
+      "force_N": 42.99273719203673,
+      "trigger_angle_deg": -7,
+      "trigger_arc_mm": 9.743018189505399
+    },
+    {
+      "angle": 20,
+      "point_mm": [
+        342.52012590046945,
+        185.0,
+        232.52090134790643
+      ],
+      "normal": [
+        -0.9710099814719313,
+        0.0,
+        -0.23903894218699973
+      ],
+      "radius_mm": 186.07794065928394,
+      "force_N": 42.99273719203673,
+      "trigger_angle_deg": 17,
+      "trigger_arc_mm": 9.743018189505399
+    }
+  ],
+  "LC1_with_fixed_budget": {
+    "knee": {
+      "stress_MPa": 6.641229154361371,
+      "limit_MPa": 10,
+      "margin": 1.5057453624278099,
+      "detail": "actual mesh sections; Kt1.8 only Z114 hole",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "M4_Z80_114_thread_8_8": {
+      "stress_MPa": 507.00198359952935,
+      "limit_MPa": 580,
+      "margin": 1.1439797451722207,
+      "detail": "conditional grade8.8, threaded root, bending+shear",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "foot_cheek_bearing": {
+      "stress_MPa": 4.960621231805967,
+      "limit_MPa": 5,
+      "margin": 1.00793827352541,
+      "detail": "OD8 steel spacer; minimum5mm PETG bearing length;60% of full pin load",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "foot_cheek_edge": {
+      "stress_MPa": 2.9662228870138927,
+      "limit_MPa": 5,
+      "margin": 1.6856454118434498,
+      "detail": "OD8.2 bore, effective5mm; directional X/Z ligament sum, no generic Kt",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "knee_bearing": {
+      "stress_MPa": 4.133851026504972,
+      "limit_MPa": 5,
+      "margin": 1.2095259282304922,
+      "detail": "20mm solid knee, actual4mm bolt",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "rail_pad_pitch": {
+      "stress_MPa": 9.627620513536819,
+      "limit_MPa": 10,
+      "margin": 1.038678247230414,
+      "detail": "actual section incl45deg flare, seat14.6; Kt1.5 actual bore",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "foot_root_roll": {
+      "stress_MPa": 3.7462681470334207,
+      "limit_MPa": 10,
+      "margin": 2.6693230723269927,
+      "detail": "inboard real bore net section, unchanged root",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "foot_bridge_torsion": {
+      "stress_MPa": 1.015805571260699,
+      "limit_MPa": 5,
+      "margin": 4.92220178886653,
+      "detail": "unchanged bore-free source hull; Kt1; roll moment about X",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "base_M4_8_8": {
+      "stress_MPa": 50.82181396276472,
+      "limit_MPa": 580,
+      "margin": 11.412422241066498,
+      "detail": "external load only, no preload",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "PETG_rail_OD14": {
+      "stress_MPa": 3.7858721429176168,
+      "limit_MPa": 5,
+      "margin": 1.3206996462766714,
+      "detail": "100N residual preload only at washer seats",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "PETG_inboard_OD9": {
+      "stress_MPa": 2.802602820775279,
+      "limit_MPa": 5,
+      "margin": 1.7840558651178617,
+      "detail": "100N residual preload only at washer seats",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "PETG_pin_head_OD10": {
+      "stress_MPa": 3.8865675968716804,
+      "limit_MPa": 5,
+      "margin": 1.2864821916450204,
+      "detail": "100N residual preload only; conservative PETG annulus outside sleeve bore",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "PETG_pin_nut_OD12": {
+      "stress_MPa": 1.6587279113277262,
+      "limit_MPa": 5,
+      "margin": 3.014358151119407,
+      "detail": "100N residual preload only; inboard washer outside sleeve bore",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "PETG_crown_washer": {
+      "stress_MPa": 2.1277398809076917,
+      "limit_MPa": 5,
+      "margin": 2.349911304885165,
+      "detail": "100N residual preload only under OD9 steel washer0.5; actual knee bore4.6",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "pitch_contact": {
+      "stress_MPa": 4.45636725649403,
+      "limit_MPa": 5,
+      "margin": 1.121990112622285,
+      "detail": "8x12 contact, no preload",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "console_stem": {
+      "stress_MPa": 1.7928222113363872,
+      "limit_MPa": 10,
+      "margin": 5.577797919262671,
+      "detail": "actual Z180 stock, all console/carried solid gravity included conservatively, Kt1",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "cradle_B_bearing": {
+      "stress_MPa": 1.3097424733008913,
+      "limit_MPa": 5,
+      "margin": 3.8175443661063393,
+      "detail": "2x8mm pivot bosses;4mm stub pins; carried gravity included",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "cradle_bridge_spine": {
+      "stress_MPa": 7.3246729422457015,
+      "limit_MPa": 10,
+      "margin": 1.3652486710122047,
+      "detail": "actual mesh sections; full one-path force26mm +actual solid gravity moment aboutB",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "cradle_B_boss_net": {
+      "stress_MPa": 9.002943787587693,
+      "limit_MPa": 10,
+      "margin": 1.1107477993794588,
+      "detail": "actual mesh D20/4.6 boss, Kt1.8 real bore; full path force +actual gravity moment",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "console_B_ear_bearing": {
+      "stress_MPa": 4.4905456227459135,
+      "limit_MPa": 5,
+      "margin": 1.1134504401143488,
+      "detail": "actual2.8mm ear ligament below head recess;60% total pivot load on either ear",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "console_fork_leg": {
+      "stress_MPa": 4.093381809889719,
+      "limit_MPa": 10,
+      "margin": 2.442967811074876,
+      "detail": "actual6x20 fork leg at barZ193,27mm lever; no bore at stock root/Kt1",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "nut_clevis_bearing": {
+      "stress_MPa": 3.082827651022647,
+      "limit_MPa": 5,
+      "margin": 1.6218876194202363,
+      "detail": "2x4mm moving fork legs;60% total load on either side, local gravity included",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "nut_arm_riser": {
+      "stress_MPa": 8.055108893127834,
+      "limit_MPa": 10,
+      "margin": 1.24144814585082,
+      "detail": "actual30x10; FULL path U/W biaxial moments FU53+FW40 and13.2mm Y offset; Kt1.5 at R3 root",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "nut_arm_riser_torsion": {
+      "stress_MPa": 2.335589168374917,
+      "limit_MPa": 5,
+      "margin": 2.140787458557601,
+      "detail": "actual30x10 torsion; full path/13.2mm offset; Kt1.5 at R3 root",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "nut_arm_shelf": {
+      "stress_MPa": 5.47042544929638,
+      "limit_MPa": 10,
+      "margin": 1.8280113846147423,
+      "detail": "actual30x16 low shelf; full path U/W bending,40mm span +30mm pin-height couple; Kt1.5 at R3 root",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "nut_arm_shelf_torsion_U": {
+      "stress_MPa": 0.7534789874442459,
+      "limit_MPa": 5,
+      "margin": 6.635885118654325,
+      "detail": "actual30x16 shelf, full13.2mm Y offset; Kt1.5 at R3 root",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "nut_arm_shelf_torsion_Y": {
+      "stress_MPa": 1.555124179937134,
+      "limit_MPa": 5,
+      "margin": 3.215177324425709,
+      "detail": "actual40x16 transverse shelf section, full pin-height couple; Kt1.5 at R3 root",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "nut_arm_fork_legs": {
+      "stress_MPa": 8.514395417462497,
+      "limit_MPa": 10,
+      "margin": 1.1744815115692913,
+      "detail": "actual4x24 upward fork web; full one-leg force30mm lever; Kt1.5 at R3 root",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "nut_arm_bight": {
+      "stress_MPa": 3.7593078351435496,
+      "limit_MPa": 10,
+      "margin": 2.660064149712855,
+      "detail": "actual24x14 bight, full path biaxial load; Kt1.5 at R3 junction",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "nut_arm_bight_torsion": {
+      "stress_MPa": 3.3853043372781144,
+      "limit_MPa": 5,
+      "margin": 1.4769720834080604,
+      "detail": "actual24x14 lower crossbar, full one-leg moment30mm ABOVE centre; Kt1.5 at R3 junction",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "nut_trunnion_plate": {
+      "stress_MPa": 4.5378070564118405,
+      "limit_MPa": 10,
+      "margin": 2.203707622577337,
+      "detail": "actual32x8 plate/10.6 bore;33.6mm pin span; Kt1.5 real bore",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "arm_yoke_OD10_washer": {
+      "stress_MPa": 4.107773628063927,
+      "limit_MPa": 5,
+      "margin": 1.2172043673099378,
+      "detail": "actual four bolts20x40 pitch; local U/W force+actual moving mass moments; preload100 only washers",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "arm_yoke_M4_8_8": {
+      "stress_MPa": 17.874108225431684,
+      "limit_MPa": 580,
+      "margin": 32.44917132004174,
+      "detail": "four mounting M4, no preload in external steel load",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "arm_base_plate": {
+      "stress_MPa": 8.352271018072841,
+      "limit_MPa": 10,
+      "margin": 1.197279156574513,
+      "detail": "actual12mm base/net two4.6 bores across52mm; full moment bound; Kt1.5 real holes",
+      "angle": 20.0,
+      "sign": 1
+    },
+    "cradle_front_plate": {
+      "stress_MPa": 3.9105109700057854,
+      "limit_MPa": 10,
+      "margin": 2.557210573426727,
+      "detail": "actual mesh front section incl18mm bore, Kt1.5;48mm span; all fixed hardware gravity added conservatively",
+      "angle": 20.0,
+      "sign": -1
+    },
+    "crown_inboard_lug_bearing": {
+      "stress_MPa": 0.7587863066553745,
+      "limit_MPa": 5,
+      "margin": 6.589470521732675,
+      "detail": "single12mm inboard lug, original20mm pin pitch",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "crown_lug_local_biaxial": {
+      "stress_MPa": 2.347979255308342,
+      "limit_MPa": 10,
+      "margin": 4.258981410245371,
+      "detail": "actual mesh lug/4.6 bore, Kt1.8 at real hole; local pin-root moment16.4mm",
+      "angle": -10.0,
+      "sign": -1
+    },
+    "crown_pin_thread_10_9": {
+      "stress_MPa": 196.69283838857348,
+      "limit_MPa": 830,
+      "margin": 4.2197774296200175,
+      "detail": "REQUIRES10.9 button-head pin; root3.14, cantilever16.4mm; no smooth-grip credit",
+      "angle": -10.0,
+      "sign": -1
+    }
+  },
+  "actual_contact_LC2_screen": {
+    "knee": {
+      "stress_MPa": 5.922027815753592,
+      "limit_MPa": 10,
+      "margin": 1.6886107784563786,
+      "detail": "actual mesh sections; Kt1.8 only Z114 hole",
+      "angle": -10,
+      "sign": -1
+    },
+    "M4_Z80_114_thread_8_8": {
+      "stress_MPa": 418.6920766389189,
+      "limit_MPa": 580,
+      "margin": 1.3852662430490499,
+      "detail": "conditional grade8.8, threaded root, bending+shear",
+      "angle": -10,
+      "sign": -1
+    },
+    "foot_cheek_bearing": {
+      "stress_MPa": 4.096577276124646,
+      "limit_MPa": 5,
+      "margin": 1.2205311075518122,
+      "detail": "OD8 steel spacer; minimum5mm PETG bearing length;60% of full pin load",
+      "angle": -10,
+      "sign": -1
+    },
+    "foot_cheek_edge": {
+      "stress_MPa": 2.2343298910350775,
+      "limit_MPa": 5,
+      "margin": 2.237807416022929,
+      "detail": "OD8.2 bore, effective5mm; directional X/Z ligament sum, no generic Kt",
+      "angle": -10,
+      "sign": -1
+    },
+    "knee_bearing": {
+      "stress_MPa": 3.413814396770538,
+      "limit_MPa": 5,
+      "margin": 1.4646373290621746,
+      "detail": "20mm solid knee, actual4mm bolt",
+      "angle": -10,
+      "sign": -1
+    },
+    "rail_pad_pitch": {
+      "stress_MPa": 7.566601292480846,
+      "limit_MPa": 10,
+      "margin": 1.3215973213676917,
+      "detail": "actual section incl45deg flare, seat14.6; Kt1.5 actual bore",
+      "angle": -10,
+      "sign": -1
+    },
+    "foot_root_roll": {
+      "stress_MPa": 1.7294744112941154,
+      "limit_MPa": 10,
+      "margin": 5.782103472995181,
+      "detail": "inboard real bore net section, unchanged root",
+      "angle": -10,
+      "sign": -1
+    },
+    "foot_bridge_torsion": {
+      "stress_MPa": 0.46894927789313623,
+      "limit_MPa": 5,
+      "margin": 10.662133914489992,
+      "detail": "unchanged bore-free source hull; Kt1; roll moment about X",
+      "angle": -10,
+      "sign": -1
+    },
+    "base_M4_8_8": {
+      "stress_MPa": 37.76355690665059,
+      "limit_MPa": 580,
+      "margin": 15.358722734559345,
+      "detail": "external load only, no preload",
+      "angle": -10,
+      "sign": -1
+    },
+    "PETG_rail_OD14": {
+      "stress_MPa": 3.0395258503170437,
+      "limit_MPa": 5,
+      "margin": 1.644993412205547,
+      "detail": "100N residual preload only at washer seats",
+      "angle": -10,
+      "sign": -1
+    },
+    "PETG_inboard_OD9": {
+      "stress_MPa": 2.390365746755139,
+      "limit_MPa": 5,
+      "margin": 2.091730107322435,
+      "detail": "100N residual preload only at washer seats",
+      "angle": -10,
+      "sign": -1
+    },
+    "PETG_pin_head_OD10": {
+      "stress_MPa": 3.8865675968716804,
+      "limit_MPa": 5,
+      "margin": 1.2864821916450204,
+      "detail": "100N residual preload only; conservative PETG annulus outside sleeve bore",
+      "angle": -10,
+      "sign": -1
+    },
+    "PETG_pin_nut_OD12": {
+      "stress_MPa": 1.6587279113277262,
+      "limit_MPa": 5,
+      "margin": 3.014358151119407,
+      "detail": "100N residual preload only; inboard washer outside sleeve bore",
+      "angle": -10,
+      "sign": -1
+    },
+    "PETG_crown_washer": {
+      "stress_MPa": 5.375517136670835,
+      "limit_MPa": 5,
+      "margin": 0.9301430677042916,
+      "detail": "FULL Q as conservative axial/prying bound +100N preload, actualOD9 PETG annulus; NOT preload-only"
+    },
+    "pitch_contact": {
+      "stress_MPa": 3.372485635499609,
+      "limit_MPa": 5,
+      "margin": 1.4825860034417275,
+      "detail": "8x12 contact, no preload",
+      "angle": -10,
+      "sign": -1
+    },
+    "console_stem": {
+      "stress_MPa": 0.10689440832217989,
+      "limit_MPa": 10,
+      "margin": 93.55026288989772,
+      "detail": "actual Z180 stock, all console/carried solid gravity included conservatively, Kt1",
+      "angle": 20,
+      "sign": -1
+    },
+    "cradle_B_bearing": {
+      "stress_MPa": 0.10673394565900744,
+      "limit_MPa": 5,
+      "margin": 46.8454526732662,
+      "detail": "2x8mm pivot bosses;4mm stub pins; carried gravity included",
+      "angle": -10,
+      "sign": -1
+    },
+    "cradle_bridge_spine": {
+      "stress_MPa": 0.5745975603965756,
+      "limit_MPa": 10,
+      "margin": 17.403484959278632,
+      "detail": "actual mesh sections; full one-path force26mm +actual solid gravity moment aboutB",
+      "angle": 20,
+      "sign": -1
+    },
+    "cradle_B_boss_net": {
+      "stress_MPa": 0.70765655902885,
+      "limit_MPa": 10,
+      "margin": 14.131148609324647,
+      "detail": "actual mesh D20/4.6 boss, Kt1.8 real bore; full path force +actual gravity moment",
+      "angle": 20,
+      "sign": -1
+    },
+    "console_B_ear_bearing": {
+      "stress_MPa": 0.36594495654516834,
+      "limit_MPa": 5,
+      "margin": 13.663257029702644,
+      "detail": "actual2.8mm ear ligament below head recess;60% total pivot load on either ear",
+      "angle": -10,
+      "sign": -1
+    },
+    "console_fork_leg": {
+      "stress_MPa": 0.3335791581662846,
+      "limit_MPa": 10,
+      "margin": 29.97789206906967,
+      "detail": "actual6x20 fork leg at barZ193,27mm lever; no bore at stock root/Kt1",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_clevis_bearing": {
+      "stress_MPa": 0.055838792916464444,
+      "limit_MPa": 5,
+      "margin": 89.54348292378141,
+      "detail": "2x4mm moving fork legs;60% total load on either side, local gravity included",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_arm_riser": {
+      "stress_MPa": 0.20489114414148019,
+      "limit_MPa": 10,
+      "margin": 48.80640420990993,
+      "detail": "actual30x10; FULL path U/W biaxial moments FU53+FW40 and13.2mm Y offset; Kt1.5 at R3 root",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_arm_riser_torsion": {
+      "stress_MPa": 0.049138137766488704,
+      "limit_MPa": 5,
+      "margin": 101.75395786793342,
+      "detail": "actual30x10 torsion; full path/13.2mm offset; Kt1.5 at R3 root",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_arm_shelf": {
+      "stress_MPa": 0.13908512668942685,
+      "limit_MPa": 10,
+      "margin": 71.89841385649895,
+      "detail": "actual30x16 low shelf; full path U/W bending,40mm span +30mm pin-height couple; Kt1.5 at R3 root",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_arm_shelf_torsion_U": {
+      "stress_MPa": 0.01919458506503465,
+      "limit_MPa": 5,
+      "margin": 260.49013214190956,
+      "detail": "actual30x16 shelf, full13.2mm Y offset; Kt1.5 at R3 root",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_arm_shelf_torsion_Y": {
+      "stress_MPa": 0.03271804272449089,
+      "limit_MPa": 5,
+      "margin": 152.82087752325359,
+      "detail": "actual40x16 transverse shelf section, full pin-height couple; Kt1.5 at R3 root",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_arm_fork_legs": {
+      "stress_MPa": 0.1977623915791449,
+      "limit_MPa": 10,
+      "margin": 50.5657315334295,
+      "detail": "actual4x24 upward fork web; full one-leg force30mm lever; Kt1.5 at R3 root",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_arm_bight": {
+      "stress_MPa": 0.09562868106612192,
+      "limit_MPa": 10,
+      "margin": 104.57113795269805,
+      "detail": "actual24x14 bight, full path biaxial load; Kt1.5 at R3 junction",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_arm_bight_torsion": {
+      "stress_MPa": 0.07122295014855158,
+      "limit_MPa": 5,
+      "margin": 70.20209061224463,
+      "detail": "actual24x14 lower crossbar, full one-leg moment30mm ABOVE centre; Kt1.5 at R3 junction",
+      "angle": -10,
+      "sign": -1
+    },
+    "nut_trunnion_plate": {
+      "stress_MPa": 0.08219261574152477,
+      "limit_MPa": 10,
+      "margin": 121.66543076628076,
+      "detail": "actual32x8 plate/10.6 bore;33.6mm pin span; Kt1.5 real bore",
+      "angle": -10,
+      "sign": -1
+    },
+    "arm_yoke_OD10_washer": {
+      "stress_MPa": 1.6269859723760483,
+      "limit_MPa": 5,
+      "margin": 3.0731672459953705,
+      "detail": "actual four bolts20x40 pitch; local U/W force+actual moving mass moments; preload100 only washers",
+      "angle": -10,
+      "sign": -1
+    },
+    "arm_yoke_M4_8_8": {
+      "stress_MPa": 0.08599174976736125,
+      "limit_MPa": 580,
+      "margin": 6744.8330981647605,
+      "detail": "four mounting M4, no preload in external steel load",
+      "angle": -10,
+      "sign": -1
+    },
+    "arm_base_plate": {
+      "stress_MPa": 0.04696106077314382,
+      "limit_MPa": 10,
+      "margin": 212.9423789702557,
+      "detail": "actual12mm base/net two4.6 bores across52mm; full moment bound; Kt1.5 real holes",
+      "angle": -10,
+      "sign": -1
+    },
+    "cradle_front_plate": {
+      "stress_MPa": 0.17060524666906196,
+      "limit_MPa": 10,
+      "margin": 58.61484447426099,
+      "detail": "actual mesh front section incl18mm bore, Kt1.5;48mm span; all fixed hardware gravity added conservatively",
+      "angle": -10,
+      "sign": -1
+    },
+    "crown_inboard_lug_bearing": {
+      "stress_MPa": 3.179995203777804,
+      "limit_MPa": 5,
+      "margin": 1.5723294154846674,
+      "detail": "single12mm inboard lug, original20mm pin pitch",
+      "angle": -10,
+      "sign": -1
+    },
+    "crown_lug_local_biaxial": {
+      "stress_MPa": 9.840139054909793,
+      "limit_MPa": 10,
+      "margin": 1.0162458014259914,
+      "detail": "actual mesh lug/4.6 bore, Kt1.8 at real hole; local pin-root moment16.4mm",
+      "angle": -10,
+      "sign": -1
+    },
+    "crown_pin_thread_10_9": {
+      "stress_MPa": 824.3194127344577,
+      "limit_MPa": 830,
+      "margin": 1.006891245284032,
+      "detail": "REQUIRES10.9 button-head pin; root3.14, cantilever16.4mm; no smooth-grip credit",
+      "angle": -10,
+      "sign": -1
+    }
+  },
+  "local_stop_screen": {
+    "striker_40x12_net_M4_root": {
+      "stress_MPa": 5.974775470979728,
+      "limit_MPa": 10,
+      "margin": 1.6737030619094087
+    },
+    "striker_torsion": {
+      "stress_MPa": 1.2763468853885904,
+      "limit_MPa": 5,
+      "margin": 3.9174303296691355
+    },
+    "console_20x24_net_root": {
+      "stress_MPa": 3.283742223728048,
+      "limit_MPa": 10,
+      "margin": 3.045306031557786
+    },
+    "pad_effective_12x2_CONDITIONAL": {
+      "stress_MPa": 1.791364049668197,
+      "limit_MPa": 5,
+      "condition": "coupon must demonstrate >=24mm2 backed contact, NOT assumed Hertz proof",
+      "margin": 2.791169109889259
+    },
+    "striker_mount_OD12": {
+      "stress_MPa": 2.573893990309562,
+      "limit_MPa": 5,
+      "margin": 1.9425819473624284
+    },
+    "crown_seat_20x20": {
+      "stress_MPa": 0.10748184298009182,
+      "limit_MPa": 5,
+      "margin": 46.519485164820985
+    },
+    "larger_crown_OD12_seat_axial_bound": {
+      "stress_MPa": 2.6186172700942913,
+      "limit_MPa": 5,
+      "condition": "requires actual stiffOD12 washer/seat; not a flexible foil assumption",
+      "margin": 1.9094046530213098
+    }
+  },
+  "hardware": {
+    "LC1": {
+      "crown_thread_8_8": 16.948526643725753,
+      "foot_thread_8_8": 1.1711320119015838,
+      "deeper_hex_recess_cheek": 0.9080382140965868,
+      "crown_DIN433_OD8": 1.6823228659973342
+    },
+    "LC2": {
+      "crown_thread_8_8": 0.7917180960819638,
+      "foot_thread_8_8": 1.4746500406842316,
+      "deeper_hex_recess_cheek": 1.1433711791262133,
+      "crown_DIN433_OD8": 1.6823228659973342
+    },
+    "proposed_actual_contact_LC2_crown_8_8": 0.7036107497165524,
+    "crown_partial_thread_8_8_d3_8_axial_bound": {
+      "angle": -10,
+      "sign": -1,
+      "stress_MPa": 482.63561585497706,
+      "margin": 1.2017347683149002
+    },
+    "cut_stock_sleeve_min_L4_95_LC1": 1.0215429908586602,
+    "cut_stock_sleeve_min_L4_95_LC1_with_stop_budget": 0.997858890790156,
+    "cut_stock_sleeve_min_L4_97_LC1_with_stop_budget": 1.0018906438842576
+  },
+  "print_planning": [
+    {
+      "STL": "p293g_console_inboard.stl",
+      "quantity": 1,
+      "solid_g_each": 105.98705999171324,
+      "h_each_low": 3.511681664532972,
+      "h_each_high": 5.995442912932701,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    },
+    {
+      "STL": "p293g_console_outboard.stl",
+      "quantity": 1,
+      "solid_g_each": 65.46042177953132,
+      "h_each_low": 2.245382507796879,
+      "h_each_high": 3.779419388644538,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    },
+    {
+      "STL": "p293g_cradle.stl",
+      "quantity": 1,
+      "solid_g_each": 106.65197343614231,
+      "h_each_low": 3.5324576126778626,
+      "h_each_high": 6.031800822186259,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    },
+    {
+      "STL": "p293g_crossbar_end.stl",
+      "quantity": 2,
+      "solid_g_each": 44.71613333307571,
+      "h_each_low": 1.597204516094104,
+      "h_each_high": 2.645107903164682,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    },
+    {
+      "STL": "p293g_crown.stl",
+      "quantity": 2,
+      "solid_g_each": 61.35859257732763,
+      "h_each_low": 2.117216365995739,
+      "h_each_high": 3.5551286404925433,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    },
+    {
+      "STL": "p293g_float_cap.stl",
+      "quantity": 1,
+      "solid_g_each": 5.544988219179512,
+      "h_each_low": 0.373259224446304,
+      "h_each_high": 0.5032036427810319,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    },
+    {
+      "STL": "p293g_foot.stl",
+      "quantity": 2,
+      "solid_g_each": 159.6861908073808,
+      "h_each_low": 5.189569766509836,
+      "h_each_high": 8.93174709139221,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    },
+    {
+      "STL": "p293g_nut_arm.stl",
+      "quantity": 1,
+      "solid_g_each": 88.67752177628954,
+      "h_each_low": 2.970826202233769,
+      "h_each_high": 5.048945853909095,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    },
+    {
+      "STL": "p293g_nut_trunnion.stl",
+      "quantity": 1,
+      "solid_g_each": 11.729444514106072,
+      "h_each_low": 0.5664993286497335,
+      "h_each_high": 0.8413738251370337,
+      "all_solid": true,
+      "source": "mesh volume; time NOT sliced",
+      "supports_purge_brim_excluded": true
+    }
+  ],
+  "print_total": {
+    "g": 915.5732431525303,
+    "h_low": 31.00808783753688,
+    "h_high": 52.464153715689534,
+    "physical_parts": 12
+  },
+  "limitations": [
+    "Existing arch sections exact; proposed stop sections nominal, no mesh verification.",
+    "Both signs checked at each endpoint, no Tr8 force in LC2;200g fixed console budget.",
+    "Global foot support model remains P293g sectional screen, not contact FEA.",
+    "New stop Y-offset/axial pin loads require candidate joint verification.",
+    "Pad24mm2 is conditional finite contact, not a verified first-contact footprint.",
+    "8Nm is static load bound, NOT arbitrary impact/stall qualification."
+  ],
+  "source_screen_SHA256": "31843267642258b2c55a283f8e41be7dd42ff4efdaed8b2c5951c545569f74a1"
+}

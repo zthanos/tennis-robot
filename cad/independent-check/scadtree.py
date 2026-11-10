@@ -214,9 +214,14 @@ class Parser:
             self.out.inserts.append((tk.end, echo))
             self.block(in_module=True)
         else:
+            # Single-statement body: wrap it in a block whose first statement
+            # is the entry echo.  The brace is queued after the statement's
+            # own selector so that, at the shared position, it lands outside
+            # it: `{echo; let(...) if(_on) stmt}` rather than the selector
+            # wrapping the echo and shifting the module's recorded path.
             start = tk.pos
-            self.out.inserts.append((tk.pos, "{" + echo))
             self.statement(False, True)
+            self.out.inserts.append((tk.pos, "{" + echo))
             self.out.inserts.append((self.t[self.i - 1].end, "}"))
         self.out.modules[name] = self.src[start:self.t[self.i - 1].end]
 

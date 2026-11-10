@@ -1,0 +1,7 @@
+{
+  "returncode": 1,
+  "protected_SHA256": {
+    "cad/independent-check/scadtree.py": "ade7310711ea2db2beae35f305a6dbc42243de2300fd45cfcbc2f2b273d788fa",
+    "cad/independent-check/selftest.py": "73b4b3da7a98d5537f15fe570eca70df118e45ce5bffdba18e4fdea175afa153"
+  }
+}

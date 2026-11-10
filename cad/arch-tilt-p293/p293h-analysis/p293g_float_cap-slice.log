@@ -1,0 +1,3 @@
+[2026-11-07 09:40:00.832993] [0x00007f34034f5840] [trace]   Initializing StaticPrintConfigs
+[2026-11-07 09:40:01.011285] [0x00007f34034f5840] [error]   Unable to init glew library
+[2026-11-07 09:40:01.011307] [0x00007f34034f5840] [error]   init opengl failed! skip thumbnail generating
