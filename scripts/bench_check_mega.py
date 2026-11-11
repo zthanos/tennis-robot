@@ -32,8 +32,11 @@ FIELDS = (
 def open_port(path: str, baud: int):
     import serial
 
-    port = serial.Serial(path, baud, timeout=0.02, exclusive=True)
+    port = serial.Serial(path, baud, timeout=0.02, write_timeout=1.0, exclusive=True)
     time.sleep(2.0)  # the Mega resets when the port opens
+    # Telemetry piled up unread during the reset wait; a full 16U2 bridge
+    # stops accepting host writes, so drain it before the first command.
+    port.reset_input_buffer()
     return port
 
 

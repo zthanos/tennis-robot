@@ -160,13 +160,18 @@ class MegaButtonsController:
                 try:
                     import serial  # type: ignore[import-not-found]
 
-                    candidate = serial.Serial(self.port, self.baud, timeout=0.1, exclusive=True)
+                    candidate = serial.Serial(self.port, self.baud, timeout=0.1,
+                                              write_timeout=1.0, exclusive=True)
                     with self._serial_lock:
                         self._serial = candidate
                     with self._state_lock:
                         self._last_error = ""
                         self._event("info", f"port {self.port} opened (Mega reset)")
                     self._stop_event.wait(self.startup_delay)
+                    # Nobody read during the boot delay: the Mega's telemetry
+                    # filled the 16U2 bridge, which then stops accepting host
+                    # writes.  Drain it before the first command.
+                    candidate.reset_input_buffer()
                     self._connected_event.set()
                     self._send_safe_config()
                 except Exception as exc:  # USB may appear later.

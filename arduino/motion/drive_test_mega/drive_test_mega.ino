@@ -499,6 +499,35 @@ void zeroOdometry() {
   odomYaw = 0.0f;
 }
 
+// avr-libc's sscanf has no float conversion unless linked with -lscanf_flt,
+// so every float pattern silently failed and the CMD/CFG/LIMIT commands came
+// back ERR,UNKNOWN.  Match the keyword prefix, then read each number with
+// strtod.
+bool parseFloats(const char *command, const char *prefix, float *values,
+                 uint8_t count) {
+  size_t prefixLength = strlen(prefix);
+  if (strncmp(command, prefix, prefixLength) != 0) {
+    return false;
+  }
+  const char *cursor = command + prefixLength;
+  for (uint8_t i = 0; i < count; ++i) {
+    if (*cursor != ' ') {
+      return false;
+    }
+    char *end;
+    double value = strtod(cursor, &end);
+    if (end == cursor) {
+      return false;
+    }
+    values[i] = static_cast<float>(value);
+    cursor = end;
+  }
+  while (*cursor == ' ') {
+    ++cursor;
+  }
+  return *cursor == '\0';
+}
+
 void handleCommand(char *command) {
   lastHostMs = millis();
 
@@ -532,9 +561,10 @@ void handleCommand(char *command) {
   }
 
   char word[12];
-  float first;
-  float second;
-  if (sscanf(command, "CMD %f %f", &first, &second) == 2) {
+  float values[2];
+  float &first = values[0];
+  float &second = values[1];
+  if (parseFloats(command, "CMD", values, 2)) {
     if (controllerState != ARMED) {
       Serial.println(F("ERR,NOT_ARMED"));
       return;
@@ -556,38 +586,38 @@ void handleCommand(char *command) {
     Serial.println(F("OK,MODE"));
     return;
   }
-  if (sscanf(command, "CFG CPR %f", &first) == 1) {
+  if (parseFloats(command, "CFG CPR", values, 1)) {
     countsPerWheelRevolution = max(0.0f, first);
     Serial.println(F("OK,CPR"));
     return;
   }
-  if (sscanf(command, "CFG RADIUS %f", &first) == 1) {
+  if (parseFloats(command, "CFG RADIUS", values, 1)) {
     wheelRadiusM = clampFloat(first, 0.05f, 0.12f);
     Serial.println(F("OK,RADIUS"));
     return;
   }
-  if (sscanf(command, "CFG TRACK %f", &first) == 1) {
+  if (parseFloats(command, "CFG TRACK", values, 1)) {
     trackM = clampFloat(first, 0.3f, 0.9f);
     Serial.println(F("OK,TRACK"));
     return;
   }
-  if (sscanf(command, "CFG PWM %f", &first) == 1) {
+  if (parseFloats(command, "CFG PWM", values, 1)) {
     pwmCeiling = clampFloat(first, 0.0f, 1.0f);
     Serial.println(F("OK,PWM"));
     return;
   }
-  if (sscanf(command, "CFG NOLOAD %f", &first) == 1) {
+  if (parseFloats(command, "CFG NOLOAD", values, 1)) {
     noLoadSpeedRadS = clampFloat(first, 0.1f, 100.0f);
     Serial.println(F("OK,NOLOAD"));
     return;
   }
-  if (sscanf(command, "CFG ACCEL %f %f", &first, &second) == 2) {
+  if (parseFloats(command, "CFG ACCEL", values, 2)) {
     accelerationLimitMps2 = clampFloat(first, 0.02f, 2.0f);
     yawAccelerationLimitRadS2 = clampFloat(second, 0.05f, 4.0f);
     Serial.println(F("OK,ACCEL"));
     return;
   }
-  if (sscanf(command, "LIMIT %f %f", &first, &second) == 2) {
+  if (parseFloats(command, "LIMIT", values, 2)) {
     maximumRunSeconds = max(0.0f, first);
     maximumRunDistanceM = max(0.0f, second);
     Serial.println(F("OK,LIMIT"));
