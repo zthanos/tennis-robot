@@ -6,6 +6,12 @@
 > pivot cassette σχεδιάζονται μόνο αφού κλειδώσει το πραγματικό moving
 > module: flywheel wheels, D5065 και pivot supports/trunnions.
 
+Μετρήσεις 2026-11-12: και οι δύο εμπρός motor flanges είναι3 mm πιο κοντά
+στο X240 από το παλιό CAD envelope (6 mm πραγματικό κενό από X271, αντί
+9 mm CAD). Προστέθηκαν μόνο front flange strips X277…280· τα σώματα μοτέρ
+και τα πίσω envelopes έμειναν αμετάβλητα. Το P2-93h δεν έχει candidate
+solids, επομένως δεν υπάρχει P2-93h σώμα προς clearance approval.
+
 τι διαφέρει από το αναμενόμενο: το πραγματικό hard-stop contact δεν είναι
 κατακόρυφη δύναμη60,6 N στο crown. Για την παρακάτω διάταξη είναι
 **42,993 N εφαπτομενικά**, με διαφορετική pitch/roll αντίδραση. Επίσης,

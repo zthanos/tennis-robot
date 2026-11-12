@@ -1,0 +1,203 @@
+{
+  "status": "PASS_NO_NEW_COLLISIONS_AND_GE_3MM",
+  "measurements": {
+    "date": "2026-11-12",
+    "template_edge_X_mm": 271,
+    "left_front_flange_gap_mm": 6,
+    "right_front_flange_gap_mm": 6,
+    "measured_front_flange_start_X_mm": 277,
+    "old_cad_front_flange_start_X_mm": 280,
+    "rear_motor_measurements": "pending; CAD unchanged"
+  },
+  "method": "fresh check-current-scene manifolds; canonical X277 front flange solids; P2-93g kinematic poses at each integer angle",
+  "acceptance_minimum_mm": 3.0,
+  "governing": {
+    "angle_deg": -10,
+    "minimum_gap_mm": 6.0,
+    "body": "p293g_foot"
+  },
+  "angles": [
+    {
+      "angle_deg": -10,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -9,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -8,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -7,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -6,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -5,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -4,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -3,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -2,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": -1,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 0,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 1,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 2,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 3,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 4,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 5,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 6,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 7,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 8,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 9,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 10,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 11,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 12,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 13,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 14,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 15,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 16,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 17,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 18,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 19,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    },
+    {
+      "angle_deg": 20,
+      "minimum_gap_mm": 6.0,
+      "body": "p293g_foot"
+    }
+  ],
+  "scene_gate": {
+    "positions_deg": [
+      -10,
+      -3,
+      0,
+      15,
+      20
+    ],
+    "bodies_per_angle": {
+      "-10": 109,
+      "-3": 109,
+      "0": 109,
+      "15": 109,
+      "20": 109
+    },
+    "export_failures": {},
+    "baseline_collision_pairs": 76,
+    "current_collision_pairs": 76,
+    "new_collision_pairs": [],
+    "global_gate_remains_nonzero_from_existing_out_of_scope_collisions": 76
+  },
+  "p293h_candidate_solids": [],
+  "notes": [
+    "Motor/encoder envelopes retain conservative OD38-40/~80 mm dimensions.",
+    "Rear drive envelopes are unchanged pending measurement.",
+    "P2-93h is PARKED and has no candidate solids."
+  ]
+}

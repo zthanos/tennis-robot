@@ -80,6 +80,24 @@ X220–420, ελάχιστο F gap2 mm και drive gap9 mm. Τα παλιά AS5
 ελέγχει τις πραγματικές meshes σε31 γωνίες. Δεν αποτελεί μαθηματικό
 continuous-motion proof μεταξύ δειγμάτων.
 
+**Εμπρός flanges, μετρήσεις χρήστη 2026-11-12:** τα templates P2-93e L+R
+έδωσαν και τα δύο6 mm από X271 έως τη μαύρη πλάκα στήριξης, αντί των9 mm
+έως το παλιό CAD drive envelope X280. Η συστηματική απόκλιση διορθώθηκε
+με ξεχωριστά front-only flange strips X277…280· τα motor/encoder envelopes
+και τα πίσω μοτέρ δεν μετακινήθηκαν. Στις31 γωνίες−10…+20° δεν προκύπτει
+νέα τομή και το ελάχιστο P2-93g→drive κενό είναι **6,000 mm** (governing
+`p293g_foot` στις−10°), άρα κανένα P2-93g σώμα δεν πέφτει κάτω από3 mm.
+[Raw αποτέλεσμα](p293g-candidate-results/front-flange-template-check.json).
+Το πλήρες scene gate διατηρεί τα ίδια76 προϋπάρχοντα collision pairs και
+0 export failures: **0 νέα pairs** από τη διόρθωση X277.
+Το P2-93h είναι PARKED και δεν έχει candidate solids· οι reference
+stop/AS5600 διατάξεις δεν αποτελούν σώματα προς clearance approval.
+Οι αντίστοιχες πίσω flange μετρήσεις εκκρεμούν και το πίσω envelope μένει
+αμετάβλητο.
+Τα καλώδια των εμπρός encoders περνούν κάτω από την πλευρική ράγα και
+την X240, όπως ορίζει το `docs/hardware/drive-test-wiring-el.md`, άρα δεν
+καταναλώνουν αυτό το κενό δίπλα στο πέλμα της αψίδας.
+
 [Πίνακας ελάχιστων κενών ανά γωνία](P2-93g-solid-tables.md).
 Τα0,1 mm arm–yoke και0,4 mm cradle–fork είναι **πραγματικά σχεδιασμένα
 assembly clearances**, όχι εξαίρεση ελέγχου· κλείσιμο/ελεύθερη περιστροφή

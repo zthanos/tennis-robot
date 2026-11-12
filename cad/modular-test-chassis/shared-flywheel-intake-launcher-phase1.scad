@@ -201,6 +201,20 @@ module shared_base_frame() {
     drive_package_envelopes();
 }
 
+module measured_front_drive_mount_flange_envelopes() {
+    // USER TEMPLATE L+R, 2026-11-12: X271 to each black front mounting
+    // flange is 6 mm, so the measured front edge is X277 (CAD was X280).
+    // Add only the missing X277..280 flange strip.  Do not translate the
+    // motor/encoder envelopes: their bodies are farther away and retain the
+    // conservative OD38..40 / ~80 mm assumptions.  Rear motors are unchanged;
+    // equivalent rear measurements are still pending.
+    color([0.72,0.74,0.78])
+    for (side=[-1,1]) {
+        translate([278.5,side*drive_mount_y,53]) cube([3,40,2],center=true);
+        translate([278.5,side*239,77.5]) cube([3,2,47],center=true);
+    }
+}
+
 module drive_hardware_envelopes() {
     // Positive collision geometry. MEASURED/FIT-CHECKED: 40x40 foot, 25x30
     // hole rectangle; bracket height is only an approximate 47 mm measurement.
@@ -209,6 +223,10 @@ module drive_hardware_envelopes() {
     // MEASURED BY TAPE (+/-2..3 mm): tyre width/track, face-to-encoder stack,
     // and outer hex stack. Detailed diameters, shaft/hub lengths and cable bend
     // envelope remain assumptions; verify all four assemblies before release.
+    // 2026-11-12 USER TEMPLATE/TAPE L+R: both front mounting flanges begin at
+    // X277 (6 mm from p293e X271), a systematic 3 mm offset from old X280.
+    // Their separate correction solid is added below; rear measurements pend.
+    measured_front_drive_mount_flange_envelopes();
     for (side=[-1,1],xx=drive_mount_x) {
         color([0.72,0.74,0.78]) {
             translate([xx,side*drive_mount_y,53]) cube([40,40,2],center=true);
