@@ -1,6 +1,36 @@
 # Ενεργό σύνολο εκτύπωσης — P2-93e / P2-95 gate
 
-## P2-93e — ενεργή candidate αψίδα, όχι RELEASED
+## P2-96 — ενεργό print set αψίδας, όχι RELEASED
+
+Μοναδική πηγή εκτύπωσης: `arch-tilt-p293/print-arch/`.
+
+| Σειρά | STL | Ποσότητα / έλεγχος |
+| ---: | --- | --- |
+| 1 | `coupon_foot_seats.stl` | 1· X240/X230 seats, washer recesses και ένα Z80 clevis· ένα σώμα, planning <1 h |
+| 2 | `coupon_knee_pins.stl` | 1· οπές knee Z80/Z114· ένα σώμα, planning <1 h |
+| 3 | `foot_L-R_x1_each.stl` | 2· ένα κανονικό + ένα Mirror Y· συμπαγή |
+| 4 | `knee_L-R_x1_each.stl` | 2· ένα κανονικό + ένα Mirror Y· συμπαγή |
+| 5 | — | Υποχρεωτικό physical proof-load του assembled foot+knee πριν συνεχίσει η αψίδα |
+| 6 | `crown_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Z και Drop-to-bed |
+| 7 | `crossbar_end_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Y |
+| 8 | `crossbar_center_x1.stl` | 1 |
+| 9 | `arch_joint_sleeve_x2.stl` | 2 |
+| 10 | `mast_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Y |
+| 11 | `mast_cap_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Y |
+| 12 | `lidar_half_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Y |
+| 13 | `sensor_joint_sleeve_x1.stl` | 1 |
+| 14 | `oak_mount_x1.stl` | 1 |
+
+Τα coupons είναι test-only, όχι installed parts. Οι χρόνοι τους είναι
+planning estimates και απαιτούν επιβεβαίωση από πραγματικό slicer. Όλα τα
+φέροντα μέρη παραμένουν FIT-CHECK μέχρι το physical proof-load.
+
+Το `parked-tilt/` είναι **PARKED — μετά το moving module, ΜΗΝ ΤΥΠΩΣΕΙΣ**.
+Τα παλιά STL, superseded p293d μέρη και templates είναι μόνο στο `archive/` — **ΜΗΝ ΤΥΠΩΣΕΙΣ**.
+
+<!-- P2-93e/g historical instructions superseded by the P2-96 table above.
+
+## P2-93e — ιστορική candidate αψίδα, ΜΗΝ ΤΥΠΩΣΕΙΣ
 
 **Το παλιό σετ `arch-tilt-p293/stl/` της αψίδας: ΜΗΝ ΤΥΠΩΣΕΙΣ.**
 Οι παλιές οδηγίες «μπορούν να τυπωθούν» είναι ιστορικές και ακυρώνονται.
@@ -129,6 +159,8 @@ coupon/installed-pose/raw scene gates που εξακολουθούν να ισ�
 «concept» **δεν τυπώνονται**. Η κατάσταση αποτυπώνει όσα είναι γνωστά στις
 2026-11-05 (P2-95)· όταν ένα φυσικό part αλλάξει, ενημερώνεται πρώτα αυτό το
 αρχείο.
+
+-->
 
 ## Υποχρεωτικό gate πριν από κάθε εκτύπωση
 

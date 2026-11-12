@@ -3,18 +3,11 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_scad="$here/p293-arch-tilt-release.scad"
-release_dir="$here/stl"
+release_dir="$here/print-arch"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
 component_check="$here/../check-stl-components.py"
 
-parts=(
-  arch_foot_x240 arch_foot_x300 arch_leg_lower arch_leg_upper arch_joint_sleeve
-  arch_brace_x240 arch_brace_x300 arch_crossbar_center arch_crossbar_end
-  lidar_mast lidar_crossbar_half sensor_joint_sleeve oak_universal_plate
-  tilt_fit0186_carrier tilt_kfl08_base tilt_nut_carriage tilt_stop
-  tilt_as5600_pod tilt_as5600_cover
-  tilt_magnet_cap
-)
+parts=(arch_crossbar_center arch_joint_sleeve sensor_joint_sleeve)
 
 if [[ "${DRY_RUN:-0}" == "1" ]]; then
   out_dir="$(mktemp -d "$here/.dry-run.XXXXXX")"
@@ -27,14 +20,24 @@ fi
 if (($#)); then parts=("$@"); fi
 
 for name in "${parts[@]}"; do
-  "$openscad_bin" --backend=Manifold -o "$out_dir/$name.stl" \
+  case "$name" in
+    arch_crossbar_center) out_name="crossbar_center_x1" ;;
+    arch_joint_sleeve) out_name="arch_joint_sleeve_x2" ;;
+    sensor_joint_sleeve) out_name="sensor_joint_sleeve_x1" ;;
+  esac
+  "$openscad_bin" --backend=Manifold -o "$out_dir/$out_name.stl" \
     -D "part=\"$name\"" "$source_scad"
-  [[ -s "$out_dir/$name.stl" ]] || { echo "P2-93 missing STL: $name" >&2; exit 1; }
-  python3 "$component_check" "$out_dir/$name.stl" 1
+  [[ -s "$out_dir/$out_name.stl" ]] || { echo "P2-96 missing STL: $out_name" >&2; exit 1; }
+  python3 "$component_check" "$out_dir/$out_name.stl" 1
 done
 
 # Permanent P2-90e lesson: no large horizontal underside above the bed.
-for mesh in "$out_dir"/*.stl; do
+for name in "${parts[@]}"; do
+  case "$name" in
+    arch_crossbar_center) mesh="$out_dir/crossbar_center_x1.stl" ;;
+    arch_joint_sleeve) mesh="$out_dir/arch_joint_sleeve_x2.stl" ;;
+    sensor_joint_sleeve) mesh="$out_dir/sensor_joint_sleeve_x1.stl" ;;
+  esac
   awk -v mesh="$mesh" '
     /facet normal/ { nz=$5; vi=0; next }
     /vertex/ { vi++; x[vi]=$2; y[vi]=$3; z[vi]=$4 }
@@ -58,6 +61,4 @@ for mesh in "$out_dir"/*.stl; do
   ' "$mesh"
 done
 
-python3 "$here/p293-stl-stats.py" "$out_dir" "$here/p293-print-estimate.json"
-bash "$here/qa-p293.sh"
-echo "P2-93 export PASS: ${#parts[@]} one-body STL"
+echo "P2-96 common retained export PASS: ${#parts[@]} one-body STL"

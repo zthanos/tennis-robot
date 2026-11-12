@@ -2,8 +2,13 @@
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
-mkdir -p "$here/stl-candidate-p293g"
-for name in p293g_foot p293g_crown p293g_crossbar_end p293g_console_inboard p293g_console_outboard p293g_cradle p293g_float_cap p293g_nut_trunnion p293g_nut_arm; do
-  "$bin" --backend=manifold -D "part=\"$name\"" -o "$here/stl-candidate-p293g/$name.stl" "$here/p293g-tilt-candidate.scad"
+mkdir -p "$here/print-arch" "$here/parked-tilt"
+for spec in "p293g_foot:foot_L-R_x1_each" "p293g_crown:crown_L-R_x1_each" "p293g_crossbar_end:crossbar_end_L-R_x1_each"; do
+  part="${spec%%:*}"; name="${spec##*:}"
+  "$bin" --backend=manifold -D "part=\"$part\"" -o "$here/print-arch/$name.stl" "$here/p293g-tilt-candidate.scad"
 done
-echo 'P2-93g FIT-CHECK only. Physical coupons, proof-load and full scene gate required.'
+for spec in "p293g_console_inboard:console_inboard_x1" "p293g_console_outboard:console_outboard_x1" "p293g_cradle:cradle_x1" "p293g_float_cap:float_cap_x1" "p293g_nut_trunnion:nut_trunnion_x1" "p293g_nut_arm:nut_arm_x1"; do
+  part="${spec%%:*}"; name="${spec##*:}"
+  "$bin" --backend=manifold -D "part=\"$part\"" -o "$here/parked-tilt/$name.stl" "$here/p293g-tilt-candidate.scad"
+done
+echo 'P2-96 split export: arch FIT-CHECK; tilt PARKED.'
