@@ -1,6 +1,6 @@
 # Ενεργό σύνολο εκτύπωσης — P2-93e / P2-95 gate
 
-## P2-96 — ενεργό print set αψίδας, όχι RELEASED
+## P2-96b — ενεργό print set αψίδας, όχι RELEASED
 
 Μοναδική πηγή εκτύπωσης: `arch-tilt-p293/print-arch/`.
 
@@ -8,22 +8,23 @@
 | ---: | --- | --- |
 | 1 | `coupon_foot_seats.stl` | 1· X240/X230 seats, washer recesses και ένα Z80 clevis· ένα σώμα, planning <1 h |
 | 2 | `coupon_knee_pins.stl` | 1· οπές knee Z80/Z114· ένα σώμα, planning <1 h |
-| 3 | `foot_L-R_x1_each.stl` | 2· ένα κανονικό + ένα Mirror Y· συμπαγή |
-| 4 | `knee_L-R_x1_each.stl` | 2· ένα κανονικό + ένα Mirror Y· συμπαγή |
+| 3 | `foot_L.stl`, `foot_R.stl` | 1+1· έτοιμα στο bed· συμπαγή |
+| 4 | `knee_L.stl`, `knee_R.stl` | 1+1· έτοιμα στο bed· συμπαγή |
 | 5 | — | Υποχρεωτικό physical proof-load του assembled foot+knee πριν συνεχίσει η αψίδα |
-| 6 | `crown_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Z και Drop-to-bed |
-| 7 | `crossbar_end_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Y |
+| 6 | `crown_L.stl`, `crown_R.stl` | 1+1· έτοιμα στο bed |
+| 7 | `crossbar_end_L.stl`, `crossbar_end_R.stl` | 1+1· έτοιμα στο bed |
 | 8 | `crossbar_center_x1.stl` | 1 |
 | 9 | `arch_joint_sleeve_x2.stl` | 2 |
-| 10 | `mast_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Y |
-| 11 | `mast_cap_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Y |
-| 12 | `lidar_half_L-R_x1_each.stl` | 2· δεύτερο τεμάχιο Mirror Y |
+| 10 | `mast_L.stl`, `mast_R.stl` | 1+1· έτοιμα στο bed |
+| 11 | `mast_cap_L.stl`, `mast_cap_R.stl` | 1+1· έτοιμα στο bed |
+| 12 | `lidar_half_L.stl`, `lidar_half_R.stl` | 1+1· έτοιμα στο bed |
 | 13 | `sensor_joint_sleeve_x1.stl` | 1 |
 | 14 | `oak_mount_x1.stl` | 1 |
 
 Τα coupons είναι test-only, όχι installed parts. Οι χρόνοι τους είναι
 planning estimates και απαιτούν επιβεβαίωση από πραγματικό slicer. Όλα τα
 φέροντα μέρη παραμένουν FIT-CHECK μέχρι το physical proof-load.
+Τα αρχεία L/R είναι τελικά print orientations· **κανένα mirror ή rotate στον slicer**.
 
 Το `parked-tilt/` είναι **PARKED — μετά το moving module, ΜΗΝ ΤΥΠΩΣΕΙΣ**.
 Τα παλιά STL, superseded p293d μέρη και templates είναι μόνο στο `archive/` — **ΜΗΝ ΤΥΠΩΣΕΙΣ**.
