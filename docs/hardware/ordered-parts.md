@@ -64,7 +64,7 @@ Motion control board + safety chain + drive mechanics. Σύνολο: `€56.20` 
 
 | # | Part | Κατηγορία | Ποσότητα | Τιμή μονάδας | Σύνολο | Πωλητής | Κατάσταση |
 |---:|---|---|---:|---:|---:|---|---|
-| A1 | 8″ pneumatic wheel **200x50**, aluminium-alloy hub, 10 mm axle, 6200 bearings, inner + outer tyre ([1005012429999292](https://www.aliexpress.com/item/1005012429999292.html)) — **τροχοί του κοινού flywheel (intake + launch), 2 τεμ., ίδια παρτίδα/χρώμα** | Flywheel / Wheels | 2 | 33,39 € | 66,78 € (+ μεταφορικά) | Shop1105601460 Store | Παραγγέλθηκε 22/10/2026 — εκκρεμεί παράδοση |
+| A1 | 8″ pneumatic wheel **200x50**, aluminium-alloy hub, 10 mm axle, 6200 bearings, inner + outer tyre ([1005012429999292](https://www.aliexpress.com/item/1005012429999292.html)) — **τροχοί του κοινού flywheel (intake + launch), 2 τεμ., ίδια παρτίδα/χρώμα** | Flywheel / Wheels | 2 | 33,39 € | 66,78 € (+ μεταφορικά) | Shop1105601460 Store | Παραγγέλθηκε 22/10/2026· **Παραλήφθηκε 14/11/2026** — μετρήσεις εκκρεμούν |
 
 > **Στοιχεία πωλητή (ΟΧΙ μετρημένα):** εξωτερική διάμετρος **192 mm** (όχι 200), πλάτος πέλματος
 > 48 mm, μάζα **760 g**/τεμ., πίεση 36 PSI (2,5 bar), ζάντα δύο κομματιών με βίδες/παξιμάδια,
