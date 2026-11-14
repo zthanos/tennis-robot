@@ -443,6 +443,7 @@ M4 δεν συναρμολογούνται. Δεν χρησιμοποιούντ�
 | TPU pulley + bracket | `test-fixtures/tpu-friction/pulley.stl`, `pulley_bracket.stl` | `tpu-friction-test.scad` | M4×25 + παξιμάδι ως άξονας | Μόνο δοκιμή |
 | Ski hand-test, τέσσερις παραλλαγές | `test-fixtures/ski-jump-hand-test/ski_42deg_R75.stl`, `ski_60deg_R75.stl`, `ski_75deg_R75.stl`, `ski_75deg_R110.stl` | `ski-jump-test.scad` | Ταινία/σφιγκτήρας στο τραπέζι | Μόνο χειροκίνητη δοκιμή |
 | Εκτοξευτής εισόδου βατήρα (λάστιχα) | `test-fixtures/ramp-entry-ball-launcher/stl/ramp_entry_launcher_base.stl`, `ramp_entry_launcher_pusher.stl`, `ramp_entry_launcher_spool_anchor.stl` ×2, `ramp_entry_launcher_spool_pusher.stl` ×2 | `ramp-entry-ball-launcher.scad` | Πείρος ατσάλινος Ø4×135–145, 4×M5×30 + 12 ροδέλες M5 + 4 nyloc, 2 ίδια λάστιχα ~80–90 mm· ταινία/Velcro/δεματικά | FIT-CHECK δοκιμαστικό· βάση 40%, έμβολο 25% infill· `ramp_surface_z`=11 επιβεβαιωμένο από χρήστη 2026-11-08 |
+| Καπάκι συγκράτησης τροχού κίνησης | `drive-wheel-cap/stl/wheel_retainer_cap.stl` ×4 | `drive-wheel-cap/wheel-retainer-cap.scad` | 1×M4 ανά τροχό + ροδέλα, μήκος = 8 mm καπάκι + βάθος σπειρώματος | FIT-CHECK· spigot Ø9,7×5 στην οπή Ø10, χείλος Ø15×3· PETG 100%, χείλος στο bed, χωρίς supports |
 | Basket mockup | Δεν έχει STL· διαστάσεις στο `test-fixtures/basket-mockup/README.md` | P2-71 cardboard fixture | Ταινία/χαρτόνι | Μόνο δοκιμή· pile retention 40/45 μπαλών εκκρεμεί |
 
 Το P2-71 καλάθι έχει τέσσερις πλευρές πλέγματος. Μόνο η fail-closed θύρα
