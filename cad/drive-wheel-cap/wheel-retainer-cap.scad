@@ -2,12 +2,12 @@
 // hex hub.  The spigot enters the hub bore from the outer face; the flange
 // bears on the wheel face.  Printed flange-down, spigot up: no supports.
 //
-// User measurement 2026-11-14: bore ~10 mm, insertion ~5 mm, outer Ø15.
+// User measurement 2026-11-14: bore ~10 mm, insertion ~5 mm; flange Ø30.
 
 spigot_bore_d = 10.0;    // measured hub bore
 spigot_clearance = 0.3;  // diametral running fit for a printed spigot
 spigot_len = 5;
-flange_d = 15;
+flange_d = 30;          // user 2026-11-15: wider bearing face on the wheel
 flange_t = 3;
 m4_clear = 4.5;
 tip_chamfer = 0.6;       // eases the spigot into the bore
