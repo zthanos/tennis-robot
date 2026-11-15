@@ -254,6 +254,20 @@ def mirror(cad: Path, dst: Path) -> tuple[set[str], dict[int, str], set[str]]:
              if not {"archive", "independent-check"} & set(p.relative_to(cad).parts)]
     stls = {p.stem for p in cad.rglob("*.stl")
             if not {"archive", "independent-check"} & set(p.relative_to(cad).parts)}
+    # A printed part is a dispatcher literal that becomes an STL.  STL files
+    # may be renamed on export (P2-96: part "p293g_foot" -> foot_L.stl), so a
+    # literal named in any export script counts as well; matching STL names
+    # alone silently merged renamed parts into coarser bodies.
+    export_words = set()
+    for script in cad.rglob("*.sh"):
+        if not {"archive", "independent-check"} & set(script.relative_to(cad).parts):
+            text = script.read_text()
+            # part="X" / part=\"X\" selectors and "X:name..." export specs.
+            export_words |= set(re.findall(r'part=\\?"([A-Za-z0-9_]+)', text))
+            export_words |= set(re.findall(r'"([A-Za-z0-9_]+):', text))
+    export_words = {w for w in export_words
+                    if not w.startswith(("qa", "debug", "check"))
+                    and not w.endswith("assembly") and not w.isupper()}
     parts, helpers, fids = set(), set(), {}
     dispatch = []
     for fid, path in enumerate(sorted(files)):
@@ -283,7 +297,7 @@ def mirror(cad: Path, dst: Path) -> tuple[set[str], dict[int, str], set[str]]:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(ON_FUNC + out)
     for lit, calls in dispatch:
-        if lit in stls:
+        if lit in stls or lit in export_words:
             parts.update(c for c in calls if c not in helpers)
     return parts, fids, helpers
 
