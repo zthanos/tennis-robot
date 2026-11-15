@@ -6,6 +6,7 @@
 use <body-panels-f.scad>
 use <body-panels-f-rear-v2.scad>
 use <../rear-pod/rear-pod-v2.scad>
+use <../rear-pod/stackable-box-p297.scad>
 use <../arch-tilt-p293/p293-arch-tilt-release.scad>
 use <../arch-tilt-p293/p293d-arch-candidate.scad>
 use <../arch-tilt-p293/p293g-tilt-candidate.scad>
@@ -35,17 +36,9 @@ module p271_basket_current() {
 module exact_current_context(a) {
   color([0.34,0.36,0.39]) frame_assembly();
   drive_package_envelopes();
-  color([0.92,0.63,0.14]) rear_pod_v2_assembly();
-  color([0.92,0.63,0.14]) {
-    for(side=[-1,1]) {
-      parkside_dock(side);
-      parkside_drawer(side);
-      rear_foot_wedge_installed(side);
-      ugreen_clamp_cap_installed(side);
-    }
-    ugreen_post_holder();
-    ugreen_rear_retainer();
-  }
+  // P2-97 Phase 1 FIT-CHECK tower replaces the P2-90d posts/carrier and the
+  // provisional unmeasured Parkside drawers.  Released base halves remain.
+  color([0.92,0.63,0.14]) p297_assembly();
   color([0.18,0.45,0.72])
     translate([112.5,195,37]) rotate([90,0,0]) mpu6050_rail_side_mount();
   color([0.28,0.67,0.36]) p271_basket_current();
