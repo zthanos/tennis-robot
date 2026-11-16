@@ -15,4 +15,4 @@ The P2-97 export also runs `check-stl-components.py` and
 `check-stl-downward-faces.py` after every generated STL.  Export stops unless
 each file is one material body and every connected horizontal downward patch
 above the print bed is at most 40 mm².  The printability test set passes all
-eight files; its worst result is 12.00 mm² on `p297_logic_box.stl`.
+ten files, including both seam coupons; its worst result is 35.28 mm².

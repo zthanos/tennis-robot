@@ -1,6 +1,6 @@
 // P2-97 Phase 1 — FIT-CHECK stackable electronics box system.
-// One tower, keyed shear seams and four M3 screws per seam into
-// Ruthex RX-M3x5.7 heat-set inserts.  Select with -D 'part="..."'.
+// One tower, continuous three-sided shear seams and four lift-retention M3
+// screws per seam into Ruthex RX-M3x5.7 inserts. Select with -D 'part="..."'.
 
 use <rear-pod-v2.scad>
 include <params-v2.scad>
@@ -13,17 +13,26 @@ p297_cx = panel_center_x;
 p297_outer = [138,190];
 p297_wall = 4;
 p297_floor = 3.2;
-p297_corner = 12;
+p297_corner = 14;
 p297_corner_x = 44;
 p297_corner_y = 82;
 p297_lattice = 4.10;
 p297_lattice_t = 3.2;
 p297_extrusion_w = 0.62; // user's 0.6 mm nozzle profile
-p297_key_h = 2.2;
-p297_key_size = 10;
-p297_key_clear = 0.30;
-p297_seam_gap = 0.25;  // avoids coplanar CGAL false positives at lattice walls
-p297_key_straight_h = p297_key_h+p297_seam_gap+1.5;
+p297_seam_lip_h = 8;
+p297_seam_lip_t = 1.40;
+p297_seam_band = 6;
+p297_seam_front_x = 65.5; // tongue/groove remains fully supported by wall
+p297_seam_side_y = 92.5;
+p297_seam_band_front_x = 66; // asymmetric socket material stays in outline
+p297_seam_band_side_y = 92;
+p297_seam_clearance = 0.35; // per side; override for the coupon/export
+p297_seam_fit_residual = 0.05; // local tuning ribs, not the main perimeter
+p297_seam_rib_add = max(0,p297_seam_clearance-p297_seam_fit_residual);
+p297_seam_gap = 0.25;  // vertical assembly relief
+p297_seam_straight_h = p297_seam_lip_h+0.15;
+p297_seam_socket_h = p297_seam_straight_h
+                         +(p297_seam_lip_t+2*p297_seam_clearance)/2+0.25;
 p297_seam_x = p297_corner_x;
 p297_seam_y = p297_corner_y;
 p297_insert_hole = 4.0;
@@ -61,7 +70,7 @@ p297_bts_centres = [[-30,-40],[30,-40],[-30,40],[30,40]];
 p297_bts_board_z = p297_floor + 8;
 p297_bts_terminal_clear = 25;
 p297_bts_side_inner_y = 93.4 - p297_lattice_t/2;
-p297_bts_service_z0 = 6;
+p297_bts_service_z0 = 11; // stays above the continuous 9.45 mm socket band
 p297_bts_service_z1 = p297_bts_board_z + p297_bts_design_h + 5;
 p297_perf_pattern = [75,115];
 p297_mega_holes = [[-25,52], [25,52], [-18.5,-10], [18.5,-10]];
@@ -76,11 +85,6 @@ module p297_slot(length=8,width=3.4,vertical=false,h=8) {
     linear_extrude(height=h)
         if (vertical) rotate(90) p297_capsule_2d(length,width);
         else p297_capsule_2d(length,width);
-}
-
-module p297_key_positions() {
-    for (x=[-p297_corner_x,p297_corner_x],
-         y=[-p297_corner_y,p297_corner_y]) translate([x,y,0]) children();
 }
 
 module p297_seam_positions() {
@@ -105,25 +109,71 @@ module p297_beam_x(length,depth,height) {
     }
 }
 
-module p297_top_keys(z) {
-    p297_key_positions()
-        translate([0,0,z]) cube([p297_key_size,p297_key_size,p297_key_h],center=true);
+// Three closed sides: both Y walls and the +X/front wall. The -X/rear side
+// remains open for the Phase-2 drawers and the common cable/service route.
+module p297_seam_path_2d(width) {
+    union() {
+        for (y=[-p297_seam_side_y,p297_seam_side_y]) translate([0,y])
+            square([p297_outer[0],width],center=true);
+        translate([p297_seam_front_x,0])
+            square([width,p297_outer[1]],center=true);
+    }
 }
 
-module p297_key_pocket_cavity(z0) {
-    width = p297_key_size+2*p297_key_clear;
-    straight_h = p297_key_straight_h;
-    p297_key_positions() {
-        translate([0,0,z0+straight_h/2])
-            cube([width,width,straight_h+0.2],center=true);
-        // The former flat pocket roof was a 122 mm2 unsupported ceiling.
-        // Close it as a 45-degree pyramid above the required straight key bay.
-        hull() {
-            translate([0,0,z0+straight_h-0.05])
-                cube([width,width,0.1],center=true);
-            translate([0,0,z0+straight_h+(width-0.1)/2])
-                cube([0.1,0.1,0.1],center=true);
+module p297_seam_band_path_2d(width) {
+    union() {
+        for (y=[-p297_seam_band_side_y,p297_seam_band_side_y]) translate([0,y])
+            square([p297_outer[0],width],center=true);
+        translate([p297_seam_band_front_x,0])
+            square([width,p297_outer[1]],center=true);
+    }
+}
+
+module p297_seam_tuning_ribs_2d(width) {
+    // Short gauge ribs preserve the requested clearance over almost the
+    // entire perimeter but leave only 0.05 mm/side locally after seating.
+    // Their fit is accepted or adjusted on the coupon before a full box.
+    for (y=[-p297_seam_side_y,p297_seam_side_y],x=[-35,20,60]) translate([x,y])
+        square([12,width],center=true);
+    for (y=[-48,10,60,80]) translate([p297_seam_front_x,y])
+        square([width,12],center=true);
+}
+
+module p297_top_seam_lip(z) {
+    translate([0,0,z]) linear_extrude(height=p297_seam_lip_h)
+        union() {
+            p297_seam_path_2d(p297_seam_lip_t);
+            p297_seam_tuning_ribs_2d(
+                p297_seam_lip_t+2*p297_seam_rib_add);
         }
+}
+
+module p297_socket_band() {
+    linear_extrude(height=p297_seam_socket_h)
+        p297_seam_band_path_2d(p297_seam_band);
+}
+
+module p297_socket_cavity(z0=-0.1) {
+    groove = p297_seam_lip_t+2*p297_seam_clearance;
+    straight = p297_seam_straight_h;
+    // Straight receiving bay.
+    for (y=[-p297_seam_side_y,p297_seam_side_y])
+        translate([0,y,z0+straight/2])
+            cube([p297_outer[0]+0.2,groove,straight+0.2],center=true);
+    translate([p297_seam_front_x,0,z0+straight/2])
+        cube([groove,p297_outer[1]+0.2,straight+0.2],center=true);
+    // 45-degree self-supporting roofs; no horizontal bridge is introduced.
+    for (y=[-p297_seam_side_y,p297_seam_side_y]) hull() {
+        translate([0,y,z0+straight+0.05])
+            cube([p297_outer[0]+0.2,groove,0.1],center=true);
+        translate([0,y,z0+straight+groove/2])
+            cube([p297_outer[0]+0.2,0.05,0.1],center=true);
+    }
+    hull() {
+        translate([p297_seam_front_x,0,z0+straight+0.05])
+            cube([groove,p297_outer[1]+0.2,0.1],center=true);
+        translate([p297_seam_front_x,0,z0+straight+groove/2])
+            cube([0.05,p297_outer[1]+0.2,0.1],center=true);
     }
 }
 
@@ -133,11 +183,10 @@ module p297_corner_nodes(h) {
 }
 
 module p297_insert_pockets(h) {
-    // Pocket opens through the 10 mm key.  At its narrowest the key leaves
-    // (10-4)/2 = 3 mm radial wall; the 12 mm column leaves 4 mm.  The complete
-    // 6.7 mm pocket depth remains surrounded by the full-height solid node.
+    // These screws only retain a floor during lifting; the perimeter seam
+    // carries shear. The 14 mm node leaves 5 mm radial material around Ø4.
     p297_seam_positions()
-        translate([0,0,h+p297_key_h-p297_insert_depth])
+        translate([0,0,h-p297_insert_depth])
             cylinder(d=p297_insert_hole,h=p297_insert_depth+0.3,$fn=28);
 }
 
@@ -151,46 +200,40 @@ module p297_corner_before_reference() {
         translate([8,7.5,1.6]) cube([16,15,p297_floor],center=true);
         translate([13,13,old_h/2]) cube([6,6,old_h],center=true);
         translate([4,4,old_h/2]) cylinder(d=10,h=old_h,center=true,$fn=36);
-        translate([0,0,old_h+p297_key_h/2])
-            cube([12,12,p297_key_h],center=true);
+        translate([0,0,old_h+1.1]) cube([12,12,2.2],center=true);
     }
 }
 
-// Exact local section of the corrected keyed joint.  The front half is
-// removed only for the documentation render, exposing the 6.7 mm insert bay
-// and the 45-degree female-key roof in the box above.
+// Exact local section of the continuous perimeter joint. The front half is
+// removed only for the documentation render to expose the female roof.
+module p297_seam_coupon_lower() {
+    translate([-54,-80,0]) intersection() {
+        union() {
+            linear_extrude(height=4) p297_seam_band_path_2d(p297_seam_band);
+            p297_top_seam_lip(4);
+        }
+        translate([54,80,7]) cube([30,30,14],center=true);
+    }
+}
+
+module p297_seam_coupon_upper() {
+    translate([-54,-80,0]) intersection() {
+        difference() {
+            p297_socket_band();
+            p297_socket_cavity();
+        }
+        translate([54,80,p297_seam_socket_h/2])
+            cube([30,30,p297_seam_socket_h+0.2],center=true);
+    }
+}
+
 module p297_corner_after_section() {
-    lower_h = 18;
-    upper_z = lower_h+p297_key_h+p297_seam_gap;
-    upper_h = 18;
-    pocket_w = p297_key_size+2*p297_key_clear;
-    pocket_straight = p297_key_straight_h;
     difference() {
         union() {
-            difference() {
-                union() {
-                    translate([0,0,lower_h/2])
-                        cube([p297_corner,p297_corner,lower_h],center=true);
-                    translate([0,0,lower_h+p297_key_h/2])
-                        cube([p297_key_size,p297_key_size,p297_key_h],center=true);
-                }
-                translate([0,0,lower_h+p297_key_h-p297_insert_depth])
-                    cylinder(d=p297_insert_hole,h=p297_insert_depth+0.3,$fn=28);
-            }
-            difference() {
-                translate([0,0,upper_z+upper_h/2])
-                    cube([p297_corner,p297_corner,upper_h],center=true);
-                translate([0,0,upper_z-0.1+pocket_straight/2])
-                    cube([pocket_w,pocket_w,pocket_straight+0.2],center=true);
-                hull() {
-                    translate([0,0,upper_z-0.15+pocket_straight])
-                        cube([pocket_w,pocket_w,0.1],center=true);
-                    translate([0,0,upper_z-0.1+pocket_straight+(pocket_w-0.1)/2])
-                        cube([0.1,0.1,0.1],center=true);
-                }
-            }
+            p297_seam_coupon_lower();
+            translate([0,0,4+p297_seam_gap]) p297_seam_coupon_upper();
         }
-        translate([-20,-20,-1]) cube([40,20,50]);
+        translate([-20,-20,-1]) cube([40,20,30]);
     }
 }
 
@@ -219,7 +262,6 @@ module p297_floor_plate(full=true) {
             }
             p297_seam_positions() cylinder(d=12,h=p297_floor,center=true,$fn=36);
         }
-        p297_key_pocket_cavity(-p297_floor/2-0.1);
         p297_seam_positions()
             translate([0,0,-p297_floor]) cylinder(d=p297_m3_clear,h=3*p297_floor,$fn=28);
         if (full)
@@ -281,16 +323,14 @@ module p297_open_box(h,full_floor=true,front_lattice=true,top_keys=true,top_inse
             p297_side_wall(-93.4,h);
             p297_side_wall(93.4,h);
             if (front_lattice) p297_front_wall(66.4,h);
+            p297_socket_band();
             p297_corner_nodes(h);
-            if (top_keys) p297_top_keys(h+p297_key_h/2);
+            if (top_keys) p297_top_seam_lip(h);
         }
         // Bottom seam fasteners remain reachable from above.
         p297_seam_positions()
             translate([0,0,-0.1]) cylinder(d=p297_m3_clear,h=p297_floor+1,$fn=28);
-        // Cut the female key pockets through the complete box union as well
-        // as the floor submodule; this also clears any coincident corner/grid
-        // material added outside p297_floor_plate().
-        p297_key_pocket_cavity(-0.1);
+        p297_socket_cavity();
         if (top_inserts) p297_insert_pockets(h);
     }
 }
@@ -303,13 +343,17 @@ module p297_base_adapter() {
                 cube([133,14,p297_adapter_h],center=true);
             for (x=[-64,64]) translate([x,0,p297_adapter_h/2])
                 cube([10,178,p297_adapter_h],center=true);
+            // The adapter has no box wall below it, so this bed-supported
+            // perimeter band carries the complete three-sided tongue.
+            linear_extrude(height=p297_adapter_h)
+                p297_seam_band_path_2d(p297_seam_band);
             p297_corner_nodes(p297_adapter_h);
             // Bed-supported links carry the inboard corner nodes into the
             // existing X=+/-64 adapter rails without a suspended shelf.
             for (x=[-54,54],y=[-p297_corner_y,p297_corner_y])
                 translate([x,y,p297_adapter_h/2])
                     cube([20,p297_corner,p297_adapter_h],center=true);
-            p297_top_keys(p297_adapter_h+p297_key_h/2);
+            p297_top_seam_lip(p297_adapter_h);
         }
         // Existing rear and field-jigged front holes; no chassis drilling.
         for (x=[side_frame_rear_x-panel_center_x,
@@ -349,13 +393,16 @@ module p297_power_service_openings() {
 module p297_power_service_frames() {
     // Portal frames restore the side-wall load path removed by the four
     // service windows.  X=0 lies in the 10 mm gap between the two boards.
+    frame_z0 = max(p297_bts_service_z0-4,p297_seam_socket_h+0.5);
+    frame_z1 = p297_bts_service_z1+4;
     for (side=[-1,1]) {
         for (x=[-58,0,58])
-            translate([x,side*93.4,
-                       (p297_bts_service_z0+p297_bts_service_z1)/2])
-                cube([4,p297_lattice_t,
-                      p297_bts_service_z1-p297_bts_service_z0+8],center=true);
-        for (z=[p297_bts_service_z0-2,p297_bts_service_z1+2])
+            translate([x,side*93.4,(frame_z0+frame_z1)/2])
+                cube([4,p297_lattice_t,frame_z1-frame_z0],center=true);
+        // Keep the lower portal beam above the 8 mm male lip. This frame is
+        // added after the box boolean, so it must not refill the socket bay.
+        for (z=[max(p297_bts_service_z0-2,p297_seam_socket_h+2),
+                p297_bts_service_z1+2])
             translate([0,side*93.4,z])
                 p297_beam_x(120,p297_lattice_t,4);
     }
@@ -512,8 +559,8 @@ module p297_collar() {
         // Explicit E-stop service keepout through the front crossbar.
         translate([0,-58,p297_collar_h-25]) cube([39,34,54],center=true);
         // Collar floor spokes are added outside p297_open_box(); reopen the
-        // four female key bays through those spokes as well.
-        p297_key_pocket_cavity(-0.1);
+        // continuous female seam through those spokes as well.
+        p297_socket_cavity();
     }
 }
 
@@ -556,6 +603,8 @@ else if (part=="p297_power_box") p297_power_box();
 else if (part=="p297_power_fitcheck") p297_power_fitcheck();
 else if (part=="p297_corner_before") p297_corner_before_reference();
 else if (part=="p297_corner_after_section") p297_corner_after_section();
+else if (part=="p297_seam_coupon_lower") p297_seam_coupon_lower();
+else if (part=="p297_seam_coupon_upper") p297_seam_coupon_upper();
 else if (part=="p297_logic_box") p297_logic_box();
 else if (part=="p297_collar") p297_collar();
 else if (part=="p297_mega_carrier") p297_mega_carrier();
@@ -569,8 +618,8 @@ assert(p297_corner_x+p297_corner/2 <= p297_outer[0]/2
        && p297_corner_y+p297_corner/2 <= p297_outer[1]/2,
        "P2-97 corner column exceeds the box outline");
 assert((p297_corner-p297_insert_hole)/2 >= 2
-       && (p297_key_size-p297_insert_hole)/2 >= 2,
-       "P2-97 Ruthex pocket has less than 2 mm radial wall");
+       && (p297_seam_band-(p297_seam_lip_t+2*p297_seam_clearance))/2 >= 1.5,
+       "P2-97 corner/socket wall is below its minimum radial thickness");
 assert(p297_insert_depth >= 6.7,
        "P2-97 Ruthex pocket is shallower than 6.7 mm");
 assert(p297_panel_z + plate_t + 21 <= pod_absolute_top,
@@ -588,3 +637,7 @@ assert((part!="p297_power_box" && part!="p297_power_fitcheck"
        "P2-97: supply measured BTS underside-to-heatsink-top height with -D p297_bts_measured_h=<mm>");
 assert(min(p297_lattice,p297_lattice_t) >= 2*p297_extrusion_w,
        "P2-97 lattice is thinner than two 0.62 mm extrusion lines");
+assert(p297_seam_clearance >= 0 && p297_seam_clearance <= 0.8,
+       "P2-97 seam clearance must be between 0 and 0.8 mm per side");
+assert(p297_seam_lip_t >= 2*p297_extrusion_w,
+       "P2-97 perimeter lip is thinner than two 0.62 mm extrusion lines");

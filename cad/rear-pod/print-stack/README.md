@@ -2,8 +2,7 @@
 
 Status: **FIT-CHECK, do not print the power box yet.**  All parts are support-free in
 the exported orientation and fit a 250 x 250 mm bed.  The common nominal box
-footprint is 138 x 190 mm; small keyed/seam details keep every exported mesh
-below 143 x 195 mm.
+footprint is 138 x 190 mm; the complete perimeter seam stays inside it.
 
 The BTS height measurement is still open.  Measure from the PCB underside to
 the highest point of the fitted heatsink and export with
@@ -18,14 +17,19 @@ measured BTS positions and the removable Mega/perfboard/Pi carriers remain.
 ## What differs from the expected rod tower
 
 The four continuous M5 rods were not selected.  Each floor is a separately
-removable open-rear box.  Four 10 x 10 x 2.2 mm keys at every seam take shear;
-four M3 screws provide clamp load into Ruthex RX-M3x5.7 inserts in the box
-below.  The screws are reached from inside the box above, so the chassis/base
-joint and all lower seams stay assembled during floor service.
+removable open-rear box.  An 8 mm-high continuous tongue enters the box above
+along both side walls and the closed +X/front wall.  This three-sided
+perimeter—not the screws or four point keys—carries all seam shear.
+
+Four M3 screws into Ruthex RX-M3x5.7 inserts only stop a floor lifting off.
+Two would carry the nominal lift load, but four are selected to keep the large
+perimeter seated symmetrically and retain it after one missed/loose fastener.
+No screw shear is credited.  Access from inside the box above leaves every
+lower seam assembled while a floor is removed.
 
 The old 300 mm-high thin-post load path is also gone.  Lateral load goes from
 the existing control panel into the collar, the X-braced side/front walls, the
-keyed seams and the adapter rails, then through the existing P2-90d base holes.
+perimeter seams and the adapter rails, then through the existing P2-90d base holes.
 No chassis hole is added.
 
 ## Installed stack and access
@@ -66,33 +70,40 @@ If the Pi 5 is to remain in its metal/M.2 case, measure that case's mounting
 holes before printing; the official bare-PCB holes are not assumed to pass
 through the case.
 
-## Corner section and support-free undersides
+## Perimeter seam, corner section and fit coupon
 
-Each seam now uses a full-height 12 x 12 mm solid corner column centred at
-X=±44, Y=±82 mm.  Its complete footprint stays inside the 138 x 190 mm outline
-and overlaps the solid perimeter node below.  The Ø4.0 insert pocket is
-centred: the column leaves 4.0 mm radial material and the narrower 10 mm shear
-key still leaves 3.0 mm, both above the required 2 mm.  The pocket is 6.7 mm
-deep and is surrounded by uninterrupted column material for its full depth.
-The female key bay retains a 3.95 mm straight relief region, then closes with a
-45° pyramidal roof instead of an unsupported horizontal ceiling.
+Each seam uses full-height 14 x 14 mm solid corner columns centred at X=±44,
+Y=±82 mm.  Their complete footprints stay inside the 138 x 190 mm outline.
+The centred Ø4.0 insert pocket leaves 5.0 mm radial material, is 6.7 mm deep,
+and is surrounded by uninterrupted column material for its full depth.
+
+The continuous tongue is 1.40 mm thick (2.26 extrusion widths at 0.62 mm) and
+8 mm high.  Its groove has parameterized clearance of 0.35 mm per side by
+default (`P297_SEAM_CLEARANCE_MM`) and a 45° self-supporting roof.  Short
+calibration ribs leave 0.05 mm per side locally to suppress rattle; the rest
+of the perimeter retains the full 0.35 mm/side assembly clearance.
+
+Print `p297_seam_coupon_lower.stl` and `p297_seam_coupon_upper.stl` first.
+They are exact 30 x 30 mm corner crops of the male/female seam, including one
+calibration rib and the roof.  Each is one body; together they are 5.1 g and
+0.33 h, below 30 minutes.  Accept only if they seat fully by hand, show no
+visible lateral rattle, and separate without levering.  Otherwise change
+`P297_SEAM_CLEARANCE_MM` and re-export both before any large print.
 
 Before: the old 6 mm post, insert boss and shear key used separate axes, and
 the post exceeded the nominal outline.
 
 ![P2-97 corner before](p297-corner-before.png)
 
-After: section through two assembled corner nodes; the lower centred insert
-bay and upper 45° female-key roof are visible.
+After: section through the assembled continuous male/female perimeter corner.
 
 ![P2-97 corner after section](p297-corner-after-section.png)
 
 All formerly flat elevated undersides were changed to 45° V/chamfered forms:
 the wall rails, BTS service-window rails, six logic tray rails, collar lands
-and key-pocket roofs.  `check-stl-downward-faces.py` groups connected
+and seam-groove roofs.  `check-stl-downward-faces.py` groups connected
 coplanar downward triangles and rejects any elevated patch over 40 mm².  In
-the test export the worst patches are 12.00 mm² on the logic box and 9.43 mm²
-on the power box; every one of the eight STL files passes.
+the final export the worst patch is 35.28 mm²; all ten STL files pass.
 
 For the user's 0.6 mm nozzle profile, the assumed extrusion width is 0.62 mm.
 The X braces have a 4.10 x 3.20 mm minimum section, corresponding to 6.61 and
@@ -104,21 +115,22 @@ well above the required two.  At 0.30 mm layers the 45° chamfers advance only
 
 The repository has no configured slicer profile, so these are geometry-based
 planning numbers, not G-code times.  They use watertight STL volume, PETG at
-1.27 g/cm³, and retain a conservative effective 32 g/h floor plus a small
-per-part allowance.  The user's 0.6 mm nozzle / 0.30 mm layer profile should
-not be slower, but the actual slicer remains the acceptance source.
+1.27 g/cm³, 40 g/h and 0.10 h handling per STL.  The 40 g/h rate corresponds
+to the requested 0.6 mm nozzle / 0.30 mm layer profile (0.62 mm line width,
+about 9 mm³/s).  The actual slicer remains the acceptance source.
 
 | STL | PETG | Estimated time |
 | --- | ---: | ---: |
-| `p297_base_adapter.stl` | 80 g | 2.6 h |
-| `p297_energy_spacer.stl` | 116 g | 3.8 h |
-| `p297_power_box.stl` | 176 g | 5.6 h |
-| `p297_logic_box.stl` | 219 g | 7.0 h |
-| `p297_collar.stl` | 62 g | 2.1 h |
-| `p297_mega_carrier.stl` | 30 g | 1.1 h |
-| `p297_perf_carrier.stl` | 43 g | 1.5 h |
-| `p297_pi5_carrier.stl` | 23 g | 0.8 h |
-| **Phase 1 total** | **about 750 g** | **about 24.4 h** |
+| `p297_base_adapter.stl` | 105.3 g | 2.73 h |
+| `p297_energy_spacer.stl` | 151.1 g | 3.88 h |
+| `p297_power_box.stl` | 212.4 g | 5.41 h |
+| `p297_logic_box.stl` | 256.7 g | 6.52 h |
+| `p297_collar.stl` | 75.1 g | 1.98 h |
+| `p297_mega_carrier.stl` | 30.9 g | 0.87 h |
+| `p297_perf_carrier.stl` | 43.3 g | 1.18 h |
+| `p297_pi5_carrier.stl` | 23.2 g | 0.68 h |
+| **Phase 1 installed total** | **898.0 g** | **23.25 h** |
+| two seam coupons (print first) | 5.1 g | 0.33 h |
 
 The values above are rounded targets; regenerate the table from final meshes
 if geometry changes.  No individual estimate exceeds 8 h.
@@ -130,21 +142,28 @@ PETG E=1.2 GPa, the 4.1 x 3.2 mm diagonal section, axial X-brace stiffness
 `2EA/L * (b/L)^2`, and adds explicit allowances for panel bending, adapter/
 collar bending and joint slip.
 
-| Load-path term at 50 N | Bolted keyed boxes | Four M5 rods + same lattice |
+| Load-path term at 50 N | Perimeter-seam boxes | Four M5 rods + same lattice |
 | --- | ---: | ---: |
 | lattice shear, floors in series | 0.32 mm | 0.32 mm |
 | panel + collar + base adapter | 0.62 mm | 0.62 mm |
-| four seams / clamp slip allowance | 0.24 mm | 0.12 mm |
-| **estimated E-stop displacement** | **1.18 mm** | **1.06 mm** |
+| four seated seams / local fit take-up | 0.20 mm | — |
+| perimeter bearing deformation | 0.02 mm | — |
+| rod clamp/joint allowance | — | 0.12 mm |
+| **estimated E-stop displacement** | **1.16 mm** | **1.06 mm** |
 
 Both clear the 1.5 mm requirement.  The box system is selected because the
-~0.12 mm stiffness penalty is small and the service split is much better.
+~0.10 mm stiffness penalty is small and the service split is much better.
 Four M5 steel rods would be cut to about **285 mm** (259 mm clamp stack plus
-washers/nuts and adjustment), weighing about 176 g before hardware.  Sixteen
-M3 screws/inserts plus printed seam keys/bosses are about 43 g.  The rod variant
-would save roughly 0.7 h and 22 g of printed seam material, but finishes about
-108 g heavier overall and requires disturbing the whole stack to remove a
-middle floor.
+washers/nuts and adjustment), weighing about 176 g before nuts/washers.
+Sixteen M3 screws/inserts are about 43 g.  The continuous seams raise the
+installed plastic total to 898.0 g, but the complete M3 box stack remains
+about 20 g lighter than the equivalent rod stack after four rods, nuts and
+washers are included.  A middle floor also remains independently removable.
+
+The 1.16 mm result assumes the coupon proves that the local 0.05 mm/side ribs
+seat and are not removed.  With only the unrestrained 0.35 mm/side nominal
+gap, clearance take-up could exceed 1.5 mm; a rattling coupon is therefore a
+failed stiffness gate, not a cosmetic issue.
 
 The support-free corner and rail revision remains below the 25 h Phase-1
 planning target, and no individual part exceeds 8 h.  These values use a
