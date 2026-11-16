@@ -1,13 +1,14 @@
 # P2-97 Phase 1 — FIT-CHECK stackable electronics tower
 
-Status: **FIT-CHECK, do not print the power box yet.**  All parts are support-free in
-the exported orientation and fit a 250 x 250 mm bed.  The common nominal box
-footprint is 138 x 190 mm; the complete perimeter seam stays inside it.
+Status: **FIT-CHECK.** All parts are support-free in the exported orientation
+and fit a 250 x 250 mm bed.  The common nominal box footprint is 138 x 190 mm;
+the complete perimeter seam stays inside it.
 
-The BTS height measurement is still open.  Measure from the PCB underside to
-the highest point of the fitted heatsink and export with
-`P297_BTS_HEIGHT_MM=<measured mm>`.  The export script now stops before writing
-any STL if that value is absent, zero or non-numeric.
+The BTS7960/IBT-2 geometry was measured by the user on 2026-11-16: 50 x 50 mm
+PCB, 40 x 40 mm holes, 50 x 30 x 20 mm centred heatsink below the PCB, 15 mm
+maximum component height above it and about 36 mm total.  The print set was
+exported with `P297_BTS_HEIGHT_MM=36`.  The script stops before export if the
+value is absent/invalid or does not match the measured 20+1+15 mm stack.
 
 The power and logic floors use a plain through-M3 mounting grid: Ø3.4 mm
 holes on a 20 mm pitch, carried by 8 mm orthogonal ribs.  This is not
@@ -39,8 +40,9 @@ Installed datums are measured from ground/chassis coordinates:
 - base adapter: Z64..72, seated on the existing P2-90d locating bosses;
 - empty Phase-1 energy spacer: Z72.25..142.25 (rear open; no provisional drawers);
 - power box: Z142.50..212.50, four measured 50 x 50 BTS7960 boards on measured
-  40 x 40 patterns, plus adjustable fuse/DC-DC lands.  The BTS PCB underside
-  is Z153.70 and the envelope top is `Z153.70 + measured BTS height`;
+  40 x 40 patterns.  PCB undersides are at Z167.70; heatsink bottoms at
+  Z147.70, 2.0 mm above the floor-grid top; the 15 mm top envelope ends at
+  Z183.70.  Fuse/DC-DC use the general M3 grid after their bodies are measured;
 - logic box: Z212.75..294.75, three rear-removable horizontal trays at Z+10/+36/+62;
 - collar: Z295.00..319.00;
 - existing control-panel top: Z323; E-stop mushroom top: approximately Z344.
@@ -64,7 +66,20 @@ edge toward +Y; the negative-Y pair is rotated 180° toward −Y.  This leaves
 25 mm screwdriver/1.5 mm² cable requirement.  Signal headers face the 30 mm
 central aisle and then the open −X rear/cable channel.  Four framed 52 mm-wide
 side-lattice windows align with the terminal edges for motor-cable exit; their
-upper edge is generated from the measured BTS height plus 5 mm.
+upper edge is generated from the measured 15 mm top envelope plus 5 mm.
+
+Each PCB rests on four integrated Ø8 x 22 mm standoffs.  A Ø3.4 through-hole
+takes an M3x30 screw, top washer and washer/nyloc below the floor.  The screw
+axis is 5 mm outside the 30 mm heatsink width; after the M3 radius it retains
+3.3 mm nominal clearance, while the boss itself retains 1.0 mm.  Dry-fit one
+board before installing all four because the heatsink outline is hand-measured.
+The heatsink bottom has 2.0 mm free air above the floor.
+
+The heatsink fins run along X.  Six 130 x 5 mm floor slots—three beneath each
+Y row—form continuous channels below both heatsinks and open through the −X
+rear edge.  They avoid all sixteen standoff feet.  The former fuse/DC-DC rear
+lands were removed because they occupied this airflow path; the existing
+20 mm-pitch M3 grid remains their adjustable mounting interface.
 
 If the Pi 5 is to remain in its metal/M.2 case, measure that case's mounting
 holes before printing; the official bare-PCB holes are not assumed to pass
@@ -123,13 +138,13 @@ about 9 mm³/s).  The actual slicer remains the acceptance source.
 | --- | ---: | ---: |
 | `p297_base_adapter.stl` | 105.3 g | 2.73 h |
 | `p297_energy_spacer.stl` | 151.1 g | 3.88 h |
-| `p297_power_box.stl` | 212.4 g | 5.41 h |
+| `p297_power_box.stl` | 203.2 g | 5.18 h |
 | `p297_logic_box.stl` | 256.7 g | 6.52 h |
 | `p297_collar.stl` | 75.1 g | 1.98 h |
 | `p297_mega_carrier.stl` | 30.9 g | 0.87 h |
 | `p297_perf_carrier.stl` | 43.3 g | 1.18 h |
 | `p297_pi5_carrier.stl` | 23.2 g | 0.68 h |
-| **Phase 1 installed total** | **898.0 g** | **23.25 h** |
+| **Phase 1 installed total** | **888.8 g** | **23.02 h** |
 | two seam coupons (print first) | 5.1 g | 0.33 h |
 
 The values above are rounded targets; regenerate the table from final meshes
@@ -156,7 +171,7 @@ Both clear the 1.5 mm requirement.  The box system is selected because the
 Four M5 steel rods would be cut to about **285 mm** (259 mm clamp stack plus
 washers/nuts and adjustment), weighing about 176 g before nuts/washers.
 Sixteen M3 screws/inserts are about 43 g.  The continuous seams raise the
-installed plastic total to 898.0 g, but the complete M3 box stack remains
+installed plastic total to 888.8 g, but the complete M3 box stack remains
 about 20 g lighter than the equivalent rod stack after four rods, nuts and
 washers are included.  A middle floor also remains independently removable.
 
@@ -166,9 +181,8 @@ gap, clearance take-up could exceed 1.5 mm; a rattling coupon is therefore a
 failed stiffness gate, not a cosmetic issue.
 
 The support-free corner and rail revision remains below the 25 h Phase-1
-planning target, and no individual part exceeds 8 h.  These values use a
-20 mm BTS height only as a geometry-test fixture; regenerate the power-box
-row after the real BTS height is supplied.
+planning target, and no individual part exceeds 8 h.  The power row is from
+the measured 36 mm BTS export, not the former 20 mm placeholder.
 
 ## Hardware — Phase 1
 
@@ -176,7 +190,8 @@ row after the real BTS height is supplied.
 - 16 x M3x10 socket-head screws and M3 washers;
 - 4 x existing-base M4x20 screws, washers and nylocs for the adapter;
 - 4 x M4x20 screws, broad washers and nylocs for the existing panel holes;
-- 16 x M3 board screws plus 16 x 20 mm spacers for the four BTS7960 boards;
+- 16 x M3x30 board screws, 32 x washers and 16 x nylocs for the four BTS7960
+  boards; the 22 mm standoffs are integrated in the power-box STL;
 - 4 x M3 screws/spacers for the measured Mega acrylic case;
 - 4 x M3 screws/spacers for the user's perfboard cross-slots;
 - 4 x M2.5 screws, washers and 6 mm spacers for a bare Raspberry Pi 5;

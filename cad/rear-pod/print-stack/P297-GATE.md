@@ -16,3 +16,6 @@ The P2-97 export also runs `check-stl-components.py` and
 each file is one material body and every connected horizontal downward patch
 above the print bed is at most 40 mm².  The printability test set passes all
 ten files, including both seam coupons; its worst result is 35.28 mm².
+OpenSCAD runs with `--hardwarnings`, so assertion/warning diagnostics also
+stop the script instead of leaving a misleading STL behind.  The power box
+was exported with the measured `P297_BTS_HEIGHT_MM=36` geometry.

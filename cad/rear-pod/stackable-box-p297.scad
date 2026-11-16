@@ -61,17 +61,22 @@ p297_panel_z = p297_collar_z + p297_collar_h;
 // RP-008347-DS-1 (85 x 56 board; 58 x 49 hole centres).
 p297_bts_pattern = [40,40];
 p297_bts_size = [50,50];
-// Required physical measurement.  Keep this invalid in source so a power-box
-// or assembly export cannot silently reuse the former nominal 20 mm ghost.
-// Supply with -D 'p297_bts_measured_h=<underside-to-heatsink-top mm>'.
+// User measurement 2026-11-16: 20 mm heatsink below a ~1 mm PCB and 15 mm
+// components above it, 36 mm total. Keep total invalid in source so a power
+// export must explicitly acknowledge the measured assembly.
 p297_bts_measured_h = -1;
-p297_bts_design_h = p297_bts_measured_h > 0 ? p297_bts_measured_h : 20;
+p297_bts_heatsink_below = 20;
+p297_bts_pcb_t = 1;
+p297_bts_above = 15;
+p297_bts_heatsink_size = [50,30]; // fins and 50 mm length run along local X
 p297_bts_centres = [[-30,-40],[30,-40],[-30,40],[30,40]];
-p297_bts_board_z = p297_floor + 8;
+p297_bts_standoff_h = 22;
+p297_bts_board_z = p297_floor + p297_bts_standoff_h; // PCB underside
+p297_bts_air_gap = p297_bts_board_z-p297_bts_heatsink_below-p297_floor;
 p297_bts_terminal_clear = 25;
 p297_bts_side_inner_y = 93.4 - p297_lattice_t/2;
 p297_bts_service_z0 = 11; // stays above the continuous 9.45 mm socket band
-p297_bts_service_z1 = p297_bts_board_z + p297_bts_design_h + 5;
+p297_bts_service_z1 = p297_bts_board_z+p297_bts_pcb_t+p297_bts_above+5;
 p297_perf_pattern = [75,115];
 p297_mega_holes = [[-25,52], [25,52], [-18.5,-10], [18.5,-10]];
 p297_pi_pattern = [58,49];
@@ -371,19 +376,38 @@ module p297_energy_spacer() {
 
 module p297_bts_standoffs() {
     // The two rows move out to Y +/-40: the terminal face is at Y +/-65 and
-    // retains 26.8 mm to the inner side-wall face.  Hole centres remain on
-    // the 20 mm grid, so every boss still grows directly from a floor rib.
+    // retains 26.8 mm to the inner side-wall face. The 40 x 40 hole centres
+    // lie 5 mm outside the 30 mm-wide heatsink, so Ø8 bosses and M3 screws do
+    // not enter its envelope. Every boss grows from a 20 mm floor-grid rib.
     for (c=p297_bts_centres) let(cx=c[0],cy=c[1])
         for (dx=[-20,20],dy=[-20,20])
             translate([cx+dx,cy+dy,p297_floor]) difference() {
-                cylinder(d=9,h=8,$fn=32);
-                translate([0,0,-1]) cylinder(d=4.2,h=10,$fn=28);
+                cylinder(d=8,h=p297_bts_standoff_h,$fn=32);
+                translate([0,0,-1])
+                    cylinder(d=p297_m3_clear,h=p297_bts_standoff_h+2,$fn=28);
             }
+}
+
+module p297_bts_fastener_holes() {
+    // True through-holes: M3x30 installs from the PCB side and receives a
+    // washer/nyloc below the floor before this box is stacked.
+    for (c=p297_bts_centres) let(cx=c[0],cy=c[1])
+        for (dx=[-20,20],dy=[-20,20])
+            translate([cx+dx,cy+dy,-1])
+                cylinder(d=p297_m3_clear,h=p297_bts_board_z+3,$fn=28);
+}
+
+module p297_bts_air_channels() {
+    // Six continuous X slots run below the heatsink fins of both board rows
+    // and open through the -X/rear floor rim. They avoid all 16 standoff feet.
+    for (cy=[-40,40],dy=[-9,0,9])
+        translate([-5,cy+dy,-1])
+            p297_slot(130,5,false,p297_floor+3);
 }
 
 module p297_power_service_openings() {
     // One screwdriver/cable window per board, through each +/-Y lattice.
-    // The upper edge follows the measured heatsink envelope plus 5 mm.
+    // The upper edge follows the measured 15 mm top-component envelope +5.
     for (side=[-1,1],cx=[-30,30])
         translate([cx,side*93.4,(p297_bts_service_z0+p297_bts_service_z1)/2])
             cube([52,p297_lattice_t+4,
@@ -414,13 +438,9 @@ module p297_power_box() {
             union() {
                 p297_open_box(p297_power_h,true,true);
                 p297_bts_standoffs();
-                // Fuse and DC-DC adjustable lands on the open rear edge.
-                // Start on the bed rather than at Z0.7 over the open grid.
-                for (y=[-50,50]) translate([-56,y,2.5]) cube([22,40,5],center=true);
             }
-            // Fuse/DC-DC dimensions vary: paired 18 mm slots are the FIT-CHECK gate.
-            for (y=[-58,-42,42,58],x=[-61,-51])
-                translate([x,y,p297_floor-1]) p297_slot(18,3.4,false,9);
+            p297_bts_air_channels();
+            p297_bts_fastener_holes();
             p297_power_service_openings();
         }
         p297_power_service_frames();
@@ -433,19 +453,32 @@ module p297_bts_ghost(cx,cy) {
     // headers toward the central 30 mm harness aisle/rear cable channel.
     translate([cx,cy,p297_bts_board_z])
         rotate([0,0,cy > 0 ? 0 : 180]) {
+            // Measured central heatsink below the PCB. Its fins run in X,
+            // aligned with the continuous floor-air slots and open rear.
+            color([.45,.45,.45,.75])
+                translate([0,0,-p297_bts_heatsink_below/2])
+                    cube([p297_bts_heatsink_size[0],
+                          p297_bts_heatsink_size[1],
+                          p297_bts_heatsink_below],center=true);
             color([.75,.15,.10,.55])
-                translate([0,0,p297_bts_design_h/2])
+                translate([0,0,p297_bts_pcb_t/2])
                     cube([p297_bts_size[0],p297_bts_size[1],
-                          p297_bts_design_h],center=true);
+                          p297_bts_pcb_t],center=true);
             color([.10,.35,.85,.75])
-                for (x=[-13,13]) translate([x,23,6]) cube([20,6,12],center=true);
+                for (x=[-13,13])
+                    translate([x,23,p297_bts_pcb_t+6])
+                        cube([20,6,12],center=true);
             color([.10,.10,.10,.80])
-                translate([0,-23,5]) cube([32,5,10],center=true);
+                translate([0,-23,p297_bts_pcb_t+5])
+                    cube([32,5,10],center=true);
+            color([.15,.15,.15,.8])
+                translate([0,0,p297_bts_pcb_t])
+                    cylinder(d=10,h=p297_bts_above,$fn=32);
             color([.10,.55,.85,.16])
                 translate([0,25+p297_bts_terminal_clear/2,
-                           p297_bts_design_h/2])
+                           (p297_bts_pcb_t+p297_bts_above)/2])
                     cube([50,p297_bts_terminal_clear,
-                          p297_bts_design_h+10],center=true);
+                          p297_bts_pcb_t+p297_bts_above+4],center=true);
         }
 }
 
@@ -631,10 +664,21 @@ assert(2*(40-p297_bts_size[1]/2) >= 25,
        "P2-97 BTS signal-header centre aisle is below 25 mm");
 assert(p297_bts_service_z1+4 < p297_power_h,
        "P2-97 measured BTS height exceeds the power-box/service-window envelope");
+assert(p297_bts_air_gap >= 1.99,
+       "P2-97 BTS heatsink has less than 2 mm air below it");
+assert(p297_bts_pattern[1]/2-p297_bts_heatsink_size[1]/2-p297_m3_clear/2 >= 3,
+       "P2-97 M3 path is too close to the measured BTS heatsink");
+assert((8-p297_m3_clear)/2 >= 2
+       && p297_bts_pattern[1]/2-p297_bts_heatsink_size[1]/2-8/2 >= 1,
+       "P2-97 BTS standoff wall or heatsink side clearance is too small");
 assert((part!="p297_power_box" && part!="p297_power_fitcheck"
         && part!="p297_assembly")
        || p297_bts_measured_h > 0,
-       "P2-97: supply measured BTS underside-to-heatsink-top height with -D p297_bts_measured_h=<mm>");
+       "P2-97: supply measured total BTS height with -D p297_bts_measured_h=36");
+assert(p297_bts_measured_h <= 0
+       || abs(p297_bts_measured_h-(p297_bts_heatsink_below
+                                   +p297_bts_pcb_t+p297_bts_above)) < 0.6,
+       "P2-97 measured total must match 20 mm heatsink + PCB + 15 mm top envelope");
 assert(min(p297_lattice,p297_lattice_t) >= 2*p297_extrusion_w,
        "P2-97 lattice is thinner than two 0.62 mm extrusion lines");
 assert(p297_seam_clearance >= 0 && p297_seam_clearance <= 0.8,
