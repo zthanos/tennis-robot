@@ -10,3 +10,9 @@ The earlier comparison with a stored count of 76 is no longer valid: the old
 report used coarser body decomposition and included pod bodies intentionally
 retired by P2-97.  The acceptance datum is now the corrected 48-pair report;
 P2-97 adds no collision to it.
+
+The P2-97 export also runs `check-stl-components.py` and
+`check-stl-downward-faces.py` after every generated STL.  Export stops unless
+each file is one material body and every connected horizontal downward patch
+above the print bed is at most 40 mm².  The printability test set passes all
+eight files; its worst result is 12.00 mm² on `p297_logic_box.stl`.

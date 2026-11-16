@@ -1,9 +1,14 @@
 # P2-97 Phase 1 — FIT-CHECK stackable electronics tower
 
-Status: **FIT-CHECK, do not batch-print yet.**  All parts are support-free in
+Status: **FIT-CHECK, do not print the power box yet.**  All parts are support-free in
 the exported orientation and fit a 250 x 250 mm bed.  The common nominal box
 footprint is 138 x 190 mm; small keyed/seam details keep every exported mesh
 below 143 x 195 mm.
+
+The BTS height measurement is still open.  Measure from the PCB underside to
+the highest point of the fitted heatsink and export with
+`P297_BTS_HEIGHT_MM=<measured mm>`.  The export script now stops before writing
+any STL if that value is absent, zero or non-numeric.
 
 The power and logic floors use a plain through-M3 mounting grid: Ø3.4 mm
 holes on a 20 mm pitch, carried by 8 mm orthogonal ribs.  This is not
@@ -13,7 +18,7 @@ measured BTS positions and the removable Mega/perfboard/Pi carriers remain.
 ## What differs from the expected rod tower
 
 The four continuous M5 rods were not selected.  Each floor is a separately
-removable open-rear box.  Four 12 x 12 x 2.2 mm keys at every seam take shear;
+removable open-rear box.  Four 10 x 10 x 2.2 mm keys at every seam take shear;
 four M3 screws provide clamp load into Ruthex RX-M3x5.7 inserts in the box
 below.  The screws are reached from inside the box above, so the chassis/base
 joint and all lower seams stay assembled during floor service.
@@ -30,7 +35,8 @@ Installed datums are measured from ground/chassis coordinates:
 - base adapter: Z64..72, seated on the existing P2-90d locating bosses;
 - empty Phase-1 energy spacer: Z72.25..142.25 (rear open; no provisional drawers);
 - power box: Z142.50..212.50, four measured 50 x 50 BTS7960 boards on measured
-  40 x 40 patterns, plus adjustable fuse/DC-DC lands;
+  40 x 40 patterns, plus adjustable fuse/DC-DC lands.  The BTS PCB underside
+  is Z153.70 and the envelope top is `Z153.70 + measured BTS height`;
 - logic box: Z212.75..294.75, three rear-removable horizontal trays at Z+10/+36/+62;
 - collar: Z295.00..319.00;
 - existing control-panel top: Z323; E-stop mushroom top: approximately Z344.
@@ -48,29 +54,71 @@ Mounting patterns used by the FIT-CHECK carriers:
 - Raspberry Pi 5 bare PCB: official 58 x 49 mm pattern, M2.5 fasteners;
 - BTS7960/HW-039: measured 40 x 40 mm pattern on 50 x 50 boards.
 
+The BTS centres are X=±30, Y=±40 mm.  The positive-Y pair has its terminal
+edge toward +Y; the negative-Y pair is rotated 180° toward −Y.  This leaves
+26.8 mm between each 50 mm board edge and the inner wall face, exceeding the
+25 mm screwdriver/1.5 mm² cable requirement.  Signal headers face the 30 mm
+central aisle and then the open −X rear/cable channel.  Four framed 52 mm-wide
+side-lattice windows align with the terminal edges for motor-cable exit; their
+upper edge is generated from the measured BTS height plus 5 mm.
+
 If the Pi 5 is to remain in its metal/M.2 case, measure that case's mounting
 holes before printing; the official bare-PCB holes are not assumed to pass
 through the case.
+
+## Corner section and support-free undersides
+
+Each seam now uses a full-height 12 x 12 mm solid corner column centred at
+X=±44, Y=±82 mm.  Its complete footprint stays inside the 138 x 190 mm outline
+and overlaps the solid perimeter node below.  The Ø4.0 insert pocket is
+centred: the column leaves 4.0 mm radial material and the narrower 10 mm shear
+key still leaves 3.0 mm, both above the required 2 mm.  The pocket is 6.7 mm
+deep and is surrounded by uninterrupted column material for its full depth.
+The female key bay retains a 3.95 mm straight relief region, then closes with a
+45° pyramidal roof instead of an unsupported horizontal ceiling.
+
+Before: the old 6 mm post, insert boss and shear key used separate axes, and
+the post exceeded the nominal outline.
+
+![P2-97 corner before](p297-corner-before.png)
+
+After: section through two assembled corner nodes; the lower centred insert
+bay and upper 45° female-key roof are visible.
+
+![P2-97 corner after section](p297-corner-after-section.png)
+
+All formerly flat elevated undersides were changed to 45° V/chamfered forms:
+the wall rails, BTS service-window rails, six logic tray rails, collar lands
+and key-pocket roofs.  `check-stl-downward-faces.py` groups connected
+coplanar downward triangles and rejects any elevated patch over 40 mm².  In
+the test export the worst patches are 12.00 mm² on the logic box and 9.43 mm²
+on the power box; every one of the eight STL files passes.
+
+For the user's 0.6 mm nozzle profile, the assumed extrusion width is 0.62 mm.
+The X braces have a 4.10 x 3.20 mm minimum section, corresponding to 6.61 and
+5.16 extrusion widths respectively—at least five paths in the thinner axis,
+well above the required two.  At 0.30 mm layers the 45° chamfers advance only
+0.30 mm per layer, less than one 0.62 mm extrusion width.
 
 ## PETG and print-time planning estimate
 
 The repository has no configured slicer profile, so these are geometry-based
 planning numbers, not G-code times.  They use watertight STL volume, PETG at
-1.27 g/cm³, and an effective 32 g/h for a 0.4 mm nozzle / 0.2 mm layer,
-including a small per-part handling/travel allowance.  Expect ±20% until the
-user's actual slicer profile is run.
+1.27 g/cm³, and retain a conservative effective 32 g/h floor plus a small
+per-part allowance.  The user's 0.6 mm nozzle / 0.30 mm layer profile should
+not be slower, but the actual slicer remains the acceptance source.
 
 | STL | PETG | Estimated time |
 | --- | ---: | ---: |
-| `p297_base_adapter.stl` | 72 g | 2.4 h |
-| `p297_energy_spacer.stl` | 105 g | 3.4 h |
-| `p297_power_box.stl` | 167 g | 5.3 h |
-| `p297_logic_box.stl` | 216 g | 6.9 h |
-| `p297_collar.stl` | 47 g | 1.6 h |
-| `p297_mega_carrier.stl` | 31 g | 1.1 h |
+| `p297_base_adapter.stl` | 80 g | 2.6 h |
+| `p297_energy_spacer.stl` | 116 g | 3.8 h |
+| `p297_power_box.stl` | 176 g | 5.6 h |
+| `p297_logic_box.stl` | 219 g | 7.0 h |
+| `p297_collar.stl` | 62 g | 2.1 h |
+| `p297_mega_carrier.stl` | 30 g | 1.1 h |
 | `p297_perf_carrier.stl` | 43 g | 1.5 h |
 | `p297_pi5_carrier.stl` | 23 g | 0.8 h |
-| **Phase 1 total** | **about 704 g** | **about 23.0 h** |
+| **Phase 1 total** | **about 750 g** | **about 24.4 h** |
 
 The values above are rounded targets; regenerate the table from final meshes
 if geometry changes.  No individual estimate exceeds 8 h.
@@ -98,9 +146,10 @@ would save roughly 0.7 h and 22 g of printed seam material, but finishes about
 108 g heavier overall and requires disturbing the whole stack to remove a
 middle floor.
 
-After adding the 20 mm M3 grid and integrating all formerly floating bodies,
-the same volume model gives 703.5 g / 22.944 h, versus 703.5 g / 22.95 h for
-the preceding FIT-CHECK export: no print-time increase within model precision.
+The support-free corner and rail revision remains below the 25 h Phase-1
+planning target, and no individual part exceeds 8 h.  These values use a
+20 mm BTS height only as a geometry-test fixture; regenerate the power-box
+row after the real BTS height is supplied.
 
 ## Hardware — Phase 1
 
