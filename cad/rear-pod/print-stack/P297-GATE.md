@@ -1,17 +1,16 @@
 # P2-97 full-scene gate note
 
 Commit `0092fcd6` fixed printed-part recognition for STL files renamed by
-export scripts.  The P2-97b exact HEAD comparison reports **50 collision
-pairs** both before and after these changes, zero contained pairs and zero
-export failures at -10/-3/0/15/20 degrees.  The two pairs added after the
-older 48-pair datum (`control_panel_v2 × p297_logic_box` and
-`p297_logic_box × p297_power_box`) already exist in the current HEAD baseline;
-P2-97b adds **zero new pairs**.
+export scripts.  P2-97c restores the correct pre-`5e3404ad` baseline of
+**48 collision pairs**, with zero contained pairs and zero export failures at
+-10/-3/0/15/20 degrees.  It removes `control_panel_v2 × p297_logic_box`
+(52.5 mm3) and `p297_logic_box × p297_power_box` (20 mm3), which were new
+P2-97 overlaps and were incorrectly accepted by P2-97b.
 
 The earlier comparison with a stored count of 76 is no longer valid: the old
 report used coarser body decomposition and included pod bodies intentionally
-retired by P2-97.  Collision acceptance is an exact pair-set comparison with
-the current HEAD, not a frozen historical total.
+retired by P2-97. Collision acceptance uses the historical 48-pair set before
+the P2-97 stack changes, not the immediate parent HEAD.
 
 The P2-97 export runs the common `check-stl-printability.sh` after every
 generated STL.  It includes `check-stl-components.py`,

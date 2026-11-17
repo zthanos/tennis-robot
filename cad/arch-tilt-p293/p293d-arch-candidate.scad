@@ -86,7 +86,10 @@ module p293d_crown(){
   }
   for(s=[L-55,L-35]) yhole(station(s));
   // Two access-through holes for a future crown/end clamp; no hidden screw.
-  for(z=[239,251]) yhole([390,0,z]);
+  // These clamp holes belong only to the 32.8 mm crown body.  The former
+  // generic 80 mm bore continued through the inboard spigot and left a
+  // constant 1.18 mm shell there.
+  for(z=[239,251]) yhole([390,0,z],l=34.8);
   zhole([390,-26.4,245]);
  }
 }
@@ -146,15 +149,30 @@ module p293d_mast_cap(){
 }
 
 // OAK plate + integral forward struts. Pads butt at the LiDAR beam X402.
+module p293d_oak_plate(){
+ difference(){
+  hull()for(x=[-48,48],y=[-18,18])translate([x,y,3])cylinder(d=12,h=6,center=true);
+  // Keep the released 4.6 mm M4 clearance.  Shortening the vertical slot
+  // travel by 0.2 mm at each end raises its ligament to the horizontal slots
+  // from the former constant 1.4 mm to 1.6 mm.
+  for(y=[-14,14])hull()for(x=[-40,40])translate([x,y,3])cylinder(d=m4d,h=10,center=true);
+  for(x=[-30,30])hull()for(y=[-7.8,7.8])translate([x,y,3])cylinder(d=m4d,h=10,center=true);
+ }
+}
+
 module p293d_oak_mount(){
  difference(){
   union(){
-   translate([450,0,305]) rotate([0,50,0]) oak_universal_plate();
+   translate([450,0,305]) rotate([0,50,0]) p293d_oak_plate();
    for(s=[-1,1]){
     translate([406,s*35,354]) cube([8,12,16],center=true);
     hull(){
-     translate([406,s*35,354]) sphere(r=4);
-     translate([448,s*14,303]) sphere(r=4);
+     // A finite outer-face ring, rather than a tangent sphere at the bore,
+     // leaves 4.2-2.3 = 1.9 mm radial material around the M4 hole.
+     translate([410,s*35,354])rotate([0,90,0])cylinder(r=4.2,h=4,center=true);
+     // Enter the plate outside the Y=+/-14 horizontal slots.  Local Y=22
+     // leaves 1.7 mm between the D8 strut foot and the D4.6 slot edge.
+     translate([450,s*22,305])sphere(r=4);
     }
    }
   }
@@ -187,7 +205,16 @@ else if(part=="p293d_mast_cap") translate([-374,-118,-330]) p293d_mast_cap();
 // on a line and produced 0.2 mm-layer knife edges; the complete mount is
 // rotated as one rigid part, so its interfaces are unchanged.
 else if(part=="p293d_oak_mount")
- translate([128.519,0,16.416]) rotate([0,180,0])
-  translate([78.137,0,-55.280]) rotate([0,-50,0])
-   translate([-402,41,-260]) p293d_oak_mount();
+ union(){
+  translate([128.519,0,16.416]) rotate([0,180,0])
+   translate([78.137,0,-55.280]) rotate([0,-50,0])
+    translate([-402,41,-260]) p293d_oak_mount();
+  // The inclined struts otherwise begin as two detached bed islands before
+  // they meet the plate.  Permanent 2.4 mm print-plane gussets join each ear
+  // to the plate through the first 3.4 mm; they are part geometry, not support.
+  for(side=[-1,1])hull(){
+   translate([104,41+side*21,1.8])cylinder(d=4,h=3.6,center=true,$fn=24);
+   translate([122,41+side*35,1.8])cylinder(d=4,h=3.6,center=true,$fn=24);
+  }
+ }
 else p293d_arch_assembly();

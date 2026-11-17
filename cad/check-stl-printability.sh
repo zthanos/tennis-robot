@@ -45,20 +45,23 @@ case "$(basename "$mesh")" in
       slice_args+=(--allow-z "$range:oblique edge after support-free rotation")
     done
     ;;
-  crown_L.stl) slice_args+=(--allow-z "0.5:20.0:pointed transverse-hole exit") ;;
-  crown_R.stl) slice_args+=(--allow-z "32.0:53.0:pointed transverse-hole exit") ;;
+  crown_L.stl) slice_args+=(--allow-z "18.9:19.9:transverse-bore exit edge") ;;
+  crown_R.stl) slice_args+=(--allow-z "32.7:33.9:transverse-bore exit edge") ;;
   mast_cap_L.stl|mast_cap_R.stl)
     slice_args+=(--allow-z "3.9:8.1:elliptical spigot edge")
     slice_args+=(--allow-z "17.5:18.3:elliptical spigot edge")
     slice_args+=(--allow-z "29.7:30.5:elliptical spigot edge")
     ;;
   oak_mount_x1.stl)
-    slice_args+=(--allow-z "0.5:16.5:oblique free edge in plate-flat orientation")
+    slice_args+=(--allow-z "0.5:0.7:rounded bed-edge tangent")
+    slice_args+=(--allow-z "1.1:3.3:oblique gusset and plate edge transitions")
+    slice_args+=(--allow-z "9.1:9.9:ear bore exit edges")
+    slice_args+=(--allow-z "15.3:16.5:pointed strut tips")
     ;;
   ramp_entry_launcher_pusher.stl)
     slice_args+=(--allow-z "9.7:14.4:spherical cup free edge")
     ;;
-  p297_mega_carrier.stl|p297_perf_carrier.stl)
+  p297_mega_carrier.stl)
     slice_args+=(--allow-z "0.5:3.1:carrier chamfer/cutout edge")
     ;;
 esac

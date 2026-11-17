@@ -622,6 +622,18 @@ module p297_logic_box() {
             translate([-58,0,31]) cube([12,22,58],center=true);
         }
         translate([-60,0,32]) cube([10,14,62],center=true);
+        // Rails are added outside p297_open_box(), so reopen the female seam
+        // after them as well.  This preserves the nominal 0.35 mm lateral and
+        // 0.25 mm vertical clearance to the power-box male tongue.
+        p297_socket_cavity();
+        // The released panel's X=-69..-49 deep rear beam passes through the
+        // collar.  Break both side tongues completely across this 20.4 mm
+        // interval; retaining only their outer edge would create a constant
+        // 1.05 mm wall.  The notch leaves 0.2 mm X/Y clearance to the beam.
+        for (side=[-1,1])
+            translate([-59,side*p297_seam_side_y,
+                       p297_logic_h+p297_seam_lip_h/2+0.2])
+                cube([20.4,p297_seam_band,p297_seam_lip_h+0.4],center=true);
     }
 }
 
@@ -649,7 +661,9 @@ module p297_mega_carrier() {
 }
 
 module p297_perf_carrier() {
-    p297_board_carrier([86,126],
+    // X=+/-37.5 cross-slots extend to +/-41.5.  A 86 mm plate left only
+    // 1.50 mm to its edge through the complete 3.2 mm thickness.
+    p297_board_carrier([86.4,126.4],
         [[-37.5,-57.5],[37.5,-57.5],[-37.5,57.5],[37.5,57.5]],true,"PERF");
 }
 

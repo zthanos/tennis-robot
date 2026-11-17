@@ -374,6 +374,44 @@ def main() -> int:
             unwaived.append(failure)
         else:
             waived.append((failure, match[2]))
+
+    # A true free-edge/chamfer witness changes as the sampled plane moves.
+    # A nearly constant sub-limit width persisting for more than 1 mm is a
+    # wall, even if its Z interval was listed in --allow-z.  Fail closed so a
+    # broad classification cannot mask a structural ligament (P2-97c).
+    rejected_plateau_z: set[float] = set()
+    by_classification: dict[str, list[tuple]] = {}
+    for failure, classification in waived:
+        if failure[1] < args.min_thickness - 1e-3:
+            by_classification.setdefault(classification, []).append(failure)
+    for classification, classified_failures in by_classification.items():
+        ordered = sorted(classified_failures, key=lambda item: item[0])
+        runs = []
+        run = []
+        for failure in ordered:
+            if run and failure[0] - run[-1][0] > args.layer_height * 1.5:
+                runs.append(run)
+                run = []
+            run.append(failure)
+        if run:
+            runs.append(run)
+        for run in runs:
+            widths = [failure[1] for failure in run]
+            span = run[-1][0] - run[0][0] + args.layer_height
+            if span > 1.0 + 1e-6 and max(widths) - min(widths) <= 0.05:
+                rejected_plateau_z.update(failure[0] for failure in run)
+                print(
+                    f"  REJECTED WALL CLASSIFICATION: {classification}: "
+                    f"width {min(widths):.3f}..{max(widths):.3f} mm persists "
+                    f"for {span:.1f} mm at Z{run[0][0]:.3f}..{run[-1][0]:.3f}"
+                )
+    if rejected_plateau_z:
+        unwaived.extend(
+            failure for failure, _classification in waived
+            if failure[0] in rejected_plateau_z and failure not in unwaived
+        )
+        waived = [item for item in waived if item[0][0] not in rejected_plateau_z]
+
     status = "PASS" if not unwaived else "FAIL"
     width_text = (f"{worst_width:.3f} mm" if math.isfinite(worst_width)
                   else f">={args.min_thickness:.3f} mm")

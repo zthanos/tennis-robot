@@ -40,9 +40,7 @@ Z, εμβαδό νησιών και width witness.
 
 ## Collision regression
 
-Το `cad/check-current-scene.sh` εκτελέστηκε τόσο σε καθαρό archive του HEAD
-όσο και στο τελικό working tree: 94 bodies ανά γωνία στις
-−10/−3/0/15/20°, 0 contained pairs, 0 export failures και 50 υπάρχοντα
-collision pairs και στις δύο εκτελέσεις. Επομένως η αλλαγή έχει **0 νέα
-collision pairs**. Μια ενδιάμεση διεύρυνση των mast-cap cheeks που έδινε δύο
-νέα `mast × mast_cap` pairs απορρίφθηκε και δεν περιλαμβάνεται στο αποτέλεσμα.
+Η σύγκριση με το άμεσο HEAD των 50 pairs ήταν λανθασμένη. Το P2-97c
+χρησιμοποιεί το ιστορικό baseline των 48 πριν από τα commits του P2-97 και
+αφαιρεί τα δύο νέα P297 overlaps. Βλ.
+[`printability-p297c/README.md`](../printability-p297c/README.md).
