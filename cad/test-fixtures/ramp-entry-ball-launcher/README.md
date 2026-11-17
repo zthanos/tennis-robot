@@ -16,7 +16,7 @@
 ## Τι τυπώνεται
 
 - `ramp_entry_launcher_base.stl`: ενιαία βάση με δύο οδηγούς, στοπ,
-  αριθμημένες θέσεις 1–4 και γενικές σχισμές προσωρινής στερέωσης.
+  τέσσερις θέσεις όπλισης ανά 20 mm και γενικές σχισμές προσωρινής στερέωσης.
 - `ramp_entry_launcher_pusher.stl`: συρόμενο έμβολο με κοίλη επιφάνεια για
   μπάλα Ø66 mm και δύο ανεξάρτητα σημεία για τα λάστιχα.
 - `ramp_entry_launcher_spool_anchor.stl` ×2 (μήκος 10 mm) και
@@ -70,9 +70,11 @@ Velcro. Οι πραγματικοί τροχοί πρέπει να είναι ε
 
 ## Θέσεις όπλισης
 
-Οι αριθμοί 1–4 είναι χαραγμένοι στον δεξιό εξωτερικό οδηγό. Η μπάλα ξεκινά
-πάντα μέσα στο κύπελλο, οπότε η απόσταση εκκίνησης πριν από το σημείο παράδοσης
-είναι ίση με τη διαδρομή του εμβόλου:
+Οι τέσσερις οπές είναι διατεταγμένες ανά 20 mm και αριθμούνται 1–4 από την
+μικρότερη προς τη μεγαλύτερη διαδρομή σύμφωνα με τον παρακάτω πίνακα. Οι
+παλιοί χαραγμένοι αριθμοί αφαιρέθηκαν επειδή δημιουργούσαν knife-edge τομές.
+Η μπάλα ξεκινά πάντα μέσα στο κύπελλο, οπότε η απόσταση εκκίνησης πριν από το
+σημείο παράδοσης είναι ίση με τη διαδρομή του εμβόλου:
 
 | Θέση | Διαδρομή εμβόλου | Απόσταση αξόνων αγκύρωσης |
 |---|---:|---:|
@@ -140,12 +142,8 @@ PETG, 0,20 mm layer, 4 perimeters, 25–35% infill. Η βάση τυπώνετα
 ## Εξαγωγή STL
 
 ```bash
-/snap/bin/openscad-nightly -o stl/ramp_entry_launcher_base.stl \
-  -D 'part="base"' ramp-entry-ball-launcher.scad
-/snap/bin/openscad-nightly -o stl/ramp_entry_launcher_pusher.stl \
-  -D 'part="pusher"' ramp-entry-ball-launcher.scad
-/snap/bin/openscad-nightly -o stl/ramp_entry_launcher_spool_anchor.stl \
-  -D 'part="spool_anchor"' ramp-entry-ball-launcher.scad
-/snap/bin/openscad-nightly -o stl/ramp_entry_launcher_spool_pusher.stl \
-  -D 'part="spool_pusher"' ramp-entry-ball-launcher.scad
+bash export-stls.sh
 ```
+
+Το script σταματά αν οποιοδήποτε STL δεν είναι ένα σώμα, έχει μη
+ταξινομημένο downward face ή αποτυγχάνει το slice gate ≥1,6 mm / ≥25 mm².

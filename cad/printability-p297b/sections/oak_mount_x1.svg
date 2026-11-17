@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="191" height="805" viewBox="0 0 191 805">
+<rect width="100%" height="100%" fill="#f7f7f4"/>
+<text x="30" y="30" font-family="sans-serif" font-size="20" font-weight="bold">Z=3.634 mm</text>
+<text x="30" y="55" font-family="sans-serif" font-size="16">width 0.000 mm; islands 0.01 mm2</text>
+<path d="M 95.70,709.28 L 95.70,709.26 L 95.70,709.24 L 95.70,707.79 L 95.70,140.70 L 95.70,140.73 L 95.70,709.25 L 95.70,709.27 L 95.70,709.30 Z" fill="#1f6f8b" fill-rule="evenodd" stroke="#173f4f" stroke-width="1"/>
+<line x1="95.70" y1="708.52" x2="95.70" y2="708.52" stroke="#d7263d" stroke-width="3"/><circle cx="95.70" cy="708.52" r="5" fill="#d7263d"/><circle cx="95.70" cy="708.52" r="5" fill="#d7263d"/>
+</svg>

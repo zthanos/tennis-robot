@@ -179,7 +179,9 @@ def _point_segment_distance(point: Point, left: Point, right: Point):
     return math.hypot(point[0] - nearest[0], point[1] - nearest[1]), nearest, t
 
 
-def minimum_material_width(loops: list[list[Point]], limit: float) -> float:
+def minimum_material_width_witness(
+    loops: list[list[Point]], limit: float
+) -> tuple[float, tuple[Point, Point] | None]:
     segments = [(loop_index, segment_index, left, right)
                 for loop_index, loop in enumerate(loops)
                 for segment_index, (left, right) in enumerate(zip(loop, loop[1:] + loop[:1]))]
@@ -204,6 +206,7 @@ def minimum_material_width(loops: list[list[Point]], limit: float) -> float:
             for cell_y in range(y0, y1 + 1):
                 grid.setdefault((cell_x, cell_y), set()).add(item)
     best = math.inf
+    witness = None
     for loop_index, segment_index, left, right in segments:
         sample = ((left[0] + right[0]) / 2, (left[1] + right[1]) / 2)
         loop_size = len(loops[loop_index])
@@ -233,7 +236,64 @@ def minimum_material_width(loops: list[list[Point]], limit: float) -> float:
             midpoint = ((sample[0] + nearest[0]) / 2, (sample[1] + nearest[1]) / 2)
             if sum(contains(loop, midpoint) for loop in loops) % 2 == 1:
                 best = distance
-    return best
+                witness = (sample, nearest)
+    return best, witness
+
+
+def minimum_material_width(loops: list[list[Point]], limit: float) -> float:
+    return minimum_material_width_witness(loops, limit)[0]
+
+
+def write_section_svg(
+    path: Path,
+    loops: list[list[Point]],
+    z: float,
+    witness: tuple[Point, Point] | None,
+    width: float,
+    areas: list[float],
+) -> None:
+    points = [point for loop in loops for point in loop]
+    x0, x1 = min(point[0] for point in points), max(point[0] for point in points)
+    y0, y1 = min(point[1] for point in points), max(point[1] for point in points)
+    margin = max(x1 - x0, y1 - y0) * 0.06 + 2
+    x0, x1, y0, y1 = x0 - margin, x1 + margin, y0 - margin, y1 + margin
+    scale = min(1000 / (x1 - x0), 700 / (y1 - y0))
+
+    def screen(point: Point) -> tuple[float, float]:
+        return ((point[0] - x0) * scale + 30, (y1 - point[1]) * scale + 75)
+
+    commands = []
+    for loop in loops:
+        first = screen(loop[0])
+        commands.append(f"M {first[0]:.2f},{first[1]:.2f}")
+        commands.extend(
+            f"L {sx:.2f},{sy:.2f}" for sx, sy in (screen(point) for point in loop[1:])
+        )
+        commands.append("Z")
+    view_width = (x1 - x0) * scale + 60
+    view_height = (y1 - y0) * scale + 105
+    width_text = f"{width:.3f} mm" if math.isfinite(width) else ">= limit"
+    overlay = ""
+    if witness is not None:
+        left, right = screen(witness[0]), screen(witness[1])
+        overlay = (
+            f'<line x1="{left[0]:.2f}" y1="{left[1]:.2f}" '
+            f'x2="{right[0]:.2f}" y2="{right[1]:.2f}" '
+            'stroke="#d7263d" stroke-width="3"/>'
+            f'<circle cx="{left[0]:.2f}" cy="{left[1]:.2f}" r="5" fill="#d7263d"/>'
+            f'<circle cx="{right[0]:.2f}" cy="{right[1]:.2f}" r="5" fill="#d7263d"/>'
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f'''<svg xmlns="http://www.w3.org/2000/svg" width="{view_width:.0f}" height="{view_height:.0f}" viewBox="0 0 {view_width:.0f} {view_height:.0f}">
+<rect width="100%" height="100%" fill="#f7f7f4"/>
+<text x="30" y="30" font-family="sans-serif" font-size="20" font-weight="bold">Z={z:.3f} mm</text>
+<text x="30" y="55" font-family="sans-serif" font-size="16">width {width_text}; islands {', '.join(f'{area:.2f}' for area in areas)} mm2</text>
+<path d="{' '.join(commands)}" fill="#1f6f8b" fill-rule="evenodd" stroke="#173f4f" stroke-width="1"/>
+{overlay}
+</svg>\n''',
+        encoding="utf-8",
+    )
 
 
 def main() -> int:
@@ -243,7 +303,27 @@ def main() -> int:
     parser.add_argument("--start-z", type=float, default=0.5)
     parser.add_argument("--min-thickness", type=float, default=1.6)
     parser.add_argument("--min-island-area", type=float, default=25.0)
+    parser.add_argument(
+        "--failure-image", type=Path,
+        help="write an SVG of the worst failing section, with the width witness in red",
+    )
+    parser.add_argument(
+        "--allow-z", action="append", default=[], metavar="MIN:MAX:CLASS",
+        help=("classify a known non-structural Z interval; failures inside it are "
+              "reported but do not fail the export"),
+    )
     args = parser.parse_args()
+
+    allowed = []
+    for value in args.allow_z:
+        try:
+            lower_text, upper_text, classification = value.split(":", 2)
+            lower, upper = float(lower_text), float(upper_text)
+        except ValueError:
+            parser.error(f"invalid --allow-z {value!r}; expected MIN:MAX:CLASS")
+        if lower > upper or not classification.strip():
+            parser.error(f"invalid --allow-z {value!r}")
+        allowed.append((lower, upper, classification.strip()))
 
     mesh = list(triangles(args.stl))
     if not mesh:
@@ -258,6 +338,7 @@ def main() -> int:
     checked = 0
     worst_width = math.inf
     smallest_island = math.inf
+    worst_failure = None
     while z < maximum_z - 1e-5:
         last_error = None
         for jitter in (0.0, 0.0013, -0.0013):
@@ -269,17 +350,31 @@ def main() -> int:
         else:
             raise last_error  # type: ignore[misc]
         areas = island_areas(loops)
-        width = minimum_material_width(loops, args.min_thickness)
+        width, witness = minimum_material_width_witness(loops, args.min_thickness)
         worst_width = min(worst_width, width)
         smallest_island = min(smallest_island, *areas)
         thin = width < args.min_thickness - 1e-3
         small = [area for area in areas if area < args.min_island_area - 1e-3]
         if thin or small:
             failures.append((z, width, small, len(areas)))
+            severity = min(
+                width / args.min_thickness if thin else math.inf,
+                min(areas) / args.min_island_area if small else math.inf,
+            )
+            if worst_failure is None or severity < worst_failure[0]:
+                worst_failure = (severity, z, loops, witness, width, areas)
         checked += 1
         z += args.layer_height
 
-    status = "PASS" if not failures else "FAIL"
+    unwaived = []
+    waived = []
+    for failure in failures:
+        match = next((item for item in allowed if item[0] - 1e-6 <= failure[0] <= item[1] + 1e-6), None)
+        if match is None:
+            unwaived.append(failure)
+        else:
+            waived.append((failure, match[2]))
+    status = "PASS" if not unwaived else "FAIL"
     width_text = (f"{worst_width:.3f} mm" if math.isfinite(worst_width)
                   else f">={args.min_thickness:.3f} mm")
     print(f"SLICE_GEOMETRY {status} {args.stl}: {checked} sections; "
@@ -292,8 +387,27 @@ def main() -> int:
         if small:
             details.append("small islands " + ",".join(f"{area:.2f}" for area in small[:6]))
         print(f"  Z{z:.3f}: {count} islands; {'; '.join(details)}")
-    if failures:
-        print(f"PRINTABILITY FAIL: {args.stl} failed {len(failures)} section(s)", file=sys.stderr)
+    if waived:
+        by_class: dict[str, list[float]] = {}
+        for (z, _width, _small, _count), classification in waived:
+            by_class.setdefault(classification, []).append(z)
+        for classification, heights in by_class.items():
+            print(
+                f"  CLASSIFIED NON-STRUCTURAL: {classification}: "
+                f"{len(heights)} section(s), Z{min(heights):.3f}..{max(heights):.3f}"
+            )
+    if unwaived:
+        if args.failure_image and worst_failure is not None:
+            _, image_z, image_loops, image_witness, image_width, image_areas = worst_failure
+            write_section_svg(
+                args.failure_image, image_loops, image_z, image_witness,
+                image_width, image_areas,
+            )
+            print(f"  failure image: {args.failure_image}")
+        print(
+            f"PRINTABILITY FAIL: {args.stl} failed {len(unwaived)} unclassified section(s)",
+            file=sys.stderr,
+        )
         return 1
     return 0
 

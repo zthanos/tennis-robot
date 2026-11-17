@@ -183,5 +183,11 @@ else if(part=="p293d_crossbar_end") translate([-380,-100,-232]) p293d_crossbar_e
 else if(part=="p293d_mast") translate([-375,-135,-258]) p293d_mast();
 else if(part=="p293d_lidar_half") translate([-378,0,-344]) p293d_lidar_half();
 else if(part=="p293d_mast_cap") translate([-374,-118,-330]) p293d_mast_cap();
-else if(part=="p293d_oak_mount") translate([-402,41,-260]) p293d_oak_mount();
+// Put the universal plate on the bed.  The old installed-angle export began
+// on a line and produced 0.2 mm-layer knife edges; the complete mount is
+// rotated as one rigid part, so its interfaces are unchanged.
+else if(part=="p293d_oak_mount")
+ translate([128.519,0,16.416]) rotate([0,180,0])
+  translate([78.137,0,-55.280]) rotate([0,-50,0])
+   translate([-402,41,-260]) p293d_oak_mount();
 else p293d_arch_assembly();

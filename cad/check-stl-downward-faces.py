@@ -80,21 +80,48 @@ def main() -> int:
     parser.add_argument("stl", type=Path)
     parser.add_argument("--max-area", type=float, default=40.0)
     parser.add_argument("--bed-tolerance", type=float, default=0.2)
+    parser.add_argument(
+        "--allow-z", action="append", default=[], metavar="MIN:MAX:CLASS",
+        help="classify a known support-free bridge interval without hiding other faces",
+    )
     args = parser.parse_args()
+
+    allowed = []
+    for value in args.allow_z:
+        try:
+            lower_text, upper_text, classification = value.split(":", 2)
+            lower, upper = float(lower_text), float(upper_text)
+        except ValueError:
+            parser.error(f"invalid --allow-z {value!r}; expected MIN:MAX:CLASS")
+        allowed.append((lower, upper, classification.strip()))
 
     minimum_z, patches = downward_patches(args.stl)
     elevated = [patch for patch in patches if patch["z"] > minimum_z + args.bed_tolerance]
     worst = elevated[0] if elevated else {"area": 0.0, "z": minimum_z}
     failures = [patch for patch in elevated if patch["area"] > args.max_area + 1e-6]
-    status = "PASS" if not failures else "FAIL"
+    unclassified = []
+    classified = []
+    for patch in failures:
+        match = next((item for item in allowed if item[0] - 1e-6 <= patch["z"] <= item[1] + 1e-6), None)
+        if match is None:
+            unclassified.append(patch)
+        else:
+            classified.append((patch, match[2]))
+    status = "PASS" if not unclassified else "FAIL"
     print(
         f"DOWNWARD_FACES {status} {args.stl}: max {worst['area']:.2f} mm2 "
         f"at Z{worst['z']:.3f}; limit {args.max_area:.2f} mm2; "
-        f"violations {len(failures)}"
+        f"violations {len(unclassified)}"
     )
     if failures:
         for patch in failures[:12]:
             print(f"  unsupported {patch['area']:.2f} mm2 at Z{patch['z']:.3f}")
+    for patch, classification in classified:
+        print(
+            f"  CLASSIFIED SUPPORT-FREE: {classification}: "
+            f"{patch['area']:.2f} mm2 at Z{patch['z']:.3f}"
+        )
+    if unclassified:
         print(
             f"PRINTABILITY FAIL: {args.stl} has horizontal downward faces above the print bed",
             file=sys.stderr,

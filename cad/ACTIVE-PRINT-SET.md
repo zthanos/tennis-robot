@@ -8,7 +8,7 @@
 | ---: | --- | --- |
 | 1 | `coupon_foot_seats.stl` | 1· X240/X230 seats, washer recesses και ένα Z80 clevis· ένα σώμα, planning <1 h |
 | 2 | `coupon_knee_pins.stl` | 1· οπές knee Z80/Z114· ένα σώμα, planning <1 h |
-| 3 | `foot_L.stl`, `foot_R.stl` | 1+1· έτοιμα στο bed· συμπαγή |
+| 3 | `foot_L.stl`, `foot_R.stl` | 1+1· έτοιμα στο bed· συμπαγή· **P2-97b νέα έκδοση, το παλιό τυπωμένο foot δεν πάει σε proof-load** |
 | 4 | `knee_L.stl`, `knee_R.stl` | 1+1· έτοιμα στο bed· συμπαγή |
 | 5 | — | Υποχρεωτικό physical proof-load του assembled foot+knee πριν συνεχίσει η αψίδα |
 | 6 | `crown_L.stl`, `crown_R.stl` | 1+1· έτοιμα στο bed |
@@ -25,6 +25,12 @@
 planning estimates και απαιτούν επιβεβαίωση από πραγματικό slicer. Όλα τα
 φέροντα μέρη παραμένουν FIT-CHECK μέχρι το physical proof-load.
 Τα αρχεία L/R είναι τελικά print orientations· **κανένα mirror ή rotate στον slicer**.
+
+P2-97b: το 0,411 mm εύρημα του παλιού foot ήταν πραγματικό φέρον ligament
+ανάμεσα στις X240 εσοχές ροδέλας της βάσης, όχι στις παρειές με τις οπές.
+Απαιτείται επανεκτύπωση και των δύο foot πριν από το physical proof-load.
+Κάθε export του ενεργού set περνά πλέον το κοινό one-body, downward-face και
+slice gate (≥1,6 mm, islands ≥25 mm² πάνω από Z=0,5).
 
 Το `parked-tilt/` είναι **PARKED — μετά το moving module, ΜΗΝ ΤΥΠΩΣΕΙΣ**.
 Τα παλιά STL, superseded p293d μέρη και templates είναι μόνο στο `archive/` — **ΜΗΝ ΤΥΠΩΣΕΙΣ**.

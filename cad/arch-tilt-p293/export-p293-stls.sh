@@ -5,7 +5,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_scad="$here/p293-arch-tilt-release.scad"
 release_dir="$here/print-arch"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
-component_check="$here/../check-stl-components.py"
+printability_check="$here/../check-stl-printability.sh"
 
 parts=(arch_crossbar_center arch_joint_sleeve sensor_joint_sleeve)
 
@@ -28,7 +28,7 @@ for name in "${parts[@]}"; do
   "$openscad_bin" --backend=Manifold -o "$out_dir/$out_name.stl" \
     -D "part=\"$name\"" "$source_scad"
   [[ -s "$out_dir/$out_name.stl" ]] || { echo "P2-96 missing STL: $out_name" >&2; exit 1; }
-  python3 "$component_check" "$out_dir/$out_name.stl" 1
+  bash "$printability_check" "$out_dir/$out_name.stl" 1
 done
 
 # Permanent P2-90e lesson: no large horizontal underside above the bed.

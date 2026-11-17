@@ -47,6 +47,10 @@ module p293g_foot(){
   }
   zh([230,220,62]);
   translate([230,220,70])cylinder(d=14.6,h=35,$fn=64);
+  // The two legacy X240 washer seats are only 10 mm apart.  Separate
+  // Ø9.6 pockets leave a non-printable 0.4 mm load-bearing sliver between
+  // them, so make the shared washer seat an intentional obround pocket.
+  hull()for(y=[150,160])translate([240,y,62])cylinder(d=9.6,h=40,$fn=48);
   translate([258,221.6,100])cube([26.8,20.4,56],center=true);
   // M4 axes unchanged. Steel OD8 spacers carry shear into the cheeks.
   // Outboard5mm spacer below3.2mm button-head/washer recess; inboard8mm.
@@ -323,7 +327,20 @@ module p293g_tilt_assembly(a=angle){
 }
 
 // Candidate exports, never overwrite the historical p293d/e STL or templates.
-if(part=="p293g_foot")translate([-192,-133,-42])p293g_foot();
+module p293g_foot_print(side=1){
+ intersection(){
+  // The installed underside wraps the chassis rail and cannot face the bed.
+  // Opposite ±40° rotations make both hands support-free; the 0.3 mm
+  // clipped corner is the common bed land and changes no mating interface.
+  translate([0,0,-.3])rotate([side*40,0,0])
+   if(side>0)translate([-192,-133,-42])p293g_foot();
+   else mirror([0,1,0])translate([-192,-133,-42])p293g_foot();
+  translate([-1000,-1000,0])cube([2000,2000,1000]);
+ }
+}
+if(part=="p293g_foot")p293g_foot_print(1);
+else if(part=="p293g_foot_R")p293g_foot_print(-1);
+else if(part=="p293g_foot_canonical")translate([-192,-133,-42])p293g_foot();
 else if(part=="p293g_crossbar_end")translate([-380,-100,-232])p293g_crossbar_end();
 else if(part=="p293g_crown")translate([-340,200,36.4])rotate([90,0,0])p293g_crown();
 else if(part=="p293g_console_inboard")translate([-237,250,-120])p293g_console_inboard();

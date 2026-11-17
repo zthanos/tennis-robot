@@ -23,7 +23,7 @@ runway_w = 30;
 // Fixture envelope and running fit.
 base_x0 = -148;
 base_x1 = 0;
-base_outer_y = 64;
+base_outer_y = 66;
 rail_front_x = -34;
 rail_center_y = 47;
 rail_wall_t = 3;
@@ -153,15 +153,9 @@ module base_raw() {
 }
 
 module base_labels_cut() {
-    // Engrave the four settings on the outside of the +Y rail.
-    outer_face_y = rail_center_y + channel_w/2 + rail_wall_t;
-    for (i = [0:len(cocking_strokes)-1]) {
-        hx = strike_origin_x - cocking_strokes[i] + pusher_pin_x;
-        translate([hx, outer_face_y + 0.2, 7])
-            rotate([90, 0, 0])
-                linear_extrude(height=0.8)
-                    text(str(i+1), size=6, halign="center", valign="center");
-    }
+    // Intentionally empty.  The former engraved digits generated 0.08 mm
+    // horizontal knife edges.  The four 20 mm-spaced holes remain unambiguous
+    // and are numbered in the assembly/use instructions.
 }
 
 module base_part() {
@@ -175,7 +169,7 @@ module base_part() {
 
         // Temporary mounting slots in the outer flanges.
         for (side = [-1, 1], xx = mount_slot_x)
-            translate([xx, side*(base_outer_y-4), -eps])
+            translate([xx, side*(base_outer_y-5), -eps])
                 linear_extrude(height=rail_floor_t + 2*eps)
                     rounded_slot_2d(mount_slot_len, mount_slot_w);
 
@@ -216,8 +210,14 @@ module pusher_part() {
     difference() {
         pusher_raw();
 
-        // Shallow spherical cup matching the ball at the forward stop.
-        translate([ball_r, 0, ball_center[2]]) sphere(d=ball_d + 0.5);
+        // Shallow spherical cup matching the ball at the forward stop.  Clip
+        // its theoretical point to a flat bottom: the old tangent created a
+        // 0.25 mm knife edge in the support-free print orientation.
+        intersection() {
+            translate([ball_r, 0, ball_center[2]]) sphere(d=ball_d + 0.5);
+            translate([20.8, 0, ball_center[2]])
+                cube([38.4, 80, 80], center=true);
+        }
 
         // Cross release pin.
         translate([pusher_pin_x, 0, 9])

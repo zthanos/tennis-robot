@@ -12,7 +12,14 @@ module coupon_foot_seats() {
       // Compact connected carrier; the sampled bores/recesses retain the
       // production diameters and seat stacks.
       translate([0,0,2.5]) cube([42,20,5], center=true);
-      for (y=[-8,8]) translate([16,y,12]) cube([10,4,24], center=true);
+      for (y=[-8,8]) translate([16,y,12]) cube([10,6,24], center=true);
+      // Non-functional spine keeps the four pin-seat quadrants printable;
+      // it stays clear of the real bore/head-seat surfaces.
+      translate([6,-2,12]) cube([2.4,28,24], center=true);
+      for (y=[-8,8]) translate([8.5,y,12]) cube([5,6,24], center=true);
+      translate([26,-2,12]) cube([2.4,28,24], center=true);
+      for (y=[-8,8]) translate([23.5,y,12]) cube([5,6,24], center=true);
+      translate([16,-15,12]) cube([22.4,2.4,24], center=true);
     }
     // X240 OD9.6 seat and X230 OD14.6 seat.
     translate([-12,0,-1]) cylinder(d=4.6,h=9,$fn=48);
