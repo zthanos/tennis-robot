@@ -11,24 +11,24 @@ show_ghosts = true;
 // Frozen external envelope: the panel is 138 x 190 and defines the tower.
 p297_cx = panel_center_x;
 p297_outer = [138,190];
-p297_wall = 4;
+p297_wall = 5;
 p297_floor = 3.2;
 p297_corner = 14;
 p297_corner_x = 44;
 p297_corner_y = 82;
-p297_lattice = 4.10;
-p297_lattice_t = 3.2;
+p297_lattice = 7.2;
+p297_lattice_t = 5.0;
 p297_extrusion_w = 0.62; // user's 0.6 mm nozzle profile
 p297_seam_lip_h = 8;
-p297_seam_lip_t = 1.40;
-p297_seam_band = 6;
-p297_seam_front_x = 65.5; // tongue/groove remains fully supported by wall
-p297_seam_side_y = 92.5;
-p297_seam_band_front_x = 66; // asymmetric socket material stays in outline
-p297_seam_band_side_y = 92;
 p297_seam_clearance = 0.35; // per side; override for the coupon/export
-p297_seam_fit_residual = 0.05; // local tuning ribs, not the main perimeter
-p297_seam_rib_add = max(0,p297_seam_clearance-p297_seam_fit_residual);
+p297_seam_lip_t = 1.60;
+p297_seam_band = p297_seam_lip_t+2*p297_seam_clearance+2*2.4;
+// Centre the common tongue/groove so its outer socket wall is 2.4 mm while
+// the complete band remains inside the frozen 138 x 190 mm envelope.
+p297_seam_front_x = p297_outer[0]/2-p297_seam_band/2;
+p297_seam_side_y = p297_outer[1]/2-p297_seam_band/2;
+p297_seam_band_front_x = p297_seam_front_x;
+p297_seam_band_side_y = p297_seam_side_y;
 p297_seam_gap = 0.25;  // vertical assembly relief
 p297_seam_straight_h = p297_seam_lip_h+0.15;
 p297_seam_socket_h = p297_seam_straight_h
@@ -81,7 +81,7 @@ p297_bts_standoff_h = 22;
 p297_bts_board_z = p297_floor + p297_bts_standoff_h; // PCB underside
 p297_bts_air_gap = p297_bts_board_z-p297_bts_heatsink_below-p297_floor;
 p297_bts_terminal_clear = 25;
-p297_bts_side_inner_y = 93.4 - p297_lattice_t/2;
+p297_bts_side_inner_y = 92.5 - p297_lattice_t/2;
 p297_bts_service_z0 = 11; // stays above the continuous 9.45 mm socket band
 p297_bts_service_z1 = p297_bts_board_z+p297_bts_pcb_t+p297_bts_above+5;
 p297_perf_pattern = [75,115];
@@ -115,88 +115,102 @@ module p297_base_front_mount_positions() {
         translate([p297_base_front_x,y,0]) children();
 }
 
-// A horizontal beam whose lower face is a 45-degree V instead of a flat
-// bridge.  The ridge is deliberately only 0.05 mm wide, so its tessellated
-// downward patch remains far below the 40 mm2 export limit.
+// A horizontal beam whose lower face is an exact 45-degree V instead of a
+// flat bridge.  A true triangular-prism ridge avoids the former 0.05 mm
+// tessellation ribs, which appeared as sub-line-width material in sections.
+module p297_beam_segment_x(length,depth,height) {
+    ridge = 1.6;
+    section = [[-ridge/2,-height/2],
+               [ridge/2,-height/2],
+               [depth/2,-height/2+(depth-ridge)/2],
+               [depth/2,height/2],
+               [-depth/2,height/2],
+               [-depth/2,-height/2+(depth-ridge)/2]];
+    points = [for (x=[-length/2,length/2], yz=section) [x,yz[0],yz[1]]];
+    polyhedron(points=points,
+        faces=[[0,1,2,3,4,5],[11,10,9,8,7,6],
+               [6,7,1,0],[7,8,2,1],[8,9,3,2],
+               [9,10,4,3],[10,11,5,4],[11,6,0,5]],convexity=2);
+}
+
 module p297_beam_x(length,depth,height) {
-    eps = 0.05;
-    union() {
-        hull() {
-            translate([0,0,-height/2]) cube([length,eps,eps],center=true);
-            for (y=[-depth/2,depth/2])
-                translate([0,y,-height/2+depth/2])
-                    cube([length,eps,eps],center=true);
-        }
-        translate([0,0,depth/4])
-            cube([length,depth,height-depth/2],center=true);
-    }
+    // A 1.6 mm ridge satisfies the horizontal buffer gate.  Short 0.2 mm
+    // breaks keep each supported downward patch below 40 mm2; the lattice and
+    // tongue join the segments into the final single body.
+    count = ceil(length/23.5);
+    pitch = length/count;
+    for (i=[0:count-1])
+        translate([(i-(count-1)/2)*pitch,0,0])
+            p297_beam_segment_x(pitch-0.2,depth,height);
 }
 
 // Three closed sides: both Y walls and the +X/front wall. The -X/rear side
 // remains open for the Phase-2 drawers and the common cable/service route.
 module p297_seam_path_2d(width) {
     union() {
-        for (y=[-p297_seam_side_y,p297_seam_side_y]) translate([0,y])
-            square([p297_outer[0],width],center=true);
+        // Side legs terminate on the front-leg centreline.  Extending both
+        // rectangles through one another made four socket quadrants at each
+        // bend, including a detached 2.4 x 2.4 outer island.
+        side_length = p297_seam_front_x+p297_outer[0]/2;
+        side_centre_x = (p297_seam_front_x-p297_outer[0]/2)/2;
+        for (y=[-p297_seam_side_y,p297_seam_side_y])
+            translate([side_centre_x,y])
+                square([side_length,width],center=true);
         translate([p297_seam_front_x,0])
-            square([width,p297_outer[1]],center=true);
+            square([width,2*p297_seam_side_y+width],center=true);
     }
 }
 
 module p297_seam_band_path_2d(width) {
     union() {
-        for (y=[-p297_seam_band_side_y,p297_seam_band_side_y]) translate([0,y])
-            square([p297_outer[0],width],center=true);
+        side_length = p297_seam_band_front_x+p297_outer[0]/2;
+        side_centre_x = (p297_seam_band_front_x-p297_outer[0]/2)/2;
+        for (y=[-p297_seam_band_side_y,p297_seam_band_side_y])
+            translate([side_centre_x,y])
+                square([side_length,width],center=true);
         translate([p297_seam_band_front_x,0])
             square([width,p297_outer[1]],center=true);
     }
 }
 
-module p297_seam_tuning_ribs_2d(width) {
-    // Short gauge ribs preserve the requested clearance over almost the
-    // entire perimeter but leave only 0.05 mm/side locally after seating.
-    // Their fit is accepted or adjusted on the coupon before a full box.
-    for (y=[-p297_seam_side_y,p297_seam_side_y],x=[-35,20,60]) translate([x,y])
-        square([12,width],center=true);
-    for (y=[-48,10,60,80]) translate([p297_seam_front_x,y])
-        square([width,12],center=true);
-}
-
 module p297_top_seam_lip(z) {
     translate([0,0,z]) linear_extrude(height=p297_seam_lip_h)
-        union() {
-            p297_seam_path_2d(p297_seam_lip_t);
-            p297_seam_tuning_ribs_2d(
-                p297_seam_lip_t+2*p297_seam_rib_add);
-        }
+        p297_seam_path_2d(p297_seam_lip_t);
 }
 
 module p297_socket_band() {
-    linear_extrude(height=p297_seam_socket_h)
-        p297_seam_band_path_2d(p297_seam_band);
+    union() {
+        linear_extrude(height=p297_seam_socket_h)
+            p297_seam_band_path_2d(p297_seam_band);
+        // Solid outer elbows keep the two 2.4 mm socket walls joined through
+        // the 90-degree bend; the raw rectangle union narrows to a sub-line
+        // crescent while the self-supporting roof closes.
+        for (side=[-1,1])
+            translate([66.5,side*93.8,p297_seam_socket_h/2])
+                cube([5,2.4,p297_seam_socket_h],center=true);
+    }
 }
 
 module p297_socket_cavity(z0=-0.1) {
     groove = p297_seam_lip_t+2*p297_seam_clearance;
     straight = p297_seam_straight_h;
+    side_length = p297_seam_front_x+p297_outer[0]/2;
+    side_centre_x = (p297_seam_front_x-p297_outer[0]/2)/2;
     // Straight receiving bay.
-    for (y=[-p297_seam_side_y,p297_seam_side_y])
-        translate([0,y,z0+straight/2])
-            cube([p297_outer[0]+0.2,groove,straight+0.2],center=true);
-    translate([p297_seam_front_x,0,z0+straight/2])
-        cube([groove,p297_outer[1]+0.2,straight+0.2],center=true);
+    translate([0,0,z0]) linear_extrude(height=straight+0.01)
+        p297_seam_path_2d(groove);
     // 45-degree self-supporting roofs; no horizontal bridge is introduced.
     for (y=[-p297_seam_side_y,p297_seam_side_y]) hull() {
-        translate([0,y,z0+straight+0.05])
-            cube([p297_outer[0]+0.2,groove,0.1],center=true);
-        translate([0,y,z0+straight+groove/2])
-            cube([p297_outer[0]+0.2,0.05,0.1],center=true);
+        translate([side_centre_x,y,z0+straight+0.005])
+            cube([side_length,groove,0.01],center=true);
+        translate([side_centre_x,y,z0+straight+groove/2])
+            cube([side_length,0.01,0.01],center=true);
     }
     hull() {
-        translate([p297_seam_front_x,0,z0+straight+0.05])
-            cube([groove,p297_outer[1]+0.2,0.1],center=true);
+        translate([p297_seam_front_x,0,z0+straight+0.005])
+            cube([groove,2*p297_seam_side_y+groove,0.01],center=true);
         translate([p297_seam_front_x,0,z0+straight+groove/2])
-            cube([0.05,p297_outer[1]+0.2,0.1],center=true);
+            cube([0.01,2*p297_seam_side_y+groove,0.01],center=true);
     }
 }
 
@@ -283,7 +297,7 @@ module p297_floor_plate(full=true) {
                 cube([p297_outer[0],p297_outer[1],p297_floor],center=true);
                 cube([p297_outer[0]-16,p297_outer[1]-16,p297_floor+2],center=true);
             }
-            p297_seam_positions() cylinder(d=12,h=p297_floor,center=true,$fn=36);
+            p297_seam_positions() cylinder(d=14,h=p297_floor,center=true,$fn=36);
         }
         p297_seam_positions()
             translate([0,0,-p297_floor]) cylinder(d=p297_m3_clear,h=3*p297_floor,$fn=28);
@@ -315,10 +329,16 @@ module p297_side_wall(y,h) {
             for (x=[-69,-34.5,0,34.5,69])
                 translate([x,h/2]) square([p297_wall,h],center=true);
             for (x=[-51.75,-17.25,17.25,51.75])
-                p297_x_lattice_xy(x-17.25,x+17.25,5,h-5);
+                p297_x_lattice_xy(x-17.25,x+17.25,
+                                  p297_wall-1,h-(p297_wall-1));
           }
-        translate([0,y,2]) p297_beam_x(138,p297_lattice_t,p297_wall);
-        translate([0,y,h-2]) p297_beam_x(138,p297_lattice_t,p297_wall);
+        translate([0,y,p297_wall/2])
+            p297_beam_x(138,p297_lattice_t,p297_wall);
+        // The 2.4 mm outer socket wall moves the tongue inward.  Widen and
+        // shift only the self-supporting top beam so the tongue has a 45 deg
+        // backed underside rather than a horizontal overhang.
+        translate([0,sign(y)*92.5,h-p297_wall/2])
+            p297_beam_x(138,5,p297_wall);
     }
 }
 
@@ -330,24 +350,37 @@ module p297_front_wall(x,h) {
             for (y=[-95,-47.5,0,47.5,95])
                 translate([y,h/2]) square([p297_wall,h],center=true);
             for (y=[-71.25,-23.75,23.75,71.25])
-                p297_x_lattice_xy(y-23.75,y+23.75,5,h-5);
+                p297_x_lattice_xy(y-23.75,y+23.75,
+                                  p297_wall-1,h-(p297_wall-1));
           }
-        translate([x,0,2]) rotate([0,0,90])
+        translate([x,0,p297_wall/2]) rotate([0,0,90])
             p297_beam_x(190,p297_lattice_t,p297_wall);
-        translate([x,0,h-2]) rotate([0,0,90])
-            p297_beam_x(190,p297_lattice_t,p297_wall);
+        translate([66.4,0,h-p297_wall/2]) rotate([0,0,90])
+            p297_beam_x(190,5,p297_wall);
     }
 }
 
-module p297_open_box(h,full_floor=true,front_lattice=true,top_keys=true,top_inserts=true) {
+module p297_solid_side_walls(h,t=2.4) {
+    for (y=[-p297_outer[1]/2+t/2,p297_outer[1]/2-t/2])
+        translate([0,y,h/2]) cube([p297_outer[0],t,h],center=true);
+}
+
+module p297_open_box(h,full_floor=true,front_lattice=true,top_keys=true,
+                     top_inserts=true,side_lattice=true,corner_nodes=true) {
     difference() {
         union() {
             translate([0,0,p297_floor/2]) p297_floor_plate(full_floor);
-            p297_side_wall(-93.4,h);
-            p297_side_wall(93.4,h);
+            if (side_lattice) {
+                p297_side_wall(-92.5,h);
+                p297_side_wall(92.5,h);
+            }
+            else p297_solid_side_walls(h);
             if (front_lattice) p297_front_wall(66.4,h);
+            if (front_lattice && side_lattice)
+                for (y=[-92.5,92.5])
+                    translate([66.4,y,h/2]) cube([5,5,h],center=true);
             p297_socket_band();
-            p297_corner_nodes(h);
+            if (corner_nodes) p297_corner_nodes(h);
             if (top_keys) p297_top_seam_lip(h);
         }
         // Bottom seam fasteners remain reachable from above.
@@ -398,25 +431,28 @@ module p297_base_adapter() {
         // The front tongue alone is opened to Ø11.  A Ø9 washer/head and its
         // driver therefore approach vertically while the full tongue remains
         // continuous on both sides of the local notch.
-        p297_base_front_mount_positions()
+        p297_base_front_mount_positions() {
             translate([0,0,p297_adapter_h])
                 cylinder(d=p297_base_m4_access_d,
                          h=p297_seam_lip_h+1,$fn=40);
+            // A round Ø11 access cut only grazes the 1.6 mm tongue at each
+            // side, producing long 0.08..0.15 mm crescents.  Open a clean
+            // rectangular service break around the same washer instead.
+            translate([0,0,p297_adapter_h+p297_seam_lip_h/2])
+                cube([p297_seam_band+2,12,p297_seam_lip_h],center=true);
+        }
         p297_insert_pockets(p297_adapter_h);
     }
 }
 
 module p297_base_front_head_reliefs() {
-    // The energy spacer receives the installed M4 head/Ø9 washer without
-    // changing the nominal seam clearance.  A 45-degree conical roof keeps
-    // the pocket support-free in its normal print orientation.
+    // The energy spacer receives the installed M4 head/Ø9 washer.  Use a
+    // clean, open service notch from the inner floor edge through the front
+    // band: the former tangent/conical pocket left sub-line-width crescents
+    // at every intermediate section.
     p297_base_front_mount_positions() {
-        translate([0,0,-0.5])
-            cylinder(d=p297_base_m4_access_d,
-                     h=p297_base_m4_head_h+0.6,$fn=40);
-        translate([0,0,p297_base_m4_head_h])
-            cylinder(d1=p297_base_m4_access_d,d2=0.1,
-                     h=p297_base_m4_access_d/2,$fn=40);
+        translate([-1.5,0,p297_seam_socket_h/2-0.5])
+            cube([8.2,p297_base_m4_access_d,p297_seam_socket_h+1],center=true);
     }
 }
 
@@ -455,18 +491,19 @@ module p297_bts_fastener_holes() {
 module p297_bts_air_channels() {
     // Six continuous X slots run below the heatsink fins of both board rows
     // and open through the -X/rear floor rim. They avoid all 16 standoff feet.
-    for (cy=[-40,40],dy=[-9,0,9])
-        translate([-5,cy+dy,-1])
-            p297_slot(130,5,false,p297_floor+3);
+    for (cy=[-40,40],dy=[-10,0,10])
+        translate([-8,cy+dy,-1])
+            p297_slot(136,4.8,false,p297_floor+3);
 }
 
 module p297_power_service_openings() {
     // One screwdriver/cable window per board, through each +/-Y lattice.
     // The upper edge follows the measured 15 mm top-component envelope +5.
+    opening_z1 = p297_bts_service_z1+4;
     for (side=[-1,1],cx=[-30,30])
-        translate([cx,side*93.4,(p297_bts_service_z0+p297_bts_service_z1)/2])
+        translate([cx,side*93.4,(p297_bts_service_z0+opening_z1)/2])
             cube([52,p297_lattice_t+4,
-                  p297_bts_service_z1-p297_bts_service_z0],center=true);
+                  opening_z1-p297_bts_service_z0],center=true);
 }
 
 module p297_power_service_frames() {
@@ -475,9 +512,10 @@ module p297_power_service_frames() {
     frame_z0 = max(p297_bts_service_z0-4,p297_seam_socket_h+0.5);
     frame_z1 = p297_bts_service_z1+4;
     for (side=[-1,1]) {
-        for (x=[-58,0,58])
+        for (x=[-58.5,0,58.5])
             translate([x,side*93.4,(frame_z0+frame_z1)/2])
-                cube([4,p297_lattice_t,frame_z1-frame_z0],center=true);
+                cube([x == 0 ? 8 : 6,p297_lattice_t,
+                      frame_z1-frame_z0],center=true);
         // Keep the lower portal beam above the 8 mm male lip. This frame is
         // added after the box boolean, so it must not refill the socket bay.
         for (z=[max(p297_bts_service_z0-2,p297_seam_socket_h+2),
@@ -549,12 +587,20 @@ module p297_tray_rail(y,z) {
         front_post_y = sign(y)*47.5;
         front_dogleg = front_post_y-y;
         difference() {
-            p297_beam_x(112,8,7);
+            union() {
+                p297_beam_x(112,8,7);
+                // The segmented print-safe beam needs one continuous outer
+                // top spine so every tray rail is part of the box body.
+                translate([0,sign(y)*3,3]) cube([112,2,1],center=true);
+            }
             translate([0,-sign(y)*2,2.1]) cube([104,4.2,3.4],center=true);
         }
         // Short stop/bridge overlaps the rail and the X=66.4 front wall.
         // The rear remains open for independent tray withdrawal.
         translate([61,0,0]) p297_beam_x(11,4,4);
+        // A 5 x 5 printable corner node removes tapered sub-line gaps where
+        // the low rail bridge enters the front wall/socket roof.
+        translate([66.4,0,0]) cube([5,5,7],center=true);
         // Join that bridge to the nearest continuous Y=+/-47.5 front-wall
         // vertical, independent of the open X-brace bay at this rail's Y.
         translate([64,front_dogleg/2,0])
@@ -615,7 +661,10 @@ module p297_pi5_carrier() {
 module p297_collar() {
     difference() {
         union() {
-            p297_open_box(p297_collar_h,false,false,false,false);
+            // At only 24 mm high the lattice produced dozens of tiny slicer
+            // islands.  Continuous 2.4 mm side walls give the collar a
+            // four-line PETG shell and retain the common socket below.
+            p297_open_box(p297_collar_h,false,false,false,false,false,false);
             // Panel lands align to the four existing Ø8.6 panel holes.
             for (x=[-58,58],y=[-56,56]) translate([x,y,p297_collar_h-4])
                 cylinder(d=16,h=4,$fn=36);
@@ -634,7 +683,7 @@ module p297_collar() {
                 translate([x-sign(x)*4,y,p297_floor/2])
                     cube([12,8,p297_floor],center=true);
                 translate([x-sign(x)*8,y+sign(y)*20,p297_floor/2])
-                    cube([8,40,p297_floor],center=true);
+                    cube([10,40,p297_floor],center=true);
             }
         }
         for (x=[-58,58],y=[-56,56]) translate([x,y,p297_collar_h-6])
@@ -644,6 +693,21 @@ module p297_collar() {
         // lands in its existing holes but no scene-check overlap.
         for (dx=[-0.15,0.15],dy=[-0.15,0.15],dz=[-0.2,0.2])
             translate([dx,dy,p297_collar_h+dz]) control_panel_v2();
+        // The released panel's asymmetric lower rib only grazes this dogleg,
+        // otherwise leaving a ~0.004 mm2 detached triangular remnant through
+        // Z3.8..15.8.  Clear the tangency instead of asking the slicer to emit
+        // an unprintable one-extrusion island.
+        translate([-51,75,10]) cube([0.6,0.6,14],center=true);
+        // Two more panel-rib tangencies occur only while the socket roof is
+        // closing.  A deliberate short service notch avoids 0.02..0.22 mm
+        // material webs at Z9.0/9.2.
+        for (side=[-1,1])
+            translate([-59,side*91.3,9.1]) cube([22,1.2,1.4],center=true);
+        // At the panel interface four released-panel corner cutouts otherwise
+        // leave 5.4 mm2 tips at the ends of the solid side walls.  Terminate
+        // those tips cleanly during the final 0.8 mm instead.
+        for (x=[-67,67],y=[-94,94])
+            translate([x,y,p297_collar_h-0.4]) cube([6,4,0.8],center=true);
         // Explicit E-stop service keepout through the front crossbar.
         translate([0,-58,p297_collar_h-25]) cube([39,34,54],center=true);
         // Collar floor spokes are added outside p297_open_box(); reopen the

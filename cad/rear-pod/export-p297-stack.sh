@@ -8,6 +8,7 @@ openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
 component_check="$root_dir/../check-stl-components.py"
 downward_check="$root_dir/../check-stl-downward-faces.py"
 through_hole_check="$root_dir/../check-stl-through-holes.py"
+slice_check="$root_dir/../check-stl-slices.py"
 bts_height="${P297_BTS_HEIGHT_MM:-}"
 seam_clearance="${P297_SEAM_CLEARANCE_MM:-0.35}"
 
@@ -47,6 +48,13 @@ for part_name in "${parts[@]}"; do
   }
   python3 "$component_check" "$out_dir/${part_name}.stl" 1
   python3 "$downward_check" "$out_dir/${part_name}.stl" --max-area 40
+  case "$part_name" in
+    p297_base_adapter|p297_energy_spacer|p297_power_box|p297_logic_box|p297_collar)
+      python3 "$slice_check" "$out_dir/${part_name}.stl" \
+        --layer-height 0.2 --start-z 0.5 \
+        --min-thickness 1.6 --min-island-area 25
+      ;;
+  esac
   if [[ "$part_name" == "p297_base_adapter" ]]; then
     # Axes extend beyond the complete Z0..16 adapter/tongue mesh.  A lip or
     # accidental skin anywhere on a declared Ø4.5 bore stops the export.
