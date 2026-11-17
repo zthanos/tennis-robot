@@ -2,7 +2,9 @@
 
 Status: **FIT-CHECK.** All parts are support-free in the exported orientation
 and fit a 250 x 250 mm bed.  The common nominal box footprint is 138 x 190 mm;
-the complete perimeter seam stays inside it.
+the complete perimeter seam stays inside it.  The base adapter alone has two
+local front mounting ears and is 141.5 x 190 mm, still well inside the bed and
+the checked F-rear envelope.
 
 The BTS7960/IBT-2 geometry was measured by the user on 2026-11-16: 50 x 50 mm
 PCB, 40 x 40 mm holes, 50 x 30 x 20 mm centred heatsink below the PCB, 15 mm
@@ -32,6 +34,15 @@ The old 300 mm-high thin-post load path is also gone.  Lateral load goes from
 the existing control panel into the collar, the X-braced side/front walls, the
 perimeter seams and the adapter rails, then through the existing P2-90d base holes.
 No chassis hole is added.
+
+The adapter reuses the four P2-90d M4 axes at local X=-58/+66.5, Y=±54 mm.
+All four are now Ø4.5 through-bores across the full adapter/tongue height.  At
+each +66.5 mm front axis, a bed-supported 12 x 14 mm ear leaves 3.75 mm of
+material in X and 4.75 mm in Y around the bore.  An Ø11 vertical notch through
+the tongue accepts an M4 head and Ø9 washer with 1 mm radial tool clearance.
+Tighten these two fasteners from above before seating the energy spacer; its
+matching head pocket has a 45° roof, so the installed hardware does not alter
+the 0.35 mm seam fit or require support.
 
 ## Installed stack and access
 
@@ -120,6 +131,12 @@ and seam-groove roofs.  `check-stl-downward-faces.py` groups connected
 coplanar downward triangles and rejects any elevated patch over 40 mm².  In
 the final export the worst patch is 35.28 mm²; all ten STL files pass.
 
+`check-stl-through-holes.py` independently ray-casts each declared hole axis
+through the exported mesh.  The export declares all four adapter M4 axes from
+Z=-1 to Z=17 and stops if any STL triangle blocks one.  The final adapter
+passes 4/4; this check reproduces the earlier fault as 2/4 before the tongue
+notches were added.
+
 For the user's 0.6 mm nozzle profile, the assumed extrusion width is 0.62 mm.
 The X braces have a 4.10 x 3.20 mm minimum section, corresponding to 6.61 and
 5.16 extrusion widths respectively—at least five paths in the thinner axis,
@@ -136,15 +153,15 @@ about 9 mm³/s).  The actual slicer remains the acceptance source.
 
 | STL | PETG | Estimated time |
 | --- | ---: | ---: |
-| `p297_base_adapter.stl` | 105.3 g | 2.73 h |
-| `p297_energy_spacer.stl` | 151.1 g | 3.88 h |
+| `p297_base_adapter.stl` | 105.9 g | 2.75 h |
+| `p297_energy_spacer.stl` | 150.2 g | 3.86 h |
 | `p297_power_box.stl` | 203.2 g | 5.18 h |
 | `p297_logic_box.stl` | 256.7 g | 6.52 h |
 | `p297_collar.stl` | 75.1 g | 1.98 h |
 | `p297_mega_carrier.stl` | 30.9 g | 0.87 h |
 | `p297_perf_carrier.stl` | 43.3 g | 1.18 h |
 | `p297_pi5_carrier.stl` | 23.2 g | 0.68 h |
-| **Phase 1 installed total** | **888.8 g** | **23.02 h** |
+| **Phase 1 installed total** | **888.6 g** | **23.01 h** |
 | two seam coupons (print first) | 5.1 g | 0.33 h |
 
 The values above are rounded targets; regenerate the table from final meshes
@@ -171,7 +188,7 @@ Both clear the 1.5 mm requirement.  The box system is selected because the
 Four M5 steel rods would be cut to about **285 mm** (259 mm clamp stack plus
 washers/nuts and adjustment), weighing about 176 g before nuts/washers.
 Sixteen M3 screws/inserts are about 43 g.  The continuous seams raise the
-installed plastic total to 888.8 g, but the complete M3 box stack remains
+installed plastic total to 888.6 g, but the complete M3 box stack remains
 about 20 g lighter than the equivalent rod stack after four rods, nuts and
 washers are included.  A middle floor also remains independently removable.
 

@@ -19,3 +19,9 @@ ten files, including both seam coupons; its worst result is 35.28 mm².
 OpenSCAD runs with `--hardwarnings`, so assertion/warning diagnostics also
 stop the script instead of leaving a misleading STL behind.  The power box
 was exported with the measured `P297_BTS_HEIGHT_MM=36` geometry.
+
+For the base adapter, export additionally runs `check-stl-through-holes.py`
+against the four declared P2-90d M4 axes.  Its independent finite ray-cast
+must find no mesh triangle between Z=-1 and Z=17.  The corrected adapter is
+one body, passes all four Ø4.5 axes, and its two front Ø11 tongue access
+notches plus the energy-spacer head pockets still pass the 40 mm² support gate.

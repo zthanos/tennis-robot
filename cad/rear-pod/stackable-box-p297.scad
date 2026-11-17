@@ -38,6 +38,13 @@ p297_seam_y = p297_corner_y;
 p297_insert_hole = 4.0;
 p297_insert_depth = 6.7;
 p297_m3_clear = 3.4;
+p297_base_rear_x = side_frame_rear_x-panel_center_x;
+p297_base_front_x = side_frame_front_x-panel_center_x;
+p297_base_mount_y = 54;
+p297_base_m4_clear = 4.5;
+p297_base_front_ear = [12,14];
+p297_base_m4_access_d = 11; // Ø9 washer/head plus 1 mm radial tool clearance
+p297_base_m4_head_h = 5.5;
 p297_grid_pitch = 20;
 p297_grid_x = [-50:20:50];
 p297_grid_y = [-90:20:90];
@@ -95,6 +102,17 @@ module p297_slot(length=8,width=3.4,vertical=false,h=8) {
 module p297_seam_positions() {
     for (x=[-p297_seam_x,p297_seam_x],y=[-p297_seam_y,p297_seam_y])
         translate([x,y,0]) children();
+}
+
+module p297_base_mount_positions() {
+    for (x=[p297_base_rear_x,p297_base_front_x],
+         y=[-p297_base_mount_y,p297_base_mount_y])
+        translate([x,y,0]) children();
+}
+
+module p297_base_front_mount_positions() {
+    for (y=[-p297_base_mount_y,p297_base_mount_y])
+        translate([p297_base_front_x,y,0]) children();
 }
 
 // A horizontal beam whose lower face is a 45-degree V instead of a flat
@@ -341,6 +359,10 @@ module p297_open_box(h,full_floor=true,front_lattice=true,top_keys=true,top_inse
 }
 
 module p297_base_adapter() {
+    assert((p297_base_front_ear[0]-p297_base_m4_clear)/2 >= 3,
+        "P2-97 front M4 ears need >=3 mm material in X");
+    assert((p297_base_front_ear[1]-p297_base_m4_clear)/2 >= 3,
+        "P2-97 front M4 ears need >=3 mm material in Y");
     difference() {
         union() {
             // Two light rails join the exact P2-90d base axes.
@@ -358,20 +380,53 @@ module p297_base_adapter() {
             for (x=[-54,54],y=[-p297_corner_y,p297_corner_y])
                 translate([x,y,p297_adapter_h/2])
                     cube([20,p297_corner,p297_adapter_h],center=true);
+            // Local front ears move the outer edge 3.75 mm beyond each Ø4.5
+            // bore.  They are bed-supported and merge with both the Y rail
+            // and the three-sided seam band.
+            p297_base_front_mount_positions()
+                translate([0,0,p297_adapter_h/2])
+                    cube([p297_base_front_ear[0],p297_base_front_ear[1],
+                          p297_adapter_h],center=true);
             p297_top_seam_lip(p297_adapter_h);
         }
         // Existing rear and field-jigged front holes; no chassis drilling.
-        for (x=[side_frame_rear_x-panel_center_x,
-                side_frame_front_x-panel_center_x],y=[-54,54])
-            translate([x,y,-1]) cylinder(d=m4_clear,h=p297_adapter_h+2,$fn=32);
+        // The bore crosses the complete 8 mm adapter and its 8 mm tongue.
+        p297_base_mount_positions()
+            translate([0,0,-1])
+                cylinder(d=p297_base_m4_clear,
+                         h=p297_adapter_h+p297_seam_lip_h+2,$fn=32);
+        // The front tongue alone is opened to Ø11.  A Ø9 washer/head and its
+        // driver therefore approach vertically while the full tongue remains
+        // continuous on both sides of the local notch.
+        p297_base_front_mount_positions()
+            translate([0,0,p297_adapter_h])
+                cylinder(d=p297_base_m4_access_d,
+                         h=p297_seam_lip_h+1,$fn=40);
         p297_insert_pockets(p297_adapter_h);
+    }
+}
+
+module p297_base_front_head_reliefs() {
+    // The energy spacer receives the installed M4 head/Ø9 washer without
+    // changing the nominal seam clearance.  A 45-degree conical roof keeps
+    // the pocket support-free in its normal print orientation.
+    p297_base_front_mount_positions() {
+        translate([0,0,-0.5])
+            cylinder(d=p297_base_m4_access_d,
+                     h=p297_base_m4_head_h+0.6,$fn=40);
+        translate([0,0,p297_base_m4_head_h])
+            cylinder(d1=p297_base_m4_access_d,d2=0.1,
+                     h=p297_base_m4_access_d/2,$fn=40);
     }
 }
 
 module p297_energy_spacer() {
     // Phase 1 contains no Parkside geometry.  Rear is completely open and the
     // floor is only a perimeter ring, ready for measured Phase 2 drawers.
-    p297_open_box(p297_energy_h,false,true);
+    difference() {
+        p297_open_box(p297_energy_h,false,true);
+        p297_base_front_head_reliefs();
+    }
 }
 
 module p297_bts_standoffs() {
