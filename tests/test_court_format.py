@@ -1,8 +1,11 @@
+import pytest
+
 from tennis_robot.court_format import (
     CameraCornerEvidence,
     add_distinct_corner,
     camera_corner_to_map,
     estimate_court_format,
+    resolve_camera_x_m,
 )
 
 
@@ -72,3 +75,31 @@ def test_camera_projection_and_deduplication():
     add_distinct_corner(evidence, CameraCornerEvidence(1.1, 1.1, 0.9))
     assert len(evidence) == 1
     assert evidence[0].confidence == 0.9
+
+
+def test_camera_x_has_no_hardcoded_default():
+    # The forward offset must come from TF/URDF (or an explicit override);
+    # a silent default drifted 155 mm from the mounted camera (P2-99c).
+    with pytest.raises(TypeError):
+        camera_corner_to_map(
+            robot_x_m=0.0, robot_y_m=0.0, robot_yaw_rad=0.0,
+            bearing_rad=0.0, distance_m=1.0,
+        )
+
+
+def test_resolve_camera_x_prefers_override_then_tf_then_unknown():
+    assert resolve_camera_x_m("0.42", 0.69) == 0.42
+    assert resolve_camera_x_m(None, 0.69) == 0.69
+    assert resolve_camera_x_m("", 0.69) == 0.69
+    assert resolve_camera_x_m(None, None) is None
+    assert resolve_camera_x_m("nan", 0.69) is None
+    assert resolve_camera_x_m("bad", 0.69) is None
+    assert resolve_camera_x_m(None, float("inf")) is None
+
+
+def test_survey_node_does_not_carry_a_camera_x_default():
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1] / "ros2_ws/src/tennis_robot/tennis_robot"
+    for name in ("court_survey_v2_node.py", "controller_node.py"):
+        source = (root / name).read_text(encoding="utf-8")
+        assert 'getenv("PERCEPTION_CAMERA_X_M", "' not in source, name

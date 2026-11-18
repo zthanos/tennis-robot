@@ -18,6 +18,25 @@ class CameraCornerEvidence:
     confidence: float
 
 
+def resolve_camera_x_m(env_value: str | None, tf_x_m: float | None) -> float | None:
+    """Forward offset base_link -> camera_link used to project camera corners.
+
+    An explicit ``PERCEPTION_CAMERA_X_M`` override wins; otherwise the value
+    comes from the robot TF (the URDF), never from a hardcoded default that
+    can drift from the mounted camera.  ``None`` means "unknown": the caller
+    must skip the observation instead of projecting it from a guessed pose.
+    """
+    if env_value is not None and env_value.strip():
+        try:
+            value = float(env_value)
+        except ValueError:
+            return None
+        return value if math.isfinite(value) else None
+    if isinstance(tf_x_m, (int, float)) and math.isfinite(tf_x_m):
+        return float(tf_x_m)
+    return None
+
+
 def camera_corner_to_map(
     *,
     robot_x_m: float,
@@ -25,7 +44,7 @@ def camera_corner_to_map(
     robot_yaw_rad: float,
     bearing_rad: float,
     distance_m: float,
-    camera_x_m: float = 0.535,
+    camera_x_m: float,
 ) -> CameraCornerEvidence | None:
     values = (
         robot_x_m, robot_y_m, robot_yaw_rad, bearing_rad, distance_m, camera_x_m,

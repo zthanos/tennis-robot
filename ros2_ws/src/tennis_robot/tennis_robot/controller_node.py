@@ -99,7 +99,6 @@ PERCEPTION_OBSERVATION_TIMEOUT_S = float(
 PERCEPTION_FRAME_ID = os.getenv(
     "PERCEPTION_FRAME_ID", "camera_link_optical_frame"
 )
-PERCEPTION_CAMERA_X_M = float(os.getenv("PERCEPTION_CAMERA_X_M", "0.535"))
 COLLECTION_EVENT_SCHEMA_VERSION = 2
 SIM_BASKET_RETENTION_DWELL_S = _env_float("SIM_BASKET_RETENTION_DWELL_S", 0.75)
 # "beam" (default): collection is confirmed by the SAME basket IR latch the

@@ -58,6 +58,7 @@ try:
         CameraCornerEvidence,
         add_distinct_corner,
         camera_corner_to_map,
+        resolve_camera_x_m,
         estimate_court_format,
     )
 except ModuleNotFoundError:  # running from source tree
@@ -69,6 +70,7 @@ except ModuleNotFoundError:  # running from source tree
         CameraCornerEvidence,
         add_distinct_corner,
         camera_corner_to_map,
+        resolve_camera_x_m,
         estimate_court_format,
     )
 
@@ -87,7 +89,8 @@ GOAL_TIMEOUT_S = float(os.getenv("COURT_SURVEY_GOAL_TIMEOUT_S", "90.0"))
 FIND_NET_TIMEOUT_S = float(os.getenv("COURT_SURVEY_FIND_NET_TIMEOUT_S", "60.0"))
 NET_MIN_CONF = float(os.getenv("COURT_SURVEY_LANDMARK_MIN_CONF", "0.25"))
 VISION_MAX_AGE_S = float(os.getenv("COURT_SURVEY_VISION_MAX_AGE_S", "1.0"))
-CAMERA_X_M = float(os.getenv("PERCEPTION_CAMERA_X_M", "0.535"))
+# base_link -> camera_link forward offset: from TF unless explicitly overridden.
+CAMERA_X_ENV = os.getenv("PERCEPTION_CAMERA_X_M")
 FORMAT_MIN_CORNER_CONF = float(
     os.getenv("COURT_SURVEY_FORMAT_MIN_CORNER_CONF", "0.35")
 )
@@ -150,6 +153,7 @@ class CourtSurveyV2Node(Node):
         self._scan_angle_inc = 2.0 * math.pi / 360.0
         self._last_scan_points: list[tuple[float, float, float]] = []
         self._vision: dict = {}
+        self._camera_x_cache: float | None = None
         self._vision_received_at: float | None = None
         self._camera_corner_evidence: list[CameraCornerEvidence] = []
         self._events: list[dict] = []
@@ -218,13 +222,16 @@ class CourtSurveyV2Node(Node):
         bearing = vision.get("junction_bearing_rad")
         if confidence < FORMAT_MIN_CORNER_CONF:
             return
+        camera_x_m = self._camera_x_m()
+        if camera_x_m is None:
+            return
         projected = camera_corner_to_map(
             robot_x_m=self._robot_x,
             robot_y_m=self._robot_y,
             robot_yaw_rad=self._robot_yaw,
             bearing_rad=bearing,
             distance_m=distance,
-            camera_x_m=CAMERA_X_M,
+            camera_x_m=camera_x_m,
         )
         if projected is None:
             return
@@ -236,6 +243,21 @@ class CourtSurveyV2Node(Node):
                 confidence,
             ),
         )
+
+    def _camera_x_m(self) -> float | None:
+        if self._camera_x_cache is not None:
+            return self._camera_x_cache
+        tf_x = None
+        if CAMERA_X_ENV is None:
+            try:
+                t = self._tf_buffer.lookup_transform(
+                    "base_link", "camera_link", rclpy.time.Time(),
+                    rclpy.duration.Duration(seconds=0.05))
+                tf_x = float(t.transform.translation.x)
+            except (LookupException, ExtrapolationException, ConnectivityException):
+                return None
+        self._camera_x_cache = resolve_camera_x_m(CAMERA_X_ENV, tf_x)
+        return self._camera_x_cache
 
     def _scan_cb(self, msg: LaserScan) -> None:
         self._scan_frame_id = msg.header.frame_id
