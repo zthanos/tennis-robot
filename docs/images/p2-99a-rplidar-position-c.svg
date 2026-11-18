@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">P2-99a θέση C — απουσία φορέα και υποθετική διαδρομή USB</title>
+  <desc id="desc">Σχηματική κάτοψη που δείχνει ότι το URDF X μείον 420 βρίσκεται πίσω από το Body F και πλάγια όψη του υποθετικού μεγάλου ιστού.</desc>
+  <defs>
+    <style>.bg{fill:#f7f7f5}.panel{fill:#fff;stroke:#30343b;stroke-width:2}.robot{fill:#d8dde2;stroke:#59636e;stroke-width:2}.body{fill:#e7c9b0;stroke:#815b3d;stroke-width:2}.scan{fill:none;stroke:#8a9097;stroke-width:4;stroke-dasharray:11 8}.route{fill:none;stroke:#b44b36;stroke-width:5;stroke-dasharray:10 7}.sensor{fill:#17191c;stroke:#000;stroke-width:2}.invalid{stroke:#c53d34;stroke-width:5}.label{font-family:sans-serif;font-size:18px;fill:#20242a}.small{font-family:sans-serif;font-size:14px;fill:#39414a}.head{font-family:sans-serif;font-size:24px;font-weight:bold;fill:#20242a}.dim{stroke:#20242a;stroke-width:1.5;marker-start:url(#a);marker-end:url(#a)}</style>
+    <marker id="a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#20242a"/></marker>
+  </defs>
+  <rect width="1200" height="620" class="bg"/>
+  <text x="32" y="40" class="head">C — URDF X≈−420 / χωρίς πραγματικό φορέα</text>
+  <rect x="25" y="65" width="555" height="520" rx="8" class="panel"/>
+  <text x="45" y="96" class="label">Κάτοψη — το Body F τελειώνει στο X−307,5</text>
+  <path d="M170 165 Q345 115 510 170 L525 450 Q340 520 160 450Z" class="body"/>
+  <line x1="160" y1="140" x2="160" y2="485" stroke="#815b3d" stroke-width="3" stroke-dasharray="7 6"/>
+  <text x="170" y="500" class="small">πίσω άκρο F X−307,5</text>
+  <rect x="250" y="340" width="160" height="125" rx="12" class="robot"/><text x="270" y="408" class="small">P2-97 tower</text>
+  <rect x="75" y="280" width="42" height="42" class="sensor"/>
+  <circle cx="96" cy="301" r="165" class="scan"/>
+  <line x1="75" y1="280" x2="117" y2="322" class="invalid"/><line x1="117" y1="280" x2="75" y2="322" class="invalid"/>
+  <line x1="96" y1="245" x2="160" y2="245" class="dim"/>
+  <text x="85" y="225" class="small">112,5 mm κενό</text>
+  <text x="60" y="545" class="label">Τυφλές σφήνες: μη εφαρμόσιμο</text>
+  <text x="60" y="570" class="small">Ο γκρι κύκλος είναι μόνο η εικονική θέση του URDF</text>
+
+  <rect x="605" y="65" width="570" height="520" rx="8" class="panel"/>
+  <text x="625" y="96" class="label">Πλάγια όψη — simulation datum, όχι κατασκευή</text>
+  <line x1="645" y1="510" x2="1135" y2="510" stroke="#59636e" stroke-width="4"/>
+  <path d="M700 510L700 375L905 375L905 510" class="body"/>
+  <text x="720" y="400" class="small">θεωρητικό roof Z350</text>
+  <rect x="675" y="175" width="56" height="41" class="sensor"/>
+  <line x1="620" y1="186" x2="1145" y2="186" class="scan"/>
+  <rect x="695" y="216" width="16" height="159" fill="#8a9097" stroke="#c53d34" stroke-width="2" stroke-dasharray="7 6"/>
+  <text x="735" y="290" class="small">ανύπαρκτος ιστός ≥173,7 mm</text>
+  <rect x="935" y="315" width="130" height="195" rx="8" class="robot"/><circle cx="995" cy="430" r="13" fill="#b94a3f"/><text x="1015" y="435" class="small">Pi 5</text>
+  <path d="M703 200L650 260L650 480L920 480L982 430" class="route"/>
+  <text x="690" y="550" class="label">route ≈0,62 m · cable allowance 0,8 m</text>
+  <text x="690" y="572" class="small">Δεν υπάρχει επιφάνεια για clips ή gland</text>
+  <line x1="835" y1="186" x2="835" y2="375" class="dim"/>
+  <text x="845" y="285" class="small">+178,5 mm από Z375</text>
+</svg>

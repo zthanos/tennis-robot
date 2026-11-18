@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">P2-99a θέση B — κάτοψη σάρωσης και πλάγια διαδρομή USB</title>
+  <desc id="desc">Σχηματική κάτοψη της μετατοπισμένης θέσης LiDAR στο P2-97 και πλάγια σύντομη διαδρομή προς το Pi 5.</desc>
+  <defs>
+    <style>.bg{fill:#f7f7f5}.panel{fill:#fff;stroke:#30343b;stroke-width:2}.robot{fill:#d8dde2;stroke:#59636e;stroke-width:2}.body{fill:#e7c9b0;stroke:#815b3d;stroke-width:2}.arch{fill:none;stroke:#276b9a;stroke-width:10}.scan{fill:none;stroke:#14834f;stroke-width:4}.route{fill:none;stroke:#b44b36;stroke-width:5;stroke-dasharray:10 7}.sensor{fill:#17191c;stroke:#000;stroke-width:2}.estop{fill:#d12f2f;stroke:#761616;stroke-width:2}.keep{fill:none;stroke:#c53d34;stroke-width:2;stroke-dasharray:7 6}.label{font-family:sans-serif;font-size:18px;fill:#20242a}.small{font-family:sans-serif;font-size:14px;fill:#39414a}.head{font-family:sans-serif;font-size:24px;font-weight:bold;fill:#20242a}.dim{stroke:#20242a;stroke-width:1.5;marker-start:url(#a);marker-end:url(#a)}</style>
+    <marker id="a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#20242a"/></marker>
+  </defs>
+  <rect width="1200" height="620" class="bg"/>
+  <text x="32" y="40" class="head">B — P2-97 tower / μετατόπιση Y+45</text>
+  <rect x="25" y="65" width="555" height="520" rx="8" class="panel"/>
+  <text x="45" y="96" class="label">Κάτοψη — scan plane Z389,8</text>
+  <path d="M115 165 Q300 115 485 165 L520 450 Q300 520 80 450Z" class="body"/>
+  <rect x="220" y="340" width="160" height="125" rx="12" class="robot"/>
+  <text x="239" y="450" class="small">P2-97 tower</text>
+  <circle cx="275" cy="417" r="19" class="estop"/><text x="228" y="400" class="small">E-stop</text>
+  <rect x="303" y="363" width="42" height="42" class="sensor"/>
+  <circle cx="324" cy="384" r="167" class="scan"/>
+  <circle cx="324" cy="384" r="21" class="keep"/>
+  <rect x="390" y="190" width="100" height="190" rx="15" class="robot"/><text x="399" y="285" class="small">flywheel</text>
+  <rect x="245" y="205" width="115" height="130" rx="10" class="robot"/><text x="268" y="270" class="small">basket</text>
+  <path d="M195 175L430 175" class="arch"/>
+  <line x1="287" y1="409" x2="311" y2="397" class="dim"/>
+  <text x="95" y="535" class="label">E-stop edge gap ≈56,2 mm</text>
+  <text x="72" y="558" class="label">Τυφλές σφήνες: 0° σε −10/−3/0/15/20°</text>
+  <text x="72" y="578" class="small">Στο Y0 το κενό του E-stop πέφτει σε ≈11,2 mm</text>
+
+  <rect x="605" y="65" width="570" height="520" rx="8" class="panel"/>
+  <text x="625" y="96" class="label">Πλάγια όψη — adapter μέσα στο logic box</text>
+  <line x1="645" y1="510" x2="1135" y2="510" stroke="#59636e" stroke-width="4"/>
+  <rect x="835" y="265" width="160" height="245" rx="8" class="robot"/>
+  <line x1="835" y1="323" x2="995" y2="323" stroke="#815b3d" stroke-width="5"/>
+  <text x="1005" y="328" class="small">panel top Z323</text>
+  <rect x="887" y="215" width="56" height="41" class="sensor"/>
+  <rect x="907" y="256" width="16" height="67" fill="#276b9a"/>
+  <line x1="650" y1="226" x2="1140" y2="226" class="scan"/>
+  <circle cx="910" cy="420" r="13" fill="#b94a3f"/><text x="930" y="425" class="small">Pi 5 / CP2102</text>
+  <path d="M915 250L950 310L950 360L925 420" class="route"/>
+  <text x="690" y="550" class="label">route ≈0,23 m · cable allowance 0,5 m</text>
+  <text x="690" y="572" class="small">Νέο μετρημένο πέρασμα· όχι υπόθεση ότι χωρά στο 24×8</text>
+  <line x1="805" y1="226" x2="805" y2="375" class="dim"/>
+  <text x="660" y="300" class="small">+14,8 mm από Z375</text>
+</svg>

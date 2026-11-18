@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">P2-99a θέση A — κάτοψη σάρωσης και πλάγια διαδρομή USB</title>
+  <desc id="desc">Σχηματική κάτοψη της θέσης LiDAR στο κέντρο της άνω δοκού και πλάγια διαδρομή καλωδίου προς το P2-97 logic box.</desc>
+  <defs>
+    <style>
+      .bg{fill:#f7f7f5}.panel{fill:#fff;stroke:#30343b;stroke-width:2}.robot{fill:#d8dde2;stroke:#59636e;stroke-width:2}.body{fill:#e7c9b0;stroke:#815b3d;stroke-width:2}.arch{fill:none;stroke:#276b9a;stroke-width:10}.scan{fill:none;stroke:#14834f;stroke-width:4}.route{fill:none;stroke:#b44b36;stroke-width:5;stroke-dasharray:10 7}.sensor{fill:#17191c;stroke:#000;stroke-width:2}.keep{fill:none;stroke:#c53d34;stroke-width:2;stroke-dasharray:7 6}.label{font-family:sans-serif;font-size:18px;fill:#20242a}.small{font-family:sans-serif;font-size:14px;fill:#39414a}.head{font-family:sans-serif;font-size:24px;font-weight:bold;fill:#20242a}.dim{stroke:#20242a;stroke-width:1.5;marker-start:url(#a);marker-end:url(#a)}
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#20242a"/></marker>
+  </defs>
+  <rect width="1200" height="620" class="bg"/>
+  <text x="32" y="40" class="head">A — κορυφή αψίδας / κέντρο άνω δοκού</text>
+  <rect x="25" y="65" width="555" height="520" rx="8" class="panel"/>
+  <text x="45" y="96" class="label">Κάτοψη — scan plane Z393,8</text>
+  <path d="M115 165 Q300 115 485 165 L520 450 Q300 520 80 450Z" class="body"/>
+  <rect x="220" y="340" width="160" height="125" rx="12" class="robot"/>
+  <text x="239" y="408" class="small">P2-97 tower</text>
+  <rect x="390" y="190" width="100" height="190" rx="15" class="robot"/>
+  <text x="399" y="285" class="small">flywheel</text>
+  <rect x="245" y="205" width="115" height="150" rx="10" class="robot"/>
+  <text x="268" y="280" class="small">basket</text>
+  <path d="M195 175L430 175" class="arch"/>
+  <rect x="298" y="160" width="35" height="30" class="sensor"/>
+  <circle cx="315" cy="175" r="130" class="scan"/>
+  <circle cx="315" cy="175" r="18" class="keep"/>
+  <text x="340" y="132" class="small">C1 [390,0]</text>
+  <text x="72" y="555" class="label">Τυφλές σφήνες: 0° σε −10/−3/0/15/20°</text>
+  <text x="72" y="575" class="small">Πράσινος πλήρης κύκλος = καθαρή nominal ζώνη ±2°</text>
+
+  <rect x="605" y="65" width="570" height="520" rx="8" class="panel"/>
+  <text x="625" y="96" class="label">Πλάγια όψη — νόμιμη σταθερή διαδρομή</text>
+  <line x1="645" y1="510" x2="1135" y2="510" stroke="#59636e" stroke-width="4"/>
+  <path d="M690 510L780 235L875 235" class="arch"/>
+  <rect x="852" y="205" width="46" height="30" class="sensor"/>
+  <line x1="620" y1="205" x2="1145" y2="205" class="scan"/>
+  <rect x="1000" y="310" width="105" height="200" rx="8" class="robot"/>
+  <rect x="1018" y="350" width="70" height="110" fill="#cfd8df" stroke="#59636e"/>
+  <text x="1017" y="405" class="small">logic box</text>
+  <circle cx="1055" cy="430" r="13" fill="#b94a3f"/><text x="1074" y="435" class="small">Pi 5</text>
+  <path d="M875 220L780 220L700 500L980 500L1005 430L1042 430" class="route"/>
+  <text x="720" y="545" class="label">route ≈1,35 m · cable allowance 1,6 m</text>
+  <text x="720" y="568" class="small">Υπερβαίνει τη σύσταση USB ≤1 m</text>
+  <line x1="930" y1="205" x2="930" y2="375" class="dim"/>
+  <text x="940" y="292" class="small">+18,8 mm από Z375</text>
+</svg>
