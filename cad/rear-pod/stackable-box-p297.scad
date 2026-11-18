@@ -63,6 +63,20 @@ p297_logic_z = p297_power_z + p297_power_h + p297_seam_gap;
 p297_collar_z = p297_logic_z + p297_logic_h + p297_seam_gap;
 p297_panel_z = p297_collar_z + p297_collar_h;
 
+// P2-99b: the released control panel and the P2-97 collar become one print.
+// Keep the installed datum explicit; the export wrapper turns the released
+// panel face onto Z=0, as required by the support-free print orientation.
+p299_panel_collar_h = p297_collar_h + plate_t;
+p299_c1_center = [0,110]; // provisional CAD datum; physical dummy dimensions remain gates
+p299_c1_base_z = 390;
+p299_c1_scan_offset = 29.8;
+p299_c1_size = [55.6,55.6,41.3];
+p299_pedestal_h = p299_c1_base_z-(p297_panel_z+plate_t);
+p299_c1_pattern = 43;
+p299_panel_mounts = [[-18,72],[18,72],[-18,90],[22,88]];
+p299_xh_opening = [17,10]; // provisional XH2.54-5P housing +2 mm/side: measure user part
+p299_xh_opening_center = [0,82];
+
 // Physical board patterns.  Mega/perf/BTS values are measured parts recorded
 // in motion-electronics-tray/params.scad.  Pi 5 is Raspberry Pi drawing
 // RP-008347-DS-1 (85 x 56 board; 58 x 49 hole centres).
@@ -787,6 +801,149 @@ module p297_collar() {
     }
 }
 
+// P2-99b step 1.  This collar core deliberately does not subtract an expanded
+// control_panel_v2() clearance: the released panel and all of its ribs are now
+// part of the same manifold body. The engaged socket/cavity dimensions and
+// E-stop service volume remain the P2-97 geometry; the obsolete panel lands,
+// insert pockets and non-seam floor ring are intentionally absent.
+module p299_collar_core() {
+    difference() {
+        union() {
+            // Preserve the engaged three-sided female seam exactly, but omit
+            // the old four-sided horizontal floor ring: face-down it became a
+            // 2308 mm2 suspended ledge and it has no role in tongue capture.
+            p297_socket_band();
+            p297_solid_side_walls(p297_collar_h);
+            translate([p297_outer[0]/2-1.2,0,p297_collar_h/2])
+                cube([2.4,p297_outer[1],p297_collar_h],center=true);
+
+            // In the required face-down print, these 45-degree transitions
+            // grow outwards from the collar walls to the complete socket band.
+            // They sit strictly above the engaged cavity, so 0.35 mm radial
+            // and 0.25 mm vertical seam clearances remain unchanged.
+            ramp_h = max((p297_outer[1]/2-2.4)
+                         -(p297_seam_side_y-p297_seam_band/2),
+                         (p297_outer[0]/2-2.4)
+                         -(p297_seam_front_x-p297_seam_band/2));
+            for (side=[-1,1]) hull() {
+                translate([(p297_seam_front_x-p297_outer[0]/2)/2,
+                           side*p297_seam_side_y,
+                           p297_seam_socket_h])
+                    cube([p297_seam_front_x+p297_outer[0]/2,
+                          p297_seam_band,0.02],center=true);
+                translate([0,side*(p297_outer[1]/2-1.2),
+                           p297_seam_socket_h+ramp_h])
+                    cube([p297_outer[0],2.4,0.02],center=true);
+            }
+            hull() {
+                translate([p297_seam_front_x,0,p297_seam_socket_h])
+                    cube([p297_seam_band,p297_outer[1],0.02],center=true);
+                translate([p297_outer[0]/2-1.2,0,
+                           p297_seam_socket_h+ramp_h])
+                    cube([2.4,p297_outer[1],0.02],center=true);
+            }
+        }
+        translate([0,-58,p297_collar_h-25]) cube([39,34,54],center=true);
+        p297_socket_cavity();
+        // Open the two female-groove entrances cleanly through the rear edge.
+        // The released P2-97 cavity ended exactly on X=-69; after reversing
+        // the whole body for face-down printing that coincident contour was
+        // slicer-dependent.  Groove width and the 0.35 mm radial clearance
+        // are unchanged everywhere in the engaged seam.
+        for (side=[-1,1])
+            translate([-68.9,side*p297_seam_side_y,
+                       p297_seam_straight_h/2])
+                cube([0.4,p297_seam_lip_t+2*p297_seam_clearance,
+                      p297_seam_straight_h+0.2],center=true);
+        // Retain the released P2-97 closure/tangency clean-ups.  They act in
+        // collar material only and therefore cannot alter a panel hole/seat.
+        translate([-51,75,10]) cube([0.6,0.6,14],center=true);
+        for (side=[-1,1])
+            translate([-59,side*91.3,9.1]) cube([22,1.2,1.4],center=true);
+        for (x=[-67,67],y=[-94,94])
+            translate([x,y,p297_collar_h-0.4]) cube([6,4,0.8],center=true);
+    }
+}
+
+module p299_panel_collar() {
+    difference() {
+        union() {
+            p299_collar_core();
+            // Do not clone or reinterpret any panel feature: reuse the released
+            // solid so every control hole, counter-volume, seat and L-beam remains
+            // at exactly its released coordinate and diameter.
+            translate([0,0,p297_collar_h]) control_panel_v2();
+            // Blind Ruthex bosses open on the control face. The deliberately
+            // asymmetric fourth point is the pedestal's position key.
+            for (p=p299_panel_mounts)
+                translate([p[0],p[1],p299_panel_collar_h-7])
+                    cylinder(d=12,h=7,$fn=48);
+        }
+        for (p=p299_panel_mounts)
+            translate([p[0],p[1],p299_panel_collar_h-6.7])
+                cylinder(d=p297_insert_hole,h=6.8,$fn=40);
+        // Captive XH lead: provisional 17 x 10 envelope. The actual housing
+        // and overmould must be measured before printing.
+        translate([p299_xh_opening_center[0],p299_xh_opening_center[1],
+                   p297_collar_h-0.1])
+            linear_extrude(height=plate_t+0.2)
+                offset(r=2) square([p299_xh_opening[0]-4,
+                                    p299_xh_opening[1]-4],center=true);
+    }
+}
+
+module p299_c1_pedestal_installed() {
+    assert(p299_pedestal_h > 10,"P2-99b pedestal height must be positive");
+    assert(abs(p299_c1_base_z+p299_c1_scan_offset-419.8) < 0.001,
+           "P2-99b nominal scan plane changed");
+    difference() {
+        union() {
+            // Bed-supported panel foot. Its nearest Y edge retains >25 mm
+            // clear from the Ø16.3 START edge; it also clears slot/LED/toggle/E-stop.
+            translate([0,95,2.5]) cube([58,58,5],center=true);
+            // Two PETG shear cheeks. The rear 10 mm cantilever has an exact
+            // 45-degree underside and supports the off-panel C1 hole row.
+            for (x=[-25,25])
+                translate([x-2,0,0]) rotate([90,0,90])
+                    linear_extrude(height=4)
+                        polygon(points=[[66,4.6],[124,4.6],[134,14.6],
+                                        [134,p299_pedestal_h-4],
+                                        [82,p299_pedestal_h-4],
+                                        [66,p299_pedestal_h-20]]);
+            // Four independent 4 mm sensor pads keep every screw head
+            // accessible from below and make M2.5x8 penetrate exactly 4 mm.
+            for (x=[-p299_c1_pattern/2,p299_c1_pattern/2],
+                 y=[p299_c1_center[1]-p299_c1_pattern/2,
+                    p299_c1_center[1]+p299_c1_pattern/2])
+                translate([x,y,p299_pedestal_h-2]) cube([6.5,6.5,4],center=true);
+            // A printable V-bottom cross tie removes cheek racking without a
+            // flat 50 mm bridge.
+            translate([0,105,42]) p297_beam_x(58,5,5);
+            // Two cable-guide ears accept a small reusable tie around the
+            // captive lead; cable OD remains a user measurement.
+            for (x=[-7,7]) translate([x,103,19.4]) cube([4,10,29.2],center=true);
+        }
+        for (p=p299_panel_mounts)
+            translate([p[0],p[1],-0.1]) cylinder(d=p297_m3_clear,h=5.2,$fn=32);
+        for (x=[-p299_c1_pattern/2,p299_c1_pattern/2],
+             y=[p299_c1_center[1]-p299_c1_pattern/2,
+                p299_c1_center[1]+p299_c1_pattern/2])
+            translate([x,y,p299_pedestal_h-4.1])
+                cylinder(d=2.8,h=4.3,$fn=32);
+        translate([p299_xh_opening_center[0],p299_xh_opening_center[1],-0.1])
+            linear_extrude(height=5.2)
+                offset(r=2) square([p299_xh_opening[0]-4,
+                                    p299_xh_opening[1]-4],center=true);
+    }
+}
+
+module p299_c1_ghost() {
+    color([.12,.18,.22,.45])
+        translate([p299_c1_center[0],p299_c1_center[1],
+                   p299_pedestal_h+p299_c1_size[2]/2])
+            cube(p299_c1_size,center=true);
+}
+
 module p297_controls_ghosts() {
     color([.85,.08,.08,.55]) translate([0,-58,p297_panel_z-p297_collar_z-25])
         cube([35,30,50],center=true);
@@ -799,13 +956,14 @@ module p297_stack_only(ghosts=false) {
     translate([0,0,p297_energy_z]) p297_energy_spacer();
     translate([0,0,p297_power_z]) p297_power_box();
     translate([0,0,p297_logic_z]) p297_logic_box();
-    translate([0,0,p297_collar_z]) p297_collar();
-    translate([0,0,p297_panel_z]) control_panel_v2();
+    translate([0,0,p297_collar_z]) p299_panel_collar();
+    translate([0,0,p297_panel_z+plate_t]) p299_c1_pedestal_installed();
     if (ghosts) {
         // Four oriented BTS envelopes plus their 25 mm terminal keepouts.
         translate([0,0,p297_power_z])
             for (c=p297_bts_centres) p297_bts_ghost(c[0],c[1]);
         translate([0,0,p297_collar_z]) p297_controls_ghosts();
+        translate([0,0,p297_panel_z+plate_t]) p299_c1_ghost();
     }
 }
 
@@ -830,6 +988,11 @@ else if (part=="p297_seam_coupon_lower") p297_seam_coupon_lower();
 else if (part=="p297_seam_coupon_upper") p297_seam_coupon_upper();
 else if (part=="p297_logic_box") p297_logic_box();
 else if (part=="p297_collar") p297_collar();
+else if (part=="p299_collar_core") p299_collar_core();
+else if (part=="p299_panel_collar")
+    translate([0,0,p299_panel_collar_h]) rotate([180,0,0]) p299_panel_collar();
+else if (part=="p299_c1_pedestal")
+    translate([0,-66,0]) p299_c1_pedestal_installed();
 else if (part=="p297_mega_carrier") p297_mega_carrier();
 else if (part=="p297_perf_carrier") p297_perf_carrier();
 else if (part=="p297_pi5_carrier") p297_pi5_carrier();

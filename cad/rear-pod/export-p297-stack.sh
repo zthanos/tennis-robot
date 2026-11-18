@@ -27,7 +27,8 @@ parts=(
   p297_energy_spacer
   p297_power_box
   p297_logic_box
-  p297_collar
+  p299_panel_collar
+  p299_c1_pedestal
   p297_mega_carrier
   p297_perf_carrier
   p297_pi5_carrier
@@ -36,10 +37,16 @@ parts=(
 )
 
 for part_name in "${parts[@]}"; do
+  part_args=()
+  if [[ "$part_name" == p299_* ]]; then
+    # Dense deterministic facets keep the released panel's circular/tangent
+    # seats stable after its mandatory 180-degree print rotation.
+    part_args+=( -D '$fn=72' )
+  fi
   "$openscad_bin" --hardwarnings -o "$out_dir/${part_name}.stl" \
     -D "part=\"${part_name}\"" -D 'show_ghosts=false' \
     -D "p297_bts_measured_h=$bts_height" \
-    -D "p297_seam_clearance=$seam_clearance" "$scad_file"
+    -D "p297_seam_clearance=$seam_clearance" "${part_args[@]}" "$scad_file"
   [[ -s "$out_dir/${part_name}.stl" ]] || {
     echo "Missing export: $part_name" >&2
     exit 1
@@ -53,6 +60,23 @@ for part_name in "${parts[@]}"; do
       --hole 'rear_ypos,-58,54,-1,-58,54,17,4.5' \
       --hole 'front_yneg,66.5,-54,-1,66.5,-54,17,4.5' \
       --hole 'front_ypos,66.5,54,-1,66.5,54,17,4.5'
+  elif [[ "$part_name" == "p299_panel_collar" ]]; then
+    python3 "$through_hole_check" "$out_dir/${part_name}.stl" \
+      --hole 'loc_1,-58,-56,-1,-58,-56,5,8.6' \
+      --hole 'loc_2,-58,56,-1,-58,56,5,8.6' \
+      --hole 'loc_3,58,-56,-1,58,-56,5,8.6' \
+      --hole 'loc_4,58,56,-1,58,56,5,8.6' \
+      --hole 'estop,0,58,-1,0,58,5,22.5' \
+      --hole 'toggle,0,12,-1,0,12,5,12.3' \
+      --hole 'start,0,-32,-1,0,-32,5,16.3' \
+      --hole 'slot_mid,42,-70,-1,42,-70,5,8' \
+      --hole 'status,-42,-70,-1,-42,-70,5,8'
+  elif [[ "$part_name" == "p299_c1_pedestal" ]]; then
+    python3 "$through_hole_check" "$out_dir/${part_name}.stl" \
+      --hole 'c1_1,-21.5,22.5,62,-21.5,22.5,68,2.8' \
+      --hole 'c1_2,21.5,22.5,62,21.5,22.5,68,2.8' \
+      --hole 'c1_3,-21.5,65.5,62,-21.5,65.5,68,2.8' \
+      --hole 'c1_4,21.5,65.5,62,21.5,65.5,68,2.8'
   fi
 done
 

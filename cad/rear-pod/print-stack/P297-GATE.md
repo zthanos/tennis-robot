@@ -1,5 +1,14 @@
 # P2-97 full-scene gate note
 
+P2-99b addendum (2026-11-18): the active exporter now emits 11 files. It
+removes `p297_collar.stl` and adds `p299_panel_collar.stl` plus
+`p299_c1_pedestal.stl`. Both new files pass the permanent one-body,
+floating-island, downward-face and slice gates; declared hole axes pass 9/9
+and 4/4 respectively. The final raw scene has 94 bodies per angle, zero
+exports, zero contained pairs and the same 48 historical collision pairs at
+-10/-3/0/15/20. The complete record is
+[P2-99b](../../../docs/hardware/p2-99b-panel-collar-rplidar-c1-pedestal-el.md).
+
 Commit `0092fcd6` fixed printed-part recognition for STL files renamed by
 export scripts.  P2-97c restores the correct pre-`5e3404ad` baseline of
 **48 collision pairs**, with zero contained pairs and zero export failures at

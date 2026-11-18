@@ -1,5 +1,45 @@
 # P2-97 Phase 1 — FIT-CHECK stackable electronics tower
 
+## P2-99b — unified panel/collar and RPLIDAR C1 pedestal
+
+The active top of the P2-97 stack is now `p299_panel_collar.stl`; the former
+`p297_collar.stl` and separate `stl-v2/control_panel.stl` are not printed for
+this build. The new body reuses `control_panel_v2()` without changing the
+released E-stop Ø22.5, toggle Ø12.3, START Ø16.3, status Ø8, 24×8 capsule or
+four Ø8.6 locating features. The released L-beam at X=-69..-49 and all panel
+ribs are fused into the collar. The engaged female seam remains 0.35 mm per
+side with the same 0.25 mm vertical stack gap. Its support-free backing was
+changed to 45-degree ramps because the required print orientation places the
+control face on the bed. Exported footprint is 138×190×28 mm, inside 250×250.
+
+`p299_c1_pedestal.stl` is a separate 58×68.8×67 mm print. Four asymmetric M3
+axes key it to blind Ø4.0×6.7 Ruthex seats in the unified body. Four M2.5
+clearance bores use the official 43×43 mm C1 pattern; M2.5×8 screws through
+the 4 mm sensor pads enter the C1 by 4 mm maximum. The nominal C1 centre is
+panel-local `[0,+110]`, opposite the E-stop, with base Z390 and scan plane
+Z419.8. The nearest pedestal edge has 25.85 mm clear from the Ø16.3 START edge. This datum
+remains **FIT-CHECK / DO NOT PRINT** until the user's two dummy measurements
+are entered and agree:
+
+- C1 centre → white START centre: **not supplied; measure by user** (CAD
+  nominal 78 mm);
+- C1 centre → nearest narrow panel edge: **not supplied; measure by user**
+  (CAD nominal 15 mm beyond the +Y edge; deliberate rigid overhang).
+
+The provisional XH2.54-5P opening is 17×10 mm (housing plus 2 mm per side).
+Measure the actual housing/strain relief before printing. The 70 cm captive
+lead descends between the pedestal cheeks, is retained by the two tie ears,
+and enters the logic volume without crossing tilt or basket motion. Keep
+R≥30 mm. The 35×30×5 adapter is tied to the inside +Y logic lattice near the
+Pi, with a short USB-C lead; connector-side orientation must be checked on
+the real adapter.
+
+Both new STLs pass one-body, floating-island, downward-face and slice gates.
+The unified body additionally passes all nine declared released circular/
+central-slot axes; the pedestal passes all four C1 axes. The full raw scene is
+unchanged at 48 historical pairs, zero contained pairs and zero export
+failures at -10/-3/0/15/20 degrees.
+
 Status: **FIT-CHECK.** All parts are support-free in the exported orientation
 and fit a 250 x 250 mm bed.  The common nominal box footprint is 138 x 190 mm;
 the complete perimeter seam stays inside it.  The base adapter alone has two
@@ -55,14 +95,13 @@ Installed datums are measured from ground/chassis coordinates:
   Z147.70, 2.0 mm above the floor-grid top; the 15 mm top envelope ends at
   Z183.70.  Fuse/DC-DC use the general M3 grid after their bodies are measured;
 - logic box: Z212.75..294.75, three rear-removable horizontal trays at Z+10/+36/+62;
-- collar: Z295.00..319.00;
-- existing control-panel top: Z323; E-stop mushroom top: approximately Z344.
+- unified panel/collar: Z295.00..323.00; E-stop mushroom top: approximately Z344;
+- C1 pedestal: Z323.00..390.00; C1 scan plane: Z419.80.
 
-Mega and Pi USB extension leads rise in the continuous rear cable channel and
-exit through the existing 24 x 8 panel slot.  The panel keeps its four existing
-Ø8.6 locating holes.  Four M3 screws with washers of at least Ø12 mm pass
-through them into blind Ø4.0 x 6.7 mm seats for Ruthex RX-M3x5.7 inserts in
-the collar; no inaccessible nut is required.
+Mega and Pi USB extension leads retain the continuous rear cable channel and
+existing 24×8 slot. The C1 lead uses its new provisional 17×10 opening. The
+four existing Ø8.6 locating holes remain exact but no longer fasten panel to
+collar, because those two solids are one print.
 
 Mounting patterns used by the FIT-CHECK carriers:
 
@@ -128,10 +167,11 @@ After: section through the assembled continuous male/female perimeter corner.
 ![P2-97 corner after section](p297-corner-after-section.png)
 
 All formerly flat elevated undersides were changed to 45° V/chamfered forms:
-the wall rails, BTS service-window rails, six logic tray rails, collar lands
+the wall rails, BTS service-window rails, six logic tray rails, collar supports
 and seam-groove roofs.  `check-stl-downward-faces.py` groups connected
 coplanar downward triangles and rejects any elevated patch over 40 mm².  In
-the final export the worst patch is 35.28 mm²; all ten STL files pass.
+the P2-99b export both new STL files pass; the pedestal maximum is 26.07 mm²
+and the unified body maximum is 12.00 mm².
 
 `check-stl-through-holes.py` independently ray-casts each declared hole axis
 through the exported mesh.  The export declares all four adapter M4 axes from
@@ -159,11 +199,12 @@ about 9 mm³/s).  The actual slicer remains the acceptance source.
 | `p297_energy_spacer.stl` | 150.2 g | 3.86 h |
 | `p297_power_box.stl` | 203.2 g | 5.18 h |
 | `p297_logic_box.stl` | 256.7 g | 6.52 h |
-| `p297_collar.stl` | 75.1 g | 1.98 h |
+| `p299_panel_collar.stl` | 312.9 g | 7.92 h |
+| `p299_c1_pedestal.stl` | 63.5 g | 1.69 h |
 | `p297_mega_carrier.stl` | 30.9 g | 0.87 h |
 | `p297_perf_carrier.stl` | 43.3 g | 1.18 h |
 | `p297_pi5_carrier.stl` | 23.2 g | 0.68 h |
-| **Phase 1 installed total** | **888.6 g** | **23.01 h** |
+| **P2-99b installed print-set total** | **1189.8 g** | **30.65 h** |
 | two seam coupons (print first) | 5.1 g | 0.33 h |
 
 The values above are rounded targets; regenerate the table from final meshes
@@ -199,18 +240,20 @@ seat and are not removed.  With only the unrestrained 0.35 mm/side nominal
 gap, clearance take-up could exceed 1.5 mm; a rattling coupon is therefore a
 failed stiffness gate, not a cosmetic issue.
 
-The support-free corner and rail revision remains below the 25 h Phase-1
-planning target, and no individual part exceeds 8 h.  The power row is from
-the measured 36 mm BTS export, not the former 20 mm placeholder.
+The unified top pushes the complete planning estimate above the former 25 h
+Phase-1 target, although no individual part exceeds 8 h. These remain
+geometry/throughput estimates, not slicer results. The power row is from the
+measured 36 mm BTS export, not the former 20 mm placeholder.
 
 ## Hardware — Phase 1
 
 - 16 x Ruthex RX-M3x5.7 heat-set inserts (four per seam);
 - 16 x M3x10 socket-head screws and M3 washers;
 - 4 x existing-base M4x20 screws, washers and nylocs for the adapter;
-- 4 x M3 screws, washers Ø>=12 mm and Ruthex RX-M3x5.7 inserts for the
-  existing panel holes; screw length is selected to give full insert engagement
-  without bottoming in the 6.7 mm blind seat;
+- 4 x M3 pedestal screws and 4 x Ruthex RX-M3x5.7 inserts in the asymmetric
+  P2-99b panel pattern;
+- 4 x M2.5x8 screws for the C1; the 4 mm pedestal pad limits sensor-base
+  penetration to 4 mm;
 - 16 x M3x30 board screws, 32 x washers and 16 x nylocs for the four BTS7960
   boards; the 22 mm standoffs are integrated in the power-box STL;
 - 4 x M3 screws/spacers for the measured Mega acrylic case;
@@ -227,8 +270,9 @@ The Phase-1 current scene no longer uses `side_frame.stl`, `panel_posts.stl`,
 `vertical_electronics_plate.stl`, `pi_shelf.stl`, `parkside_dock_left/right.stl`,
 `parkside_drawer_left/right.stl`, `ugreen_post_holder.stl`,
 `ugreen_clamp_caps.stl`, or `ugreen_rear_retainer.stl`.  The existing
-`base_left.stl`, `base_right.stl`, `corner_tie.stl`, and `control_panel.stl`
-remain active/reused.
+`base_left.stl`, `base_right.stl`, and `corner_tie.stl` remain reused.
+`control_panel.stl` and `p297_collar.stl` are superseded by the unified P2-99b
+body.
 
 Phase 2 begins only after measuring the real Parkside batteries/contact docks;
 the empty energy spacer is intentionally not a guessed drawer system.

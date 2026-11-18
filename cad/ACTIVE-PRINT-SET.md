@@ -1,5 +1,22 @@
 # Ενεργό σύνολο εκτύπωσης — P2-93e / P2-95 gate
 
+## P2-99b — επάνω μέρος P2-97 + RPLIDAR C1, FIT-CHECK
+
+Το `rear-pod/print-stack/p299_panel_collar.stl` αντικαθιστά **και** το
+`p297_collar.stl` **και** το χωριστό `stl-v2/control_panel.stl`. Το παλιό
+collar/panel δεν τυπώνεται για αυτή τη συναρμολόγηση. Το
+`p299_c1_pedestal.stl` είναι το χωριστό βιδωτό βάθρο θέσης B.
+
+| STL | Ποσότητα | Κατάσταση / blocker |
+| --- | ---: | --- |
+| `rear-pod/print-stack/p299_panel_collar.stl` | 1 | **FIT-CHECK — ΜΗΝ ΤΥΠΩΣΕΙΣ ακόμη**. One-body/floating/downward/slice PASS, 138×190×28 mm, released control axes 9/9 PASS, scene baseline 48 ζεύγη. Εκκρεμεί πραγματική μέτρηση XH housing και dummy C1. |
+| `rear-pod/print-stack/p299_c1_pedestal.stl` | 1 | **FIT-CHECK — ΜΗΝ ΤΥΠΩΣΕΙΣ ακόμη**. One-body/floating/downward/slice PASS, 58×68,8×67 mm, C1 axes 4/4 PASS. Εκκρεμούν οι δύο πραγματικές αποστάσεις C1→START και C1→στενή άκρη. |
+
+Nominal CAD: κέντρο C1 panel-local `[0,+110]`, βάση Z390, scan Z419,8,
+4×M2.5 στα 43×43 και M2.5×8 (είσοδος στη βάση C1 4 mm). Οι τέσσερις M3
+προς Ruthex είναι ασύμμετρο κλειδί θέσης. Το άνοιγμα XH 17×10 είναι
+προσωρινό· **να μετρηθεί από τον χρήστη**. URDF δεν άλλαξε.
+
 ## P2-96b — ενεργό print set αψίδας, όχι RELEASED
 
 Μοναδική πηγή εκτύπωσης: `arch-tilt-p293/print-arch/`.
@@ -276,7 +293,7 @@ Coupon και fixtures δεν έχουν robot-installed pose· παραμένο
 | `rear-pod/stl-v2/ugreen_clamp_caps.stl` | FIT-CHECK | Εκκρεμεί post/clamp coupon |
 | `rear-pod/stl-v2/ugreen_rear_retainer.stl` | CONCEPT | 172,6 mm³ overlap με holder· blocking |
 | `rear-pod/stl-v2/panel_posts.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
-| `rear-pod/stl-v2/control_panel.stl` | FIT-CHECK | Ιστορικά τυπωμένο/συναρμολογημένο· P2-95 full-scene FAIL, δεν υπάρχει νέο release |
+| `rear-pod/stl-v2/control_panel.stl` | CONCEPT | **SUPERSEDED για P2-99b** από `print-stack/p299_panel_collar.stl`· το ιστορικά τυπωμένο panel δεν συνδυάζεται με το νέο collar |
 | `rear-pod/stl-v2/component_pins.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
 | `rear-pod/stl-v2/component_clips.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
 | `rear-pod/stl-v2/bts_spacers.stl` | FIT-CHECK | Μη φέρον fit part· πρώτα draft/coupon |
@@ -421,7 +438,7 @@ OPENSCAD_BIN=/snap/bin/openscad-nightly bash cad/arch-tilt-p293/export-p293-stls
 | Parkside docks/drawers | `stl-v2/parkside_dock_left/right.stl`, `parkside_drawer_left/right.stl` ×1 | P2-88 provisional | 4×M3×12 προς υπάρχουσες slots + 2×M3 rear locks, Ruthex RX-M3x5.7 | **Σχεδιασμένο· αναμονή πραγματικής μπαταρίας/dock — ΔΕΝ ΤΥΠΩΝΕΤΑΙ ΑΚΟΜΑ** |
 | Θήκη UGREEN + split caps + πίσω retainer | `stl-v2/ugreen_post_holder.stl`, `ugreen_clamp_caps.stl` ×1 print plate / 2 caps, `ugreen_rear_retainer.stl` ×1 | P2-90/P2-90b, πραγματικό 115×45×45 | 4×M3×30 caps + 2×M3×12 retainer, 6× Ruthex RX-M3x5.7, προαιρετικό λουράκι | **ΝΕΟ P2-90b export holder+caps — πλάγια τοποθέτηση caps, κεντρική εισαγωγή συσκευής από −X· κλειστά P2-90 collars superseded** |
 | Panel posts | `stl-v2/panel_posts.stl` ×1 print plate / 4 posts | P2-81/P2-90d interface | κάτω/cup 4×M4×60, επάνω 4×M4×20, ροδέλες/nyloc | **ΤΥΠΩΜΕΝΑ — κλειδωμένα, καμία μεταβολή STL στο P2-90d** |
-| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΤΥΠΩΜΕΝΟ — κλειδωμένο στο P2-90· συναρμολογημένο στα posts με E-stop, toggle και START/ARM (2026-10-26)**· physical proof-load 30 N πριν τη χρήση |
+| Νευρωμένο control panel | `stl-v2/control_panel.stl` ×1 | P2-81/P2-84/P2-86 | 4×M4×20, ροδέλες/nyloc· νέα συνεχής rear beam: 4×M3 rear_hi + 4×M3 deck· οπή LED Ø8 | **ΙΣΤΟΡΙΚΑ ΤΥΠΩΜΕΝΟ, SUPERSEDED για P2-99b**· το released CAD επαναχρησιμοποιείται ακριβώς μέσα στο `p299_panel_collar.stl`, αλλά το παλιό χωριστό print δεν μπαίνει στη νέα στοίβα |
 | Component pins/clips | `stl-v2/component_pins.stl` ×1, `component_clips.stl` ×1 | P2-76 | Τυπωμένα pin/C-clips, χωρίς βίδα | **FIT-CHECK** — πρώτα draft coupon |
 | BTS spacers | `stl-v2/bts_spacers.stl` ×1 | P2-76 | Σε συνδυασμό με pins/C-clips | **FIT-CHECK** — πρώτα draft coupon |
 | Cable bulkhead + feet | `stl-v2/cable_bulkhead.stl` ×1, `bulkhead_foot.stl` ×2 | P2-75 retained in v2 | Υπάρχουσες M4, ροδέλες/παξιμάδια | **FIT-CHECK** — πρώτα coupon |

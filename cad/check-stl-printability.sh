@@ -81,6 +81,14 @@ case "$(basename "$mesh")" in
   p297_mega_carrier.stl)
     slice_args+=(--allow-z "0.5:3.1:carrier chamfer/cutout edge")
     ;;
+  p299_panel_collar.stl)
+    # The released panel is printed face-down unchanged. Its Ø25 shoulder
+    # access circles meet the existing rib grid tangentially, and the unified
+    # collar adds changing 45-degree seam-support edges. These are connected
+    # free-edge sections (the independent floating-island gate remains strict),
+    # not constant sub-line-width walls; plateau rejection stays enabled.
+    slice_args+=(--allow-z "3.0:24.0:released panel tangencies and 45-degree seam supports")
+    ;;
 esac
 
 python3 "$here/check-stl-slices.py" "$mesh" "${slice_args[@]}"
