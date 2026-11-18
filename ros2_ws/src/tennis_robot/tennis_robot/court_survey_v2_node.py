@@ -292,6 +292,19 @@ class CourtSurveyV2Node(Node):
         except (LookupException, ExtrapolationException, ConnectivityException):
             pass
 
+    def _sensor_pose_in_map(self) -> tuple[float, float, float] | None:
+        """Pose (x, y, yaw) of the /scan frame in map: the origin of every range."""
+        if not self._scan_frame_id:
+            return None
+        try:
+            t = self._tf_buffer.lookup_transform(
+                "map", self._scan_frame_id, rclpy.time.Time(),
+                rclpy.duration.Duration(seconds=0.05))
+        except (LookupException, ExtrapolationException, ConnectivityException):
+            return None
+        return (float(t.transform.translation.x), float(t.transform.translation.y),
+                _yaw_from_quaternion(t.transform.rotation))
+
     # ── occupancy map (map frame) ────────────────────────────────────────────
     def _accumulate_map(self) -> None:
         if not self._scan_frame_id:
@@ -485,10 +498,23 @@ class CourtSurveyV2Node(Node):
             and math.isfinite(d)
             and d <= NET_STANDOFF_M + 1.0
         ):
+            # d is measured from the LiDAR, not from base_link (P2-99c: adding
+            # it to base_link put the net exactly -lidar_x too far, +0.318 m
+            # with the C1). The net centre stays on the robot heading line
+            # (the drive-to-net centres the robot on it); only the depth uses
+            # the sensor: base -> net = d + the sensor's offset along heading.
+            sensor = self._sensor_pose_in_map()
+            if sensor is None:
+                return False
+            sx, sy, _ = sensor
             hx, hy = math.cos(self._robot_yaw), math.sin(self._robot_yaw)
+            reach = d + hx * (sx - self._robot_x) + hy * (sy - self._robot_y)
             self._locked_net = {
-                "map_x_m": round(self._robot_x + hx * d, 3),
-                "map_y_m": round(self._robot_y + hy * d, 3),
+                "map_x_m": round(self._robot_x + hx * reach, 3),
+                "map_y_m": round(self._robot_y + hy * reach, 3),
+                "sensor_x_m": round(sx, 3),
+                "sensor_y_m": round(sy, 3),
+                "sensor_frame": self._scan_frame_id,
                 "robot_x_m": round(self._robot_x, 3),
                 "robot_y_m": round(self._robot_y, 3),
                 "robot_yaw_rad": round(self._robot_yaw, 4),
