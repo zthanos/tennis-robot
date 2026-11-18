@@ -137,15 +137,28 @@ module p293d_mast_cap(){
    translate([390,150,348]) cube([32,24,8],center=true);
    for(x=[375.8,404.2]) translate([x,150,341]) cube([3.6,16,22],center=true);
    // Elliptical spigot occupies the bar's real void, with 0.5 mm gap.
-   translate([390,128,354]) rotate([0,0,90])
+   // Keep the released insertion end at Y118, but overlap the cap body by
+   // 2 mm instead of ending tangent at Y138.  The tangent ellipse created a
+   // detached first slice at print Z17.7 even though the final STL was one body.
+   translate([390,129,354]) rotate([0,0,90])
      difference(){
-      scale([1,17/2,13/2]) rotate([0,90,0]) cylinder(d=2,h=20,center=true,$fn=47);
+      scale([1,17/2,13/2]) rotate([0,90,0]) cylinder(d=2,h=22,center=true,$fn=47);
       scale([1,10/2,6/2]) rotate([0,90,0]) cylinder(d=2,h=22,center=true,$fn=47);
      }
   }
   xhole([390,150,336]);
   zhole([390,128,354]);
+  // The vertical bore completely split the lowest elliptical chord.  Remove
+  // the free underside up to Z348.5; two printable rails below are added
+  // outside this difference and support the replacement chord.
+  translate([390,128,343.1]) cube([20,20,10.8],center=true);
  }
+ // Two 1.6 mm rails sit just outside the Ø4.6 bore (inner edges at X+/-2.4),
+ // remain inside the ellipse at Z348.3, and overlap the cap over Y138..140.
+ // Each starts one layer before the replacement chord and is layer-supported
+ // through that cap overlap, so the nose never starts as a floating region.
+ for(side=[-1,1])
+  translate([390+side*3.2,129,348.5]) cube([1.6,22,0.4],center=true);
 }
 
 // OAK plate + integral forward struts. Pads butt at the LiDAR beam X402.
@@ -215,6 +228,10 @@ else if(part=="p293d_oak_mount")
   for(side=[-1,1])hull(){
    translate([104,41+side*21,1.8])cylinder(d=4,h=3.6,center=true,$fn=24);
    translate([122,41+side*35,1.8])cylinder(d=4,h=3.6,center=true,$fn=24);
+   // The rotated strut first appears near X110.5, Y41+/-33.3 at Z1.1.
+   // Include that footprint in the same bed gusset instead of letting a
+   // 4 mm2 strip begin independently in mid-air.
+   translate([110.5,41+side*33.3,1.8])cylinder(d=5,h=3.6,center=true,$fn=24);
   }
  }
 else p293d_arch_assembly();

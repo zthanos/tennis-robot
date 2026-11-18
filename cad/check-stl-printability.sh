@@ -8,6 +8,15 @@ expected_components="${2:-1}"
 
 python3 "$here/check-stl-components.py" "$mesh" "$expected_components"
 
+floating_output="$(python3 "$here/independent-check/check-floating-islands.py" \
+    "$here/check-stl-slices.py" "$mesh")"
+if [[ -n "$floating_output" ]]; then
+  printf '%s\n' "$floating_output" >&2
+  printf 'PRINTABILITY FAIL: %s has floating slice islands\n' "$mesh" >&2
+  exit 1
+fi
+printf 'FLOATING_ISLANDS PASS %s: 0 floating islands\n' "$mesh"
+
 downward_args=(--max-area 40)
 case "$(basename "$mesh")" in
   crown_L.stl)

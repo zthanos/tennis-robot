@@ -73,6 +73,16 @@ module p293g_crown(){
     translate([275,60.4,200])cube([200,100,200],center=true);
    }
    translate([0,-16.4,0])along_local(116.79,156.79,12);
+   // Permanent print/load rib in the XZ crown plane.  Its Y=-36.4 face is on
+   // the bed and Y=-22.4..-21.4 overlaps the lug.  It deliberately stops at
+   // the lug end: extending to the spigot crossed the crossbar tube wall.
+   t=atan2(125,132); rib_s1=156.79;
+   // Offset 4 mm away from the Tr8 sweep; a centred rib was tangent to the
+   // relief and left a constant 0.20 mm web.  The 4 mm section remains inside
+   // the crown lug envelope.
+   translate([258+(116.79+rib_s1)/2*cos(t)+4*sin(t),-28.9,
+              120+(116.79+rib_s1)/2*sin(t)-4*cos(t)])
+    rotate([0,-t,0]) cube([rib_s1-116.79,15,4],center=true);
   }
   // Same original knee/crown pin axes; L=sqrt(132^2+125^2).
   for(s=[sqrt(132*132+125*125)-55,sqrt(132*132+125*125)-35])

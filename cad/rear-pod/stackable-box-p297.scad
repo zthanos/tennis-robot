@@ -134,14 +134,11 @@ module p297_beam_segment_x(length,depth,height) {
 }
 
 module p297_beam_x(length,depth,height) {
-    // A 1.6 mm ridge satisfies the horizontal buffer gate.  Short 0.2 mm
-    // breaks keep each supported downward patch below 40 mm2; the lattice and
-    // tongue join the segments into the final single body.
-    count = ceil(length/23.5);
-    pitch = length/count;
-    for (i=[0:count-1])
-        translate([(i-(count-1)/2)*pitch,0,0])
-            p297_beam_segment_x(pitch-0.2,depth,height);
+    // One continuous member.  Its 45-degree transverse underside is printable
+    // and the vertical lattice/post intersections divide the 1.6 mm centre
+    // ridge into real bridges with material at both ends.  Never introduce
+    // artificial gaps merely to reduce the downward-face area.
+    p297_beam_segment_x(length,depth,height);
 }
 
 // Three closed sides: both Y walls and the +X/front wall. The -X/rear side
@@ -514,7 +511,9 @@ module p297_power_service_frames() {
     for (side=[-1,1]) {
         for (x=[-58.5,0,58.5])
             translate([x,side*93.4,(frame_z0+frame_z1)/2])
-                cube([x == 0 ? 8 : 6,p297_lattice_t,
+                // 8 mm outer and 9 mm centre posts leave exactly 50 mm
+                // between supports for each continuous portal beam.
+                cube([x == 0 ? 9 : 8,p297_lattice_t,
                       frame_z1-frame_z0],center=true);
         // Keep the lower portal beam above the 8 mm male lip. This frame is
         // added after the box boolean, so it must not refill the socket bay.
@@ -580,7 +579,7 @@ module p297_power_fitcheck() {
     for (c=p297_bts_centres) p297_bts_ghost(c[0],c[1]);
 }
 
-module p297_tray_rail(y,z) {
+module p297_tray_rail(y,z,floor_supported=false) {
     // Horizontal rear-service runners.  Each carrier pulls toward -X without
     // disturbing the floors below or removing the control panel.
     translate([0,y,z]) union() {
@@ -588,23 +587,69 @@ module p297_tray_rail(y,z) {
         front_dogleg = front_post_y-y;
         difference() {
             union() {
-                p297_beam_x(112,8,7);
-                // The segmented print-safe beam needs one continuous outer
-                // top spine so every tray rail is part of the box body.
-                translate([0,sign(y)*3,3]) cube([112,2,1],center=true);
+                p297_beam_x(100,8,7);
+                // The outer top spine carries the tray and stiffens the rail.
+                translate([0,sign(y)*3,3]) cube([100,2,1],center=true);
             }
-            translate([0,-sign(y)*2,2.1]) cube([104,4.2,3.4],center=true);
+            translate([0,-sign(y)*2,2.1]) cube([92,4.2,3.4],center=true);
         }
-        // Short stop/bridge overlaps the rail and the X=66.4 front wall.
-        // The rear remains open for independent tray withdrawal.
-        translate([61,0,0]) p297_beam_x(11,4,4);
-        // A 5 x 5 printable corner node removes tapered sub-line gaps where
-        // the low rail bridge enters the front wall/socket roof.
-        translate([66.4,0,0]) cube([5,5,7],center=true);
-        // Join that bridge to the nearest continuous Y=+/-47.5 front-wall
-        // vertical, independent of the open X-brace bay at this rail's Y.
-        translate([64,front_dogleg/2,0])
-            rotate([0,0,90]) p297_beam_x(abs(front_dogleg)+4,4,4);
+        // One straight bridge runs from the supported X=50 rail end to the
+        // continuous X=66.4, Y=+/-47.5 front-wall post.  The former two-leg L
+        // had a combined lower face with one unsupported end.
+        front_dx = 16.4;
+        hull() {
+            translate([50,0,0]) cube([5,5,4],center=true);
+            translate([66.4,front_dogleg,0]) cube([5,5,4],center=true);
+        }
+        hull() {
+            // 5 x 8 keeps the only horizontal starter face exactly at the
+            // 40 mm2 limit while burying the diagonal bridge transition.
+            translate([66.4,front_dogleg,-4]) cube([5,8,1],center=true);
+            translate([66.4,front_dogleg,0]) cube([9,13,1],center=true);
+        }
+    }
+    // Every ridge span is a real bridge no longer than 20 mm.  The low
+    // Mega rail can rise directly from the floor.  Higher rails remain clear
+    // of the removable carriers below: 45-degree braces approach from the
+    // outside of the carrier envelope and root in continuous side-wall posts.
+    rail_bottom = z-3.5;
+    if (floor_supported)
+        for (x=p297_grid_x)
+            translate([x,y,rail_bottom/2])
+                // 5 x 5 is the permanent slice-gate minimum island area and
+                // lands fully on the 8 mm floor-grid rib below.
+                cube([5,5,rail_bottom],center=true);
+    else {
+        // Each outer wall post carries one solid triangular web to two rail
+        // stations.  Separate braces formed a thin Y-shaped split where they
+        // diverged.  The centre post carries one straight web.
+        groups = [[-34.5,[-50,-34.5]], [0,[0]], [34.5,[34.5,50]]];
+        for (group=groups) {
+            wall_x = group[0];
+            rail_xs = group[1];
+            side_y = sign(y)*91.3;
+            max_run = max([for (x=rail_xs)
+                sqrt((side_y-y)*(side_y-y)+(wall_x-x)*(wall_x-x))]);
+            root_z = rail_bottom+2.3-max_run;
+            hull() {
+                // A 5 x 5 square section keeps every oblique slice at or above
+                // 25 mm2.  Sink it 0.2 mm into the rail for finite overlap.
+                translate([wall_x,side_y,root_z])
+                    cube([5,5,5],center=true);
+                for (x=rail_xs)
+                    translate([x,y,rail_bottom+2.3])
+                        cube([5,5,5],center=true);
+            }
+            // Pads bury the oblique transition inside existing material; the
+            // brace leaves each junction at its full 5 x 5 section.
+            translate([wall_x,side_y,root_z]) cube([9,9,5],center=true);
+            // Both upper brace levels root near the bed.  This short pier
+            // covers the triangular web's initial taper until it has fully
+            // separated from the wall face.
+            translate([wall_x,side_y,7.5]) cube([9,9,15],center=true);
+            for (x=rail_xs)
+                translate([x,y,rail_bottom+2.3]) cube([7,7,5],center=true);
+        }
     }
 }
 
@@ -615,9 +660,11 @@ module p297_logic_box() {
             // Three independent horizontal carriers, inserted from the open
             // rear.  Mega low, perfboard middle, Pi high; USB extension leads
             // rise through the common rear cable channel to the panel slot.
-            for (y=[-58,58]) p297_tray_rail(y,10);
-            for (y=[-63,63]) p297_tray_rail(y,36);
-            for (y=[-32,32]) p297_tray_rail(y,62);
+            for (y=[-58,58]) p297_tray_rail(y,10,true);
+            // Raised only enough for the outer 3-D braces to retain a
+            // >=45-degree underside from the existing X=+/-34.5 wall posts.
+            for (y=[-63,63]) p297_tray_rail(y,38);
+            for (y=[-32,32]) p297_tray_rail(y,66);
             // Continuous cable channel, aligned through all occupied floors.
             translate([-58,0,31]) cube([12,22,58],center=true);
         }
