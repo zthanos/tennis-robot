@@ -3,6 +3,7 @@
 use <p293d-arch-candidate.scad>
 use <p293-arch-tilt-release.scad>
 part="assembly";
+side_mark="";
 angle=0;
 centres=60;
 PZ=51.837363636;
@@ -31,13 +32,13 @@ module root_fillet(p,a,b,width,r=3){
 // Base hole centres/template retained; outer sole edge clipped atY240.
 // Pad widening begins above Z52 with45deg sides.
 // Seat stays Z70, so18mm PETG +2x1mm washers still fits M4x60.
-module p293g_foot(){
+module p293g_foot(mark=side_mark){
  $fn=48;
  intersection(){
  translate([250,0,180])cube([500,480,360],center=true);
  difference(){
   union(){
-   intersection(){p293d_foot();translate([250,200,7])cube([500,400,130],center=true);}
+   intersection(){p293d_foot("");translate([250,200,7])cube([500,400,130],center=true);}
    hull(){
     translate([218,220,52.05])cube([52,28,.1],center=true);
     translate([218,220,65])cube([52,40,14],center=true);
@@ -58,18 +59,20 @@ module p293g_foot(){
    yh([258,221.6,z],8.2);
    yh([258,238.4,z],10.6,3.2);
   }
+  // Outer reinforced cheek, clear of both pin/recess stations.
+  p298_mark_pos_y([258,240.1,97],0,mark);
  }
  }
 }
 // F's sloping front return is locally inboard of its main Y242 face.
 // Replace the low outboard crown lug with a12x26mm inboard-only lug.
 // Crown pins:10.9 button-head M4; threaded-root single-sided bending screened.
-module p293g_crown(){
+module p293g_crown(mark=side_mark){
  $fn=48;
  difference(){
   union(){
    difference(){
-    p293d_crown();
+    p293d_crown("");
     translate([275,60.4,200])cube([200,100,200],center=true);
    }
    translate([0,-16.4,0])along_local(116.79,156.79,12);
@@ -91,6 +94,8 @@ module p293g_crown(){
   // Mirrored actuator plane is localY-16.6; d12.6 gives >2mm to actual d8.
   for(a=[-10:1:20])screw_pose(a,[260,-16.6,220])
    translate([0,0,-45])cylinder(d=12.6,h=max_L()+75,$fn=48);
+  // Exposed outer cut face; X382 clears the crown clamp bores.
+  p298_mark_pos_y([382,10.5,245],0,mark);
  }
 }
 module along_local(s0,s1,w){
@@ -99,7 +104,7 @@ module along_local(s0,s1,w){
 }
 // Same knee solid, installed6.4mm inboard. Crown follows it unchanged.
 // Only the end beam is shortened6.4mm; its end bolt follows the spigot.
-module p293g_crossbar_end(){
+module p293g_crossbar_end(mark=side_mark){
  $fn=48;
  difference(){
   union(){
@@ -107,6 +112,8 @@ module p293g_crossbar_end(){
    for(y=[146,154])translate([390,y,245])cube([20,9,26],center=true);
   }
   for(y=[112,195.2,146,154])zh([390,y,245]);
+  // Front tube wall between bolt stations.
+  p298_mark_pos_x([400.1,175,245],mark);
  }
 }
 module p293g_arch_assembly(){
@@ -119,7 +126,8 @@ module p293g_arch_assembly(){
  }
  translate([390,0,245])rotate([0,0,90])arch_crossbar_center();
  for(side=[-1,1])translate([390,side*100,245])rotate([0,0,90])joint_sleeve_x([20,26],48);
- translate([390,0,354])rotate([0,0,90])joint_sleeve_x([24,20],44);
+ translate([390,0,354])rotate([0,0,90])
+  joint_sleeve_x([24,20],44,[-11,11]);
  p293d_oak_mount();
  p293g_foot();mirror([0,1,0])p293g_foot();
 }

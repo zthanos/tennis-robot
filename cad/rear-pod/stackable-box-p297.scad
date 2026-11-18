@@ -720,6 +720,10 @@ module p297_pi5_carrier() {
 }
 
 module p297_collar() {
+    assert(p297_insert_depth >= 5.7+1,
+        "RX-M3x5.7 collar pocket needs at least 1 mm bottom allowance");
+    assert((8-p297_insert_hole)/2 >= 1.6,
+        "collar insert column must retain at least 1.6 mm radial wall");
     difference() {
         union() {
             // At only 24 mm high the lattice produced dozens of tiny slicer
@@ -727,6 +731,8 @@ module p297_collar() {
             // four-line PETG shell and retain the common socket below.
             p297_open_box(p297_collar_h,false,false,false,false,false,false);
             // Panel lands align to the four existing Ø8.6 panel holes.
+            // Their Ø16 OD leaves 6 mm radial PETG around the Ø4.0
+            // RX-M3x5.7 heat-set pocket (minimum required: 1.6 mm).
             for (x=[-58,58],y=[-56,56]) translate([x,y,p297_collar_h-4])
                 cylinder(d=16,h=4,$fn=36);
             // Each panel land has a continuous support-free path to the side
@@ -747,8 +753,12 @@ module p297_collar() {
                     cube([10,40,p297_floor],center=true);
             }
         }
-        for (x=[-58,58],y=[-56,56]) translate([x,y,p297_collar_h-6])
-            cylinder(d=m4_clear,h=8,$fn=32);
+        // Ruthex RX-M3x5.7: Ø4.0 recommended printed bore, 5.7 mm insert.
+        // A 6.7 mm blind pocket provides the requested 1 mm bottom allowance;
+        // it opens only at the panel face and leaves solid material below.
+        for (x=[-58,58],y=[-56,56])
+            translate([x,y,p297_collar_h-p297_insert_depth])
+                cylinder(d=p297_insert_hole,h=p297_insert_depth+0.1,$fn=32);
         // The existing panel has ribs down to local Z-20.  Collar material is
         // removed against the exact released panel solid, leaving the panel
         // lands in its existing holes but no scene-check overlap.

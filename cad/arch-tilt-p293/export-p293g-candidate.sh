@@ -3,12 +3,21 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
 printability_check="$here/../check-stl-printability.sh"
+right_source=""
+trap '[[ -z "$right_source" ]] || rm -f -- "$right_source"' EXIT
 mkdir -p "$here/print-arch" "$here/parked-tilt"
 for spec in "p293g_foot:foot:y:0" "p293g_crown:crown:z:52.8" "p293g_crossbar_end:crossbar_end:y:0"; do
   IFS=: read -r part name axis height <<<"$spec"
-  "$bin" --backend=manifold -D "part=\"$part\"" -o "$here/print-arch/${name}_L.stl" "$here/p293g-tilt-candidate.scad"
-  "$bin" --backend=manifold -D "input_file=\"$here/print-arch/${name}_L.stl\"" \
+  "$bin" --backend=manifold -D "part=\"$part\"" -D 'side_mark="L"' \
+    -o "$here/print-arch/${name}_L.stl" "$here/p293g-tilt-candidate.scad"
+  right_source="$(mktemp "$here/.right-marked.XXXXXX.stl")"
+  rm -f "$right_source"
+  "$bin" --backend=manifold -D "part=\"$part\"" -D 'side_mark="R"' \
+    -o "$right_source" "$here/p293g-tilt-candidate.scad"
+  "$bin" --backend=manifold -D "input_file=\"$right_source\"" \
     -D "axis=\"$axis\"" -D "bed_height=$height" -o "$here/print-arch/${name}_R.stl" "$here/p296b-mirror-print.scad"
+  rm -f "$right_source"
+  right_source=""
   if [[ "$name" == "foot" ]]; then
     canonical_mesh="$(mktemp "$here/.foot-canonical.XXXXXX.stl")"
     rm -f "$canonical_mesh"

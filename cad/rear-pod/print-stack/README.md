@@ -60,7 +60,9 @@ Installed datums are measured from ground/chassis coordinates:
 
 Mega and Pi USB extension leads rise in the continuous rear cable channel and
 exit through the existing 24 x 8 panel slot.  The panel keeps its four existing
-Ø8.6 locating holes; M4 washers/nylocs clamp it to the collar.
+Ø8.6 locating holes.  Four M3 screws with washers of at least Ø12 mm pass
+through them into blind Ø4.0 x 6.7 mm seats for Ruthex RX-M3x5.7 inserts in
+the collar; no inaccessible nut is required.
 
 Mounting patterns used by the FIT-CHECK carriers:
 
@@ -206,7 +208,9 @@ the measured 36 mm BTS export, not the former 20 mm placeholder.
 - 16 x Ruthex RX-M3x5.7 heat-set inserts (four per seam);
 - 16 x M3x10 socket-head screws and M3 washers;
 - 4 x existing-base M4x20 screws, washers and nylocs for the adapter;
-- 4 x M4x20 screws, broad washers and nylocs for the existing panel holes;
+- 4 x M3 screws, washers Ø>=12 mm and Ruthex RX-M3x5.7 inserts for the
+  existing panel holes; screw length is selected to give full insert engagement
+  without bottoming in the 6.7 mm blind seat;
 - 16 x M3x30 board screws, 32 x washers and 16 x nylocs for the four BTS7960
   boards; the 22 mm standoffs are integrated in the power-box STL;
 - 4 x M3 screws/spacers for the measured Mega acrylic case;

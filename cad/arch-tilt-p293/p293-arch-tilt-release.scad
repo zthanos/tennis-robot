@@ -79,13 +79,13 @@ module joint_tongue_x(x0, dir=1, yz=[34,26], len=24) {
     cube([len,yz[0]-7.2,6.4],center=true);
 }
 
-module joint_sleeve_x(yz=[34,26], len=48) {
+module joint_sleeve_x(yz=[34,26], len=48, holes=[-12,12]) {
   difference() {
     scale([1,(yz[0]-7.0)/2,(yz[1]-7.0)/2])
       rotate([0,90,0]) cylinder(d=2,h=len,center=true,$fn=47);
     scale([1,(yz[0]-13.0)/2,(yz[1]-13.0)/2])
       rotate([0,90,0]) cylinder(d=2,h=len+2,center=true,$fn=47);
-    joint_holes_x([-12,12],yz);
+    joint_holes_x(holes,yz);
   }
 }
 
@@ -403,7 +403,8 @@ module arch_release_assembly(include_lands=true) {
   for(side=[-1,1]) translate([390,side*100,245]) rotate([0,0,90]) joint_sleeve_x(arch_section,48);
   for(side=[-1,1]) translate([390,side*164,245]) rotate([0,0,side>0?90:-90]) arch_crossbar_end();
   for(side=[-1,1]) translate([390,side*80,mast_z1]) rotate([0,0,side>0?90:-90]) lidar_crossbar_half();
-  translate([390,0,mast_z1]) rotate([0,0,90]) joint_sleeve_x([24,20],44);
+  translate([390,0,mast_z1]) rotate([0,0,90])
+    joint_sleeve_x([24,20],44,[-11,11]);
   translate([408,0,305]) rotate([0,50,0]) oak_universal_plate();
 }
 
@@ -434,7 +435,8 @@ else if(part=="arch_foot_x300") arch_foot_x300();
 else if(part=="arch_leg_lower") on_open_end(seg_len(arch_base,leg_split())) arch_leg_lower();
 else if(part=="arch_leg_upper") on_open_end(seg_len(leg_split(),arch_top)) arch_leg_upper();
 else if(part=="arch_joint_sleeve") on_open_end(48) joint_sleeve_x(arch_section,48);
-else if(part=="sensor_joint_sleeve") on_open_end(44) joint_sleeve_x([24,20],44);
+else if(part=="sensor_joint_sleeve") on_open_end(44)
+  joint_sleeve_x([24,20],44,[-11,11]);
 else if(part=="arch_brace_x240") on_open_end(seg_len([240,228,76],[390,228,245])) arch_brace(seg_len([240,228,76],[390,228,245]));
 else if(part=="arch_brace_x300") on_open_end(seg_len([300,228,77],[390,228,245])) arch_brace(seg_len([300,228,77],[390,228,245]));
 else if(part=="arch_crossbar_center") on_open_end(200) arch_crossbar_center();

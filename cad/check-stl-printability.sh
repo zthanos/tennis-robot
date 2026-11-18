@@ -53,9 +53,17 @@ case "$(basename "$mesh")" in
                  121.5:122.3 125.3:128.3; do
       slice_args+=(--allow-z "$range:oblique edge after support-free rotation")
     done
+    # The 0.6 mm handed glyph crosses the foot's required support-free print
+    # rotation obliquely.  Only its changing entry/exit tips are sub-limit;
+    # the cheek left behind the engraving is 7.6 mm thick.
+    slice_args+=(--allow-z "95.3:95.5:engraved L/R entry edge")
+    slice_args+=(--allow-z "107.3:107.7:engraved L/R exit edge")
+    slice_args+=(--allow-z "112.3:112.5:engraved R bowl edge")
     ;;
   crown_L.stl) slice_args+=(--allow-z "18.9:19.9:transverse-bore exit edge") ;;
-  crown_R.stl) slice_args+=(--allow-z "32.7:33.9:transverse-bore exit edge") ;;
+  crown_R.stl)
+    slice_args+=(--allow-z "5.9:6.5:engraved R bowl edge")
+    slice_args+=(--allow-z "32.7:33.9:transverse-bore exit edge") ;;
   mast_cap_L.stl|mast_cap_R.stl)
     slice_args+=(--allow-z "3.9:8.1:elliptical spigot edge")
     slice_args+=(--allow-z "17.5:18.3:elliptical spigot edge")

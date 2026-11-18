@@ -1,6 +1,7 @@
 // P2-93e refinement of P2-93d. Existing chassis holes; tilt unchanged.
 use <p293-arch-tilt-release.scad>
 part="assembly";
+side_mark="";
 $fn=48;
 m4d=4.6;
 K=[258,120]; C=[390,245];
@@ -16,8 +17,26 @@ module along(s0,s1,w=20,h=26){
 }
 module xzpoly(points,w){rotate([90,0,0]) linear_extrude(height=w,center=true) polygon(points);}
 
+// P2-98 handed-part engraving.  The R glyph is pre-mirrored because the
+// export pipeline mirrors the complete positive-hand mesh afterwards.
+// A 0.7 mm cutter starting 0.1 mm outside the face leaves a 0.6 mm engraving.
+module p298_mark_2d(label=side_mark){
+ if(label=="R") mirror([1,0,0])
+  text(label,size=8,halign="center",valign="center",font="Liberation Sans:style=Bold");
+ else if(label=="L")
+  text(label,size=8,halign="center",valign="center",font="Liberation Sans:style=Bold");
+}
+module p298_mark_pos_y(p,angle=0,label=side_mark){
+ if(label=="L"||label=="R") translate(p) rotate([0,-angle,0]) rotate([90,0,0])
+  linear_extrude(height=0.7) p298_mark_2d(label);
+}
+module p298_mark_pos_x(p,label=side_mark){
+ if(label=="L"||label=="R") translate(p) rotate([0,-90,0]) rotate([0,0,90])
+  linear_extrude(height=0.7) p298_mark_2d(label);
+}
+
 // Positive side installed coordinates. Mirrored as a complete part on -Y.
-module p293d_foot(){
+module p293d_foot(mark=side_mark){
  difference(){
   union(){
    hull(){
@@ -46,16 +65,20 @@ module p293d_foot(){
   // Real open socket, not a QA exclusion: the knee bottoms at Z72.
   translate([258,228,100]) cube([26.8,20.8,56],center=true);
   for(z=[80,114]) yhole([258,228,z]);
+  // Outer cheek, away from every bore/socket/contact face.
+  p298_mark_pos_y([258,244.5,92],0,mark);
  }
 }
 
 // Solid 26 x 20 knee/arm, printed with the XZ load plane on the bed.
 // Separate crown ports: 0.2 mm end clearance; two through-M4 carry the joint.
-module p293d_knee(){
+module p293d_knee(mark=side_mark){
  difference(){
   xzpoly_knee();
   for(z=[80,114]) yhole([258,0,z]);
   for(s=[L-55,L-35]) yhole(station(s));
+  // Exposed side of the sloping arm, outside both pinned ends.
+  p298_mark_pos_y(station(90)+[0,10.1,0],theta,mark);
  }
 }
 
@@ -71,7 +94,7 @@ module xzpoly_knee(){
  }
 }
 
-module p293d_crown(){
+module p293d_crown(mark=side_mark){
  difference(){
   union(){
    translate([390,0,245]) cube([26,32.8,26],center=true);
@@ -91,11 +114,13 @@ module p293d_crown(){
   // constant 1.18 mm shell there.
   for(z=[239,251]) yhole([390,0,z],l=34.8);
   zhole([390,-26.4,245]);
+  // Outer solid face; X382 clears the two central clamp bores.
+  p298_mark_pos_y([382,16.5,245],0,mark);
  }
 }
 
 // Y100..211.6 ends against the crown face, not inside the crown.
-module p293d_crossbar_end(){
+module p293d_crossbar_end(mark=side_mark){
  difference(){
   union(){
    translate([390,155.8,245]) rotate([0,0,90]) tube_x(111.6,[20,26]);
@@ -104,11 +129,13 @@ module p293d_crossbar_end(){
   zhole([390,112,245]);
   zhole([390,201.6,245]);
   for(y=[146,154]) zhole([390,y,245]);
+  // Front tube wall between the bolt stations.
+  p298_mark_pos_x([400.1,175,245],mark);
  }
 }
 
 // Mast starts above the beam at Z258; integral shoe is bolted through it.
-module p293d_mast(){
+module p293d_mast(mark=side_mark){
  difference(){
   union(){
    translate([390,150,262]) cube([30,30,8],center=true);
@@ -117,19 +144,23 @@ module p293d_mast(){
   // Socket-head screws fit inside the open 18 mm mast lumen; no top washer.
   for(y=[146,154]) zhole([390,y,262]);
   xhole([390,150,336]);
+  // Front tube wall, clear of the shoe and cap pin.
+  p298_mark_pos_x([402.1,150,305],mark);
  }
 }
 
-module p293d_lidar_half(){
+module p293d_lidar_half(mark=side_mark){
  difference(){
   translate([390,69,354]) rotate([0,0,90]) tube_x(138,[24,20],3);
   zhole([390,11,354]);
   zhole([390,128,354]);
   xhole([390,35,354]);
+  // Front wall, clear of the OAK hole at Y35 and both sleeve pins.
+  p298_mark_pos_x([402.1,78,354],mark);
  }
 }
 
-module p293d_mast_cap(){
+module p293d_mast_cap(mark=side_mark){
  difference(){
   union(){
    translate([390,150,354]) cube([24,24,20],center=true);
@@ -152,6 +183,8 @@ module p293d_mast_cap(){
   // the free underside up to Z348.5; two printable rails below are added
   // outside this difference and support the replacement chord.
   translate([390,128,343.1]) cube([20,20,10.8],center=true);
+  // Outboard body face, not the mast/spigot contact surfaces.
+  p298_mark_pos_y([390,162.1,354],0,mark);
  }
  // Two 1.6 mm rails sit just outside the Ø4.6 bore (inner edges at X+/-2.4),
  // remain inside the ellipse at Z348.3, and overlap the cap over Y138..140.
@@ -203,7 +236,8 @@ module p293d_arch_assembly(include_feet=true){
  }
  translate([390,0,245]) rotate([0,0,90]) arch_crossbar_center();
  for(side=[-1,1]) translate([390,side*100,245]) rotate([0,0,90]) joint_sleeve_x([20,26],48);
- translate([390,0,354]) rotate([0,0,90]) joint_sleeve_x([24,20],44);
+ translate([390,0,354]) rotate([0,0,90])
+  joint_sleeve_x([24,20],44,[-11,11]);
  p293d_oak_mount();
 }
 
