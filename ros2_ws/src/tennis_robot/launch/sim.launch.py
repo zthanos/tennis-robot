@@ -139,10 +139,10 @@ def generate_launch_description():
     # option-a-launch variants were archived on 2026-08-27 — in those, the
     # launcher frame cut through the intake mouth and the two could not coexist.
     enable_flywheel = os.getenv(
-        "ROBOT_ENABLE_FLYWHEEL", "true",
+        "ROBOT_ENABLE_FLYWHEEL", "false",
     ).lower() in {"1", "true", "yes"}
     enable_intake = os.getenv(
-        "ROBOT_ENABLE_INTAKE", "true",
+        "ROBOT_ENABLE_INTAKE", "false",
     ).lower() in {"1", "true", "yes"}
     skip_control_panel = bench_minimal or os.getenv(
         "SIM_SKIP_CONTROL_PANEL", "false"

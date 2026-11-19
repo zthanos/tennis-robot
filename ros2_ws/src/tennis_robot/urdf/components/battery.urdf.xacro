@@ -40,4 +40,66 @@
       </visual>
     </link>
   </xacro:macro>
+
+  <!-- P2-99c (c): power packs of the active design (body F / rear pod).
+       Parkside X20V Team 4 Ah, 0.65 kg each (docs/mechanism/
+       shared-flywheel-intake-launcher-phase2-v3-print-release-el.md §Γ;
+       NOT purchased, NOT weighed). Position: accepted P2-70 reservation
+       parkside_center = [-198.5, +-115.5, 98.5] mm (cad/rear-pod/params-v2.scad);
+       envelope = parkside_battery_provisional 125 x 59 x 59 mm (unmeasured).
+       NOTE: P2-97 left the energy spacer empty until the real packs/docks are
+       measured, so the final pack location is still OPEN.
+       UGREEN power bank 115 x 45 x 45 mm (measured, P2-90), 0.309 kg (v3 bench
+       contract), at ugreen_center = [-209, 34, 258] mm (params-v2.scad). -->
+  <xacro:macro name="cad_mass_box" params="name parent cad_to_base_x cad_to_base_z x y z sx sy sz mass material">
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${name}_link"/>
+      <origin xyz="${x * 0.001 + cad_to_base_x} ${y * 0.001} ${z * 0.001 + cad_to_base_z}" rpy="0 0 0"/>
+    </joint>
+    <link name="${name}_link">
+      <inertial>
+        <mass value="${mass}"/>
+        <inertia ixx="${mass / 12.0 * ((sy * 0.001) ** 2 + (sz * 0.001) ** 2)}" ixy="0" ixz="0"
+                 iyy="${mass / 12.0 * ((sx * 0.001) ** 2 + (sz * 0.001) ** 2)}" iyz="0"
+                 izz="${mass / 12.0 * ((sx * 0.001) ** 2 + (sy * 0.001) ** 2)}"/>
+      </inertial>
+      <collision name="${name}_col">
+        <geometry><box size="${sx * 0.001} ${sy * 0.001} ${sz * 0.001}"/></geometry>
+      </collision>
+      <visual name="${name}_vis">
+        <geometry><box size="${sx * 0.001} ${sy * 0.001} ${sz * 0.001}"/></geometry>
+        <material name="${material}"/>
+      </visual>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="power_packs" params="parent cad_to_base_x cad_to_base_z">
+    <xacro:cad_mass_box name="parkside_left" parent="${parent}" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x="-198.5" y="115.5" z="98.5" sx="125" sy="59" sz="59" mass="0.65" material="basket_gray"/>
+    <xacro:cad_mass_box name="parkside_right" parent="${parent}" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x="-198.5" y="-115.5" z="98.5" sx="125" sy="59" sz="59" mass="0.65" material="basket_gray"/>
+    <xacro:cad_mass_box name="ugreen" parent="${parent}" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x="-209" y="34" z="258" sx="115" sy="45" sz="45" mass="0.309" material="electronics_blue"/>
+  </xacro:macro>
+
+  <!-- P2-99c (c) MASS PLACEHOLDER for the shared tilting flywheel module until
+       step (d1b) models it: v3 bench P2-40 module 4.610 kg (frame 2.852 +
+       2 x 0.879 wheels) + tilt actuator 0.095 kg (bench P16 surrogate; the
+       FIT0186+Tr8 mass is unmeasured), at the module CoM at 0 deg:
+       CAD [426.5, 0, 63.3] mm (pivot [387, 0, 51.8] + bench offsets).
+       No visual, no collision: it only keeps the whole-robot mass/CoG right. -->
+  <xacro:macro name="shared_flywheel_mass_placeholder" params="parent cad_to_base_x cad_to_base_z">
+    <joint name="shared_flywheel_mass_placeholder_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="shared_flywheel_mass_placeholder_link"/>
+      <origin xyz="${0.4265 + cad_to_base_x} 0 ${0.0633 + cad_to_base_z}" rpy="0 0 0"/>
+    </joint>
+    <link name="shared_flywheel_mass_placeholder_link">
+      <inertial>
+        <mass value="4.705"/>
+        <inertia ixx="0.030" ixy="0" ixz="0" iyy="0.012" iyz="0" izz="0.035"/>
+      </inertial>
+    </link>
+  </xacro:macro>
 </robot>

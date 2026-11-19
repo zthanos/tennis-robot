@@ -30,6 +30,9 @@
   <material name="body_dark_grey">
     <color rgba="0.20 0.20 0.22 1"/>
   </material>
+  <material name="frame_blue_v3">
+    <color rgba="0.16 0.48 0.78 1.0"/>
+  </material>
   <material name="body_terracotta">
     <color rgba="0.76 0.42 0.29 1.0"/>
   </material>

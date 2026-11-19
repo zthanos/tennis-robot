@@ -35,21 +35,24 @@
   <xacro:arg name="functional_shift_x" default="-0.100"/>
   <xacro:arg name="intake_cad_alignment_x" default="-0.070"/>
   <xacro:arg name="battery_center_x" default="-0.143"/>
-  <xacro:arg name="enable_compact_electronics" default="true"/>
+  <xacro:arg name="enable_compact_electronics" default="false"/>
   <!-- ONE robot: the compact CAD machine. The baseline / option-a-* packaging
        variants were archived 2026-08-27; components/archive/ keeps their xacro. -->
-  <xacro:arg name="enable_compact_mechanics" default="true"/>
+  <xacro:arg name="enable_compact_mechanics" default="false"/>
   <xacro:arg name="enable_basket_raised_holders" default="false"/>
   <xacro:arg name="intake_parent_link" default="compact_bridge_link"/>
-  <!-- The compact CAD machine permanently carries the correctly aligned
-       intake AND flywheel launcher together, so both default ON: this is the
-       machine we test. Set the env overrides only to isolate one of them. -->
-  <xacro:arg name="enable_intake" default="true"/>
-  <xacro:arg name="enable_flywheel" default="true"/>
+  <!-- P2-99c (c+d1a): the legacy dual-wheel intake (cheeks, ramp, bridge,
+       hood, basket rails) and the fixed +20 deg launcher are NOT part of the
+       active design and default OFF. Their xacro stays only until step (d1b)
+       replaces them with the shared tilting flywheel; the env overrides
+       ROBOT_ENABLE_INTAKE / ROBOT_ENABLE_FLYWHEEL re-enable them for legacy
+       studies only. -->
+  <xacro:arg name="enable_intake" default="false"/>
+  <xacro:arg name="enable_flywheel" default="false"/>
   <xacro:arg name="flywheel_max_vel" default="320.0"/>
   <xacro:arg name="flywheel_nip_gap" default="0.058"/>
-  <xacro:arg name="basket_empty_mass" default="1.012"/>
-  <xacro:arg name="basket_payload_mass" default="0.0"/>
+  <xacro:arg name="basket_empty_mass" default="1.70"/>
+  <xacro:arg name="basket_payload_mass" default="2.565"/>
   <xacro:arg name="basket_lift_travel" default="0.100"/>
   <xacro:arg name="basket_lift_overtravel" default="0.010"/>
   <xacro:arg name="basket_launch_tilt_rad" default="0.0"/>
@@ -100,10 +103,26 @@
   <xacro:arg name="basket_hood_rear_clearance_z" default="0.120"/>
   <xacro:arg name="basket_hood_front_clearance_z" default="0.135"/>
 
-  <xacro:property name="chassis_x" value="0.92"/>
-  <xacro:property name="chassis_y" value="0.58"/> 
-  <xacro:property name="chassis_z" value="0.014"/> 
-  <xacro:property name="chassis_mass" value="7.2"/> 
+  <!-- P2-99c (c): whole-robot mass model = v3 bench (the only documented
+       whole-robot mass model of the active design; nothing is weighed yet).
+       Its 10.0 kg lump at CAD (100, 0, 120) mm is split: drive wheels,
+       drive motors and the C1 are their own links, base_link keeps the rest
+       at the CoM that preserves the lump's CoM. -->
+  <xacro:property name="v3_lump_mass" value="10.0"/>
+  <xacro:property name="v3_lump_com_mm" value="${[100.0, 0.0, 120.0]}"/>
+  <xacro:property name="wheel_mass_each" value="0.25"/>
+  <xacro:property name="motor_mass_each" value="0.65"/>
+  <xacro:property name="c1_mass" value="0.110"/>
+  <xacro:property name="wheel_axle_cad_mm" value="${[117.5, 0.0, 85.0]}"/>
+  <xacro:property name="c1_com_cad_mm" value="${[-198.5, 110.0, 390.0 + 41.3 / 2.0]}"/>
+  <xacro:property name="drive_separate_mass" value="${4.0 * (wheel_mass_each + motor_mass_each)}"/>
+  <xacro:property name="base_mass" value="${v3_lump_mass - drive_separate_mass - c1_mass}"/>
+  <xacro:property name="base_com_x_mm"
+      value="${(v3_lump_mass * v3_lump_com_mm[0] - drive_separate_mass * wheel_axle_cad_mm[0] - c1_mass * c1_com_cad_mm[0]) / base_mass}"/>
+  <xacro:property name="base_com_y_mm"
+      value="${(v3_lump_mass * v3_lump_com_mm[1] - c1_mass * c1_com_cad_mm[1]) / base_mass}"/>
+  <xacro:property name="base_com_z_mm"
+      value="${(v3_lump_mass * v3_lump_com_mm[2] - drive_separate_mass * wheel_axle_cad_mm[2] - c1_mass * c1_com_cad_mm[2]) / base_mass}"/>
   <!-- base_link is the chassis plate centre. The plate top is 52 mm above
        ground, below the 85 mm motor-shaft/wheel-axle centreline. -->
   <xacro:property name="base_link_height" value="0.045"/>
@@ -115,14 +134,18 @@
        symmetrically about the chassis center (±wheel_base_x). All four share the
        same wheel_z and radius so their ground contacts are coplanar and the
        (now level, un-pitched) robot sits flat. Casters removed. -->
-  <xacro:property name="wheel_base_x" value="0.33"/>  <!-- rear at -x, front at +x; wheelbase = 0.66 m -->
-  <xacro:property name="wheel_y" value="0.35"/>
+  <!-- P2-99c (c): v3 axles at CAD X-65 / X300 (modular-chassis-v3.scad),
+       i.e. +-0.1825 about base_link (D1); wheelbase 0.365 m. Wheel centres
+       Y+-297 (track 0.594 m), tyre width 83 mm. Radius 85 mm is the reference
+       value (loaded radius 82..90 mm unmeasured). -->
+  <xacro:property name="wheel_base_x" value="0.1825"/>
+  <xacro:property name="wheel_y" value="0.297"/>
   <xacro:property name="wheel_radius" value="0.085"/>  <!-- 170 mm diameter (HPI Dirt Buster Block) -->
   <xacro:property name="wheel_z" value="${wheel_radius - base_link_height}"/>
-  <xacro:property name="wheel_width" value="0.08"/>
-  <xacro:property name="wheel_mass" value="0.25"/>
+  <xacro:property name="wheel_width" value="0.083"/>
+  <xacro:property name="wheel_mass" value="${wheel_mass_each}"/>
   <xacro:property name="wheel_separation" value="${2.0 * wheel_y}"/>
-  <xacro:property name="motor_y" value="${chassis_y / 2.0 - 0.05}"/>
+  <xacro:property name="motor_y" value="0.220"/>  <!-- FIT0403 inline on the v3 rails, Y+-220 -->
   <xacro:property name="motor_radius" value="0.03"/>
   <xacro:property name="motor_length" value="0.10"/>
 
@@ -254,11 +277,13 @@
   <xacro:property name="max_angular_acceleration" value="4.0"/>
 
   <xacro:tennis_robot_base
-      chassis_x="${chassis_x}"
-      chassis_y="${chassis_y}"
-      chassis_z="${chassis_z}"
       base_link_height="${base_link_height}"
-      chassis_mass="${chassis_mass}"
+      cad_to_base_x="${cad_to_base_x}"
+      cad_to_base_z="${cad_to_base_z}"
+      base_mass="${base_mass}"
+      base_com_x_mm="${base_com_x_mm}"
+      base_com_y_mm="${base_com_y_mm}"
+      base_com_z_mm="${base_com_z_mm}"
       entry_beam_x="${ir_x}"
       entry_beam_z="${ir_z}"
       entry_beam_width="${2.0 * ir_y}"/>
@@ -266,13 +291,13 @@
   <!-- Motors are fixed to the chassis top. Each shaft shares its x/z centre
        with the corresponding wheel joint; only y differs along the shaft. -->
   <xacro:drive_motor side="rear_left" y="${motor_y}" motor_x="-${wheel_base_x}"
-      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="0.65"/>
+      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="${motor_mass_each}"/>
   <xacro:drive_motor side="rear_right" y="-${motor_y}" motor_x="-${wheel_base_x}"
-      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="0.65"/>
+      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="${motor_mass_each}"/>
   <xacro:drive_motor side="front_left" y="${motor_y}" motor_x="${wheel_base_x}"
-      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="0.65"/>
+      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="${motor_mass_each}"/>
   <xacro:drive_motor side="front_right" y="-${motor_y}" motor_x="${wheel_base_x}"
-      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="0.65"/>
+      shaft_z="${wheel_z}" radius="${motor_radius}" length="${motor_length}" mass="${motor_mass_each}"/>
 
   <xacro:drive_wheel
       side="rear_left"
@@ -423,8 +448,10 @@
       launch_tilt_rad="${float($(arg basket_launch_tilt_rad))}"
       floor_thickness="${float($(arg basket_floor_thickness))}"
       cad_support_details="$(arg basket_cad_support_details)"/>
-  <xacro:battery_pack parent="base_link"
-      center_x="${float($(arg battery_center_x))}"/>
+  <xacro:power_packs parent="base_link"
+      cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
+  <xacro:shared_flywheel_mass_placeholder parent="base_link"
+      cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
 
   <xacro:if value="$(arg enable_compact_electronics)">
     <xacro:compact_electronics_packaging
@@ -446,6 +473,7 @@
       xyz="${lidar_xyz}"
       rpy="${lidar_rpy}"
       scan_offset_z="${lidar_sensor_scan_offset}"
+      mass="${c1_mass}"
       update_rate="${sensor_update_rate}"/>
   <!-- P2-97 electronics tower + P2-99b panel/collar and C1 pedestal. -->
   <xacro:p297_tower parent="base_link"

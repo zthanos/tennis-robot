@@ -4,8 +4,9 @@ schema_version: collection-route/v2
 mechanical:
   capture_half_width_m: 0.17
   ball_radius_m: 0.033
-  robot_length_m: 0.8
-  robot_width_m: 0.6
+  # P2-99c (c): active design envelope (nav2 footprint): 0.8495 x 0.677 m.
+  robot_length_m: 0.85
+  robot_width_m: 0.68
   funnel_length_m: 0.4
   funnel_width_m: 0.34
   safety_margin_m: 0.05

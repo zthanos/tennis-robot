@@ -4,7 +4,8 @@
 # NavigateToPose ball collection. Controller output is remapped to /cmd_vel_nav
 # so twist_mux arbitrates it (see launch/navigation.launch.py).
 #
-# Robot footprint ~0.92 x 0.58 m (half extents 0.46 x 0.29).
+# Robot footprint (P2-99c c): body F + v3 tyres + shared-flywheel discs, in base_link:
+# X -0.425 (F rear arc) .. +0.4245 (flywheel discs at 0 deg), Y +-0.3385 (tyre outer faces).
 
 bt_navigator:
   ros__parameters:
@@ -156,7 +157,7 @@ local_costmap:
       width: 6
       height: 6
       resolution: 0.05
-      footprint: "[[0.46, 0.29], [0.46, -0.29], [-0.46, -0.29], [-0.46, 0.29]]"
+      footprint: "[[0.4245, 0.3385], [0.4245, -0.3385], [-0.425, -0.3385], [-0.425, 0.3385]]"
       plugins: ["obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -188,7 +189,7 @@ global_costmap:
       robot_base_frame: base_link
       resolution: 0.05
       track_unknown_space: true
-      footprint: "[[0.46, 0.29], [0.46, -0.29], [-0.46, -0.29], [-0.46, 0.29]]"
+      footprint: "[[0.4245, 0.3385], [0.4245, -0.3385], [-0.425, -0.3385], [-0.425, 0.3385]]"
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"

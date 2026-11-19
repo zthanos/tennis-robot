@@ -28,10 +28,13 @@ VALIDATOR_PATH = ROOT / "scripts/validate_compact_mechanics.py"
 CONTRACT = ROOT / "config/compact_mechanical_contract.json"
 MEASUREMENTS = ROOT / "config/compact_cad_measurements.json"
 
-pytestmark = pytest.mark.skipif(
-    shutil.which("xacro") is None or not os.environ.get("AMENT_PREFIX_PATH"),
-    reason="ROS 2 environment not sourced (need xacro + AMENT_PREFIX_PATH)",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        shutil.which("xacro") is None or not os.environ.get("AMENT_PREFIX_PATH"),
+        reason="ROS 2 environment not sourced (need xacro + AMENT_PREFIX_PATH)",
+    ),
+    pytest.mark.skip(reason="P2-99c (c+d1a): the legacy compact intake/launcher machine is no longer the generated robot (v3 chassis, body F, no intake/fixed launcher); it is replaced by the shared tilting flywheel in step (d1b). Retired, not deleted, pending that step."),
+]
 
 spec = importlib.util.spec_from_file_location("compact_validator", VALIDATOR_PATH)
 validator = importlib.util.module_from_spec(spec)

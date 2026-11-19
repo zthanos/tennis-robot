@@ -652,11 +652,13 @@ def main() -> int:
         "ROBOT_INTAKE_CAD_ALIGNMENT_X_M", str(offsets["intake_cad_alignment_x_m"])
     )
     battery_center_x = os.getenv("ROBOT_BATTERY_CENTER_X_M", "-0.255")
-    enable_compact_electronics = os.getenv("ROBOT_ENABLE_COMPACT_ELECTRONICS", "true")
-    enable_compact_mechanics = "true"
+    enable_compact_electronics = os.getenv("ROBOT_ENABLE_COMPACT_ELECTRONICS", "false")
+    # P2-99c (c+d1a): the legacy compact intake/launcher machine is off by
+    # default; ROBOT_ENABLE_COMPACT_MECHANICS=true restores it for legacy studies.
+    enable_compact_mechanics = os.getenv("ROBOT_ENABLE_COMPACT_MECHANICS", "false")
     intake_parent_link = "compact_bridge_link"
-    enable_flywheel = os.getenv("ROBOT_ENABLE_FLYWHEEL", "true")
-    enable_intake = os.getenv("ROBOT_ENABLE_INTAKE", "true")
+    enable_flywheel = os.getenv("ROBOT_ENABLE_FLYWHEEL", "false")
+    enable_intake = os.getenv("ROBOT_ENABLE_INTAKE", "false")
     # The basket entry hood is the intake handoff mouth. The mechanical concept
     # puts it "open or released" in the LAUNCH position (see
     # docs/archive/mechanism/flywheel-launcher/flywheel-launcher-exploration-el.md), which is also what
@@ -667,7 +669,7 @@ def main() -> int:
     # bin plus 0.087 kg fixed relieved hood/support portal (in compact Xacro).
     # plus 45 ITF-range balls at 57 g each. Set payload to 0 for simulations
     # that spawn the balls as individual Gazebo models, avoiding double count.
-    basket_empty_mass = os.getenv("ROBOT_BASKET_EMPTY_MASS_KG", "1.012")
+    basket_empty_mass = os.getenv("ROBOT_BASKET_EMPTY_MASS_KG", "1.70")
     basket_payload_mass = os.getenv("ROBOT_BASKET_PAYLOAD_MASS_KG", "2.565")
     basket_tilt_deg = float(os.getenv("BASKET_LAUNCH_TILT_DEG", "0.0"))
     basket_launch_tilt_rad = f"{math.radians(basket_tilt_deg):.9f}"

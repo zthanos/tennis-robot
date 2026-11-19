@@ -81,12 +81,8 @@
     </joint>
 
     <link name="panels_link">
-      <!-- Mass/CoG deliberately unchanged in step (a): the old 2.5 kg lump
-           stays at base_link (0, 0, 0.007). Step (c) replaces it. -->
-      <inertial>
-        <origin xyz="${-cad_to_base_x} 0 ${0.007 - cad_to_base_z}" rpy="0 0 0"/>
-        <mass value="2.5"/> <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
-      </inertial>
+      <!-- No own mass (P2-99c step c): the shell is inside the v3 bench
+           10 kg lump carried by base_link. -->
 
       <xacro:f_side s="1" tag="left"/>
       <xacro:f_side s="-1" tag="right"/>

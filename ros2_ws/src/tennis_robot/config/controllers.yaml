@@ -50,13 +50,14 @@ diff_drive_controller:
     right_wheel_names: ["rear_right_wheel_joint", "front_right_wheel_joint"]
 
     # Geometry — keep in sync with urdf/tennis_robot.urdf.xacro
-    # Geometric track = 2 * wheel_y = 0.70 m. BUT this is a 4WD skid-steer: the
-    # wheels scrub sideways when turning, so the EFFECTIVE rotational track is
-    # larger than the geometric one. Using 0.70 made odom OVER-estimate yaw, which
-    # smeared the SLAM map into a pinwheel and failed the court survey.
-    # 1.0 ~= 0.70 * 1.4 (typical skid-steer correction). TUNE: if the SLAM map
-    # still over-rotates raise this; if it under-rotates lower it toward 0.70.
-    wheel_separation: 1.0
+    # P2-99c (c): v3 chassis, geometric track 2 * 0.297 = 0.594 m, wheelbase
+    # 0.365 m. Skid-steer scrub makes the EFFECTIVE rotational track differ
+    # from the geometric one. Calibrated in Gazebo (P2-99c gyro turn test,
+    # scripts/sim_debug/p299c_gyro_check.py): with 0.849 a 0.600 rad/s command
+    # gave 0.693 rad/s on the gyro -> effective 0.849 * 0.600 / 0.693 = 0.735
+    # (1.24 x geometric). Yaw itself is fused from the IMU gyro only
+    # (ekf.yaml), not from wheel odometry. Re-calibrate on the real robot.
+    wheel_separation: 0.735
     wheel_radius: 0.085  # 170 mm HPI Dirt Buster Block wheels (was 0.09 / 180 mm)
 
     # Plain geometry_msgs/Twist on ~/cmd_vel_unstamped (use_stamped_vel: false)

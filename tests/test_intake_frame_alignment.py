@@ -233,10 +233,7 @@ def test_no_component_carries_a_private_offset():
 # --------------------------------------------------------------------------
 # End-to-end: the same assertion against the actually generated model.
 # --------------------------------------------------------------------------
-@pytest.mark.skipif(
-    shutil.which("xacro") is None or not os.environ.get("AMENT_PREFIX_PATH"),
-    reason="ROS 2 environment not sourced (need xacro + AMENT_PREFIX_PATH)",
-)
+@pytest.mark.skip(reason="P2-99c (c+d1a): the legacy compact intake/launcher machine is no longer the generated robot (v3 chassis, body F, no intake/fixed launcher); it is replaced by the shared tilting flywheel in step (d1b). Retired, not deleted, pending that step.")
 def test_generated_model_places_wheels_cheeks_and_ramp_in_one_frame(tmp_path):
     output = tmp_path / "compact.urdf"
     subprocess.run(

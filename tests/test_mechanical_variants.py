@@ -5,12 +5,9 @@ cover the whole arg chain (generator defaults -> xacro args -> macro params)
 rather than the presence of a string in a source file.
 
 The invariants:
-  * The intake assembly and the flywheel launcher claim the same front volume
-    (intake x 446...884 / z 0...281, flywheel wheels x 459...661 / z 162...268),
-    so no collection configuration may carry the launcher and the launch
-    configuration must not carry the intake.
-  * The launcher keeps real collision geometry — a visual-only launcher would
-    make Throwing Mode physics meaningless.
+  * P2-99c (c+d1a): the default robot carries no legacy intake / fixed
+    launcher, its wheels sit on the v3 axles and its mass matches the v3
+    bench model.
   * The basket lift travel is the CAD baseline 100 mm, not the earlier 450 mm
     that pushed the raised rim through the LiDAR scan plane.
   * The LiDAR OPTICAL CENTRE (not the link origin) is the P2-99b C1 scan plane,
@@ -95,51 +92,44 @@ def _ground_height(root: ET.Element, link_name: str) -> float:
 
 # ---------------------------------------------------------------- variants
 
-def test_the_one_robot_carries_intake_and_launcher_together(tmp_path):
-    """The whole point of the compact machine: both mechanisms coexist.
+LEGACY_MECHANISM_LINKS = {
+    "intake_wheel_left_link", "intake_wheel_right_link",
+    "intake_wheel_left_mount_link", "intake_wheel_right_mount_link",
+    "compact_intake_cheeks_link", "compact_handoff_ramp_link",
+    "compact_bridge_link", "basket_rails_link", "compact_fixed_entry_hood_link",
+    "flywheel_launcher_frame_link", "flywheel_left_link", "flywheel_right_link",
+    "motion_electronics_tray_link", "pi_case_link", "pi_buck_converter_link",
+    "battery_link",
+}
 
-    In the archived variants the launcher frame cut through the intake mouth,
-    so a robot could have one or the other. The corrected compact CAD (bridge,
-    curved cheeks, Option A ramp, two-plate cradle) fits both, and that is the
-    configuration we test.
-    """
+
+def test_default_robot_has_no_legacy_intake_or_fixed_launcher(tmp_path):
+    """P2-99c (c+d1a): the generated robot is the active design without the
+    legacy dual-wheel intake, its bridge/rails/hood, the fixed +20 deg launcher
+    and the retired electronics/battery placeholders."""
     links = _link_names(_generate(tmp_path, VARIANT))
-    assert {"intake_wheel_left_link", "intake_wheel_right_link"} <= links
-    assert {"flywheel_left_link", "flywheel_right_link",
-            "flywheel_launcher_frame_link"} <= links
-    assert {"compact_intake_cheeks_link", "compact_handoff_ramp_link"} <= links
+    assert not (links & LEGACY_MECHANISM_LINKS), sorted(links & LEGACY_MECHANISM_LINKS)
+    assert {"parkside_left_link", "parkside_right_link", "ugreen_link",
+            "shared_flywheel_mass_placeholder_link"} <= links
 
 
-def test_collect_only_drops_the_launcher_but_keeps_the_intake(tmp_path):
-    links = _link_names(_generate(tmp_path, VARIANT, **COLLECT_ONLY))
-    assert {"intake_wheel_left_link", "intake_wheel_right_link"} <= links
-    assert not {name for name in links if "flywheel" in name}
-
-
-def test_launch_only_drops_the_intake_but_keeps_the_launcher(tmp_path):
-    root = _generate(tmp_path, VARIANT, **LAUNCH_ONLY)
-    links = _link_names(root)
-    assert {"flywheel_left_link", "flywheel_right_link",
-            "flywheel_launcher_frame_link"} <= links
-    assert not {name for name in links if name.startswith("intake_wheel_")}
-    # ...and its ros2_control joints go with it, or the controller cannot load.
-    control_joints = {
-        joint.get("name")
-        for control in root.findall("ros2_control")
-        for joint in control.findall("joint")
-    }
-    assert not {name for name in control_joints if name and name.startswith("intake_wheel_")}
-    assert {"flywheel_left_joint", "flywheel_right_joint"} <= control_joints
-
-
-def test_launcher_keeps_real_collision_geometry(tmp_path):
+def test_drive_wheels_are_on_the_v3_axles(tmp_path):
+    """v3 axles CAD X-65/+300, Y+-297 -> base_link +-0.1825 (D1)."""
     root = _generate(tmp_path, VARIANT)
-    for link_name in ("flywheel_left_link", "flywheel_right_link"):
-        link = next(l for l in root.findall("link") if l.get("name") == link_name)
-        collisions = link.findall("collision")
-        assert collisions, f"{link_name} must keep collision geometry, not visual-only"
-        for collision in collisions:
-            assert collision.find("geometry") is not None
+    got = {}
+    for side in ("rear_left", "rear_right", "front_left", "front_right"):
+        x, y, _ = (float(v) for v in _joint(root, f"{side}_wheel_joint").find("origin").get("xyz").split())
+        got[side] = (round(x, 6), round(y, 6))
+    assert got == {"rear_left": (-0.1825, 0.297), "rear_right": (-0.1825, -0.297),
+                   "front_left": (0.1825, 0.297), "front_right": (0.1825, -0.297)}
+
+
+def test_whole_robot_mass_matches_the_v3_bench_model(tmp_path):
+    """Total mass within 5 % of the v3 bench full-45 model (20.585 kg)."""
+    root = _generate(tmp_path, VARIANT)
+    total = sum(float(l.find("inertial/mass").get("value"))
+                for l in root.findall("link") if l.find("inertial/mass") is not None)
+    assert total == pytest.approx(20.585, rel=0.05)
 
 
 # ------------------------------------------------------------------ basket

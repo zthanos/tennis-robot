@@ -28,103 +28,56 @@
     </inertial>
   </xacro:macro>
 
+  <!-- P2-99c (c): modular v3 PETG chassis (cad/modular-test-chassis/
+       modular-chassis-v3.scad), as transcribed for the isolated v3 bench
+       (engineering/shared-flywheel-isolated-bench/v3_chassis_flywheel_bench.urdf.xacro):
+       50x30 rails at Y+-220 from X-165 to X330, crossbars at X-165 / X240 /
+       X300. Geometry is CAD mm (ground frame) and passes through D1.
+
+       Mass: the v3 bench whole-robot model lumps 10.0 kg at CAD
+       (100, 0, 120) mm for frame + drivetrain + arch + shell + electronics.
+       Drive wheels, drive motors and the C1 are separate links here, so
+       base_link carries the remainder (lump_mass - separate_mass) at the
+       position that keeps the lump's centre of mass. NO weighed values exist
+       (ΤΕΚΜΗΡΙΩΣΗ ΛΕΙΠΕΙ): this is the CAD estimate until the robot is weighed. -->
+  <xacro:macro name="v3_rail_box" params="name cx cy cz sx sy sz">
+    <collision name="${name}_col">
+      <origin xyz="${cx * 0.001 + cad_to_base_x} ${cy * 0.001} ${cz * 0.001 + cad_to_base_z}" rpy="0 0 0"/>
+      <geometry><box size="${sx * 0.001} ${sy * 0.001} ${sz * 0.001}"/></geometry>
+    </collision>
+    <visual name="${name}_vis">
+      <origin xyz="${cx * 0.001 + cad_to_base_x} ${cy * 0.001} ${cz * 0.001 + cad_to_base_z}" rpy="0 0 0"/>
+      <geometry><box size="${sx * 0.001} ${sy * 0.001} ${sz * 0.001}"/></geometry>
+      <material name="frame_blue_v3"/>
+    </visual>
+  </xacro:macro>
+
   <xacro:macro name="tennis_robot_base"
-               params="chassis_x chassis_y chassis_z base_link_height chassis_mass entry_beam_x entry_beam_z entry_beam_width">
+               params="base_link_height cad_to_base_x cad_to_base_z base_mass base_com_x_mm base_com_y_mm base_com_z_mm entry_beam_x entry_beam_z entry_beam_width">
     <link name="base_footprint"/>
 
     <joint name="base_footprint_joint" type="fixed">
       <parent link="base_footprint"/>
       <child link="base_link"/>
-      <!-- base_footprint is the ground plane. base_link is the centre of the
-           chassis plate, deliberately below the motor/axle centreline. -->
+      <!-- base_footprint is the ground plane; base_link is the axle midpoint
+           (CAD X117.5) 45 mm above ground (P2-99c D1). -->
       <origin xyz="0 0 ${base_link_height}" rpy="0 0 0"/>
     </joint>
 
     <link name="base_link">
-      <xacro:box_inertial mass="${chassis_mass}" x="${chassis_x}" y="${chassis_y}" z="${chassis_z}"/>
-      <!-- Bin v2 opening (docs/basket-bin-redesign-spec-el.md §3): the plate
-           is REALLY open at x 0.01..0.46, y ±0.15 so the sunken bin floor
-           (0.030 ground) is the surface balls actually rest on — a solid
-           plate here would bury the bin's 25 mm retention depth. Plate =
-           two full-length side strips (|y| 0.15..0.29) + rear block. -->
-      <collision name="chassis_left_col">
-        <origin xyz="0 0.22 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} 0.14 ${chassis_z}"/></geometry>
-      </collision>
-      <collision name="chassis_right_col">
-        <origin xyz="0 -0.22 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} 0.14 ${chassis_z}"/></geometry>
-      </collision>
-      <collision name="chassis_rear_col">
-        <origin xyz="-0.225 0 0" rpy="0 0 0"/>
-        <geometry><box size="0.47 0.30 ${chassis_z}"/></geometry>
-      </collision>
-      <visual name="chassis_left_vis">
-        <origin xyz="0 0.22 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} 0.14 ${chassis_z}"/></geometry>
-        <material name="plywood"/>
-      </visual>
-      <visual name="chassis_right_vis">
-        <origin xyz="0 -0.22 0" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} 0.14 ${chassis_z}"/></geometry>
-        <material name="plywood"/>
-      </visual>
-      <visual name="chassis_rear_vis">
-        <origin xyz="-0.225 0 0" rpy="0 0 0"/>
-        <geometry><box size="0.47 0.30 ${chassis_z}"/></geometry>
-        <material name="plywood"/>
-      </visual>
-
-      <visual name="front_left_cheek_vis">
-        <origin xyz="${chassis_x / 2.0} ${0.30 / 2.0 + (chassis_y - 0.30) / 4.0} 0.077" rpy="0 0 0"/>
-        <geometry><box size="0.025 ${(chassis_y - 0.30) / 2.0} 0.14"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="front_right_cheek_vis">
-        <origin xyz="${chassis_x / 2.0} ${-(0.30 / 2.0 + (chassis_y - 0.30) / 4.0)} 0.077" rpy="0 0 0"/>
-        <geometry><box size="0.025 ${(chassis_y - 0.30) / 2.0} 0.14"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="rear_wall_vis">
-        <origin xyz="${-chassis_x / 2.0} 0 0.077" rpy="0 0 0"/>
-        <geometry><box size="0.025 ${chassis_y} 0.14"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="left_wall_vis">
-        <origin xyz="0 ${chassis_y / 2.0} 0.077" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} 0.025 0.14"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="right_wall_vis">
-        <origin xyz="0 ${-chassis_y / 2.0} 0.077" rpy="0 0 0"/>
-        <geometry><box size="${chassis_x} 0.025 0.14"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="rear_left_axle_bracket_vis">
-        <origin xyz="-0.33 0.24 ${0.5 * chassis_z + 0.009}" rpy="0 0 0"/>
-        <geometry><box size="0.065 0.060 0.018"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="rear_right_axle_bracket_vis">
-        <origin xyz="-0.33 -0.24 ${0.5 * chassis_z + 0.009}" rpy="0 0 0"/>
-        <geometry><box size="0.065 0.060 0.018"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="front_left_axle_bracket_vis">
-        <origin xyz="0.33 0.24 ${0.5 * chassis_z + 0.009}" rpy="0 0 0"/>
-        <geometry><box size="0.065 0.060 0.018"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="front_right_axle_bracket_vis">
-        <origin xyz="0.33 -0.24 ${0.5 * chassis_z + 0.009}" rpy="0 0 0"/>
-        <geometry><box size="0.065 0.060 0.018"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <visual name="elec_vis">
-        <origin xyz="-0.36 0 0.067" rpy="0 0 0"/>
-        <geometry><box size="0.18 0.26 0.12"/></geometry>
-        <material name="anthracite"/>
-      </visual>
+      <inertial>
+        <origin xyz="${base_com_x_mm * 0.001 + cad_to_base_x} ${base_com_y_mm * 0.001} ${base_com_z_mm * 0.001 + cad_to_base_z}" rpy="0 0 0"/>
+        <mass value="${base_mass}"/>
+        <!-- v3 bench lump inertia (0.62/0.45/0.86, ixz -0.05 kg m^2 for
+             10 kg) scaled by base_mass / 10. -->
+        <inertia ixx="${0.062 * base_mass}" ixy="0" ixz="${-0.005 * base_mass}"
+                 iyy="${0.045 * base_mass}" iyz="0" izz="${0.086 * base_mass}"/>
+      </inertial>
+      <xacro:v3_rail_box name="left_rail" cx="82.5" cy="220" cz="37" sx="495" sy="50" sz="30"/>
+      <xacro:v3_rail_box name="right_rail" cx="82.5" cy="-220" cz="37" sx="495" sy="50" sz="30"/>
+      <xacro:v3_rail_box name="rear_crossbar" cx="-165" cy="0" cz="37" sx="50" sy="390" sz="30"/>
+      <xacro:v3_rail_box name="x240_crossbar" cx="240" cy="0" cz="32" sx="50" sy="390" sz="20"/>
+      <xacro:v3_rail_box name="x300_crossbar" cx="300" cy="0" cz="32" sx="20" sy="390" sz="20"/>
       <!-- Entry beam-line visual. Its position and width are injected from the
            same properties that place the two Gazebo rays, so diagnostics can
            never drift away from the actual sensing geometry. -->

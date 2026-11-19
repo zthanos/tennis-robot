@@ -14,17 +14,19 @@
        The support is the P2-99b pedestal in components/p297_tower.urdf.xacro,
        not a mast on this link. -->
   <xacro:macro name="rplidar_c1_mount"
-               params="parent link_name xyz rpy update_rate scan_offset_z:=0.0298">
+               params="parent link_name xyz rpy update_rate scan_offset_z:=0.0298 mass:=0.110">
     <xacro:property name="c1_side" value="0.0556"/>
     <xacro:property name="c1_height" value="0.0413"/>
     <xacro:property name="c1_base_h" value="0.0231"/>
     <xacro:property name="c1_window_top" value="0.0355"/>
     <link name="${link_name}">
-      <!-- Mass kept at the previous 0.05 kg lump at the link origin so step
-           (a) is mass-neutral; the official 110 g enters in P2-99c step (c). -->
+      <!-- SLAMTEC datasheet 110 g (P2-99c step c), centred in the body. -->
       <inertial>
-        <mass value="0.05"/>
-        <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
+        <origin xyz="0 0 ${c1_height / 2.0}" rpy="0 0 0"/>
+        <mass value="${mass}"/>
+        <inertia ixx="${mass * (c1_side ** 2 + c1_height ** 2) / 12.0}" ixy="0" ixz="0"
+                 iyy="${mass * (c1_side ** 2 + c1_height ** 2) / 12.0}" iyz="0"
+                 izz="${mass * c1_side ** 2 / 6.0}"/>
       </inertial>
       <visual name="head_base_vis">
         <origin xyz="0 0 ${c1_base_h / 2.0}" rpy="0 0 0"/>
