@@ -53,7 +53,7 @@
   </xacro:macro>
 
   <xacro:macro name="tennis_robot_base"
-               params="base_link_height cad_to_base_x cad_to_base_z base_mass base_com_x_mm base_com_y_mm base_com_z_mm entry_beam_x entry_beam_z entry_beam_width">
+               params="base_link_height cad_to_base_x cad_to_base_z base_mass base_com_x_mm base_com_y_mm base_com_z_mm">
     <link name="base_footprint"/>
 
     <joint name="base_footprint_joint" type="fixed">
@@ -78,14 +78,6 @@
       <xacro:v3_rail_box name="rear_crossbar" cx="-165" cy="0" cz="37" sx="50" sy="390" sz="30"/>
       <xacro:v3_rail_box name="x240_crossbar" cx="240" cy="0" cz="32" sx="50" sy="390" sz="20"/>
       <xacro:v3_rail_box name="x300_crossbar" cx="300" cy="0" cz="32" sx="20" sy="390" sz="20"/>
-      <!-- Entry beam-line visual. Its position and width are injected from the
-           same properties that place the two Gazebo rays, so diagnostics can
-           never drift away from the actual sensing geometry. -->
-      <visual name="ir_beam_line_vis">
-        <origin xyz="${entry_beam_x} 0 ${entry_beam_z}" rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="0.003" length="${entry_beam_width}"/></geometry>
-        <material name="ir_beam_red"/>
-      </visual>
     </link>
 
     <gazebo reference="base_link">

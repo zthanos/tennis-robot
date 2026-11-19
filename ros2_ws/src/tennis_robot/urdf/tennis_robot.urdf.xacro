@@ -9,7 +9,6 @@
   <xacro:include filename="components/lidar.urdf.xacro"/>
   <xacro:include filename="components/oak_d.urdf.xacro"/>
   <xacro:include filename="components/imu.urdf.xacro"/>
-  <xacro:include filename="components/ir_beam.urdf.xacro"/>
   <xacro:include filename="components/body_panels.urdf.xacro"/>
   <xacro:include filename="components/p297_tower.urdf.xacro"/>
   <xacro:include filename="components/intake_debug_camera.urdf.xacro"/>
@@ -252,26 +251,6 @@
   <xacro:property name="intake_debug_camera_xyz" value="${0.78 + functional_shift_x} 0 0.06"/>
   <xacro:property name="intake_debug_camera_rpy" value="0 0.339 3.14159"/>
 
-  <!-- Throat beam crosses the corridor at ball-centre height (40 mm above
-       ground = -0.005 in base_link) just AHEAD of the intake wheels: the
-       wheel cylinders span x = nip_x ± Rw = 0.53..0.65, so a beam inside
-       that band would stare at the wheels and read permanently broken.
-       At x=0.720 it fires before first wheel contact, leaving time to start
-       or maintain the rollers. Collection confirmation is the BASKET beam
-       pair below — see gazebo_extras_node.py. -->
-  <xacro:property name="ir_x" value="${0.720 + functional_shift_x}"/>
-  <xacro:property name="ir_y" value="0.105"/>
-  <xacro:property name="ir_z" value="-0.005"/>
-  <!-- Basket confirmation beam is behind the retention lip, halfway down the
-       internal management tray. A ball on the external receiver is not yet
-       collected and must keep the intake running until it crosses this beam. -->
-  <xacro:property name="basket_ir_x" value="${float($(arg basket_floor_front_x)) - float($(arg basket_management_run)) / 2.0 + functional_shift_x}"/>
-  <xacro:property name="basket_ir_y" value="0.105"/> 
-  <!-- Beam height 0.075 above court: ABOVE a court ball's top (0.066) so the
-       ray cannot clip balls standing beside the robot through the open wire
-       mesh (run 11: 4 false credits, one-sided ir hits 2-11 cm from one
-       sensor), yet still well below a tray-rolling ball's top (0.096). -->
-  <xacro:property name="basket_ir_z" value="${float($(arg basket_floor_top_z)) + float($(arg basket_management_rise)) / 2.0 + 0.045 - base_link_height}"/>
 
   <xacro:property name="max_linear_acceleration" value="2.0"/> 
   <xacro:property name="max_angular_acceleration" value="4.0"/>
@@ -284,9 +263,7 @@
       base_com_x_mm="${base_com_x_mm}"
       base_com_y_mm="${base_com_y_mm}"
       base_com_z_mm="${base_com_z_mm}"
-      entry_beam_x="${ir_x}"
-      entry_beam_z="${ir_z}"
-      entry_beam_width="${2.0 * ir_y}"/>
+/>
 
   <!-- Motors are fixed to the chassis top. Each shaft shares its x/z centre
        with the corresponding wheel joint; only y differs along the shaft. -->
@@ -508,38 +485,14 @@
       update_rate="100"
       topic="/gz/imu"/>
 
-  <xacro:ir_beam_sensor
-      parent="base_link"
-      link_name="ir_left_link"
-      joint_name="ir_left_joint"
-      xyz="${ir_x} -${ir_y} ${ir_z}"
-      rpy="0 0 1.5708"
-      topic="/gz/ir_left"
-      update_rate="${sensor_update_rate}"/>
-  <xacro:ir_beam_sensor
-      parent="base_link"
-      link_name="ir_right_link"
-      joint_name="ir_right_joint"
-      xyz="${ir_x} ${ir_y} ${ir_z}"
-      rpy="0 0 -1.5708"
-      topic="/gz/ir_right"
-      update_rate="${sensor_update_rate}"/>
-  <xacro:ir_beam_sensor
-      parent="base_link"
-      link_name="basket_ir_left_link"
-      joint_name="basket_ir_left_joint"
-      xyz="${basket_ir_x} -${basket_ir_y} ${basket_ir_z}"
-      rpy="0 0 1.5708"
-      topic="/gz/basket_ir_left"
-      update_rate="${sensor_update_rate}"/>
-  <xacro:ir_beam_sensor
-      parent="base_link"
-      link_name="basket_ir_right_link"
-      joint_name="basket_ir_right_joint"
-      xyz="${basket_ir_x} ${basket_ir_y} ${basket_ir_z}"
-      rpy="0 0 -1.5708"
-      topic="/gz/basket_ir_right"
-      update_rate="${sensor_update_rate}"/>
+  <!-- IR break beams (P2-99c): Mega D36 = entry beam, D37 = exit/confirmation
+       beam. Their geometry belonged to the legacy intake/bin and is removed
+       from the sim; the signal contract (gazebo_extras_node subscribes to
+       /gz/ir_*/scan and /gz/basket_ir_*/scan, collector_interface
+       entry_beam_broken) is unchanged and simply receives no data.
+       OPEN CAD ITEM: the two beam positions on the shared flywheel are not
+       defined; they are required for collection confirmation (S5) and come
+       back here once defined. -->
 
   <xacro:tennis_robot_ros2_control
       sim_mode="$(arg sim_mode)"
