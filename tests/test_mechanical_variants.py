@@ -92,14 +92,17 @@ def _ground_height(root: ET.Element, link_name: str) -> float:
 
 # ---------------------------------------------------------------- variants
 
+#: the legacy bin v2 with its 100 mm lift, kept testable for legacy studies.
+LEGACY_BASKET = {"ROBOT_ENABLE_LEGACY_BASKET": "true"}
+
 LEGACY_MECHANISM_LINKS = {
     "intake_wheel_left_link", "intake_wheel_right_link",
     "intake_wheel_left_mount_link", "intake_wheel_right_mount_link",
     "compact_intake_cheeks_link", "compact_handoff_ramp_link",
     "compact_bridge_link", "basket_rails_link", "compact_fixed_entry_hood_link",
-    "flywheel_launcher_frame_link", "flywheel_left_link", "flywheel_right_link",
+    "basket_link", "basket_guide_path_link",
     "motion_electronics_tray_link", "pi_case_link", "pi_buck_converter_link",
-    "battery_link",
+    "battery_link", "shared_flywheel_mass_placeholder_link",
 }
 
 
@@ -110,7 +113,43 @@ def test_default_robot_has_no_legacy_intake_or_fixed_launcher(tmp_path):
     links = _link_names(_generate(tmp_path, VARIANT))
     assert not (links & LEGACY_MECHANISM_LINKS), sorted(links & LEGACY_MECHANISM_LINKS)
     assert {"parkside_left_link", "parkside_right_link", "ugreen_link",
-            "shared_flywheel_mass_placeholder_link"} <= links
+            "launcher_yoke_link", "flywheel_launcher_frame_link",
+            "flywheel_left_link", "flywheel_right_link",
+            "active_structure_link", "basket_support_mass_link"} <= links
+
+
+def test_shared_flywheel_tilts_about_the_cad_pivot(tmp_path):
+    """P2-40 pivot CAD [387, 0, 49.84] mm -> base_link via D1; axis -Y so a
+    positive angle raises the mouth; seats -3 deg (collection) / +20 deg.
+    The modelled lower stop is 0.5 deg below the -3 deg seat (DART limit
+    freeze workaround); the upper stop is the +20 deg seat."""
+    root = _generate(tmp_path, VARIANT)
+    tilt = _joint(root, "launcher_tilt_joint")
+    assert tilt.get("type") == "revolute"
+    xyz = [float(v) for v in tilt.find("origin").get("xyz").split()]
+    assert xyz == pytest.approx([0.387 - 0.1175, 0.0, 0.049837363636 - 0.045], abs=1e-9)
+    assert [float(v) for v in tilt.find("axis").get("xyz").split()] == [0.0, -1.0, 0.0]
+    limit = tilt.find("limit")
+    assert float(limit.get("lower")) == pytest.approx(math.radians(-3.5), abs=1e-9)
+    assert float(limit.get("upper")) == pytest.approx(math.radians(20.0), abs=1e-9)
+
+
+def test_flywheels_ride_the_tilting_module_at_the_cad_nip(tmp_path):
+    """Frame 55 mm ahead of the pivot (nip X442), wheels at Y+-129, both
+    parented under the tilt joint so they tilt with the module."""
+    root = _generate(tmp_path, VARIANT)
+    parent_of = {j.find("child").get("link"): j.find("parent").get("link") for j in root.findall("joint")}
+    assert parent_of["flywheel_launcher_frame_link"] == "launcher_yoke_link"
+    for side, y in (("left", 0.129), ("right", -0.129)):
+        assert parent_of[f"flywheel_{side}_link"] == "flywheel_launcher_frame_link"
+        xyz = [float(v) for v in _joint(root, f"flywheel_{side}_joint").find("origin").get("xyz").split()]
+        assert xyz == pytest.approx([0.0, y, 0.0], abs=1e-9)
+    mount = [float(v) for v in _joint(root, "flywheel_launcher_mount_joint").find("origin").get("xyz").split()]
+    assert mount == pytest.approx([0.055, 0.0, 0.0], abs=1e-9)
+
+
+def test_default_robot_has_no_basket_lift(tmp_path):
+    assert _joint(_generate(tmp_path, VARIANT), "basket_joint") is None
 
 
 def test_drive_wheels_are_on_the_v3_axles(tmp_path):
@@ -135,7 +174,7 @@ def test_whole_robot_mass_matches_the_v3_bench_model(tmp_path):
 # ------------------------------------------------------------------ basket
 
 def test_basket_lift_upper_stop_is_one_hundred_millimetres(tmp_path):
-    joint = _joint(_generate(tmp_path, VARIANT), "basket_joint")
+    joint = _joint(_generate(tmp_path, VARIANT, **LEGACY_BASKET), "basket_joint")
     assert joint is not None and joint.get("type") == "prismatic"
     assert float(joint.find("limit").get("upper")) == pytest.approx(0.100, abs=1e-9)
 
@@ -149,7 +188,7 @@ def test_basket_lower_stop_sits_below_the_parked_position(tmp_path):
     every other joint in the same model actuates normally. The commanded travel
     is still 0..100 mm; only the modelled hard stop moves below it.
     """
-    limit = _joint(_generate(tmp_path, VARIANT), "basket_joint").find("limit")
+    limit = _joint(_generate(tmp_path, VARIANT, **LEGACY_BASKET), "basket_joint").find("limit")
     lower = float(limit.get("lower"))
     assert lower < 0.0, (
         "basket_joint lower limit coincides with the parked position (0.0); "

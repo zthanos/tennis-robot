@@ -144,6 +144,13 @@ def generate_launch_description():
     enable_intake = os.getenv(
         "ROBOT_ENABLE_INTAKE", "false",
     ).lower() in {"1", "true", "yes"}
+    # P2-99c (d1b): active mechanism = shared tilting flywheel + fixed basket.
+    enable_shared_flywheel = os.getenv(
+        "ROBOT_ENABLE_SHARED_FLYWHEEL", "true",
+    ).lower() in {"1", "true", "yes"}
+    enable_legacy_basket = os.getenv(
+        "ROBOT_ENABLE_LEGACY_BASKET", "false",
+    ).lower() in {"1", "true", "yes"}
     skip_control_panel = bench_minimal or os.getenv(
         "SIM_SKIP_CONTROL_PANEL", "false"
     ).lower() in {"1", "true", "yes"}
@@ -271,6 +278,7 @@ def generate_launch_description():
     assist_wheel_spawner = _spawner("assist_wheel_velocity_controller")
     flywheel_spawner = _spawner("flywheel_velocity_controller")
     basket_spawner = _spawner("basket_velocity_controller")
+    tilt_spawner = _spawner("launcher_tilt_velocity_controller")
 
     # Actuation layer: the only node that talks to the controller command topics.
     drive_actuator = Node(
@@ -631,11 +639,14 @@ def generate_launch_description():
         spawn_sequence = [jsb_spawner, diff_drive_spawner]
         if enable_intake:
             spawn_sequence.append(intake_wheel_spawner)
-        spawn_sequence.append(basket_spawner)
+        if enable_legacy_basket:
+            spawn_sequence.append(basket_spawner)
         if enable_assist:
             spawn_sequence.append(assist_wheel_spawner)
-        if enable_flywheel:
+        if enable_flywheel or enable_shared_flywheel:
             spawn_sequence.append(flywheel_spawner)
+        if enable_shared_flywheel:
+            spawn_sequence.append(tilt_spawner)
         delayed_controllers = TimerAction(period=6.0, actions=[spawn_sequence[0]])
         controller_chain = [
             RegisterEventHandler(OnProcessExit(target_action=previous, on_exit=[following]))

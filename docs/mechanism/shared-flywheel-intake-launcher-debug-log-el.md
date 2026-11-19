@@ -4902,3 +4902,56 @@ Setup:
 αργό goal στα 120 s) ικανοποιείται στο distributed setup.
 
 Κατάσταση: `P2_99C_NAV2_STALL_PC_DOCKER_ONLY_PI_NATIVE_PASS`.
+
+### P2-99c (δ1β): κοινό tilting flywheel, αψίδα P2-93, ski R75, καλάθι P2-71 στο sim
+
+Νέο component `components/shared_flywheel.urdf.xacro` (CAD mm μέσω D1):
+
+- **Μονάδα:** `launcher_tilt_joint` revolute στο pivot [387, 0, 49,84],
+  άξονας −Y (θετική γωνία σηκώνει το στόμιο). Πλαίσιο 55 mm μπροστά (nip
+  X442): πλάκα, yokes και D5065, με μάζα πλαισίου 2,852 kg από το v3 bench.
+  Τροχοί D200×60 στο Y±129, 0,879 kg ο καθένας (frozen P2-40· οι
+  παραγγελμένοι είναι D192×48 και η απόσταση των αξόνων είναι ΑΝΟΙΧΤΗ).
+  Actuator FIT0186 ως mass box 0,095 kg του bench.
+- **Αψίδα P2-93** (πόδια, braces, δοκός, masts, άνω δοκός ως Z364), **ski
+  R75/75** (επίπεδο + 15 segments τόξου) και **καλάθι P2-71** (δάπεδο Z70→42,
+  πλαϊνά Y±172 ως Z320, πίσω X−118, μπροστινός τοίχος X225 με την
+  fail-closed θύρα κλειστή, κανάλι τροφοδοσίας). Τα πλέγματα είναι
+  συμπαγή· μάζα στήριξης καλαθιού 1,70 kg και φορτίο 45 μπαλών στις θέσεις
+  του bench.
+- **Legacy bin v2** με lift: `ROBOT_ENABLE_LEGACY_BASKET` (default false)· ο
+  `basket_velocity_controller` γίνεται spawn μόνο τότε. Νέος
+  `launcher_tilt_velocity_controller` (±0,09 rad/s, ίδια λογική με το
+  basket lift)· οι flywheels στον `flywheel_velocity_controller`.
+- **Tilt joint limits:** seats του CAD −3° / +20°· το **μοντελοποιημένο κάτω
+  stop είναι −3,5°**. Το πρώτο gate έδειξε ότι μετά το σπρώξιμο στο −3°
+  limit το joint πάγωσε 21 s κάτω από velocity εντολή (DART limit freeze,
+  όπως στο `basket_joint`). Ο supervisor σταματά στις −3° (υπέρβαση 0,10–0,16°)
+  και δεν σπρώχνει ποτέ στο κάτω stop. Στο +20° το seat κρατά υπό preload,
+  επειδή η βαρύτητα το απελευθερώνει.
+
+| Gate | Αποτέλεσμα |
+| --- | --- |
+| render / `check_urdf` / SDF | PASS |
+| pytest (docker) | 1047 passed / 22 skipped (+3 νέα τεστ για pivot, nip, χωρίς lift· τα legacy basket τεστ τρέχουν με `ROBOT_ENABLE_LEGACY_BASKET=true`) |
+| μάζα / CoG | 20,625 kg (+0,19 % έναντι bench)· CoG Δ −2,5 / +0,5 / +0,9 mm· εμπρός άξονας 60,1 % έναντι 60,7 % (το +22 mm του γ διορθώθηκε) |
+| controllers | tilt, flywheel, diff_drive, jsb active |
+| tilt | 0→+20° 4,92 s· σπρώξιμο στο seat 20,0°· +20→−3° 5,5 s (−3,10°)· −3→0° 1,6 s (0,04°) |
+| flywheels | 150 / −150 rad/s ακριβώς |
+| `/scan` στις −3 / 0 / +20 και στην αρχή | 0 self-hits, 0° τυφλές γωνίες |
+| survey (PC) | δίχτυ +0,001 / +0,004, κολώνες ≤ 0,005, 137 s |
+| Nav2 (brain στο Pi, 3 runs) | **15/15 goals SUCCEEDED** (20 / 50 / 80 / 120 / 150 s)· σύντομες καθυστερήσεις 0,3–0,4 s (1–2 επεισόδια) με Wi-Fi RTT έως 1,7 s, όχι πάγωμα |
+
+Γνωστά ανοικτά:
+- OAK (β)·
+- intake debug camera (sim-only, δεν βλέπει τίποτα χρήσιμο)·
+- επαφή μπάλας–flywheel/ski (δ2: οι τροχοί D192, το μ και το contact model
+  δεν έχουν μετρηθεί)·
+- θέσεις IR D36/D37·
+- το `collect_route` smoke δεν έτρεξε: ο controller οδηγεί ακόμη τον legacy
+  intake controller, οπότε η συλλογή με το κοινό flywheel θέλει νέο
+  collector mapping (δ2).
+
+Εικόνες: `runtime/p299c/visuals_d/pairs/`.
+
+Κατάσταση: `P2_99C_D1B_DONE`.

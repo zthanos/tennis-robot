@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- P2-99c step (d1b): active design mechanism.
+       Sources (CAD mm, ground frame, through D1 cad_to_base):
+         - shared tilting flywheel: P2-40 frozen baseline as transcribed in the
+           v3 bench (engineering/shared-flywheel-isolated-bench/
+           v3_chassis_flywheel_bench.urdf.xacro, cad_v3_flywheel_launcher_module):
+           pivot [387, 0, 49.837], nip 55 mm ahead, D200 x 60 wheels on
+           vertical D5065 axes at Y+-129. Joint axis -Y so positive = mouth up.
+           Collection -3 deg (lower seat), transport 0, launch +15..+20 deg.
+           NOTE: the ordered wheels are D192 x 48 (seller data) and the axis
+           distance is still OPEN; the frozen D200 x 60 is kept here.
+         - P2-93 arch (cad/arch-tilt-p293/p293-arch-tilt-release.scad):
+           legs [318,+-228,67] -> [390,+-228,245], braces from X240/X300,
+           crossbar X390 Z245, masts Y+-150 up to Z354, upper beam top Z364.
+         - R75/75 ski (P2-67/P2-73 frozen floor points).
+         - P2-71 basket (shared-flywheel-p271-basket-grid.scad as assembled in
+           current_robot(): cut at X225): floor Z70 at X-85 falling to Z42 at
+           X278, Y+-172 side grids to Z320, rear wall X-118 to Z320, front
+           wall X225 Z46.1..235 with the fail-closed 80 x 80 feed door shut,
+           feed channel [-85,58] -> [225,38] (80 wide).
+       Grids are drawn solid (conservative for sensors; a 66 mm ball cannot
+       pass the <=40 mm openings). Masses: module/actuator/basket/payload are
+       the v3 bench model; arch and ski are inside the bench 10 kg lump. -->
+
+  <xacro:macro name="cad_strip_xz" params="name parent cad_to_base_x cad_to_base_z x0 z0 x1 z1 width t y:=0 material collide:=true">
+    <xacro:property name="dx" value="${x1 - x0}"/>
+    <xacro:property name="dz" value="${z1 - z0}"/>
+    <xacro:property name="len" value="${sqrt(dx * dx + dz * dz)}"/>
+    <xacro:if value="${collide}">
+      <collision name="${name}_col">
+        <origin xyz="${(x0 + x1) / 2000.0 + cad_to_base_x} ${y * 0.001} ${(z0 + z1) / 2000.0 + cad_to_base_z}" rpy="0 ${-atan2(dz, dx)} 0"/>
+        <geometry><box size="${len * 0.001} ${width * 0.001} ${t * 0.001}"/></geometry>
+      </collision>
+    </xacro:if>
+    <visual name="${name}_vis">
+      <origin xyz="${(x0 + x1) / 2000.0 + cad_to_base_x} ${y * 0.001} ${(z0 + z1) / 2000.0 + cad_to_base_z}" rpy="0 ${-atan2(dz, dx)} 0"/>
+      <geometry><box size="${len * 0.001} ${width * 0.001} ${t * 0.001}"/></geometry>
+      <material name="${material}"/>
+    </visual>
+  </xacro:macro>
+
+  <xacro:macro name="cad_box" params="name cad_to_base_x cad_to_base_z x y z sx sy sz material collide:=true">
+    <xacro:if value="${collide}">
+      <collision name="${name}_col">
+        <origin xyz="${x * 0.001 + cad_to_base_x} ${y * 0.001} ${z * 0.001 + cad_to_base_z}" rpy="0 0 0"/>
+        <geometry><box size="${sx * 0.001} ${sy * 0.001} ${sz * 0.001}"/></geometry>
+      </collision>
+    </xacro:if>
+    <visual name="${name}_vis">
+      <origin xyz="${x * 0.001 + cad_to_base_x} ${y * 0.001} ${z * 0.001 + cad_to_base_z}" rpy="0 0 0"/>
+      <geometry><box size="${sx * 0.001} ${sy * 0.001} ${sz * 0.001}"/></geometry>
+      <material name="${material}"/>
+    </visual>
+  </xacro:macro>
+
+  <!-- ===================================================== tilting module -->
+  <xacro:macro name="shared_flywheel_module" params="parent cad_to_base_x cad_to_base_z max_vel">
+    <link name="launcher_yoke_link">
+      <inertial><mass value="0.001"/><inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/></inertial>
+    </link>
+    <joint name="launcher_tilt_joint" type="revolute">
+      <parent link="${parent}"/>
+      <child link="launcher_yoke_link"/>
+      <!-- CAD rotate([0,-theta,0]): positive theta raises the mouth -> axis -Y.
+           CAD seats: -3 deg collection, +20 deg launch (mechanical emergency
+           stops -12/+22 are outside them). The commanded travel is exactly
+           -3..+20 deg (supervisor target from the AS5600 angle). The MODELLED
+           lower stop sits 0.5 deg below the -3 deg seat: a joint parked ON its
+           limit sits on a permanently active DART limit constraint and gz-sim
+           cannot drive it off with a velocity command (P2-99c d1b gate: frozen
+           at -3.0 deg for 21 s; same workaround as basket_joint overtravel).
+           The upper seat needs no margin: gravity pulls the module off it. -->
+      <origin xyz="${0.387 + cad_to_base_x} 0 ${0.049837363636 + cad_to_base_z}" rpy="0 0 0"/>
+      <axis xyz="0 -1 0"/>
+      <limit lower="-0.061086523820" upper="0.349065850399" effort="150" velocity="0.09"/>
+      <dynamics damping="1.5" friction="0.8"/>
+    </joint>
+
+    <joint name="flywheel_launcher_mount_joint" type="fixed">
+      <parent link="launcher_yoke_link"/><child link="flywheel_launcher_frame_link"/>
+      <origin xyz="0.055 0 0" rpy="0 0 0"/>
+    </joint>
+    <link name="flywheel_launcher_frame_link">
+      <!-- v3 bench: 2.852 kg fixed module mass (plate, yokes, D5065, hubs). -->
+      <inertial>
+        <origin xyz="-0.025 0 0.0185061462201"/>
+        <mass value="2.85200336"/>
+        <inertia ixx="0.03695" ixy="0" ixz="-0.00023" iyy="0.01935" iyz="0" izz="0.04147"/>
+      </inertial>
+      <collision name="upper_plate_col"><origin xyz="0.0225 0 0.043"/><geometry><box size="0.185 0.314 0.008"/></geometry></collision>
+      <visual name="upper_plate_vis"><origin xyz="0.0225 0 0.043"/><geometry><box size="0.185 0.314 0.008"/></geometry><material name="mount_gray"/></visual>
+      <xacro:macro name="sf_yoke" params="side">
+        <collision name="yoke_flange_${side}_col"><origin xyz="-0.045 ${side*0.1955} 0.043"/><geometry><box size="0.040 0.077 0.008"/></geometry></collision>
+        <visual name="yoke_flange_${side}_vis"><origin xyz="-0.045 ${side*0.1955} 0.043"/><geometry><box size="0.040 0.077 0.008"/></geometry><material name="mount_gray"/></visual>
+        <collision name="yoke_web_${side}_col"><origin xyz="-0.045 ${side*0.234} 0.0215"/><geometry><box size="0.040 0.008 0.043"/></geometry></collision>
+        <visual name="yoke_web_${side}_vis"><origin xyz="-0.045 ${side*0.234} 0.0215"/><geometry><box size="0.040 0.008 0.043"/></geometry><material name="mount_gray"/></visual>
+        <visual name="trunnion_${side}_vis"><origin xyz="-0.055 ${side*0.234} 0" rpy="1.57079632679 0 0"/><geometry><cylinder radius="0.012" length="0.012"/></geometry><material name="mount_gray"/></visual>
+        <collision name="d5065_${side}_col"><origin xyz="0 ${side*0.129} 0.0795"/><geometry><cylinder radius="0.025" length="0.065"/></geometry></collision>
+        <visual name="d5065_${side}_vis"><origin xyz="0 ${side*0.129} 0.0795"/><geometry><cylinder radius="0.025" length="0.065"/></geometry><material name="anthracite"/></visual>
+      </xacro:macro>
+      <xacro:sf_yoke side="1"/>
+      <xacro:sf_yoke side="-1"/>
+    </link>
+    <xacro:provisional_candidate_flywheel side="left" parent="flywheel_launcher_frame_link"
+      y="0.129" radius="0.100" width="0.060" rotating_mass="0.878977133503"
+      spin_inertia="0.00508981582897" transverse_inertia="0.00267808165955"
+      com_z="0.0" max_vel="${max_vel}" effort="0.62"/>
+    <xacro:provisional_candidate_flywheel side="right" parent="flywheel_launcher_frame_link"
+      y="-0.129" radius="0.100" width="0.060" rotating_mass="0.878977133503"
+      spin_inertia="0.00508981582897" transverse_inertia="0.00267808165955"
+      com_z="0.0" max_vel="${max_vel}" effort="0.62"/>
+
+    <!-- Tilt actuator FIT0186 + Tr8x2: mass/position of the bench P16
+         surrogate (0.095 kg at CAD [320,-190,120]); the real FIT0186 mass is
+         unmeasured. -->
+    <joint name="tilt_actuator_joint" type="fixed">
+      <parent link="${parent}"/><child link="tilt_actuator_link"/>
+      <origin xyz="${0.320 + cad_to_base_x} -0.190 ${0.120 + cad_to_base_z}" rpy="0 0 0"/>
+    </joint>
+    <link name="tilt_actuator_link">
+      <inertial><mass value="0.095"/><inertia ixx="1e-5" ixy="0" ixz="0" iyy="1.2e-4" iyz="0" izz="1.2e-4"/></inertial>
+      <visual><geometry><box size="0.120 0.037 0.037"/></geometry><material name="anthracite"/></visual>
+    </link>
+  </xacro:macro>
+
+  <!-- ===================================================== fixed structure -->
+  <xacro:macro name="ski_segments" params="i n cad_to_base_x cad_to_base_z">
+    <xacro:property name="t0" value="${radians(5.0 * i)}"/>
+    <xacro:property name="t1" value="${radians(5.0 * (i + 1))}"/>
+    <xacro:cad_strip_xz name="ski_arc_${i}" parent="" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x0="${383.0 - 75.0 * sin(t0)}" z0="${10.0 + 75.0 * (1.0 - cos(t0))}"
+        x1="${383.0 - 75.0 * sin(t1)}" z1="${10.0 + 75.0 * (1.0 - cos(t1))}"
+        width="${94.0 if 61.0 + (i + 1) * 6.0 > 94.0 else 61.0 + (i + 1) * 6.0}" t="2.0" material="frame_blue_v3"/>
+    <xacro:if value="${i + 1 &lt; n}">
+      <xacro:ski_segments i="${i + 1}" n="${n}" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
+    </xacro:if>
+  </xacro:macro>
+
+  <xacro:macro name="arch_side" params="s cad_to_base_x cad_to_base_z">
+    <xacro:cad_strip_xz name="arch_leg_${s}" parent="" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x0="318" z0="67" x1="390" z1="245" width="20" t="26" y="${s * 228}" material="electronics_blue"/>
+    <xacro:cad_strip_xz name="arch_brace240_${s}" parent="" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x0="240" z0="76" x1="390" z1="245" width="20" t="20" y="${s * 228}" material="electronics_blue"/>
+    <xacro:cad_strip_xz name="arch_brace300_${s}" parent="" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x0="300" z0="77" x1="390" z1="245" width="20" t="20" y="${s * 228}" material="electronics_blue"/>
+    <xacro:cad_box name="arch_mast_${s}" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x="390" y="${s * 150}" z="${(245 + 354) / 2.0}" sx="24" sy="20" sz="109" material="electronics_blue"/>
+  </xacro:macro>
+
+  <xacro:macro name="p271_side" params="s cad_to_base_x cad_to_base_z">
+    <!-- side grid: X-118..225, from the floor (~Z46) to the Z320 rim -->
+    <xacro:cad_box name="basket_side_${s}" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        x="${(-118 + 225) / 2.0}" y="${s * 172}" z="${(46 + 320) / 2.0}" sx="343" sy="3" sz="274" material="basket_gray"/>
+  </xacro:macro>
+
+  <xacro:macro name="active_mechanism_structure" params="parent cad_to_base_x cad_to_base_z">
+    <joint name="active_structure_joint" type="fixed">
+      <parent link="${parent}"/><child link="active_structure_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+    <link name="active_structure_link">
+      <!-- P2-93 arch -->
+      <xacro:arch_side s="1" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
+      <xacro:arch_side s="-1" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
+      <xacro:cad_box name="arch_crossbar" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x="390" y="0" z="245" sx="26" sy="476" sz="20" material="electronics_blue"/>
+      <xacro:cad_box name="arch_upper_beam" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x="390" y="0" z="354" sx="24" sy="320" sz="20" material="electronics_blue"/>
+      <!-- R75/75 ski: flat lead-in then 15 arc segments to 75 deg -->
+      <xacro:cad_strip_xz name="ski_flat" parent="" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x0="435" z0="10" x1="383" z1="10" width="61" t="2" material="frame_blue_v3"/>
+      <xacro:ski_segments i="0" n="15" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
+      <!-- P2-71 basket -->
+      <xacro:cad_strip_xz name="basket_floor_rear" parent="" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x0="-118" z0="72.55" x1="-85" z1="70" width="280" t="4" material="basket_gray"/>
+      <xacro:cad_strip_xz name="basket_floor" parent="" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x0="-85" z0="70" x1="225" z1="46.1" width="280" t="4" material="basket_gray"/>
+      <xacro:p271_side s="1" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
+      <xacro:p271_side s="-1" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
+      <xacro:cad_box name="basket_rear_wall" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x="-118" y="0" z="${(72.55 + 320) / 2.0}" sx="4" sy="280" sz="247.45" material="basket_gray"/>
+      <xacro:cad_box name="basket_front_wall" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x="225" y="0" z="${(46.1 + 235) / 2.0}" sx="4" sy="344" sz="188.9" material="basket_gray"/>
+      <xacro:cad_box name="basket_feed_door_closed" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x="227" y="0" z="${46.1 + 42.0}" sx="2" sy="84" sz="84" material="safety_orange" collide="false"/>
+      <xacro:cad_strip_xz name="basket_feed_channel" parent="" cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+          x0="-85" z0="58" x1="225" z1="38" width="80" t="4" material="frame_blue_v3"/>
+    </link>
+
+    <!-- v3 bench masses: basket + support 1.70 kg at CAD [120, 0, 130] and
+         45 balls 2.565 kg at [105, 0, 135] (mass only). -->
+    <xacro:property name="payload" value="${float($(arg basket_payload_mass))}"/>
+    <joint name="basket_support_mass_joint" type="fixed">
+      <parent link="${parent}"/><child link="basket_support_mass_link"/>
+      <origin xyz="${0.120 + cad_to_base_x} 0 ${0.130 + cad_to_base_z}" rpy="0 0 0"/>
+    </joint>
+    <link name="basket_support_mass_link">
+      <inertial><mass value="${float($(arg basket_empty_mass))}"/><inertia ixx="0.030" ixy="0" ixz="0" iyy="0.020" iyz="0" izz="0.040"/></inertial>
+    </link>
+    <xacro:if value="${payload > 0.0}">
+      <joint name="basket_payload_mass_joint" type="fixed">
+        <parent link="${parent}"/><child link="basket_payload_mass_link"/>
+        <origin xyz="${0.105 + cad_to_base_x} 0 ${0.135 + cad_to_base_z}" rpy="0 0 0"/>
+      </joint>
+      <link name="basket_payload_mass_link">
+        <inertial><mass value="${payload}"/><inertia ixx="0.028" ixy="0" ixz="0" iyy="0.020" iyz="0" izz="0.042"/></inertial>
+      </link>
+    </xacro:if>
+  </xacro:macro>
+</robot>

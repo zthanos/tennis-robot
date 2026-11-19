@@ -15,6 +15,8 @@
   <xacro:include filename="components/electronics_packaging.urdf.xacro"/>
   <xacro:include filename="components/flywheel_launcher.urdf.xacro"/>
   <xacro:include filename="components/compact_mechanics.urdf.xacro"/>
+  <xacro:include filename="components/flywheel_launcher_module.urdf.xacro"/>
+  <xacro:include filename="components/shared_flywheel.urdf.xacro"/>
 
   <!-- ros2_control args. sim_mode swaps the hardware backend (sim vs real).
        controllers_config is the absolute path to controllers.yaml, injected by
@@ -48,6 +50,10 @@
        studies only. -->
   <xacro:arg name="enable_intake" default="false"/>
   <xacro:arg name="enable_flywheel" default="false"/>
+  <!-- P2-99c (d1b): active mechanism (shared tilting flywheel, P2-93 arch,
+       R75 ski, fixed P2-71 basket) ON; legacy lifting bin v2 OFF. -->
+  <xacro:arg name="enable_shared_flywheel" default="true"/>
+  <xacro:arg name="enable_legacy_basket" default="false"/>
   <xacro:arg name="flywheel_max_vel" default="320.0"/>
   <xacro:arg name="flywheel_nip_gap" default="0.058"/>
   <xacro:arg name="basket_empty_mass" default="1.70"/>
@@ -402,6 +408,7 @@
         length="${intake_conveyor_length}"
         mass="0.14"/>
   </xacro:if>
+  <xacro:if value="$(arg enable_legacy_basket)">
   <xacro:ball_basket
       parent="base_link"
       floor_front_x="${float($(arg basket_floor_front_x))}"
@@ -425,9 +432,15 @@
       launch_tilt_rad="${float($(arg basket_launch_tilt_rad))}"
       floor_thickness="${float($(arg basket_floor_thickness))}"
       cad_support_details="$(arg basket_cad_support_details)"/>
+  </xacro:if>
+  <xacro:if value="$(arg enable_shared_flywheel)">
+    <xacro:shared_flywheel_module parent="base_link"
+        cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+        max_vel="${float($(arg flywheel_max_vel))}"/>
+    <xacro:active_mechanism_structure parent="base_link"
+        cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
+  </xacro:if>
   <xacro:power_packs parent="base_link"
-      cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
-  <xacro:shared_flywheel_mass_placeholder parent="base_link"
       cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
 
   <xacro:if value="$(arg enable_compact_electronics)">
@@ -499,11 +512,13 @@
       controllers_config="$(arg controllers_config)"
       intake_max_vel="${intake_wheel_max_vel}"
       enable_intake="$(arg enable_intake)"
-      enable_flywheel="$(arg enable_flywheel)"
+      enable_flywheel="${'$(arg enable_flywheel)' == 'true' or '$(arg enable_shared_flywheel)' == 'true'}"
       flywheel_max_vel="${float($(arg flywheel_max_vel))}"
       basket_lift_travel="${float($(arg basket_lift_travel))}"
       enable_assist="$(arg enable_assist)"
-      enable_conveyor="$(arg enable_conveyor)"/>
+      enable_conveyor="$(arg enable_conveyor)"
+      enable_basket_lift="$(arg enable_legacy_basket)"
+      enable_tilt="$(arg enable_shared_flywheel)"/>
 
   <xacro:robot_body_panels parent="base_link"
       cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>

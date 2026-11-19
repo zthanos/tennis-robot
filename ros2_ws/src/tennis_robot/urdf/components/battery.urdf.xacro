@@ -83,23 +83,4 @@
         x="-209" y="34" z="258" sx="115" sy="45" sz="45" mass="0.309" material="electronics_blue"/>
   </xacro:macro>
 
-  <!-- P2-99c (c) MASS PLACEHOLDER for the shared tilting flywheel module until
-       step (d1b) models it: v3 bench P2-40 module 4.610 kg (frame 2.852 +
-       2 x 0.879 wheels) + tilt actuator 0.095 kg (bench P16 surrogate; the
-       FIT0186+Tr8 mass is unmeasured), at the module CoM at 0 deg:
-       CAD [426.5, 0, 63.3] mm (pivot [387, 0, 51.8] + bench offsets).
-       No visual, no collision: it only keeps the whole-robot mass/CoG right. -->
-  <xacro:macro name="shared_flywheel_mass_placeholder" params="parent cad_to_base_x cad_to_base_z">
-    <joint name="shared_flywheel_mass_placeholder_joint" type="fixed">
-      <parent link="${parent}"/>
-      <child link="shared_flywheel_mass_placeholder_link"/>
-      <origin xyz="${0.4265 + cad_to_base_x} 0 ${0.0633 + cad_to_base_z}" rpy="0 0 0"/>
-    </joint>
-    <link name="shared_flywheel_mass_placeholder_link">
-      <inertial>
-        <mass value="4.705"/>
-        <inertia ixx="0.030" ixy="0" ixz="0" iyy="0.012" iyz="0" izz="0.035"/>
-      </inertial>
-    </link>
-  </xacro:macro>
 </robot>

@@ -42,6 +42,8 @@ controller_manager:
 
     basket_velocity_controller:
       type: forward_command_controller/ForwardCommandController
+    launcher_tilt_velocity_controller:
+      type: forward_command_controller/ForwardCommandController
 
 diff_drive_controller:
   ros__parameters:
@@ -116,6 +118,14 @@ flywheel_velocity_controller:
     # Forward launch: left positive, right negative. The controller exposes
     # the two raw wheel commands so differential spin remains possible later.
     joints: ["flywheel_left_joint", "flywheel_right_joint"]
+    interface_name: velocity
+
+launcher_tilt_velocity_controller:
+  ros__parameters:
+    # P2-99c (d1b): shared-flywheel tilt, rated-speed primitive (+-0.09 rad/s);
+    # the -3 / +20 deg seats are joint limits, the position loop is closed by
+    # the supervisor from /joint_states (AS5600 on hardware).
+    joints: ["launcher_tilt_joint"]
     interface_name: velocity
 
 basket_velocity_controller:

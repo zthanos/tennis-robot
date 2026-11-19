@@ -25,7 +25,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- intake_max_vel = GB37Y3530-12V-251R no-load speed (251 RPM = 26.3 rad/s). -->
   <xacro:macro name="tennis_robot_ros2_control"
-               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 intake_max_vel:=26.3 flywheel_max_vel:=320.0 basket_lift_travel:=0.100 enable_intake:=true enable_flywheel:=false enable_assist:=false enable_conveyor:=false">
+               params="sim_mode:=true controllers_config wheel_max_vel:=20.0 intake_max_vel:=26.3 flywheel_max_vel:=320.0 basket_lift_travel:=0.100 enable_intake:=true enable_flywheel:=false enable_assist:=false enable_conveyor:=false enable_basket_lift:=true enable_tilt:=false">
 
     <ros2_control name="TennisRobotSystem" type="system">
 
@@ -130,6 +130,7 @@
            proportional controller, so it would ignore this joint's rated speed.
            Keep min/max equal to the basket_joint velocity limit in
            components/basket.urdf.xacro. -->
+      <xacro:if value="${enable_basket_lift}">
       <joint name="basket_joint">
         <command_interface name="velocity">
           <param name="min">-0.12</param>
@@ -138,6 +139,23 @@
         <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
+      </xacro:if>
+
+      <!-- P2-99c (d1b): shared flywheel tilt (FIT0186 + Tr8x2, AS5600 angle).
+           Same rated-speed velocity primitive as the basket lift: the
+           -3 / +20 deg seats are the joint limits, the supervisor closes the
+           position loop from the `position` state (AS5600 on hardware).
+           0.09 rad/s ~ the FIT0186/Tr8 design range (4.5..6 s for -3..+20). -->
+      <xacro:if value="${enable_tilt}">
+        <joint name="launcher_tilt_joint">
+          <command_interface name="velocity">
+            <param name="min">-0.09</param>
+            <param name="max">0.09</param>
+          </command_interface>
+          <state_interface name="position"/>
+          <state_interface name="velocity"/>
+        </joint>
+      </xacro:if>
 
       <!-- Optional two-motor side-by-side launcher. Opposite commands make
            both inner wheel faces drive the ball forward (+X). -->
