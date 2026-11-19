@@ -4863,3 +4863,42 @@ Run με το τρέχον URDF: `ros2 bag record --use-sim-time /tf /tf_static 
 είναι σωστά. Σύμφωνα με την εντολή, επόμενο είναι το Pi test.
 
 Κατάσταση: `P2_99C_NAV2_STALL_NO_OUTLIER_NO_SECOND_PUBLISHER_ASK_PI`.
+
+#### Pi test: Nav2 και slam native στο Pi, sim στο PC, μέσω του Wi-Fi AP
+
+Setup:
+- PC στο AP «TennisRobot» (10.42.0.227· το ethernet παραμένει)· DDS
+  multicast discovery PC→Pi επιβεβαιωμένο (117/117 μηνύματα).
+- Κώδικας: rsync μόνο `ros2_ws/src`, `scripts`, `config` και run scripts
+  (~11 MB, χωρίς `--delete`· το `mega_buttons_panel.py` και το `runtime/`
+  έμειναν), rebuild του `tennis_robot` στο Pi.
+- Sim headless στο PC (`TENNIS_LAUNCH_BRAIN=false`,
+  `TENNIS_PERCEPTION_ON_PC=true`)· `run_pi.sh` (domain 42, slam mapping +
+  Nav2) στο Pi.
+- Goals στα 20/50/80/120/150 s (wall) μετά το ready, `tf_age_probe` στο Pi,
+  συνεχές ping. Harness: `scripts/sim_debug/p299c_pi_nav_test.sh`.
+
+| Run | Goals (20 / 50 / 80 / 120 / 150 s) | «too old» στον `controller_server` (Pi) | Ηλικία `map→odom` στο Pi | Wi-Fi rx στο Pi | Ping |
+| --- | --- | --- | --- | --- | --- |
+| r1 | **5/5 SUCCEEDED** | 0 | −0,19…+1,84 s | 999 kB/s | απώλεια 0,44 %, RTT μ.ο. 80 ms, max 542 ms |
+| r2 | **5/5 SUCCEEDED** | 28, όλα με ένα μόνο transform time (445,83 s, καθυστέρηση 0,9 s μετά από slam «queue is full»)· όχι πάγωμα, το goal ολοκληρώθηκε | −0,20…+1,66 s | 911 kB/s | 0,39 %, 89 / 612 ms |
+| r3 | **5/5 SUCCEEDED** | 0 | −0,19…+1,10 s | 1051 kB/s | 0,53 %, 92 / 710 ms |
+
+- **Wi-Fi:** κανένα image/depth/camera topic στο DDS graph του Pi (58–69
+  topics). Μετρημένα: `/map` 124–157 kB/s, `/tf` ~4,6 kB/s,
+  `/odometry/filtered` 9–17 kB/s, `/survey/vision` 6–8 kB/s,
+  `/perception/ball_detections` 2–7 kB/s.
+- **Slam στο Pi:** πετά 105–134 scans/run («queue is full»)· το RTF που
+  βλέπει το Pi κυμαίνεται 0,48–5,4 (ριπές `/clock` στο Wi-Fi). Παρ' όλα αυτά
+  το `map→odom` δεν παγώνει ποτέ.
+- **Καθάρισμα:** στο τέλος κάθε run δεν τρέχει τίποτα στο Pi (και το ros2
+  daemon σταματά). Το `/dev/ttyACM0` δεν υπάρχει (η Mega δεν είναι
+  συνδεδεμένη) και δεν αγγίχτηκε.
+
+Συμπέρασμα: **το πάγωμα του `map→odom` στους Nav2 servers είναι πρόβλημα του
+περιβάλλοντος του dev PC (Ubuntu 26.04 + docker/jazzy).** Στο native Jazzy
+του Pi δεν εμφανίζεται σε 15/15 goals, ενώ στο PC εμφανίζεται σε κάθε run, με
+ή χωρίς το (α). Η ρίζα μέσα στο docker δεν βρέθηκε. Κριτήριο push (goal 3/3 +
+αργό goal στα 120 s) ικανοποιείται στο distributed setup.
+
+Κατάσταση: `P2_99C_NAV2_STALL_PC_DOCKER_ONLY_PI_NATIVE_PASS`.
