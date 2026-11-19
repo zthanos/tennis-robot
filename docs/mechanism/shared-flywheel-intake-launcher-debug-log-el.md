@@ -4795,3 +4795,44 @@ cheeks/intake και το λάθος μήκος είναι «μεγάλο πρό
 
 Κατάσταση: `P2_99C_C_D1A_DONE_NAV2_GOAL_BLOCKED_PREEXISTING`. Τοπικό commit,
 χωρίς push.
+
+### P2-99c — IR D36/D37 έξω από το sim· διάγνωση του Nav2 stall (ηλικία stamp)
+
+**IR:** αφαιρέθηκαν και τα δύο ζεύγη δεσμών (entry D36, exit/confirm D37),
+γεωμετρία και αισθητήρες (`508c289d`). Το contract (`/gz/ir_*`,
+`/gz/basket_ir_*`, `entry_beam_broken`) μένει ως έχει, χωρίς δεδομένα.
+ΑΝΟΙΧΤΟ CAD: θέση των δύο δεσμών στο κοινό flywheel, που απαιτείται για το
+collection confirm (S5).
+
+**Υπόθεση χρήστη:** το `map→odom` έρχεται στα 50 Hz αλλά με ΠΑΛΙΟ stamp, γιατί
+το slam μένει πίσω. Probe `scripts/sim_debug/p299c_tf_age_probe.py` ανά 1 s
+στο ίδιο container: ηλικία stamp του raw `/tf` (`map→odom`,
+`odom→base_footprint`), RTF από το `/clock`, άλματα `/clock`, ρυθμός και
+ηλικία `/scan`, και (στο baseline) ένα κανονικό tf2 Buffer όπως των Nav2
+servers. Goals στα 20 s και 120 s (wall) μετά το ready. Load: loadavg/GPU/top
+ανά 1 s.
+
+| Run | Goal 20 s | Goal 120 s | Ηλικία raw `map→odom` | RTF | Άλματα `/clock` | `/scan` | slam drops | Πάγωμα στον `controller_server` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cur 1 (γ+δ1α) | ABORTED | ABORTED | −0,19…−0,14 s, 50 Hz | 0,94–1,00 | 0 | ~31 Hz, ≤ 0,05 s | 1 (εκκίνηση) | 32,97 s, σταθερό |
+| cur 2 | ABORTED | ABORTED | −0,18…−0,14 s, 50 Hz | 0,92–1,01 | 0 | ≥ 10/s, ≤ 0,05 s | 0 | 37,26 s, σταθερό |
+| baseline (πριν το α) | ABORTED | ABORTED | −0,17…−0,13 s | 0,77–0,91 | 0 | φρέσκο | — | 53,35 s, σταθερό |
+
+Αποτέλεσμα: **η υπόθεση απορρίφθηκε.**
+
+- Το `map→odom` στο `/tf` έχει πάντα φρέσκο stamp (μπροστά κατά
+  `transform_timeout` 0,2 s).
+- Το RTF δεν πέφτει πριν το πάγωμα· το slam δεν πετά scans· το `/clock`
+  είναι συνεχές.
+- Ένα κανονικό tf2 Buffer στο probe βλέπει `map→odom` και `map→base_link`
+  φρέσκα σε όλη τη διάρκεια.
+- Μέσα στους Nav2 servers (controller **και** behavior) το `map→odom` παγώνει
+  σε μία στιγμή και μένει εκεί >100 s, ενώ το `odom→base` συνεχίζει να
+  ενημερώνεται.
+
+Το πρόβλημα είναι επομένως στην παράδοση/αποδοχή του `map→odom` του
+slam_toolbox **μέσα** στα long-lived Nav2 processes. Δεν είναι θέμα χρόνου,
+φορτίου ή ροής scans. Load: loadavg 11–16, GPU 17–22 %, perception
+166–291 % CPU. Κανένα param δεν άλλαξε.
+
+Κατάσταση: `P2_99C_NAV2_STALL_NOT_STAMP_AGE_INSIDE_NAV2_PROCESSES`. ΠΑΥΣΗ.
