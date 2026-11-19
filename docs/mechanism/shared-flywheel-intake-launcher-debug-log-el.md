@@ -4696,3 +4696,38 @@ Gyro (MPU6050 sim): **χρησιμοποιείται**. Το `/imu/data` (`imu_l
 το nav goal μπλοκάρεται από υπάρχον πρόβλημα. Τίποτα δεν έχει γίνει push. Τα
 `b9c7f59e`/`e73bbabb` και το (α) δεν έχουν γίνει push· το (α) δεν έχει γίνει
 commit. ΠΑΥΣΗ.
+
+#### P2-99c (α), 3ος γύρος: διερεύνηση του Nav2 TF stall και οπτική σύγκριση
+
+Το (α) έγινε τοπικά commit (`b8cdc78b`), χωρίς push.
+
+Διερεύνηση με baseline URDF (πριν το (α)) και 4 φρέσκα runs ανά σενάριο:
+goal (2,5, 1,0), gyro check και αργό goal (0, 0) 60 s αργότερα.
+Script: `runtime/p299c/run_same_container.sh`.
+
+| Σενάριο | Goal 1 fail | Αργό goal fail | Πάγωμα `map→odom` (sim) |
+| --- | ---: | ---: | --- |
+| 1a: probes με `docker exec` στο ΙΔΙΟ container (κανένα νέο στο domain) | 1/4 | **4/4** | 41,8 / 68,2 / 69,9 / 67,7 s |
+| 1b: όπως 1a + `FASTDDS_BUILTIN_TRANSPORTS=UDPv4` σε όλα (επιβεβαιωμένο στο `/proc/*/environ`) | 2/4 | **4/4** | 39,6 / 62,9 / 65,9 / 39,0 s |
+
+Υπόθεση «test harness» (νέο container, shared memory): **απορρίφθηκε**.
+Κανένα σενάριο δεν δίνει 0/4. Σύμφωνα με την εντολή η διερεύνηση σταματά·
+η προσωρινή προσθήκη στο `docker/jazzy/run.sh` αναιρέθηκε. Το πάγωμα συμβαίνει
+πάντα: είτε νωρίς (~40 s), είτε κοντά στα ~63–70 s. Το gyro χρησιμοποιείται σε
+όλα τα runs (διαφορά EKF−gyro ≤ 0,0012 rad/s).
+
+Οπτική σύγκριση: `runtime/p299c/visuals/` (README, `pairs/`, `gz/`, `cad/`).
+Gazebo photo world (`scripts/sim_debug/p299c_photo_world.py`): robot static,
+κάμερες με αποθήκευση και δίσκος-marker μόνο στο world των εικόνων. Δίπλα,
+OpenSCAD `current_robot(0°)` από τις ίδιες γωνίες. Κύριες ορατές διαφορές:
+
+- το σασί και οι τροχοί του sim (0,92×0,58, μεταξόνιο 0,66)·
+- **τα παλιά cheeks, ο intake και ο σταθερός launcher, με συνολικό μήκος
+  ≈1,17 m έναντι ≈0,85 m στο CAD**·
+- η OAK αιωρείται·
+- λείπουν η αψίδα και το καλάθι P2-71.
+
+Tower, C1 και επίπεδο σάρωσης ταυτίζονται. Χρήστης 2026-11-19: τα παλιά
+cheeks/intake και το λάθος μήκος είναι «μεγάλο πρόβλημα».
+
+Κατάσταση: `P2_99C_A_GATE4_BLOCKED_PREEXISTING_NAV2_TF_STALL_NOT_HARNESS`.
