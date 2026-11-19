@@ -15,11 +15,8 @@
         <geometry><box size="0.085 0.11 0.018"/></geometry>
         <material name="mount_gray"/>
       </visual>
-      <visual name="lower_mount_stem_vis">
-        <origin xyz="-0.075 0 -0.085" rpy="0 0 0"/>
-        <geometry><box size="0.020 0.070 0.110"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
+      <!-- lower_mount_stem_vis removed (P2-99c step a): it cut the C1 scan
+           band (ground 0.371..0.482). The camera pose itself moves in step (b). -->
     </link>
     <joint name="camera_joint" type="fixed">
       <parent link="${parent}"/>

@@ -13,7 +13,8 @@ The invariants:
     make Throwing Mode physics meaningless.
   * The basket lift travel is the CAD baseline 100 mm, not the earlier 450 mm
     that pushed the raised rim through the LiDAR scan plane.
-  * The LiDAR OPTICAL CENTRE (not the link origin) is 553.5 mm above ground.
+  * The LiDAR OPTICAL CENTRE (not the link origin) is the P2-99b C1 scan plane,
+    419.8 mm above ground, and nothing on the robot enters its +-2 deg band.
 
 Requires xacro, so the whole module skips when ROS is not sourced.
 """
@@ -196,16 +197,67 @@ def test_no_stale_450_mm_basket_travel_default_remains():
 
 # ------------------------------------------------------------------- LiDAR
 
-def test_lidar_optical_centre_clears_the_shell_roof(tmp_path):
-    """The datum is the SCAN PLANE, which is the sensor pose, not lidar_link.
+def _origin_matrix(origin: ET.Element | None):
+    import numpy as np
 
-    Chain: base_footprint -> base_link (base_link_height) -> lidar_link
-    (lidar_xyz.z) -> gpu_lidar <pose> (scan offset). Summing only the first two
-    is exactly how the scan plane silently ended up at 578 mm.
-    """
-    root = _generate(tmp_path, VARIANT)
-    link_height = _ground_height(root, "lidar_link")
+    m = np.eye(4)
+    if origin is None:
+        return m
+    r, p, y = (float(v) for v in origin.get("rpy", "0 0 0").split())
+    cr, sr, cp, sp, cy, sy = (math.cos(r), math.sin(r), math.cos(p),
+                              math.sin(p), math.cos(y), math.sin(y))
+    m[:3, :3] = [[cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr],
+                 [sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr],
+                 [-sp, cp * sr, cp * cr]]
+    m[:3, 3] = [float(v) for v in origin.get("xyz", "0 0 0").split()]
+    return m
 
+
+def _world_transforms(root: ET.Element) -> dict:
+    """Zero-pose transform of every link in the ground (base_footprint) frame."""
+    import numpy as np
+
+    parent = {j.find("child").get("link"): j for j in root.findall("joint")}
+    out: dict = {}
+
+    def resolve(link: str):
+        if link not in out:
+            joint = parent.get(link)
+            out[link] = (np.eye(4) if joint is None else
+                         resolve(joint.find("parent").get("link")) @ _origin_matrix(joint.find("origin")))
+        return out[link]
+
+    for link in root.findall("link"):
+        resolve(link.get("name"))
+    return out
+
+
+def _visual_samples(root: ET.Element):
+    """(link, visual name, Nx3 ground-frame points) on each visual's box/cylinder hull."""
+    import numpy as np
+
+    world = _world_transforms(root)
+    ticks = np.linspace(-1.0, 1.0, 9)
+    for link in root.findall("link"):
+        for visual in link.findall("visual"):
+            geometry = visual.find("geometry")[0]
+            if geometry.tag == "box":
+                half = [float(v) / 2.0 for v in geometry.get("size").split()]
+            elif geometry.tag == "cylinder":
+                r = float(geometry.get("radius"))
+                half = [r, r, float(geometry.get("length")) / 2.0]
+            else:
+                continue
+            m = world[link.get("name")] @ _origin_matrix(visual.find("origin"))
+            local = [(a * half[0], b * half[1], c * half[2])
+                     for a in ticks for b in ticks for c in ticks
+                     if max(abs(a), abs(b), abs(c)) == 1.0]
+            pts = (m @ np.c_[np.array(local), np.ones(len(local))].T).T[:, :3]
+            yield link.get("name"), visual.get("name") or geometry.tag, pts
+
+
+def _lidar_scan_origin(root: ET.Element) -> tuple[float, float, float]:
+    world = _world_transforms(root)
     sensor_z = None
     for gazebo in root.findall("gazebo"):
         if gazebo.get("reference") != "lidar_link":
@@ -214,25 +266,67 @@ def test_lidar_optical_centre_clears_the_shell_roof(tmp_path):
             if sensor.get("name") == "front_lidar":
                 sensor_z = float((sensor.findtext("pose") or "0 0 0 0 0 0").split()[2])
     assert sensor_z is not None, "front_lidar sensor pose not found on lidar_link"
-
-    optical_centre = link_height + sensor_z
-    assert optical_centre == pytest.approx(0.5535, abs=1e-6), (
-        f"LiDAR optical centre is {optical_centre * 1000:.1f} mm above ground; "
-        f"the datum is 553.5 mm (link {link_height * 1000:.1f} mm "
-        f"+ scan offset {sensor_z * 1000:.1f} mm)"
-    )
+    x, y, z = world["lidar_link"][:3, 3]
+    return float(x), float(y), float(z + sensor_z)
 
 
-def test_lidar_mast_never_protrudes_below_the_chassis(tmp_path):
-    """The mast is derived from the mount height, so the datum can move safely."""
+def test_lidar_scan_plane_is_the_p299b_c1_datum(tmp_path):
+    """P2-99c (a): C1 scan plane = pedestal top Z390 + 29.8 mm = 419.8 mm.
+
+    The datum is the SCAN PLANE (sensor pose), not lidar_link: summing only
+    the joint chain is exactly how the scan plane once ended up at 578 mm.
+    """
     root = _generate(tmp_path, VARIANT)
-    link_height = _ground_height(root, "lidar_link")
-    link = next(l for l in root.findall("link") if l.get("name") == "lidar_link")
-    mast = next(v for v in link.findall("visual") if v.get("name") == "mast_vis")
-    centre_z = float(mast.find("origin").get("xyz").split()[2])
-    length = float(mast.find("geometry/box").get("size").split()[2])
-    bottom_ground = link_height + centre_z - length / 2.0
-    assert bottom_ground > 0.0, "LiDAR mast reaches below the ground plane"
-    assert bottom_ground == pytest.approx(0.045 + 0.007, abs=1e-6), (
-        "mast should still land on the chassis top"
-    )
+    _, _, scan_z = _lidar_scan_origin(root)
+    assert scan_z == pytest.approx(0.4198, abs=1e-6)
+    assert _ground_height(root, "lidar_link") == pytest.approx(0.390, abs=1e-6)
+
+
+def test_lidar_position_goes_through_the_d1_cad_offset(tmp_path):
+    """CAD C1 centre [-198.5, +110] mm -> base_link via D1 (X-117.5 mm)."""
+    root = _generate(tmp_path, VARIANT)
+    origin = _joint(root, "lidar_joint").find("origin")
+    x, y, z = (float(v) for v in origin.get("xyz").split())
+    assert (x, y, z) == pytest.approx((-0.316, 0.110, 0.345), abs=1e-9)
+    assert origin.get("rpy") is None or all(
+        abs(float(v)) < 1e-12 for v in origin.get("rpy").split())
+
+
+def test_c1_pedestal_carries_the_sensor_from_the_panel(tmp_path):
+    root = _generate(tmp_path, VARIANT)
+    pedestal = next(pts for link, name, pts in _visual_samples(root)
+                    if name == "p299_c1_pedestal_vis")
+    assert pedestal[:, 2].min() == pytest.approx(0.323, abs=1e-6)
+    assert pedestal[:, 2].max() == pytest.approx(0.390, abs=1e-6)
+
+
+def test_nothing_on_the_robot_enters_the_c1_scan_band(tmp_path):
+    """Geometric +-2 deg band check (same criterion as P2-99a/b), 360 deg.
+
+    Every visual outside lidar_link whose height range reaches
+    Zscan +- r*tan(2 deg) at its own horizontal distance r is a blind sector
+    for gpu_lidar (it renders visuals)."""
+    root = _generate(tmp_path, VARIANT)
+    lx, ly, lz = _lidar_scan_origin(root)
+    slope = math.tan(math.radians(2.0))
+    offenders = []
+    for link, name, pts in _visual_samples(root):
+        if link == "lidar_link":
+            continue
+        r = ((pts[:, 0] - lx) ** 2 + (pts[:, 1] - ly) ** 2) ** 0.5
+        band = r.max() * slope
+        if pts[:, 2].max() >= lz - band and pts[:, 2].min() <= lz + band:
+            offenders.append(f"{link}/{name} z={pts[:, 2].min():.3f}..{pts[:, 2].max():.3f}")
+    assert not offenders, offenders
+
+
+def test_body_f_ko_lidar_ceiling(tmp_path):
+    """D3: above ground 0.375 m only the C1, its pedestal and (until P2-99c
+    step b moves it) the OAK-D camera may exist."""
+    root = _generate(tmp_path, VARIANT)
+    allowed = {"lidar_link", "camera_link"}
+    above = [f"{link}/{name} zmax={pts[:, 2].max():.3f}"
+             for link, name, pts in _visual_samples(root)
+             if pts[:, 2].max() > 0.375 + 1e-9 and link not in allowed
+             and name != "p299_c1_pedestal_vis"]
+    assert not above, above

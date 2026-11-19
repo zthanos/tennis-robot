@@ -121,10 +121,12 @@
       <geometry><box><size>11.3 0.02 0.914</size></box></geometry>
     </collision>
 
-    <!-- Continuous strand AT the LiDAR scan height (z~0.713 m). gpu_lidar senses
-         VISUALS, and the 5 cm strand grid leaves a gap at this exact height; this
-         box gives every scan a clean, dense net return at the right place so the
-         one-shot net lock (which anchors the whole court frame) is stable. -->
+    <!-- Continuous strand at z~0.713 m. It is NOT at the LiDAR scan height:
+         the scan plane has been 0.578 / 0.5535 m and is 0.4198 m since P2-99c
+         (RPLIDAR C1 on the P2-97 tower), so no scan meets this box. The LiDAR
+         sees the net through the procedural strand grid below (gpu_lidar
+         senses VISUALS). Kept unchanged; whether a real net mesh returns
+         reliably at 0.42 m is a real-court test (P2-99c debug log). -->
     <visual name="net_lidar_strand"><pose>0 0 0.713 0 0 0</pose><geometry><box><size>11.3 0.02 0.03</size></box></geometry><material><ambient>0.11373 0.11373 0.11373 1</ambient><diffuse>0.11373 0.11373 0.11373 1</diffuse><specular>0.08 0.08 0.08 1</specular></material></visual>
 
     <!-- Procedural net visual: 5 cm DAE mat_2 strand grid, visible to the camera. -->

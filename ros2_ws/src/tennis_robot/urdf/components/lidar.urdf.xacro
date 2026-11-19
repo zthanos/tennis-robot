@@ -1,32 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <!-- mount_z      : this link's origin in the PARENT frame (base_link).
-       scan_offset_z: sim-only raise of the sensor origin above the link, so the
-                      gpu_lidar (which renders VISUALS) does not sit inside its
-                      own head_vis cylinder. It is part of the datum chain:
-                      ground_scan_z = base_link_height + mount_z + scan_offset_z.
-       chassis_top_z: chassis top in the parent frame; the mast is derived from
-                      it so changing mount_z can never push the mast through the
-                      chassis (or below ground) unnoticed. -->
+  <!-- SLAMTEC RPLIDAR C1 (datasheet v1.1, 2024-03-12):
+         body 55.6 x 55.6 x 41.3 mm, lower base 23.1 mm, 110 g,
+         scan (emit/receive) plane 29.8 mm above the mounting face,
+         range 0.05-12 m.
+       lidar_link = the mounting face (bottom of the sensor), so
+         ground_scan_z = base_link_height + mount z + scan_offset_z.
+       gpu_lidar renders VISUALS, and a ray origin inside its own housing hits
+       the housing interior (blind lidar). The head is therefore drawn as the
+       official 23.1 mm base plus a thin top cap, leaving an optical window
+       around the scan plane. The window band (23.1..35.5 mm) is a sim-only
+       simplification of the real rotating window, not a datasheet value.
+       The support is the P2-99b pedestal in components/p297_tower.urdf.xacro,
+       not a mast on this link. -->
   <xacro:macro name="rplidar_c1_mount"
-               params="parent link_name xyz rpy update_rate scan_offset_z:=0.035 mount_z chassis_top_z:=0.007">
-    <xacro:property name="head_clearance" value="0.015"/>
-    <xacro:property name="mast_length" value="${mount_z - head_clearance - chassis_top_z}"/>
+               params="parent link_name xyz rpy update_rate scan_offset_z:=0.0298">
+    <xacro:property name="c1_side" value="0.0556"/>
+    <xacro:property name="c1_height" value="0.0413"/>
+    <xacro:property name="c1_base_h" value="0.0231"/>
+    <xacro:property name="c1_window_top" value="0.0355"/>
     <link name="${link_name}">
+      <!-- Mass kept at the previous 0.05 kg lump at the link origin so step
+           (a) is mass-neutral; the official 110 g enters in P2-99c step (c). -->
       <inertial>
         <mass value="0.05"/>
         <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
       </inertial>
-      <visual name="mast_vis">
-        <!-- Runs from just under the LiDAR head down to the chassis top. Both
-             ends are derived, so the lower end stays on the chassis for any
-             mount_z instead of being a hand-maintained constant. -->
-        <origin xyz="0 0 ${(chassis_top_z + mount_z - head_clearance) / 2.0 - mount_z}" rpy="0 0 0"/>
-        <geometry><box size="0.025 0.025 ${mast_length}"/></geometry>
-        <material name="anthracite"/>
+      <visual name="head_base_vis">
+        <origin xyz="0 0 ${c1_base_h / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="${c1_side} ${c1_side} ${c1_base_h}"/></geometry>
+        <material name="sensor_black"/>
       </visual>
-      <visual name="head_vis">
-        <geometry><cylinder radius="0.047" length="0.045"/></geometry>
+      <visual name="head_cap_vis">
+        <origin xyz="0 0 ${(c1_window_top + c1_height) / 2.0}" rpy="0 0 0"/>
+        <geometry><box size="${c1_side} ${c1_side} ${c1_height - c1_window_top}"/></geometry>
         <material name="sensor_black"/>
       </visual>
     </link>
@@ -38,11 +45,9 @@
 
     <gazebo reference="${link_name}">
       <sensor name="front_lidar" type="gpu_lidar">
-        <!-- Raised above head_vis (cylinder r=0.047, z=±0.0225): gpu_lidar
-             renders VISUALS, and a sensor origin inside its own housing makes
-             every ray hit the cylinder interior at ~5 cm (lidar goes blind).
-             THIS OFFSET IS PART OF THE HEIGHT DATUM — the scan plane is this
-             much above lidar_link, not at it. -->
+        <!-- Scan plane = 29.8 mm above the mounting face (THIS OFFSET IS PART
+             OF THE HEIGHT DATUM), inside the open window between the base
+             and the cap visuals above. -->
         <pose>0 0 ${scan_offset_z} 0 0 0</pose>
         <update_rate>${update_rate}</update_rate>
         <always_on>true</always_on>
@@ -59,8 +64,8 @@
             </horizontal>
           </scan>
           <range>
-            <!-- RPLIDAR C1 spec min is 0.1 m; 0.15 also rejects any residual
-                 self-hits from the robot's own body. -->
+            <!-- RPLIDAR C1 spec min is 0.05 m. The sim keeps 0.15 m to reject
+                 residual self-hits from the robot body (P2-99a/P2-99c). -->
             <min>0.15</min>
             <max>12.0</max>
             <resolution>0.01</resolution>

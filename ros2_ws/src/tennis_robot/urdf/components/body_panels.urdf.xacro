@@ -1,65 +1,100 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="robot_body_panels" params="parent chassis_z">
-    
+  <!-- Body concept F (P2-99c step a): simplified, SOLID envelope of
+       cad/body-panels/body-panels-f.scad (tub + front continuation + decks).
+       Visual only (the old shell had no collision either); the lattice is
+       drawn closed, which is conservative for sensor occlusion.
+
+       CAD datums (mm, ground frame):
+         plan        circle icr=[117,0] r_tub=424.5  AND  |Y| <= y_wall 244.5
+                     -> straight sides X-230..+464, rear arc to X-307.5
+         heights     z_bot 60, deck z_top 350 for X<=x_arc -230, collar line
+                     falls to the Z320 rim at X~-117, rim Z320 forward
+         tub end     slanted plane at the P2-67/P2-93 arch legs (~X300 here)
+         front cont. after the arch legs (~X340) to fb_xf 511, bottom Z105
+                     (Z140..158 at the front), top Z320; front face |Y|<=158
+         decks       rim/side decks Y167.5..244.5; rear ring around the pod
+       Rule (body F ko_lidar): nothing here exceeds ground Z375.
+       The R60 plan fillets, wall cuts, drawer faces and camera eye are not
+       modelled. Frame: panels_link = CAD ground origin via D1. -->
+  <xacro:property name="f_icr_x" value="117.0"/>
+  <xacro:property name="f_r_tub" value="424.5"/>
+  <xacro:property name="f_y_wall" value="244.5"/>
+  <xacro:property name="f_t" value="3.0"/>
+
+  <!-- Axis-aligned slab between two CAD corners (mm). -->
+  <xacro:macro name="f_slab" params="name x0 x1 y0 y1 z0 z1">
+    <visual name="${name}">
+      <origin xyz="${(x0 + x1) / 2000.0} ${(y0 + y1) / 2000.0} ${(z0 + z1) / 2000.0}" rpy="0 0 0"/>
+      <geometry><box size="${fabs(x1 - x0) * 0.001} ${fabs(y1 - y0) * 0.001} ${fabs(z1 - z0) * 0.001}"/></geometry>
+      <material name="body_terracotta"/>
+    </visual>
+  </xacro:macro>
+
+  <!-- One chord of the r_tub arc between two angles (deg, about icr). -->
+  <xacro:macro name="f_arc_chord" params="name a0 a1 z0 z1">
+    <xacro:property name="am" value="${radians((a0 + a1) / 2.0)}"/>
+    <xacro:property name="half" value="${radians(fabs(a1 - a0) / 2.0)}"/>
+    <xacro:property name="rc" value="${f_r_tub * cos(half) - f_t / 2.0}"/>
+    <visual name="${name}">
+      <origin xyz="${(f_icr_x + rc * cos(am)) * 0.001} ${rc * sin(am) * 0.001} ${(z0 + z1) / 2000.0}" rpy="0 0 ${am}"/>
+      <geometry><box size="${f_t * 0.001} ${2.0 * f_r_tub * sin(half) * 0.001} ${(z1 - z0) * 0.001}"/></geometry>
+      <material name="body_terracotta"/>
+    </visual>
+  </xacro:macro>
+
+  <!-- Rear arc as n chords, recursively (a0 -> a1 deg). -->
+  <xacro:macro name="f_rear_arc" params="i n a0 a1">
+    <xacro:f_arc_chord name="f_rear_arc_${i}_vis"
+        a0="${a0 + (a1 - a0) * i / n}" a1="${a0 + (a1 - a0) * (i + 1) / n}"
+        z0="60.0" z1="350.0"/>
+    <xacro:if value="${i + 1 &lt; n}">
+      <xacro:f_rear_arc i="${i + 1}" n="${n}" a0="${a0}" a1="${a1}"/>
+    </xacro:if>
+  </xacro:macro>
+
+  <xacro:macro name="f_side" params="s tag">
+    <!-- straight side wall: deck-height rear part, rim-height middle, front band -->
+    <xacro:f_slab name="f_${tag}_wall_rear_vis" x0="-230.0" x1="-117.0"
+        y0="${s * (f_y_wall - f_t)}" y1="${s * f_y_wall}" z0="60.0" z1="350.0"/>
+    <xacro:f_slab name="f_${tag}_wall_mid_vis" x0="-117.0" x1="300.0"
+        y0="${s * (f_y_wall - f_t)}" y1="${s * f_y_wall}" z0="60.0" z1="320.0"/>
+    <xacro:f_slab name="f_${tag}_front_band_vis" x0="340.0" x1="464.0"
+        y0="${s * (f_y_wall - f_t)}" y1="${s * f_y_wall}" z0="105.0" z1="320.0"/>
+    <!-- front corner arc 35.2 deg -> 21.85 deg (X464 -> X511) -->
+    <xacro:f_arc_chord name="f_${tag}_front_arc_vis"
+        a0="${s * degrees(acos((464.0 - f_icr_x) / f_r_tub))}"
+        a1="${s * degrees(acos((511.0 - f_icr_x) / f_r_tub))}"
+        z0="140.0" z1="320.0"/>
+    <!-- side / rim decks -->
+    <xacro:f_slab name="f_${tag}_deck_rear_vis" x0="-272.5" x1="-117.0"
+        y0="${s * 167.5}" y1="${s * f_y_wall}" z0="347.0" z1="350.0"/>
+    <xacro:f_slab name="f_${tag}_deck_mid_vis" x0="-117.0" x1="300.0"
+        y0="${s * 167.5}" y1="${s * f_y_wall}" z0="317.0" z1="320.0"/>
+  </xacro:macro>
+
+  <xacro:macro name="robot_body_panels" params="parent cad_to_base_x cad_to_base_z">
     <joint name="panels_joint" type="fixed">
       <parent link="${parent}"/>
       <child link="panels_link"/>
-      <origin xyz="0 0 ${chassis_z / 2}" rpy="0 0 0"/>
+      <origin xyz="${cad_to_base_x} 0 ${cad_to_base_z}" rpy="0 0 0"/>
     </joint>
 
     <link name="panels_link">
+      <!-- Mass/CoG deliberately unchanged in step (a): the old 2.5 kg lump
+           stays at base_link (0, 0, 0.007). Step (c) replaces it. -->
       <inertial>
+        <origin xyz="${-cad_to_base_x} 0 ${0.007 - cad_to_base_z}" rpy="0 0 0"/>
         <mass value="2.5"/> <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
       </inertial>
 
-<visual name="front_left_housing">
-        <origin xyz="0.44 0.18 0.22" rpy="0 0 0"/>
-        <geometry><box size="0.04 0.22 0.44"/></geometry>
-        <material name="body_white">
-          <color rgba="0.92 0.92 0.92 1.0"/>
-        </material>
-      </visual>
-
-      <visual name="front_right_housing">
-        <origin xyz="0.44 -0.18 0.22" rpy="0 0 0"/>
-        <geometry><box size="0.04 0.22 0.44"/></geometry>
-        <material name="body_white"/>
-      </visual>
-
-      <visual name="front_top_brow">
-        <origin xyz="0.44 0 0.38" rpy="0 0 0"/>
-        <geometry><box size="0.04 0.58 0.12"/></geometry>
-        <material name="body_white"/>
-      </visual>
-
-      <visual name="rear_curve_panel">
-        <origin xyz="-0.46 0 0.22" rpy="0 0 0"/>
-        <geometry>
-          <box size="0.05 0.58 0.44"/>
-        </geometry>
-        <material name="body_white"/>
-      </visual>
-
-      <visual name="left_side_panel">
-        <origin xyz="0 0.29 0.22" rpy="0 0 0"/>
-        <geometry><box size="0.88 0.004 0.44"/></geometry>
-        <material name="body_dark_grey">
-          <color rgba="0.2 0.2 0.2 1.0"/>
-        </material>
-      </visual>
-      <visual name="right_side_panel">
-        <origin xyz="0 -0.29 0.22" rpy="0 0 0"/>
-        <geometry><box size="0.88 0.004 0.44"/></geometry>
-        <material name="body_dark_grey"/>
-      </visual>
-
-      <visual name="top_cover_panel">
-        <origin xyz="0 0 0.44" rpy="0 0 0"/>
-        <geometry><box size="0.88 0.58 0.004"/></geometry>
-        <material name="body_white"/>
-      </visual>
+      <xacro:f_side s="1" tag="left"/>
+      <xacro:f_side s="-1" tag="right"/>
+      <xacro:f_rear_arc i="0" n="8"
+          a0="${degrees(acos((-230.0 - f_icr_x) / f_r_tub))}"
+          a1="${360.0 - degrees(acos((-230.0 - f_icr_x) / f_r_tub))}"/>
+      <xacro:f_slab name="f_front_face_vis" x0="508.0" x1="511.0"
+          y0="-158.0" y1="158.0" z0="158.0" z1="320.0"/>
     </link>
-
   </xacro:macro>
 </robot>

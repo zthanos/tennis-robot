@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- P2-97 stackable electronics tower with the P2-99b unified panel/collar
+       and the RPLIDAR C1 pedestal (cad/rear-pod/stackable-box-p297.scad,
+       cad/rear-pod/print-stack/README.md). Simplified envelope, visual only:
+       mass/inertia of the stack are not modelled here (the existing
+       electronics links keep their mass until P2-99c step (c)).
+         stack box      138 x 190 mm, centre CAD X = C1 X, Y0, Z64..323
+         E-stop         mushroom D38 at panel-local [0,-58], top ~Z344
+         C1 pedestal    58 x 68.75 mm, panel-local X+-29, Y+66..+134.75,
+                        Z323..C1 base
+       All values are CAD mm in the ground frame and pass through D1. -->
+  <xacro:macro name="p297_tower"
+               params="parent cad_to_base_x cad_to_base_z c1_x_mm c1_y_mm c1_base_z_mm">
+    <xacro:property name="panel_top_mm" value="323.0"/>
+    <xacro:property name="ped_y0_mm" value="${c1_y_mm - 44.0}"/>
+    <xacro:property name="ped_y1_mm" value="${c1_y_mm + 24.75}"/>
+    <joint name="p297_tower_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="p297_tower_link"/>
+      <!-- Link frame = CAD ground origin, so the children below are plain CAD. -->
+      <origin xyz="${cad_to_base_x} 0 ${cad_to_base_z}" rpy="0 0 0"/>
+    </joint>
+    <link name="p297_tower_link">
+      <visual name="p297_stack_vis">
+        <origin xyz="${c1_x_mm * 0.001} 0 ${(64.0 + panel_top_mm) / 2000.0}" rpy="0 0 0"/>
+        <geometry><box size="0.138 0.190 ${(panel_top_mm - 64.0) * 0.001}"/></geometry>
+        <material name="anthracite"/>
+      </visual>
+      <visual name="p297_estop_vis">
+        <origin xyz="${c1_x_mm * 0.001} -0.058 ${(panel_top_mm + 344.0) / 2000.0}" rpy="0 0 0"/>
+        <geometry><cylinder radius="0.019" length="${(344.0 - panel_top_mm) * 0.001}"/></geometry>
+        <material name="ir_beam_red"/>
+      </visual>
+      <visual name="p299_c1_pedestal_vis">
+        <origin xyz="${c1_x_mm * 0.001} ${(ped_y0_mm + ped_y1_mm) / 2000.0} ${(panel_top_mm + c1_base_z_mm) / 2000.0}" rpy="0 0 0"/>
+        <geometry><box size="0.058 ${(ped_y1_mm - ped_y0_mm) * 0.001} ${(c1_base_z_mm - panel_top_mm) * 0.001}"/></geometry>
+        <material name="mount_gray"/>
+      </visual>
+    </link>
+  </xacro:macro>
+</robot>

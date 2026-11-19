@@ -11,6 +11,7 @@
   <xacro:include filename="components/imu.urdf.xacro"/>
   <xacro:include filename="components/ir_beam.urdf.xacro"/>
   <xacro:include filename="components/body_panels.urdf.xacro"/>
+  <xacro:include filename="components/p297_tower.urdf.xacro"/>
   <xacro:include filename="components/intake_debug_camera.urdf.xacro"/>
   <xacro:include filename="components/electronics_packaging.urdf.xacro"/>
   <xacro:include filename="components/flywheel_launcher.urdf.xacro"/>
@@ -156,41 +157,34 @@
   <xacro:property name="intake_conveyor_length" value="0.200"/>
   <xacro:property name="scooper_pitch" value="0.1745"/>  <!-- 10 degrees; funnel-cheek tilt -->
 
-  <!-- LiDAR height datum. The CAD/mechanical source of truth is the SCAN PLANE
-       at 498 mm above ground, NOT the link origin: the gpu_lidar sensor sits
-       lidar_sensor_scan_offset above lidar_link (see components/lidar.urdf.xacro),
-       and lidar_link itself sits base_link_height above ground. Deriving the
-       mount height keeps all three terms in one place — hardcoding 0.498 here
-       silently placed the scan plane at 0.578 m.
+  <!-- P2-99c D1: CAD ground frame -> base_link. base_link stays at the
+       skid-steer rotation centre (axle midpoint) 45 mm above ground; in the
+       v3 CAD (cad/modular-test-chassis/modular-chassis-v3.scad, axles
+       X-65/+300; body F icr=[117,0]) that point is CAD X+117.5. EVERY CAD
+       position that enters this URDF goes through these two terms; do not
+       hardcode a converted base_link value anywhere else. -->
+  <xacro:property name="cad_to_base_x" value="-0.1175"/>
+  <xacro:property name="cad_to_base_z" value="${-base_link_height}"/>
 
-       RAISED 0.498 -> 0.5535 (2026-08-27). At 0.498 the lidar_link sat at
-       ground 0.463, so head_vis (r=0.047, length 0.045, CENTRED on the link)
-       spanned ground 0.4405..0.4855 — entirely INSIDE the shell, whose roof
-       panel top is at ground 0.494. The scan plane cleared that roof by only
-       4 mm, against the CAD's own 8 mm scan_clearance rule, and worked purely
-       because the chassis is level.
-
-       The shell is deliberately tall: its height is set by the basket in its
-       RAISED position, where the basket feeds the flywheel (the lowered
-       position serves the intake). So the roof does not come down to the
-       CAD's older uniform_shell_top_z = 463 — the LiDAR goes up instead.
-
-       Datum derivation, so it can be re-derived if the roof moves:
-         roof panel top (ground)          0.494
-         + head clearance above the roof  0.002   (CAD sensor_roof_offset = +2)
-         + half of head_vis               0.0225
-         + lidar_sensor_scan_offset       0.035
-         = 0.5535
-       giving lidar_link at ground 0.5185 and the head bottom at 0.496, i.e.
-       resting 2 mm proud of the roof instead of buried 31 mm inside it.
-       NOTE: the CAD lidar-pod-study models a 30 mm sensor whose scan plane is
-       at its top; this URDF uses a 45 mm head with a 35 mm sim-only offset.
-       That 30/45 mm discrepancy is unreconciled and is NOT resolved here. -->
-  <xacro:property name="lidar_scan_plane_z_ground" value="0.5535"/>
-  <xacro:property name="lidar_sensor_scan_offset" value="0.035"/>
-  <xacro:property name="lidar_mount_z"
-      value="${lidar_scan_plane_z_ground - base_link_height - lidar_sensor_scan_offset}"/>
-  <xacro:property name="lidar_xyz" value="-0.42 0 ${lidar_mount_z}"/>
+  <!-- RPLIDAR C1 on the P2-97 tower, P2-99b position B (FIT-CHECK until the
+       two dummy measurements are entered; change ONLY these CAD values):
+       docs/hardware/p2-99b-panel-collar-rplidar-c1-pedestal-el.md.
+         C1 centre (CAD mm)      [-198.5, +110]
+         C1 base (pedestal top)  Z390.0
+         scan plane              Z419.8 = base + 29.8 (SLAMTEC datasheet v1.1)
+       lidar_link is the C1 BASE (mounting face); the gpu_lidar sits
+       lidar_sensor_scan_offset above it, inside the modelled optical window
+       of components/lidar.urdf.xacro. Replaces the 2026-08-27 sim-only
+       0.5535 m datum above the old box shell. -->
+  <xacro:property name="lidar_cad_x_mm" value="-198.5"/>
+  <xacro:property name="lidar_cad_y_mm" value="110.0"/>
+  <xacro:property name="lidar_cad_base_z_mm" value="390.0"/>
+  <xacro:property name="lidar_sensor_scan_offset" value="0.0298"/>
+  <xacro:property name="lidar_mount_z" value="${lidar_cad_base_z_mm * 0.001 + cad_to_base_z}"/>
+  <xacro:property name="lidar_scan_plane_z_ground"
+      value="${lidar_cad_base_z_mm * 0.001 + lidar_sensor_scan_offset}"/>
+  <xacro:property name="lidar_xyz"
+      value="${lidar_cad_x_mm * 0.001 + cad_to_base_x} ${lidar_cad_y_mm * 0.001} ${lidar_mount_z}"/>
   <xacro:property name="lidar_rpy" value="0 0 0"/>  <!-- level chassis: horizontal scan plane -->
   <!-- OAK-D. MOVED FORWARD 0.535 -> 0.690 (2026-08-27). The frozen intake
        extends the robot much further forward than the body panels do: the
@@ -451,9 +445,13 @@
       link_name="lidar_link"
       xyz="${lidar_xyz}"
       rpy="${lidar_rpy}"
-      mount_z="${lidar_mount_z}"
       scan_offset_z="${lidar_sensor_scan_offset}"
       update_rate="${sensor_update_rate}"/>
+  <!-- P2-97 electronics tower + P2-99b panel/collar and C1 pedestal. -->
+  <xacro:p297_tower parent="base_link"
+      cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"
+      c1_x_mm="${lidar_cad_x_mm}" c1_y_mm="${lidar_cad_y_mm}"
+      c1_base_z_mm="${lidar_cad_base_z_mm}"/>
 
   <xacro:oak_d_lite_mount
       parent="base_link"
@@ -526,5 +524,6 @@
       enable_assist="$(arg enable_assist)"
       enable_conveyor="$(arg enable_conveyor)"/>
 
-  <xacro:robot_body_panels parent="base_link" chassis_z="${chassis_z}"/>
+  <xacro:robot_body_panels parent="base_link"
+      cad_to_base_x="${cad_to_base_x}" cad_to_base_z="${cad_to_base_z}"/>
 </robot>

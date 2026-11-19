@@ -250,8 +250,11 @@
         <inertia ixx="0.0320" ixy="0" ixz="0"
                  iyy="0.0060" iyz="0" izz="0.0280"/>
       </inertial>
-      <xacro:compact_box name="basket_left_rail" xyz="0.070 0.180 ${0.2535 - base_link_height}" rpy="0 0 0" size="0.028 0.022 0.403" material="mount_gray"/>
-      <xacro:compact_box name="basket_right_rail" xyz="0.070 -0.180 ${0.2535 - base_link_height}" rpy="0 0 0" size="0.028 0.022 0.403" material="mount_gray"/>
+      <!-- P2-99c (a): clipped from ground Z455 to the body-F ko_lidar ceiling
+           Z375 (D3), so the legacy guides no longer cut the C1 scan band.
+           The basket's raised top (0.25 + 0.10 lift) stays inside them. -->
+      <xacro:compact_box name="basket_left_rail" xyz="0.070 0.180 ${0.2135 - base_link_height}" rpy="0 0 0" size="0.028 0.022 0.323" material="mount_gray"/>
+      <xacro:compact_box name="basket_right_rail" xyz="0.070 -0.180 ${0.2135 - base_link_height}" rpy="0 0 0" size="0.028 0.022 0.323" material="mount_gray"/>
       <xacro:compact_box name="basket_left_rail_foot" xyz="0.070 0.180 ${0.058 - base_link_height}" rpy="0 0 0" size="0.090 0.070 0.012" material="mount_gray"/>
       <xacro:compact_box name="basket_right_rail_foot" xyz="0.070 -0.180 ${0.058 - base_link_height}" rpy="0 0 0" size="0.090 0.070 0.012" material="mount_gray"/>
     </link>

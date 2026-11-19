@@ -4561,3 +4561,138 @@ physical coupon PASS. Τα user `parts.py` edits και τα 3MF έμειναν 
 
 Κατάσταση: `P2_95_FULL_SCENE_GATE_FAIL_115_PLUS_3_CONTAINED`.
 ΠΑΥΣΗ.
+
+### P2-99c (α) — LiDAR C1 + κέλυφος F στο sim, gates 0–3 (ΣΤΑΣΗ στο 3)
+
+Αποφάσεις χρήστη: D1 `base_link` στο μέσο των αξόνων, `cad_to_base =
+[−0,1175, 0, −0,045]` (ένα xacro property)· D2 OAK ≈25° στο βήμα (β)· D3 ο
+παλιός μηχανισμός μένει γνωστό κενό, εκτός από ό,τι περνά πάνω από ground
+0,375 m. Απογραφή: `docs/validation/p2-99c-sim-cad-inventory-el.md`.
+
+Αλλαγές (μη committed ακόμη):
+
+- `tennis_robot.urdf.xacro`: `cad_to_base_x/z` και C1 από τα CAD
+  `[-198,5, +110]`, βάση Z390 → `lidar_xyz [-0.316, 0.110, 0.345]`, scan
+  ground 0,4198, offset 0,0298.
+- `lidar.urdf.xacro`: C1 55,6×55,6×41,3, ως base 23,1 mm + cap. Το παράθυρο
+  23,1…35,5 mm είναι sim-only. Χωρίς ιστό· μάζα 0,05 kg ως τώρα (mass-neutral,
+  τα 110 g στο (γ)).
+- Νέο `p297_tower.urdf.xacro`: stack 138×190 Z64…323, E-stop Ø38 ως Z344,
+  βάθρο Z323…390· μόνο visual.
+- `body_panels.urdf.xacro`: απλοποιημένο συμπαγές envelope του F, 22 visuals,
+  όλα ≤ Z350· η μάζα 2,5 kg μένει στο ίδιο σημείο.
+- Οι ράγες του καλαθιού κόπηκαν από Z455 στο Z375· αφαιρέθηκε η κάτω βάση
+  (`lower_mount_stem`) της κάμερας.
+- Contract: `lidar_scan_plane` 0,4198, `basket_guides` top 0,375.
+- Τεστ: `test_mechanical_variants` ελέγχει scan datum, D1 θέση, βάθρο, ζώνη
+  ±2° και κανόνα Z375.
+
+| Gate | Αποτέλεσμα |
+| --- | --- |
+| 0 xacro render (docker) | PASS: `check_urdf` OK, `gz sdf` OK, 26/26 νέα visuals στο SDF, 90 passed / 3 skipped |
+| 1 TF/frame | PASS: `base_link→lidar_link` `[-0.316, 0.110, 0.345]` (σφάλμα 6e-17), `/scan` frame `lidar_link` |
+| 2 στατικό `/scan` | PASS: 50 scans × 500 beams, finite <0,20 m = 0, −inf = 0, τυφλές 0,0°· `runtime/p299c/scan_gate/` |
+| 3 survey | Ολοκληρώνεται (`done`, 138 s, net/posts/fence/4 obstacles, map saved), αλλά **το κέντρο του διχτυού απέχει +0,318 m** από το ground truth (8,000) |
+
+Υπόθεση για το 3: το `court_survey_v2_node.py:489` κλειδώνει το δίχτυ στο
+`robot(base_link) + front_range`, ενώ το `front_range` μετριέται από τον
+LiDAR. Λείπει το mount offset του LiDAR.
+
+Αποτέλεσμα: επιβεβαιώθηκε με δύο σημεία.
+
+- July survey, LiDAR x −0,08 → σφάλμα +0,082.
+- Τώρα, LiDAR x −0,316 → σφάλμα +0,318.
+
+Το σφάλμα ισούται με −`lidar_x`. Ο χάρτης SLAM δείχνει το δίχτυ ακριβώς στο
+8,0 (`runtime/p299c/gate3_survey_map.png`) και το στατικό scan επίσης
+(X≈7,99). Άρα δεν φταίει το URDF. Το bug προϋπήρχε και ενεργοποιείται από τη
+θέση του LiDAR: από το 2026-08-27 (x −0,42) θα ήταν +0,42. Φράχτης ίδιος
+(γωνίες Δ ≤ 0,09 m)· οι αποστάσεις run-off μετατοπίζονται ±0,265 λόγω του
+court frame.
+
+Παρατήρηση: το `world net_lidar_strand` είναι στο Z0,713, ενώ κανένα scan
+(0,4198 ή 0,5535) δεν το συναντά. Το δίχτυ φαίνεται μόνο από τις αραιές
+κατακόρυφες χορδές (11/500 beams). Το `court_survey.launch.py` σηκώνει δεύτερο
+Nav2 και ο lifecycle_manager του αναφέρει `Failed to change state for node:
+controller_server` (το survey έτρεξε με το ήδη ενεργό Nav2).
+
+Κατάσταση (1ος γύρος): `P2_99C_A_GATE3_STOP_NET_LOCK_IGNORES_LIDAR_OFFSET`.
+
+#### P2-99c (α), 2ος γύρος: net lock διορθώθηκε, gate 3 PASS, gate 4 ΣΤΑΣΗ
+
+Απόφαση χρήστη: διόρθωση του net lock σε ξεχωριστό commit· ο κόσμος δεν
+αλλάζει (μόνο το σχόλιο του `net_lidar_strand`)· το `court_boundary.json`
+επανέρχεται.
+
+- Commit `e73bbabb`: η απόσταση βάθους προσθέτει το offset του αισθητήρα κατά
+  μήκος του heading, από το TF `map→scan frame`· το κέντρο μένει στη γραμμή
+  του heading του ρομπότ. Ένα πρώτο variant που πρόβαλλε από τον ίδιο τον C1
+  έβαλε το κέντρο +0,098 m πλάγια (C1 στο y+0,110) και απορρίφθηκε.
+  Τρία τεστ αποτυγχάνουν με τον παλιό κώδικα και περνούν με τον νέο.
+- Έλεγχος υπόλοιπων σημείων του survey: ο occupancy χάρτης ήδη χρησιμοποιεί
+  `map→scan frame`· extraction και vantages προκύπτουν από το lock. Δεν
+  υπάρχει άλλη προβολή. Εκτός survey το `controller_node.py:2083` (LiDAR ball
+  candidates στα legacy modes `collect`/`collect_pattern`) έχει το ίδιο
+  μοτίβο· δεν άλλαξε.
+- Gate 3 (φρέσκο spawn): κέντρο x +0,046 / y −0,007, κολώνες x +0,050 / +0,042
+  και y −0,007, φράχτης ίδιος, 137 s → **PASS στο όριο** (βόρεια κολώνα
+  ακριβώς 0,050). Υπόθεση για το υπόλοιπο σφάλμα: το lock χρησιμοποιεί το 30ό
+  percentile ενός μετωπικού κώνου με αραιά returns διχτυού. Ένα run στο ίδιο
+  sim έδωσε +0,025.
+- Ένα δεύτερο survey στο ίδιο sim απέτυχε (`find_net timeout`): μετά το
+  προηγούμενο survey το ρομπότ γύρισε στην αφετηρία με yaw ≈ −176°. Είναι
+  υπάρχον όριο (δεν επαναφέρεται το heading), άσχετο με το (α).
+- Το `court_survey.launch.py` σηκώνει δεύτερο Nav2 με τα ίδια ονόματα. Ο
+  `lifecycle_manager_navigation` του βασικού stack έγραψε «Aborting bringup»
+  και άφησε `bt_navigator` unconfigured. Το gate 4 τρέχει επομένως σε φρέσκο
+  sim χωρίς survey.
+- Gate 4, costmaps: 0 lethal/inscribed σε ακτίνα 1,5 m, local και global,
+  πριν και μετά → **PASS**.
+- Gate 4, nav goal (2,5, 1,0): **ABORTED 3/3** με το (α). Ο `controller_server`
+  και ο `behavior_server` βλέπουν `map→odom` κολλημένο (53,38 s / 48,33 s):
+  «Transform data too old», «Current footprint not available». Το ρομπότ μόνο
+  στρίβει. Στο ίδιο run ανεξάρτητος subscriber μετρά `map→odom` φρέσκο στα
+  50 Hz (36→88 s). **Baseline (URDF πριν το (α), ίδιο probe): SUCCEEDED σε
+  7,3 s, σφάλμα 0,14 m, 0 «too old».** Η ρίζα δεν βρέθηκε.
+- Παρατήρηση: στο global costmap του (α) το δίχτυ είναι διακεκομμένα τμήματα
+  και μπροστά υπάρχει άγνωστη σφήνα ±40°, ενώ στο 0,5535 είναι συνεχής
+  γραμμή. Στο στατικό scan μόνο 11/500 ακτίνες χτυπούν το δίχτυ. Αναμενόμενο
+  κατά σχεδίαση (χρήστης, 2026-11-19): ένα πραγματικό δίχτυ δεν δίνει πυκνά
+  LiDAR returns· την αναγνώριση και τον εντοπισμό του διχτυού τα κάνει η
+  OAK-D (neural court scene), ενώ ο LiDAR δίνει μόνο την απόσταση στο lock.
+  Δεν είναι εύρημα του (α).
+
+Αρχεία: `runtime/p299c/{court_boundary.after_fix.json, nav_gate*/,
+sim4.log, sim5.log, sim_baseline.log, tf_probe.py}`.
+
+Απομόνωση (χρήστης: προχώρα, έλεγξε και το gyro). Κάθε run: φρέσκο sim,
+nav goal (2,5, 1,0), gyro check με στροφή 0,6 rad/s, και στη 2η σειρά ένα
+αργό goal 60 s μετά. Script: `runtime/p299c/run_variant.sh`.
+
+| Run | URDF | Goal 1 | Αργό goal |
+| --- | --- | --- | --- |
+| α ×3 (sim4 ×2, sim5) | πλήρες (α) | ABORTED | — |
+| baseline 1 | πριν το (α) | SUCCEEDED 7,3 s | — |
+| A | (α), LiDAR στην παλιά θέση/ύψος | ABORTED (0,69 m πριν τον στόχο) | — |
+| B | A + παλιό κέλυφος | SUCCEEDED 7,2 s | — |
+| C | A + F χωρίς visuals | SUCCEEDED 7,2 s | — |
+| C2 | ίδιο με C | ABORTED | ABORTED |
+| baseline 2 | πριν το (α) | ABORTED | ABORTED |
+
+Αποτέλεσμα: η αποτυχία είναι **διαλείπουσα και προϋπάρχει**· δεν την προκαλεί
+το (α). Το baseline αποτυγχάνει 1 φορά στις 2 και η C επίσης 1 στις 2.
+Σε κάθε αποτυχία οι Nav2 servers έχουν `map→odom` παγωμένο στα ~34–53 s
+sim, ενώ το `/tf` είναι φρέσκο (50 Hz, `tf_probe.py`). Η ρίζα δεν βρέθηκε.
+Υπόθεση προς έλεγχο: σπάει η DDS παράδοση `/tf` προς τους Nav2 servers όταν
+μπαίνει νέο container στο domain (`--network/--ipc host`, shared memory).
+
+Gyro (MPU6050 sim): **χρησιμοποιείται**. Το `/imu/data` (`imu_link`) φτάνει
+στην EKF· σε στροφή 0,6 rad/s το yaw rate της EKF ακολουθεί το gyro με
+διαφορά 0,0001–0,002 rad/s, ενώ οι τροχοί δίνουν 0,597–0,602. Η EKF δεν
+παίρνει yaw από τους τροχούς (`ekf.yaml`) και ο `diff_drive_controller` δεν
+δημοσιεύει TF.
+
+Κατάσταση: `P2_99C_A_GATE4_BLOCKED_PREEXISTING_NAV2_TF_STALL`. Costmaps PASS·
+το nav goal μπλοκάρεται από υπάρχον πρόβλημα. Τίποτα δεν έχει γίνει push. Τα
+`b9c7f59e`/`e73bbabb` και το (α) δεν έχουν γίνει push· το (α) δεν έχει γίνει
+commit. ΠΑΥΣΗ.
