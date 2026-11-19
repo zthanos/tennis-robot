@@ -350,12 +350,31 @@ def test_nothing_on_the_robot_enters_the_c1_scan_band(tmp_path):
 
 
 def test_body_f_ko_lidar_ceiling(tmp_path):
-    """D3: above ground 0.375 m only the C1, its pedestal and (until P2-99c
-    step b moves it) the OAK-D camera may exist."""
+    """D3: above ground 0.375 m only the C1 and its pedestal may exist
+    (the OAK-D S2 moved to the body-F front face in P2-99c step b)."""
     root = _generate(tmp_path, VARIANT)
-    allowed = {"lidar_link", "camera_link"}
+    allowed = {"lidar_link"}
     above = [f"{link}/{name} zmax={pts[:, 2].max():.3f}"
              for link, name, pts in _visual_samples(root)
              if pts[:, 2].max() > 0.375 + 1e-9 and link not in allowed
              and name != "p299_c1_pedestal_vis"]
     assert not above, above
+
+
+def test_oak_d_s2_camera_link_is_the_p299e_pose(tmp_path):
+    """P2-99e: RGB lens at CAD [508, 0, 300] mm, 25 deg down, through D1."""
+    root = _generate(tmp_path, VARIANT)
+    origin = _joint(root, "camera_joint").find("origin")
+    assert [float(v) for v in origin.get("xyz").split()] == pytest.approx([0.3905, 0.0, 0.255], abs=1e-9)
+    assert [float(v) for v in origin.get("rpy").split()] == pytest.approx([0.0, math.radians(25.0), 0.0], abs=1e-9)
+
+
+def test_flywheels_use_the_measured_wheel(tmp_path):
+    """User measurements 2026-11-19: OD 0.200 m, tread 0.040 m, 0.754 kg."""
+    root = _generate(tmp_path, VARIANT)
+    for side in ("left", "right"):
+        link = next(l for l in root.findall("link") if l.get("name") == f"flywheel_{side}_link")
+        assert float(link.find("inertial/mass").get("value")) == pytest.approx(0.754)
+        cyl = link.find("collision/geometry/cylinder")
+        assert (float(cyl.get("radius")), float(cyl.get("length"))) == pytest.approx((0.100, 0.040))
+

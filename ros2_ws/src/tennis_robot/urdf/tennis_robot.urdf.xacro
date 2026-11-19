@@ -217,37 +217,19 @@
   <xacro:property name="lidar_xyz"
       value="${lidar_cad_x_mm * 0.001 + cad_to_base_x} ${lidar_cad_y_mm * 0.001} ${lidar_mount_z}"/>
   <xacro:property name="lidar_rpy" value="0 0 0"/>  <!-- level chassis: horizontal scan plane -->
-  <!-- OAK-D. MOVED FORWARD 0.535 -> 0.690 (2026-08-27). The frozen intake
-       extends the robot much further forward than the body panels do: the
-       cheek mouth is at base_link x=0.705 and the CAD nose front
-       (external-panel-study nose_front_x=790, i.e. base_link 0.690) agrees
-       with it. At x=0.535 the camera sat 155-170 mm BEHIND the actual front
-       edge, cantilevered over the flywheel with the cheeks and ramp reaching
-       out past it.
-
-       Height is unchanged at 0.443 (ground 0.488), which already satisfies
-       "above the flywheel opening" and keeps the calibrated aim:
-         flywheel exit at the nose  ground 0.2987, opening d=116 -> top 0.357
-         camera body bottom          ground 0.463  -> 106 mm above the opening
-         ball centre at the nose     ground 0.2987, ball top 0.332
-                                                   -> 131 mm of launch clearance
-         camera head top             ground 0.5127
-         LiDAR scan plane            ground 0.5535 -> 40.8 mm clear, no occlusion
-       (at the old 0.498 scan plane this camera cut the forward sector by
-       14.7 mm; raising the LiDAR fixed that, see the datum block above.)
-
-       KNOWN GAP: components/body_panels.urdf.xacro still models the OLD short
-       shell, front face at base_link 0.46 — 230 mm behind the CAD nose. The
-       camera mount therefore still hangs in free air here. Extending the shell
-       to the CAD nose, and cutting the launcher exit opening in it, is a
-       separate task and is NOT done here. -->
-       The literal below is a CAD-frame X: functional_shift_x (-0.100 on the
-       compact variant) converts it to base_link. 0.790 IS the CAD
-       nose_front_x, so compact lands at base_link 0.690, next to the cheek
-       mouth which compact_mechanics hardcodes at base_link 0.705 (CAD 805).
-       Writing 0.690 here would double-shift it to 0.590. -->
-  <xacro:property name="camera_xyz" value="${0.790 + functional_shift_x} 0 0.443"/>
-  <xacro:property name="camera_rpy" value="0 0.273 0"/>  <!-- forward-down tilt ~15.6deg; preserves the old world aim (0.22 cam + 0.053 chassis pitch) now that the chassis is level -->
+  <!-- OAK-D S2 (P2-99e, docs/hardware/p2-99e-oak-d-s2-position-angle-el.md):
+       position B, RGB lens on the body-F front face at CAD [508, 0, 300] mm,
+       25 deg down (cad/arch-tilt-p293/p299e-oak-s2.scad oak_lens /
+       oak_pitch_deg), on the p299e bracket from the arch upper beam.
+       camera_link = RGB optical centre at the front glass, through D1:
+       base_link [0.3905, 0, 0.255], pitch 0.436332 rad. Horizon visible,
+       ground from ~0.23 m ahead of the lens, no robot body in the field of
+       view at -3/0/+20 deg (CAD ray cast). -->
+  <xacro:property name="oak_lens_cad_mm" value="${[508.0, 0.0, 300.0]}"/>
+  <xacro:property name="oak_pitch_deg" value="25.0"/>
+  <xacro:property name="camera_xyz"
+      value="${oak_lens_cad_mm[0] * 0.001 + cad_to_base_x} ${oak_lens_cad_mm[1] * 0.001} ${oak_lens_cad_mm[2] * 0.001 + cad_to_base_z}"/>
+  <xacro:property name="camera_rpy" value="0 ${radians(oak_pitch_deg)} 0"/>
   <xacro:property name="sensor_update_rate" value="31.25"/>
 
   <!-- Sim-only debug camera (intake_debug_camera.urdf.xacro): mounted ahead

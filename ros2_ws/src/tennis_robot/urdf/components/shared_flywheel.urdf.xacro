@@ -8,8 +8,15 @@
            pivot [387, 0, 49.837], nip 55 mm ahead, D200 x 60 wheels on
            vertical D5065 axes at Y+-129. Joint axis -Y so positive = mouth up.
            Collection -3 deg (lower seat), transport 0, launch +15..+20 deg.
-           NOTE: the ordered wheels are D192 x 48 (seller data) and the axis
-           distance is still OPEN; the frozen D200 x 60 is kept here.
+           Wheels = USER MEASUREMENTS (docs/hardware/ordered-parts.md A1,
+           2026-11-19): OD ~0.200 m (circumference at working pressure still
+           pending), tread width ~0.040 m measured (tyre marking 200x50 is
+           nominal), hub with bearings 39 mm, rim D106, mass 0.754 kg each.
+           Inertia ASSUMPTION (not measured): rim + hub + bearings 0.35 kg as a
+           solid D106 x 39 disc, tyre + tube 0.404 kg as a thick ring R53..R100
+           x 40 -> spin 0.003079, transverse 0.001638 kg m^2. The axes stay at
+           Y+-129 (nip 58 mm for D200). The frozen CAD still has D200 x 60:
+           updating its width is a separate CAD task.
          - P2-93 arch (cad/arch-tilt-p293/p293-arch-tilt-release.scad):
            legs [318,+-228,67] -> [390,+-228,245], braces from X240/X300,
            crossbar X390 Z245, masts Y+-150 up to Z354, upper beam top Z364.
@@ -103,12 +110,12 @@
       <xacro:sf_yoke side="-1"/>
     </link>
     <xacro:provisional_candidate_flywheel side="left" parent="flywheel_launcher_frame_link"
-      y="0.129" radius="0.100" width="0.060" rotating_mass="0.878977133503"
-      spin_inertia="0.00508981582897" transverse_inertia="0.00267808165955"
+      y="0.129" radius="0.100" width="0.040" rotating_mass="0.754"
+      spin_inertia="0.003079" transverse_inertia="0.001638"
       com_z="0.0" max_vel="${max_vel}" effort="0.62"/>
     <xacro:provisional_candidate_flywheel side="right" parent="flywheel_launcher_frame_link"
-      y="-0.129" radius="0.100" width="0.060" rotating_mass="0.878977133503"
-      spin_inertia="0.00508981582897" transverse_inertia="0.00267808165955"
+      y="-0.129" radius="0.100" width="0.040" rotating_mass="0.754"
+      spin_inertia="0.003079" transverse_inertia="0.001638"
       com_z="0.0" max_vel="${max_vel}" effort="0.62"/>
 
     <!-- Tilt actuator FIT0186 + Tr8x2: mass/position of the bench P16

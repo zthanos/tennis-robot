@@ -2,21 +2,20 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <xacro:macro name="oak_d_lite_mount" params="parent link_name xyz rpy update_rate">
     <link name="${link_name}">
+      <!-- Mass unknown (S2 not purchased, not in the datasheet): placeholder. -->
       <inertial>
         <mass value="0.03"/>
         <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/>
       </inertial>
+      <!-- OAK-D S2 enclosure 23.4 x 97.1 x 29.7 mm (official Luxonis STEP);
+           camera_link = RGB lens on the front glass, lenses 19.67 mm above
+           the enclosure bottom, so the box sits behind and slightly below the
+           link and never enters the field of view. -->
       <visual name="cam_vis">
-        <geometry><box size="0.04 0.10 0.04"/></geometry>
+        <origin xyz="-0.0117 0 ${0.0297 / 2.0 - 0.01967}" rpy="0 0 0"/>
+        <geometry><box size="0.0234 0.0971 0.0297"/></geometry>
         <material name="sensor_black"/>
       </visual>
-      <visual name="rear_mount_plate_vis">
-        <origin xyz="-0.055 0 -0.025" rpy="0 0 0"/>
-        <geometry><box size="0.085 0.11 0.018"/></geometry>
-        <material name="mount_gray"/>
-      </visual>
-      <!-- lower_mount_stem_vis removed (P2-99c step a): it cut the C1 scan
-           band (ground 0.371..0.482). The camera pose itself moves in step (b). -->
     </link>
     <joint name="camera_joint" type="fixed">
       <parent link="${parent}"/>
