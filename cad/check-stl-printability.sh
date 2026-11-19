@@ -69,6 +69,14 @@ case "$(basename "$mesh")" in
     slice_args+=(--allow-z "17.5:18.3:elliptical spigot edge")
     slice_args+=(--allow-z "29.7:30.5:elliptical spigot edge")
     ;;
+  p299e_oak_bracket.stl)
+    # P2-99e: images and classification in
+    # docs/hardware/p2-99e-oak-d-s2-position-angle-el.md (docs/images/p2-99e-slice-*.svg).
+    # Walls around the pocket are >=3.2 mm (X), 3.8 mm (Y), 6 mm (Z).
+    slice_args+=(--allow-z "85.7:86.3:nut-pocket floor cusp at the bore after support-free rotation")
+    slice_args+=(--allow-z "93.7:94.3:bore/nut-pocket exit at the beam-contact face")
+    slice_args+=(--allow-z "98.9:99.5:oblique pad top edge after support-free rotation")
+    ;;
   oak_mount_x1.stl)
     slice_args+=(--allow-z "0.5:0.7:rounded bed-edge tangent")
     slice_args+=(--allow-z "1.1:3.3:oblique gusset and plate edge transitions")

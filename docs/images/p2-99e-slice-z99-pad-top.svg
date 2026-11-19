@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="805" viewBox="0 0 160 805">
+<rect width="100%" height="100%" fill="#f7f7f4"/>
+<text x="30" y="30" font-family="sans-serif" font-size="20" font-weight="bold">Z=99.500 mm</text>
+<text x="30" y="55" font-family="sans-serif" font-size="16">width 0.042 mm; islands 0.67, 0.67 mm2</text>
+<path d="M 80.15,236.62 L 80.19,236.62 L 80.25,236.60 L 80.25,127.47 L 80.25,124.96 L 79.96,124.96 L 79.96,126.21 L 79.96,126.22 L 79.96,235.34 L 79.96,236.60 Z M 80.15,613.38 L 80.19,613.38 L 80.25,613.40 L 80.25,615.91 L 80.25,725.04 L 79.96,725.04 L 79.96,723.78 L 79.96,614.66 L 79.96,614.65 L 79.96,613.40 Z" fill="#1f6f8b" fill-rule="evenodd" stroke="#173f4f" stroke-width="1"/>
+<line x1="80.25" y1="182.04" x2="79.96" y2="182.04" stroke="#d7263d" stroke-width="3"/><circle cx="80.25" cy="182.04" r="5" fill="#d7263d"/><circle cx="79.96" cy="182.04" r="5" fill="#d7263d"/>
+</svg>

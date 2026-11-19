@@ -21,6 +21,7 @@
 //     above; between pod and wall the deck follows the diagonal; the P2-70
 //     top panel (E-stop etc.) stays flush at Z350.
 
+include <../arch-tilt-p293/p299e-oak-s2.scad>   // P2-99e OAK-D S2 envelope/pose
 use <body-panels-f-support.scad>
 use <../modular-test-chassis/modular-chassis-v3.scad>
 use <../modular-test-chassis/shared-flywheel-transition-p252.scad>
@@ -234,14 +235,13 @@ module fov_visible(a){
 // launch cone with its axis at the CURRENT module angle (paired check)
 module ko_cone_at(a,L=1600){ n=gpoint(a,[55,0,0]); hull(){ translate(n) sphere(r=33);
   for(de=[-10,10], sy=[-1,1]){ e=a+de; translate(n+L*[cos(e),0,sin(e)]+[0,sy*L*tan(10),0]) sphere(r=33); } } }
-cam_old = [410,0,305]; cam_new = [500,0,300];   // camera integrated in the front face, hung from the X-beam of the LiDAR mast (Z344)
+cam_old = [410,0,305]; cam_new = oak_lens;   // P2-99e: OAK-D S2 lens in the front face, on a bracket from the arch upper beam
 function cam_x()= cam_fwd ? cam_new[0] : cam_old[0]; function cam_z()= cam_fwd ? cam_new[2] : cam_old[2];
-module cam_box(c){ translate(c) rotate([0,50,0]) cube([82,32,28],center=true); }
+module cam_box(c){ oak_s2_envelope(); }   // P2-99e: real S2 envelope at the approved pose (c kept for the QA call sites)
 module ko_camera_fov_f(){ dx = cam_x()-410; hull(){ translate([cam_x(),0,cam_z()]) sphere(d=8);
   for(p=[[605,-120,33],[605,120,33],[490,-70,33],[490,70,33]]) translate(p+[dx,0,0]) sphere(d=8); } }
-module camera_proposal(){
-  color([0.08,0.09,0.11]) cam_box(cam_new);
-  color([0.20,0.50,0.76]) hull(){ translate([cam_new[0]-22,0,343]) cube([30,24,2],center=true); translate([cam_new[0]-22,0,334]) cube([12,24,2],center=true); } // hanger from the mast X-beam
+module camera_proposal(){   // P2-99e: OAK-D S2 at position B (bracket lives in the arch assembly)
+  color([0.08,0.09,0.11]) oak_s2_envelope();
 }
 
 // ---------------------------------------------------------------- FRONT CONTINUATION
@@ -294,12 +294,12 @@ module front_band(){
 module fb_hangers(){ for(s=[-1,1]) hull(){
   translate([417,s*172,236]) cube([4,8,10],center=true);     // clip on the crossbar front face X415
   translate([498,s*172,fb_zt(498)-2]) cube([4,8,4],center=true); } }    // lands on the corner arc, inside R424.5
-// opening = camera body (82x32x28 at 50 deg) + 3 mm all round, pushed through
-// the front face along the lens direction; the lens sits flush in the face.
+// P2-99e opening: the OAK-D S2 envelope + 3 mm all round, pushed forward
+// along the optical axis through the face, plus the RGB/stereo field of view
+// where it crosses the face. Follows oak_pitch_deg (p299e-oak-s2.scad).
 module cam_eye(){
-  translate(cam_new) rotate([0,50,0]) hull(){ cube([88,38,34],center=true); translate([60,0,0]) cube([88,38,34],center=true); }
-  // + the FOV mouth where it crosses the face (a few mm below the body)
-  intersection(){ minkowski(){ ko_camera_fov_f(); sphere(r=3,$fn=8); } slab([480,-60,200],[530,60,330]); }
+  hull(){ oak_s2_envelope(3); oak_frame() translate([60,0,0]) cube([2, oak_size[1]+6, oak_size[2]+6], center=true); }
+  intersection(){ minkowski(){ oak_fov(80); sphere(r=3,$fn=8); } slab([480,-80,150],[530,80,340]); }
 }
 module front_continuation(){ front_band(); }
 

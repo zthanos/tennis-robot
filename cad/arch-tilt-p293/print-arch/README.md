@@ -24,3 +24,11 @@ print orientation να μην μπορούν να κρύψουν πραγματ�
 
 Κάθε coupon είναι ένα σώμα και έχει planning print time κάτω από 1 h· η
 τιμή πρέπει να επιβεβαιωθεί από τον πραγματικό slicer πριν την εκτύπωση.
+
+## P2-99e — `p299e_oak_bracket.stl` (FIT-CHECK)
+
+Αντικαθιστά το `oak_mount_x1.stl` (P2-93d, 50° στο X450 — **ΜΗΝ ΤΥΠΩΣΕΙΣ**).
+Έτοιμο στο bed: πλάκα κάτω, τοιχώματα προς τα πάνω· κανένα rotate στον slicer.
+Πηγή `p299e-oak-bracket.scad`, export `export-p299e-oak.sh`, μελέτη
+`docs/hardware/p2-99e-oak-d-s2-position-angle-el.md`.
+

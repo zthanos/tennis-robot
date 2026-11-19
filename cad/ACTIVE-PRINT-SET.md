@@ -17,6 +17,19 @@ Nominal CAD: κέντρο C1 panel-local `[0,+110]`, βάση Z390, scan Z419,8,
 προς Ruthex είναι ασύμμετρο κλειδί θέσης. Το άνοιγμα XH 17×10 είναι
 προσωρινό· **να μετρηθεί από τον χρήστη**. URDF δεν άλλαξε.
 
+## P2-99e — βραχίονας OAK-D S2, FIT-CHECK
+
+| STL | Ποσότητα | Κατάσταση / blocker |
+| --- | ---: | --- |
+| `arch-tilt-p293/print-arch/p299e_oak_bracket.stl` | 1 | **FIT-CHECK — ΜΗΝ ΤΥΠΩΣΕΙΣ ακόμη**. One-body / floating / downward / slice PASS (3 τεκμηριωμένες ακμές), scene gate 48 ζεύγη χωρίς νέο. Εκκρεμούν: ζύγιση της κάμερας, fit της S2 και του M4 nut pocket, tap test. |
+
+Θέση B: φακός CAD [508, 0, 300], `oak_pitch_deg` 25° (παράμετρος στο
+`p299e-oak-s2.scad`). Στήριξη στις δύο υπάρχουσες M4 οπές της άνω δοκού
+([*, ±35, 354]): M4×40 από πίσω από τη δοκό σε captive παξιμάδι. Η κάμερα
+δένει με 2× M4×12 VESA 75 από πίσω (κλειδί L). Τυπώνεται με την πλάκα στο bed,
+115 g PETG. Εκτύπωση: `bash arch-tilt-p293/export-p299e-oak.sh`. Αντικαθιστά
+το `oak_mount_x1.stl`. Το «μάτι» του body F ακολουθεί την ίδια παράμετρο.
+
 ## P2-96b — ενεργό print set αψίδας, όχι RELEASED
 
 Μοναδική πηγή εκτύπωσης: `arch-tilt-p293/print-arch/`.
@@ -36,7 +49,7 @@ Nominal CAD: κέντρο C1 panel-local `[0,+110]`, βάση Z390, scan Z419,8,
 | 11 | `mast_cap_L.stl`, `mast_cap_R.stl` | 1+1· έτοιμα στο bed |
 | 12 | `lidar_half_L.stl`, `lidar_half_R.stl` | 1+1· έτοιμα στο bed |
 | 13 | `sensor_joint_sleeve_x1.stl` | 1 |
-| 14 | `oak_mount_x1.stl` | 1 |
+| 14 | ~~`oak_mount_x1.stl`~~ → **`p299e_oak_bracket.stl`** | 1· **P2-99e αντικαθιστά** το oak_mount_x1 (50° στο X450). Το παλιό: **ΜΗΝ ΤΥΠΩΣΕΙΣ** |
 
 Τα coupons είναι test-only, όχι installed parts. Οι χρόνοι τους είναι
 planning estimates και απαιτούν επιβεβαίωση από πραγματικό slicer. Όλα τα

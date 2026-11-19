@@ -45,6 +45,8 @@ module exact_current_context(a) {
   color([0.28,0.67,0.36]) p271_front_system(a,true);
   color([0.08,0.62,0.82]) p273_ski_mount_assembly();
   color([0.10,0.42,0.86]) p293g_arch_assembly();
+  // P2-99e: OAK-D S2 envelope at position B (lens [508,0,300], 25 deg).
+  color([0.08,0.09,0.11]) oak_s2_envelope();
   color([0.95,0.43,0.08]) p293g_tilt_assembly(a);
   // P2-93g: legacy upper stops retired by explicit user approval.
   // FIT-CHECK ONLY: operation prohibited until P2-93h stops/strikers verified.

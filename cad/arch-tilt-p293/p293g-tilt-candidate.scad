@@ -2,6 +2,7 @@
 // Purchased hardware dimensions are provisional fit-check envelopes.
 use <p293d-arch-candidate.scad>
 use <p293-arch-tilt-release.scad>
+use <p299e-oak-bracket.scad>
 part="assembly";
 side_mark="";
 angle=0;
@@ -128,7 +129,8 @@ module p293g_arch_assembly(){
  for(side=[-1,1])translate([390,side*100,245])rotate([0,0,90])joint_sleeve_x([20,26],48);
  translate([390,0,354])rotate([0,0,90])
   joint_sleeve_x([24,20],44,[-11,11]);
- p293d_oak_mount();
+ // P2-99e: OAK-D S2 bracket (position B, 25 deg) replaces p293d_oak_mount.
+ p299e_oak_bracket();
  p293g_foot();mirror([0,1,0])p293g_foot();
 }
 
