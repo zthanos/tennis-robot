@@ -690,6 +690,7 @@ def main() -> int:
             f"enable_flywheel:={enable_flywheel}",
             f"enable_shared_flywheel:={os.getenv('ROBOT_ENABLE_SHARED_FLYWHEEL', 'true')}",
             f"enable_legacy_basket:={os.getenv('ROBOT_ENABLE_LEGACY_BASKET', 'false')}",
+            f"enable_intake_debug_camera:={os.getenv('ROBOT_ENABLE_INTAKE_DEBUG_CAMERA', 'false')}",
             f"flywheel_max_vel:={os.getenv('FLYWHEEL_MAX_VEL_RAD_S', '320.0')}",
             f"flywheel_nip_gap:={os.getenv('FLYWHEEL_NIP_GAP_M', '0.058')}",
             f"basket_empty_mass:={basket_empty_mass}",

@@ -54,6 +54,9 @@
        R75 ski, fixed P2-71 basket) ON; legacy lifting bin v2 OFF. -->
   <xacro:arg name="enable_shared_flywheel" default="true"/>
   <xacro:arg name="enable_legacy_basket" default="false"/>
+  <!-- Sim-only intake debug camera (legacy intake corridor view): off by
+       default since P2-99c; ROBOT_ENABLE_INTAKE_DEBUG_CAMERA=true for legacy studies. -->
+  <xacro:arg name="enable_intake_debug_camera" default="false"/>
   <xacro:arg name="flywheel_max_vel" default="320.0"/>
   <xacro:arg name="flywheel_nip_gap" default="0.058"/>
   <xacro:arg name="basket_empty_mass" default="1.70"/>
@@ -479,7 +482,7 @@
       update_rate="${sensor_update_rate}"/>
 
   <!-- Sim-only: no real-hardware equivalent. -->
-  <xacro:if value="$(arg sim_mode)">
+  <xacro:if value="${'$(arg sim_mode)' == 'true' and '$(arg enable_intake_debug_camera)' == 'true'}">
     <xacro:intake_debug_camera
         parent="base_link"
         link_name="intake_debug_camera_link"
