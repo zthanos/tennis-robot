@@ -4836,3 +4836,30 @@ slam_toolbox **μέσα** στα long-lived Nav2 processes. Δεν είναι θ
 166–291 % CPU. Κανένα param δεν άλλαξε.
 
 Κατάσταση: `P2_99C_NAV2_STALL_NOT_STAMP_AGE_INSIDE_NAV2_PROCESSES`. ΠΑΥΣΗ.
+
+#### Υπόθεση «μεμονωμένο stamp μπροστά / δεύτερος εκδότης»: απορρίφθηκε
+
+Run με το τρέχον URDF: `ros2 bag record --use-sim-time /tf /tf_static /clock`
+από πριν το bring-up ως μετά το πάγωμα (`runtime/p299c/bag_cur_1`). Ανάλυση:
+`scripts/sim_debug/p299c_tf_bag_outliers.py`.
+
+- Πάγωμα στον `controller_server` στο stamp **37,000 s** (`37s 0ns`). Το
+  αντίστοιχο μήνυμα `map→odom` λήφθηκε κανονικά στα 36,836 s (+0,164 s), όπως
+  όλα τα άλλα· το στρογγυλό stamp προκύπτει από το `scan stamp + 0,2`.
+- **Outliers > 1 s: 0.** Offsets stamp − λήψη: `map→odom` +0,136…+0,192 s
+  (10.546 μηνύματα, 7,56→217,26 s)· `odom→base_footprint` −0,01…+0,022 s
+  (6.457)· `base_link→*` −0,08…+0,02 s.
+- **Εκδότες `/tf`: 3** (όλοι reliable/volatile), με ξένα μεταξύ τους σύνολα:
+  μόνο `map→odom` (slam_toolbox)· μόνο `odom→base_footprint` (EKF,
+  use_sim_time=True)· `base_link→*` (robot_state_publisher). **Κανένας
+  δεύτερος εκδότης `map→odom`.** Ο TRANSIENT_LOCAL εκδότης ανήκει στο
+  `/tf_static`.
+- Logs: **κανένα** TF_OLD_DATA, «ignoring data from the past»,
+  TF_REPEATED_DATA ή jump-back· οι 26 εμφανίσεις είναι μόνο «Received request
+  to clear» των recoveries.
+
+Συμπέρασμα: οι Nav2 servers σταματούν να **λαμβάνουν** (ή να εισάγουν) το
+`map→odom` του slam_toolbox, χωρίς ίχνος στο log, ενώ τα δεδομένα στο δίκτυο
+είναι σωστά. Σύμφωνα με την εντολή, επόμενο είναι το Pi test.
+
+Κατάσταση: `P2_99C_NAV2_STALL_NO_OUTLIER_NO_SECOND_PUBLISHER_ASK_PI`.
