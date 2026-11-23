@@ -1,5 +1,15 @@
 # P2-97 full-scene gate note
 
+P2-99f addendum (2026-11-23): the failed four 6.5×6.5×4 C1 pads are
+replaced by one 62×73×4 mm plate, printed on the bed. C1 bores are Ø2.9 on
+the unchanged 43×43 pattern; cheek inner faces are X=±27. The unchanged
+58×58 lower foot, four M3 axes, XH opening and `p299_panel_collar.stl` remain
+identical. Pedestal gates: one body, 0 floating islands, 0 unsupported faces,
+slice width ≥1.6 mm, 8/8 C1+M3 axes, and 0.000000 mm³ intersection with four
+Ø4.5 head/key corridors. The scene remains at the same 48 historical pairs
+with 0 contained and 0 export failures; scan Z419.8 and the ±2° band pass.
+Record: [P2-99f](../../../docs/hardware/p2-99f-c1-pedestal-first-print-correction-el.md).
+
 P2-99b addendum (2026-11-18): the active exporter now emits 11 files. It
 removes `p297_collar.stl` and adds `p299_panel_collar.stl` plus
 `p299_c1_pedestal.stl`. Both new files pass the permanent one-body,

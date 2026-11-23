@@ -7,6 +7,8 @@ out_dir="$root_dir/print-stack"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
 printability_check="$root_dir/../check-stl-printability.sh"
 through_hole_check="$root_dir/../check-stl-through-holes.py"
+pedestal_access_check="$root_dir/check-p299-c1-pedestal.py"
+image_dir="$root_dir/../../docs/images"
 bts_height="${P297_BTS_HEIGHT_MM:-}"
 seam_clearance="${P297_SEAM_CLEARANCE_MM:-0.35}"
 
@@ -73,12 +75,40 @@ for part_name in "${parts[@]}"; do
       --hole 'status,-42,-70,-1,-42,-70,5,8'
   elif [[ "$part_name" == "p299_c1_pedestal" ]]; then
     python3 "$through_hole_check" "$out_dir/${part_name}.stl" \
-      --hole 'c1_1,-21.5,22.5,62,-21.5,22.5,68,2.8' \
-      --hole 'c1_2,21.5,22.5,62,21.5,22.5,68,2.8' \
-      --hole 'c1_3,-21.5,65.5,62,-21.5,65.5,68,2.8' \
-      --hole 'c1_4,21.5,65.5,62,21.5,65.5,68,2.8'
+      --hole 'c1_1,-21.5,7.5,-1,-21.5,7.5,5,2.9' \
+      --hole 'c1_2,21.5,7.5,-1,21.5,7.5,5,2.9' \
+      --hole 'c1_3,-21.5,50.5,-1,-21.5,50.5,5,2.9' \
+      --hole 'c1_4,21.5,50.5,-1,21.5,50.5,5,2.9' \
+      --hole 'm3_1,-18,67,61,-18,67,68,3.4' \
+      --hole 'm3_2,18,67,61,18,67,68,3.4' \
+      --hole 'm3_3,-18,49,61,-18,49,68,3.4' \
+      --hole 'm3_4,22,51,61,22,51,68,3.4'
   fi
 done
+
+access_tmp="$(mktemp -d "$root_dir/.p299-access-check.XXXXXX")"
+trap 'rm -rf "$access_tmp"' EXIT
+"$openscad_bin" --hardwarnings -o "$access_tmp/p299_c1_access_keepouts.stl" \
+  -D 'part="p299_c1_access_keepouts"' -D 'show_ghosts=false' -D '$fn=72' \
+  -D "p297_bts_measured_h=$bts_height" \
+  -D "p297_seam_clearance=$seam_clearance" "$scad_file"
+uv run --with manifold3d --with trimesh --with numpy \
+  python "$pedestal_access_check" "$out_dir/p299_c1_pedestal.stl" \
+  "$access_tmp/p299_c1_access_keepouts.stl"
+
+mkdir -p "$image_dir"
+"$openscad_bin" --hardwarnings --backend=manifold --render \
+  -o "$image_dir/p2-99f-c1-pedestal-bottom.png" \
+  --imgsize=1400,1000 --viewall --autocenter \
+  --camera=0,102,-170,0,102,63 -D 'part="p299_c1_bottom_preview"' \
+  -D "p297_bts_measured_h=$bts_height" \
+  -D "p297_seam_clearance=$seam_clearance" "$scad_file"
+"$openscad_bin" --hardwarnings --backend=manifold --render \
+  -o "$image_dir/p2-99f-c1-pedestal-side.png" \
+  --imgsize=1400,1000 --viewall --autocenter \
+  --camera=175,102,55,0,102,34 -D 'part="p299_c1_side_preview"' \
+  -D "p297_bts_measured_h=$bts_height" \
+  -D "p297_seam_clearance=$seam_clearance" "$scad_file"
 
 "$openscad_bin" --hardwarnings --backend=manifold --render -o "$out_dir/p297-assembly.png" \
   --imgsize=1400,1000 --viewall --autocenter \
@@ -99,4 +129,4 @@ done
   --camera=90,-110,75,0,0,18 -D 'part="p297_corner_after_section"' \
   -D "p297_seam_clearance=$seam_clearance" "$scad_file"
 
-echo "Exported ${#parts[@]} FIT-CHECK STLs (clearance ${seam_clearance} mm/side) and four previews to $out_dir"
+echo "Exported ${#parts[@]} FIT-CHECK STLs (clearance ${seam_clearance} mm/side), four stack previews to $out_dir, and two P2-99f access views to $image_dir"

@@ -67,14 +67,22 @@ p297_panel_z = p297_collar_z + p297_collar_h;
 // Keep the installed datum explicit; the export wrapper turns the released
 // panel face onto Z=0, as required by the support-free print orientation.
 p299_panel_collar_h = p297_collar_h + plate_t;
-p299_c1_center = [0,110]; // provisional CAD datum; physical dummy dimensions remain gates
+p299_c1_center = [0,110]; // user-confirmed CAD datum; 78 mm from START centre
 p299_c1_base_z = 390;
 p299_c1_scan_offset = 29.8;
 p299_c1_size = [55.6,55.6,41.3];
 p299_pedestal_h = p299_c1_base_z-(p297_panel_z+plate_t);
 p299_c1_pattern = 43;
+p299_c1_clear_d = 2.9;
+p299_c1_head_d = 4.5;
+p299_c1_plate_t = 4;
+p299_c1_plate_size = [62,73];
+p299_c1_plate_center = [0,102.5];
+p299_c1_cheek_t = 4;
+p299_c1_cheek_inner_x = 27;
+p299_c1_cable_slot = [17,26.2];
 p299_panel_mounts = [[-18,72],[18,72],[-18,90],[22,88]];
-p299_xh_opening = [17,10]; // provisional XH2.54-5P housing +2 mm/side: measure user part
+p299_xh_opening = [17,10]; // user housing 13 x 10 x 4 mm passes this released opening
 p299_xh_opening_center = [0,82];
 
 // Physical board patterns.  Mega/perf/BTS values are measured parts recorded
@@ -896,45 +904,125 @@ module p299_c1_pedestal_installed() {
     assert(p299_pedestal_h > 10,"P2-99b pedestal height must be positive");
     assert(abs(p299_c1_base_z+p299_c1_scan_offset-419.8) < 0.001,
            "P2-99b nominal scan plane changed");
+    assert(p299_c1_plate_t == 4,
+           "P2-99f M2.5x8 requires exactly 4 mm plate thickness");
+    assert(p299_c1_plate_size[0] >= p299_c1_size[0]
+           && p299_c1_plate_size[1] >= p299_c1_size[1],
+           "P2-99f plate must cover the complete C1 footprint");
+    assert(p299_c1_cheek_inner_x-p299_c1_pattern/2 >= 5,
+           "P2-99f cheek inner face must be >=5 mm from every C1 hole axis");
     difference() {
         union() {
-            // Bed-supported panel foot. Its nearest Y edge retains >25 mm
-            // clear from the Ø16.3 START edge; it also clears slot/LED/toggle/E-stop.
+            // P2-99f keeps the complete lower interface unchanged: 58 x 58 x 5,
+            // the four asymmetric M3 axes and the existing XH passage below.
             translate([0,95,2.5]) cube([58,58,5],center=true);
-            // Two PETG shear cheeks. The rear 10 mm cantilever has an exact
-            // 45-degree underside and supports the off-panel C1 hole row.
-            for (x=[-25,25])
-                translate([x-2,0,0]) rotate([90,0,90])
-                    linear_extrude(height=4)
-                        polygon(points=[[66,4.6],[124,4.6],[134,14.6],
-                                        [134,p299_pedestal_h-4],
-                                        [82,p299_pedestal_h-4],
-                                        [66,p299_pedestal_h-20]]);
-            // Four independent 4 mm sensor pads keep every screw head
-            // accessible from below and make M2.5x8 penetrate exactly 4 mm.
-            for (x=[-p299_c1_pattern/2,p299_c1_pattern/2],
-                 y=[p299_c1_center[1]-p299_c1_pattern/2,
-                    p299_c1_center[1]+p299_c1_pattern/2])
-                translate([x,y,p299_pedestal_h-2]) cube([6.5,6.5,4],center=true);
-            // A printable V-bottom cross tie removes cheek racking without a
-            // flat 50 mm bridge.
-            translate([0,105,42]) p297_beam_x(58,5,5);
-            // Two cable-guide ears accept a small reusable tie around the
-            // captive lead; cable OD remains a user measurement.
-            for (x=[-7,7]) translate([x,103,19.4]) cube([4,10,29.2],center=true);
+            // Continuous cheeks: the inner faces are X=±27, i.e. 5.5 mm from
+            // each X=±21.5 hole axis, throughout the complete tool-access
+            // height. Their outer faces X=±31 are fully carried by the plate.
+            for (side=[-1,1])
+                translate([side*(p299_c1_cheek_inner_x+p299_c1_cheek_t/2),
+                           102.5,(4.6+p299_pedestal_h-p299_c1_plate_t)/2])
+                    cube([p299_c1_cheek_t,73,
+                          p299_pedestal_h-p299_c1_plate_t-4.6],center=true);
+            // The failed four pads become one 4.0 mm plate. 62 x 73 covers
+            // the whole 55.6 x 55.6 C1 footprint, both widened cheeks and
+            // both service webs, so every vertical wall starts on the bed.
+            translate([p299_c1_plate_center[0],p299_c1_plate_center[1],
+                       p299_pedestal_h-p299_c1_plate_t/2])
+                cube([p299_c1_plate_size[0],p299_c1_plate_size[1],
+                      p299_c1_plate_t],center=true);
+            // Two continuous service webs replace the old mid-air cross tie
+            // and cable ears. In the plate-down print they grow from the bed,
+            // split the 58 mm foot roof into short supported spans, and retain
+            // a 19 mm-wide central cable chute aligned with the XH opening.
+            for (side=[-1,1])
+                translate([side*11,95,(5+p299_pedestal_h-p299_c1_plate_t)/2])
+                    cube([3,58,p299_pedestal_h-p299_c1_plate_t-5],center=true);
         }
         for (p=p299_panel_mounts)
             translate([p[0],p[1],-0.1]) cylinder(d=p297_m3_clear,h=5.2,$fn=32);
         for (x=[-p299_c1_pattern/2,p299_c1_pattern/2],
              y=[p299_c1_center[1]-p299_c1_pattern/2,
                 p299_c1_center[1]+p299_c1_pattern/2])
-            translate([x,y,p299_pedestal_h-4.1])
-                cylinder(d=2.8,h=4.3,$fn=32);
+            translate([x,y,p299_pedestal_h-p299_c1_plate_t-0.1])
+                cylinder(d=p299_c1_clear_d,h=p299_c1_plate_t+0.2,$fn=48);
+        // SLAMTEC C1 drawing: the captive lead leaves the middle of the side
+        // between the negative-Y hole pair, at the sensor mounting plane.
+        // This full-thickness slot starts outside the 55.6 mm footprint and
+        // opens into the central chute directly above the existing XH hole.
+        translate([p299_c1_center[0]-p299_c1_cable_slot[0]/2,
+                   p299_c1_plate_center[1]-p299_c1_plate_size[1]/2-0.1,
+                   p299_pedestal_h-p299_c1_plate_t-0.1])
+            cube([p299_c1_cable_slot[0],p299_c1_cable_slot[1]+0.2,
+                  p299_c1_plate_t+0.2],center=false);
         translate([p299_xh_opening_center[0],p299_xh_opening_center[1],-0.1])
             linear_extrude(height=5.2)
                 offset(r=2) square([p299_xh_opening[0]-4,
                                     p299_xh_opening[1]-4],center=true);
+        // Reusable tie passages through both service webs. Short 3 mm roofs
+        // are support-free in the plate-down orientation; no floating ear
+        // begins above the bed.
+        for (side=[-1,1],z=[22,42])
+            translate([side*11,95,z]) rotate([0,90,0])
+                cylinder(d=5,h=5,center=true,$fn=24);
     }
+}
+
+module p299_c1_access_keepouts() {
+    // Exact release gate volume: no printed material may enter these four
+    // Ø4.5 vertical head/key corridors below the plate. The lower 0.2 mm is
+    // above the unchanged foot, where an L-key can enter from the open side.
+    for (x=[-p299_c1_pattern/2,p299_c1_pattern/2],
+         y=[p299_c1_center[1]-p299_c1_pattern/2,
+            p299_c1_center[1]+p299_c1_pattern/2])
+        translate([x,y,5.2]) cylinder(d=p299_c1_head_d,
+            h=p299_pedestal_h-p299_c1_plate_t-5.25,$fn=72);
+}
+
+module p299_c1_hardware_preview() {
+    // Four M2.5 button heads and shafts, shown from below.
+    for (x=[-p299_c1_pattern/2,p299_c1_pattern/2],
+         y=[p299_c1_center[1]-p299_c1_pattern/2,
+            p299_c1_center[1]+p299_c1_pattern/2]) {
+        color([0.22,0.24,0.27]) translate([x,y,p299_pedestal_h-5.6])
+            cylinder(d=p299_c1_head_d,h=1.6,$fn=48);
+        color([0.22,0.24,0.27]) translate([x,y,p299_pedestal_h-4])
+            cylinder(d=2.5,h=8,$fn=32);
+    }
+    // Representative 2 mm L-key engaged in the negative-X/negative-Y head.
+    color([0.12,0.13,0.15]) {
+        translate([-p299_c1_pattern/2,
+                   p299_c1_center[1]-p299_c1_pattern/2,
+                   p299_pedestal_h-18]) cylinder(d=2,h=12.5,$fn=6);
+        translate([-p299_c1_pattern/2,
+                   p299_c1_center[1]-p299_c1_pattern/2,
+                   p299_pedestal_h-18]) rotate([0,90,0])
+            cylinder(d=2,h=18,$fn=6);
+    }
+}
+
+module p299_c1_pedestal_bottom_preview() {
+    // Cut away the lower 55 mm so the view from below unambiguously shows all
+    // four heads, the cable notch and the representative L-key engagement.
+    color([0.92,0.63,0.14]) intersection() {
+        p299_c1_pedestal_installed();
+        translate([0,102.5,61]) cube([90,90,12],center=true);
+    }
+    p299_c1_hardware_preview();
+}
+
+module p299_c1_pedestal_side_preview() {
+    // X=0 section: remove the near (+X) half and expose the service chute.
+    color([0.92,0.63,0.14]) intersection() {
+        p299_c1_pedestal_installed();
+        translate([-50,102.5,p299_pedestal_h/2])
+            cube([100,100,p299_pedestal_h+2],center=true);
+    }
+    p299_c1_hardware_preview();
+    // Captive lead centreline: side exit at the mounting plane, then straight
+    // down the protected central chute to the unchanged XH opening.
+    color([0.08,0.24,0.78]) translate([0,82,5])
+        cylinder(d=4,h=p299_pedestal_h-p299_c1_plate_t-5,$fn=32);
 }
 
 module p299_c1_ghost() {
@@ -992,7 +1080,18 @@ else if (part=="p299_collar_core") p299_collar_core();
 else if (part=="p299_panel_collar")
     translate([0,0,p299_panel_collar_h]) rotate([180,0,0]) p299_panel_collar();
 else if (part=="p299_c1_pedestal")
-    translate([0,-66,0]) p299_c1_pedestal_installed();
+    // P2-99f prints upside-down: the 4 mm C1 plate is the complete flat bed
+    // face. The widened cheeks and service webs then support the unchanged
+    // 58 x 58 panel foot; there is no >50 mm bridge.
+    translate([0,139,p299_pedestal_h]) rotate([180,0,0])
+        p299_c1_pedestal_installed();
+else if (part=="p299_c1_access_keepouts")
+    translate([0,139,p299_pedestal_h]) rotate([180,0,0])
+        p299_c1_access_keepouts();
+else if (part=="p299_c1_bottom_preview")
+    p299_c1_pedestal_bottom_preview();
+else if (part=="p299_c1_side_preview")
+    p299_c1_pedestal_side_preview();
 else if (part=="p297_mega_carrier") p297_mega_carrier();
 else if (part=="p297_perf_carrier") p297_perf_carrier();
 else if (part=="p297_pi5_carrier") p297_pi5_carrier();

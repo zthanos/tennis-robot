@@ -1,6 +1,6 @@
 # Ενεργό σύνολο εκτύπωσης — P2-93e / P2-95 gate
 
-## P2-99b — επάνω μέρος P2-97 + RPLIDAR C1, FIT-CHECK
+## P2-99f — επάνω μέρος P2-97 + διορθωμένο RPLIDAR C1 pedestal
 
 Το `rear-pod/print-stack/p299_panel_collar.stl` αντικαθιστά **και** το
 `p297_collar.stl` **και** το χωριστό `stl-v2/control_panel.stl`. Το παλιό
@@ -10,12 +10,12 @@ collar/panel δεν τυπώνεται για αυτή τη συναρμολόγ
 | STL | Ποσότητα | Κατάσταση / blocker |
 | --- | ---: | --- |
 | `rear-pod/print-stack/p299_panel_collar.stl` | 1 | **ΕΤΟΙΜΟ ΓΙΑ ΕΚΤΥΠΩΣΗ (2026-11-22)**. One-body/floating/downward/slice PASS, 138×190×28 mm, released control axes 9/9 PASS, scene baseline 48 ζεύγη. XH housing μετρημένο 13×10×4 mm → περνά από το 17×10 άνοιγμα· θέση C1 επιβεβαιωμένη από τον χρήστη στο CAD (κουμπιά ελεύθερα). Εκτύπωση με την όψη του panel στο bed, χωρίς supports, brim 5–8 mm. |
-| `rear-pod/print-stack/p299_c1_pedestal.stl` | 1 | **ΕΤΟΙΜΟ ΓΙΑ ΕΚΤΥΠΩΣΗ (2026-11-22)**. One-body/floating/downward/slice PASS, 58×68,8×67 mm, C1 axes 4/4 PASS. Θέση (78 mm από το START) επιβεβαιωμένη από τον χρήστη στο CAD. C1 με 4×M2.5×8· στο panel_collar 4×M3 σε RX-M3x5.7. |
+| `rear-pod/print-stack/p299_c1_pedestal.stl` | 1 | **ΕΤΟΙΜΟ ΓΙΑ ΕΚΤΥΠΩΣΗ (P2-99f, 2026-11-23)** μετά τη διόρθωση της πρώτης εκτύπωσης. Ενιαία πλάκα 62×73×4 mm στο bed, 4×Ø2,9 στον ίδιο κάνναβο 43×43, παρειές X=±27, Ø4,5 tool corridors 0,000000 mm³. One-body/floating/downward/slice PASS, C1+M3 axes 8/8, scene ίδια 48 pairs, scan ±2° καθαρό και Z419,8 αμετάβλητο. C1 με 4×M2.5×8· στο panel_collar 4×M3 σε RX-M3x5.7. [Αναφορά και εικόνες](../docs/hardware/p2-99f-c1-pedestal-first-print-correction-el.md). |
 
 Nominal CAD: κέντρο C1 panel-local `[0,+110]`, βάση Z390, scan Z419,8,
 4×M2.5 στα 43×43 και M2.5×8 (είσοδος στη βάση C1 4 mm). Οι τέσσερις M3
-προς Ruthex είναι ασύμμετρο κλειδί θέσης. Το άνοιγμα XH 17×10 είναι
-προσωρινό· **να μετρηθεί από τον χρήστη**. URDF δεν άλλαξε.
+προς Ruthex είναι ασύμμετρο κλειδί θέσης. Το μετρημένο housing 13×10×4 mm
+περνά από το αμετάβλητο άνοιγμα XH 17×10. URDF δεν άλλαξε.
 
 ## P2-99e — βραχίονας OAK-D S2, FIT-CHECK
 

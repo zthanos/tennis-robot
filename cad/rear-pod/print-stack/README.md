@@ -1,6 +1,6 @@
 # P2-97 Phase 1 — FIT-CHECK stackable electronics tower
 
-## P2-99b — unified panel/collar and RPLIDAR C1 pedestal
+## P2-99f — corrected RPLIDAR C1 pedestal; panel/collar unchanged
 
 The active top of the P2-97 stack is now `p299_panel_collar.stl`; the former
 `p297_collar.stl` and separate `stl-v2/control_panel.stl` are not printed for
@@ -12,35 +12,37 @@ side with the same 0.25 mm vertical stack gap. Its support-free backing was
 changed to 45-degree ramps because the required print orientation places the
 control face on the bed. Exported footprint is 138×190×28 mm, inside 250×250.
 
-`p299_c1_pedestal.stl` is a separate 58×68.8×67 mm print. Four asymmetric M3
-axes key it to blind Ø4.0×6.7 Ruthex seats in the unified body. Four M2.5
+`p299_c1_pedestal.stl` is a separate 62×73×67 mm print, exported upside-down
+with its continuous 62×73×4 mm C1 plate on the bed. Four asymmetric M3 axes
+key it to blind Ø4.0×6.7 Ruthex seats in the unified body. Four Ø2.9 M2.5
 clearance bores use the official 43×43 mm C1 pattern; M2.5×8 screws through
-the 4 mm sensor pads enter the C1 by 4 mm maximum. The nominal C1 centre is
+the 4 mm plate enter the C1 by exactly 4 mm. The nominal C1 centre is
 panel-local `[0,+110]`, opposite the E-stop, with base Z390 and scan plane
-Z419.8. The nearest pedestal edge has 25.85 mm clear from the Ø16.3 START edge. This datum
-remains **FIT-CHECK / DO NOT PRINT** until the user's two dummy measurements
-are entered and agree:
+Z419.8. The nearest pedestal edge has 25.85 mm clear from the Ø16.3 START
+edge. The 78 mm C1-centre-to-START datum and the installed position were
+confirmed by the user before P2-99f.
 
-- C1 centre → white START centre: **not supplied; measure by user** (CAD
-  nominal 78 mm);
-- C1 centre → nearest narrow panel edge: **not supplied; measure by user**
-  (CAD nominal 15 mm beyond the +Y edge; deliberate rigid overhang).
-
-The provisional XH2.54-5P opening is 17×10 mm (housing plus 2 mm per side).
-Measure the actual housing/strain relief before printing. The 70 cm captive
-lead descends between the pedestal cheeks, is retained by the two tie ears,
+The measured XH2.54-5P housing passes the unchanged 17×10 mm opening. The
+70 cm captive lead leaves the middle of the C1's negative-Y side at its base
+plane, passes through the new 17×26.2 plate notch, descends inside a 19 mm
+service chute, is retained through four Ø5 tie passages,
 and enters the logic volume without crossing tilt or basket motion. Keep
 R≥30 mm. The 35×30×5 adapter is tied to the inside +Y logic lattice near the
 Pi, with a short USB-C lead; connector-side orientation must be checked on
 the real adapter.
 
-Both new STLs pass one-body, floating-island, downward-face and slice gates.
+Both STLs pass one-body, floating-island, downward-face and slice gates.
 The unified body additionally passes all nine declared released circular/
-central-slot axes; the pedestal passes all four C1 axes. The full raw scene is
+central-slot axes; the pedestal passes all four C1 plus four unchanged M3
+axes (8/8). The full raw scene is
 unchanged at 48 historical pairs, zero contained pairs and zero export
 failures at -10/-3/0/15/20 degrees.
 
-Status: **FIT-CHECK.** All parts are support-free in the exported orientation
+P2-99f pedestal status: **READY TO PRINT (2026-11-23).** Its four Ø4.5
+head/key corridors have exact-solid intersection 0.000000 mm³; the geometric
+scan band is clear at ±2° and the scan plane remains Z419.8 mm. Full report:
+[P2-99f](../../../docs/hardware/p2-99f-c1-pedestal-first-print-correction-el.md).
+All parts are support-free in the exported orientation
 and fit a 250 x 250 mm bed.  The common nominal box footprint is 138 x 190 mm;
 the complete perimeter seam stays inside it.  The base adapter alone has two
 local front mounting ears and is 141.5 x 190 mm, still well inside the bed and
