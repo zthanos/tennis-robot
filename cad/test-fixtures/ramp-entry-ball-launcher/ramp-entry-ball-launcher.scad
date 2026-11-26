@@ -210,7 +210,7 @@ hook_lip = 1.5;             // lip height beyond the bar on both side walls
 hook_y0 = 55.5;             // inner lip face = base spool inner flange face
 hook_zone = 7.5;            // band zone; base spool zone is 7.0
 hook_y1 = hook_y0 + hook_zone;
-hook_curl_t = 2.5;          // bed stem; 4 mm where it laps the bar
+hook_curl_t = 3.0;          // bed stem; 4 mm where it laps the bar
 hook_curl_head_t = 4;
 ear_x1 = 1.5;               // front of the over-wall ear
 // Lip face must cover the bar rear apex (x -8.2) plus a lip.
@@ -228,7 +228,12 @@ cup_rim_r = sqrt(pow(ball_d/2 + 0.25, 2) - pow(ball_r - carrier_x1, 2));
 carrier_half_w = ceil(cup_rim_r + 1.7);        // >= 1.6 mm wall at the rim
 carrier_z0 = ear_z0;       // carries the bridge arms
 carrier_z1 = ceil(ball_center[2] + cup_rim_r + 1.7);
-gusset_t = 2.0;
+gusset_t = 2.5;
+// Print footing (2026-11-26, after two spaghetti failures of the first v2
+// print): thin bed-standing stems detached.  The stems get no elephant-foot
+// chamfer (only the runners need it for the channel fit) and a 45-degree
+// foot flare into free space; the ear column now joins the runner at the bed.
+foot_flare = 3;
 
 // 2D profile (u = Y, v = Z) extruded along +X from x0 to x1.  When x0 is the
 // bed face the first `c` mm shrink by `c` (45-degree elephant-foot chamfer).
@@ -277,9 +282,9 @@ module pusher_side(side=1) {
         for (yr = [[runner_y0, bridge_z1], [rail_center_y, ear_z1]])
             hull() {
                 prism_x(x0, x0 + 0.01 + bed_chamfer, bed_chamfer)
-                    translate([yr[0], runner_z1 - 0.01])
+                    translate([yr[0], runner_z1 - 2])
                         square([runner_y1 - yr[0], max(0.01, yr[1] - runner_z1
-                                - (ear_full_x0 - x0 - bed_chamfer))]);
+                                - (ear_full_x0 - x0 - bed_chamfer)) + 2]);
                 translate([ear_full_x0, yr[0], runner_z1 - 0.01])
                     cube([ear_x1 - ear_full_x0, runner_y1 - yr[0],
                           yr[1] - runner_z1 + 0.01]);
@@ -313,8 +318,7 @@ module pusher_side(side=1) {
         curl_x1 = bx + hook_bar_r + hook_lip;
         curl_head_x0 = bx + hook_rear_x - hook_lip;
         hull() {
-            prism_x(x0, curl_head_x0 - (hook_curl_head_t - hook_curl_t),
-                    bed_chamfer)
+            prism_x(x0, curl_head_x0 - (hook_curl_head_t - hook_curl_t))
                 translate([hook_y1, bz - hook_bar_r - hook_lip])
                     square([hook_curl_t, 2 * (hook_bar_r + hook_lip)]);
             translate([curl_head_x0, hook_y1, bz - hook_bar_r - hook_lip])
@@ -328,9 +332,30 @@ module pusher_side(side=1) {
                       2 * (hook_bar_r + hook_lip)]);
         }
 
+        // Foot flares (45 degrees, bed only): curl outward (+Y, away from
+        // the band pocket), gusset inward (ball lane, free above Z19).
+        hull() {
+            prism_x(x0, x0 + 1)
+                translate([hook_y1, bz - hook_bar_r - hook_lip])
+                    square([hook_curl_t + foot_flare,
+                            2 * (hook_bar_r + hook_lip)]);
+            prism_x(x0, x0 + 1 + foot_flare)
+                translate([hook_y1, bz - hook_bar_r - hook_lip])
+                    square([hook_curl_t, 2 * (hook_bar_r + hook_lip)]);
+        }
+        gusset_bed_z1 = carrier_z1 - (carrier_x0 - 2 - x0 - 2);
+        hull() {
+            prism_x(x0, x0 + 1)
+                translate([carrier_half_w - gusset_t - foot_flare, ear_z0])
+                    square([gusset_t + foot_flare, gusset_bed_z1 - ear_z0]);
+            prism_x(x0, x0 + 1 + foot_flare)
+                translate([carrier_half_w - gusset_t, ear_z0])
+                    square([gusset_t, gusset_bed_z1 - ear_z0]);
+        }
+
         // Gusset under the cup carrier (bed-standing, <= 45 degrees).
         hull() {
-            prism_x(x0, x0 + 2, bed_chamfer)
+            prism_x(x0, x0 + 2)
                 translate([carrier_half_w - gusset_t, ear_z0])
                     square([gusset_t, carrier_z1 - (carrier_x0 - 2 - x0 - 2) - ear_z0]);
             translate([carrier_x0 - 2, carrier_half_w - gusset_t, ear_z0])
