@@ -29,9 +29,6 @@ case "$(basename "$mesh")" in
     downward_args+=(--allow-z "16.9:17.1:short tube bridge") ;;
   mast_cap_L.stl|mast_cap_R.stl)
     downward_args+=(--allow-z "13.9:14.1:24 mm cap bridge") ;;
-  ramp_entry_launcher_pusher.stl)
-    downward_args+=(--allow-z "3.9:4.1:pusher gusset bridge")
-    downward_args+=(--allow-z "7.9:8.1:pusher runner bridge") ;;
 esac
 python3 "$here/check-stl-downward-faces.py" "$mesh" "${downward_args[@]}"
 
@@ -82,9 +79,6 @@ case "$(basename "$mesh")" in
     slice_args+=(--allow-z "1.1:3.3:oblique gusset and plate edge transitions")
     slice_args+=(--allow-z "9.1:9.9:ear bore exit edges")
     slice_args+=(--allow-z "15.3:16.5:pointed strut tips")
-    ;;
-  ramp_entry_launcher_pusher.stl)
-    slice_args+=(--allow-z "9.7:14.4:spherical cup free edge")
     ;;
   p297_mega_carrier.stl)
     slice_args+=(--allow-z "0.5:3.1:carrier chamfer/cutout edge")

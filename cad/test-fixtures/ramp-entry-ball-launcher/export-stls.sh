@@ -6,9 +6,9 @@ out_dir="$here/stl"
 openscad_bin="${OPENSCAD_BIN:-/snap/bin/openscad-nightly}"
 printability_check="$here/../../check-stl-printability.sh"
 
-parts=(base pusher spool_anchor spool_pusher)
+parts=(base pusher spool_anchor)
 outputs=(ramp_entry_launcher_base ramp_entry_launcher_pusher
-         ramp_entry_launcher_spool_anchor ramp_entry_launcher_spool_pusher)
+         ramp_entry_launcher_spool_anchor)
 
 mkdir -p "$out_dir"
 for index in "${!parts[@]}"; do

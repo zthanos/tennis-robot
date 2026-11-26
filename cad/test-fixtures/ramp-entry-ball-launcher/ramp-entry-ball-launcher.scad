@@ -9,7 +9,7 @@
 //
 // This is a short-life supervised test fixture, not a robot mechanism.
 
-part = "assembly"; // [assembly,base,pusher,spool_anchor,spool_pusher,robot_check,qa_cocked,qa_forward,qa_ball_cup,qa_ramp,qa_band_hardware]
+part = "assembly"; // [assembly,base,pusher,pusher_local,spool_anchor,robot_check,qa_cocked,qa_forward,qa_pos4,qa_ball_cup,qa_ramp,qa_band_hardware]
 
 $fn = 64;
 
@@ -27,9 +27,11 @@ base_outer_y = 66;
 rail_front_x = -34;
 rail_center_y = 47;
 rail_wall_t = 3;
-runner_w = 10;
-runner_clearance = 0.45;
-channel_w = runner_w + 2 * runner_clearance;
+// The printed base channel is 10.9 mm wide (v1: 10 mm runner + 2 x 0.45).
+// Pusher v2 keeps the channel and narrows only the runner.
+channel_w = 10.9;
+runner_clearance = 0.75;
+runner_w = channel_w - 2 * runner_clearance;   // 9.4
 rail_floor_t = 3;
 rail_wall_h = 15;
 
@@ -40,8 +42,8 @@ rail_wall_h = 15;
 ball_r = ball_d / 2;
 ball_center = [-10, 0, ramp_surface_z + ball_r];
 strike_origin_x = ball_center[0] - ball_r;
-pusher_runner_x0 = -16;
-pusher_runner_x1 = 8;
+pusher_runner_x0 = -24;  // rear end 1 mm inside the channel at position 4
+pusher_runner_x1 = 7.95;  // 0.05 mm modelled gap to the stop face (contact by design)
 pusher_pin_x = -12;
 pusher_band_x = -4;
 
@@ -50,7 +52,7 @@ pusher_band_x = -4;
 // stays below ~3x stretch (see README).
 cocking_strokes = [20, 40, 60, 80];
 pin_d = 4.4;             // 4 mm smooth steel rod or straight pin
-band_hole_d = 5.5;       // M5 anchor-bolt clearance; latex never touches print
+band_hole_d = 5.5;       // base M5 anchor-bolt clearance (base side only)
 anchor_x = -23;
 band_axis_z = 24;        // 1 mm clearance below a nominal Ø10 head/washer
 anchor_hole_z = band_axis_z;
@@ -177,33 +179,182 @@ module base_part() {
     }
 }
 
-module pusher_raw() {
-    // Two runners and a bridge.  Runner front faces define the hard stop.
-    for (side = [-1, 1]) {
-        translate([(pusher_runner_x0+pusher_runner_x1)/2,
-                   side*rail_center_y, 9.5])
-            cube([pusher_runner_x1-pusher_runner_x0, runner_w, 12], center=true);
+// ---------------------------------------------------------------------------
+// Pusher v2 (2026-11-26).  Only the pusher is reprinted; the base above is
+// frozen.  Changes against v1: integrated J-hook band anchors (no M5, no
+// spools), 0.75 mm runner clearance, 32 mm runners, 0.6 mm elephant-foot and
+// runner-bottom chamfers, and a 0.1 mm modelled floor gap so the Ø4.4 pin hole
+// stays aligned when the pusher physically rests on the channel floor.
+//
+// Print frame: X-up, rear face (x = pusher_runner_x0) on the bed, cup facing
+// up.  Every outboard feature is a prism standing on that bed face; the only
+// unsupported spans are short bridges between bed-standing walls.
+bed_chamfer = 0.6;          // elephant foot at the bed face
+runner_chamfer = 0.6;       // runner bottom long edges (channel floor corners)
+runner_floor_gap = 0.1;     // modelled; < 0.2 mm radial pin slack
+runner_z0 = rail_floor_t + runner_floor_gap;
+runner_z1 = 15.5;
+runner_y0 = rail_center_y - runner_w/2;   // 42.30
+runner_y1 = rail_center_y + runner_w/2;   // 51.70
 
-        // Raised band ear keeps the latex clear of the guide channel.
-        translate([pusher_band_x, side*rail_center_y, 0])
-            hull() {
-                translate([0, 0, 16]) cube([16, 10, 12], center=true);
-                translate([0, 0, band_axis_z]) cube([14, 10, 14], center=true);
-            }
-    }
+// J-hook.  The bar axis stays level with the fixed base anchor (Z24) so the
+// band is horizontal over the whole stroke and puts no lift on the pusher in
+// the open-top channel (see README, "Ύψος έλξης").
+hook_bar_r = 3.5;           // Ø7 latex seat
+hook_tip_r = 1.5;           // rounded rear corners (latex contact, >= 1.5)
+hook_flat = 2;
+// Corner-circle centre giving exactly 45-degree flanks.
+hook_tip_x = hook_flat/2 - (hook_bar_r - hook_tip_r) * sqrt(2);
+hook_rear_x = hook_tip_x - hook_tip_r;         // -3.33 from the bar axis
+hook_lip = 1.5;             // lip height beyond the bar on both side walls
+hook_y0 = 55.5;             // inner lip face = base spool inner flange face
+hook_zone = 7.5;            // band zone; base spool zone is 7.0
+hook_y1 = hook_y0 + hook_zone;
+hook_curl_t = 2.5;          // bed stem; 4 mm where it laps the bar
+hook_curl_head_t = 4;
+ear_x1 = 1.5;               // front of the over-wall ear
+// Lip face must cover the bar rear apex (x -8.2) plus a lip.
+ear_full_x0 = pusher_band_x + hook_rear_x - hook_lip
+              - (hook_y0 - (rail_center_y + runner_w/2));
+ear_z0 = rail_floor_t + rail_wall_h + 1;  // 1 mm over the Z18 guide walls
+ear_z1 = band_axis_z + hook_bar_r + hook_lip;   // 29
 
-    // The bridge passes 1 mm above the 18 mm-high guide walls.
-    translate([-6, 0, 23]) cube([12, 2*rail_center_y, 8], center=true);
+bridge_x0 = -12.5;
+bridge_x1 = -0.5;
+bridge_z1 = ear_z0 + 6;
+carrier_x0 = bridge_x1;     // 2.1 mm behind the cup flat bottom
+carrier_x1 = 4;            // cup 2.4 mm deep beyond its flat (v1: 4.4)
+cup_rim_r = sqrt(pow(ball_d/2 + 0.25, 2) - pow(ball_r - carrier_x1, 2));
+carrier_half_w = ceil(cup_rim_r + 1.7);        // >= 1.6 mm wall at the rim
+carrier_z0 = ear_z0;       // carries the bridge arms
+carrier_z1 = ceil(ball_center[2] + cup_rim_r + 1.7);
+gusset_t = 2.0;
 
-    // Central cup carrier and two simple gussets.
-    translate([-1, 0, ball_center[2]])
-        cube([14, 52, 50], center=true);
-    for (side = [-1, 1])
+// 2D profile (u = Y, v = Z) extruded along +X from x0 to x1.  When x0 is the
+// bed face the first `c` mm shrink by `c` (45-degree elephant-foot chamfer).
+// Children must be convex.
+module prism_x(x0, x1, c=0) {
+    multmatrix([[0, 0, 1, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
         hull() {
-            translate([-6, side*22, 18]) cube([10, 8, 8], center=true);
-            translate([-5, side*20, ball_center[2]-13])
-                cube([10, 8, 10], center=true);
+            if (c > 0)
+                translate([0, 0, x0]) linear_extrude(height=0.01)
+                    offset(delta=-c) children();
+            translate([0, 0, x0 + c]) linear_extrude(height=x1 - x0 - c)
+                children();
         }
+}
+
+module runner_profile() {
+    c = runner_chamfer;
+    polygon([[runner_y0 + c, runner_z0], [runner_y1 - c, runner_z0],
+             [runner_y1, runner_z0 + c], [runner_y1, runner_z1],
+             [runner_y0, runner_z1], [runner_y0, runner_z0 + c]]);
+}
+
+// Hook bar section in the XZ plane (u = X, v = Z): Ø7 with 45-degree flanks
+// toward -X (print-down) ending in a 2 mm flat whose two corners are rounded
+// r1.5.  The latex wraps exactly this rear half; the flat is the first,
+// bridged layer of the bar (>= 1.6 mm wide).
+module hook_bar_section() {
+    hull() {
+        circle(r=hook_bar_r);
+        for (v = [-hook_flat/2, hook_flat/2])
+            translate([hook_tip_x, v]) circle(r=hook_tip_r);
+    }
+}
+
+module pusher_side(side=1) {
+    x0 = pusher_runner_x0;
+    bx = pusher_band_x;
+    bz = band_axis_z;
+    mirror([0, side < 0 ? 1 : 0, 0]) {
+        // Runner (in the channel).
+        prism_x(x0, pusher_runner_x1, bed_chamfer) runner_profile();
+
+        // Ear column above the runner: full height only where the hook
+        // needs it, tapered at 45 degrees down to the bed behind that.
+        // Above the bridge arms only the outer 4.7 mm is kept.
+        for (yr = [[runner_y0, bridge_z1], [rail_center_y, ear_z1]])
+            hull() {
+                prism_x(x0, x0 + 0.01 + bed_chamfer, bed_chamfer)
+                    translate([yr[0], runner_z1 - 0.01])
+                        square([runner_y1 - yr[0], max(0.01, yr[1] - runner_z1
+                                - (ear_full_x0 - x0 - bed_chamfer))]);
+                translate([ear_full_x0, yr[0], runner_z1 - 0.01])
+                    cube([ear_x1 - ear_full_x0, runner_y1 - yr[0],
+                          yr[1] - runner_z1 + 0.01]);
+            }
+
+        // Over-wall ear, grown outward at 45 degrees from the column; its
+        // outer face is the inner hook lip.  Front outer edge rounded r2
+        // where the band strands run past it.
+        hull() {
+            translate([ear_full_x0, runner_y1 - 0.01, ear_z0])
+                cube([0.01, 0.01, ear_z1 - ear_z0]);
+            translate([ear_full_x0 + (hook_y0 - runner_y1), runner_y1 - 0.01,
+                       ear_z0])
+                cube([ear_x1 - 2 - ear_full_x0 - (hook_y0 - runner_y1),
+                      hook_y0 - runner_y1 + 0.01, ear_z1 - ear_z0]);
+            translate([ear_x1 - 2, runner_y1 - 0.01, ear_z0])
+                cube([2, hook_y0 - 2 - runner_y1 + 0.01, ear_z1 - ear_z0]);
+            translate([ear_x1 - 2, hook_y0 - 2, ear_z0])
+                cylinder(r=2, h=ear_z1 - ear_z0);
+        }
+
+        // Hook bar: a short bridge between the ear lip and the curl.
+        translate([bx, hook_y0 - 0.01, bz]) rotate([-90, 0, 0])
+            linear_extrude(height=hook_zone + 0.02) hook_bar_section();
+
+        // Curl / outer lip: free J tip standing on the bed face.  The loop is
+        // slipped over its rear end, slid forward and seats on the bar; under
+        // tension it cannot walk back off.
+        // Inner front edge rounded r1.5 (strands run past it); the head is
+        // 4 mm thick so its last print layers stay >= 25 mm2 / 1.6 mm.
+        curl_x1 = bx + hook_bar_r + hook_lip;
+        curl_head_x0 = bx + hook_rear_x - hook_lip;
+        hull() {
+            prism_x(x0, curl_head_x0 - (hook_curl_head_t - hook_curl_t),
+                    bed_chamfer)
+                translate([hook_y1, bz - hook_bar_r - hook_lip])
+                    square([hook_curl_t, 2 * (hook_bar_r + hook_lip)]);
+            translate([curl_head_x0, hook_y1, bz - hook_bar_r - hook_lip])
+                cube([curl_x1 - 1.5 - curl_head_x0, hook_curl_head_t,
+                      2 * (hook_bar_r + hook_lip)]);
+            translate([curl_x1 - 1.5, hook_y1 + 1.5, bz - hook_bar_r - hook_lip])
+                cylinder(r=1.5, h=2 * (hook_bar_r + hook_lip));
+            translate([curl_x1 - 0.01, hook_y1 + 1.5,
+                       bz - hook_bar_r - hook_lip])
+                cube([0.01, hook_curl_head_t - 1.5,
+                      2 * (hook_bar_r + hook_lip)]);
+        }
+
+        // Gusset under the cup carrier (bed-standing, <= 45 degrees).
+        hull() {
+            prism_x(x0, x0 + 2, bed_chamfer)
+                translate([carrier_half_w - gusset_t, ear_z0])
+                    square([gusset_t, carrier_z1 - (carrier_x0 - 2 - x0 - 2) - ear_z0]);
+            translate([carrier_x0 - 2, carrier_half_w - gusset_t, ear_z0])
+                cube([2, gusset_t, carrier_z1 - ear_z0]);
+        }
+    }
+}
+
+module pusher_raw() {
+    pusher_side(1);
+    pusher_side(-1);
+
+    // Two bridge arms from the ear columns into the cup carrier, 1 mm above
+    // the inner guide walls.  Each underside bridges gusset -> column.
+    for (side = [-1, 1])
+        translate([bridge_x0, side > 0 ? carrier_half_w - 5 : -(runner_y0 + 1),
+                   ear_z0])
+            cube([bridge_x1 - bridge_x0, runner_y0 + 1 - carrier_half_w + 5,
+                  bridge_z1 - ear_z0]);
+
+    // Cup carrier.
+    translate([carrier_x0, -carrier_half_w, carrier_z0])
+        cube([carrier_x1 - carrier_x0, 2 * carrier_half_w,
+              carrier_z1 - carrier_z0]);
 }
 
 module pusher_part() {
@@ -211,8 +362,7 @@ module pusher_part() {
         pusher_raw();
 
         // Shallow spherical cup matching the ball at the forward stop.  Clip
-        // its theoretical point to a flat bottom: the old tangent created a
-        // 0.25 mm knife edge in the support-free print orientation.
+        // its theoretical point to a flat bottom (no knife edge).
         intersection() {
             translate([ball_r, 0, ball_center[2]]) sphere(d=ball_d + 0.5);
             translate([20.8, 0, ball_center[2]])
@@ -222,35 +372,28 @@ module pusher_part() {
         // Cross release pin.
         translate([pusher_pin_x, 0, 9])
             bore_y(pin_d, 2*rail_center_y + 18);
-
-        // One band/cord hole on each side.
-        for (side = [-1, 1])
-            translate([pusher_band_x, side*rail_center_y, band_axis_z])
-                bore_y(band_hole_d, 14);
     }
 }
 
 module band_preview(side=1, stroke=60) {
-    // Visual-only elastic centreline.
+    // Visual-only elastic centreline, base spool -> pusher hook bar.
     color([0.9, 0.15, 0.12])
         hull() {
-            translate([anchor_x, side*rail_center_y, anchor_hole_z])
+            translate([anchor_x, side*(hook_y0 + hook_zone/2), anchor_hole_z])
                 sphere(d=3);
             translate([strike_origin_x-stroke+pusher_band_x,
-                       side*rail_center_y, band_axis_z]) sphere(d=3);
+                       side*(hook_y0 + hook_zone/2), band_axis_z]) sphere(d=3);
         }
 }
 
+// Base anchor hardware that stays: M5 + washers + nyloc + printed spool.
+module base_anchor_hardware_envelope() {
+    for (side=[-1,1])
+        translate([anchor_x, side*51.5, band_axis_z]) bore_y(12, 37);
+}
+
 module band_hardware_preview(stroke=60) {
-    // Visual/QA envelope for M5 anchor bolts plus Ø10 heads/washers.  The
-    // actual latex loop sits on a smooth sleeve outside each printed lug.
-    color("silver") for (side=[-1,1]) {
-        translate([anchor_x, side*rail_center_y, band_axis_z])
-            bore_y(5, 24);
-        translate([strike_origin_x-stroke+pusher_band_x,
-                   side*rail_center_y, band_axis_z])
-            bore_y(5, 24);
-    }
+    color("silver") base_anchor_hardware_envelope();
 }
 
 module fixture_assembly(stroke=60, show_ball=true, show_bands=true) {
@@ -312,35 +455,52 @@ module active_ramp_clearance_check() {
     }
 }
 
-module band_hardware_clearance_check(stroke=60) {
-    intersection() {
-        // Conservative Ø10 full-length envelope covers bolt heads, washers
-        // and a small smooth sleeve around the M5 fastener.
-        union() for (side=[-1,1])
+// Band envelope (one 1.5 mm layer on the Ø9 base spool and on the Ø7 hook
+// bar) must never meet the frozen base; the pusher hook must never meet the
+// base anchor hardware; the band must clear the pusher apart from the bar.
+module band_envelope(stroke) {
+    for (side=[-1,1])
+        hull() {
+            translate([anchor_x, side*(hook_y0 + hook_zone/2), anchor_hole_z])
+                bore_y(9 + 3, hook_zone - 0.2);
             translate([strike_origin_x-stroke+pusher_band_x,
-                       side*rail_center_y, band_axis_z])
-                bore_y(10, 26);
-        union() {
-            rail_channel(1);
-            rail_channel(-1);
+                       side*(hook_y0 + hook_zone/2), band_axis_z])
+                bore_y(2*hook_bar_r + 3, hook_zone - 0.2);
+        }
+}
+
+module band_hardware_clearance_check(stroke=80) {
+    for (s = [0, stroke]) {
+        intersection() { band_envelope(s); base_part(); }
+        intersection() {
+            translate([strike_origin_x-s, 0, 0]) pusher_part();
+            base_anchor_hardware_envelope();
+        }
+        // Band vs pusher, excluding the bar wrap zone (x within the bar).
+        intersection() {
+            band_envelope(s);
+            difference() {
+                translate([strike_origin_x-s, 0, 0]) pusher_part();
+                translate([strike_origin_x-s+pusher_band_x-20, -100, 0])
+                    cube([20 + hook_bar_r + 0.01, 200, 100]);
+            }
         }
     }
 }
 
 assert((rail_center_y-channel_w/2-rail_wall_t) > ball_d/2,
        "rail inner walls must clear the tennis ball");
-// Printed spool for the exposed part of each M5 band bolt, so the latex
+// Printed spool for the exposed part of each base M5 band bolt, so the latex
 // never touches thread or a PETG edge.  The flanges keep the loop centred
-// between the washers.  Lengths fill the exposed M5x30 shank: 30 minus the
-// lug (12 mm anchor, 10 mm pusher), the inner washer/nyloc (6) and one
-// 1 mm washer on each side of the spool (the anchor lug face is sloped, so
-// the spool must never bear on it directly).
+// between the washers.  Length fills the exposed M5x30 shank: 30 minus the
+// 12 mm anchor lug, the inner washer/nyloc (6) and one 1 mm washer on each
+// side of the spool (the anchor lug face is sloped, so the spool must never
+// bear on it directly).  The v1 pusher spool is obsolete (pusher v2 hooks).
 spool_bore = 5.5;
 spool_core_d = 9;
 spool_flange_d = 11;   // bottom stays above the Z18 rail wall it slides past
 spool_flange_t = 1.5;
 spool_anchor_len = 10;
-spool_pusher_len = 12;
 
 module band_spool(len) {
     difference() {
@@ -355,17 +515,27 @@ module band_spool(len) {
 
 assert(strike_origin_x + pusher_runner_x1 <= rail_front_x,
        "runner must hit the front stop before the cup enters the ramp");
+assert(strike_origin_x - cocking_strokes[3] + pusher_runner_x0 >= base_x0,
+       "runner rear must stay inside the channel at position 4");
+assert(ear_z0 - hook_lip - hook_bar_r <= band_axis_z - 2*hook_bar_r + 0.01,
+       "hook lips must be deeper than the bar");
+assert(ear_z0 > rail_floor_t + rail_wall_h,
+       "over-wall ear and bridge must clear the Z18 guide walls");
+assert(hook_y0 > rail_center_y + channel_w/2 + rail_wall_t,
+       "band zone must lie outboard of the outer guide wall face");
 
 if (part == "assembly") fixture_assembly(stroke=60);
 else if (part == "base") base_part();
 else if (part == "pusher")
-    // Cup face on the bed: compact, support-free print orientation.
-    translate([0, 0, 16]) rotate([0, -90, 0]) pusher_part();
+    // X-up: rear face (runners, ears, hook curls, gusset roots) on the bed,
+    // concave cup facing up.  Support-free; see pusher v2 notes above.
+    translate([0, 0, -pusher_runner_x0]) rotate([0, -90, 0]) pusher_part();
+else if (part == "pusher_local") pusher_part();
 else if (part == "spool_anchor") band_spool(spool_anchor_len);
-else if (part == "spool_pusher") band_spool(spool_pusher_len);
 else if (part == "robot_check") robot_check();
 else if (part == "qa_cocked") slide_clearance_check(60);
 else if (part == "qa_forward") slide_clearance_check(0);
+else if (part == "qa_pos4") slide_clearance_check(80);
 else if (part == "qa_ball_cup") ball_cup_clearance_check(60);
 else if (part == "qa_ramp") active_ramp_clearance_check();
 else if (part == "qa_band_hardware") band_hardware_clearance_check(80);
