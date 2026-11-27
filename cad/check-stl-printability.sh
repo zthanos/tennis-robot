@@ -17,6 +17,10 @@ if [[ -n "$floating_output" ]]; then
 fi
 printf 'FLOATING_ISLANDS PASS %s: 0 floating islands\n' "$mesh"
 
+# Tower stability: an island that prints on its own until it joins the main
+# island must satisfy height / sqrt(min area) <= 3 (see check-stl-towers.py).
+python3 "$here/check-stl-towers.py" "$mesh"
+
 downward_args=(--max-area 40)
 case "$(basename "$mesh")" in
   crown_L.stl)

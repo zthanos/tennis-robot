@@ -189,7 +189,7 @@ module base_part() {
 // Print frame: X-up, rear face (x = pusher_runner_x0) on the bed, cup facing
 // up.  Every outboard feature is a prism standing on that bed face; the only
 // unsupported spans are short bridges between bed-standing walls.
-bed_chamfer = 0.6;          // elephant foot at the bed face
+bed_chamfer = 0.6;          // elephant foot at the bed face (runners)
 runner_chamfer = 0.6;       // runner bottom long edges (channel floor corners)
 runner_floor_gap = 0.1;     // modelled; < 0.2 mm radial pin slack
 runner_z0 = rail_floor_t + runner_floor_gap;
@@ -219,21 +219,30 @@ ear_full_x0 = pusher_band_x + hook_rear_x - hook_lip
 ear_z0 = rail_floor_t + rail_wall_h + 1;  // 1 mm over the Z18 guide walls
 ear_z1 = band_axis_z + hook_bar_r + hook_lip;   // 29
 
-bridge_x0 = -12.5;
 bridge_x1 = -0.5;
-bridge_z1 = ear_z0 + 6;
+// Bed web (v2b, 2026-11-27): one continuous 2 mm wall from the bed face to
+// the cup carrier, Z19-21, across both ear columns, gussets and the ball
+// lane.  It replaces the bridged arms and makes the two halves one island
+// from the first layer.  It runs 1 mm over the inner/outer guide walls and
+// 8 mm over the runway, behind the ball.
+web_z1 = ear_z0 + 2;
 carrier_x0 = bridge_x1;     // 2.1 mm behind the cup flat bottom
 carrier_x1 = 4;            // cup 2.4 mm deep beyond its flat (v1: 4.4)
 cup_rim_r = sqrt(pow(ball_d/2 + 0.25, 2) - pow(ball_r - carrier_x1, 2));
 carrier_half_w = ceil(cup_rim_r + 1.7);        // >= 1.6 mm wall at the rim
-carrier_z0 = ear_z0;       // carries the bridge arms
+carrier_z0 = ear_z0;       // sits on the bed web
 carrier_z1 = ceil(ball_center[2] + cup_rim_r + 1.7);
 gusset_t = 2.5;
-// Print footing (2026-11-26, after two spaghetti failures of the first v2
-// print): thin bed-standing stems detached.  The stems get no elephant-foot
-// chamfer (only the runners need it for the channel fit) and a 45-degree
-// foot flare into free space; the ear column now joins the runner at the bed.
+// Print footing.  v2a (2026-11-26) failed twice with spaghetti: in the X-up
+// pose the pusher printed as two separate towers that only met at Z23.5 of
+// 32.  v2b joins everything at the bed: the bed web above, plus a 0.4 mm
+// breakaway tab from each hook curl to the ear column (cut after printing,
+// the curl must be a free J tip to load the band).  The curl stem is
+// 3 x 14 mm with a 45-degree foot so that it passes the tower gate
+// (height / sqrt(area) <= 3) on its own until the hook bar joins it.
 foot_flare = 3;
+curl_stem_z0 = 15;
+tab_t = 0.4;
 
 // 2D profile (u = Y, v = Z) extruded along +X from x0 to x1.  When x0 is the
 // bed face the first `c` mm shrink by `c` (45-degree elephant-foot chamfer).
@@ -268,7 +277,7 @@ module hook_bar_section() {
     }
 }
 
-module pusher_side(side=1) {
+module pusher_side(side=1, print_tabs=false) {
     x0 = pusher_runner_x0;
     bx = pusher_band_x;
     bz = band_axis_z;
@@ -279,7 +288,10 @@ module pusher_side(side=1) {
         // Ear column above the runner: full height only where the hook
         // needs it, tapered at 45 degrees down to the bed behind that.
         // Above the bridge arms only the outer 4.7 mm is kept.
-        for (yr = [[runner_y0, bridge_z1], [rail_center_y, ear_z1]])
+        prism_x(x0, ear_x1, bed_chamfer)
+            translate([runner_y0, runner_z1 - 2])
+                square([runner_w, web_z1 - runner_z1 + 2]);
+        for (yr = [[rail_center_y, ear_z1]])
             hull() {
                 prism_x(x0, x0 + 0.01 + bed_chamfer, bed_chamfer)
                     translate([yr[0], runner_z1 - 2])
@@ -319,8 +331,9 @@ module pusher_side(side=1) {
         curl_head_x0 = bx + hook_rear_x - hook_lip;
         hull() {
             prism_x(x0, curl_head_x0 - (hook_curl_head_t - hook_curl_t))
-                translate([hook_y1, bz - hook_bar_r - hook_lip])
-                    square([hook_curl_t, 2 * (hook_bar_r + hook_lip)]);
+                translate([hook_y1, curl_stem_z0])
+                    square([hook_curl_t, bz + hook_bar_r + hook_lip
+                            - curl_stem_z0]);
             translate([curl_head_x0, hook_y1, bz - hook_bar_r - hook_lip])
                 cube([curl_x1 - 1.5 - curl_head_x0, hook_curl_head_t,
                       2 * (hook_bar_r + hook_lip)]);
@@ -336,22 +349,21 @@ module pusher_side(side=1) {
         // the band pocket), gusset inward (ball lane, free above Z19).
         hull() {
             prism_x(x0, x0 + 1)
-                translate([hook_y1, bz - hook_bar_r - hook_lip])
+                translate([hook_y1, curl_stem_z0])
                     square([hook_curl_t + foot_flare,
-                            2 * (hook_bar_r + hook_lip)]);
+                            bz + hook_bar_r + hook_lip - curl_stem_z0]);
             prism_x(x0, x0 + 1 + foot_flare)
-                translate([hook_y1, bz - hook_bar_r - hook_lip])
-                    square([hook_curl_t, 2 * (hook_bar_r + hook_lip)]);
+                translate([hook_y1, curl_stem_z0])
+                    square([hook_curl_t,
+                            bz + hook_bar_r + hook_lip - curl_stem_z0]);
         }
-        gusset_bed_z1 = carrier_z1 - (carrier_x0 - 2 - x0 - 2);
-        hull() {
-            prism_x(x0, x0 + 1)
-                translate([carrier_half_w - gusset_t - foot_flare, ear_z0])
-                    square([gusset_t + foot_flare, gusset_bed_z1 - ear_z0]);
-            prism_x(x0, x0 + 1 + foot_flare)
-                translate([carrier_half_w - gusset_t, ear_z0])
-                    square([gusset_t, gusset_bed_z1 - ear_z0]);
-        }
+
+        // Breakaway print tab, 0.4 mm (two layers): curl foot -> ear column
+        // across the band pocket.  Cut it off before loading the band.
+        if (print_tabs)
+            prism_x(x0, x0 + tab_t)
+                translate([runner_y1 - 1, ear_z0])
+                    square([hook_y1 + 1 - (runner_y1 - 1), 2]);
 
         // Gusset under the cup carrier (bed-standing, <= 45 degrees).
         hull() {
@@ -364,17 +376,14 @@ module pusher_side(side=1) {
     }
 }
 
-module pusher_raw() {
-    pusher_side(1);
-    pusher_side(-1);
+module pusher_raw(tabs=false) {
+    pusher_side(1, tabs);
+    pusher_side(-1, tabs);
 
-    // Two bridge arms from the ear columns into the cup carrier, 1 mm above
-    // the inner guide walls.  Each underside bridges gusset -> column.
-    for (side = [-1, 1])
-        translate([bridge_x0, side > 0 ? carrier_half_w - 5 : -(runner_y0 + 1),
-                   ear_z0])
-            cube([bridge_x1 - bridge_x0, runner_y0 + 1 - carrier_half_w + 5,
-                  bridge_z1 - ear_z0]);
+    // Bed web: both halves, gussets and carrier in one bed-standing wall.
+    prism_x(pusher_runner_x0, bridge_x1 + 0.01)
+        translate([-runner_y1, ear_z0])
+            square([2 * runner_y1, web_z1 - ear_z0]);
 
     // Cup carrier.
     translate([carrier_x0, -carrier_half_w, carrier_z0])
@@ -382,9 +391,9 @@ module pusher_raw() {
               carrier_z1 - carrier_z0]);
 }
 
-module pusher_part() {
+module pusher_part(tabs=false) {
     difference() {
-        pusher_raw();
+        pusher_raw(tabs);
 
         // Shallow spherical cup matching the ball at the forward stop.  Clip
         // its theoretical point to a flat bottom (no knife edge).
@@ -554,7 +563,8 @@ else if (part == "base") base_part();
 else if (part == "pusher")
     // X-up: rear face (runners, ears, hook curls, gusset roots) on the bed,
     // concave cup facing up.  Support-free; see pusher v2 notes above.
-    translate([0, 0, -pusher_runner_x0]) rotate([0, -90, 0]) pusher_part();
+    translate([0, 0, -pusher_runner_x0]) rotate([0, -90, 0])
+        pusher_part(tabs=true);
 else if (part == "pusher_local") pusher_part();
 else if (part == "spool_anchor") band_spool(spool_anchor_len);
 else if (part == "robot_check") robot_check();
